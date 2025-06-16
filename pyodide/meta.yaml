@@ -7,7 +7,7 @@ source:
 
 build:
   script: |
-    BUILD_CFG=Release python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py312 IfcOpenShell-Python
+    BUILD_CFG=Release python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py313 IfcOpenShell-Python
     mv package/ifcopenshell .
     cp pyodide/setup.py .
 

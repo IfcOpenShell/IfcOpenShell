@@ -89,7 +89,7 @@ OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.86.0"
 PCRE_VERSION = "8.41"
-LIBXML2_VERSION = "2.9.11"
+LIBXML2_VERSION = "2.13.8"
 SWIG_VERSION = "4.0.2"
 OPENCOLLADA_VERSION = "v1.6.68"
 HDF5_VERSION = "1.12.1"
@@ -324,7 +324,7 @@ def run_autoconf(arg1, configure_args, cwd):
     if "wasm" in flags:
         wasm.append("emconfigure")
 
-    run([*wasm, "/bin/sh", "../configure"] + configure_args + [f"--prefix={prefix}"], cwd=cwd)
+    run([*wasm, "/bin/sh", "../configure", *(["--host=wasm32"] if "wasm" in flags and not any(s.startswith('--host') for s in configure_args) else []), *configure_args, f"--prefix={prefix}"], cwd=cwd)
 
 
 def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
@@ -337,7 +337,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if "wasm" in flags:
         wasm.append("emcmake")
         
-    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}", f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}"], cwd=cwd)
+    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}", f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}", f"-DCMAKE_CXX_FLAGS='{os.environ['CXXFLAGS']}'", f"-DCMAKE_C_FLAGS='{os.environ['CFLAGS']}'", f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}"], cwd=cwd)
 
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
@@ -363,7 +363,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "checkout", revision], cwd=target_dir)
 
 
-def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, additional_files={}, no_append_name=False, **kwargs):
+def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, shell=None, pre_compile_subs=[], additional_files={}, no_append_name=False, **kwargs):
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
     a list which is necessary in order to not mess up quoting of compiler and
@@ -412,6 +412,8 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
             compr = "gz"
         elif download_name.endswith(".tar.bz2"):
             compr = "bz2"
+        elif download_name.endswith(".tar.xz"):
+            compr = "xz"
         else:
             raise RuntimeError("fix source for new download type")
         download_tarfile = tarfile.open(name=download_tarfile_path, mode=f"r:{compr}")
@@ -438,6 +440,9 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
                 except Exception as e:
                     # Assert that the patch has already been applied
                     run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
+
+    if shell is not None:
+        sp.run(shell, shell=True, check=True, cwd=extract_dir)
     
     if mode == "ctest":
         run(["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"], cwd=extract_dir)
@@ -459,6 +464,12 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
             run_cmake(name, build_tool_args, cwd=extract_build_dir)
         else:
             raise ValueError()
+        for fn, before, after in pre_compile_subs:
+            with open(os.path.join(extract_dir, fn), 'r') as f:
+                s = f.read()
+            s = s.replace(before, after)
+            with open(os.path.join(extract_dir, fn), 'w') as f:
+                f.write(s)
         logger.info(f"\rBuilding {name}...   ")
         run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=extract_build_dir)
         logger.info(f"\rInstalling {name}... ")
@@ -486,9 +497,6 @@ ADDITIONAL_ARGS = []
 if platform.system() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
-if "wasm" in flags:
-    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fwasm-exceptions", "-sSUPPORT_LONGJMP"))
-
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
 
@@ -499,7 +507,11 @@ CFLAGS = os.environ.get("CFLAGS", "")
 LDFLAGS = os.environ.get("LDFLAGS", "")
 
 ADDITIONAL_ARGS_STR = " ".join(ADDITIONAL_ARGS)
-if "wasm" not in flags and sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
+
+if "wasm" in flags:
+    CFLAGS_MINIMAL = CXXFLAGS_MINIMAL = CFLAGS = CXXFLAGS = os.environ['SIDE_MODULE_CFLAGS']
+    LDFLAGS = os.environ['SIDE_MODULE_LDFLAGS']
+elif sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
     CXXFLAGS_MINIMAL = f"{CXXFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
     CFLAGS_MINIMAL = f"{CFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
     if BUILD_STATIC:
@@ -525,6 +537,7 @@ if "lto" in flags:
         locals()[f] += f" -flto={IFCOS_NUM_BUILD_PROCS}"
 
 os.environ["CXXFLAGS"] = CXXFLAGS
+os.environ["CPPFLAGS"] = CXXFLAGS
 os.environ["CFLAGS"] = CFLAGS
 os.environ["LDFLAGS"] = LDFLAGS
 
@@ -661,8 +674,8 @@ if "libxml2" in targets:
             "--without-iconv",
             "--without-lzma"
         ],
-        download_url="ftp://xmlsoft.org/libxml2/",
-        download_name=f"libxml2-{LIBXML2_VERSION}.tar.gz"
+        download_url=f"https://download.gnome.org/sources/libxml2/{'.'.join(LIBXML2_VERSION.split('.')[0:2])}/",
+        download_name=f"libxml2-{LIBXML2_VERSION}.tar.xz"
     )
     
 if "OpenCOLLADA" in targets:
@@ -695,9 +708,11 @@ if "OpenCOLLADA" in targets:
 
 if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flags:
     # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
+    OLD_CPP_FLAGS = os.environ["CPPFLAGS"]
     OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
     OLD_C_FLAGS = os.environ["CFLAGS"]
     os.environ["CXXFLAGS"] = CXXFLAGS_MINIMAL
+    os.environ["CPPFLAGS"] = CXXFLAGS_MINIMAL
     os.environ["CFLAGS"] = CFLAGS_MINIMAL
 
     # On OSX a dynamic python library is built or it would not be compatible
@@ -727,6 +742,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
             ):
                 raise e
 
+    os.environ["CPPFLAGS"] = OLD_CPP_FLAGS
     os.environ["CXXFLAGS"] = OLD_CXX_FLAGS
     os.environ["CFLAGS"] = OLD_C_FLAGS
 
@@ -772,6 +788,7 @@ if "cgal" in targets:
         name=f"gmp-{GMP_VERSION}",
         mode="autoconf",
         build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, "--with-pic", *gmp_args],
+        pre_compile_subs=([("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if "wasm" in flags else []),
         download_url="https://ftp.gnu.org/gnu/gmp/",
         download_name=f"gmp-{GMP_VERSION}.tar.bz2"
     )
@@ -956,6 +973,7 @@ if "IfcOpenShell-Python" in targets:
     if "wasm" in flags:
         ADDITIONAL_ARGS = f"-Wl,-undefined,suppress -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper"
         
+    os.environ["CPPFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CXXFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CFLAGS"] = f"{CFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["LDFLAGS"] = f"{LDFLAGS} {ADDITIONAL_ARGS}"
