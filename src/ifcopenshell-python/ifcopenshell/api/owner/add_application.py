@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.api.pset
 from typing import Optional, Any, Union
 
 
@@ -90,18 +92,32 @@ class Usecase:
                 "Roles": [
                     self.file.create_entity("IfcActorRole", **{"Role": "USERDEFINED", "UserDefinedRole": "CONTRIBUTOR"})
                 ],
-                "Addresses": [
-                    self.file.create_entity(
-                        "IfcTelecomAddress",
-                        **{
-                            "Purpose": "USERDEFINED",
-                            "UserDefinedPurpose": "WEBPAGE",
-                            "WWWHomePageURL": "https://ifcopenshell.org",
-                        },
-                    ),
-                ],
             },
         )
         # 0 IfcOrganization.Identification / Id (IFC2X3).
         result[0] = "IfcOpenShell"
+
+        # 4 IfcOrganization.Addresses
+        if self.file.schema == "IFC4X3":
+            # IfcTelecomAddress is deprecated in IFC4X3.
+            actor = ifcopenshell.api.owner.add_actor(self.file, result)
+            pset = ifcopenshell.api.pset.add_pset(self.file, actor, "PEnum_AddressType")
+            ifcopenshell.api.pset.edit_pset(
+                self.file,
+                pset,
+                properties={
+                    "Purpose": "OTHER",
+                    "UserDefinedPurpose": "WEBPAGE",
+                    "WWWHomePageURL": "https://ifcopenshell.org",
+                },
+            )
+        else:
+            result[4] = [
+                self.file.create_entity(
+                    "IfcTelecomAddress",
+                    Purpose="USERDEFINED",
+                    UserDefinedPurpose="WEBPAGE",
+                    WWWHomePageURL="https://ifcopenshell.org",
+                ),
+            ]
         return result
