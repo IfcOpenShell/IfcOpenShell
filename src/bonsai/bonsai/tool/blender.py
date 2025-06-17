@@ -1268,6 +1268,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     @cache
     def get_bonsai_version(cls) -> str:
+        """E.g. `0.8.3-alpha250617-15453a9`"""
         version = None
 
         # Try to retrieve actual version for live-dev environment.

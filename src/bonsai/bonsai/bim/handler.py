@@ -259,7 +259,8 @@ def redo_post(scene: bpy.types.Scene) -> None:
 
 def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
     # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
-    version = tool.Blender.get_bonsai_version()
+    # Use only main part from the version to avoid flooding advanced users projects with IfcApplications.
+    version = tool.Blender.get_bonsai_version().split("-")[0]
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == "Bonsai" and element.Version == version:
             return element
