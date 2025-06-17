@@ -49,6 +49,7 @@ private:
 %ignore IfcUtil::IfcBaseClass::is;
 
 %rename("by_id") instance_by_id;
+%rename("by_guid") instance_by_guid;
 %rename("by_type") instances_by_type;
 %rename("by_type_excl_subtypes") instances_by_type_excl_subtypes;
 %rename("get_inverses_by_declaration") getInverse;
@@ -124,10 +125,6 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	// can trace file ownership of instances on the python side.
 	size_t file_pointer() const {
 		return reinterpret_cast<size_t>($self);
-	}
-
-	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
-		return $self->instance_by_guid(guid);
 	}
 
 	aggregate_of_instance::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
