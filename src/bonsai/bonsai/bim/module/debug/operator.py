@@ -42,7 +42,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args, Union, Any, TYPE_CHECKING, Literal, get_args
+from typing import get_args, Union, Any, TYPE_CHECKING, Literal, get_args, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute
@@ -747,15 +747,13 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Purge Unused Objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(
+    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
         name="Object Type",
-        items=(
-            ("TYPE", "Type", ""),
-            ("PROFILE", "Profile", ""),
-            ("STYLE", "Style", ""),
-            ("MATERIAL", "Material", ""),
-        ),
+        items=((s, s.capitalize(), "") for s in get_args(PurgeObjectType)),
     )
+
+    if TYPE_CHECKING:
+        object_type: PurgeObjectType
 
     def _execute(self, context):
         object_type = self.object_type
@@ -767,9 +765,10 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
             purged = tool.Style.purge_unused_styles()
         elif object_type == "MATERIAL":
             purged = tool.Material.purge_unused_materials()
+        elif object_type in ("APPLICATION", "ORGANIZATION"):
+            purged = core.purge_unused_elements(tool.Ifc, tool.Debug, "IfcApplication")
         else:
-            self.report({"ERROR"}, f"Invalid object type {object_type}.")
-            return {"CANCELLED"}
+            assert_never(object_type)
 
         self.report({"INFO"}, f"{purged} unused {object_type.lower()}s were purged.")
 
@@ -788,6 +787,10 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
             props = tool.Material.get_material_props()
             if props.is_editing:
                 bpy.ops.bim.load_materials()
+        elif object_type == "ORGANIZATION":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_organisation_id) is None:
+                props.active_organisation_id = 0
 
 
 class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):

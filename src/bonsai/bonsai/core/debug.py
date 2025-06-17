@@ -38,5 +38,9 @@ def purge_unused_elements(ifc: type[tool.Ifc], debug: type[tool.Debug], ifc_clas
     ifc_file = ifc.get()
     unused_elements = [i for i in ifc_file.by_type(ifc_class) if ifc_file.get_total_inverses(i) == 0]
     unused_elements_amount = len(unused_elements)
-    debug.remove_unused_elements(unused_elements)
+    if ifc_class == "IfcApplication":
+        for element in unused_elements:
+            ifc.run("owner.remove_application", application=element)
+    else:
+        debug.remove_unused_elements(unused_elements)
     return unused_elements_amount

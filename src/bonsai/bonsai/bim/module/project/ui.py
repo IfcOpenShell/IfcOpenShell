@@ -648,8 +648,10 @@ class BIM_PT_purge(Panel):
 
         row = layout.row(align=True)
         row.label(text="Organizations: ")
+        row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "ORGANIZATION"
         row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = "ORGANIZATION"
 
         row = layout.row(align=True)
         row.label(text="Applications: ")
+        row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = "APPLICATION"
         row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = "APPLICATION"
