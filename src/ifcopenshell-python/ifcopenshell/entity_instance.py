@@ -156,6 +156,7 @@ class entity_instance:
     """
 
     wrapped_data: ifcopenshell_wrapper.entity_instance
+    method_list: Union[MethodList, None] = None
 
     def __init__(
         self,
@@ -171,7 +172,6 @@ class entity_instance:
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
         object.__setattr__(self, "wrapped_data", e)
-        object.__setattr__(self, "method_list", None)
 
         # Make sure the file is not gc'ed while we have live instances
         e.file = file
