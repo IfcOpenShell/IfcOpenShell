@@ -22,6 +22,7 @@ import json
 import bpy
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.material
+import ifcopenshell.api.owner
 import ifcopenshell.express
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
@@ -31,7 +32,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 from collections import defaultdict
-from typing import Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING, assert_never
 from collections.abc import Iterable
 
 if TYPE_CHECKING:
@@ -122,24 +123,38 @@ class Debug(bonsai.core.tool.Debug):
         return sum(unused.values())
 
     @classmethod
-    def merge_identical_objects(cls, object_type: Literal["STYLE", "MATERIAL"]) -> dict[str, list[str]]:
+    def merge_identical_objects(
+        cls,
+        object_type: Literal["STYLE", "MATERIAL", "ORGANIZATION", "APPLICATION"],
+    ) -> dict[str, list[str]]:
         """Merge identical objects.
 
         Note that Styles UI (or other UI) should be updated manually after using this method.
         """
 
         def get_hash(element: ifcopenshell.entity_instance) -> int:
-            return hash(json.dumps(element.get_info_2(include_identifier=False, recursive=True), sort_keys=True))
+            data = element.get_info_2(include_identifier=False, recursive=True)
+            if object_type == "APPLICATION":
+                # To avoid disruption let user merge organizations separately.
+                data["ApplicationDeveloper"] = element.ApplicationDeveloper.id()
+            return hash(json.dumps(data, sort_keys=True))
 
         ifc_file = tool.Ifc.get()
         merged_element_types: dict[str, list[str]] = {}
 
         if object_type == "STYLE":
-            declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+            declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle").as_entity()
+            assert declaration
             element_types = [e.name() for e in ifcopenshell.util.schema.get_subtypes(declaration)]
         elif object_type == "MATERIAL":
             # TODO: support other material types.
             element_types = ["IfcMaterial"]
+        elif object_type == "ORGANIZATION":
+            element_types = ["IfcOrganization"]
+        elif object_type == "APPLICATION":
+            element_types = ["IfcApplication"]
+        else:
+            assert_never(object_type)
 
         for element_type in element_types:
             elements = ifc_file.by_type(element_type, include_subtypes=False)
@@ -148,7 +163,8 @@ class Debug(bonsai.core.tool.Debug):
             hash_to_elements: defaultdict[int, list[ifcopenshell.entity_instance]] = defaultdict(list)
             for element in elements:
                 # Except for styles, ignore unnamed elements as they may be not safe to merge
-                if object_type != "STYLE" and not element.Name:
+                not_optional_name = ("APPLICATION", "ORGANIZATION")
+                if object_type != "STYLE" and object_type not in not_optional_name and not element.Name:
                     continue
                 element_hash = get_hash(element)
                 hash_to_elements[element_hash].append(element)
@@ -177,6 +193,21 @@ class Debug(bonsai.core.tool.Debug):
                         ifcopenshell.util.element.replace_element(material, main_element)
                         merged_elements_names.append(material.Name)
                         ifcopenshell.api.material.remove_material(ifc_file, material)
+
+                elif object_type == "ORGANIZATION":
+                    for organization in elements[1:]:
+                        ifcopenshell.util.element.replace_element(organization, main_element)
+                        merged_elements_names.append(organization.Name)
+                        ifcopenshell.api.owner.remove_organisation(ifc_file, organization)
+
+                elif object_type == "APPLICATION":
+                    for application in elements[1:]:
+                        ifcopenshell.util.element.replace_element(application, main_element)
+                        merged_elements_names.append(application.ApplicationFullName)
+                        ifcopenshell.api.owner.remove_application(ifc_file, application)
+
+                else:
+                    assert_never(object_type)
 
             if merged_elements_names:
                 merged_element_types[element_type] = merged_elements_names

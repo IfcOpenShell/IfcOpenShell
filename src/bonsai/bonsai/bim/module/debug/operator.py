@@ -42,7 +42,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args, Union, Any, TYPE_CHECKING
+from typing import get_args, Union, Any, TYPE_CHECKING, Literal, get_args
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute
@@ -739,6 +739,9 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator, ExportHe
             tool.Ifc.get().write(self.filepath)
 
 
+PurgeObjectType = Literal["TYPE", "PROFILE", "STYLE", "MATERIAL", "ORGANIZATION", "APPLICATION"]
+
+
 class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.purge_unused_objects"
     bl_label = "Purge Unused Objects"
@@ -793,23 +796,21 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "For materials currently only IfcMaterials are supported"
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(
+    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
         name="Object Type",
-        items=(
-            ("TYPE", "Type", ""),
-            ("PROFILE", "Profile", ""),
-            ("STYLE", "Style", ""),
-            ("MATERIAL", "Material", ""),
-        ),
+        items=((s, s.capitalize(), "") for s in get_args(PurgeObjectType)),
     )
+
+    if TYPE_CHECKING:
+        object_type: PurgeObjectType
 
     def _execute(self, context):
         object_type: str = self.object_type
-        if object_type in ("STYLE", "MATERIAL"):
-            merged_data = tool.Debug.merge_identical_objects(object_type)
-        else:
-            self.report({"ERROR"}, f"Invalid object type {object_type}.")
+        if object_type in ("PROFILE", "TYPE"):
+            self.report({"ERROR"}, f"Unsupported object type {object_type}.")
             return {"CANCELLED"}
+
+        merged_data = tool.Debug.merge_identical_objects(object_type)
         plural_object_type = f"{object_type.lower()}s"
         if merged_data:
             for element_type, element_names in merged_data.items():
