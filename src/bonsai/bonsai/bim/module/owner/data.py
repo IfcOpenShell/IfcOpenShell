@@ -30,6 +30,7 @@ def refresh():
     OwnerData.is_loaded = False
     ActorData.is_loaded = False
     ObjectActorData.is_loaded = False
+    ApplicationsData.is_loaded = False
 
 
 class RolesAddressesData:
