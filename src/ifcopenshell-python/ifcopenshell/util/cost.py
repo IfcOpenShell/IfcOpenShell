@@ -282,9 +282,10 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
 
 
 def get_cost_schedule_types(file: ifcopenshell.file) -> list[dict[str, str]]:
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(file.schema_identifier)
+    schema = ifcopenshell_wrapper.schema_by_name(file.schema_identifier)
     results = []
-    declaration = schema.declaration_by_name("IfcCostSchedule")
+    declaration = schema.declaration_by_name("IfcCostSchedule").as_entity()
+    assert declaration
     version = file.schema_identifier
     for attribute in declaration.attributes():
         if attribute.name() == "PredefinedType":

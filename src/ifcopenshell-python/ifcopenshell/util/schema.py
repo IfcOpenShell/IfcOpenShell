@@ -136,8 +136,8 @@ def get_subtypes(
         [<entity IfcFlowSegment>, <entity IfcCableCarrierSegment>, ..., <entity IfcPipeSegment>]
     """
 
-    def get_classes(decl):
-        results = []
+    def get_classes(decl: ifcopenshell_wrapper.entity) -> list[ifcopenshell_wrapper.entity]:
+        results: list[ifcopenshell_wrapper.entity] = []
         if not decl.is_abstract():
             results.append(decl)
         for subtype in decl.subtypes():
@@ -172,7 +172,7 @@ def reassign_class(
     if not ifc_file:
         ifc_file = element.file
 
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
+    schema = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
     try:
         declaration = schema.declaration_by_name(new_class)
     except RuntimeError:

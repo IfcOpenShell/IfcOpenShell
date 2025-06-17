@@ -277,10 +277,10 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
         return pao
     elif ifc.schema == "IFC2X3":
         if (person := next(iter(ifc.by_type("IfcPerson")), None)) is None:
-            person = tool.Ifc.run("owner.add_person")
+            person = ifcopenshell.api.owner.add_person(ifc)
         if (organization := next(iter(ifc.by_type("IfcOrganization")), None)) is None:
-            organization = tool.Ifc.run("owner.add_organisation")
-        pao = tool.Ifc.run("owner.add_person_and_organisation", person=person, organisation=organization)
+            organization = ifcopenshell.api.owner.add_organisation(ifc)
+        pao = ifcopenshell.api.owner.add_person_and_organisation(ifc, person=person, organisation=organization)
         return pao
 
 

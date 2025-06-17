@@ -815,12 +815,13 @@ def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_
     None,
     None,
 ]:
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
+    schema = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
 
     for element in ifc_file:
-        entity = schema.declaration_by_name(element.is_a())
+        entity = schema.declaration_by_name(element.is_a()).as_entity()
+        assert entity
         attrs = entity.all_attributes()
-        attrs_derived: tuple[bool, ...] = entity.derived()
+        attrs_derived = entity.derived()
         for attr, val, is_derived in zip(attrs, list(element), attrs_derived):
             if is_derived:
                 continue

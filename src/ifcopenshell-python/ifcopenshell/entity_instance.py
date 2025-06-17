@@ -26,7 +26,7 @@ import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, TypeVar, overload, TYPE_CHECKING
+from typing import Union, Any, TypeVar, overload, TYPE_CHECKING, cast, NoReturn
 from collections.abc import Callable, Sequence
 
 from . import ifcopenshell_wrapper
@@ -64,17 +64,20 @@ def set_unsupported_attribute(*args):
 # done for each invocation of __setitem__. Now this
 # mapping is built once during initialization of the
 # module.
-_method_dict = {}
+MethodList = list[Callable[[ifcopenshell_wrapper.entity_instance, int, Any], Union[None, NoReturn]]]
+"""List of setter methods for class attributes."""
+_method_dict: dict[str, MethodList] = {}
+"""Mapping of entity classes (e.g. 'IFC4.IfcWall') to MethodLists."""
 
 
 def register_schema_attributes(schema: ifcopenshell_wrapper.schema_definition) -> None:
     for decl in schema.declarations():
-        decl: ifcopenshell_wrapper.declaration
         if hasattr(decl, "argument_types"):
             fq_name = ".".join((schema.name(), decl.name()))
 
             # get type strings as reported by IfcOpenShell C++
             type_strs = decl.argument_types()
+            type_strs = cast(Sequence[str], type_strs)
 
             # convert case for setter function
             type_strs = [x.title().replace(" ", "") for x in type_strs]

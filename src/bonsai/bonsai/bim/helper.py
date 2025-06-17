@@ -121,7 +121,8 @@ def import_attributes(
     callback: Optional[ImportCallback] = None,
 ) -> None:
     schema = tool.Ifc.schema()
-    for attribute in schema.declaration_by_name(ifc_class).all_attributes():
+    assert (entity := schema.declaration_by_name(ifc_class).as_entity())
+    for attribute in entity.all_attributes():
         import_attribute(attribute, props, data, callback=callback)
 
 
@@ -132,11 +133,13 @@ def import_attributes2(
     callback: Optional[ImportCallback] = None,
 ) -> None:
     if isinstance(element, str):
-        attributes = tool.Ifc.schema().declaration_by_name(element).as_entity().all_attributes()
+        assert (entity := tool.Ifc.schema().declaration_by_name(element).as_entity())
+        attributes = entity.all_attributes()
         info = {a.name(): None for a in attributes}
         info["type"] = element
     else:
-        attributes = element.wrapped_data.declaration().as_entity().all_attributes()
+        assert (entity := element.wrapped_data.declaration().as_entity())
+        attributes = entity.all_attributes()
         info = element.get_info()
     for attribute in attributes:
         import_attribute(attribute, props, info, callback=callback)

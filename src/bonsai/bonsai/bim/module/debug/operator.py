@@ -42,7 +42,10 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args, Union
+from typing import get_args, Union, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
 
 
 class CopyDebugInformation(bpy.types.Operator):
@@ -70,6 +73,7 @@ class CopyDebugInformation(bpy.types.Operator):
         print(text_with_backticks)
         print("-" * 80)
 
+        assert context.window_manager
         context.window_manager.clipboard = text_with_backticks
         return {"FINISHED"}
 
@@ -347,8 +351,9 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
     threshold: bpy.props.IntProperty()
 
     def execute(self, context):
+        assert context.view_layer
         for obj in context.view_layer.objects:
-            if obj.type == "MESH" and len(obj.data.polygons) > self.threshold:
+            if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons) > self.threshold:
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -361,6 +366,7 @@ class SelectHighestPolygonMeshes(bpy.types.Operator):
     percentile: bpy.props.IntProperty()
 
     def execute(self, context):
+        assert context.view_layer
         objects = [obj for obj in context.view_layer.objects if obj.type == "MESH"]
         if objects:
             percentile = len(max(objects, key=lambda o: len(o.data.polygons)).data.polygons) * self.percentile / 100
@@ -423,7 +429,7 @@ class InspectFromStepId(bpy.types.Operator):
             new.int_value = inverse.id()
         return {"FINISHED"}
 
-    def add_attribute(self, prop, key, value):
+    def add_attribute(self, prop: "bpy.types.bpy_prop_collection_idprop[Attribute]", key: str, value: Any) -> None:
         if isinstance(value, tuple) and len(value) < 10:
             for i, item in enumerate(value):
                 self.add_attribute(prop, key + f"[{i}]", item)
@@ -459,8 +465,10 @@ class InspectFromObject(bpy.types.Operator):
     def poll(cls, context):
         if not context.active_object:
             cls.poll_message_set("No Active Object")
+            return False
         elif not cls.get_active_object_ifc_definition(context):
             cls.poll_message_set("Active Object doesn't have an IFC definition")
+            return False
         else:
             return True
 
@@ -492,6 +500,7 @@ class PrintObjectPlacement(bpy.types.Operator):
         if self.create_empty_object:
             bpy.ops.object.empty_add(type="ARROWS")
             si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            assert context.active_object
             context.active_object.matrix_world = placement.transpose()
             context.active_object.matrix_world.translation *= si_conversion
             context.active_object.empty_display_size = self.arrow_size
@@ -1017,6 +1026,7 @@ class RestartBlender(bpy.types.Operator):
     def execute(self, context):
         # Save preferences manually since we're restarting Blender using .execv
         # and it doens't have a chance to save them on exit.
+        assert context.preferences
         if context.preferences.use_preferences_save:
             bpy.ops.wm.save_userpref()
 

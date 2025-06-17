@@ -31,6 +31,7 @@ class BIM_PT_debug(Panel):
     bl_parent_id = "BIM_PT_tab_quality_control"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
 
         props = tool.Debug.get_debug_props()
