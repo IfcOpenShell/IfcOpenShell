@@ -29,6 +29,8 @@ private:
 %ignore IfcParse::IfcFile::schema;
 %ignore IfcParse::IfcFile::begin;
 %ignore IfcParse::IfcFile::end;
+// Available as get_inverse().
+%ignore IfcParse::IfcFile::instances_by_reference;
 
 %ignore parse_context;
 
