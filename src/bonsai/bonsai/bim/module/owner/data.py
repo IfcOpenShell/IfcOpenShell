@@ -35,30 +35,24 @@ def refresh():
 class RolesAddressesData:
     @classmethod
     def get_roles(cls, parent: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
-        props = tool.Owner.get_owner_props()
         results: list[dict[str, Any]] = []
         for role in parent.Roles or []:
             results.append(
                 {
                     "id": role.id(),
-                    "is_editing": props.active_role_id == role.id(),
                     "label": role.UserDefinedRole or role.Role,
-                    "props": props.role_attributes,
                 }
             )
         return results
 
     @classmethod
     def get_addresses(cls, parent: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
-        props = tool.Owner.get_owner_props()
         results: list[dict[str, Any]] = []
         for address in parent.Addresses or []:
             results.append(
                 {
                     "id": address.id(),
-                    "is_editing": props.active_address_id == address.id(),
                     "label": address.is_a(),
-                    "props": props.address_attributes,
                     "list_attributes": cls.get_address_list_attributes(address),
                 }
             )
@@ -102,17 +96,14 @@ class PeopleData(RolesAddressesData):
 
     @classmethod
     def get_people(cls) -> list[dict[str, Any]]:
-        props = tool.Owner.get_owner_props()
         people: list[dict[str, Any]] = []
         for person in tool.Ifc.get().by_type("IfcPerson"):
             roles = cls.get_roles(person)
             people.append(
                 {
                     "id": person.id(),
-                    "props": props.person_attributes,
                     "name": cls.get_person_name(person),
                     "roles_label": ", ".join([r["label"] for r in roles]),
-                    "is_editing": cls.get_person_is_editing(person),
                     "is_engaged": bool(person.EngagedIn),
                     "list_attributes": cls.get_person_list_attributes(person),
                     "roles": roles,
@@ -132,11 +123,6 @@ class PeopleData(RolesAddressesData):
             full_name = "{} {}".format(person.GivenName or "", person.FamilyName or "").strip()
             name += f" ({full_name})"
         return name
-
-    @classmethod
-    def get_person_is_editing(cls, person: ifcopenshell.entity_instance) -> bool:
-        props = tool.Owner.get_owner_props()
-        return props.active_person_id == person.id()
 
     @classmethod
     def get_person_list_attributes(cls, person: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
@@ -167,17 +153,14 @@ class OrganisationsData(RolesAddressesData):
 
     @classmethod
     def get_organisations(cls) -> list[dict[str, Any]]:
-        props = tool.Owner.get_owner_props()
         organisations: list[dict[str, Any]] = []
         for organisation in tool.Ifc.get().by_type("IfcOrganization"):
             roles = cls.get_roles(organisation)
             organisations.append(
                 {
                     "id": organisation.id(),
-                    "props": props.organisation_attributes,
                     "name": organisation.Name,
                     "roles_label": ", ".join([r["label"] for r in roles]),
-                    "is_editing": props.active_organisation_id == organisation.id(),
                     "is_engaged": bool(organisation.Engages),
                     "roles": roles,
                     "addresses": cls.get_addresses(organisation),
@@ -251,7 +234,6 @@ class ActorData:
         actors: list[dict[str, Any]] = []
         props = tool.Owner.get_owner_props()
         for actor in tool.Ifc.get().by_type(props.actor_class, include_subtypes=False):
-            is_editing = props.active_actor_id == actor.id()
             the_actor: ifcopenshell.entity_instance = actor.TheActor
             if the_actor.is_a("IfcPerson"):
                 the_actor_ = the_actor.Identification or "N/A"
@@ -267,7 +249,6 @@ class ActorData:
                     "id": actor.id(),
                     "name": actor.Name or "Unnamed",
                     "the_actor": the_actor_,
-                    "is_editing": is_editing,
                 }
             )
         return actors

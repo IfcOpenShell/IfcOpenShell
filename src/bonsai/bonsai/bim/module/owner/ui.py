@@ -31,17 +31,18 @@ from bonsai.bim.module.owner.data import (
 
 
 def draw_roles(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
+    props = tool.Owner.get_owner_props()
     row = box.row(align=True)
     row.label(text="Roles")
     op = row.operator("bim.add_role", icon="ADD", text="")
     op.parent = parent["id"]
 
     for role in parent["roles"]:
-        if role["is_editing"]:
+        if props.active_role_id == role["id"]:
             row = box.row(align=True)
             row.operator("bim.edit_role", icon="CHECKMARK")
             row.operator("bim.disable_editing_role", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(role["props"], box)
+            bonsai.bim.helper.draw_attributes(props.role_attributes, box)
         else:
             row = box.row(align=True)
             row.label(text=role["label"])
@@ -50,6 +51,7 @@ def draw_roles(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
 
 
 def draw_addresses(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
+    props = tool.Owner.get_owner_props()
     row = box.row(align=True)
     row.label(text="Addresses")
     op = row.operator("bim.add_address", icon="LINK_BLEND", text="")
@@ -60,11 +62,11 @@ def draw_addresses(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
     op.ifc_class = "IfcPostalAddress"
 
     for address in parent["addresses"]:
-        if address["is_editing"]:
+        if props.active_address_id == address["id"]:
             row = box.row(align=True)
             row.operator("bim.edit_address", icon="CHECKMARK")
             row.operator("bim.disable_editing_address", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(address["props"], box)
+            bonsai.bim.helper.draw_attributes(props.address_attributes, box)
             for attribute in address["list_attributes"]:
                 row = box.row(align=True)
                 row.label(text=attribute["name"])
@@ -113,12 +115,14 @@ class BIM_PT_people(bpy.types.Panel):
 
     def draw_person(self, person: dict[str, Any]) -> None:
         assert self.layout
-        if person["is_editing"]:
+        props = tool.Owner.get_owner_props()
+
+        if props.active_person_id == person["id"]:
             box = self.layout.box()
             row = box.row(align=True)
             row.operator("bim.edit_person", icon="CHECKMARK")
             row.operator("bim.disable_editing_person", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(person["props"], box)
+            bonsai.bim.helper.draw_attributes(props.person_attributes, box)
 
             for attribute in person["list_attributes"]:
                 row = box.row(align=True)
@@ -174,12 +178,13 @@ class BIM_PT_organisations(bpy.types.Panel):
 
     def draw_organisation(self, organisation: dict[str, Any]) -> None:
         assert self.layout
-        if organisation["is_editing"]:
+        props = tool.Owner.get_owner_props()
+        if props.active_organisation_id == organisation["id"]:
             box = self.layout.box()
             row = box.row(align=True)
             row.operator("bim.edit_organisation", icon="CHECKMARK")
             row.operator("bim.disable_editing_organisation", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(organisation["props"], box)
+            bonsai.bim.helper.draw_attributes(props.organisation_attributes, box)
 
             draw_roles(box, organisation)
             draw_addresses(box, organisation)
@@ -284,12 +289,14 @@ class BIM_PT_actor(bpy.types.Panel):
 
     def draw_actor(self, actor: dict[str, Any]) -> None:
         assert self.layout
-        if actor["is_editing"]:
+        props = tool.Owner.get_owner_props()
+
+        if props.active_actor_id == actor["id"]:
             box = self.layout.box()
             row = box.row(align=True)
             row.operator("bim.edit_actor", icon="CHECKMARK")
             row.operator("bim.disable_editing_actor", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(self.props.actor_attributes, box)
+            bonsai.bim.helper.draw_attributes(props.actor_attributes, box)
         else:
             row = self.layout.row(align=True)
             row.label(text=actor["name"], icon="USER")
