@@ -23,20 +23,23 @@ import ifcopenshell.api.owner
 class TestEditOrganisation(test.bootstrap.IFC4):
     def test_editing_a_organisation(self):
         organisation = self.file.createIfcOrganization()
+        attributes = {
+            "Identification" if self.file.schema != "IFC2X3" else "Id": "Identification",
+            "Name": "Name",
+            "Description": "Description",
+        }
         ifcopenshell.api.owner.edit_organisation(
             self.file,
             organisation=organisation,
-            attributes={
-                "Identification" if self.file.schema != "IFC2X3" else "Id": "Identification",
-                "Name": "Name",
-                "Description": "Description",
-            },
+            attributes=attributes,
         )
-        # 0 IfcOrganization Identification(>IFC2X3) / Id (IFC2X3)
-        assert organisation[0] == "Identification"
-        assert organisation.Name == "Name"
-        assert organisation.Description == "Description"
+        for attr, value in attributes.items():
+            assert getattr(organisation, attr) == value
 
 
 class TestEditOrganisationIFC2X3(test.bootstrap.IFC2X3, TestEditOrganisation):
+    pass
+
+
+class TestEditOrganisationIFC4X3(test.bootstrap.IFC4X3, TestEditOrganisation):
     pass
