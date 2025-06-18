@@ -19,6 +19,7 @@
 from __future__ import annotations
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.util.representation
 import json
 import bonsai.bim.helper
@@ -67,19 +68,20 @@ class Structural(bonsai.core.tool.Structural):
 
     @classmethod
     def ensure_representation_contexts(cls) -> None:
-        model = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
+        ifc_file = tool.Ifc.get()
+        model = ifcopenshell.util.representation.get_context(ifc_file, "Model")
         if not model:
-            model = tool.Ifc.run(
-                "context.add_context",
+            model = ifcopenshell.api.context.add_context(
+                ifc_file,
                 context_type="Model",
                 context_identifier="",
                 target_view="",
                 parent=0,
             )
-        graph = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Reference", "GRAPH_VIEW")
+        graph = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Reference", "GRAPH_VIEW")
         if not graph:
-            model = tool.Ifc.run(
-                "context.add_context",
+            model = ifcopenshell.api.context.add_context(
+                ifc_file,
                 context_type="Model",
                 context_identifier="Reference",
                 target_view="GRAPH_VIEW",

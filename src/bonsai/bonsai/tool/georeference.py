@@ -44,8 +44,8 @@ class Georeference(bonsai.core.tool.Georeference):
     @classmethod
     def add_georeferencing(cls) -> None:
         props = cls.get_georeference_props()
-        tool.Ifc.run(
-            "georeference.add_georeferencing",
+        ifcopenshell.api.georeference.add_georeferencing(
+            tool.Ifc.get(),
             ifc_class=props.coordinate_operation_class,
         )
 

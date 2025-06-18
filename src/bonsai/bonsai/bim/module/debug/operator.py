@@ -26,10 +26,10 @@ import subprocess
 import platform
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.debug as core
@@ -893,6 +893,7 @@ class DebugActiveDrawing(bpy.types.Operator):
     )
 
     def execute(self, context: bpy.types.Context):
+        ifc_file = tool.Ifc.get()
         props = tool.Drawing.get_document_props()
         drawing_item = props.drawings[props.active_drawing_index]
         drawing = tool.Ifc.get().by_id(drawing_item.ifc_definition_id)
@@ -923,7 +924,7 @@ class DebugActiveDrawing(bpy.types.Operator):
             excluded_guids = ", ".join([e.GlobalId for e in current_elements if hasattr(e, "GlobalId")])
             new_exclude = "" if not original_exclude else f"{original_exclude}, "
             new_exclude += excluded_guids
-            tool.Ifc.run("pset.edit_pset", pset=pset, properties={"Exclude": new_exclude})
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Exclude": new_exclude})
 
             try:
                 bpy.ops.bim.create_drawing(sync=False)
@@ -932,7 +933,7 @@ class DebugActiveDrawing(bpy.types.Operator):
                 # print(e)
                 result = True
 
-            tool.Ifc.run("pset.edit_pset", pset=pset, properties={"Exclude": original_exclude})
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Exclude": original_exclude})
             return result
 
         def test_elements(elements: list[ifcopenshell.entity_instance], attempts: int = ATTEMPS) -> None:

@@ -1208,7 +1208,7 @@ class Model(bonsai.core.tool.Model):
         if obj:
             obj.matrix_world = matrix
             return
-        tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
+        ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), product=element, matrix=matrix, is_si=True)
 
     @classmethod
     def sync_object_ifc_position(cls, obj: bpy.types.Object) -> None:

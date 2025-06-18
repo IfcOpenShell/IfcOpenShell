@@ -27,6 +27,7 @@ import mathutils
 import webbrowser
 import isodate
 import ifcopenshell
+import ifcopenshell.api.group
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.sequence
 import ifcopenshell.util.date
@@ -1688,12 +1689,13 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def save_animation_color_scheme(cls, name: str) -> ifcopenshell.entity_instance:
         props = cls.get_animation_props()
+        ifc_file = tool.Ifc.get()
         colour_scheme = {
             "Inputs": {cs.name: cs.color[0:3] for cs in props.task_input_colors},
             "Outputs": {cs.name: cs.color[0:3] for cs in props.task_output_colors},
         }
 
-        group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == name]
+        group = [g for g in ifc_file.by_type("IfcGroup") if g.Name == name]
         if group:
             group = group[0]
             description = json.loads(group.Description)
@@ -1701,7 +1703,7 @@ class Sequence(bonsai.core.tool.Sequence):
             group.Description = json.dumps(description)
         else:
             description = json.dumps({"type": "BBIM_AnimationColorScheme", "colourscheme": colour_scheme})
-            group = tool.Ifc.run("group.add_group", name=name, description=description)
+            group = ifcopenshell.api.group.add_group(ifc_file, name=name, description=description)
         return group[0]
 
     @classmethod

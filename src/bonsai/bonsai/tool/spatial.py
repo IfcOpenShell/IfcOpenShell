@@ -22,6 +22,8 @@ import bmesh
 import shapely
 import shapely.ops
 import ifcopenshell
+import ifcopenshell.api.attribute
+import ifcopenshell.api.type
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -552,7 +554,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def edit_container_name(cls, container: ifcopenshell.entity_instance, name: str) -> None:
-        tool.Ifc.run("attribute.edit_attributes", product=container, attributes={"Name": name})
+        ifcopenshell.api.attribute.edit_attributes(tool.Ifc.get(), product=container, attributes={"Name": name})
 
     @classmethod
     def get_active_container(cls) -> Union[ifcopenshell.entity_instance, None]:
@@ -1167,13 +1169,15 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
         props = tool.Model.get_model_props()
+        ifc_file = tool.Ifc.get()
         relating_type_id = props.relating_type_id
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, ifc_file.schema)[0]
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
-        tool.Ifc.run("type.assign_type", related_objects=[element], relating_type=relating_type)
+        assert element
+        ifcopenshell.api.type.assign_type(ifc_file, related_objects=[element], relating_type=relating_type)
 
     @classmethod
     def assign_relating_type_to_element(

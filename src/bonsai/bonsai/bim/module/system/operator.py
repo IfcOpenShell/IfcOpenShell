@@ -512,12 +512,12 @@ class AssignUnassignFlowControl(bpy.types.Operator, tool.Ifc.Operator):
 
         for control in flow_controls:
             if self.assign:
-                tool.Ifc.run(
-                    "system.assign_flow_control", relating_flow_element=flow_element, related_flow_control=control
+                ifcopenshell.api.system.assign_flow_control(
+                    ifc_file, relating_flow_element=flow_element, related_flow_control=control
                 )
             else:
-                tool.Ifc.run(
-                    "system.unassign_flow_control", relating_flow_element=flow_element, related_flow_control=control
+                ifcopenshell.api.system.unassign_flow_control(
+                    ifc_file, relating_flow_element=flow_element, related_flow_control=control
                 )
 
         if from_selected_objects:

@@ -50,6 +50,11 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def run(cls, command: str, **kwargs) -> Any:
+        """
+        Should be used for core modules only - when actual api modules are not available,
+        otherwise those calls can be more error prone than explicit calls,
+        due to the lost type information.
+        """
         return ifcopenshell.api.run(command, IfcStore.get_file(), **kwargs)
 
     @classmethod

@@ -27,6 +27,8 @@ import json
 import time
 import isodate
 from datetime import datetime
+import ifcopenshell.api.pset
+import ifcopenshell.api.resource
 import ifcopenshell.util.date as ifcdateutils
 import ifcopenshell.util.cost
 import ifcopenshell.util.resource
@@ -404,9 +406,10 @@ class Resource(bonsai.core.tool.Resource):
         productivity = cls.get_productivity(resource)
         if not productivity:
             return
-        return tool.Ifc.run(
-            "pset.edit_pset",
-            pset=tool.Ifc.get().by_id(productivity["id"]),
+        ifc_file = tool.Ifc.get()
+        return ifcopenshell.api.pset.edit_pset(
+            ifc_file,
+            pset=ifc_file.by_id(productivity["id"]),
             properties=attributes,
         )
 
@@ -429,12 +432,13 @@ class Resource(bonsai.core.tool.Resource):
 
     @classmethod
     def run_edit_resource_time(cls, resource: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+        ifc_file = tool.Ifc.get()
         if not resource.Usage:
-            tool.Ifc.run(
-                "resource.add_resource_time",
+            ifcopenshell.api.resource.add_resource_time(
+                ifc_file,
                 resource=resource,
             )
-        tool.Ifc.run("resource.edit_resource_time", resource_time=resource.Usage, attributes=attributes)
+        ifcopenshell.api.resource.edit_resource_time(ifc_file, resource_time=resource.Usage, attributes=attributes)
 
     @classmethod
     def go_to_resource(cls, resource: ifcopenshell.entity_instance) -> None:
@@ -459,7 +463,7 @@ class Resource(bonsai.core.tool.Resource):
 
     @classmethod
     def run_calculate_resource_usage(cls, resource: ifcopenshell.entity_instance) -> None:
-        tool.Ifc.run("resource.calculate_resource_usage", resource=resource)
+        ifcopenshell.api.resource.calculate_resource_usage(tool.Ifc.get(), resource=resource)
 
     @classmethod
     def calculate_resource_quantity(cls, resource: ifcopenshell.entity_instance) -> None:

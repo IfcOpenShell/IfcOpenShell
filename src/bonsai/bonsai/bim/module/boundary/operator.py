@@ -984,7 +984,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             connection_geometry = self.create_connection_geometry_from_polygon(opening_polygon, target_face_matrix)
-            boundary = tool.Ifc.run("root.create_entity", ifc_class=props.boundary_class)
+            boundary = ifcopenshell.api.root.create_entity(ifc_file, ifc_class=props.boundary_class)
             boundary.RelatingSpace = space
             boundary.RelatedBuildingElement = filling
             boundary.ConnectionGeometry = connection_geometry

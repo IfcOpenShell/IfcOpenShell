@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 import bpy
+import ifcopenshell.api.geometry
+import ifcopenshell.api.system
 import ifcopenshell.util.element
 import ifcopenshell.util.system
 import bonsai.bim.helper
@@ -55,11 +57,13 @@ class System(bonsai.core.tool.System):
         end_port_pos: Optional[Vector] = None,
         offset_end_port: Optional[Vector] = None,
     ) -> list[ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+
         def add_port(mep_element, matrix):
-            port = tool.Ifc.run("system.add_port", element=mep_element)
+            port = ifcopenshell.api.system.add_port(ifc_file, element=mep_element)
             port.FlowDirection = "NOTDEFINED"
             port.PredefinedType = tool.System.get_port_predefined_type(mep_element)
-            tool.Ifc.run("geometry.edit_object_placement", product=port, matrix=matrix, is_si=True)
+            ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=port, matrix=matrix, is_si=True)
             return port
 
         # make sure obj.dimensions and .matrix_world has valid data

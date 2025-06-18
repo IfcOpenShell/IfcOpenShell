@@ -19,6 +19,7 @@
 import bpy
 import bmesh
 import ifcopenshell
+import ifcopenshell.api.style
 import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -97,7 +98,9 @@ class TestCreatingStyles(NewFile):
         ifc_path = Path("test/files/temp/test.ifc").absolute()
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
-        style = tool.Ifc.run("style.add_style", name="test")
+        ifc_file = tool.Ifc.get()
+
+        style = ifcopenshell.api.style.add_style(ifc_file, name="test")
         material = bpy.data.materials.new(style.Name)
         tool.Ifc.link(style, material)
         get_color = lambda value: {color: value for color in ("Red", "Green", "Blue")}
@@ -109,8 +112,8 @@ class TestCreatingStyles(NewFile):
             "SpecularHighlight": {"IfcSpecularRoughness": 0.4},
             "SpecularColour": 0.03,
         }
-        rendering_style = tool.Ifc.run(
-            "style.add_surface_style",
+        rendering_style = ifcopenshell.api.style.add_surface_style(
+            ifc_file,
             style=style,
             ifc_class="IfcSurfaceStyleRendering",
             attributes=rendering_attributes,
@@ -125,9 +128,9 @@ class TestCreatingStyles(NewFile):
                 "uv_mode": "Generated",
             }
         ]
-        textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
-        texture_style = tool.Ifc.run(
-            "style.add_surface_style",
+        textures = ifcopenshell.api.style.add_surface_textures(ifc_file, textures=textures, uv_maps=[])
+        texture_style = ifcopenshell.api.style.add_surface_style(
+            ifc_file,
             style=style,
             ifc_class="IfcSurfaceStyleWithTextures",
             attributes={"Textures": textures},
@@ -162,7 +165,7 @@ class TestCreatingStyles(NewFile):
         bpy.ops.bim.create_project()
 
         ifc_file = tool.Ifc.get()
-        style = tool.Ifc.run("style.add_style", name="test")
+        style = ifcopenshell.api.style.add_style(ifc_file, name="test")
         material = bpy.data.materials.new(style.Name)
         tool.Ifc.link(style, material)
         get_color = lambda value: {color: value for color in ("Red", "Green", "Blue")}
@@ -174,8 +177,8 @@ class TestCreatingStyles(NewFile):
             "SpecularHighlight": {"IfcSpecularRoughness": 0.4},
             "SpecularColour": 0.03,
         }
-        rendering_style = tool.Ifc.run(
-            "style.add_surface_style",
+        rendering_style = ifcopenshell.api.style.add_surface_style(
+            ifc_file,
             style=style,
             ifc_class="IfcSurfaceStyleRendering",
             attributes=rendering_attributes,
@@ -239,8 +242,8 @@ class TestCreatingStyles(NewFile):
         # setup UV
         ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")
 
-        texture_style = tool.Ifc.run(
-            "style.add_surface_style",
+        texture_style = ifcopenshell.api.style.add_surface_style(
+            ifc_file,
             style=style,
             ifc_class="IfcSurfaceStyleWithTextures",
             attributes={"Textures": textures},
@@ -332,7 +335,7 @@ class TestCreatingStyles(NewFile):
         bpy.ops.bim.create_project()
 
         ifc_file = tool.Ifc.get()
-        style = tool.Ifc.run("style.add_style", name="test")
+        style = ifcopenshell.api.style.add_style(ifc_file, name="test")
         material = bpy.data.materials.new(style.Name)
         tool.Ifc.link(style, material)
         get_color = lambda value: {color: value for color in ("Red", "Green", "Blue")}
@@ -344,8 +347,8 @@ class TestCreatingStyles(NewFile):
             "SpecularHighlight": {"IfcSpecularRoughness": 0.4},
             "SpecularColour": 0.03,
         }
-        rendering_style = tool.Ifc.run(
-            "style.add_surface_style",
+        rendering_style = ifcopenshell.api.style.add_surface_style(
+            ifc_file,
             style=style,
             ifc_class="IfcSurfaceStyleRendering",
             attributes=rendering_attributes,
@@ -374,8 +377,8 @@ class TestCreatingStyles(NewFile):
         # setup UV
         ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")
 
-        texture_style = tool.Ifc.run(
-            "style.add_surface_style",
+        texture_style = ifcopenshell.api.style.add_surface_style(
+            ifc_file,
             style=style,
             ifc_class="IfcSurfaceStyleWithTextures",
             attributes={"Textures": textures},

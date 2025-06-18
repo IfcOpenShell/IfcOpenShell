@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.api.pset
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bonsai.bim.module.resource.ui import draw_productivity_ui
 import bonsai.core.resource as core
@@ -376,7 +377,8 @@ class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        tool.Ifc.run("pset.add_pset", product=tool.Resource.get_highlighted_resource(), name="EPset_Productivity")
+        assert (resource := tool.Resource.get_highlighted_resource())
+        ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=resource, name="EPset_Productivity")
 
 
 class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):

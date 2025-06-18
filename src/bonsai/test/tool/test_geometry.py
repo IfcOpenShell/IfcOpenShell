@@ -634,7 +634,7 @@ class TestCreateShapeAspect(NewFile):
         item = ifc.createIfcExtrudedAreaSolid()
         items = [item]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
-        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
 
         product_shape = element.RepresentationMaps[0] if use_element_type else element.Representation
         subject.create_shape_aspect(product_shape, representation, items, None)
@@ -653,7 +653,7 @@ class TestAddRepresentationItemToShapeAspect(NewFile):
 
         items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
-        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
         product_shape = element.Representation
         shape_aspect0 = subject.create_shape_aspect(product_shape, representation, [items[0]], None)
         previous_shape_aspect_id = shape_aspect0.id()
@@ -676,7 +676,7 @@ class TestRemoveRepresentationItemFromShapeAspect(NewFile):
 
         items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
-        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
         product_shape = element.Representation
         shape_aspect0 = subject.create_shape_aspect(product_shape, representation, [items[0]], None)
         previous_shape_aspect_id = shape_aspect0.id()

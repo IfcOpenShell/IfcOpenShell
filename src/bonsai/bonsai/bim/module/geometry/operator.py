@@ -1165,6 +1165,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
     @staticmethod
     def execute_ifc_duplicate_linked_aggregate_operator(self, context, location_from_3d_cursor=False):
+        ifc_file = tool.Ifc.get()
         self.new_active_obj = None
         self.group_name = "BBIM_Linked_Aggregate"
         self.pset_name = "BBIM_Linked_Aggregate"
@@ -1193,10 +1194,10 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
 
             if not pset:
-                pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=part, name=self.pset_name)
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=part, name=self.pset_name)
 
                 ifcopenshell.api.pset.edit_pset(
-                    tool.Ifc.get(),
+                    ifc_file,
                     pset=pset,
                     properties={"Index": index},
                 )
@@ -1217,8 +1218,8 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             if self.group_name in product_groups_name:
                 return
 
-            linked_aggregate_group = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.group_name)
-            ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=[element], group=linked_aggregate_group)
+            linked_aggregate_group = ifcopenshell.api.group.add_group(ifc_file, name=self.group_name)
+            ifcopenshell.api.group.assign_group(ifc_file, products=[element], group=linked_aggregate_group)
 
         def custom_incremental_naming_for_element_assembly(old_to_new):
             for new in old_to_new.values():
@@ -1256,10 +1257,10 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             for old, new in old_to_new.items():
                 pset = ifcopenshell.util.element.get_pset(old, "BBIM_Linked_Aggregate")
                 if pset:
-                    new_pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=new[0], name=self.pset_name)
+                    new_pset = ifcopenshell.api.pset.add_pset(ifc_file, product=new[0], name=self.pset_name)
 
                     ifcopenshell.api.pset.edit_pset(
-                        tool.Ifc.get(),
+                        ifc_file,
                         pset=new_pset,
                         properties={"Index": pset["Index"]},
                     )
@@ -1271,7 +1272,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         if r.is_a("IfcRelAssignsToGroup")
                         if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                     ]
-                    tool.Ifc.run("group.assign_group", group=linked_aggregate_group[0], products=new)
+                    ifcopenshell.api.group.assign_group(ifc_file, group=linked_aggregate_group[0], products=new)
 
         def get_location_from_3d_cursor(old_to_new, aggregate):
             base_obj = tool.Ifc.get_object(aggregate)
@@ -1287,6 +1288,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
         selected_obj = context.selected_objects[0]
         selected_element = tool.Ifc.get_entity(selected_obj)
+        assert selected_element
 
         if selected_element.is_a("IfcElementAssembly"):
             pass
@@ -2720,6 +2722,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
         obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
         element = tool.Ifc.get_entity(obj)
+        assert element
         props = tool.Geometry.get_object_geometry_props(obj)
         props.is_editing_item_shape_aspect = False
         ifc_file = tool.Ifc.get()
@@ -2755,11 +2758,12 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
         shape_aspect_representation = tool.Geometry.get_shape_aspect_representation_for_item(
             shape_aspect, representation_item
         )
+        assert shape_aspect_representation
         styles = tool.Geometry.get_shape_aspect_styles(element, shape_aspect, representation_item)
         # TODO this looks wrong to me. In theory styles can be > 1 (e.g. curve
         # styles) and then the usecase will assign the wrong style.
-        tool.Ifc.run(
-            "style.assign_representation_styles",
+        ifcopenshell.api.style.assign_representation_styles(
+            ifc_file,
             shape_representation=shape_aspect_representation,
             styles=styles,
         )

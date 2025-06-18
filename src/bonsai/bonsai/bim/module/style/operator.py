@@ -833,9 +833,9 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 assert self.texture_style
                 ifcopenshell.api.style.remove_surface_style(ifc_file, self.texture_style)
                 return
-            textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
-            texture_style = tool.Ifc.run(
-                "style.add_surface_style",
+            textures = ifcopenshell.api.style.add_surface_textures(ifc_file, textures=textures, uv_maps=[])
+            texture_style = ifcopenshell.api.style.add_surface_style(
+                ifc_file,
                 style=self.style,
                 ifc_class="IfcSurfaceStyleWithTextures",
                 attributes={"Textures": textures},
@@ -864,9 +864,10 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def add_new_style(self) -> None:
         material = tool.Ifc.get_object(self.style)
+        ifc_file = tool.Ifc.get()
         if self.props.is_editing_class == "IfcSurfaceStyleShading":
             surface_style = ifcopenshell.api.style.add_surface_style(
-                tool.Ifc.get(),
+                ifc_file,
                 style=self.style,
                 ifc_class="IfcSurfaceStyleShading",
                 attributes=self.get_shading_attributes(),
@@ -874,7 +875,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             tool.Loader.create_surface_style_shading(material, surface_style)
         elif self.props.is_editing_class == "IfcSurfaceStyleRendering":
             surface_style = ifcopenshell.api.style.add_surface_style(
-                tool.Ifc.get(),
+                ifc_file,
                 style=self.style,
                 ifc_class="IfcSurfaceStyleRendering",
                 attributes=self.get_rendering_attributes(),
@@ -886,9 +887,9 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             textures = self.get_texture_attributes()
             if not textures:
                 return
-            textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
-            texture_style = tool.Ifc.run(
-                "style.add_surface_style",
+            textures = ifcopenshell.api.style.add_surface_textures(ifc_file, textures=textures, uv_maps=[])
+            texture_style = ifcopenshell.api.style.add_surface_style(
+                ifc_file,
                 style=self.style,
                 ifc_class="IfcSurfaceStyleWithTextures",
                 attributes={"Textures": textures},

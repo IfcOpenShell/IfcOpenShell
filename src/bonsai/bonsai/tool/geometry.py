@@ -30,6 +30,7 @@ import ifcopenshell.api
 import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
+import ifcopenshell.api.group
 import ifcopenshell.api.profile
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
@@ -1482,7 +1483,7 @@ class Geometry(bonsai.core.tool.Geometry):
             # remove shape aspect first otherwise remove_representation won't remove it because of the inverse
             if len(shape_aspect.ShapeRepresentations) == 1:
                 ifc_file.remove(shape_aspect)
-            tool.Ifc.run("geometry.remove_representation", representation=representation)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=representation)
         else:
             items = set(representation.Items) - set(representation_items)
             representation.Items = tuple(items)
@@ -2249,6 +2250,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def remove_linked_aggregate_data(cls, old_to_new):
+        ifc_file = tool.Ifc.get()
         for old, new in old_to_new.items():
             pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
             if pset:
@@ -2263,7 +2265,7 @@ class Geometry(bonsai.core.tool.Geometry):
                     if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                 ]
                 if linked_aggregate_group:
-                    tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[new[0]])
+                    ifcopenshell.api.group.unassign_group(ifc_file, group=linked_aggregate_group[0], products=[new[0]])
 
     @classmethod
     def name_item_object(cls, obj: bpy.types.Object, item: ifcopenshell.entity_instance) -> None:

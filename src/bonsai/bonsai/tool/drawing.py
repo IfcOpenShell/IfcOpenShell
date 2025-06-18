@@ -39,6 +39,7 @@ import bonsai.core.type
 import bonsai.tool as tool
 import ifcopenshell.api
 import ifcopenshell.api.context
+import ifcopenshell.api.drawing
 import ifcopenshell.api.document
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
@@ -210,6 +211,7 @@ class Drawing(bonsai.core.tool.Drawing):
         if not related_object or not (related_entity := tool.Ifc.get_entity(related_object)):
             return
 
+        ifc_file = tool.Ifc.get()
         obj_entity = tool.Ifc.get_entity(obj)
         assert obj_entity
         assign_product = False
@@ -267,7 +269,9 @@ class Drawing(bonsai.core.tool.Drawing):
             assign_product = True
 
         if assign_product and not cls.get_assigned_product(obj_entity):
-            tool.Ifc.run("drawing.assign_product", relating_product=related_entity, related_object=obj_entity)
+            ifcopenshell.api.drawing.assign_product(
+                ifc_file, relating_product=related_entity, related_object=obj_entity
+            )
 
         if object_type == "TEXT":
             tool.Drawing.update_text_value(obj)
@@ -745,8 +749,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 literal = cls.add_literal_to_annotation(obj, **attributes)
             else:
                 literal = ifc_file.by_id(ifc_definition_id)
-                tool.Ifc.run(
-                    "drawing.edit_text_literal",
+                ifcopenshell.api.drawing.edit_text_literal(
+                    ifc_file,
                     text_literal=literal,
                     attributes=attributes,
                 )

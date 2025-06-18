@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.api.resource
 import ifcopenshell.util.resource
 import bonsai.tool as tool
 import bonsai.bim.module.pset.data
@@ -52,9 +53,10 @@ def updateResourceName(self, context):
     props = context.scene.BIMResourceProperties
     if not props.is_resource_update_enabled:
         return
-    tool.Ifc.run(
-        "resource.edit_resource",
-        resource=tool.Ifc.get().by_id(self.ifc_definition_id),
+    ifc_file = tool.Ifc.get()
+    ifcopenshell.api.resource.edit_resource(
+        ifc_file,
+        resource=ifc_file.by_id(self.ifc_definition_id),
         attributes={"Name": self.name},
     )
     if props.active_resource_id == self.ifc_definition_id:

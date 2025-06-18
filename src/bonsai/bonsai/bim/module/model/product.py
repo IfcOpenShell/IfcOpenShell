@@ -25,6 +25,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
+import ifcopenshell.api.system
 import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -311,6 +312,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         row.prop(self, "representation_template", text="")
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
         props = tool.Model.get_model_props()
         relating_type_id = self.relating_type_id or props.relating_type_id
 
@@ -503,10 +505,10 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             mat = Matrix(ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement))
             mat.translation *= unit_scale
             mat = obj.matrix_world @ mat
-            new_port = tool.Ifc.run("system.add_port", element=element)
+            new_port = ifcopenshell.api.system.add_port(ifc_file, element=element)
             new_port.PredefinedType = port.PredefinedType
             new_port.SystemType = port.SystemType
-            tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
+            ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=new_port, matrix=mat, is_si=True)
 
         if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:
             pass

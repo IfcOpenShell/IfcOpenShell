@@ -51,7 +51,7 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def duplicate_material(cls, material: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        new = tool.Ifc.run("material.copy_material", material=material)
+        new = ifcopenshell.api.material.copy_material(tool.Ifc.get(), material=material)
 
         # Doesn't have a name.
         if new.is_a("IfcMaterialList"):
@@ -233,18 +233,19 @@ class Material(bonsai.core.tool.Material):
     def add_material_to_set(
         cls, material_set: ifcopenshell.entity_instance, material: ifcopenshell.entity_instance
     ) -> None:
+        ifc_file = tool.Ifc.get()
         if material_set.is_a("IfcMaterialConstituentSet"):
             if not material_set.MaterialConstituents:
-                tool.Ifc.run(
-                    "material.add_constituent",
+                ifcopenshell.api.material.add_constituent(
+                    ifc_file,
                     constituent_set=material_set,
                     material=material,
                 )
         elif material_set.is_a() == "IfcMaterialLayerSet":
             if not material_set.MaterialLayers:
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                layer = tool.Ifc.run(
-                    "material.add_layer",
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+                layer = ifcopenshell.api.material.add_layer(
+                    ifc_file,
                     layer_set=material_set,
                     material=material,
                 )
@@ -252,21 +253,21 @@ class Material(bonsai.core.tool.Material):
                 layer.LayerThickness = thickness / unit_scale
         elif material_set.is_a("IfcMaterialProfileSet"):
             if not material_set.MaterialProfiles:
-                named_profiles = [p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName]
+                named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
                 if named_profiles:
                     profile = named_profiles[0]
                 else:
-                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
                     size = 0.5 / unit_scale
-                    profile = tool.Ifc.get().create_entity(
+                    profile = ifc_file.create_entity(
                         "IfcRectangleProfileDef",
                         ProfileName="New Profile",
                         ProfileType="AREA",
                         XDim=size,
                         YDim=size,
                     )
-                    material_profile = tool.Ifc.run(
-                        "material.add_profile",
+                    material_profile = ifcopenshell.api.material.add_profile(
+                        ifc_file,
                         profile_set=material_set,
                         material=material,
                         profile=profile,
@@ -290,6 +291,7 @@ class Material(bonsai.core.tool.Material):
     def replace_material_with_material_profile(
         cls, element: ifcopenshell.entity_instance
     ) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
         old_material = cls.get_material(element, should_inherit=False)
         old_inherited_material = cls.get_material(element, should_inherit=True)
         material = old_material if old_material and old_material.is_a("IfcMaterial") else None
@@ -299,9 +301,13 @@ class Material(bonsai.core.tool.Material):
             material = tool.Ifc.get().by_type("IfcMaterial")[0]
         else:
             bonsai.core.material.unassign_material(tool.Ifc, tool.Material, objects=[tool.Ifc.get_object(element)])
-        tool.Ifc.run("material.assign_material", products=[element], type="IfcMaterialProfileSet", material=material)
+        ifcopenshell.api.material.assign_material(
+            ifc_file, products=[element], type="IfcMaterialProfileSet", material=material
+        )
         assinged_material = cls.get_material(element)
-        material_profile = tool.Ifc.run("material.add_profile", profile_set=assinged_material, material=material)
+        material_profile = ifcopenshell.api.material.add_profile(
+            ifc_file, profile_set=assinged_material, material=material
+        )
         return material_profile
 
     @classmethod

@@ -76,7 +76,7 @@ class TestGetBooleans(NewFile):
 
         items = [ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
-        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc)
         cut1 = builder.half_space_solid(builder.plane())
@@ -96,7 +96,7 @@ class TestGetManualBooleans(NewFile):
 
         items = [ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
-        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc)
         cut1 = builder.half_space_solid(builder.plane())
