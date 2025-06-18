@@ -268,6 +268,7 @@ class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.object.origin_set(type=self.origin_type)
             bpy.ops.bim.update_representation(obj=obj.name)
 
+
 class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
@@ -303,25 +304,6 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         ],
         name="Representation Conversion Method",
     )
-    
-    # Add scale property
-    target_scale: bpy.props.EnumProperty(
-        items=[
-            ("NONE", "No Scale", ""),
-            ("1:100", "1:100", ""),
-            ("1:50", "1:50", ""),
-            ("1:20", "1:20", ""),
-            ("1:10", "1:10", ""),
-            ("CUSTOM", "Custom...", ""),
-        ],
-        name="Target Scale",
-        default="NONE",
-    )
-    
-    custom_scale: bpy.props.StringProperty(
-        name="Custom Scale",
-        description="Enter a custom scale in the format '1:X' (e.g., '1:25')"
-    )
 
     def _execute(self, context):
         obj = context.active_object
@@ -332,61 +314,6 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if not ifc_context:
             return
         ifc_context = tool.Ifc.get().by_id(ifc_context)
-
-        # Process target scale value
-        target_scale_value = None
-        if self.target_scale == "1:100":
-            target_scale_value = 0.01
-        elif self.target_scale == "1:50":
-            target_scale_value = 0.02
-        elif self.target_scale == "1:20":
-            target_scale_value = 0.05
-        elif self.target_scale == "1:10":
-            target_scale_value = 0.1
-        elif self.target_scale == "CUSTOM" and self.custom_scale:
-            try:
-                # Parse custom scale format "1:X"
-                scale_parts = self.custom_scale.split(":")
-                if len(scale_parts) == 2 and scale_parts[0] == "1":
-                    denominator = int(scale_parts[1])
-                    if denominator > 0:
-                        target_scale_value = 1.0 / denominator
-            except (ValueError, ZeroDivisionError):
-                self.report({'ERROR'}, "Invalid custom scale format. Use format '1:X'")
-                return {'CANCELLED'}
-                
-        # If we have a scale value and the context is a subcontext, update it with the new scale
-        if target_scale_value is not None and ifc_context.is_a("IfcGeometricRepresentationSubContext"):
-            # We need to find or create a context with the same properties but our target scale
-            original_context = ifc_context
-            context_type = original_context.ContextType
-            identifier = original_context.ContextIdentifier
-            parent_context = original_context.ParentContext
-            target_view = original_context.TargetView
-            
-            # Look for existing context with matching properties including scale
-            matching_context = None
-            for subcontext in parent_context.HasSubContexts:
-                if (subcontext.ContextType == context_type and
-                    subcontext.ContextIdentifier == identifier and
-                    subcontext.TargetView == target_view and
-                    subcontext.TargetScale == target_scale_value):
-                    matching_context = subcontext
-                    break
-                    
-            # Create new context if no matching one found
-            if not matching_context:
-                matching_context = tool.Ifc.get().createIfcGeometricRepresentationSubContext(
-                    ContextIdentifier=identifier,
-                    ContextType=context_type,
-                    ParentContext=parent_context,
-                    TargetScale=target_scale_value,
-                    TargetView=target_view,
-                    UserDefinedTargetView=None
-                )
-                
-            # Use the context with our scale
-            ifc_context = matching_context
 
         original_data = obj.data
 
@@ -469,13 +396,7 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if self.representation_conversion_method == "OBJECT":
             row = self.layout.row()
             row.prop(props, "representation_from_object", text="")
-        
-        row = self.layout.row()
-        row.prop(self, "target_scale", text="Scale")
-        
-        if self.target_scale == "CUSTOM":
-            row = self.layout.row()
-            row.prop(self, "custom_scale", text="")
+
 
 class SelectConnection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_connection"
