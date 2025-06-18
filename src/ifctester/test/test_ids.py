@@ -118,7 +118,7 @@ class TestIds:
 
     def test_authoring_an_ids_with_no_specifications_is_invalid(self):
         specs = ids.Ids()
-        with pytest.raises(xmlschema.validators.exceptions.XMLSchemaChildrenValidationError):
+        with pytest.raises(xmlschema.validators.exceptions.XMLSchemaValidationError):
             specs.to_string()
 
     def test_saving_to_xml(self):
