@@ -23,10 +23,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install 'black>=24.10.0'
           curl -LsSf https://astral.sh/uv/install.sh | sh
           uv tool install ruff
+          uv tool install black
 
       # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
@@ -41,7 +40,7 @@ jobs:
       - name: Black formatter
         id: black
         run: |
-          python3 -m black --diff --check .
+          uvx black --diff --check .
         continue-on-error: true
 
       - name: Ruff check
