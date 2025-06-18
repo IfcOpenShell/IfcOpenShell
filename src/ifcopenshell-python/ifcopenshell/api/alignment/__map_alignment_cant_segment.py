@@ -380,7 +380,7 @@ def _map_viennese_bend(
     raise NotImplementedError("VIENNESEBEND not implemented")
 
 
-def map_alignment_cant_segment(
+def __map_alignment_cant_segment(
     file: ifcopenshell.file, segment: entity_instance, rail_head_distance: float
 ) -> Sequence[entity_instance]:
     """

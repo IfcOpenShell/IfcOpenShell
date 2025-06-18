@@ -17,13 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-import ifcopenshell.api.alignment
+from  ifcopenshell.api.alignment.__update_curve_segment_transition_code import __update_curve_segment_transition_code
 import ifcopenshell.api.context
 
 
 def _test1():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(Name="Test")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file,units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -79,7 +81,7 @@ def _test1():
 
     composite_curve = file.createIfcCompositeCurve(Segments=(circular_arc, line), SelfIntersect=False)
 
-    ifcopenshell.api.alignment.update_curve_segment_transition_code(circular_arc, line)
+    __update_curve_segment_transition_code(circular_arc, line)
     assert circular_arc.Transition == "CONTSAMEGRADIENT"
 
 
@@ -94,6 +96,7 @@ def _test2():
         target_view="MODEL_VIEW",
         parent=geometric_representation_context,
     )
+
     # 30=IFCCARTESIANPOINT((0.,0.));
     # 31=IFCALIGNMENTHORIZONTALSEGMENT($,$,#30,0.523598775598299,0.,0.,27.8843513637174,$,.LINE.);
     # 32=IFCALIGNMENTSEGMENT('3$jiMaOgfAoujgvRyMLw0X',$,'H1',$,$,#111,#113,#31);
@@ -220,29 +223,23 @@ def _test2():
         ),
     )
 
-    composite_curve = file.createIfcCompositeCurve(Segments=[], SelfIntersect=False)
+    composite_curve = file.createIfcCompositeCurve(Segments=[line1,clothoid1,circular_arc,clothoid2,line2], SelfIntersect=False)
 
-    # add_segment_to_curve calls update_curve_segment_transition_code
-    ifcopenshell.api.alignment.add_segment_to_curve(file, line1, composite_curve)
-    assert line1.Transition == "DISCONTINUOUS"
-
-    ifcopenshell.api.alignment.add_segment_to_curve(file, clothoid1, composite_curve)
+    __update_curve_segment_transition_code(line1,clothoid1)
     assert line1.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
-    assert clothoid1.Transition == "DISCONTINUOUS"
 
-    ifcopenshell.api.alignment.add_segment_to_curve(file, circular_arc, composite_curve)
+    __update_curve_segment_transition_code(clothoid1,circular_arc)
     assert clothoid1.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
-    assert circular_arc.Transition == "DISCONTINUOUS"
 
-    ifcopenshell.api.alignment.add_segment_to_curve(file, clothoid2, composite_curve)
+    __update_curve_segment_transition_code(circular_arc,clothoid2)
     assert circular_arc.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
-    assert clothoid2.Transition == "DISCONTINUOUS"
 
-    ifcopenshell.api.alignment.add_segment_to_curve(file, line2, composite_curve)
+    __update_curve_segment_transition_code(clothoid2,line2)
     assert clothoid2.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
-    assert line2.Transition == "DISCONTINUOUS"
 
 
 def test_update_curve_segment_transition_code():
     _test1()
     _test2()
+
+test_update_curve_segment_transition_code()

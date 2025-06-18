@@ -401,7 +401,7 @@ def _map_viennese_bend(file: ifcopenshell.file, design_parameters: entity_instan
     raise NotImplementedError("VIENNESEBEND not implemented")
 
 
-def map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
+def __map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
     """
     Creates IfcCurveSegment entities for the represention of the supplied IfcAlignmentHorizontalSegment business logic entity instance.
     A pair of entities is returned because a single business logic segment of type HELMERTCURVE maps to two representaiton entities.

@@ -17,38 +17,29 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
 
 import math
 from collections.abc import Sequence
 
+from ifcopenshell.api.alignment.__add_segment_to_layout import __add_segment_to_layout
 
-def create_horizontal_alignment_by_pi_method(
-    file: ifcopenshell.file, name: str, hpoints: Sequence[Sequence[float]], radii: Sequence[float]
-) -> entity_instance:
+
+def layout_horizontal_alignment_by_pi_method(
+    file: ifcopenshell.file, layout: entity_instance, hpoints: Sequence[Sequence[float]], radii: Sequence[float]
+) -> None:
     """
-    Create a horizontal alignment using the PI layout method.
+    Appends IfcAlignmentHorizontalSegment to a previously defined IfcAlignmentHorizontal using the PI layout method.
+    The zero length segment is updated.
 
-    :param name: value for Name attribute
+    :param file: file
+    :param layout: An IfcAlignmentHorizontal layout
     :param hpoints: (X, Y) pairs denoting the location of the horizontal PIs, including start (POB) and end (POE).
     :param radii: radius values to use for transition
-    :return: Returns a IfcAlignmentHorizontal
+    :return: None
     """
     if not (len(hpoints) - 2 == len(radii)):
         raise ValueError("radii should have two fewer elements that hpoints")
-
-    # Create the horizontal alignment (IfcAlignmentHorizontal) and nest alignment segments
-    horizontal_alignment = file.create_entity(
-        type="IfcAlignmentHorizontal",
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=f"{name} - Horizontal",
-        Description=None,
-        ObjectType=None,
-        ObjectPlacement=None,
-        Representation=None,
-    )
 
     xBT, yBT = hpoints[0]
     xPI, yPI = hpoints[1]
@@ -86,12 +77,10 @@ def create_horizontal_alignment_by_pi_method(
         tangent_run = lengthBT - tangent
 
         # create back tangent run
-        pt = file.create_entity(
-            type="IfcCartesianPoint",
+        pt = file.createIfcCartesianPoint(
             Coordinates=(xBT, yBT),
         )
-        design_parameters = file.create_entity(
-            type="IfcAlignmentHorizontalSegment",
+        design_parameters = file.createIfcAlignmentHorizontalSegment(
             StartTag=None,
             EndTag=None,
             StartPoint=pt,
@@ -102,8 +91,7 @@ def create_horizontal_alignment_by_pi_method(
             GravityCenterLineHeight=None,
             PredefinedType="LINE",
         )
-        alignment_segment = file.create_entity(
-            type="IfcAlignmentSegment",
+        alignment_segment = file.createIfcAlignmentSegment(
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=None,
             Name=None,
@@ -114,16 +102,14 @@ def create_horizontal_alignment_by_pi_method(
             DesignParameters=design_parameters,
         )
 
-        ifcopenshell.api.alignment.add_segment_to_layout(file, horizontal_alignment, alignment_segment)
+        __add_segment_to_layout(file, layout, alignment_segment)
 
         # create circular curve
         if radius != 0.0:
-            pc = file.create_entity(
-                type="IfcCartesianPoint",
+            pc = file.createIfcCartesianPoint(
                 Coordinates=(xPC, yPC),
             )
-            design_parameters = file.create_entity(
-                type="IfcAlignmentHorizontalSegment",
+            design_parameters = file.createIfcAlignmentHorizontalSegment(
                 StartTag=None,
                 EndTag=None,
                 StartPoint=pc,
@@ -134,8 +120,7 @@ def create_horizontal_alignment_by_pi_method(
                 GravityCenterLineHeight=None,
                 PredefinedType="CIRCULARARC",
             )
-            alignment_segment = file.create_entity(
-                type="IfcAlignmentSegment",
+            alignment_segment = file.createIfcAlignmentSegment(
                 GlobalId=ifcopenshell.guid.new(),
                 OwnerHistory=None,
                 Name=None,
@@ -145,7 +130,7 @@ def create_horizontal_alignment_by_pi_method(
                 Representation=None,
                 DesignParameters=design_parameters,
             )
-            ifcopenshell.api.alignment.add_segment_to_layout(file, horizontal_alignment, alignment_segment)
+            __add_segment_to_layout(file, layout, alignment_segment)
 
         xBT = xPT
         yBT = yPT
@@ -158,10 +143,9 @@ def create_horizontal_alignment_by_pi_method(
     dy = yPI - yBT
     angleBT = math.atan2(dy, dx)
     tangent_run = math.sqrt(dx * dx + dy * dy)
-    pt = file.create_entity(type="IfcCartesianPoint", Coordinates=(xBT, yBT))
+    pt = file.createIfcCartesianPoint(Coordinates=(xBT, yBT))
 
-    design_parameters = file.create_entity(
-        type="IfcAlignmentHorizontalSegment",
+    design_parameters = file.createIfcAlignmentHorizontalSegment(
         StartTag=None,
         EndTag=None,
         StartPoint=pt,
@@ -172,8 +156,7 @@ def create_horizontal_alignment_by_pi_method(
         GravityCenterLineHeight=None,
         PredefinedType="LINE",
     )
-    alignment_segment = file.create_entity(
-        type="IfcAlignmentSegment",
+    alignment_segment = file.createIfcAlignmentSegment(
         GlobalId=ifcopenshell.guid.new(),
         OwnerHistory=None,
         Name=None,
@@ -183,13 +166,12 @@ def create_horizontal_alignment_by_pi_method(
         Representation=None,
         DesignParameters=design_parameters,
     )
-    ifcopenshell.api.alignment.add_segment_to_layout(file, horizontal_alignment, alignment_segment)
+    __add_segment_to_layout(file, layout, alignment_segment)
 
     # create zero length terminator segment
-    poe = file.create_entity(type="IfcCartesianPoint", Coordinates=(xPI, yPI))
+    poe = file.createIfcCartesianPoint(Coordinates=(xPI, yPI))
 
-    design_parameters = file.create_entity(
-        type="IfcAlignmentHorizontalSegment",
+    design_parameters = file.createIfcAlignmentHorizontalSegment(
         StartTag="POE",
         EndTag="POE",
         StartPoint=poe,
@@ -200,8 +182,7 @@ def create_horizontal_alignment_by_pi_method(
         GravityCenterLineHeight=None,
         PredefinedType="LINE",
     )
-    alignment_segment = file.create_entity(
-        type="IfcAlignmentSegment",
+    alignment_segment = file.createIfcAlignmentSegment(
         GlobalId=ifcopenshell.guid.new(),
         OwnerHistory=None,
         Name=None,
@@ -211,6 +192,4 @@ def create_horizontal_alignment_by_pi_method(
         Representation=None,
         DesignParameters=design_parameters,
     )
-    ifcopenshell.api.alignment.add_segment_to_layout(file, horizontal_alignment, alignment_segment)
-
-    return horizontal_alignment
+    __add_segment_to_layout(file, layout, alignment_segment)

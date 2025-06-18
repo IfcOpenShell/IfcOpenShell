@@ -17,7 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Manages alignment layout (business logical) and alignment geometry (geometric representations).
+Manages alignment layout (semantic definition) and alignment geometry (geometric definition).
+
+This API is defined in terms of the semantic definition of an alignment. The corresponding geometric definition
+is created and maintained automatically. The manditory zero length segment for the semantic and geometric definitions
+are automatically created and maintained.
+
+Alignments are created with stationing referents. Each layout segment is assigned a position referent that informs about
+the start point of the segment. An example is the point of curvature of a horizontal circular curve. The referent is
+nested to the segment representing the circular arc and is named with a indicator of the position and the station, e.g. "P.C. (145+98.32)"
 
 This API does not determine alignment parameters based on rules, such as minimum curve radius as a function of design speed or sight distance.
 
@@ -25,14 +33,13 @@ This API is under development and subject to code breaking changes in the future
 
 Presently, this API supports:
     1. Creating alignments, both horizontal and vertical, using the PI method. Alignment definition can be read from a CSV file.
-    2. Adding business logic and geometric segments to the end of an alignment
-    3. Adding and removing the zero length segment at the end of alignments
-    4. Creating geometric representations from a business logical definition
-    5. Mapping individual business logical segments to geometric segments (complete for horizontal, missing clothoid for vertical, not implemented for cant)
-    6. Using curve geometry to determine IfcCurveSegment.Transition transition code.
-    7. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
+    2. Creating alignments segment by segment.
+    3. Automatic creation of geometric definitions (IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve)
+    4. Automatic definition of stationing
+    5. Automatic definition of alignment transition point referents
+    6. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
 
-Future versions of this API will support:
+Future versions of this API may support:
     1. Defining alignments using the PI method, including transition spirals
     2. Updating horizontal curve definitions by revising transition spiral parameters and circular curve radii
     3. Updating vertical curve definitions by revising horizontal length of curves
@@ -40,18 +47,19 @@ Future versions of this API will support:
     5. Adding a segment at any location along a curve
 """
 
-from .add_segment_to_curve import add_segment_to_curve
-from .add_segment_to_layout import add_segment_to_layout
-from .add_stationing_to_alignment import add_stationing_to_alignment
-from .add_vertical_alignment_by_pi_method import add_vertical_alignment_by_pi_method
-from .add_vertical_alignment import add_vertical_alignment
-from .add_zero_length_segment import add_zero_length_segment
-from .create_alignment_by_pi_method import create_alignment_by_pi_method
-from .create_alignment_from_csv import create_alignment_from_csv
-from .create_horizontal_alignment_by_pi_method import create_horizontal_alignment_by_pi_method
-from .create_geometric_representation import create_geometric_representation
-from .create_vertical_alignment_by_pi_method import create_vertical_alignment_by_pi_method
+from .add_stationing_referent import add_stationing_referent
+from .add_vertical_layout import add_vertical_layout
+from .create_layout_segment import create_layout_segment
+from .create_alignment import create
+from .create_by_pi_method import create_by_pi_method
+from .create_from_csv import create_from_csv
 from .distance_along_from_station import distance_along_from_station
+from .get_alignment import get_alignment
+from .get_alignment_station import get_alignment_station
+from .get_layout_segments import get_layout_segments
+from .get_horizontal_layout import get_horizontal_layout
+from .get_vertical_layout import get_vertical_layout
+from .get_cant_layout import get_cant_layout
 from .get_alignment_layouts import get_alignment_layouts
 from .get_axis_subcontext import get_axis_subcontext
 from .get_basis_curve import get_basis_curve
@@ -59,29 +67,25 @@ from .get_child_alignments import get_child_alignments
 from .get_curve import get_curve
 from .get_parent_alignment import get_parent_alignment
 from .has_zero_length_segment import has_zero_length_segment
-from .map_alignment_segments import map_alignment_segments
-from .map_alignment_horizontal_segment import map_alignment_horizontal_segment
-from .map_alignment_vertical_segment import map_alignment_vertical_segment
-from .map_alignment_cant_segment import map_alignment_cant_segment
+from .layout_horizontal_alignment_by_pi_method import layout_horizontal_alignment_by_pi_method
+from .layout_vertical_alignment_by_pi_method import layout_vertical_alignment_by_pi_method
 from .name_segments import name_segments
-from .remove_last_segment import remove_last_segment
-from .remove_zero_length_segment import remove_zero_length_segment
-from .update_curve_segment_transition_code import update_curve_segment_transition_code
 from .util import *
 
 __all__ = [
-    "add_segment_to_curve",
-    "add_segment_to_layout",
-    "add_stationing_to_alignment",
-    "add_vertical_alignment_by_pi_method",
-    "add_vertical_alignment",
-    "add_zero_length_segment",
-    "create_alignment_by_pi_method",
-    "create_alignment_from_csv",
-    "create_horizontal_alignment_by_pi_method",
-    "create_geometric_representation",
-    "create_vertical_alignment_by_pi_method",
+    "add_stationing_referent",
+    "add_vertical_layout",
+    "create_layout_segment",
+    "create",
+    "create_by_pi_method",
+    "create_from_csv",
     "distance_along_from_station",
+    "get_alignment",
+    "get_alignment_station",
+    "get_layout_segments",
+    "get_horizontal_layout",
+    "get_vertical_layout",
+    "get_cant_layout",
     "get_alignment_layouts",
     "get_axis_subcontext",
     "get_basis_curve",
@@ -89,12 +93,7 @@ __all__ = [
     "get_curve",
     "get_parent_alignment",
     "has_zero_length_segment",
-    "map_alignment_segments",
-    "map_alignment_horizontal_segment",
-    "map_alignment_vertical_segment",
-    "map_alignment_cant_segment",
+    "layout_horizontal_alignment_by_pi_method",
+    "layout_vertical_alignment_by_pi_method",
     "name_segments",
-    "remove_last_segment",
-    "remove_zero_length_segment",
-    "update_curve_segment_transition_code",
 ]

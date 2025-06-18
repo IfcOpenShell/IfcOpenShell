@@ -20,10 +20,11 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 
-def test_distance_along_from_station():
-    file = ifcopenshell.file(schema="IFC4X3")
+
+def test_get_alignment():
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
+    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file,units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
@@ -34,20 +35,20 @@ def test_distance_along_from_station():
         parent=geometric_representation_context,
     )
 
-    coordinates = [(500.0, 2500.0), (3340.0, 660.0), (4340.0, 5000.0), (7600.0, 4560.0), (8480.0, 2010.0)]
-    radii = [(1000.0), (1250.0), (950.0)]
-    vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
-    lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
+    include_vertical = [False,True,True]
+    include_cant = [False, False, True]
 
-    alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        file, "TestAlignment", coordinates, radii, vpoints, lengths,start_station=10000.0
-    )
+    for i in range(0,3) :
+        ali = ifcopenshell.api.alignment.create(file,"A1",include_vertical[i],include_cant[i])
+        assert ali != None
 
-    # Station 138+83.96
-    assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 13883.96) == pytest.approx(3883.96)
+        horiz = ifcopenshell.api.alignment.get_horizontal_layout(ali)
+        vert = ifcopenshell.api.alignment.get_vertical_layout(ali)
+        cant = ifcopenshell.api.alignment.get_cant_layout(ali)
 
-    # Station 175+25.36
-    assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 17525.36) == pytest.approx(7525.36)
-
-
-test_distance_along_from_station()
+        assert ali == ifcopenshell.api.alignment.get_alignment(horiz)
+        if include_vertical[i]:
+            assert ali == ifcopenshell.api.alignment.get_alignment(vert)
+        
+        if include_cant[i]:
+            assert ali == ifcopenshell.api.alignment.get_alignment(cant)

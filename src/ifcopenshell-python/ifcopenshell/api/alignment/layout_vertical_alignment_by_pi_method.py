@@ -23,33 +23,24 @@ from ifcopenshell import entity_instance
 import math
 from collections.abc import Sequence
 
+from ifcopenshell.api.alignment.__add_segment_to_layout import __add_segment_to_layout
 
-def create_vertical_alignment_by_pi_method(
-    file: ifcopenshell.file, name: str, vpoints: Sequence[Sequence[float]], lengths: Sequence[float]
-) -> entity_instance:
+
+def layout_vertical_alignment_by_pi_method(
+    file: ifcopenshell.file, layout: entity_instance, vpoints: Sequence[Sequence[float]], lengths: Sequence[float]
+) -> None:
     """
-    Create a vertical alignment using the PI layout method.
+    Appends IfcAlignmentVerticalSegment to a previously defined IfcAlignmentVertical using the PI layout method.
+    The zero length segment is updated.
 
-    :param name: value for Name attribute
-    :param base_curve: base curve representing the 2D projection of the gradient curve
+    :param file: file
+    :param layout: An IfcAlignmentVertical layout
     :param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
     :param lengths: horizontal length of parabolic vertical curves
-    :return: IfcAlignmentHorizontal
+    :return: None
     """
     if not (len(vpoints) - 2 == len(lengths)):
         raise ValueError("lengths should have two fewer elements that vpoints")
-
-    # Create the vertical alignment (IfcAlignmentVertical) and nest alignment segments
-    vertical_alignment = file.create_entity(
-        type="IfcAlignmentVertical",
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=f"{name} - Vertical",
-        Description=None,
-        ObjectType=None,
-        ObjectPlacement=None,
-        Representation=None,
-    )
 
     xPBG, yPBG = vpoints[0]
     xPVI, yPVI = vpoints[1]
@@ -72,8 +63,7 @@ def create_vertical_alignment_by_pi_method(
 
         # create gradient
         gradient_length = dxBG - length / 2.0
-        design_parameters = file.create_entity(
-            type="IfcAlignmentVerticalSegment",
+        design_parameters = file.createIfcAlignmentVerticalSegment(
             StartTag=None,
             EndTag=None,
             StartDistAlong=xPBG,
@@ -84,8 +74,7 @@ def create_vertical_alignment_by_pi_method(
             RadiusOfCurvature=None,
             PredefinedType="CONSTANTGRADIENT",
         )
-        alignment_segment = file.create_entity(
-            type="IfcAlignmentSegment",
+        alignment_segment = file.createIfcAlignmentSegment(
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=None,
             Name=None,
@@ -95,7 +84,7 @@ def create_vertical_alignment_by_pi_method(
             Representation=None,
             DesignParameters=design_parameters,
         )
-        ifcopenshell.api.alignment.add_segment_to_layout(file, vertical_alignment, alignment_segment)
+        __add_segment_to_layout(file, layout, alignment_segment)
 
         # create vertical curve
         if 0.0 < length:
@@ -103,8 +92,7 @@ def create_vertical_alignment_by_pi_method(
             xBVC = xPVI - length / 2.0
             yBVC = yPVI - start_slope * length / 2.0
 
-            design_parameters = file.create_entity(
-                type="IfcAlignmentVerticalSegment",
+            design_parameters = file.createIfcAlignmentVerticalSegment(
                 StartTag=None,
                 EndTag=None,
                 StartDistAlong=xBVC,
@@ -115,8 +103,7 @@ def create_vertical_alignment_by_pi_method(
                 RadiusOfCurvature=1 / k,
                 PredefinedType="PARABOLICARC",
             )
-            alignment_segment = file.create_entity(
-                type="IfcAlignmentSegment",
+            alignment_segment = file.createIfcAlignmentSegment(
                 GlobalId=ifcopenshell.guid.new(),
                 OwnerHistory=None,
                 Name=None,
@@ -126,7 +113,7 @@ def create_vertical_alignment_by_pi_method(
                 Representation=None,
                 DesignParameters=design_parameters,
             )
-            ifcopenshell.api.alignment.add_segment_to_layout(file, vertical_alignment, alignment_segment)
+            __add_segment_to_layout(file, layout, alignment_segment)
 
         # start of next curve is end of this curve
         xPBG = xEVC
@@ -140,8 +127,7 @@ def create_vertical_alignment_by_pi_method(
     slope = math.tan(math.atan2(dy, dx))
     gradient_length = dx
 
-    design_parameters = file.create_entity(
-        type="IfcAlignmentVerticalSegment",
+    design_parameters = file.createIfcAlignmentVerticalSegment(
         StartTag=None,
         EndTag=None,
         StartDistAlong=xPBG,
@@ -152,8 +138,7 @@ def create_vertical_alignment_by_pi_method(
         RadiusOfCurvature=None,
         PredefinedType="CONSTANTGRADIENT",
     )
-    alignment_segment = file.create_entity(
-        type="IfcAlignmentSegment",
+    alignment_segment = file.createIfcAlignmentSegment(
         GlobalId=ifcopenshell.guid.new(),
         OwnerHistory=None,
         Name=None,
@@ -163,11 +148,10 @@ def create_vertical_alignment_by_pi_method(
         Representation=None,
         DesignParameters=design_parameters,
     )
-    ifcopenshell.api.alignment.add_segment_to_layout(file, vertical_alignment, alignment_segment)
+    __add_segment_to_layout(file, layout, alignment_segment)
 
     # create zero length terminator segment
-    design_parameters = file.create_entity(
-        type="IfcAlignmentVerticalSegment",
+    design_parameters = file.createIfcAlignmentVerticalSegment(
         StartTag="VPOE",
         EndTag="VPOE",
         StartDistAlong=xPVI,
@@ -178,8 +162,7 @@ def create_vertical_alignment_by_pi_method(
         RadiusOfCurvature=None,
         PredefinedType="CONSTANTGRADIENT",
     )
-    alignment_segment = file.create_entity(
-        type="IfcAlignmentSegment",
+    alignment_segment = file.createIfcAlignmentSegment(
         GlobalId=ifcopenshell.guid.new(),
         OwnerHistory=None,
         Name=None,
@@ -189,6 +172,4 @@ def create_vertical_alignment_by_pi_method(
         Representation=None,
         DesignParameters=design_parameters,
     )
-    ifcopenshell.api.alignment.add_segment_to_layout(file, vertical_alignment, alignment_segment)
-
-    return vertical_alignment
+    __add_segment_to_layout(file, layout, alignment_segment)

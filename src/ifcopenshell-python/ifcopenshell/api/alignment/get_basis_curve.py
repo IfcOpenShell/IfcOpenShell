@@ -45,6 +45,10 @@ def get_basis_curve(alignment: entity_instance) -> entity_instance:
             representation.RepresentationIdentifier == "FootPrint" and representation.RepresentationType == "Curve2D"
         ):
             axis = representation
-            break
+            return None if axis.Items == None or len(axis.Items) == 0 else axis.Items[0]
 
-    return None if axis == None or axis.Items == None or len(axis.Items) == 0 else axis.Items[0]
+    if axis == None and 0 < len(alignment.Decomposes):
+        parent_alignment = alignment.Decomposes[0].RelatingObject
+        return get_basis_curve(parent_alignment)
+
+    return None

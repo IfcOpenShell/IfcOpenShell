@@ -17,19 +17,28 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api.alignment
+import ifcopenshell.util
 from ifcopenshell import entity_instance
-import ifcopenshell.api.alignment.remove_last_segment
+from typing import Sequence
+
+import ifcopenshell.util.element
 
 
-def remove_zero_length_segment(file: ifcopenshell.file, entity: entity_instance) -> entity_instance:
+def get_layout_segments(layout: entity_instance) -> Sequence[entity_instance]:
     """
-    Removes the zero length segment from the end of entity.
+    Returns the IfcAlignmentSegment nested to this alignment layout
 
-    :param entity: An IfcAlignmentHorizontal, IfcAlignmentVertical, IfcAlignmentCant or IfcCompositeCurve
-    :return: The zero length segment
+    Example:
+
+    .. code:: python
+
+        horizontal = model.by_type("IfcAlignmentHorizontal")[0]
+        segments = ifcopenshell.api.alignment.get_layout_segments(horizontal)
     """
-    if not ifcopenshell.api.alignment.has_zero_length_segment(entity):
-        return None
+    segments = []
+    for rel in layout.IsNestedBy:
+        for segment in rel.RelatedObjects:
+            if segment.is_a("IfcAlignmentSegment"):
+                segments.append(segment)
 
-    return ifcopenshell.api.alignment.remove_last_segment(file, entity)
+    return segments
