@@ -54,6 +54,17 @@ class Context(bonsai.core.tool.Context):
                 elif name == "CoordinateSpaceDimension":
                     props.context_attributes.remove(props.context_attributes.find("CoordinateSpaceDimension"))
                     return True
+                elif name == "TargetScale":
+                    props.context_attributes.remove(props.context_attributes.find("TargetScale"))
+                    scale_denominator = None
+                    if data.get(name) is not None and data.get(name) != 0:
+                        scale_denominator = 1.0 / data.get(name)
+                    new_prop = props.context_attributes.add()
+                    new_prop.name = "ScaleDenominator"
+                    new_prop.data_type = "float"
+                    if scale_denominator is not None:
+                        new_prop.float_value = scale_denominator
+                    return True
             else:  # IfcGeometricRepresentationContext
                 # Import precision as a string because Blender has problem displaying 1e-7 and smaller numbers in UI.
                 if name == "Precision":
@@ -78,6 +89,13 @@ class Context(bonsai.core.tool.Context):
         def callback(attributes: dict[str, Any], blender_attribute: Attribute) -> bool:
             if blender_attribute.name == "Precision":
                 attributes["Precision"] = float(blender_attribute.get_value())
+                return True
+            elif blender_attribute.name == "ScaleDenominator":
+                scale_denominator = blender_attribute.get_value()
+                if scale_denominator is not None and scale_denominator != 0:
+                    attributes["TargetScale"] = 1.0 / scale_denominator
+                else:
+                    attributes["TargetScale"] = None
                 return True
             return False
 

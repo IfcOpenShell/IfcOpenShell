@@ -145,6 +145,7 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextType"])
             row.label(text=representation["ContextIdentifier"])
             row.label(text=representation["TargetView"])
+            row.label(text=representation["TargetScale"])
             row.label(text=representation["RepresentationType"])
             op = row.operator(
                 "bim.switch_representation",

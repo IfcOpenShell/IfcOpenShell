@@ -125,12 +125,20 @@ class RepresentationsData:
                 "ContextType": representation.ContextOfItems.ContextType or "",
                 "ContextIdentifier": "",
                 "TargetView": "",
+                "TargetScale": "",
                 "RepresentationType": representation_type or "",
                 "is_active": representation.id() == active_representation_id,
             }
             if representation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
                 data["ContextIdentifier"] = representation.ContextOfItems.ContextIdentifier or ""
                 data["TargetView"] = representation.ContextOfItems.TargetView or ""
+                if hasattr(representation.ContextOfItems, "TargetScale") and representation.ContextOfItems.TargetScale:
+                    scale_value = float(representation.ContextOfItems.TargetScale)
+                    if scale_value > 0:
+                        scale_ratio = int(1 / scale_value)
+                        data["TargetScale"] = f"1:{scale_ratio}"
+                    else:
+                        data["TargetScale"] = str(scale_value)
             results.append(data)
         return results
 
@@ -140,13 +148,21 @@ class RepresentationsData:
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             results.append((str(element.id()), element.ContextType or "Unnamed", ""))
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
+            scale_str = ""
+            if hasattr(element, "TargetScale") and element.TargetScale:
+                scale_value = float(element.TargetScale)
+                if scale_value > 0:
+                    scale_ratio = int(1 / scale_value)
+                    scale_str = f" 1:{scale_ratio}"
+            
             results.append(
                 (
                     str(element.id()),
-                    "{}/{}/{}".format(
+                    "{}/{}/{}{}".format(
                         element.ContextType or "Unnamed",
                         element.ContextIdentifier or "Unnamed",
                         element.TargetView or "Unnamed",
+                        scale_str,
                     ),
                     "",
                 )

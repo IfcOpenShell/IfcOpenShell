@@ -26,6 +26,7 @@ def add_context(
     context_type: Optional[ifcopenshell.util.representation.CONTEXT_TYPE] = None,
     context_identifier: Optional[ifcopenshell.util.representation.REPRESENTATION_IDENTIFIER] = None,
     target_view: Optional[ifcopenshell.util.representation.TARGET_VIEW] = None,
+    target_scale: Optional[float] = None,
     parent: Optional[ifcopenshell.entity_instance] = None,
 ) -> ifcopenshell.entity_instance:
     """Adds a new geometric representation context
@@ -186,6 +187,7 @@ def add_context(
         "parent": parent,
         "context_identifier": context_identifier,
         "target_view": target_view,
+        "target_scale": target_scale,
     }
     return usecase.execute()
 
@@ -221,6 +223,7 @@ class Usecase:
                 "ContextType": self.settings["context_type"],
                 "ParentContext": self.settings["parent"],
                 "TargetView": self.settings["target_view"],
+                "TargetScale": self.settings["target_scale"],
             }
         )
 

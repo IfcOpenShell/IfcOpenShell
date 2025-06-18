@@ -67,10 +67,12 @@ class BIM_PT_context(bpy.types.Panel):
             row = box.row(align=True)
             bonsai.bim.helper.prop_with_search(row, props, "subcontexts", text="")
             bonsai.bim.helper.prop_with_search(row, props, "target_views", text="")
+            row.prop(props, "target_scale_denominator", text="Scale 1:")
             op = row.operator("bim.add_context", icon="ADD", text="")
             op.context_type = ifc_context["context_type"]
             op.context_identifier = props.subcontexts
             op.target_view = props.target_views
+            op.target_scale_denominator = props.target_scale_denominator
             op.parent = ifc_context["id"]
 
             for subcontext in ifc_context["subcontexts"]:
@@ -84,5 +86,15 @@ class BIM_PT_context(bpy.types.Panel):
                     row.label(text=subcontext["context_type"])
                     row.label(text=subcontext["context_identifier"])
                     row.label(text=subcontext["target_view"])
+#                    row.label(text=f"1:{subcontext.get('target_scale_denominator', subcontext.get('scale_denominator', 'N/A'))}")
+                    if "target_scale_denominator" in subcontext and subcontext["target_scale_denominator"] is not None:
+                        if subcontext["target_scale_denominator"] == int(subcontext["target_scale_denominator"]):
+                            # Show as integer if it's a whole number
+                            row.label(text=f"1:{int(subcontext['target_scale_denominator'])}")
+                        else:
+                            # Show decimals for non-whole numbers
+                            row.label(text=f"1:{subcontext['target_scale_denominator']:.4g}")
+                    else:
+                        row.label(text="Scale: N/A")
                     row.operator("bim.enable_editing_context", icon="GREASEPENCIL", text="").context = subcontext["id"]
                     row.operator("bim.remove_context", icon="X", text="").context = subcontext["id"]
