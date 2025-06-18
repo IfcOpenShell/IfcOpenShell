@@ -62,7 +62,8 @@ class UnitsData:
 
     @classmethod
     def unit_classes(cls):
-        declarations = ifcopenshell.util.schema.get_subtypes(tool.Ifc.schema().declaration_by_name("IfcNamedUnit"))
+        assert (entity := tool.Ifc.schema().declaration_by_name("IfcNamedUnit").as_entity())
+        declarations = ifcopenshell.util.schema.get_subtypes(entity)
         version = tool.Ifc.get_schema()
         results = [
             (c, c, get_entity_doc(version, c).get("description", "")) for c in sorted([d.name() for d in declarations])
@@ -81,9 +82,8 @@ class UnitsData:
 
     @classmethod
     def named_unit_types(cls):
-        values = ifcopenshell.util.attribute.get_enum_items(
-            tool.Ifc.schema().declaration_by_name("IfcNamedUnit").all_attributes()[1]
-        )
+        assert (entity := tool.Ifc.schema().declaration_by_name("IfcNamedUnit").as_entity())
+        values = ifcopenshell.util.attribute.get_enum_items(entity.all_attributes()[1])
         return [(c, c, "") for c in sorted(values)]
 
     @classmethod

@@ -70,9 +70,9 @@ class IfcClassData:
             if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
                 names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         if ifc_product == "IfcElement":
-            feature_elements = ifcopenshell.util.schema.get_subtypes(
-                tool.Ifc.schema().declaration_by_name("IfcFeatureElement")
-            )
+            entity = tool.Ifc.schema().declaration_by_name("IfcFeatureElement").as_entity()
+            assert entity
+            feature_elements = ifcopenshell.util.schema.get_subtypes(entity)
             for feature_element in feature_elements:
                 names.remove(feature_element.name())
         version = tool.Ifc.get_schema()

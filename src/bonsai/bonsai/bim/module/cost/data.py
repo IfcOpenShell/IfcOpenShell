@@ -300,10 +300,8 @@ class CostSchedulesData:
 
     @classmethod
     def quantity_types(cls) -> list[tuple[str, str, str]]:
-        return [
-            (t.name(), t.name(), "")
-            for t in tool.Ifc.schema().declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()
-        ]
+        assert (entity := tool.Ifc.schema().declaration_by_name("IfcPhysicalSimpleQuantity").as_entity())
+        return [(t.name(), t.name(), "") for t in entity.subtypes()]
 
     @classmethod
     def get_cost_schedule_types(cls) -> list[tuple[str, str, str]]:

@@ -74,7 +74,8 @@ class TestPurgeHdf5Cache(NewFile):
 class TestMergeIdenticalObject(NewFile):
     def test_merge_identical_styles(self):
         tool.Ifc.set(ifc := ifcopenshell.file())
-        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle").as_entity()
+        assert declaration
         style_types = [d.name() for d in ifcopenshell.util.schema.get_subtypes(declaration)]
         for style_type in style_types:
             ifc.create_entity(style_type, Name=style_type)

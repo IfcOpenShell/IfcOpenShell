@@ -153,6 +153,7 @@ class ColourRgb(PropertyGroup):
     color_name: StringProperty(name="Color Name")
 
     if TYPE_CHECKING:
+        name: str
         color_value: tuple[float, float, float]
         color_name: str
 

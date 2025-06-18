@@ -206,16 +206,19 @@ class Drawing(bonsai.core.tool.Drawing):
 
         if not related_object:
             related_object = bpy.context.active_object
-        related_entity = tool.Ifc.get_entity(related_object)
-        if not related_entity:
+
+        if not related_object or not (related_entity := tool.Ifc.get_entity(related_object)):
             return
 
         obj_entity = tool.Ifc.get_entity(obj)
+        assert obj_entity
         assign_product = False
 
         if object_type == "STAIR_ARROW":
             if related_entity.is_a("IfcStairFlight"):
                 stair, arrow = related_object, obj
+                assert isinstance(stair.data, bpy.types.Mesh)
+                assert isinstance(arrow.data, bpy.types.Mesh)
 
                 # place the arrow
                 # NOTE: may not work correctly in EDIT mode
@@ -239,6 +242,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
         elif object_type == "REVISION_CLOUD":
             revised_object, cloud = related_object, obj
+            assert isinstance(revised_object.data, bpy.types.Mesh)
+            assert isinstance(obj.data, bpy.types.Mesh)
 
             verts = [np.array(revised_object.matrix_world @ v.co) for v in revised_object.data.vertices]
             verts = [(np.around(v[[0, 1]], decimals=3)).tolist() for v in verts]

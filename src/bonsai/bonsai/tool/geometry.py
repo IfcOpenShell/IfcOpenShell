@@ -1469,11 +1469,13 @@ class Geometry(bonsai.core.tool.Geometry):
         ifc_file = tool.Ifc.get()
         # as shape aspect might have multiple representations
         # it's easier to find it from the item
+        representation = None
         for inverse in ifc_file.get_inverse(representation_items[0]):
             if inverse.is_a("IfcShapeRepresentation") and shape_aspect in inverse.OfShapeAspect:
                 representation = inverse
                 break
 
+        assert representation
         # removing last item would make representation invalid
         if len(representation.Items) == len(representation_items):
             # removing last representation would make shape aspect invalid.

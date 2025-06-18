@@ -38,7 +38,7 @@ from .facet import (
     Cardinality,
     FacetFailure,
 )
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
@@ -83,6 +83,8 @@ def get_schema():
 
 
 class Ids:
+    info: dict[str, Any]
+
     def __init__(
         self,
         title: Optional[str] = "Untitled",
@@ -119,12 +121,12 @@ class Ids:
         if milestone:
             self.info["milestone"] = milestone
 
-    def asdict(self):
-        info = {}
+    def asdict(self) -> dict[str, Any]:
+        info: dict[str, Any] = {}
         for attr in ["title", "copyright", "version", "description", "author", "date", "purpose", "milestone"]:
             if attr in self.info:
                 info[attr] = self.info[attr]
-        ids_dict = {
+        ids_dict: dict[str, Any] = {
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
@@ -202,8 +204,8 @@ class Specification:
         self.status = None
         self.is_ifc_version = None
 
-    def asdict(self):
-        results = {
+    def asdict(self) -> dict[str, Any]:
+        results: dict[str, Any] = {
             "@name": self.name,
             "@ifcVersion": self.ifcVersion,
             "applicability": {},

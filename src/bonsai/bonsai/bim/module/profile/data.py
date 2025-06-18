@@ -96,9 +96,10 @@ class ProfileData:
     @classmethod
     def profile_def_classes_enum(cls) -> list[tuple[str, str, str]]:
         version = tool.Ifc.get_schema()
+        assert (entity := tool.Ifc.schema().declaration_by_name("IfcProfileDef").as_entity())
         return [
             (t.name(), t.name(), ifcopenshell.util.doc.get_entity_doc(version, t.name()).get("description", ""))
-            for t in tool.Ifc.schema().declaration_by_name("IfcProfileDef").subtypes()
+            for t in entity.subtypes()
         ]
 
     @classmethod

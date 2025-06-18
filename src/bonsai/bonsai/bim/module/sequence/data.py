@@ -247,7 +247,8 @@ class SequenceData:
     @classmethod
     def schedule_predefined_types_enum(cls) -> list[tuple[str, str, str]]:
         results: list[tuple[str, str, str]] = []
-        declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")
+        declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule").as_entity()
+        assert declaration
         version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
@@ -265,7 +266,8 @@ class SequenceData:
     def task_columns_enum(cls) -> list[tuple[str, str, str]]:
         schema = tool.Ifc.schema()
         taskcolumns_enum = []
-        for a in schema.declaration_by_name("IfcTask").all_attributes():
+        assert (entity := schema.declaration_by_name("IfcTask").as_entity())
+        for a in entity.all_attributes():
             if (primitive_type := ifcopenshell.util.attribute.get_primitive_type(a)) not in (
                 "string",
                 "float",
@@ -281,7 +283,8 @@ class SequenceData:
     def task_time_columns_enum(cls) -> list[tuple[str, str, str]]:
         schema = tool.Ifc.schema()
         tasktimecolumns_enum = []
-        for a in schema.declaration_by_name("IfcTaskTime").all_attributes():
+        assert (entity := schema.declaration_by_name("IfcTaskTime").as_entity())
+        for a in entity.all_attributes():
             if (primitive_type := ifcopenshell.util.attribute.get_primitive_type(a)) not in (
                 "string",
                 "float",

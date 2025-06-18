@@ -918,7 +918,7 @@ class DebugActiveDrawing(bpy.types.Operator):
         original_exclude = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "Exclude")
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
 
-        def drawing_fails_to_load(chunk_to_include: set) -> bool:
+        def drawing_fails_to_load(chunk_to_include: set[ifcopenshell.entity_instance]) -> bool:
             current_elements = all_elements - chunk_to_include
             excluded_guids = ", ".join([e.GlobalId for e in current_elements if hasattr(e, "GlobalId")])
             new_exclude = "" if not original_exclude else f"{original_exclude}, "

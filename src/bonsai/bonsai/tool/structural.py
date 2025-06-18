@@ -146,7 +146,8 @@ class Structural(bonsai.core.tool.Structural):
         props = cls.get_structural_props()
         props.structural_analysis_model_attributes.clear()
         schema = tool.Ifc.schema()
-        for attribute in schema.declaration_by_name("IfcStructuralAnalysisModel").all_attributes():
+        assert (entity := schema.declaration_by_name("IfcStructuralAnalysisModel").as_entity())
+        for attribute in entity.all_attributes():
             data_type = str(attribute.type_of_attribute)
             if "<entity" in data_type:
                 continue

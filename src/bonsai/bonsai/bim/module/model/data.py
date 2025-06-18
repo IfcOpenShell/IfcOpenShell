@@ -99,7 +99,8 @@ class AuthoringData:
 
     @classmethod
     def boundary_class(cls):
-        declaration = tool.Ifc.schema().declaration_by_name("IfcRelSpaceBoundary")
+        declaration = tool.Ifc.schema().declaration_by_name("IfcRelSpaceBoundary").as_entity()
+        assert declaration
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
         version = tool.Ifc.get_schema()
