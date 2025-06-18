@@ -362,10 +362,24 @@ class BIM_PT_applications(bpy.types.Panel):
         assert (layout := self.layout)
         props = tool.Owner.get_owner_props()
 
+        row = self.layout.row()
+        row.operator("bim.add_application", icon="ADD")
+
         apps_data: list[dict[str, Any]] = ApplicationsData.data["applications"]
         if not apps_data:
             layout.label(text="No Applications Found")
+            return
+
         for app_data in apps_data:
-            row = layout.row()
-            row.label(text=app_data["name"])
-            row.operator("bim.remove_application", icon="X", text="").application_id = app_data["id"]
+            if props.active_application_id == app_data["id"]:
+                box = self.layout.box()
+                row = box.row(align=True)
+                row.operator("bim.edit_application", icon="CHECKMARK")
+                row.operator("bim.disable_editing_application", icon="CANCEL", text="")
+                bonsai.bim.helper.draw_attributes(props.application_attributes, box)
+            else:
+                row = layout.row(align=True)
+                row.label(text=app_data["name"])
+                op = row.operator("bim.enable_editing_application", icon="GREASEPENCIL", text="")
+                op.application_id = app_data["id"]
+                row.operator("bim.remove_application", icon="X", text="").application_id = app_data["id"]

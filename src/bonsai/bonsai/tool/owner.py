@@ -303,3 +303,34 @@ class Owner(bonsai.core.tool.Owner):
     def get_actor(cls) -> ifcopenshell.entity_instance:
         props = cls.get_owner_props()
         return tool.Ifc().get().by_id(props.active_actor_id)
+
+    # Application.
+    @classmethod
+    def get_application(cls) -> ifcopenshell.entity_instance:
+        props = cls.get_owner_props()
+        return tool.Ifc.get().by_id(props.active_application_id)
+
+    @classmethod
+    def set_application(cls, application: ifcopenshell.entity_instance) -> None:
+        props = cls.get_owner_props()
+        props.active_application_id = application.id()
+
+    @classmethod
+    def clear_application(cls) -> None:
+        props = cls.get_owner_props()
+        if "active_application_id" in props:
+            del props["active_application_id"]
+
+    @classmethod
+    def import_application_attributes(cls) -> None:
+        props = cls.get_owner_props()
+        application = tool.Ifc.get().by_id(props.active_application_id)
+        props.application_attributes.clear()
+
+        bonsai.bim.helper.import_attributes("IfcApplication", props.application_attributes, application.get_info())
+
+    @classmethod
+    def export_application_attributes(cls) -> dict[str, Any]:
+        props = cls.get_owner_props()
+        attributes = bonsai.bim.helper.export_attributes(props.application_attributes)
+        return attributes

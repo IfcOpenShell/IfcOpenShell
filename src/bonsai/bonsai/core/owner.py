@@ -195,3 +195,24 @@ def unassign_actor(
     ifc: type[tool.Ifc], actor: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
 ) -> None:
     ifc.run("owner.unassign_actor", relating_actor=actor, related_object=element)
+
+
+def enable_editing_application(owner: type[tool.Owner], application: ifcopenshell.entity_instance) -> None:
+    owner.set_application(application)
+    owner.import_application_attributes()
+
+
+def disable_editing_application(owner: type[tool.Owner]) -> None:
+    owner.clear_application()
+
+
+def edit_application(ifc: type[tool.Ifc], owner: type[tool.Owner]) -> None:
+    application = owner.get_application()
+    ifc.run("owner.edit_application", application=application, attributes=owner.export_application_attributes())
+    owner.clear_application()
+
+
+def add_application(ifc: type[tool.Ifc], owner: type[tool.Owner]) -> ifcopenshell.entity_instance:
+    application = ifc.run("owner.add_application")
+    enable_editing_application(owner, application)
+    return application

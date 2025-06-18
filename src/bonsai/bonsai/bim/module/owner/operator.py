@@ -521,3 +521,46 @@ class RemoveApplication(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.owner.remove_application(ifc_file, ifc_file.by_id(self.application_id))
+
+
+class EnableEditingApplication(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_application"
+    bl_label = "Enable Editing Application"
+    bl_options = {"REGISTER", "UNDO"}
+    application_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        application_id: int
+
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
+        core.enable_editing_application(tool.Owner, tool.Ifc.get().by_id(self.application_id))
+        return {"FINISHED"}
+
+
+class DisableEditingApplication(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_application"
+    bl_label = "Disable Editing Application"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
+        core.disable_editing_application(tool.Owner)
+        return {"FINISHED"}
+
+
+class EditApplication(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_application"
+    bl_label = "Edit Application"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
+        core.edit_application(tool.Ifc, tool.Owner)
+        return {"FINISHED"}
+
+
+class AddApplication(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_application"
+    bl_label = "Add Application"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context) -> None:
+        core.add_application(tool.Ifc, tool.Owner)

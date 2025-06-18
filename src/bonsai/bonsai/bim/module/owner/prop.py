@@ -121,6 +121,9 @@ class BIMOwnerProperties(PropertyGroup):
     )
     actor: EnumProperty(items=get_actor, name="Actor")
 
+    active_application_id: IntProperty()
+    application_attributes: CollectionProperty(type=Attribute)
+
     if TYPE_CHECKING:
         active_person_id: int
         person_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -147,3 +150,6 @@ class BIMOwnerProperties(PropertyGroup):
         actor_type: str
         the_actor: str
         actor: str
+
+        active_application_id: int
+        application_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
