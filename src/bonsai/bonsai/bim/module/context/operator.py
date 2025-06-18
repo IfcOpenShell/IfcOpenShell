@@ -32,16 +32,16 @@ class AddContext(bpy.types.Operator, tool.Ifc.Operator):
     parent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        target_scale = None
+        target_scale_value = None
         if self.context_target_scale_denominator > 0:
-            target_scale = 1.0 / self.context_target_scale_denominator
+            target_scale_value = 1.0 / self.context_target_scale_denominator
 
         core.add_context(
             tool.Ifc,
             context_type=self.context_type,
             context_identifier=self.context_identifier,
             target_view=self.target_view,
-            target_scale=target_scale,
+            target_scale=target_scale_value,
             parent=tool.Ifc.get().by_id(self.parent) if self.parent else None,
         )
 
