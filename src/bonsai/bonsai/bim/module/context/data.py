@@ -49,7 +49,7 @@ class ContextData:
         return results
 
     @classmethod
-    def get_subcontexts(cls, context) -> list[dict[str, Any]]:
+    def get_subcontexts(cls, context: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
         results = []
         for subcontext in context.HasSubContexts:
             target_scale_denominator = None
@@ -61,9 +61,9 @@ class ContextData:
             results.append(
                 {
                     "id": subcontext.id(),
-                    "context_type": subcontext.ContextType or "",
-                    "context_identifier": subcontext.ContextIdentifier or "",
-                    "target_view": subcontext.TargetView or "",
+                    "context_type": subcontext.ContextType,
+                    "context_identifier": subcontext.ContextIdentifier,
+                    "target_view": subcontext.TargetView,
                     "target_scale_denominator": target_scale_denominator,
                 }
             )

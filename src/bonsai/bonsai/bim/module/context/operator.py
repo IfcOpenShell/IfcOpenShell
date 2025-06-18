@@ -28,14 +28,13 @@ class AddContext(bpy.types.Operator, tool.Ifc.Operator):
     context_type: bpy.props.StringProperty()
     context_identifier: bpy.props.StringProperty()
     target_view: bpy.props.StringProperty()
-    target_scale_denominator: bpy.props.FloatProperty(default=0.0, min=0.0001)
+    context_target_scale_denominator: bpy.props.FloatProperty(default=0.0)
     parent: bpy.props.IntProperty()
 
     def _execute(self, context):
-        # Calculate target_scale from denominator for IFC
         target_scale = None
-        if self.target_scale_denominator > 0:
-            target_scale = 1.0 / self.target_scale_denominator
+        if self.context_target_scale_denominator > 0:
+            target_scale = 1.0 / self.context_target_scale_denominator
 
         core.add_context(
             tool.Ifc,

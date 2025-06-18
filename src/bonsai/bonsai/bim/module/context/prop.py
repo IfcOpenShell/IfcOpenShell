@@ -65,7 +65,7 @@ class BIMContextProperties(PropertyGroup):
         ],
         name="Target Views",
     )
-    target_scale_denominator: FloatProperty(
+    representation_target_scale_denominator: FloatProperty(
         name="Scale Denominator",
         description="Scale denominator (e.g. 100 for 1:100, 0.7 for 1:0.7 12.4 for 1:12.4)",
         default=1.0,

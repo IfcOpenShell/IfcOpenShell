@@ -67,12 +67,12 @@ class BIM_PT_context(bpy.types.Panel):
             row = box.row(align=True)
             bonsai.bim.helper.prop_with_search(row, props, "subcontexts", text="")
             bonsai.bim.helper.prop_with_search(row, props, "target_views", text="")
-            row.prop(props, "target_scale_denominator", text="Scale 1:")
+            row.prop(props, "representation_target_scale_denominator", text="Scale 1:")
             op = row.operator("bim.add_context", icon="ADD", text="")
             op.context_type = ifc_context["context_type"]
             op.context_identifier = props.subcontexts
             op.target_view = props.target_views
-            op.target_scale_denominator = props.target_scale_denominator
+            op.context_target_scale_denominator = props.representation_target_scale_denominator
             op.parent = ifc_context["id"]
 
             for subcontext in ifc_context["subcontexts"]:
