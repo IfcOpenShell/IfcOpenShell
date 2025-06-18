@@ -199,20 +199,21 @@ def map_alignment_vertical_segment(file: ifcopenshell.file, segment: entity_inst
     if not segment.is_a(expected_type):
         raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment.is_a()}'.")
 
-    match segment.DesignParameters.PredefinedType:
-        case "CONSTANTGRADIENT":
-            result = _map_constant_gradient(file, segment.DesignParameters)
+    predefined_type = segment.DesignParameters.PredefinedType
 
-        case "PARABOLICARC":
-            result = _map_parabolic_arc(file, segment.DesignParameters)
+    if predefined_type == "CONSTANTGRADIENT":
+        result = _map_constant_gradient(file, segment.DesignParameters)
 
-        case "CIRCULARARC":
-            result = _map_circular_arc(file, segment.DesignParameters)
+    elif predefined_type == "PARABOLICARC":
+        result = _map_parabolic_arc(file, segment.DesignParameters)
 
-        case "CLOTHOID":
-            result = _map_clothoid(file, segment.DesignParameters)
+    elif predefined_type == "CIRCULARARC":
+        result = _map_circular_arc(file, segment.DesignParameters)
 
-        case _:
-            raise TypeError(f"Unexpected predefined type - got {segment.DesignParameters.PredefinedType}")
+    elif predefined_type == "CLOTHOID":
+        result = _map_clothoid(file, segment.DesignParameters)
+
+    else:
+        raise TypeError(f"Unexpected predefined type - got {segment.DesignParameters.PredefinedType}")
 
     return result

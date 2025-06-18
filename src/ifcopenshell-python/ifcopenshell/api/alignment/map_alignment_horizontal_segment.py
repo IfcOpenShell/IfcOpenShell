@@ -412,26 +412,26 @@ def map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_in
     if not segment.is_a(expected_type):
         raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment.is_a()}'.")
 
-    match segment.DesignParameters.PredefinedType:
-        case "LINE":
-            result = _map_line(file, segment.DesignParameters)
-        case "CIRCULARARC":
-            result = _map_circular_arc(file, segment.DesignParameters)
-        case "CLOTHOID":
-            result = _map_clothoid(file, segment.DesignParameters)
-        case "CUBIC":
-            result = _map_cubic(file, segment.DesignParameters)
-        case "HELMERTCURVE":
-            result = _map_helmert_curve(file, segment.DesignParameters)
-        case "BLOSSCURVE":
-            result = _map_bloss_curve(file, segment.DesignParameters)
-        case "COSINECURVE":
-            result = _map_cosine_curve(file, segment.DesignParameters)
-        case "SINECURVE":
-            result = _map_sine_curve(file, segment.DesignParameters)
-        case "VIENNESEBEND":
-            result = _map_viennese_bend(file, segment.DesignParameters)
-        case _:
-            raise TypeError("Unexpected predefined type")
+    predefined_type = segment.DesignParameters.PredefinedType
+    if predefined_type == "LINE":
+        result = _map_line(file, segment.DesignParameters)
+    elif predefined_type == "CIRCULARARC":
+        result = _map_circular_arc(file, segment.DesignParameters)
+    elif predefined_type == "CLOTHOID":
+        result = _map_clothoid(file, segment.DesignParameters)
+    elif predefined_type == "CUBIC":
+        result = _map_cubic(file, segment.DesignParameters)
+    elif predefined_type == "HELMERTCURVE":
+        result = _map_helmert_curve(file, segment.DesignParameters)
+    elif predefined_type == "BLOSSCURVE":
+        result = _map_bloss_curve(file, segment.DesignParameters)
+    elif predefined_type == "COSINECURVE":
+        result = _map_cosine_curve(file, segment.DesignParameters)
+    elif predefined_type == "SINECURVE":
+        result = _map_sine_curve(file, segment.DesignParameters)
+    elif predefined_type == "VIENNESEBEND":
+        result = _map_viennese_bend(file, segment.DesignParameters)
+    else:
+        raise TypeError(f"Unexpected predefined type: '{predefined_type}'.")
 
     return result
