@@ -54,18 +54,17 @@ class ContextData:
         for subcontext in context.HasSubContexts:
             target_scale_denominator = None
             if hasattr(subcontext, "TargetScale") and subcontext.TargetScale is not None:
-                try:
-                    scale_value = float(subcontext.TargetScale)
-                    if scale_value > 0:
-                        target_scale_denominator = 1.0 / scale_value
-                except (ValueError, TypeError, ZeroDivisionError):
-                    pass
-                    
-            results.append({
-                "id": subcontext.id(),
-                "context_type": subcontext.ContextType or "",
-                "context_identifier": subcontext.ContextIdentifier or "",
-                "target_view": subcontext.TargetView or "",
-                "target_scale_denominator": target_scale_denominator,
-            })
+                scale_value = float(subcontext.TargetScale)
+                if scale_value > 0:
+                    target_scale_denominator = 1.0 / scale_value
+
+            results.append(
+                {
+                    "id": subcontext.id(),
+                    "context_type": subcontext.ContextType or "",
+                    "context_identifier": subcontext.ContextIdentifier or "",
+                    "target_view": subcontext.TargetView or "",
+                    "target_scale_denominator": target_scale_denominator,
+                }
+            )
         return results

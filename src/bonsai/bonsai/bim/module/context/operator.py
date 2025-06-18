@@ -36,7 +36,7 @@ class AddContext(bpy.types.Operator, tool.Ifc.Operator):
         target_scale = None
         if self.target_scale_denominator > 0:
             target_scale = 1.0 / self.target_scale_denominator
-            
+
         core.add_context(
             tool.Ifc,
             context_type=self.context_type,
