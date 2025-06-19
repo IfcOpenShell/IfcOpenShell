@@ -16,20 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Coordinate Geometry (cogo) functions primarily for survey points and control monument for layout, parcels, etc.
-"""
+import math
 
-from .add_survey_point import add_survey_point
-from .assign_survey_point import assign_survey_point
-from .edit_survey_point import edit_survey_point
-from .angle_from_direction import angle_from_direction
-from .angle_from_dms import angle_from_dms
+def angle_from_dms(d:int,m:int,s:float)->float:
+    """
+    Compute an angle, in radian, from an angle in d:m:s format.
 
-__all__ = [
-    "add_survey_point",
-    "assign_survey_point",
-    "edit_survey_point",
-    "angle_from_direction",
-    "angle_from_dms"
-]
+    :param d: degree
+    :param m: minute
+    :param s: second
+    :return: Angle in radian
+    """
+    if (m < 0 or 60 <= m) or (s < 0.0 or 60.0 <= s):
+        raise ValueError("Invalid argument")
+
+    angle = float(d) + float(m)/60. + s/3600.
+    return math.radians(angle)
