@@ -323,6 +323,7 @@ class PolylineDecorator:
     snap_info = None
     tool_state = None
     relating_type = None
+    polyline_points = None
 
     @classmethod
     def install(cls, context, ui_only=False):
@@ -335,7 +336,10 @@ class PolylineDecorator:
                 SpaceView3D.draw_handler_add(handler.draw_snap_point, (context,), "WINDOW", "POST_PIXEL")
             )
             cls.handlers.append(
-                SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL")
+                SpaceView3D.draw_handler_add(handler.select_and_draw_measurements_text, (context,), "WINDOW", "POST_PIXEL")
+            )
+            cls.handlers.append(
+                SpaceView3D.draw_handler_add(handler.select_and_draw_measurements_poly, (context,), "WINDOW", "POST_VIEW")
             )
             cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
@@ -361,28 +365,20 @@ class PolylineDecorator:
         cls.tool_state = tool_state
         cls.input_ui = input_ui
 
-    # TODO: unused?
-    @classmethod
-    def set_input_ui(cls, input_ui: tool.Polyline.PolylineUI) -> None:
-        cls.input_ui = input_ui
-
     @classmethod
     def set_angle_axis_line(cls, start: Vector, end: Vector) -> None:
         cls.axis_start = start
         cls.axis_end = end
 
     def calculate_measurement_x_y_and_z(self, context: bpy.types.Context) -> None:
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if polyline_data else []
-
-        if len(polyline_points) == 0 or len(polyline_points) > 2:
+        if len(self.polyline_points) == 0 or len(self.polyline_points) > 2:
             return None, None
 
-        start = polyline_points[0]
-        if len(polyline_points) == 1:
+        start = self.polyline_points[0]
+        if len(self.polyline_points) == 1:
             end = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         else:
-            end = polyline_points[1]
+            end = self.polyline_points[1]
 
         x_axis = (Vector((start.x, start.y, start.z)), Vector((end.x, start.y, start.z)))
         y_axis = (Vector((end.x, start.y, start.z)), Vector((end.x, end.y, start.z)))
@@ -423,6 +419,30 @@ class PolylineDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
+    def shader_config(self, context):
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.decorator_color = self.addon_prefs.decorations_colour
+        self.decorator_color_special = self.addon_prefs.decorator_color_special
+        self.decorator_color_selected = self.addon_prefs.decorator_color_selected
+        self.decorator_color_error = self.addon_prefs.decorator_color_error
+        self.decorator_color_unselected = self.addon_prefs.decorator_color_unselected
+        self.decorator_color_background = self.addon_prefs.decorator_color_background
+        theme = context.preferences.themes.items()[0][1]
+        self.decorator_color_object_active = (*theme.view_3d.object_active, 1)  # unwrap color values and adds alpha=1
+        self.decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
+        self.decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
+        self.decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
+
+        gpu.state.blend_set("ALPHA")
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()  # required to be able to change uniforms of the shader
+        # POLYLINE_UNIFORM_COLOR specific uniforms
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+
+        # general shader
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        gpu.state.point_size_set(6)
+        
     def draw_input_ui(self, context: bpy.types.Context) -> None:
         texts = {
             "D": "Distance: ",
@@ -483,17 +503,9 @@ class PolylineDecorator:
         gpu.state.blend_set("ALPHA")
         self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
 
-    def draw_measurements(self, context):
-        region = context.region
+    def draw_measurements_text(self, context):
+        region = bpy.context.region
         rv3d = region.data
-        measure_type = context.scene.MeasureToolSettings.measurement_type
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        if not polyline_data:
-            return
-        else:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
-        polyline_points = polyline_data.polyline_points
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -504,13 +516,15 @@ class PolylineDecorator:
         color = self.addon_prefs.decorations_colour
 
         blf.color(self.font_id, *color)
-        for i in range(len(polyline_points)):
+        for i in range(len(self.polyline_points)):
+            if i < 1 and self.measure_type == "POLY_AREA":
+                continue
             if i == 0:
                 continue
-            dim_text_pos = (Vector(polyline_points[i].position) + Vector(polyline_points[i - 1].position)) / 2
+            dim_text_pos = (Vector(self.polyline_points[i].position) + Vector(self.polyline_points[i - 1].position)) / 2
             dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
 
-            formatted_value = polyline_points[i].dim
+            formatted_value = self.polyline_points[i].dim
 
             blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
             text = "d: " + formatted_value
@@ -520,19 +534,19 @@ class PolylineDecorator:
 
             if i == 1:
                 continue
-            angle_text_pos = Vector(polyline_points[i - 1].position)
+            angle_text_pos = Vector(self.polyline_points[i - 1].position)
             angle_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, angle_text_pos)
             blf.position(self.font_id, angle_text_coords[0], angle_text_coords[1], 0)
-            text = "a: " + polyline_points[i].angle
+            text = "a: " + self.polyline_points[i].angle
             text_length = blf.dimensions(self.font_id, text)
             self.draw_text_background(context, angle_text_coords, text_length)
             blf.draw(self.font_id, text)
 
-        if measure_type == "SINGLE":
+        if self.measure_type == "SINGLE":
             axis_line, axis_line_center = self.calculate_measurement_x_y_and_z(context)
             for i, dim_text_pos in enumerate(axis_line_center):
                 dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
-                blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
+                pos = blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
                 value = round((axis_line[i][1] - axis_line[i][0]).length, 4)
                 direction = axis_line[i][1] - axis_line[i][0]
                 if (i == 0 and direction.x < 0) or (i == 1 and direction.y < 0) or (i == 2 and direction.z < 0):
@@ -545,10 +559,10 @@ class PolylineDecorator:
                 blf.draw(self.font_id, text)
 
         # Area and Length text
-        polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
+        polyline_verts = [Vector((p.x, p.y, p.z)) for p in self.polyline_points]
 
         # Area
-        if measure_type == "POLY_AREA" and polyline_data.area:
+        if self.measure_type == "POLY_AREA" and self.polyline_data.area:
             if len(polyline_verts) < 3:
                 return
             center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
@@ -557,7 +571,7 @@ class PolylineDecorator:
                     polyline_verts[:-1]
                 )  # Doesn't use the last point if is a closed polyline
             area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
-            value = polyline_data.area
+            value = self.polyline_data.area
             text = f"area: {value}"
             text_length = blf.dimensions(self.font_id, text)
             area_text_coords[0] -= text_length[0] / 2  # Center text horizontally
@@ -566,18 +580,84 @@ class PolylineDecorator:
             blf.draw(self.font_id, text)
 
         # Length
-        if measure_type in {"POLYLINE", "POLY_AREA"}:
+        if self.measure_type in {"POLYLINE", "POLY_AREA"}:
             if len(polyline_verts) < 3:
                 return
             total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
             blf.position(self.font_id, total_length_text_coords[0], total_length_text_coords[1], 0)
-            value = polyline_data.total_length
+            value = self.polyline_data.total_length
             text = f"length: {value}"
             text_length = blf.dimensions(self.font_id, text)
             self.draw_text_background(context, total_length_text_coords, text_length)
             blf.draw(self.font_id, text)
 
         blf.disable(self.font_id, blf.SHADOW)
+
+    def draw_measurements_poly(self, context):
+        self.shader_config(context)
+        polyline_verts: list[Vector] = []
+        polyline_edges: list[list[int]] = []
+        for point_prop in self.polyline_points:
+            point = Vector((point_prop.x, point_prop.y, point_prop.z))
+            polyline_verts.append(point)
+
+        for i in range(len(polyline_verts) - 1):
+            polyline_edges.append([i, i + 1])
+            
+        # Lines for X, Y, Z of single measure
+        if self.polyline_data and self.polyline_data.measurement_type == "SINGLE":
+            axis, _ = self.calculate_measurement_x_y_and_z(context)
+            x_axis, y_axis, z_axis = axis
+            self.draw_batch("LINES", [*x_axis], self.decorator_color_x_axis, [(0, 1)])
+            self.draw_batch("LINES", [*y_axis], self.decorator_color_y_axis, [(0, 1)])
+            self.draw_batch("LINES", [*z_axis], self.decorator_color_z_axis, [(0, 1)])
+
+        # Area highlight
+        if self.polyline_data:
+            area = self.polyline_data.area.split(" ")[0]
+            if self.polyline_data.measurement_type == "POLY_AREA" and area:
+                if float(area) > 0:
+                    tris = self.calculate_polygon(polyline_verts)["tris"]
+                    self.draw_batch("TRIS", polyline_verts, transparent_color(self.decorator_color_special), tris)
+
+        # Draw polyline with selected points
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        self.draw_batch("POINTS", polyline_verts, self.decorator_color_special)
+        if len(polyline_verts) > 1:
+            self.draw_batch("LINES", polyline_verts, self.decorator_color_special, polyline_edges)
+
+    def get_polylines_data(self, context):
+        self.measure_type = context.scene.MeasureToolSettings.measurement_type
+        self.polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        self.measure_data = context.scene.BIMPolylineProperties.measurement_polyline
+        
+    def select_and_draw_measurements_text(self, context):
+        self.get_polylines_data(context)
+        if self.polyline_data:
+            self.polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            self.polyline_points = self.polyline_data.polyline_points
+            self.draw_measurements_text(context)
+
+        if self.measure_data:
+            for polyline_data in self.measure_data:
+                self.polyline_data = polyline_data
+                self.measure_type = polyline_data.measurement_type
+                self.polyline_points = self.polyline_data.polyline_points
+                self.draw_measurements_text(context)
+
+    def select_and_draw_measurements_poly(self, context):
+        self.get_polylines_data(context)
+        if self.polyline_data:
+            self.polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            self.polyline_points = self.polyline_data.polyline_points
+            self.draw_measurements_poly(context)
+
+        if self.measure_data:
+            for polyline_data in self.measure_data:
+                self.polyline_data = polyline_data
+                self.measure_type = polyline_data.measurement_type
+                self.polyline_points = self.polyline_data.polyline_points
+                self.draw_measurements_poly(context)
 
     def draw_snap_point(self, context):
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -736,6 +816,7 @@ class PolylineDecorator:
             polyline_points = polyline_data.polyline_points
         else:
             polyline_points = []
+        self.polyline_points = polyline_points
         polyline_verts: list[Vector] = []
         polyline_edges: list[list[int]] = []
         for point_prop in polyline_points:
@@ -764,21 +845,21 @@ class PolylineDecorator:
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], axis_color, [(0, 1)])
 
-        # Lines for X, Y, Z of single measure
-        if polyline_data and polyline_data.measurement_type == "SINGLE":
-            axis, _ = self.calculate_measurement_x_y_and_z(context)
-            x_axis, y_axis, z_axis = axis
-            self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
-            self.draw_batch("LINES", [*y_axis], decorator_color_y_axis, [(0, 1)])
-            self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
+        # # Lines for X, Y, Z of single measure
+        # if polyline_data and polyline_data.measurement_type == "SINGLE":
+        #     axis, _ = self.calculate_measurement_x_y_and_z(context)
+        #     x_axis, y_axis, z_axis = axis
+        #     self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
+        #     self.draw_batch("LINES", [*y_axis], decorator_color_y_axis, [(0, 1)])
+        #     self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
 
-        # Area highlight
-        if polyline_data:
-            area = polyline_data.area.split(" ")[0]
-            if polyline_data.measurement_type == "POLY_AREA" and area:
-                if float(area) > 0:
-                    tris = self.calculate_polygon(polyline_verts)["tris"]
-                    self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
+        # # Area highlight
+        # if polyline_data:
+        #     area = polyline_data.area.split(" ")[0]
+        #     if polyline_data.measurement_type == "POLY_AREA" and area:
+        #         if float(area) > 0:
+        #             tris = self.calculate_polygon(polyline_verts)["tris"]
+        #             self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
 
         # Mouse points
         if snap_prop.snap_type in ["Plane", "Axis", "Mix"]:
