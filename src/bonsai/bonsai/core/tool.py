@@ -652,6 +652,11 @@ class Owner:
     def set_person(cls, person): pass
     def set_role(cls, role): pass
     def set_user(cls, user): pass
+    def get_application(cls): pass
+    def set_application(cls, application): pass
+    def clear_application(cls): pass
+    def import_application_attributes(cls): pass
+    def export_application_attributes(cls): pass
 
 
 @interface

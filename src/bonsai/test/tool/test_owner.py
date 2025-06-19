@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.owner
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -579,3 +580,48 @@ class TestSetUser(NewFile):
         subject.set_user(user)
         props = subject.get_owner_props()
         assert props.active_user_id == user.id()
+
+
+class TestApplicationUI(NewFile):
+    ifc_class = "IfcApplication"
+    attrs = {
+        "Version": "v001",
+        "ApplicationFullName": "IfcOpenShell",
+        "ApplicationIdentifier": "IfcOpenShell",
+    }
+
+    def test_set(self):
+        application = ifcopenshell.file().create_entity(self.ifc_class)
+        subject.set_application(application)
+        props = subject.get_owner_props()
+        assert props.active_application_id == application.id()
+
+    def test_get(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        application = ifc.create_entity(self.ifc_class)
+        subject.set_application(application)
+        assert subject.get_application() == application
+
+    def test_run_clear(self):
+        application = ifcopenshell.file().create_entity(self.ifc_class)
+        subject.set_application(application)
+        subject.clear_application()
+        props = subject.get_owner_props()
+        assert props.active_application_id == 0
+
+    def test_import(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        application = ifc.create_entity(self.ifc_class)
+        for attr, value in self.attrs.items():
+            setattr(application, attr, value)
+        subject.set_application(application)
+        subject.import_application_attributes()
+        props = subject.get_owner_props()
+        for attr, value in self.attrs.items():
+            assert props.application_attributes[attr].get_value() == value
+
+    def test_export(self):
+        self.test_import()
+        assert subject.export_application_attributes() == self.attrs

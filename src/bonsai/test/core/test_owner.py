@@ -18,7 +18,7 @@
 
 
 import bonsai.core.owner as subject
-from test.core.bootstrap import ifc, owner
+from test.core.bootstrap import ifc, owner, Prophecy
 
 
 class TestAddPerson:
@@ -271,3 +271,30 @@ class TestUnassignActor:
     def test_run(self, ifc, owner):
         ifc.run("owner.unassign_actor", relating_actor="actor", related_object="element").should_be_called()
         subject.unassign_actor(ifc, actor="actor", element="element")
+
+
+class TestApplicationUI:
+    def test_enable_editing(self, owner: Prophecy) -> None:
+        owner.set_application("application").should_be_called()
+        owner.import_application_attributes().should_be_called()
+        subject.enable_editing_application(owner, application="application")
+
+    def test_disable_editing(self, owner: Prophecy) -> None:
+        owner.clear_application().should_be_called()
+        subject.disable_editing_application(owner)
+
+    def test_edit(self, ifc: Prophecy, owner: Prophecy) -> None:
+        owner.get_application().should_be_called().will_return("application")
+        owner.export_application_attributes().should_be_called().will_return("attributes")
+        ifc.run("owner.edit_application", application="application", attributes="attributes").should_be_called()
+        owner.clear_application().should_be_called()
+        subject.edit_application(ifc, owner)
+
+    def test_add(self, ifc: Prophecy, owner: Prophecy):
+        ifc.run("owner.add_application").should_be_called().will_return("application")
+
+        # enable editing
+        owner.set_application("application").should_be_called()
+        owner.import_application_attributes().should_be_called()
+
+        assert subject.add_application(ifc, owner) == "application"
