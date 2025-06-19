@@ -28,6 +28,7 @@ from math import pi, radians
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
+from bonsai.bim.module.drawing.decoration import CutDecorator
 from typing import TYPE_CHECKING, Literal, get_args, Union, get_args, Any, Optional
 
 
@@ -111,6 +112,13 @@ def update_slab_direction_decorator(self: "BIMModelProperties", context: bpy.typ
         SlabDirectionDecorator.install(bpy.context)
     else:
         SlabDirectionDecorator.uninstall()
+
+def update_cut_decorator(self: "BIMModelProperties", context: bpy.types.Context) -> None:
+    if self.show_cut_decorator:
+        CutDecorator.install(bpy.context)
+    else:
+        CutDecorator.uninstall()
+
 
 
 def update_search_name(self: "BIMModelProperties", context: bpy.types.Context) -> None:
@@ -239,6 +247,17 @@ class BIMModelProperties(PropertyGroup):
         name="Show Slab Direction",
         default=False,
         update=update_slab_direction_decorator,
+    )
+    show_cut_decorator: bpy.props.BoolProperty(
+        name="Show Cut Decorator",
+        default=True,
+        update=update_cut_decorator,
+        description="Shows the cut decorator",
+    )
+    show_cut_decorator_fill: bpy.props.BoolProperty(
+        name="Show Cut Decorator Fill",
+        default=True,
+        description="Show Cut Decorator Fill",
     )
 
     if TYPE_CHECKING:

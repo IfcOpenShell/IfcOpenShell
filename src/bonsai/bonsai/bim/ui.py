@@ -1315,7 +1315,9 @@ class BIM_PT_decorators_overlay(Panel):
         row.prop(model_props, "show_wall_axis", text="Wall Axis")
         row = col.row(align=True)
         row.prop(model_props, "show_slab_direction", text="Slab Direction")
-
+        row = col.row(align=True)
+        row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
+        row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")
 
 class BIM_PT_snappping(Panel):
     bl_space_type = "VIEW_3D"

@@ -2114,8 +2114,9 @@ class ActivateModel(bpy.types.Operator):
     def execute(self, context):
         dprops = tool.Drawing.get_document_props()
         dprops.active_drawing_id = 0
-
-        CutDecorator.uninstall()
+        model_props = tool.Model.get_model_props()
+        if model_props.show_cut_decorator:
+            CutDecorator.uninstall()
 
         # Preserve current visibility statuses for:
         # - non-ifc objects
@@ -2208,7 +2209,9 @@ class ActivateDrawingBase(tool.Ifc.Operator):
 
         if tool.Drawing.is_camera_orthographic():
             core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
-        CutDecorator.install(context)
+        model_props = tool.Model.get_model_props()
+        if model_props.show_cut_decorator:
+            CutDecorator.install(context)
         tool.Drawing.show_decorations()
 
         # Save drawing bounds to the .ifc file

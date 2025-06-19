@@ -1700,11 +1700,12 @@ class CutDecorator:
         self.shader.bind()
 
         black = (0, 0, 0, 1)
-
-        for colour, element_fills in fills.items():
-            for verts_tris in element_fills:
-                for verts, tris in verts_tris:
-                    self.draw_batch("TRIS", verts, colour, tris)
+        model_props = tool.Model.get_model_props()
+        if model_props.show_cut_decorator_fill:
+            for colour, element_fills in fills.items():
+                for verts_tris in element_fills:
+                    for verts, tris in verts_tris:
+                        self.draw_batch("TRIS", verts, colour, tris)
 
         gpu.state.point_size_set(2)
         self.line_shader.uniform_float("lineWidth", 3.0)
