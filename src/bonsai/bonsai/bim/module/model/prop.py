@@ -113,12 +113,12 @@ def update_slab_direction_decorator(self: "BIMModelProperties", context: bpy.typ
     else:
         SlabDirectionDecorator.uninstall()
 
+
 def update_cut_decorator(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     if self.show_cut_decorator:
         CutDecorator.install(bpy.context)
     else:
         CutDecorator.uninstall()
-
 
 
 def update_search_name(self: "BIMModelProperties", context: bpy.types.Context) -> None:

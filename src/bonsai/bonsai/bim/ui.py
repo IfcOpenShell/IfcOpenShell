@@ -1319,6 +1319,7 @@ class BIM_PT_decorators_overlay(Panel):
         row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
         row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")
 
+
 class BIM_PT_snappping(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "HEADER"
