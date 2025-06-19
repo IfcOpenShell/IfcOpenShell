@@ -93,7 +93,7 @@ class Blender(bonsai.core.tool.Blender):
 
     - (identifier, name, description, icon, number)
     """
-    BLENDER_ENUM_ITEMS = list[BLENDER_ENUM_ITEM]
+    BLENDER_ENUM_ITEMS = Iterable[BLENDER_ENUM_ITEM]
 
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:

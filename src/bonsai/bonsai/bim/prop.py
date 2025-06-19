@@ -84,7 +84,13 @@ def cache_string(s: Any) -> str:
 cache_string.data: dict[str, str] = {}
 
 
-def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    if "EnumData" not in globals() or TYPE_CHECKING:
+        from bonsai.bim.ui import EnumData
+
+    if dynamic_identifier := prop.enum_items_dynamic:
+        return EnumData.get_data(dynamic_identifier)
+
     # Support weird buildingSMART dictionary mappings which behave like enums
     items: list[tuple[str, str, str]] = []
     data = json.loads(prop.enum_items)
@@ -314,6 +320,11 @@ class Attribute(PropertyGroup):
         name="Value", description=tooltip, get=get_length_value, set=set_length_value, unit="LENGTH"
     )
     enum_items: StringProperty(name="Value")
+    """Json serialized mapping of enum items:
+        Typically a dictionary of string identifiers to item names.
+    """
+    enum_items_dynamic: StringProperty()
+    """Dynamic enum items identifier."""
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
     filepath_value: PointerProperty(type=MultipleFileSelect)
@@ -343,6 +354,7 @@ class Attribute(PropertyGroup):
         float_value: float
         length_value: float
         enum_items: str
+        enum_items_dynamic: str
         enum_descriptions: bpy.types.bpy_prop_collection_idprop[StrProperty]
         enum_value: str
         filepath_value: MultipleFileSelect
@@ -365,7 +377,11 @@ class Attribute(PropertyGroup):
             return self.string_value.replace("\\n", "\n")
         if self.data_type == "file":
             return [f.name for f in self.filepath_value.file_list]
-        value = getattr(self, str(self.get_value_name()), None)
+        value_name = self.get_value_name()
+        if value_name == "enum_value":
+            value = tool.Blender.get_enum_safe(self, "enum_value")
+        else:
+            value = getattr(self, value_name, None)
         if self.special_type == "LOGICAL" and value != "UNKNOWN":
             # IfcOpenShell expects bool if IfcLogical is True/False.
             value = value == "TRUE"

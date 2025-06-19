@@ -26,6 +26,7 @@ from typing import Union, Any, TYPE_CHECKING, Literal, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.owner.prop import BIMOwnerProperties
+    from bonsai.bim.prop import Attribute
 
 
 class Owner(bonsai.core.tool.Owner):
@@ -327,10 +328,23 @@ class Owner(bonsai.core.tool.Owner):
         application = tool.Ifc.get().by_id(props.active_application_id)
         props.application_attributes.clear()
 
-        bonsai.bim.helper.import_attributes("IfcApplication", props.application_attributes, application.get_info())
+        def callback(name: str, prop: Union[Attribute, None], data: dict[str, Any]):
+            if name == "ApplicationDeveloper":
+                new = props.application_attributes.add()
+                new.name = name
+                new.data_type = "enum"
+                new.is_optional = False
+                new.enum_items_dynamic = "organizations"
+                new.enum_value = str(data["ApplicationDeveloper"].id())
+                return True
+
+        bonsai.bim.helper.import_attributes(
+            "IfcApplication", props.application_attributes, application.get_info(), callback
+        )
 
     @classmethod
     def export_application_attributes(cls) -> dict[str, Any]:
         props = cls.get_owner_props()
         attributes = bonsai.bim.helper.export_attributes(props.application_attributes)
+        bonsai.bim.helper.process_exported_entity_attribute(attributes, "ApplicationDeveloper")
         return attributes

@@ -273,6 +273,15 @@ def export_attributes(
     return attributes
 
 
+def process_exported_entity_attribute(attributes: dict[str, Any], attribute_name: str) -> None:
+    entity_id = attributes[attribute_name]
+    if entity_id is None:
+        # Maybe it was removed by now and enum is invalid.
+        del attributes[attribute_name]
+    else:
+        attributes[attribute_name] = tool.Ifc.get().by_id(int(entity_id))
+
+
 ENUM_ITEMS_DATA = Union[bpy.types.PropertyGroup, bpy.types.ID, bpy.types.Operator, bpy.types.OperatorProperties]
 
 
