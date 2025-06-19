@@ -86,7 +86,7 @@ cache_string.data: dict[str, str] = {}
 
 def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     # Support weird buildingSMART dictionary mappings which behave like enums
-    items = []
+    items: list[tuple[str, str, str]] = []
     data = json.loads(prop.enum_items)
 
     if isinstance(data, dict):

@@ -31,6 +31,7 @@ import bonsai.bim.helper
 from typing import Any, Union, Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.georeference.prop import BIMGeoreferenceProperties
 
 
@@ -53,7 +54,7 @@ class Georeference(bonsai.core.tool.Georeference):
     def import_projected_crs(cls) -> None:
         props = tool.Georeference.get_georeference_props()
 
-        def callback(name, prop, data):
+        def callback(name: str, prop: Union[Attribute, None], data: dict[str, Any]) -> Union[bool, None]:
             if name == "MapUnit":
                 new = props.projected_crs.add()
                 new.name = name
@@ -181,10 +182,11 @@ class Georeference(bonsai.core.tool.Georeference):
 
     @classmethod
     def export_projected_crs(cls) -> dict[str, Any]:
-        def callback(attributes, prop):
+        def callback(attributes: dict[str, Any], prop: Attribute) -> bool:
             if not prop.is_null and prop.name == "MapUnit":
                 attributes[prop.name] = tool.Ifc.get().by_id(int(prop.enum_value))
                 return True
+            return False
 
         props = cls.get_georeference_props()
         return bonsai.bim.helper.export_attributes(props.projected_crs, callback=callback)
@@ -193,12 +195,13 @@ class Georeference(bonsai.core.tool.Georeference):
     def export_coordinate_operation(cls) -> dict[str, Any]:
         measure_type = None
 
-        def callback(attributes, prop):
-            global measure_type
+        def callback(attributes: dict[str, Any], prop: Attribute) -> bool:
+            nonlocal measure_type
             if prop.name == "Measure Type":
                 measure_type = prop.get_value()
                 return True
             elif prop.name in ("FirstCoordinate", "SecondCoordinate"):
+                assert measure_type
                 attributes[prop.name] = tool.Ifc.get().create_entity(measure_type, float(prop.string_value))
                 return True
             elif prop.name == "XAxisAbscissa":
@@ -216,6 +219,7 @@ class Georeference(bonsai.core.tool.Georeference):
                 # We store our floats as string to prevent single precision data loss
                 attributes[prop.name] = float(prop.string_value)
                 return True
+            return False
 
         props = cls.get_georeference_props()
         return bonsai.bim.helper.export_attributes(props.coordinate_operation, callback=callback)
