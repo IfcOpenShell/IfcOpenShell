@@ -845,22 +845,6 @@ class PolylineDecorator:
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], axis_color, [(0, 1)])
 
-        # # Lines for X, Y, Z of single measure
-        # if polyline_data and polyline_data.measurement_type == "SINGLE":
-        #     axis, _ = self.calculate_measurement_x_y_and_z(context)
-        #     x_axis, y_axis, z_axis = axis
-        #     self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
-        #     self.draw_batch("LINES", [*y_axis], decorator_color_y_axis, [(0, 1)])
-        #     self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
-
-        # # Area highlight
-        # if polyline_data:
-        #     area = polyline_data.area.split(" ")[0]
-        #     if polyline_data.measurement_type == "POLY_AREA" and area:
-        #         if float(area) > 0:
-        #             tris = self.calculate_polygon(polyline_verts)["tris"]
-        #             self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
-
         # Mouse points
         if snap_prop.snap_type in ["Plane", "Axis", "Mix"]:
             self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
