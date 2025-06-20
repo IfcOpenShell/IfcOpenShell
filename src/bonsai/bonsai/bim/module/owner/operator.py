@@ -493,11 +493,7 @@ class RemoveApplication(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         application = ifc_file.by_id(application_id)
 
-        application_info = "Additional application info:"
-        application_info += f"\n- Developer: {application.ApplicationDeveloper.Name}"
-        application_info += f"\n- Version: {application.Version}"
-        application_info += f"\n- Identifier: {application.ApplicationIdentifier}"
-        application_info += f"\n- Number of inverses: {ifc_file.get_total_inverses(application)}"
+        application_info = f"Number of inverses: {ifc_file.get_total_inverses(application)}"
         application_info += f"\n(try to remove application to see the full list of inverses in system console)"
 
         description += f"\n\n{application_info}"
