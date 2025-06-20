@@ -4,6 +4,7 @@ import bpy
 import bonsai.core.ifcgit as core
 import bonsai.tool as tool
 from bonsai.bim.module.ifcgit.data import IfcGitData, refresh
+from typing import TYPE_CHECKING
 
 
 class CreateRepo(bpy.types.Operator):
@@ -410,11 +411,19 @@ class InstallGit(bpy.types.Operator):
 
 
 class RunGitDiff(bpy.types.Operator):
-    """Run `git diff` for the current version of IFC file and the last saved one."""
 
     bl_label = "Git Diff"
     bl_idname = "ifcgit.git_diff"
+    bl_description = (
+        "Run `git diff` for the current version of IFC file and the last saved one.\n\n"
+        "ALT+click to save output to temp directory."
+    )
     bl_options = set()
+
+    save_to_temp: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        save_to_temp: bool
 
     @classmethod
     def poll(cls, context):
@@ -426,6 +435,11 @@ class RunGitDiff(bpy.types.Operator):
             return False
         return True
 
+    def invoke(self, context, event):
+        if event.alt:
+            self.save_to_temp = True
+        return self.execute(context)
+
     def execute(self, context):
-        core.run_git_diff(tool.IfcGit, self)
+        core.run_git_diff(tool.IfcGit, self, self.save_to_temp)
         return {"FINISHED"}

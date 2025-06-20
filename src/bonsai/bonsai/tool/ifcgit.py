@@ -22,9 +22,11 @@ import re
 import subprocess
 import bpy
 import logging
+import tempfile
 from bonsai.bim import import_ifc
 from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
+from pathlib import Path
 from typing import TYPE_CHECKING, Union, Literal, Any
 
 # allows git import even if git executable isn't found
@@ -582,21 +584,27 @@ class IfcGit:
             operator.report({"ERROR"}, "Winget is not available. Make sure Windows Package Manager is installed.")
 
     @classmethod
-    def run_git_diff(cls, operator: bpy.types.Operator) -> None:
+    def run_git_diff(cls, operator: bpy.types.Operator, save_to_temp: bool) -> None:
         path = tool.Ifc.get_path()
         ifc_file = tool.Ifc.get()
         ifc_str = ifc_file.to_string()
 
+        color = "never" if save_to_temp else "always"
         # Avoid `text=True` as it's causing issues with colorful output.
         try:
             subprocess.check_output(
-                ("git", "diff", "--no-index", "--color=always", "--", path, "-"),
+                ("git", "diff", "--no-index", f"--color={color}", "--", path, "-"),
                 input=ifc_str.encode(),
             )
         except subprocess.CalledProcessError as e:
             if e.returncode == 1:
-                print(e.stdout.decode())
-                operator.report({"INFO"}, "See system console for git diff output.")
+                if save_to_temp:
+                    temp_path = Path(tempfile.gettempdir()) / "bonsai.diff"
+                    temp_path.write_bytes(e.stdout)
+                    operator.report({"INFO"}, f"Git diff output is saved to {temp_path}.")
+                else:
+                    print(e.stdout.decode())
+                    operator.report({"INFO"}, "See system console for git diff output.")
                 return
             print(e.output)
             raise Exception("Error running git diff, see system console.")
