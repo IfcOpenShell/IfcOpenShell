@@ -233,7 +233,7 @@ class BIM_PT_owner(bpy.types.Panel):
             row = self.layout.row()
             row.prop(props, "user_organisation")
 
-        if OwnerData.data["can_add_user"]:
+        if OwnerData.data["user_organisation"] and OwnerData.data["user_person"]:
             row = self.layout.row()
             op = row.operator("bim.add_person_and_organisation", icon="ADD")
             op.person = int(props.user_person)
