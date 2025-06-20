@@ -374,6 +374,8 @@ class SheetBuilder:
             if "filter" in attrib:
                 # example use "#fill-background" filter
                 attrib["filter"] = replace_urls(attrib["filter"])
+            if "style" in attrib:
+                attrib["style"] = replace_urls(attrib["style"])
             if svg_element.tag == f"{SVG}use":
                 href_attrib = f"{XLINK}href"
                 if href_attrib in attrib:
