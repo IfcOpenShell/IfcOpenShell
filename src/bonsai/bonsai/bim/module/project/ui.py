@@ -635,7 +635,7 @@ class BIM_PT_purge(Panel):
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
         layout.operator("bim.purge_unused_openings", text="Purge Unused Openings in Selected Objects")
 
-        MERGEABLE_OBJECT_TYPES = ("MATERIAL", "STYLE", "ORGANIZATION", "APPLICATION")
+        MERGEABLE_OBJECT_TYPES = ("MATERIAL", "STYLE", "ORGANIZATION", "APPLICATION", "PERSON")
 
         for object_type in MERGEABLE_OBJECT_TYPES:
             row = layout.row(align=True)
