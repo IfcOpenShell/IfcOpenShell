@@ -44,6 +44,9 @@ def purge_unused_elements(ifc: type[tool.Ifc], debug: type[tool.Debug], ifc_clas
     elif ifc_class == "IfcPerson":
         for element in unused_elements:
             ifc.run("owner.remove_person", person=element)
+    elif ifc_class == "IfcPersonAndOrganization":
+        for element in unused_elements:
+            ifc.run("owner.remove_person_and_organisation", person_and_organisation=element)
     else:
         debug.remove_unused_elements(unused_elements)
     return unused_elements_amount

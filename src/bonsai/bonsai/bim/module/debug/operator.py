@@ -766,10 +766,12 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
             purged = core.purge_unused_elements(tool.Ifc, tool.Debug, "IfcApplication")
         elif object_type == "PERSON":
             purged = core.purge_unused_elements(tool.Ifc, tool.Debug, "IfcPerson")
+        elif object_type == "PERSON_AND_ORGANIZATION":
+            purged = core.purge_unused_elements(tool.Ifc, tool.Debug, "IfcPersonAndOrganization")
         else:
             assert_never(object_type)
 
-        self.report({"INFO"}, f"{purged} unused {object_type.lower()}s were purged.")
+        self.report({"INFO"}, f"{purged} unused {object_type.replace('_', ' ').lower()}s were purged.")
 
         if purged == 0:
             return
@@ -798,7 +800,7 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         merged_data = tool.Debug.merge_identical_objects(object_type)
-        plural_object_type = f"{object_type.lower()}s"
+        plural_object_type = f"{object_type.lower().replace('_', ' ')}s"
         if merged_data:
             for element_type, element_names in merged_data.items():
                 print(f"- {element_type}:")

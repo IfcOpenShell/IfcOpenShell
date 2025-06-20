@@ -125,7 +125,14 @@ class Debug(bonsai.core.tool.Debug):
     @classmethod
     def merge_identical_objects(
         cls,
-        object_type: Literal["STYLE", "MATERIAL", "ORGANIZATION", "APPLICATION", "PERSON"],
+        object_type: Literal[
+            "STYLE",
+            "MATERIAL",
+            "ORGANIZATION",
+            "APPLICATION",
+            "PERSON",
+            "PERSON_AND_ORGANIZATION",
+        ],
     ) -> dict[str, list[str]]:
         """Merge identical objects.
 
@@ -137,6 +144,9 @@ class Debug(bonsai.core.tool.Debug):
             if object_type == "APPLICATION":
                 # To avoid disruption let user merge organizations separately.
                 data["ApplicationDeveloper"] = element.ApplicationDeveloper.id()
+            elif object_type == "PERSON_AND_ORGANIZATION":
+                data["ThePerson"] = element.ThePerson.id()
+                data["TheOrganization"] = element.TheOrganization.id()
             return hash(json.dumps(data, sort_keys=True))
 
         ifc_file = tool.Ifc.get()
@@ -155,8 +165,13 @@ class Debug(bonsai.core.tool.Debug):
             element_types = ["IfcApplication"]
         elif object_type == "PERSON":
             element_types = ["IfcPerson"]
+        elif object_type == "PERSON_AND_ORGANIZATION":
+            element_types = ["IfcPersonAndOrganization"]
         else:
             assert_never(object_type)
+
+        def get_person_name(person: ifcopenshell.entity_instance) -> str:
+            return f"{person.Identification} / {person.FamilyName} / {person.GivenName}"
 
         for element_type in element_types:
             elements = ifc_file.by_type(element_type, include_subtypes=False)
@@ -167,9 +182,11 @@ class Debug(bonsai.core.tool.Debug):
                 # Except for styles, ignore unnamed elements as they may be not safe to merge
                 merge_optional_names = ("STYLE", "PERSON")
                 not_optional_name = ("APPLICATION", "ORGANIZATION")
+                has_no_name = ("PERSON_AND_ORGANIZATION",)
                 if (
                     object_type not in merge_optional_names
                     and object_type not in not_optional_name
+                    and object_type not in has_no_name
                     and not element.Name
                 ):
                     continue
@@ -216,10 +233,14 @@ class Debug(bonsai.core.tool.Debug):
                 elif object_type == "PERSON":
                     for person in elements[1:]:
                         ifcopenshell.util.element.replace_element(person, main_element)
-                        merged_elements_names.append(
-                            f"{person.Identification} / {person.FamilyName} / {person.GivenName}"
-                        )
+                        merged_elements_names.append(get_person_name(person))
                         ifcopenshell.api.owner.remove_person(ifc_file, person)
+
+                elif object_type == "PERSON_AND_ORGANIZATION":
+                    for pao in elements[1:]:
+                        ifcopenshell.util.element.replace_element(pao, main_element)
+                        merged_elements_names.append(f"{get_person_name(pao.ThePerson)} / {pao.TheOrganization.Name}")
+                        ifcopenshell.api.owner.remove_person_and_organisation(ifc_file, pao)
 
                 else:
                     assert_never(object_type)
@@ -228,7 +249,16 @@ class Debug(bonsai.core.tool.Debug):
                 merged_element_types[element_type] = merged_elements_names
         return merged_element_types
 
-    PurgeMergeObjectType = Literal["TYPE", "PROFILE", "STYLE", "MATERIAL", "ORGANIZATION", "APPLICATION", "PERSON"]
+    PurgeMergeObjectType = Literal[
+        "TYPE",
+        "PROFILE",
+        "STYLE",
+        "MATERIAL",
+        "ORGANIZATION",
+        "APPLICATION",
+        "PERSON",
+        "PERSON_AND_ORGANIZATION",
+    ]
 
     @classmethod
     def refresh_ui_after_purge_merge(cls, object_type: PurgeMergeObjectType) -> None:
@@ -258,5 +288,9 @@ class Debug(bonsai.core.tool.Debug):
             props = tool.Owner.get_owner_props()
             if tool.Ifc.get_entity_by_id(props.active_person_id) is None:
                 tool.Owner.clear_person()
+        elif object_type == "PERSON_AND_ORGANIZATION":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_person_id) is None:
+                tool.Owner.clear_user()
         else:
             assert_never(object_type)
