@@ -136,13 +136,12 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
 
     @classmethod
     def poll(cls, context):
-        is_view_3d = context.space_data.type == "VIEW_3D"
-        walls = True
+        if not (space := context.space_data) or space.type != "VIEW_3D":
+            return False
         for obj in context.selected_objects:
-            if not tool.Ifc.get_entity(obj).is_a("IfcWall"):
-                walls = False
-
-        return bool(context.selected_objects) and is_view_3d and walls
+            if not (element := tool.Ifc.get_entity(obj)) or not element.is_a("IfcWall"):
+                return False
+        return bool(context.selected_objects)
 
     def __init__(self):
         super().__init__()
