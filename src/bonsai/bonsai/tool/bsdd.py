@@ -1,3 +1,22 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
 import bonsai.core.tool
 import bonsai.tool as tool
 import bpy
@@ -8,6 +27,9 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 from typing import Any, Union, Optional, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.bsdd.prop import BIMBSDDProperties
+
 
 class Bsdd(bonsai.core.tool.Bsdd):
     identifier_url = "https://identifier.buildingsmart.org"
@@ -16,28 +38,29 @@ class Bsdd(bonsai.core.tool.Bsdd):
     bsdd_properties: dict[str, dict] = {}
 
     @classmethod
-    def get_bsdd_props(cls):
-        return bpy.context.scene.BIMBSDDProperties
+    def get_bsdd_props(cls) -> BIMBSDDProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMBSDDProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def clear_class_psets(cls) -> None:
-        bpy.context.scene.BIMBSDDProperties.classification_psets.clear()
+        cls.get_bsdd_props().classification_psets.clear()
 
     @classmethod
     def clear_classes(cls) -> None:
-        bpy.context.scene.BIMBSDDProperties.classifications.clear()
+        cls.get_bsdd_props().classifications.clear()
 
     @classmethod
     def clear_properties(cls) -> None:
-        bpy.context.scene.BIMBSDDProperties.properties.clear()
+        cls.get_bsdd_props().properties.clear()
 
     @classmethod
     def clear_dictionaries(cls) -> None:
-        bpy.context.scene.BIMBSDDProperties.dictionaries.clear()
+        cls.get_bsdd_props().dictionaries.clear()
 
     @classmethod
     def create_class_psets(cls, pset_dict: dict[str, dict[str, Any]]) -> None:
-        props = bpy.context.scene.BIMBSDDProperties
+        props = cls.get_bsdd_props()
         data_type_map = {
             "String": "string",
             "Real": "float",
@@ -60,7 +83,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
     @classmethod
     def create_dictionaries(cls, dictionaries: list[bsdd.DictionaryContractV1]) -> None:
-        props = bpy.context.scene.BIMBSDDProperties
+        props = cls.get_bsdd_props()
         for dictionary in sorted(dictionaries, key=lambda d: d["name"]):
             new = props.dictionaries.add()
             new.name = dictionary["name"]
@@ -72,7 +95,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
     @classmethod
     def get_active_class_data(cls) -> Union[bsdd.ClassContractV1, dict]:
-        prop = bpy.context.scene.BIMBSDDProperties
+        prop = cls.get_bsdd_props()
         bsdd_classification = prop.classifications[prop.active_classification_index]
         if not bsdd_classification:
             return {}
@@ -80,18 +103,18 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
     @classmethod
     def get_active_dictionary_uri(cls) -> str:
-        return bpy.context.scene.BIMBSDDProperties.active_uri
+        return cls.get_bsdd_props().active_uri
 
     @classmethod
     def get_dictionary(cls, uri: str) -> bsdd.DictionaryContractV1:
-        props = bpy.context.scene.BIMBSDDProperties
+        props = cls.get_bsdd_props()
         response = cls.client.get_dictionary(dictionary_uri=uri, include_test_dictionaries=props.load_test_dictionaries)
         if dicts := response.get("dictionaries"):
             return dicts[0]
 
     @classmethod
     def get_dictionaries(cls) -> list[bsdd.DictionaryContractV1]:
-        props = bpy.context.scene.BIMBSDDProperties
+        props = cls.get_bsdd_props()
         response = cls.client.get_dictionary(include_test_dictionaries=props.load_test_dictionaries)
         dicts = response.get("dictionaries") or []
         statuses = ["Active"]
@@ -165,7 +188,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
         limit: int = 100,
         should_paginate: bool = True,
     ):
-        cprops = bpy.context.scene.BIMClassificationProperties
+        cprops = tool.Classification.get_classification_props()
         bprops = cls.get_bsdd_props()
         dictionary_uris = (
             [d.uri for d in bprops.dictionaries if d.is_active]
@@ -202,13 +225,13 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
     @classmethod
     def set_active_bsdd(cls, name: str, uri: str) -> None:
-        props = bpy.context.scene.BIMBSDDProperties
+        props = cls.get_bsdd_props()
         props.active_dictionary = name
         props.active_uri = uri
 
     @classmethod
     def should_filter_ifc_class(cls) -> bool:
-        return bpy.context.scene.BIMBSDDProperties.should_filter_ifc_class
+        return cls.get_bsdd_props().should_filter_ifc_class
 
     @classmethod
     def get_bsdd_class(cls, uri: str) -> dict:

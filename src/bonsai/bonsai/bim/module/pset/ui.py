@@ -255,7 +255,7 @@ class BIM_PT_object_psets(Panel):
             ObjectPsetsData.load()
 
         props = context.active_object.PsetProperties
-        self.bprops = context.scene.BIMBSDDProperties
+        self.bprops = tool.Bsdd.get_bsdd_props()
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         if props.pset_name != "BBIM_BSDD" and not props.pset_name.startswith(tool.Bsdd.identifier_url):

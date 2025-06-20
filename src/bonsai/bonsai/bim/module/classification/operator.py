@@ -47,7 +47,7 @@ class AddClassification(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         ifcopenshell.api.classification.add_classification(
             tool.Ifc.get(),
             classification=IfcStore.classification_file.by_id(int(props.available_classifications)),
@@ -60,7 +60,7 @@ class AddManualClassification(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         attributes = bonsai.bim.helper.export_attributes(props.classification_attributes)
         classification = ifcopenshell.api.classification.add_classification(tool.Ifc.get(), classification="Unnamed")
         ifcopenshell.api.classification.edit_classification(
@@ -84,7 +84,7 @@ class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 objects = [context.active_object.name]
         else:
             objects = [self.obj]
-        props = context.scene.BIMClassificationReferenceProperties
+        props = tool.Classification.get_classification_reference_props()
         attributes = bonsai.bim.helper.export_attributes(props.reference_attributes)
         products = [
             tool.Ifc.get().by_id(ifc_definition_id)
@@ -110,7 +110,7 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        cprops = context.scene.BIMClassificationProperties
+        cprops = tool.Classification.get_classification_props()
         bprops = tool.Bsdd.get_bsdd_props()
         if cprops.classification_source == "BSDD":
             dictionaries = [d.uri for d in bprops.dictionaries if d.is_active]
@@ -142,7 +142,7 @@ class EnableAddingManualClassification(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         props.is_adding = True
         props.active_classification_id = 0
         props.classification_attributes.clear()
@@ -156,7 +156,7 @@ class DisableAddingManualClassification(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         props.is_adding = False
         return {"FINISHED"}
 
@@ -167,7 +167,7 @@ class EnableAddingManualClassificationReference(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMClassificationReferenceProperties
+        props = tool.Classification.get_classification_reference_props()
         props.is_adding = True
         props.reference_attributes.clear()
         bonsai.bim.helper.import_attributes2("IfcClassificationReference", props.reference_attributes)
@@ -180,7 +180,7 @@ class DisableAddingManualClassificationReference(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMClassificationReferenceProperties
+        props = tool.Classification.get_classification_reference_props()
         props.is_adding = False
         return {"FINISHED"}
 
@@ -203,7 +203,7 @@ class EnableEditingClassification(bpy.types.Operator):
                 new.string_value = "" if new.is_null else json.dumps(data[name])
                 return True
 
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         props.classification_attributes.clear()
         bonsai.bim.helper.import_attributes2(
             tool.Ifc.get().by_id(self.classification), props.classification_attributes, callback
@@ -218,7 +218,8 @@ class DisableEditingClassification(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMClassificationProperties.active_classification_id = 0
+        props = tool.Classification.get_classification_props()
+        props.active_classification_id = 0
         return {"FINISHED"}
 
 
@@ -246,7 +247,7 @@ class EditClassification(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
 
         def callback(attributes, prop):
             if prop.name == "ReferenceTokens":
@@ -271,7 +272,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        props = context.scene.BIMClassificationReferenceProperties
+        props = tool.Classification.get_classification_reference_props()
         props.reference_attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.reference), props.reference_attributes)
         props.active_reference_id = self.reference
@@ -285,7 +286,7 @@ class DisableEditingClassificationReference(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        context.scene.BIMClassificationReferenceProperties.active_reference_id = 0
+        tool.Classification.get_classification_reference_props().active_reference_id = 0
         return {"FINISHED"}
 
 
@@ -337,7 +338,7 @@ class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMClassificationReferenceProperties
+        props = tool.Classification.get_classification_reference_props()
         attributes = bonsai.bim.helper.export_attributes(props.reference_attributes)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.classification.edit_reference(
@@ -364,7 +365,7 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 objects = [context.active_object.name]
         else:
             objects = [self.obj]
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         classification = None
         classification_name = IfcStore.classification_file.by_id(int(props.available_classifications)).Name
         for element in tool.Ifc.get().by_type("IfcClassification"):
@@ -405,8 +406,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 objects = [context.active_object.name]
         else:
             objects = [self.obj]
-        props = context.scene.BIMClassificationProperties
-        bprops = context.scene.BIMBSDDProperties
+        bprops = tool.Bsdd.get_bsdd_props()
         use_only_ifc_properties: bool = bprops.use_only_ifc_properties
 
         bsdd_classification = bprops.classifications[bprops.active_classification_index]
@@ -487,7 +487,7 @@ class ChangeClassificationLevel(bpy.types.Operator):
     parent_id: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         props.available_library_references.clear()
         for reference in IfcStore.classification_file.by_id(self.parent_id).HasReferences:
             new = props.available_library_references.add()
@@ -509,6 +509,6 @@ class DisableEditingClassificationReferences(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         props.available_library_references.clear()
         return {"FINISHED"}

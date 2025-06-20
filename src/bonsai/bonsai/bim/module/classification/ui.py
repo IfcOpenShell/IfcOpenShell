@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -27,6 +28,10 @@ from bonsai.bim.module.classification.data import (
     MaterialClassificationsData,
     CostClassificationsData,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.classification.prop import BIMClassificationProperties, ClassificationReference
 
 
 class BIM_PT_classifications(Panel):
@@ -46,7 +51,8 @@ class BIM_PT_classifications(Panel):
         if not ClassificationsData.is_loaded:
             ClassificationsData.load()
 
-        self.props = context.scene.BIMClassificationProperties
+        self.props = tool.Classification.get_classification_props()
+        assert self.layout
 
         row = self.layout.row(align=True)
         row.label(text="Source", icon="OUTLINER")
@@ -110,9 +116,9 @@ class ReferenceUI:
 
     def draw_ui(self, context):
         obj = context.active_object
-        self.sprops = context.scene.BIMClassificationProperties
-        self.bprops = context.scene.BIMBSDDProperties
-        self.props = context.scene.BIMClassificationReferenceProperties
+        self.sprops = tool.Classification.get_classification_props()
+        self.bprops = tool.Bsdd.get_bsdd_props()
+        self.props = tool.Classification.get_classification_reference_props()
         self.file = tool.Ifc.get()
 
         self.draw_add_ui(context)
@@ -315,7 +321,16 @@ class BIM_PT_cost_classifications(Panel, ReferenceUI):
 
 
 class BIM_UL_classifications(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMClassificationProperties,
+        item: ClassificationReference,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             if item.has_references:
                 op = layout.operator("bim.change_classification_level", text="", icon="DISCLOSURE_TRI_RIGHT")

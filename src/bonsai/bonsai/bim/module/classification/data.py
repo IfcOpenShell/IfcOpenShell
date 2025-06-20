@@ -83,7 +83,7 @@ class ReferencesData:
     def active_classification_library(cls):
         if not IfcStore.classification_file or not IfcStore.classification_file.by_type("IfcClassification"):
             return False
-        props = bpy.context.scene.BIMClassificationProperties
+        props = tool.Classification.get_classification_props()
         name = IfcStore.classification_file.by_id(int(props.available_classifications)).Name
         if name in [e.Name for e in tool.Ifc.get().by_type("IfcClassification")]:
             return name

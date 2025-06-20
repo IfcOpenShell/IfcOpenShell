@@ -31,7 +31,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Union
+from typing import Union, TYPE_CHECKING, Literal
 
 
 def get_active_dictionary(self, context):
@@ -54,27 +54,41 @@ def update_active_class_index(self: "BIMBSDDProperties", context: bpy.types.Cont
 
 
 class BSDDDictionary(PropertyGroup):
-    name: StringProperty(name="Name")
     uri: StringProperty(name="URI")
     default_language_code: StringProperty(name="Language")
     organization_name_owner: StringProperty(name="Organization")
     status: StringProperty(name="Status")
     version: StringProperty(name="Version")
     is_active: BoolProperty(
-        name="Is Active", description="Enable to search with this dictionary", default=False, update=update_is_active
+        name="Is Active",
+        description="Enable to search with this dictionary",
+        default=False,
+        update=update_is_active,
     )
+
+    if TYPE_CHECKING:
+        uri: str
+        default_language_code: str
+        organization_name_owner: str
+        status: str
+        version: str
+        is_active: bool
 
 
 class BSDDClassification(PropertyGroup):
-    name: StringProperty(name="Name")
     reference_code: StringProperty(name="Reference Code")
     uri: StringProperty(name="URI")
     dictionary_name: StringProperty(name="Dictionary Name")
     dictionary_namespace_uri: StringProperty(name="Dictionary Namespace URI")
 
+    if TYPE_CHECKING:
+        reference_code: str
+        uri: str
+        dictionary_name: str
+        dictionary_namespace_uri: str
+
 
 class BSDDProperty(PropertyGroup):
-    name: StringProperty(name="Name")
     code: StringProperty(name="Code")
     uri: StringProperty(name="URI")
     pset: StringProperty(name="Pset")
@@ -82,10 +96,18 @@ class BSDDProperty(PropertyGroup):
         name="Is Selected", description="Select to add or edit this property", default=False, update=update_is_selected
     )
 
+    if TYPE_CHECKING:
+        code: str
+        uri: str
+        pset: str
+        is_selected: bool
+
 
 class BSDDPset(PropertyGroup):
-    name: StringProperty(name="Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
+
+    if TYPE_CHECKING:
+        properties: bpy.types.bpy_prop_collection_idprop[Attribute]
 
 
 class BIMBSDDProperties(PropertyGroup):
@@ -130,6 +152,28 @@ class BIMBSDDProperties(PropertyGroup):
         name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
     )
     classification_psets: CollectionProperty(name="Classification Psets", type=BSDDPset)
+
+    if TYPE_CHECKING:
+        active_dictionary: str
+        active_dictionary: str
+        active_uri: str
+        dictionaries: bpy.types.bpy_prop_collection_idprop[BSDDDictionary]
+        active_dictionary_index: int
+        classifications: bpy.types.bpy_prop_collection_idprop[BSDDClassification]
+        active_classification_index: int
+        property_filter_mode: Literal["CLASS", "KEYWORD"]
+        classes: bpy.types.bpy_prop_collection_idprop[BSDDClassification]
+        active_class_index: int
+        properties: bpy.types.bpy_prop_collection_idprop[BSDDProperty]
+        active_property_index: int
+        selected_properties: bpy.types.bpy_prop_collection_idprop[Attribute]
+        keyword: str
+        should_filter_ifc_class: bool
+        use_only_ifc_properties: bool
+        load_preview_dictionaries: bool
+        load_inactive_dictionaries: bool
+        load_test_dictionaries: bool
+        classification_psets: bpy.types.bpy_prop_collection_idprop[BSDDPset]
 
     @property
     def active_class(self) -> Union[BSDDClassification, None]:
