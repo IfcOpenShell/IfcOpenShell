@@ -691,7 +691,7 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Logger) -> None:
             else:
                 if hasattr(logger, "set_state"):
                     logger.set_state("instance", inst)
-                rule = "Rule IfcApplication.UR1:\n    The attribute ApplicationFullName should be unique"
+                rule = "Rule IfcApplication.UR2:\n    The attribute ApplicationFullName should be unique"
                 previous_element = used_names[app_name]
                 logger.error(
                     "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
@@ -708,7 +708,7 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Logger) -> None:
             else:
                 if hasattr(logger, "set_state"):
                     logger.set_state("instance", inst)
-                rule = "Rule IfcApplication.UR2:\n    The attribute ApplicationIdentifier should be unique"
+                rule = "Rule IfcApplication.UR1:\n    The attribute ApplicationIdentifier should be unique"
                 previous_element = used_ids[app_id]
                 logger.error(
                     "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
