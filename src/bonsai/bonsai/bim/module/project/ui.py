@@ -635,10 +635,17 @@ class BIM_PT_purge(Panel):
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
         layout.operator("bim.purge_unused_openings", text="Purge Unused Openings in Selected Objects")
 
-        MERGEABLE_OBJECT_TYPES = ("MATERIAL", "STYLE", "ORGANIZATION", "APPLICATION", "PERSON")
+        MERGEABLE_OBJECT_TYPES = (
+            "MATERIAL",
+            "STYLE",
+            "ORGANIZATION",
+            "APPLICATION",
+            "PERSON",
+            "PERSON_AND_ORGANIZATION",
+        )
 
         for object_type in MERGEABLE_OBJECT_TYPES:
             row = layout.row(align=True)
-            row.label(text=f"{object_type.capitalize()}:")
+            row.label(text=f"{object_type.replace('_', ' ').capitalize()}:")
             row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = object_type
             row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = object_type
