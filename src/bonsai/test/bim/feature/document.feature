@@ -14,15 +14,6 @@ Scenario: Load document
     When I press "bim.load_document(document={information})"
     Then nothing happens
 
-Scenario: Load parent document
-    Given an empty IFC project
-    And I press "bim.load_project_documents"
-    And I press "bim.add_information"
-    And the variable "information" is "{ifc}.by_type('IfcDocumentInformation')[-1].id()"
-    And I press "bim.load_document(document={information})"
-    When I press "bim.load_parent_document"
-    Then nothing happens
-
 Scenario: Disable document editing UI
     Given an empty IFC project
     And I press "bim.load_project_documents"

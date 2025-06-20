@@ -35,30 +35,69 @@ class DocumentData:
     @classmethod
     def load(cls):
         cls.data = {
-            "total_information": cls.total_information(),
-            "parent_document": cls.parent_document(),
+            "total_document_informations": cls.total_document_informations(),
+            "total_document_references": cls.total_document_references(),
+            "total_referenced_objects": cls.total_referenced_objects(),
+            "document_objects": cls.document_objects(),
         }
         cls.is_loaded = True
 
     @classmethod
-    def total_information(cls):
-        return len(
-            [
-                rel
-                for rel in tool.Ifc.get().by_type("IfcProject")[0].HasAssociations or []
-                if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument.is_a("IfcDocumentInformation")
-            ]
-        )
+    def total_document_informations(cls):
+        file = tool.Ifc.get()
+        info_count = len(file.by_type("IfcDocumentInformation"))
+        return info_count
 
     @classmethod
-    def parent_document(cls):
+    def total_document_references(cls):
+        file = tool.Ifc.get()
+        ref_count = len(file.by_type("IfcDocumentReference"))
+        return ref_count
+
+    @classmethod
+    def total_referenced_objects(cls):
+        file = tool.Ifc.get()
+        document_rels = file.by_type("IfcRelAssociatesDocument")
+        documented_objects = set()
+        for rel in document_rels:
+            for related_object in rel.RelatedObjects:
+                obj = tool.Ifc.get_object(related_object)
+                if obj:
+                    documented_objects.add(related_object.id())
+
+        return len(documented_objects)
+
+    @classmethod
+    def document_objects(cls):
+        document_objects = {}
+        file = tool.Ifc.get()
+
+        for rel in file.by_type("IfcRelAssociatesDocument"):
+            document_id = rel.RelatingDocument.id()
+            if document_id not in document_objects:
+                document_objects[document_id] = []
+
+            for related_object in rel.RelatedObjects:
+                element = related_object
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    document_objects[document_id].append({"id": element.id(), "name": obj.name, "obj": obj})
+
+        return document_objects
+
+    @classmethod
+    def load_document_objects_into_props(cls, document_id):
         props = tool.Document.get_document_props()
-        if len(props.breadcrumbs):
-            parent = tool.Ifc.get().by_id(int(props.breadcrumbs[-1].name))
-            if tool.Ifc.get_schema() == "IFC2X3":
-                return str(parent.DocumentId)
-            return str(parent.Identification)
-        return ""
+        props.document_objects.clear()
+
+        if "document_objects" not in cls.data or document_id not in cls.data["document_objects"]:
+            return
+
+        sorted_objects = sorted(cls.data["document_objects"][document_id], key=lambda x: x["name"].lower())
+
+        for obj_data in sorted_objects:
+            item = props.document_objects.add()
+            item.name = obj_data["name"]
 
 
 class ObjectDocumentData:
@@ -80,31 +119,47 @@ class ObjectDocumentData:
             return results
         for rel in getattr(element, "HasAssociations", []):
             if rel.is_a("IfcRelAssociatesDocument"):
-                if not rel.RelatingDocument.is_a("IfcDocumentReference"):
+                is_information = rel.RelatingDocument.is_a("IfcDocumentInformation")
+                is_reference = rel.RelatingDocument.is_a("IfcDocumentReference")
+
+                if not (is_information or is_reference):
                     continue
 
                 name = rel.RelatingDocument.Name
 
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    if not name and rel.RelatingDocument.ReferenceToDocument:
-                        name = rel.RelatingDocument.ReferenceToDocument[0].Name
+                location = None
+                identification = None
+                description = None
 
-                    identification = rel.RelatingDocument.ItemReference
-                    if not identification and rel.RelatingDocument.ReferenceToDocument:
-                        identification = rel.RelatingDocument.ReferenceToDocument[0].DocumentId
+                if is_information:
+                    if tool.Ifc.get_schema() == "IFC2X3":
+                        identification = rel.RelatingDocument.DocumentId
+                    else:
+                        identification = rel.RelatingDocument.Identification
 
-                    location = rel.RelatingDocument.Location
+                    location = getattr(rel.RelatingDocument, "Location", None)
+
                 else:
-                    if not name and rel.RelatingDocument.ReferencedDocument:
-                        name = rel.RelatingDocument.ReferencedDocument.Name
+                    description = rel.RelatingDocument.Description
+                    if tool.Ifc.get_schema() == "IFC2X3":
+                        if not name and rel.RelatingDocument.ReferenceToDocument:
+                            name = rel.RelatingDocument.ReferenceToDocument[0].Name
 
-                    identification = rel.RelatingDocument.Identification
-                    if not identification and rel.RelatingDocument.ReferencedDocument:
-                        identification = rel.RelatingDocument.ReferencedDocument.Identification
+                        identification = rel.RelatingDocument.ItemReference
+                        if not identification and rel.RelatingDocument.ReferenceToDocument:
+                            identification = rel.RelatingDocument.ReferenceToDocument[0].DocumentId
+                        location = rel.RelatingDocument.Location
+                    else:
+                        if not name and rel.RelatingDocument.ReferencedDocument:
+                            name = rel.RelatingDocument.ReferencedDocument.Name
 
-                    location = rel.RelatingDocument.Location
-                    if location is None and rel.RelatingDocument.ReferencedDocument:
-                        location = rel.RelatingDocument.ReferencedDocument.Location
+                        identification = rel.RelatingDocument.Identification
+                        if not identification and rel.RelatingDocument.ReferencedDocument:
+                            identification = rel.RelatingDocument.ReferencedDocument.Identification
+
+                        location = rel.RelatingDocument.Location
+                        if location is None and rel.RelatingDocument.ReferencedDocument:
+                            location = rel.RelatingDocument.ReferencedDocument.Location
 
                 if location:
                     if not "://" in location:
@@ -118,6 +173,8 @@ class ObjectDocumentData:
                         "identification": identification,
                         "name": name,
                         "location": location,
+                        "is_information": is_information,
+                        "description": description,
                     }
                 )
         return results

@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     import bpy
+    import json
     import ifcopenshell
     import bonsai.tool as tool
 
@@ -28,28 +29,22 @@ if TYPE_CHECKING:
 def load_project_documents(document: tool.Document) -> None:
     document.clear_document_tree()
     document.import_project_documents()
-    document.clear_breadcrumbs()
     document.enable_editing_ui()
 
 
 def load_document(document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
     document_tool.clear_document_tree()
-    document_tool.import_subdocuments(document)
-    document_tool.import_references(document)
+    try:
+        expanded_docs = json.loads(bpy.context.scene.ExpandedDocuments.json_string)
+    except (AttributeError, json.JSONDecodeError):
+        expanded_docs = []
+
+    if document.id() not in expanded_docs:
+        expanded_docs.append(document.id())
+        bpy.context.scene.ExpandedDocuments.json_string = json.dumps(expanded_docs)
+
+    document_tool.import_project_documents()
     document_tool.disable_editing_document()
-    document_tool.add_breadcrumb(document)
-
-
-def load_parent_document(document: tool.Document) -> None:
-    document.clear_document_tree()
-    document.remove_latest_breadcrumb()
-    parent = document.get_active_breadcrumb()
-    if parent:
-        document.import_subdocuments(parent)
-        document.import_references(parent)
-        document.disable_editing_document()
-    else:
-        document.import_project_documents()
 
 
 def disable_document_editing_ui(document: tool.Document) -> None:
@@ -58,33 +53,62 @@ def disable_document_editing_ui(document: tool.Document) -> None:
 
 
 def enable_editing_document(document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
+    props = document_tool.get_document_props()
+    props.active_document_id = document.id()
+    props.is_document_editing = True
     document_tool.import_document_attributes(document)
-    document_tool.set_active_document(document)
 
 
 def disable_editing_document(document: tool.Document) -> None:
-    document.disable_editing_document()
+    props = document.get_document_props()
+    props.active_document_id = 0
+    props.is_document_editing = False
+    props.document_attributes.clear()
 
 
-def add_information(ifc: tool.Ifc, document: tool.Document) -> None:
-    document.clear_document_tree()
-    parent = document.get_active_breadcrumb()
+def add_information(ifc: tool.Ifc, document_tool: tool.Document, parent=None) -> ifcopenshell.entity_instance:
+    document_tool.clear_document_tree()
+
+    if parent is None and ifc.get().by_type("IfcProject"):
+        parent = ifc.get().by_type("IfcProject")[0]
+
     information = ifc.run("document.add_information", parent=parent)
     ifc.run("document.add_reference", information=information)
-    if parent:
-        document.import_subdocuments(parent)
-        document.import_references(parent)
-    else:
-        document.import_project_documents()
+    if parent and parent.is_a("IfcDocumentInformation"):
+        try:
+            expanded_docs = json.loads(bpy.context.scene.ExpandedDocuments.json_string)
+        except (AttributeError, json.JSONDecodeError):
+            expanded_docs = []
+
+        if parent.id() not in expanded_docs:
+            expanded_docs.append(parent.id())
+            bpy.context.scene.ExpandedDocuments.json_string = json.dumps(expanded_docs)
+
+    document_tool.import_project_documents()
 
 
 def add_reference(ifc: tool.Ifc, document: tool.Document) -> None:
-    parent = document.get_active_breadcrumb()
-    assert parent
-    ifc.run("document.add_reference", information=parent)
-    document.clear_document_tree()
-    document.import_subdocuments(parent)
-    document.import_references(parent)
+    props = document.get_document_props()
+    parent = None
+
+    if props.documents and props.active_document_index < len(props.documents):
+        selected_document = props.documents[props.active_document_index]
+        if selected_document.is_information:
+            parent = ifc.get().by_id(selected_document.ifc_definition_id)
+
+    if parent:
+        reference = ifc.run("document.add_reference", information=parent)
+        reference.Location = ""
+        try:
+            expanded_docs = json.loads(bpy.context.scene.ExpandedDocuments.json_string)
+        except (AttributeError, json.JSONDecodeError):
+            expanded_docs = []
+
+        if parent.id() not in expanded_docs:
+            expanded_docs.append(parent.id())
+            bpy.context.scene.ExpandedDocuments.json_string = json.dumps(expanded_docs)
+
+    document.import_project_documents()
 
 
 def edit_document(ifc: tool.Ifc, document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
@@ -95,12 +119,7 @@ def edit_document(ifc: tool.Ifc, document_tool: tool.Document, document: ifcopen
         ifc.run("document.edit_reference", reference=document, attributes=attributes)
     document_tool.disable_editing_document()
     document_tool.clear_document_tree()
-    parent = document_tool.get_active_breadcrumb()
-    if parent:
-        document_tool.import_subdocuments(parent)
-        document_tool.import_references(parent)
-    else:
-        document_tool.import_project_documents()
+    document_tool.import_project_documents()
 
 
 def remove_document(ifc: tool.Ifc, document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
@@ -109,12 +128,7 @@ def remove_document(ifc: tool.Ifc, document_tool: tool.Document, document: ifcop
         ifc.run("document.remove_information", information=document)
     else:
         ifc.run("document.remove_reference", reference=document)
-    parent = document_tool.get_active_breadcrumb()
-    if parent:
-        document_tool.import_subdocuments(parent)
-        document_tool.import_references(parent)
-    else:
-        document_tool.import_project_documents()
+    document_tool.import_project_documents()
 
 
 def assign_document(
