@@ -287,14 +287,15 @@ def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
 
     # Use only main part from the version to avoid flooding advanced users projects with IfcApplications.
     version = tool.Blender.get_bonsai_version().split("-")[0]
+    identifier = f"Bonsai-{version}"
     for element in ifc.by_type("IfcApplication"):
-        if element.ApplicationIdentifier == "Bonsai" and element.Version == version:
+        if element.ApplicationIdentifier == identifier:
             return element
     application = ifcopenshell.api.owner.add_application(
         ifc,
         version=version,
         application_full_name="Bonsai",
-        application_identifier="Bonsai",
+        application_identifier=identifier,
     )
     SettingsCache.APPLICATION_ID = application.id()
     SettingsCache.set_file(ifc)
