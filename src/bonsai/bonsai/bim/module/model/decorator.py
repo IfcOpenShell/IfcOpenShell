@@ -336,10 +336,14 @@ class PolylineDecorator:
                 SpaceView3D.draw_handler_add(handler.draw_snap_point, (context,), "WINDOW", "POST_PIXEL")
             )
             cls.handlers.append(
-                SpaceView3D.draw_handler_add(handler.select_and_draw_measurements_text, (context,), "WINDOW", "POST_PIXEL")
+                SpaceView3D.draw_handler_add(
+                    handler.select_and_draw_measurements_text, (context,), "WINDOW", "POST_PIXEL"
+                )
             )
             cls.handlers.append(
-                SpaceView3D.draw_handler_add(handler.select_and_draw_measurements_poly, (context,), "WINDOW", "POST_VIEW")
+                SpaceView3D.draw_handler_add(
+                    handler.select_and_draw_measurements_poly, (context,), "WINDOW", "POST_VIEW"
+                )
             )
             cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
@@ -442,7 +446,7 @@ class PolylineDecorator:
         # general shader
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         gpu.state.point_size_set(6)
-        
+
     def draw_input_ui(self, context: bpy.types.Context) -> None:
         texts = {
             "D": "Distance: ",
@@ -603,7 +607,7 @@ class PolylineDecorator:
 
         for i in range(len(polyline_verts) - 1):
             polyline_edges.append([i, i + 1])
-            
+
         # Lines for X, Y, Z of single measure
         if self.polyline_data and self.polyline_data.measurement_type == "SINGLE":
             axis, _ = self.calculate_measurement_x_y_and_z(context)
@@ -630,7 +634,7 @@ class PolylineDecorator:
         self.measure_type = context.scene.MeasureToolSettings.measurement_type
         self.polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
         self.measure_data = context.scene.BIMPolylineProperties.measurement_polyline
-        
+
     def select_and_draw_measurements_text(self, context):
         self.get_polylines_data(context)
         if self.polyline_data:
