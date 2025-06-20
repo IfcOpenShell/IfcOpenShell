@@ -233,8 +233,12 @@ class MeasureDecorator:
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements_text, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements_poly, (context,), "WINDOW", "POST_VIEW"))
+        cls.handlers.append(
+            SpaceView3D.draw_handler_add(handler.draw_measurements_text, (context,), "WINDOW", "POST_PIXEL")
+        )
+        cls.handlers.append(
+            SpaceView3D.draw_handler_add(handler.draw_measurements_poly, (context,), "WINDOW", "POST_VIEW")
+        )
         cls.is_installed = True
 
     @classmethod
