@@ -337,7 +337,11 @@ class ApplicationsData:
         ifc_file = tool.Ifc.get()
         for application in ifc_file.by_type("IfcApplication"):
             total_inverses = ifc_file.get_total_inverses(application)
+            version = application.Version
             name = application.ApplicationFullName
+            # Sometimes apps duplicate version in the full name (e.g. Revit).
+            if version not in name:
+                name += f" ({version})"
             if total_inverses == 0:
                 name += " (unused)"
             applications.append(
