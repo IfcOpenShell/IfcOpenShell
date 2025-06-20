@@ -31,24 +31,6 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Document)
 
 
-class TestAddBreadcrumb(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        document = ifc.createIfcDocumentInformation()
-        subject.add_breadcrumb(document)
-        props = tool.Document.get_document_props()
-        assert props.breadcrumbs[0].name == str(document.id())
-
-
-class TestClearBreadcrumbs(NewFile):
-    def test_run(self):
-        props = tool.Document.get_document_props()
-        props.breadcrumbs.add()
-        subject.clear_breadcrumbs()
-        assert len(props.breadcrumbs) == 0
-
-
 class TestClearDocumentTree(NewFile):
     def test_run(self):
         props = tool.Document.get_document_props()
@@ -101,15 +83,6 @@ class TestExportDocumentAttributes(NewFile):
             "Confidentiality": "CONFIDENTIAL",
             "Status": "DRAFT",
         }
-
-
-class TestGetActiveBreadcrumb(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        document = ifc.createIfcDocumentInformation()
-        subject.add_breadcrumb(document)
-        assert subject.get_active_breadcrumb() == document
 
 
 class TestImportDocumentAttributes(NewFile):
@@ -197,22 +170,6 @@ class TestImportReferences(NewFile):
         assert props.documents[0].is_information is False
 
 
-class TestImportSubdocuments(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        ifc.createIfcProject()
-        document = ifcopenshell.api.document.add_information(ifc)
-        subdocument = ifcopenshell.api.document.add_information(ifc, parent=document)
-        subject.import_subdocuments(document)
-        props = tool.Document.get_document_props()
-        assert len(props.documents) == 1
-        assert props.documents[0].ifc_definition_id == subdocument.id()
-        assert props.documents[0].name == "Unnamed"
-        assert props.documents[0].identification == "X"
-        assert props.documents[0].is_information is True
-
-
 class TestIsDocumentInformation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -220,15 +177,6 @@ class TestIsDocumentInformation(NewFile):
         reference = ifc.createIfcDocumentReference()
         assert subject.is_document_information(information) is True
         assert subject.is_document_information(reference) is False
-
-
-class TestRemoveLatestBreadcrumb(NewFile):
-    def test_run(self):
-        props = tool.Document.get_document_props()
-        props.breadcrumbs.add()
-        props.breadcrumbs.add()
-        subject.remove_latest_breadcrumb()
-        assert len(props.breadcrumbs) == 1
 
 
 class TestSetActiveDocument(NewFile):

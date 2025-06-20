@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 import bpy
+import json
 import ifcopenshell.util.system
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -32,17 +33,6 @@ class Document(bonsai.core.tool.Document):
     @classmethod
     def get_document_props(cls) -> BIMDocumentProperties:
         return bpy.context.scene.BIMDocumentProperties
-
-    @classmethod
-    def add_breadcrumb(cls, document: ifcopenshell.entity_instance) -> None:
-        props = cls.get_document_props()
-        new = props.breadcrumbs.add()
-        new.name = str(document.id())
-
-    @classmethod
-    def clear_breadcrumbs(cls) -> None:
-        props = cls.get_document_props()
-        props.breadcrumbs.clear()
 
     @classmethod
     def clear_document_tree(cls) -> None:
@@ -70,17 +60,14 @@ class Document(bonsai.core.tool.Document):
         return bonsai.bim.helper.export_attributes(props.document_attributes)
 
     @classmethod
-    def get_active_breadcrumb(cls) -> Union[ifcopenshell.entity_instance, None]:
-        props = cls.get_document_props()
-        if len(props.breadcrumbs):
-            return tool.Ifc.get().by_id(int(props.breadcrumbs[-1].name))
-
-    @classmethod
     def import_document_attributes(cls, document: ifcopenshell.entity_instance) -> None:
         props = cls.get_document_props()
         props.document_attributes.clear()
 
-        def callback(attr_name: str, _, data: dict[str, Any]) -> Union[bool, None]:
+        def callback(attr_name: str, attr_value: Any, data: dict[str, Any]) -> Union[bool, None]:
+            if attr_name == "Location" and attr_value is None:
+                data[attr_name] = ""
+                return True
             if attr_name != "Name":
                 return None  # Proceed normally
 
@@ -100,51 +87,137 @@ class Document(bonsai.core.tool.Document):
     def import_project_documents(cls) -> None:
         props = cls.get_document_props()
         props.documents.clear()
-        project = tool.Ifc.get().by_type("IfcProject")[0]
+        file = tool.Ifc.get()
+        try:
+            expanded_documents = json.loads(bpy.context.scene.ExpandedDocuments.json_string)
+        except (AttributeError, json.JSONDecodeError):
+            expanded_documents = []
+
+        project = file.by_type("IfcProject")[0] if file.by_type("IfcProject") else None
+        if not project:
+            return
+
+        document_children = {}
+
+        for rel in file.by_type("IfcDocumentInformationRelationship"):
+            parent_id = rel.RelatingDocument.id()
+            if parent_id not in document_children:
+                document_children[parent_id] = []
+
+            for child in rel.RelatedDocuments:
+                document_children[parent_id].append(child)
+
+        is_ifc2x3 = file.schema == "IFC2X3"
+
+        if is_ifc2x3:
+            for ref in file.by_type("IfcDocumentReference"):
+                if ref.ReferenceToDocument:
+                    parent = ref.ReferenceToDocument[0]
+                    parent_id = parent.id()
+                    if parent_id not in document_children:
+                        document_children[parent_id] = []
+                    document_children[parent_id].append(ref)
+        else:
+            for ref in file.by_type("IfcDocumentReference"):
+                if hasattr(ref, "ReferencedDocument") and ref.ReferencedDocument:
+                    parent = ref.ReferencedDocument
+                    parent_id = parent.id()
+                    if parent_id not in document_children:
+                        document_children[parent_id] = []
+                    document_children[parent_id].append(ref)
+
+        root_documents = []
         for rel in project.HasAssociations or []:
             if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument.is_a("IfcDocumentInformation"):
-                element = rel.RelatingDocument
-                new = props.documents.add()
-                new.ifc_definition_id = element.id()
-                new["name"] = element.Name or "Unnamed"
-                new.is_information = True
-                new["identification"] = cls.get_document_information_id(element)
+                is_child = False
+                for children in document_children.values():
+                    if rel.RelatingDocument in children:
+                        is_child = True
+                        break
+
+                if not is_child:
+                    root_documents.append(rel.RelatingDocument)
+
+        root = props.documents.add()
+        root.ifc_definition_id = -1
+        root.is_information = True
+        root.name = f"Project Documents ({project.Name or 'Unnamed Project'})"
+        root.identification = ""
+        root.location = ""
+        root.tree_depth = 0
+        root.has_children = bool(root_documents)
+
+        root_id = -project.id()
+
+        root.is_expanded = root_id not in expanded_documents
+
+        if root.is_expanded:
+            root_documents.sort(
+                key=lambda doc: ((cls.get_document_information_id(doc) or "").lower(), (doc.Name or "").lower())
+            )
+
+            for doc in root_documents:
+                cls._process_document(doc, props, document_children, expanded_documents, 1)
 
     @classmethod
-    def import_references(cls, document: ifcopenshell.entity_instance) -> None:
-        props = cls.get_document_props()
-        is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
-        references = cls.get_document_references(document)
-        for element in references:
-            new = props.documents.add()
-            new.ifc_definition_id = element.id()
-            # Use Description + Location instead of Name as IFC has a restriction
-            # for IfcDocumentReference to have Name only if it has no ReferencedDocument.
-            name = " - ".join([x for x in [element.Description, element.Location] if x])
-            new["name"] = name or "Unnamed"
-            new["identification"] = cls.get_external_reference_id(element)
-            new.is_information = False
+    def _process_document(cls, document, props, document_children, expanded_documents, depth):
+        new = props.documents.add()
+        new.ifc_definition_id = document.id()
+        new.is_information = document.is_a("IfcDocumentInformation")
+        new.tree_depth = depth
 
-    @classmethod
-    def import_subdocuments(cls, document: ifcopenshell.entity_instance) -> None:
-        props = cls.get_document_props()
-        if document.IsPointer:
-            for element in document.IsPointer[0].RelatedDocuments or []:
-                new = props.documents.add()
-                new.ifc_definition_id = element.id()
-                new["name"] = element.Name or "Unnamed"
-                new.is_information = True
-                new["identification"] = cls.get_document_information_id(element) or "*"
+        file = document.file
+        if new.is_information:
+            new.name = document.Name or "Unnamed"
+            new.identification = cls.get_document_information_id(document) or ""
+            new.location = document.Location or ""
+        else:
+            new.name = document.Name or ""
+            new.identification = cls.get_external_reference_id(document) or ""
+            new.description = document.Description or ""
+            new.location = document.Location or ""
+
+            if not new.is_information:
+                if file.schema == "IFC2X3":
+                    if document.ReferenceToDocument:
+                        doc_info = document.ReferenceToDocument[0]
+                        if not new.name:
+                            new.name = doc_info.Name or ""
+                        new.location = new.location or ""
+                else:
+                    if hasattr(document, "ReferencedDocument") and document.ReferencedDocument:
+                        doc_info = document.ReferencedDocument
+                        if not new.name:
+                            new.name = doc_info.Name or ""
+                        new.location = new.location or ""
+
+        doc_id = document.id()
+        has_children = doc_id in document_children and bool(document_children[doc_id])
+        new.has_children = has_children
+        new.is_expanded = doc_id in expanded_documents
+
+        if has_children and new.is_expanded:
+            children = document_children[doc_id]
+
+            children.sort(
+                key=lambda doc: (
+                    doc.is_a("IfcDocumentInformation"),
+                    (
+                        cls.get_document_information_id(doc)
+                        if doc.is_a("IfcDocumentInformation")
+                        else cls.get_external_reference_id(doc) or ""
+                    ).lower(),
+                    (doc.Name or "").lower(),
+                ),
+                reverse=True,
+            )
+
+            for child in children:
+                cls._process_document(child, props, document_children, expanded_documents, depth + 1)
 
     @classmethod
     def is_document_information(cls, document: ifcopenshell.entity_instance) -> bool:
         return document.is_a("IfcDocumentInformation")
-
-    @classmethod
-    def remove_latest_breadcrumb(cls) -> None:
-        props = cls.get_document_props()
-        if len(props.breadcrumbs):
-            props.breadcrumbs.remove(len(props.breadcrumbs) - 1)
 
     @classmethod
     def set_active_document(cls, document: ifcopenshell.entity_instance) -> None:

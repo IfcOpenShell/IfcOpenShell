@@ -25,7 +25,6 @@ class TestLoadProjectDocuments:
     def test_run(self, document):
         document.clear_document_tree().should_be_called()
         document.import_project_documents().should_be_called()
-        document.clear_breadcrumbs().should_be_called()
         document.enable_editing_ui().should_be_called()
         subject.load_project_documents(document)
 
@@ -33,8 +32,6 @@ class TestLoadProjectDocuments:
 class TestLoadDocument:
     def test_run(self, document):
         document.clear_document_tree().should_be_called()
-        document.import_subdocuments("document").should_be_called()
-        document.import_references("document").should_be_called()
         document.disable_editing_document().should_be_called()
         document.add_breadcrumb("document").should_be_called()
         subject.load_document(document, document="document")
@@ -63,7 +60,6 @@ class TestDisableEditingDocument:
 class TestAddInformation:
     def test_add_and_reload_tree_at_project_root(self, ifc, document):
         document.clear_document_tree().should_be_called()
-        document.get_active_breadcrumb().should_be_called().will_return(None)
         ifc.run("document.add_information", parent=None).should_be_called().will_return("information")
         ifc.run("document.add_reference", information="information").should_be_called()
         document.import_project_documents().should_be_called()
@@ -71,21 +67,15 @@ class TestAddInformation:
 
     def test_add_and_reload_tree_at_current_parent(self, ifc, document):
         document.clear_document_tree().should_be_called()
-        document.get_active_breadcrumb().should_be_called().will_return("parent")
         ifc.run("document.add_information", parent="parent").should_be_called().will_return("information")
         ifc.run("document.add_reference", information="information").should_be_called()
-        document.import_subdocuments("parent").should_be_called()
-        document.import_references("parent").should_be_called()
         subject.add_information(ifc, document)
 
 
 class TestAddReference:
     def test_run(self, ifc, document):
-        document.get_active_breadcrumb().should_be_called().will_return("parent")
         ifc.run("document.add_reference", information="parent").should_be_called()
         document.clear_document_tree().should_be_called()
-        document.import_subdocuments("parent").should_be_called()
-        document.import_references("parent").should_be_called()
         subject.add_reference(ifc, document)
 
 
@@ -96,7 +86,6 @@ class TestEditDocument:
         ifc.run("document.edit_information", information="document", attributes="attributes").should_be_called()
         document.disable_editing_document().should_be_called()
         document.clear_document_tree().should_be_called()
-        document.get_active_breadcrumb().should_be_called().will_return(None)
         document.import_project_documents().should_be_called()
         subject.edit_document(ifc, document, document="document")
 
@@ -106,9 +95,6 @@ class TestEditDocument:
         ifc.run("document.edit_reference", reference="document", attributes="attributes").should_be_called()
         document.disable_editing_document().should_be_called()
         document.clear_document_tree().should_be_called()
-        document.get_active_breadcrumb().should_be_called().will_return("parent")
-        document.import_subdocuments("parent").should_be_called()
-        document.import_references("parent").should_be_called()
         subject.edit_document(ifc, document, document="document")
 
 
@@ -117,7 +103,6 @@ class TestRemoveDocument:
         document.clear_document_tree().should_be_called()
         document.is_document_information("document").should_be_called().will_return(True)
         ifc.run("document.remove_information", information="document").should_be_called()
-        document.get_active_breadcrumb().should_be_called().will_return(None)
         document.import_project_documents().should_be_called()
         subject.remove_document(ifc, document, document="document")
 
@@ -125,9 +110,6 @@ class TestRemoveDocument:
         document.clear_document_tree().should_be_called()
         document.is_document_information("document").should_be_called().will_return(False)
         ifc.run("document.remove_reference", reference="document").should_be_called()
-        document.get_active_breadcrumb().should_be_called().will_return("parent")
-        document.import_subdocuments("parent").should_be_called()
-        document.import_references("parent").should_be_called()
         subject.remove_document(ifc, document, document="document")
 
 

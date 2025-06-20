@@ -18,32 +18,47 @@
 
 import bpy
 from . import ui, prop, operator
+from bpy.types import VIEW3D_MT_object_context_menu
 
 classes = (
     operator.AddDocumentReference,
     operator.AddInformation,
     operator.AssignDocument,
     operator.DisableDocumentEditingUI,
+    operator.DisableObjectDocumentEditingUI,
     operator.DisableEditingDocument,
     operator.EditDocument,
     operator.EnableEditingDocument,
     operator.LoadDocument,
-    operator.LoadParentDocument,
+    operator.LoadObjectDocuments,
     operator.LoadProjectDocuments,
     operator.RemoveDocument,
     operator.SelectDocumentObjects,
+    operator.ToggleDocument,
     operator.UnassignDocument,
+    operator.UpdateAssignedDocuments,
+    operator.OpenIFCDocument,
     prop.Document,
+    prop.DocumentObject,
+    prop.AssignedDocument,
+    prop.ExpandedDocuments,
     prop.BIMDocumentProperties,
     ui.BIM_PT_documents,
     ui.BIM_PT_object_documents,
     ui.BIM_UL_documents,
+    ui.BIM_UL_document_objects,
+    ui.BIM_UL_assigned_documents,
+    ui.BIM_MT_object_documents_context_menu,
 )
 
 
 def register():
     bpy.types.Scene.BIMDocumentProperties = bpy.props.PointerProperty(type=prop.BIMDocumentProperties)
+    bpy.types.Scene.ExpandedDocuments = bpy.props.PointerProperty(type=prop.ExpandedDocuments)
+    VIEW3D_MT_object_context_menu.append(ui.add_object_documents_context_menu)
 
 
 def unregister():
     del bpy.types.Scene.BIMDocumentProperties
+    del bpy.types.Scene.ExpandedDocuments
+    VIEW3D_MT_object_context_menu.remove(ui.add_object_documents_context_menu)
