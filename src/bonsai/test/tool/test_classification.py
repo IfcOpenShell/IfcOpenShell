@@ -46,8 +46,8 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.bim.load_bsdd_domains()
         uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
         bpy.ops.bim.set_active_bsdd_domain(name="CCI Construction", uri=uri)
-        props = context.scene.BIMBSDDProperties
-        bpy.context.scene.BIMClassificationProperties.classification_source = "BSDD"
+        props = tool.Bsdd.get_bsdd_props()
+        tool.Classification.get_classification_props().classification_source = "BSDD"
         props.should_filter_ifc_class = True
         props.keyword = "Room"
         bpy.ops.bim.search_bsdd_classifications()
@@ -70,8 +70,8 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.bim.load_bsdd_domains()
         uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
         bpy.ops.bim.set_active_bsdd_domain(name="CCI Construction", uri=uri)
-        props = context.scene.BIMBSDDProperties
-        bpy.context.scene.BIMClassificationProperties.classification_source = "BSDD"
+        props = tool.Bsdd.get_bsdd_props()
+        tool.Classification.get_classification_props().classification_source = "BSDD"
         props.should_filter_ifc_class = True
         props.keyword = "Room"
         bpy.ops.bim.search_bsdd_classifications()
@@ -103,12 +103,12 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         element = tool.Ifc.get_entity(obj)
         assert element
 
-        props = context.scene.BIMBSDDProperties
+        props = tool.Bsdd.get_bsdd_props()
         props.load_preview_domains = True
         bpy.ops.bim.load_bsdd_domains()
         uri = "https://identifier.buildingsmart.org/uri/ifcairport/ifcairport/0.9"
         bpy.ops.bim.set_active_bsdd_domain(name="IFC Airport", uri=uri)
-        bpy.context.scene.BIMClassificationProperties.classification_source = "BSDD"
+        tool.Classification.get_classification_props().classification_source = "BSDD"
         props.should_filter_ifc_class = False  # Important due to class mismatch.
         props.keyword = "check-in conveyor"
         bpy.ops.bim.search_bsdd_classifications()

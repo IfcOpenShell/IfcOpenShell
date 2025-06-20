@@ -351,19 +351,18 @@ def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Logger)
                     logger.error(m)
 
 
-entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute]]] = {}
+entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute, ...]]] = {}
 
 
-def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entity_type, tuple[attribute]]:
+def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entity_type, tuple[attribute, ...]]:
     cache_key = schema.name(), entity
     from_cache = entity_attribute_map.get(cache_key)
     if from_cache:
         return from_cache
 
-    entity_attrs = (
-        ent := schema.declaration_by_name(entity),
-        ent.all_attributes(),
-    )
+    ent = schema.declaration_by_name(entity).as_entity()
+    assert ent
+    entity_attrs = (ent, ent.all_attributes())
 
     entity_attribute_map[cache_key] = entity_attrs
     return entity_attrs

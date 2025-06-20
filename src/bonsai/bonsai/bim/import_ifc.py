@@ -29,6 +29,7 @@ import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
@@ -1032,9 +1033,9 @@ class IfcImporter:
     def create_curve(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        shape: Union[W.Triangulation, W.TriangulationElement],
     ) -> bpy.types.Curve:
-        if isinstance(shape, ifcopenshell.geom.ShapeElementType):
+        if isinstance(shape, W.TriangulationElement):
             geometry = shape.geometry
         else:
             geometry = shape

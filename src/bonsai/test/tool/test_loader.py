@@ -540,7 +540,7 @@ class TestSetupActiveBsddClassification(NewFile):
         filepath = "test/files/temp/test.ifc"
         ifc_file.write(filepath)
         bpy.ops.bim.load_project(filepath=filepath)
-        props = bpy.context.scene.BIMBSDDProperties
+        props = tool.Bsdd.get_bsdd_props()
         assert props.active_domain == name
         assert props.active_uri == base_uri
 

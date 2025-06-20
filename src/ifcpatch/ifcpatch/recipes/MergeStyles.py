@@ -17,12 +17,14 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.guid
 import ifcopenshell.util.element
+import ifcpatch
+import logging
+from typing import Union
 
 
-class Patcher:
-    def __init__(self, file, logger):
+class Patcher(ifcpatch.BasePatcher):
+    def __init__(self, file: ifcopenshell.file, logger: Union[logging.Logger, None] = None):
         """Merge identical styles together
 
         Some software may create an obscene number of styles instead of reusing
@@ -35,8 +37,7 @@ class Patcher:
 
             ifcpatch.execute({"file": model, "recipe": "MergeStyles", "arguments": []})
         """
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
 
     def patch(self):
         for ifc_class in ("IfcColourRgb", "IfcSurfaceStyleShading", "IfcPresentationStyle"):

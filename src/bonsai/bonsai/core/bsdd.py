@@ -26,20 +26,20 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def import_bsdd_classes(bsdd: tool.Bsdd, obj, obj_type) -> int:
+def import_bsdd_classes(bsdd: type[tool.Bsdd], obj, obj_type) -> int:
     return bsdd.import_classes(obj, obj_type)
 
 
-def search_bsdd_properties(bsdd: tool.Bsdd, keyword: str, obj, obj_type) -> int:
+def search_bsdd_properties(bsdd: type[tool.Bsdd], keyword: str, obj, obj_type) -> int:
     return bsdd.import_properties(obj, obj_type, keyword)
 
 
-def load_bsdd(bsdd: tool.Bsdd) -> None:
+def load_bsdd(bsdd: type[tool.Bsdd]) -> None:
     bsdd.clear_dictionaries()
     bsdd.create_dictionaries(bsdd.get_dictionaries())
 
 
-def search_bsdd_class(bsdd: tool.Bsdd, keyword: str) -> int:
+def search_bsdd_class(bsdd: type[tool.Bsdd], keyword: str) -> int:
     bsdd.clear_classes()
     related_entities = bsdd.get_related_ifc_entities()
     return bsdd.search_class(keyword, related_entities)

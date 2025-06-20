@@ -41,7 +41,7 @@ class SearchBSDDClassifications(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        total = core.search_bsdd_class(tool.Bsdd, context.scene.BIMBSDDProperties.keyword)
+        total = core.search_bsdd_class(tool.Bsdd, tool.Bsdd.get_bsdd_props().keyword)
         self.report({"INFO"}, f"{total} bSDD classes found.")
         return {"FINISHED"}
 
@@ -71,7 +71,7 @@ class SearchBSDDProperties(bpy.types.Operator):
 
     def execute(self, context):
         props = tool.Bsdd.get_bsdd_props()
-        core.search_bsdd_properties(tool.Bsdd, context.scene.BIMBSDDProperties.keyword, self.obj, self.obj_type)
+        core.search_bsdd_properties(tool.Bsdd, tool.Bsdd.get_bsdd_props().keyword, self.obj, self.obj_type)
         self.report({"INFO"}, f"{len(props.properties)} bSDD properties found.")
         return {"FINISHED"}
 

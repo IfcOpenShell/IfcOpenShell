@@ -16,9 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+import bpy
 import bonsai.tool as tool
 from bonsai.bim.module.bsdd.data import BSDDData
 from bpy.types import Panel, UIList
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDDictionary, BSDDClassification, BSDDProperty
 
 
 class BIM_PT_bsdd(Panel):
@@ -33,7 +39,8 @@ class BIM_PT_bsdd(Panel):
     def draw(self, context):
         if not BSDDData.is_loaded:
             BSDDData.load()
-        props = context.scene.BIMBSDDProperties
+        props = tool.Bsdd.get_bsdd_props()
+        assert self.layout
         layout = self.layout
         if len(props.dictionaries):
             row = self.layout.row()
@@ -70,9 +77,17 @@ class BIM_PT_bsdd(Panel):
 
 
 class BIM_UL_bsdd_dictionaries(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMBSDDProperties,
+        item: BSDDDictionary,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
-            props = context.scene.BIMBSDDProperties
             row = layout.row(align=True)
             if item.status != "Active":
                 row.label(
@@ -86,7 +101,16 @@ class BIM_UL_bsdd_dictionaries(UIList):
 
 
 class BIM_UL_bsdd_classifications(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMBSDDProperties,
+        item: BSDDClassification,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             row = layout.row(align=True)
             row.label(text=item.reference_code)
@@ -95,7 +119,16 @@ class BIM_UL_bsdd_classifications(UIList):
 
 
 class BIM_UL_bsdd_classes(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMBSDDProperties,
+        item: BSDDClassification,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
@@ -103,7 +136,16 @@ class BIM_UL_bsdd_classes(UIList):
 
 
 class BIM_UL_bsdd_properties(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMBSDDProperties,
+        item: BSDDProperty,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             row = layout.row(align=True)
             name = item.name
