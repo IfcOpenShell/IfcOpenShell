@@ -69,15 +69,12 @@ class Document(bonsai.core.tool.Document):
                 data[attr_name] = ""
                 return True
             if attr_name != "Name":
-                return None  # Proceed normally
+                return None
 
             current_value = data[attr_name]
-            # If Name is already filled, display it so user would be able to correct invalid IFC.
             if current_value is not None:
                 return None
 
-            # Skip import since IFC restricts Name to be filled
-            # for IfcDocumentReference with ReferencedDocument.
             return False
 
         import_callback = callback if document.is_a("IfcDocumentReference") else None
@@ -199,20 +196,24 @@ class Document(bonsai.core.tool.Document):
         if has_children and new.is_expanded:
             children = document_children[doc_id]
 
-            children.sort(
+            info_children = [d for d in children if d.is_a("IfcDocumentInformation")]
+            ref_children = [d for d in children if not d.is_a("IfcDocumentInformation")]
+            
+            info_children.sort(
                 key=lambda doc: (
-                    doc.is_a("IfcDocumentInformation"),
-                    (
-                        cls.get_document_information_id(doc)
-                        if doc.is_a("IfcDocumentInformation")
-                        else cls.get_external_reference_id(doc) or ""
-                    ).lower(),
-                    (doc.Name or "").lower(),
-                ),
-                reverse=True,
+                    (cls.get_document_information_id(doc) or "").lower(),
+                    (doc.Name or "").lower()
+                )
             )
-
-            for child in children:
+            
+            ref_children.sort(
+                key=lambda doc: (
+                    (cls.get_external_reference_id(doc) or "").lower(),
+                    (doc.Description or doc.Name or "").lower()
+                )
+            )
+            
+            for child in info_children + ref_children:
                 cls._process_document(child, props, document_children, expanded_documents, depth + 1)
 
     @classmethod

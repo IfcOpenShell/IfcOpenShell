@@ -18,10 +18,10 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
+import bpy
+import json
 
 if TYPE_CHECKING:
-    import bpy
-    import json
     import ifcopenshell
     import bonsai.tool as tool
 
