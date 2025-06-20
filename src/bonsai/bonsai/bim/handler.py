@@ -291,8 +291,10 @@ def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == identifier:
             return element
+    application_developer = next((org for org in ifc.by_type("IfcOrganization") if org.Name == "IfcOpenShell"), None)
     application = ifcopenshell.api.owner.add_application(
         ifc,
+        application_developer=application_developer,
         version=version,
         application_full_name="Bonsai",
         application_identifier=identifier,
