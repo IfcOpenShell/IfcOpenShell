@@ -72,6 +72,28 @@ class DisableStatusFilters(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMStatusProperties
+
+        query = []
+        visible_statuses = {s.name for s in props.statuses}
+        for name in visible_statuses:
+            if name == "No Status":
+                q = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
+            else:
+                q = f"IfcProduct, /Pset_.*Common/.Status={name} + IfcProduct, EPset_Status.Status={name}"
+            query.append(q)
+        query = " + ".join(query)
+
+        if not query:
+            self.report({"INFO"}, "No statuses selected.")
+
+        visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+
+        for obj in bpy.context.view_layer.objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcProduct"):
+                continue
+            obj.hide_set(element not in visible_elements)
+
         props.is_enabled = False
         return {"FINISHED"}
 
@@ -96,7 +118,6 @@ class ActivateStatusFilters(bpy.types.Operator):
 
         if not query:
             self.report({"INFO"}, "No statuses selected.")
-            return {"FINISHED"}
 
         visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
 
