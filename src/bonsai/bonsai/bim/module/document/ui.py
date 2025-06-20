@@ -68,7 +68,10 @@ class BIM_PT_documents(Panel):
             row.operator("bim.edit_document", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_document", text="", icon="CANCEL")
         else:
-            row.operator("bim.add_information", text="", icon="ADD")
+            if not self.props.documents or not self.props.active_document_index < len(self.props.documents) or \
+            (self.props.active_document_index < len(self.props.documents) and 
+                self.props.documents[self.props.active_document_index].is_information):
+                row.operator("bim.add_information", text="", icon="ADD")
 
             if self.props.documents and self.props.active_document_index < len(self.props.documents):
                 active_doc = self.props.documents[self.props.active_document_index]
@@ -81,10 +84,10 @@ class BIM_PT_documents(Panel):
                 row.operator("bim.select_document_objects", text="", icon="RESTRICT_SELECT_OFF").document = (
                     ifc_definition_id
                 )
+                
                 row.operator("bim.assign_document", text="", icon="BRUSH_DATA").document = ifc_definition_id
                 row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = ifc_definition_id
                 row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id
-
         self.layout.template_list("BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index")
 
         if self.props.is_document_editing:
@@ -185,10 +188,12 @@ class BIM_PT_object_documents(Panel):
                 for doc in ObjectDocumentData.data["documents"]:
                     assigned_doc_ids.append(doc["id"])
 
-                if document.ifc_definition_id not in assigned_doc_ids:
+                # Only show assign button if the document is information (not reference) and not already assigned
+                if (document.is_information and 
+                    document.ifc_definition_id not in assigned_doc_ids):
                     doc_op = row.operator("bim.assign_document", text="", icon="BRUSH_DATA")
                     doc_op.document = document.ifc_definition_id  # Pass the current document's ID
-                else:
+                elif document.ifc_definition_id in assigned_doc_ids:
                     row.label(text="", icon="CHECKMARK")
 
             self.layout.template_list(
