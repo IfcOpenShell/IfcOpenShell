@@ -116,12 +116,14 @@ simple_type_python_mapping = {
 
 
 def annotate_inst_attr_pos(
-    inst: Union[ifcopenshell.entity_instance, W.HeaderEntity], pos: int, entity_str: str = ""
+    inst: Union[ifcopenshell.entity_instance, W.HeaderEntity],
+    pos: Union[int, tuple[int, ...]],
+    entity_str: str = "",
 ) -> str:
     """Add a caret annotation to the entity string at the given attribute index.
 
     :param inst: Instance to annotate.
-    :param pos: Attribute index to annotate.
+    :param pos: Attribute index or a tuple of them to annotate.
     :param entity_str: Entity string to annotate. If not provided, ``str(inst)`` is used.
 
     Example:
@@ -132,7 +134,12 @@ def annotate_inst_attr_pos(
         #                                                  ^^^^^^^^
     """
 
+    if isinstance(pos, int):
+        pos = (pos,)
+
     def get_pos() -> Iterator[int]:
+        # -1  - outside of entity attributes or on comma.
+        # >=0 - current attribute index
         depth = 0
         idx = -1
         for c in entity_str or str(inst):
@@ -156,7 +163,7 @@ def annotate_inst_attr_pos(
             else:
                 yield idx
 
-    return "".join(" ^"[i == pos] for i in get_pos())
+    return "".join(" ^"[i in pos] for i in get_pos())
 
 
 def format(val: Any) -> str:
@@ -680,11 +687,11 @@ def validate_ifc_header(
 
 
 def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_logger]) -> None:
-    used_names: dict[str, ifcopenshell.entity_instance] = dict()
+    used_names: dict[tuple[str, str], ifcopenshell.entity_instance] = dict()
     used_ids: dict[str, ifcopenshell.entity_instance] = dict()
 
     for inst in f.by_type("IfcApplication"):
-        app_name: str = inst.ApplicationFullName
+        app_name: tuple[str, str] = (inst.ApplicationFullName, inst.Version)
         app_id: str = inst.ApplicationIdentifier
 
         if app_name is not None:
@@ -693,15 +700,15 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
             else:
                 if isinstance(logger, json_logger):
                     logger.set_state("instance", inst)
-                rule = "Rule IfcApplication.UR2:\n    The attribute ApplicationFullName should be unique"
+                rule = "Rule IfcApplication.UR2:\n    The combination of attributes ApplicationFullName and Version should be unique"
                 previous_element = used_names[app_name]
                 logger.error(
                     "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
                     inst,
-                    annotate_inst_attr_pos(inst, 2),
+                    annotate_inst_attr_pos(inst, (1, 2)),
                     rule,
                     previous_element,
-                    annotate_inst_attr_pos(previous_element, 2),
+                    annotate_inst_attr_pos(previous_element, (1, 2)),
                 )
 
         if app_id is not None:
