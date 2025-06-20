@@ -96,7 +96,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: IfcOpenShell/bonsai_unstable_repo
-          token: ${{ secrets.IOS_TO_BLENDER_REPO }}
+          token: ${{ secrets.IFCOPENBOT_TOKEN }}
           path: bonsai_unstable_repo
 
       - name: Download Blender and run critical tests
