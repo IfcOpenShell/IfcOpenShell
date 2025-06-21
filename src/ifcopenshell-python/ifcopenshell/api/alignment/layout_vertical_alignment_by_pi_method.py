@@ -23,7 +23,7 @@ from ifcopenshell import entity_instance
 import math
 from collections.abc import Sequence
 
-from ifcopenshell.api.alignment.__add_segment_to_layout import __add_segment_to_layout
+from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
 
 def layout_vertical_alignment_by_pi_method(
@@ -84,7 +84,7 @@ def layout_vertical_alignment_by_pi_method(
             Representation=None,
             DesignParameters=design_parameters,
         )
-        __add_segment_to_layout(file, layout, alignment_segment)
+        _add_segment_to_layout(file, layout, alignment_segment)
 
         # create vertical curve
         if 0.0 < length:
@@ -113,7 +113,7 @@ def layout_vertical_alignment_by_pi_method(
                 Representation=None,
                 DesignParameters=design_parameters,
             )
-            __add_segment_to_layout(file, layout, alignment_segment)
+            _add_segment_to_layout(file, layout, alignment_segment)
 
         # start of next curve is end of this curve
         xPBG = xEVC
@@ -148,7 +148,7 @@ def layout_vertical_alignment_by_pi_method(
         Representation=None,
         DesignParameters=design_parameters,
     )
-    __add_segment_to_layout(file, layout, alignment_segment)
+    _add_segment_to_layout(file, layout, alignment_segment)
 
     # create zero length terminator segment
     design_parameters = file.createIfcAlignmentVerticalSegment(
@@ -172,4 +172,4 @@ def layout_vertical_alignment_by_pi_method(
         Representation=None,
         DesignParameters=design_parameters,
     )
-    __add_segment_to_layout(file, layout, alignment_segment)
+    _add_segment_to_layout(file, layout, alignment_segment)

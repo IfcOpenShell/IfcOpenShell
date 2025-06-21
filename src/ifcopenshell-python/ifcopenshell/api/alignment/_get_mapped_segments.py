@@ -35,25 +35,25 @@ def __get_curve_segment_count(segment: entity_instance) -> int:
         return 2 if segment.DesignParameters.PredefinedType == "HELMERTCURVE" else 1
 
 
-def __get_mapped_segments(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
+def _get_mapped_segments(file: ifcopenshell.file, layout_segment: entity_instance) -> Sequence[entity_instance]:
     """
     Finds the IfcCurveSegment related to segment
     """
     expected_type = "IfcAlignmentSegment"
-    if not segment.is_a(expected_type):
-        raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment.is_a()}'.")
+    if not layout_segment.is_a(expected_type):
+        raise TypeError(f"Expected to see type '{expected_type}', instead received '{layout_segment.is_a()}'.")
 
-    layout = segment.Nests[0].RelatingObject
+    layout = layout_segment.Nests[0].RelatingObject
     alignment = ifcopenshell.api.alignment.get_alignment(layout)
     curve = ifcopenshell.api.alignment.get_curve(alignment)
 
     index = 0
     for seg in layout.IsNestedBy[0].RelatedObjects:
         index += __get_curve_segment_count(seg)
-        if seg == segment:
+        if seg == layout_segment:
             break
 
-    segment_count = __get_curve_segment_count(segment)
+    segment_count = __get_curve_segment_count(layout_segment)
     if segment_count == 1:
         return (curve.Segments[index - segment_count], None)
     else:

@@ -21,10 +21,10 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 from ifcopenshell import entity_instance
 
-from ifcopenshell.api.alignment.__get_segment_start_point_label import __get_segment_start_point_label
+from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
 
 
-def __add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -> None:
+def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -> None:
     """
     Adds a zero length segment to the end of a layout. Also adds a zero length segment to the end of the corresponding geometric curve.
 
@@ -174,5 +174,5 @@ def __add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) 
                 curve_segment,
             ]
 
-    name = f"{__get_segment_start_point_label(segment,None)} {ifcopenshell.util.stationing.station_as_string(file,0.0)}"
+    name = f"{_get_segment_start_point_label(segment,None)} {ifcopenshell.util.stationing.station_as_string(file,0.0)}"
     ifcopenshell.api.alignment.add_stationing_referent(file, segment, basis_curve, 0.0, 0.0, name=name)

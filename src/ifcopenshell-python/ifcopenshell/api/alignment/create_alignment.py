@@ -20,8 +20,8 @@ import ifcopenshell
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
 
-from ifcopenshell.api.alignment.__create_geometric_representation import __create_geometric_representation
-from ifcopenshell.api.alignment.__add_zero_length_segment import __add_zero_length_segment
+from ifcopenshell.api.alignment._create_geometric_representation import _create_geometric_representation
+from ifcopenshell.api.alignment._add_zero_length_segment import _add_zero_length_segment
 
 
 def create(
@@ -66,10 +66,10 @@ def create(
 
     ifcopenshell.api.nest.assign_object(file, related_objects=alignment_layouts, relating_object=alignment)
 
-    __create_geometric_representation(file, alignment)
+    _create_geometric_representation(file, alignment)
 
     for layout in alignment_layouts:
-        __add_zero_length_segment(file, layout)
+        _add_zero_length_segment(file, layout)
 
     # define stationing
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)

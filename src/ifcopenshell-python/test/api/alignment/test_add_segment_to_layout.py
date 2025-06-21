@@ -20,7 +20,7 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 
-from ifcopenshell.api.alignment.__add_segment_to_layout import __add_segment_to_layout
+from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
 def test_add_segment_to_layout():
     file = ifcopenshell.file(schema="IFC4X3")
@@ -63,7 +63,7 @@ def test_add_segment_to_layout():
         DesignParameters=design_parameters,
     )
 
-    __add_segment_to_layout(file, horizontal_alignment, alignment_segment)
+    _add_segment_to_layout(file, horizontal_alignment, alignment_segment)
 
     assert len(horizontal_alignment.IsNestedBy) == 1
     assert len(horizontal_alignment.IsNestedBy[0].RelatedObjects) == 2 # The the segment we added and the automatically created zero length segment

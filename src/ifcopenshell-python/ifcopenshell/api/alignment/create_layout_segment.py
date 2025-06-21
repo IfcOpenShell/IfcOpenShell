@@ -25,7 +25,7 @@ import math
 from ifcopenshell import ifcopenshell_wrapper
 import numpy as np
 
-from ifcopenshell.api.alignment.__add_segment_to_layout import __add_segment_to_layout
+from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
 
 def create_layout_segment(
@@ -54,7 +54,7 @@ def create_layout_segment(
 
     # create the segment and add it to the layout.
     segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
-    __add_segment_to_layout(file, layout, segment)  # adds to layout and geometric representation
+    _add_segment_to_layout(file, layout, segment)  # adds to layout and geometric representation
 
     # compute the 4x4 matrix at the end of the segment so this information can be
     # returned and used when defining the next segment

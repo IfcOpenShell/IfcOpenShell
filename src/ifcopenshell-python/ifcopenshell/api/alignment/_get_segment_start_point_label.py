@@ -24,7 +24,7 @@ from typing import Sequence
 import ifcopenshell.util.representation
 
 
-def __get_segment_start_point_label(prev_segment: entity_instance, segment: entity_instance) -> str:
+def _get_segment_start_point_label(prev_segment: entity_instance, segment: entity_instance) -> str:
     """
     Returns the label for the start point of a segment. Typically used in the name of an IfcReferent
     """
@@ -74,7 +74,7 @@ def __get_segment_start_point_label(prev_segment: entity_instance, segment: enti
                 },
                 "CIRCULARARC": {
                     "BLOSSCURVE": "C.S.",
-                    "CIRCULARARC": "C.C",
+                    "CIRCULARARC": "P.C.C.",
                     "CLOTHOID": "xx",
                     "COSINECURVE": "xx",
                     "CUBIC": "xx",
@@ -170,12 +170,12 @@ def __get_segment_start_point_label(prev_segment: entity_instance, segment: enti
                     "CIRCULARARC": "xx",
                     "CLOTHOID": "xx",
                     "CONSTANTGRADIENT": "P.V.I",
-                    "PARABOLICARC": "B.V.C.",
+                    "PARABOLICARC": "P.V.C.",
                 },
                 "PARABOLICARC": {
                     "CIRCULARARC": "xx",
                     "CLOTHOID": "xx",
-                    "CONSTANTGRADIENT": "E.V.C.",
+                    "CONSTANTGRADIENT": "P.V.T.",
                     "PARABOLICARC": "xx",
                 },
             }

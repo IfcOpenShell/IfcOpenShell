@@ -25,12 +25,12 @@ import math
 from ifcopenshell import entity_instance
 from typing import Sequence
 
-from ifcopenshell.api.alignment.__add_segment_to_curve import __add_segment_to_curve
-from ifcopenshell.api.alignment.__get_mapped_segments import __get_mapped_segments
-from ifcopenshell.api.alignment.__get_segment_start_point_label import __get_segment_start_point_label
+from ifcopenshell.api.alignment._add_segment_to_curve import _add_segment_to_curve
+from ifcopenshell.api.alignment._get_mapped_segments import _get_mapped_segments
+from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
 
 
-def __add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, segment: entity_instance) -> None:
+def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, segment: entity_instance) -> None:
     """
     Adds an IfcAlignmentSegment to a layout alignment (IfcAlignmentHorizontal/Vertical/Cant). This segment is added at the end
     of the layout, before the manditory zero length segment. An IfcCurveSegment is created for the corresponding geometric representation.
@@ -56,7 +56,7 @@ def __add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, se
         curve = ifcopenshell.api.alignment.get_curve(alignment)
 
     # add the new segment to the geometric representation curve
-    __add_segment_to_curve(file, segment, curve)
+    _add_segment_to_curve(file, segment, curve)
 
     # add the new segment to the layout
     ifcopenshell.api.nest.assign_object(file, related_objects=[segment], relating_object=layout)
@@ -99,7 +99,7 @@ def __add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, se
         "IfcAlignmentVerticalSegment"
     ) or zero_length_segment.DesignParameters.is_a("IfcAlignmentCantSegment"):
         # get the geometric representation for the new segment
-        mapped_segments = __get_mapped_segments(file, segment)
+        mapped_segments = _get_mapped_segments(file, segment)
         mapped_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
 
         # compute the end point matrix
@@ -138,7 +138,7 @@ def __add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, se
         zero_length_segment.DesignParameters.StartDistAlong = start_dist_along
 
     end_referent = zero_length_segment.IsNestedBy[0].RelatedObjects[0]
-    end_referent.Name = f"{__get_segment_start_point_label(zero_length_segment,None)} ({ifcopenshell.util.stationing.station_as_string(file,station)})"
+    end_referent.Name = f"{_get_segment_start_point_label(zero_length_segment,None)} ({ifcopenshell.util.stationing.station_as_string(file,station)})"
 
     # update the referent's geometric representation's location
     end_referent.ObjectPlacement.RelativePlacement.Location.DistanceAlong.wrappedValue = start_dist_along
@@ -170,7 +170,7 @@ def __add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, se
     # get the previous segment. Working from the end of the basis curve, -1 is zero length segment
     # -2 is the newly added segment, so -3 is the segment occuring just before the newly added segment
     prev_segment = layout.IsNestedBy[0].RelatedObjects[-3] if 2 < len(layout.IsNestedBy[0].RelatedObjects) else None
-    name = f"{__get_segment_start_point_label(prev_segment,segment)} ({ifcopenshell.util.stationing.station_as_string(file,station)})"
+    name = f"{_get_segment_start_point_label(prev_segment,segment)} ({ifcopenshell.util.stationing.station_as_string(file,station)})"
     referent = ifcopenshell.api.alignment.add_stationing_referent(
         file, segment, basis_curve=basis_curve, distance_along=dist_along, station=station, name=name
     )

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-from  ifcopenshell.api.alignment.__update_curve_segment_transition_code import __update_curve_segment_transition_code
+from  ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
 import ifcopenshell.api.context
 
 
@@ -81,7 +81,7 @@ def _test1():
 
     composite_curve = file.createIfcCompositeCurve(Segments=(circular_arc, line), SelfIntersect=False)
 
-    __update_curve_segment_transition_code(circular_arc, line)
+    _update_curve_segment_transition_code(circular_arc, line)
     assert circular_arc.Transition == "CONTSAMEGRADIENT"
 
 
@@ -225,16 +225,16 @@ def _test2():
 
     composite_curve = file.createIfcCompositeCurve(Segments=[line1,clothoid1,circular_arc,clothoid2,line2], SelfIntersect=False)
 
-    __update_curve_segment_transition_code(line1,clothoid1)
+    _update_curve_segment_transition_code(line1,clothoid1)
     assert line1.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
-    __update_curve_segment_transition_code(clothoid1,circular_arc)
+    _update_curve_segment_transition_code(clothoid1,circular_arc)
     assert clothoid1.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
-    __update_curve_segment_transition_code(circular_arc,clothoid2)
+    _update_curve_segment_transition_code(circular_arc,clothoid2)
     assert circular_arc.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
-    __update_curve_segment_transition_code(clothoid2,line2)
+    _update_curve_segment_transition_code(clothoid2,line2)
     assert clothoid2.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
 

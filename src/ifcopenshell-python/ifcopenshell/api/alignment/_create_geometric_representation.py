@@ -25,11 +25,11 @@ import math
 from collections.abc import Sequence
 
 
-def __create_geometric_representation(file: ifcopenshell.file, alignment: entity_instance) -> None:
+def _create_geometric_representation(file: ifcopenshell.file, alignment: entity_instance) -> None:
     """
     Create geometric representation for the alignment and its nested layouts.
 
-    There are 5 different cases (the IfcCurve create is indicated):
+    There are 5 different cases (the IfcCurve created is indicated):
 
     1) Horizontal only -> IfcCompositeCurve
     2) Horizontal + Vertical -> IfcCompositeCurve and IfcGradientCurve

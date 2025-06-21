@@ -189,7 +189,7 @@ def _map_clothoid(file: ifcopenshell.file, design_parameters: entity_instance) -
     raise NotImplementedError("mapping for IfcVerticalSegment.CLOTHOID not implemented")
 
 
-def __map_alignment_vertical_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
+def _map_alignment_vertical_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
     """
     Creates IfcCurveSegment entities for the represention of the supplied IfcAlignmentVerticalSegment business logic entity instance.
     A pair of entities is returned for consistency with map_alignment_horizontal_segment and map_alignment_cant_segment.

@@ -19,11 +19,11 @@
 import ifcopenshell.api.cogo.angle_from_dms
 import math
 
-def angle_from_direction(direction: str)->float:
+def angle_from_bearing(bearing: str)->float:
     """
-    Compute an angle, in radian, from a direction string.
+    Compute an angle, in radian, from a quadrant bearing string.
 
-    The format of the direction string is "N|S dd (mm (ss.s)) E|W"
+    The format of the string is "N|S dd (mm (ss.s)) E|W"
     where:
     N|S is N or S for North or South
     dd is degree (required)
@@ -31,14 +31,14 @@ def angle_from_direction(direction: str)->float:
     ss.s is second (required)
     E|W is E or W for East or West
 
-    :param str: the direction string
+    :param str: the bearing string
     :return: Angle in radian
     """
-    error_msg = "Invalid direction string"
+    error_msg = "Invalid bearing string"
 
-    direction = direction.strip() # trim external white space
-    direction = ' '.join(direction.split()) # make sure all parts separated by a single space
-    parts = direction.split()
+    direcbearingtion = bearing.strip() # trim external white space
+    bearing = ' '.join(bearing.split()) # make sure all parts separated by a single space
+    parts = bearing.split()
     nParts = len(parts)
     if nParts < 3 or 5 < nParts:
         raise ValueError(error_msg)

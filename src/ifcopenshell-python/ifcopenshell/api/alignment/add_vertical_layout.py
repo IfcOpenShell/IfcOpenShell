@@ -27,7 +27,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.api
 from ifcopenshell import entity_instance
 
-from ifcopenshell.api.alignment.__add_zero_length_segment import __add_zero_length_segment
+from ifcopenshell.api.alignment._add_zero_length_segment import _add_zero_length_segment
 
 
 def _move_vertical_layout_to_child_alignment(
@@ -187,6 +187,6 @@ def add_vertical_layout(file: ifcopenshell.file, parent_alignment: entity_instan
 
     # All alignment layouts must end with a zero length segment. Their geometric representations must also end with a zero length segment.
     # Now that all the geometry is setup, add the zero length segment to the layout, which also adds a zero length segment to the representation
-    __add_zero_length_segment(file, vertical_layout)
+    _add_zero_length_segment(file, vertical_layout)
 
     return vertical_layout

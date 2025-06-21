@@ -22,13 +22,13 @@ import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import numpy as np
 from ifcopenshell import entity_instance
 
-from ifcopenshell.api.alignment.__update_curve_segment_transition_code import __update_curve_segment_transition_code
-from ifcopenshell.api.alignment.__map_alignment_horizontal_segment import __map_alignment_horizontal_segment
-from ifcopenshell.api.alignment.__map_alignment_vertical_segment import __map_alignment_vertical_segment
-from ifcopenshell.api.alignment.__map_alignment_cant_segment import __map_alignment_cant_segment
+from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
+from ifcopenshell.api.alignment._map_alignment_horizontal_segment import __map_alignment_horizontal_segment
+from ifcopenshell.api.alignment._map_alignment_vertical_segment import _map_alignment_vertical_segment
+from ifcopenshell.api.alignment._map_alignment_cant_segment import _map_alignment_cant_segment
 
 
-def __add_curve_segment_to_composite_curve(
+def _add_curve_segment_to_composite_curve(
     file: ifcopenshell.file, curve_segment: entity_instance, composite_curve: entity_instance
 ):
     if 0 < len(curve_segment.UsingCurves):
@@ -67,7 +67,7 @@ def __add_curve_segment_to_composite_curve(
             )
             composite_curve.Segments = []
             composite_curve.Segments += segments
-            __update_curve_segment_transition_code(prev_segment, curve_segment)
+            _update_curve_segment_transition_code(prev_segment, curve_segment)
         else:
             composite_curve.Segments = (curve_segment, zero_length_segment)
 
@@ -86,17 +86,17 @@ def __add_curve_segment_to_composite_curve(
         zero_length_segment.Placement.Location.Coordinates = (x, y)
         zero_length_segment.Placement.RefDirection.DirectionRatios = (dx, dy)
 
-        __update_curve_segment_transition_code(curve_segment, zero_length_segment)
+        _update_curve_segment_transition_code(curve_segment, zero_length_segment)
 
 
-def __add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, composite_curve: entity_instance) -> None:
+def _add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, curve: entity_instance) -> None:
     """
-    Creates an IfcCurveSegment from the IfcAlignmentSegment and adds it to the composite curve. The IfcCurveSegment is added
+    Creates an IfcCurveSegment from the IfcAlignmentSegment and adds it to the representation curve. The IfcCurveSegment is added
     at the end of the curve, but before the manditory zero length segment. The IfcCurveSegment.Transition for the segment
     that preceeds the new segment is updated.
 
     :param segment: The segment to be added to the curve
-    :param composite_curve: The curve receiving the segment
+    :param curve: The representation curve receiving the segment
     :return: None
     """
     expected_types = ["IfcAlignmentSegment"]
@@ -105,30 +105,30 @@ def __add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, co
             f"Expected entity type to be one of {[_ for _ in expected_types]}, instead received '{segment.is_a()}"
         )
 
-    if segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment") and not composite_curve.is_a("IfcCompositeCurve"):
-        raise TypeError(f"Expected to see IfcCompositeCurve, instead received '{composite_curve.is_a()}'.")
-    elif segment.DesignParameters.is_a("IfcAlignmentVerticalSegment") and not composite_curve.is_a("IfcGradientCurve"):
-        raise TypeError(f"Expected to see IfcGradientCurve, instead received '{composite_curve.is_a()}'.")
-    elif segment.DesignParameters.is_a("IfcAlignmentCantSegment") and not composite_curve.is_a(
+    if segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment") and not curve.is_a("IfcCompositeCurve"):
+        raise TypeError(f"Expected to see IfcCompositeCurve, instead received '{curve.is_a()}'.")
+    elif segment.DesignParameters.is_a("IfcAlignmentVerticalSegment") and not curve.is_a("IfcGradientCurve"):
+        raise TypeError(f"Expected to see IfcGradientCurve, instead received '{curve.is_a()}'.")
+    elif segment.DesignParameters.is_a("IfcAlignmentCantSegment") and not curve.is_a(
         "IfcSegmentedReferenceCurve"
     ):
-        raise TypeError(f"Expected to see IfcSegmentedReferenceCurve, instead received '{composite_curve.is_a()}'.")
+        raise TypeError(f"Expected to see IfcSegmentedReferenceCurve, instead received '{curve.is_a()}'.")
 
     expected_type = "IfcCompositeCurve"
-    if not composite_curve.is_a(expected_type):
-        raise TypeError(f"Expected to see '{expected_type}', instead received '{composite_curve.is_a()}'.")
+    if not curve.is_a(expected_type):
+        raise TypeError(f"Expected to see '{expected_type}', instead received '{curve.is_a()}'.")
 
     # map the IfcAlignmentSegment to an IfcCurveSegment (or two in the case of helmert curves)
     if segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
         mapped_segments = __map_alignment_horizontal_segment(file, segment)
     elif segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
-        mapped_segments = __map_alignment_vertical_segment(file, segment)
+        mapped_segments = _map_alignment_vertical_segment(file, segment)
     elif segment.DesignParameters.is_a("IfcAlignmentCantSegment"):
-        alignment = segment.Nests[0].RelatingObject
-        mapped_segments = __map_alignment_cant_segment(file, segment, alignment.RailHeadDistance)
+        cant_layout = segment.Nests[0].RelatingObject
+        mapped_segments = _map_alignment_cant_segment(file, segment, cant_layout.RailHeadDistance)
     else:
         assert False
 
     for mapped_segment in mapped_segments:
         if mapped_segment:
-            __add_curve_segment_to_composite_curve(file, mapped_segment, composite_curve)
+            _add_curve_segment_to_composite_curve(file, mapped_segment, curve)

@@ -23,13 +23,13 @@ Coordinate Geometry (cogo) functions primarily for survey points and control mon
 from .add_survey_point import add_survey_point
 from .assign_survey_point import assign_survey_point
 from .edit_survey_point import edit_survey_point
-from .angle_from_direction import angle_from_direction
+from .angle_from_bearing import angle_from_bearing
 from .angle_from_dms import angle_from_dms
 
 __all__ = [
     "add_survey_point",
     "assign_survey_point",
     "edit_survey_point",
-    "angle_from_direction",
+    "angle_from_bearing",
     "angle_from_dms"
 ]
