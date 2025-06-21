@@ -53,6 +53,7 @@ from .create_layout_segment import create_layout_segment
 from .create_alignment import create
 from .create_by_pi_method import create_by_pi_method
 from .create_from_csv import create_from_csv
+from .create_segment_representations import create_segment_representations
 from .distance_along_from_station import distance_along_from_station
 from .get_alignment import get_alignment
 from .get_alignment_station import get_alignment_station

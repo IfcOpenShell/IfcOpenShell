@@ -58,7 +58,7 @@ def create_segment_representations(
             )
 
         curve_segments = curve.Segments
-        segments = nested_alignment.IsNestedBy[0].RelatingObjects
+        segments = nested_alignment.IsNestedBy[0].RelatedObjects
 
         for curve_segment, alignment_segment in zip(curve_segments, segments):
             axis_representation = file.create_entity(
