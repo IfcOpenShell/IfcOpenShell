@@ -76,6 +76,7 @@ classes = (
     operator.UpdateItemAttributes,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    operator.CreateInstance,
     prop.RepresentationItem,
     prop.RepresentationItemObject,
     prop.ShapeAspect,

@@ -3432,3 +3432,21 @@ class UnassignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
         layer = ifc_file.by_id(self.layer_id)
         ifcopenshell.api.layer.unassign_layer(ifc_file, [representation], layer)
         return {"FINISHED"}
+
+class CreateInstance(bpy.types.Operator):
+    bl_idname = "bim.create_instance"
+    bl_label = "IFC Create Instance"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        try:
+            bpy.ops.bim.hotkey(hotkey="S_A")
+            return {"FINISHED"}
+        except RuntimeError as e:
+            error_message = str(e)
+            if "No relating type selected" in error_message:
+                self.report({"ERROR"}, "No relating type selected. Please select a type first in the Types panel.")
+            else:
+                self.report({"ERROR"}, f"Error creating instance: {error_message}")
+            return {"CANCELLED"}
+
