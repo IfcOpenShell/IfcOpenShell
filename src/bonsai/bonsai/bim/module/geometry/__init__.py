@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 from bpy.app.handlers import persistent
 import ifcopenshell.util.element
+import math
 
 classes = (
     operator.AddCurvelikeItem,
@@ -108,6 +109,7 @@ def block_scale(scene: bpy.types.Scene) -> None:
                 camera = tool.Ifc.get_entity(obj)
                 if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
                     obj.scale = (-1, -1, -1)
+                    obj.rotation_euler = (0.0, 0.0, math.radians(180))
             else:
                 if obj.scale != (1, 1, 1):
                     obj.scale = (1, 1, 1)
