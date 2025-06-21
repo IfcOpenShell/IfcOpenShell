@@ -31,16 +31,6 @@
             "predefined_type": "TOPPING"
         }
     ],
-    "IfcDistributionElement": [
-        {
-            "name": "Furnace"
-        }
-    ],
-    "IfcDistributionElementType": [
-        {
-            "name": "Furnace"
-        }
-    ],
     "IfcElectricDistributionBoard": [
         {
             "name": "Circuit Breaker Panel",
@@ -140,6 +130,41 @@
     "IfcUnitaryEquipment": [
         {
             "name": "Fan Coil Unit"
+        },
+        {
+            "name": "Roof Top Unit (RTU)",
+            "predefined_type": "ROOFTOPUNIT"
+        },
+        {
+            "name": "Furnace"
+        },
+        {
+            "name": "Central air conditioner (split or package)",
+            "predefined_type": "AIRCONDITIONINGUNIT"
+        },
+        {
+            "name": "Mini-split system",
+            "predefined_type": "SPLITSYSTEM"
+        }
+    ],
+    "IfcUnitaryEquipmentType": [
+        {
+            "name": "Fan Coil Unit"
+        },
+        {
+            "name": "Roof Top Unit (RTU)",
+            "predefined_type": "ROOFTOPUNIT"
+        },
+        {
+            "name": "Furnace"
+        },
+        {
+            "name": "Central air conditioner (split or package)",
+            "predefined_type": "AIRCONDITIONINGUNIT"
+        },
+        {
+            "name": "Mini-split system",
+            "predefined_type": "SPLITSYSTEM"
         }
     ],
     "IfcWall": [
