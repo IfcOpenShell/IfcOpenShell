@@ -314,7 +314,7 @@ def prop_with_search(
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
     try:
-        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > 10:
+        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > 0:
             # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
             row.context_pointer_set(name="data", data=data)
             op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
