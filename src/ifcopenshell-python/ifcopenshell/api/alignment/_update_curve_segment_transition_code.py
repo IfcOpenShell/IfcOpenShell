@@ -62,9 +62,9 @@ def _update_curve_segment_transition_code(prev_segment: entity_instance, segment
     s = segment_evaluator.evaluate(segment_fn.start())
     start = np.array(s)
 
-    same_position = True if np.allclose(end[:3], start[:3]) else False
-    same_gradient = True if np.allclose(end[:0], start[:0]) else False
-    same_curvature = True if np.allclose(end[3:], start[3:]) else False
+    same_position = True if np.allclose(end[:3,3], start[:3,3]) else False
+    same_gradient = True if np.allclose(end[:3,0], start[:3,0]) else False
+    same_curvature = True if np.allclose(end[3:,:3], start[3:,:3]) else False
 
     if same_position:
         prev_segment.Transition = "CONTINUOUS"
