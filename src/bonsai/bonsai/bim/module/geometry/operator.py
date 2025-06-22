@@ -1161,10 +1161,10 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
-        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
+        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context, aggregate_name)
 
     @staticmethod
-    def execute_ifc_duplicate_linked_aggregate_operator(self, context, location_from_3d_cursor=False):
+    def execute_ifc_duplicate_linked_aggregate_operator(self, context, aggregate_name, location_from_3d_cursor=False):
         ifc_file = tool.Ifc.get()
         self.new_active_obj = None
         self.group_name = "BBIM_Linked_Aggregate"
@@ -1199,7 +1199,10 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 ifcopenshell.api.pset.edit_pset(
                     ifc_file,
                     pset=pset,
-                    properties={"Index": index},
+                    properties={
+                        "Index": index,
+                        "Name": "Default_Name",
+                    },
                 )
 
                 index += 1
@@ -1262,7 +1265,10 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                     ifcopenshell.api.pset.edit_pset(
                         ifc_file,
                         pset=new_pset,
-                        properties={"Index": pset["Index"]},
+                        properties={
+                        "Index": pset["Index"],
+                        "Name": aggregate_name,
+                        },
                     )
 
                 if new[0].is_a("IfcElementAssembly"):
@@ -1485,13 +1491,75 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world
                 new_obj_matrix = new_base_matrix @ matrix_diff
                 new_obj.matrix_world = new_obj_matrix
-
+        ifc_file = tool.Ifc.get()
         active_element = tool.Ifc.get_entity(context.active_object)
         if not active_element:
             self.report({"INFO"}, "Object has no Ifc metadata.")
             return {"FINISHED"}
 
-        active_element = get_element_assembly(active_element)
+        pset = ifcopenshell.util.element.get_pset(active_element, "BBIM_Linked_Aggregate")
+        if pset:
+            aggregate_name = pset["Name"]
+        else:
+            aggregate_name = "testydefault"
+
+        active_aggregate = get_element_assembly(active_element)
+
+
+        # Get all parts (components) of the active aggregate
+        parts = ifcopenshell.util.element.get_decomposition(active_aggregate)
+
+        # Track whether any part doesn't match the active_element's aggregate_name
+        mismatch_found = False
+
+        for part in parts:
+            part_pset = ifcopenshell.util.element.get_pset(part, "BBIM_Linked_Aggregate")
+            part_name = part_pset.get("Name") if part_pset else None
+
+            if part_name != aggregate_name:
+                mismatch_found = True
+                break
+
+        # If a mismatch is found, assign the correct aggregate_name to all parts
+        if mismatch_found:
+            for part in parts:
+                # Try to get the IfcPropertySet instance instead of the dict
+                part_pset_dict = ifcopenshell.util.element.get_pset(part, "BBIM_Linked_Aggregate")
+                part_pset = None
+                if part_pset_dict:
+                    # Retrieve the actual IfcPropertySet instance
+                    for rel in ifc_file.get_inverse(part):
+                        if rel.is_a("IfcRelDefinesByProperties") and rel.RelatingPropertyDefinition.is_a("IfcPropertySet"):
+                            pset = rel.RelatingPropertyDefinition
+                            if pset.Name == "BBIM_Linked_Aggregate":
+                                part_pset = pset
+                                break
+
+                if not part_pset:
+                    # Create the pset if it doesn't exist
+                    part_pset = ifcopenshell.api.pset.add_pset(
+                        tool.Ifc.get(), product=part, name="BBIM_Linked_Aggregate"
+                    )
+
+                props = ifcopenshell.util.element.get_pset(part, "BBIM_Linked_Aggregate")
+                index = props.get("Index") if props else None
+                if not index:
+                    index = 1
+                ifcopenshell.api.pset.edit_pset(
+                    ifc_file,
+                    pset=part_pset,
+                    properties={
+                        "Index": index,
+                        "Name": aggregate_name,
+                    },
+                )
+
+
+
+
+
+
+
         selected_objs = context.selected_objects
         linked_aggregate_groups, selected_parents = handle_selection(selected_objs)
         if not linked_aggregate_groups or not selected_parents:
@@ -1512,11 +1580,11 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 instances_to_refresh = elements
 
             elif (len(linked_aggregate_groups) == 1) and (len(selected_parents) > 1):
-                base_instance = active_element
+                base_instance = active_aggregate
                 instances_to_refresh = [element for element in elements if element in selected_parents]
 
             else:
-                base_instance = active_element
+                base_instance = active_aggregate
                 instances_to_refresh = elements
 
             for element in instances_to_refresh:
@@ -1536,7 +1604,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
                 tool.Ifc.get_object(base_instance).select_set(True)
 
-                old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
+                old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context, aggregate_name)
 
                 set_new_matrix(selected_matrix, duplicate_matrix, old_to_new)
 
