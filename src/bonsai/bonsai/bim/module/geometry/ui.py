@@ -66,6 +66,12 @@ def object_menu(self, context):
     self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
     self.layout.menu("BIM_MT_separate", icon="PLUGIN")
 
+    # only show the create instance operator if the current tool is the BIM tool
+    # if context.space_data and hasattr(context.space_data, "show_object_viewport_mesh"):
+    #    current_tool = context.workspace.tools.from_space_view3d_mode(context.mode, create=False)
+    #    if current_tool and current_tool.idname == "bim.bim_tool":
+    self.layout.operator("bim.create_instance", icon="PLUGIN")
+
 
 def edit_mesh_menu(self, context):
     self.layout.separator()
