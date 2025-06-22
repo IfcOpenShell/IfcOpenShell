@@ -3468,8 +3468,7 @@ class CreateInstance(bpy.types.Operator, tool.Ifc.Operator):
         except:
             self.report({"ERROR"}, "You must be using the Multiobject Tool or the relevant editing tool")
             return {"CANCELLED"}
-
-
+    
         bpy.ops.bim.hotkey(hotkey="S_A")
         
         return {"FINISHED"}
