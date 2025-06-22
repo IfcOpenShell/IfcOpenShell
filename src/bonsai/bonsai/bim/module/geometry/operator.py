@@ -46,6 +46,7 @@ import bonsai.core.root
 import bonsai.core.drawing
 import bonsai.tool as tool
 import bonsai.bim.handler
+from bonsai.bim.module.model.data import AuthoringData
 from mathutils import Vector, Matrix, Quaternion
 from time import time
 from bonsai.bim.ifc import IfcStore
@@ -3433,20 +3434,42 @@ class UnassignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.layer.unassign_layer(ifc_file, [representation], layer)
         return {"FINISHED"}
 
-class CreateInstance(bpy.types.Operator):
+class CreateInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_instance"
     bl_label = "IFC Create Instance"
+    bl_description = "Create an instance of the type associated with the selected object"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
+    
+    def _execute(self, context):
+        # Check if exactly one object is selected
+        if not context.selected_objects or len(context.selected_objects) > 1:
+            self.report({"ERROR"}, "Select exactly one object to create an instance of its type")
+            return {"CANCELLED"}
+        
+        active_obj = context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        if not element:
+            self.report({"ERROR"}, "Selected object is not an IFC element")
+            return {"CANCELLED"}
+        
+        # Get the relating type of the selected object
+        relating_type = ifcopenshell.util.element.get_type(element)
+        if not relating_type:
+            self.report({"ERROR"}, "Selected object has no associated type")
+            return {"CANCELLED"}
+        
+        # Simply activate the BIM tool and invoke the S_A hotkey
+        
+        
         try:
-            bpy.ops.bim.hotkey(hotkey="S_A")
-            return {"FINISHED"}
-        except RuntimeError as e:
-            error_message = str(e)
-            if "No relating type selected" in error_message:
-                self.report({"ERROR"}, "No relating type selected. Please select a type first in the Types panel.")
-            else:
-                self.report({"ERROR"}, f"Error creating instance: {error_message}")
+            props = tool.Model.get_model_props()
+            props.ifc_class = relating_type.is_a()
+            props.relating_type_id = str(relating_type.id())
+        except:
+            self.report({"ERROR"}, "You must be using the Multiobject Tool or the relevant editing tool")
             return {"CANCELLED"}
 
+
+        bpy.ops.bim.hotkey(hotkey="S_A")
+        
+        return {"FINISHED"}
