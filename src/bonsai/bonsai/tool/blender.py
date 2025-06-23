@@ -1709,7 +1709,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_radiance_exporter_props(cls) -> RadianceExporterProperties:
         assert (scene := bpy.context.scene)
-        return scene.radiance_exporter_properties
+        return scene.BIMRadianceExporeterProperies
 
     @classmethod
     def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
