@@ -38,6 +38,8 @@ classes = (
     operator.MoveSunPathTo3DCursor,
     operator.RadianceRender,
     operator.ViewFromSun,
+    operator.LightPickCoordinates,
+    operator.LightSetTimeToNow,
     operator.RefreshIFCMaterials,
     operator.UnmapMaterial,
     operator.RADIANCE_OT_select_camera,
