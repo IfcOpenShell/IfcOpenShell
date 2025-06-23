@@ -694,7 +694,7 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
         app_name: tuple[str, str] = (inst.ApplicationFullName, inst.Version)
         app_id: str = inst.ApplicationIdentifier
 
-        if app_name is not None:
+        if all(x is not None for x in app_name):
             if app_name not in used_names:
                 used_names[app_name] = inst
             else:
