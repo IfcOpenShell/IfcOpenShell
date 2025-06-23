@@ -541,6 +541,7 @@ class SelectCostScheduleProducts(bpy.types.Operator):
         )
         return {"FINISHED"}
 
+
 class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     bl_idname = "bim.import_cost_schedule_csv"
     bl_label = "Import Cost Schedule CSV"
@@ -549,6 +550,11 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
     is_schedule_of_rates: bpy.props.BoolProperty(name="Is Schedule Of Rates", default=False)
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path",
+        description="Store the CSV filepath relative to the currently opened IFC file",
+        default=False,
+    )
 
     @classmethod
     def poll(cls, context):
@@ -559,9 +565,28 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
         return True
 
     def _execute(self, context):
-        cost_schedule = core.import_cost_schedule_csv(tool.Cost, self.filepath, self.is_schedule_of_rates)
-        core.add_csv_filepath(tool.Cost, self.filepath, self.is_schedule_of_rates, cost_schedule)
-        return {"FINISHED"}
+        from pathlib import Path
+
+        store_path = self.filepath
+        if self.use_relative_path:
+            store_path = tool.Ifc.get_uri(self.filepath, use_relative_path=True)
+
+        resolved_path = Path(tool.Ifc.resolve_uri(self.filepath))
+        if not resolved_path.exists():
+            self.report({"ERROR"}, f"File does not exist: '{store_path}' (resolved to '{resolved_path}')")
+            return {"CANCELLED"}
+
+        cost_schedule = core.import_cost_schedule_csv(tool.Cost, str(resolved_path), self.is_schedule_of_rates)
+        if cost_schedule:
+            core.add_csv_filepath(tool.Cost, store_path, self.is_schedule_of_rates, cost_schedule)
+            return {"FINISHED"}
+        return {"CANCELLED"}
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "is_schedule_of_rates")
+        row = self.layout.row()
+        row.prop(self, "use_relative_path")
 
 
 class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
@@ -576,19 +601,40 @@ class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
         if not props.active_cost_schedule_id:
             cls.poll_message_set("No active cost schedule")
             return False
-        
-        filepath = tool.Cost.get_cost_schedule_csv_filepath(props.active_cost_schedule_id)
-        if not filepath:
-            cls.poll_message_set("No CSV file associated with this cost schedule")
-            return False
-            
         return True
 
     def _execute(self, context):
+        from pathlib import Path
+
+        props = tool.Cost.get_cost_props()
+        cost_schedule_id = props.active_cost_schedule_id
+
+        file_path = tool.Cost.get_cost_schedule_csv_filepath(cost_schedule_id)
+        resolved_path = Path(tool.Ifc.resolve_uri(file_path))
+        if not resolved_path.exists():
+            self.report({"ERROR"}, f"File does not exist: '{file_path}' (resolved to '{resolved_path}')")
+            return {"CANCELLED"}
+
         tool.Cost.delete_all_cost_items()
-        tool.Cost.refresh_cost_schedule_csv()
-        tool.Cost.load_cost_schedule_tree()
-        return {"FINISHED"}
+
+        cost_schedule = tool.Ifc.get_entity_by_id(cost_schedule_id)
+        is_schedule_of_rates = tool.Cost.is_schedule_of_rates_csv(cost_schedule_id)
+
+        try:
+            from ifc5d.csv2ifc import Csv2Ifc
+
+            csv2ifc = Csv2Ifc()
+            csv2ifc.csv = str(resolved_path)
+            csv2ifc.file = tool.Ifc.get()
+            csv2ifc.cost_schedule = cost_schedule
+            csv2ifc.is_schedule_of_rates = is_schedule_of_rates
+            csv2ifc.refresh()
+
+            tool.Cost.load_cost_schedule_tree()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({"ERROR"}, f"Error refreshing CSV: {str(e)}")
+            return {"CANCELLED"}
 
 
 class AddCostColumn(bpy.types.Operator):
