@@ -53,23 +53,26 @@ def get_sites(self: "BIMSolarProperties", context: bpy.types.Context) -> tool.Bl
     return SolarData.data["sites"]
 
 
+def update_coordinates(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
+    # We define our own `coordinates` property just to ensure changing it would update
+    # all other props.
+    # But we still need to set original prop value and retrieve it to ensure coordinate
+    # was parsed correctly.
+    sun_props = tool.Blender.get_sun_props()
+    assert sun_props
+    sun_props.coordinates = self.coordinates
+    self["coordinates"] = sun_props.coordinates
+    self["longitude"] = sun_props.longitude
+    self["latitude"] = sun_props.latitude
+    update_sun_path(self)
+
+
 def update_latlong(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
-    update_sun_path(self)
-
-
-def update_hourminute(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
-    update_sun_path(self)
-
-
-def update_date(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
-    update_sun_path(self)
-
-
-def update_true_north(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
-    update_sun_path(self)
-
-
-def update_sun_path_size(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
+    sun_props = tool.Blender.get_sun_props()
+    assert sun_props
+    sun_props.longitude = sun_props.longitude
+    sun_props.latitude = sun_props.latitude
+    self["coordinates"] = sun_props.coordinates
     update_sun_path(self)
 
 
@@ -129,7 +132,7 @@ def update_resolution(self: "RadianceExporterProperties", context: bpy.types.Con
     context.scene.render.resolution_y = self.radiance_resolution_y
 
 
-def update_sun_path(self: "BIMSolarProperties") -> None:
+def update_sun_path(self: "BIMSolarProperties", context: Union[bpy.types.Context, None] = None) -> None:
     if not SolarData.is_loaded:
         SolarData.load()
 
@@ -442,6 +445,12 @@ class RadianceExporterProperties(PropertyGroup):
 
 class BIMSolarProperties(PropertyGroup):
     sites: EnumProperty(items=get_sites, name="Sites")
+    coordinates: StringProperty(
+        name="Coordinates",
+        description="Latitude and longitude on Earth. Coordinates can be directly entered from an online map",
+        update=update_coordinates,
+        default="33°51′54.51″S 151°12′35.64″E",
+    )
     latitude: FloatProperty(
         name="Latitude",
         min=-90,
@@ -457,15 +466,15 @@ class BIMSolarProperties(PropertyGroup):
         default=151.209900,
     )
     timezone: StringProperty(name="Timezone", default="Etc/GMT")
-    true_north: FloatProperty(name="True North", min=-pi, max=pi, subtype="ANGLE", update=update_true_north)
-    year: IntProperty(name="Year", min=1, max=9999, default=now.year, update=update_date)
-    month: IntProperty(name="Month", min=1, max=12, default=now.month, update=update_date)
-    day: IntProperty(name="Date", min=1, max=31, default=now.day, update=update_date)
-    hour: IntProperty(name="Hour", min=0, max=23, default=now.hour, update=update_hourminute)
-    minute: IntProperty(name="Minute", min=0, max=59, default=now.minute, update=update_hourminute)
+    true_north: FloatProperty(name="True North", min=-pi, max=pi, subtype="ANGLE", update=update_sun_path)
+    year: IntProperty(name="Year", min=1, max=9999, default=now.year, update=update_sun_path)
+    month: IntProperty(name="Month", min=1, max=12, default=now.month, update=update_sun_path)
+    day: IntProperty(name="Date", min=1, max=31, default=now.day, update=update_sun_path)
+    hour: IntProperty(name="Hour", min=0, max=23, default=now.hour, update=update_sun_path)
+    minute: IntProperty(name="Minute", min=0, max=59, default=now.minute, update=update_sun_path)
     sun_position: FloatVectorProperty(name="Sun Position", subtype="XYZ", default=(0, 0, 0))
     sun_path_origin: FloatVectorProperty(name="Sun Path Origin", subtype="XYZ", default=(0, 0, 0))
-    sun_path_size: FloatProperty(name="Sun Path Size", min=0.1, default=50, update=update_sun_path_size)
+    sun_path_size: FloatProperty(name="Sun Path Size", min=0.1, default=50, update=update_sun_path)
     azimuth: FloatProperty(name="Azimuth")
     elevation: FloatProperty(name="Elevation")
     UTC_zone: FloatProperty(name="UTC Zone")
@@ -500,6 +509,7 @@ class BIMSolarProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         sites: str
+        coordinates: str
         latitude: float
         longitude: float
         timezone: str

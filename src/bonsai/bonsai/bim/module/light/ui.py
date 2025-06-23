@@ -170,7 +170,7 @@ class BIM_PT_solar(bpy.types.Panel):
         row.operator("bim.light_pick_coordinates", icon="URL", text="Pick")
 
         row = self.layout.row(align=True)
-        row.prop(sun_props, "coordinates", icon="URL")
+        row.prop(props, "coordinates", icon="URL")
         row = self.layout.row(align=True)
         row.prop(props, "latitude")
         row.prop(props, "longitude")
