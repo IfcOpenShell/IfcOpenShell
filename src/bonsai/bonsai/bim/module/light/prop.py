@@ -22,6 +22,7 @@ import tzfpy
 import json
 import datetime
 import bonsai.tool as tool
+from typing import TYPE_CHECKING, Literal, Union
 from math import radians, pi
 from mathutils import Euler, Vector, Matrix, Quaternion
 from bpy.props import (
@@ -42,66 +43,78 @@ from bonsai.bim.module.light.decorator import SolarDecorator
 sun_position = tool.Blender.get_sun_position_addon()
 
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
-    spectraldb = json.load(f)
+    spectraldb: dict[str, dict[str, str]] = json.load(f)
 
 
-def get_sites(self, context):
+def get_sites(self: "BIMSolarProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not SolarData.is_loaded:
         SolarData.load()
     return SolarData.data["sites"]
 
 
-def update_latlong(self, context):
+def update_latlong(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
     update_sun_path(self)
 
 
-def update_hourminute(self, context):
+def update_hourminute(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
     update_sun_path(self)
 
 
-def update_date(self, context):
+def update_date(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
     update_sun_path(self)
 
 
-def update_true_north(self, context):
+def update_true_north(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
     update_sun_path(self)
 
 
-def update_sun_path_size(self, context):
+def update_sun_path_size(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
     update_sun_path(self)
 
 
-def update_shadow_mode(self, context):
+def update_shadow_mode(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
+    assert context.scene
     if self.shadow_mode == "SHADING":
         update_sun_path(self)
         context.scene.render.engine = "BLENDER_WORKBENCH"
+        assert context.scene.display
+        assert context.scene.display.shading
         context.scene.display.shading.light = "FLAT"
         context.scene.display.shading.show_shadows = True
         context.scene.display.shading.show_object_outline = True
         context.scene.display.shadow_focus = 1.0
+        assert context.scene.view_settings
         context.scene.view_settings.view_transform = "Standard"  # Preserve shading colours
         space = tool.Blender.get_view3d_space()
+        assert space
         space.shading.type = "RENDERED"
     elif self.shadow_mode == "RENDERING":
-        if context.scene.sun_pos_properties.sun_object is None:
+        sun_props = tool.Blender.get_sun_props()
+        assert sun_props
+        if sun_props.sun_object is None:
             bpy.ops.object.light_add(type="SUN", radius=1, align="WORLD", location=(0, 0, 0), scale=(1, 1, 1))
             bpy.ops.object.move_to_collection(collection_index=0)
-            context.scene.sun_pos_properties.sun_object = bpy.context.active_object
+            sun_props.sun_object = bpy.context.active_object
         update_sun_path(self)
         context.scene.render.engine = "BLENDER_EEVEE_NEXT"
+        assert context.scene.display
+        assert context.scene.display.shading
         context.scene.display.shading.light = "FLAT"
         context.scene.display.shading.show_shadows = True
         context.scene.display.shading.show_object_outline = True
         context.scene.display.shadow_focus = 1.0
+        assert context.scene.view_settings
         context.scene.view_settings.view_transform = "Standard"  # Preserve shading colours
         space = tool.Blender.get_view3d_space()
+        assert space
         space.shading.type = "RENDERED"
     else:
         space = tool.Blender.get_view3d_space()
+        assert space
         space.shading.type = "SOLID"
 
 
-def update_display_sun_path(self, context):
+def update_display_sun_path(self: "BIMSolarProperties", context: bpy.types.Context) -> None:
     if self.display_sun_path:
         update_sun_path(self)
         SolarDecorator.install(bpy.context)
@@ -109,20 +122,25 @@ def update_display_sun_path(self, context):
         SolarDecorator.uninstall()
 
 
-def update_resolution(self, context):
+def update_resolution(self: "RadianceExporterProperties", context: bpy.types.Context) -> None:
+    assert context.scene
     context.scene.render.resolution_x = self.radiance_resolution_x
     context.scene.render.resolution_y = self.radiance_resolution_y
 
 
-def update_sun_path(self):
+def update_sun_path(self: "BIMSolarProperties") -> None:
     if not SolarData.is_loaded:
         SolarData.load()
 
     if (sun_position := SolarData.data["sun_position"]) is None:
         return
 
-    props = bpy.context.scene.BIMSolarProperties
-    sun_props = bpy.context.scene.sun_pos_properties
+    if TYPE_CHECKING:
+        import sun_position
+
+    props = tool.Blender.get_solar_props()
+    sun_props = tool.Blender.get_sun_props()
+    assert sun_props
 
     sun_props.sun_distance = self.sun_path_size
     sun_props.latitude = self.latitude
@@ -166,6 +184,8 @@ def update_sun_path(self):
     props.elevation = elevation
     props.UTC_zone = zone
 
+    assert bpy.context.scene
+    assert bpy.context.scene.display
     if sun_vector.z < 0:
         bpy.context.scene.display.light_direction = mat @ Vector((0, 0, 1))
     else:
@@ -173,6 +193,7 @@ def update_sun_path(self):
     SolarData.data["sun"] = sun_vector
 
     if obj := bpy.data.objects.get("SunPathCamera"):
+        assert isinstance(obj.data, bpy.types.Camera)
         obj.matrix_world.translation = sun_vector
         z180_quaternion = Quaternion((0, 0, 1), radians(180))
         obj.rotation_mode = "QUATERNION"
@@ -181,25 +202,31 @@ def update_sun_path(self):
 
 
 class RadianceMaterial(PropertyGroup):
-    name: StringProperty(name="Name")
     style_id: StringProperty(name="Style ID")
     category: StringProperty(name="Category")
     subcategory: StringProperty(name="Subcategory")
     is_mapped: BoolProperty(name="Is Mapped", default=False)
     color: FloatVectorProperty(name="Color", subtype="COLOR", default=(1.0, 1.0, 1.0), min=0.0, max=1.0, size=3)
 
+    if TYPE_CHECKING:
+        style_id: str
+        category: str
+        subcategory: str
+        is_mapped: bool
+        color: tuple[float, float, float]
+
 
 class RadianceExporterProperties(PropertyGroup):
 
-    def update_output_dir(self, context):
+    def update_output_dir(self, context) -> None:
         if self.output_dir:
             self.output_dir = bpy.path.abspath(self.output_dir)
 
-    def update_ifc_file(self, context):
+    def update_ifc_file(self, context) -> None:
         if self.ifc_file:
             self.ifc_file = bpy.path.abspath(self.ifc_file)
 
-    def add_material_mapping(self, style_id, style_name):
+    def add_material_mapping(self, style_id: str, style_name: str) -> RadianceMaterial:
         item = self.materials.add()
         item.name = style_name
         item.style_id = style_id
@@ -208,7 +235,7 @@ class RadianceExporterProperties(PropertyGroup):
         item.color = (1.0, 1.0, 1.0)  # Default white
         return item
 
-    def import_mappings(self, filepath):
+    def import_mappings(self, filepath: str) -> None:
         with open(filepath, "r") as f:
             mappings = json.load(f)
 
@@ -225,10 +252,10 @@ class RadianceExporterProperties(PropertyGroup):
                 new_material.subcategory = mapping["subcategory"]
                 new_material.is_mapped = True
 
-    def get_material_mapping(self, style_name):
+    def get_material_mapping(self, style_name: str) -> Union[RadianceMaterial, None]:
         return next((item for item in self.materials if item.name == style_name), None)
 
-    def set_material_mapping(self, style_id, style_name, category, subcategory):
+    def set_material_mapping(self, style_id: str, style_name: str, category: str, subcategory: str) -> None:
         item = self.get_material_mapping(style_name)
         if item:
             item.category = category
@@ -238,14 +265,14 @@ class RadianceExporterProperties(PropertyGroup):
             self.materials[-1].category = category
             self.materials[-1].subcategory = subcategory
 
-    def get_mappings_dict(self):
+    def get_mappings_dict(self) -> dict[str, tuple[str, str]]:
         return {
             item.style_id: (item.category, item.subcategory)
             for item in self.materials
             if item.category and item.subcategory
         }
 
-    def unmap_material(self, style_name):
+    def unmap_material(self, style_name: str) -> None:
         item = self.get_material_mapping(style_name)
         if item:
             item.category = ""
@@ -273,7 +300,7 @@ class RadianceExporterProperties(PropertyGroup):
         ("Glass", "Glass", ""),
     ]
 
-    def update_material_mapping(self, context):
+    def update_material_mapping(self, context: bpy.types.Context) -> None:
         if self.active_material_index >= 0 and self.active_material_index < len(self.materials):
             active_material = self.materials[self.active_material_index]
             active_material.category = self.category
@@ -285,7 +312,7 @@ class RadianceExporterProperties(PropertyGroup):
         items=categories, name="Category", description="Material category", update=update_material_mapping
     )
 
-    def get_subcategories(self, context):
+    def get_subcategories(self, context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
         global SUBCATEGORIES_ENUM_ITEMS
         if self.category in spectraldb:
             SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
@@ -390,6 +417,27 @@ class RadianceExporterProperties(PropertyGroup):
         poll=lambda self, object: object.type == "CAMERA",
     )
 
+    if TYPE_CHECKING:
+        is_exporting: bool
+        category: str
+        subcategory: str
+        materials: bpy.types.bpy_prop_collection_idprop[RadianceMaterial]
+        active_material_index: int
+        should_load_from_memory: bool
+        radiance_resolution_x: int
+        radiance_resolution_y: int
+        output_dir: str
+        ifc_file: str
+        radiance_quality: Literal["LOW", "MEDIUM", "HIGH"]
+        radiance_detail: Literal["LOW", "MEDIUM", "HIGH"]
+        radiance_variability: Literal["LOW", "MEDIUM", "HIGH"]
+        output_file_name: str
+        output_file_format: Literal["HDR"]
+        use_hdr: bool
+        choose_hdr_image: Literal["Noon"]
+        use_active_camera: bool
+        selected_camera: Union[bpy.types.Object, None]
+
 
 class BIMSolarProperties(PropertyGroup):
     sites: EnumProperty(items=get_sites, name="Sites")
@@ -436,3 +484,23 @@ class BIMSolarProperties(PropertyGroup):
         description="Displays analemmas and sun position",
         update=update_display_sun_path,
     )
+
+    if TYPE_CHECKING:
+        sites: str
+        latitude: float
+        longitude: float
+        timezone: str
+        true_north: float
+        year: int
+        month: int
+        day: int
+        hour: int
+        minute: int
+        sun_position: Vector
+        sun_path_origin: Vector
+        sun_path_size: float
+        azimuth: float
+        elevation: float
+        UTC_zone: float
+        shadow_mode: Literal["NONE", "SHADING", "RENDERING"]
+        display_sun_path: bool

@@ -54,13 +54,15 @@ from typing import (
 from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 
 if TYPE_CHECKING:
+    from sun_position.properties import SunPosProperties
     import bpy.stub_internal.rna_enums as rna_enums
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
-    from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
+    from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
     from bonsai.bim.module.group.prop import BIMGroupProperties
+    from bonsai.bim.module.light.prop import BIMSolarProperties, RadianceExporterProperties
 
     T = TypeVar("T")
 
@@ -1496,6 +1498,11 @@ class Blender(bonsai.core.tool.Blender):
         return sun_position
 
     @classmethod
+    def get_sun_props(cls) -> Union[SunPosProperties, None]:
+        assert (scene := bpy.context.scene)
+        return getattr(scene, "sun_pos_properties", None)
+
+    @classmethod
     def scale_font_size(cls, size):
         default_dpi = 72
         default_pixel_size = 1.0
@@ -1693,6 +1700,16 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_object_attribute_props(cls, obj: bpy.types.Object) -> BIMAttributeProperties:
         return obj.BIMAttributeProperties
+
+    @classmethod
+    def get_solar_props(cls) -> BIMSolarProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMSolarProperties
+
+    @classmethod
+    def get_radiance_exporter_props(cls) -> RadianceExporterProperties:
+        assert (scene := bpy.context.scene)
+        return scene.radiance_exporter_properties
 
     @classmethod
     def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
