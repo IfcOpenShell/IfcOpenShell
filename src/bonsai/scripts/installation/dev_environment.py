@@ -38,6 +38,7 @@ REPO_PATH = r""
 # Usually don't need to change, just ensure Blender version matches.
 BLENDER_PATH = Path.home() / r"AppData/Roaming/Blender Foundation/Blender/4.4"
 
+
 # Determine BONSAI_PATH from existing options
 def find_bonsai_path(blender_path):
     candidates = [
@@ -51,9 +52,8 @@ def find_bonsai_path(blender_path):
             return path
     raise FileNotFoundError("Could not find Bonsai path in expected locations.")
 
+
 BONSAI_PATH = find_bonsai_path(BLENDER_PATH)
-
-
 
 
 # ---------------------------
