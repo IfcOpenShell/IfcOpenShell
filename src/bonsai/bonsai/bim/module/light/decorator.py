@@ -59,10 +59,10 @@ class SolarDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_text(self, context):
+    def draw_text(self, context: bpy.types.Context) -> None:
         self.addon_prefs = tool.Blender.get_addon_preferences()
 
-        props = bpy.context.scene.BIMSolarProperties
+        props = tool.Blender.get_solar_props()
         origin = Matrix.Translation(props.sun_path_origin)
         location = origin @ (props.sun_position * 1.05)
 
@@ -76,7 +76,8 @@ class SolarDecorator:
         grid_north_p = origin @ angle @ (Vector((0, 0.8, 0)) * props.sun_path_size)
         self.draw_text_at_position(context, "True North", grid_north_p)
 
-    def draw_text_at_position(self, context, text, position):
+    def draw_text_at_position(self, context: bpy.types.Context, text: str, position: Vector) -> None:
+        assert context.region and context.region_data
         coords_2d = location_3d_to_region_2d(context.region, context.region_data, position)
         if not coords_2d:
             return
@@ -87,7 +88,8 @@ class SolarDecorator:
             blf.position(self.font_id, co[0], co[1], 0)
             blf.draw(self.font_id, line)
 
-    def draw_geometry(self, context):
+    def draw_geometry(self, context: bpy.types.Context) -> None:
+        assert context.region
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color_special = self.addon_prefs.decorator_color_special
         decorator_color_error = self.addon_prefs.decorator_color_error
@@ -131,7 +133,7 @@ class SolarDecorator:
 
         self.shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
 
-        props = bpy.context.scene.BIMSolarProperties
+        props = tool.Blender.get_solar_props()
 
         origin = Matrix.Translation(props.sun_path_origin)
 
