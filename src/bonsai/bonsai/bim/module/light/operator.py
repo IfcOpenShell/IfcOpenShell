@@ -38,6 +38,7 @@ import webbrowser
 import ifcopenshell.geom
 import multiprocessing
 import requests
+from math import radians
 from mathutils import Vector
 from bonsai.bim.module.light.data import SolarData
 from bpy_extras.io_utils import ExportHelper
@@ -512,7 +513,7 @@ class ImportTrueNorth(bpy.types.Operator):
             if not context.TrueNorth:
                 continue
             value = context.TrueNorth.DirectionRatios
-            props.true_north = ifcopenshell.util.geolocation.yaxis2angle(*value[:2])
+            props.true_north = radians(ifcopenshell.util.geolocation.yaxis2angle(*value[:2]))
         return {"FINISHED"}
 
 

@@ -22,7 +22,7 @@ import gpu
 import bmesh
 import bonsai.tool as tool
 from bpy.types import SpaceView3D
-from math import radians
+from math import radians, degrees
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -72,7 +72,7 @@ class SolarDecorator:
         self.draw_text_at_position(context, f"{props.hour:02}:{props.minute:02}", location)
 
         self.tn_angle = props.true_north
-        angle = Matrix.Rotation(radians(self.tn_angle), 4, "Z")
+        angle = Matrix.Rotation(props.true_north, 4, "Z")
         grid_north_p = origin @ angle @ (Vector((0, 0.8, 0)) * props.sun_path_size)
         self.draw_text_at_position(context, "True North", grid_north_p)
 
@@ -155,13 +155,13 @@ class SolarDecorator:
         # True north
         self.tn_angle = props.true_north
         points = [Vector((0, 0, 0)), Vector((0, 0.75, 0))]
-        angle = Matrix.Rotation(radians(self.tn_angle), 4, "Z")
+        angle = Matrix.Rotation(self.tn_angle, 4, "Z")
         points = [origin @ angle @ (v * props.sun_path_size) for v in points]
         self.draw_batch("POINTS", points, decorator_color_special)
 
         verts = [Vector((0, 0, 0)), Vector((0, 0.75, 0))]
         edges = [[0, 1]]
-        angle = Matrix.Rotation(radians(self.tn_angle), 4, "Z")
+        angle = Matrix.Rotation(self.tn_angle, 4, "Z")
         verts = [origin @ angle @ (v * props.sun_path_size) for v in verts]
         self.draw_batch("LINES", verts, decorator_color_special, edges)
 
@@ -174,7 +174,7 @@ class SolarDecorator:
 
         arc_start = Vector((0, 0.25, 0)) * props.sun_path_size
         arc_end = angle @ arc_start
-        angle_half = Matrix.Rotation(radians(self.tn_angle / 2), 4, "Z")
+        angle_half = Matrix.Rotation(self.tn_angle / 2, 4, "Z")
         arc_mid = angle_half @ arc_start
         arc_segments = tool.Cad.create_arc_segments(
             pts=[origin @ v for v in [arc_start, arc_mid, arc_end]], num_verts=12, make_edges=True

@@ -151,7 +151,7 @@ def update_sun_path(self: "BIMSolarProperties") -> None:
     sun_props.day = self.day
     sun_props.time = self.hour + (self.minute / 60)
     # Preserve IFC sign convention
-    sun_props.north_offset = radians(self.true_north * -1)
+    sun_props.north_offset = self.true_north * -1
 
     props.timezone = tzfpy.get_tz(props.longitude, props.latitude)
     timezone = pytz.timezone(props.timezone)
@@ -457,7 +457,7 @@ class BIMSolarProperties(PropertyGroup):
         default=151.209900,
     )
     timezone: StringProperty(name="Timezone", default="Etc/GMT")
-    true_north: FloatProperty(name="True North", min=-180, max=180, update=update_true_north)
+    true_north: FloatProperty(name="True North", min=-pi, max=pi, subtype="ANGLE", update=update_true_north)
     year: IntProperty(name="Year", min=1, max=9999, default=now.year, update=update_date)
     month: IntProperty(name="Month", min=1, max=12, default=now.month, update=update_date)
     day: IntProperty(name="Date", min=1, max=31, default=now.day, update=update_date)
