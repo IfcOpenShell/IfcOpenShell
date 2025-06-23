@@ -349,7 +349,6 @@ def import_cost_schedule_csv(
 def add_csv_filepath(cost: type[tool.Cost], file_path: str, is_schedule_of_rates: bool, cost_schedule) -> None:
     cost.add_csv_filepath(file_path, is_schedule_of_rates, cost_schedule)
 
-
 def remove_csv_filepath(cost: type[tool.Cost], cost_schedule) -> None:
     cost.remove_csv_filepath(cost_schedule)
 
