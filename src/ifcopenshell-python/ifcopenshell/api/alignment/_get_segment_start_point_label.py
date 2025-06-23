@@ -176,7 +176,7 @@ def _get_segment_start_point_label(prev_segment: entity_instance, segment: entit
                     "CIRCULARARC": "xx",
                     "CLOTHOID": "xx",
                     "CONSTANTGRADIENT": "P.V.T.",
-                    "PARABOLICARC": "xx",
+                    "PARABOLICARC": "V.C.C.",
                 },
             }
             label = lookup_table[prev_segment.DesignParameters.PredefinedType][segment.DesignParameters.PredefinedType]

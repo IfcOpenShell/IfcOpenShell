@@ -20,8 +20,10 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 
-
-def test_create_alignment_pi_method():
+# other test cases cover the typical vertical by PI method (test_create_alignment_by_pi_method)
+# this test will focus on the edge cases of no initial tangent run, no final tangent run, and
+# compound curve (no tangent between curves)
+def test_horizontal_layout_by_pi_method():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
     length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
@@ -35,23 +37,19 @@ def test_create_alignment_pi_method():
         parent=geometric_representation_context,
     )
 
-    coordinates = [(500.0, 2500.0), (3340.0, 660.0), (4340.0, 5000.0), (7600.0, 4560.0), (8480.0, 2010.0)]
-    radii = [(1000.0), (1250.0), (950.0)]
-    vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
-    lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
+    coordinates = [(838.760, 224.745), (965.926, 258.819), (1226.296, 258.819), (1350.817, 291.415)]
+    radii = [(1000.0), (1000.0)]
 
-    alignment = ifcopenshell.api.alignment.create_by_pi_method(file, "TestAlignment", coordinates, radii, vpoints, lengths)
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(file, "TestAlignment", coordinates, radii)
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 1  # one nest
-    assert len(alignment.IsNestedBy[0].RelatedObjects) == 3  # nesting IfcReferent, IfcAlignmentHorizontal, IfcAlignmentVertical
+    assert len(alignment.IsNestedBy[0].RelatedObjects) == 2  # nesting IfcReferent, IfcAlignmentHorizontal
     assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
     assert alignment.IsNestedBy[0].RelatedObjects[1].is_a("IfcAlignmentHorizontal")
-    assert alignment.IsNestedBy[0].RelatedObjects[2].is_a("IfcAlignmentVertical")
     assert (
         len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy) == 1
     )  # nesting of segments beneath IfcAlignmentHorizontal
-    assert len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 8  # segments in horizontal layout
-    assert len(alignment.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects) == 10  # segments in vertical layout
+    assert len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 3  # segments in horizontal layout
 
-test_create_alignment_pi_method()
+test_horizontal_layout_by_pi_method()

@@ -23,7 +23,7 @@ from ifcopenshell import entity_instance
 import math
 from collections.abc import Sequence
 
-from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
+import ifcopenshell.api.alignment.create_layout_segment
 
 
 def layout_vertical_alignment_by_pi_method(
@@ -63,28 +63,19 @@ def layout_vertical_alignment_by_pi_method(
 
         # create gradient
         gradient_length = dxBG - length / 2.0
-        design_parameters = file.createIfcAlignmentVerticalSegment(
-            StartTag=None,
-            EndTag=None,
-            StartDistAlong=xPBG,
-            HorizontalLength=gradient_length,
-            StartHeight=yPBG,
-            StartGradient=start_slope,
-            EndGradient=start_slope,
-            RadiusOfCurvature=None,
-            PredefinedType="CONSTANTGRADIENT",
-        )
-        alignment_segment = file.createIfcAlignmentSegment(
-            GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=None,
-            Name=None,
-            Description=None,
-            ObjectType=None,
-            ObjectPlacement=None,
-            Representation=None,
-            DesignParameters=design_parameters,
-        )
-        _add_segment_to_layout(file, layout, alignment_segment)
+        if 1.0e-03 < gradient_length :
+            design_parameters = file.createIfcAlignmentVerticalSegment(
+                StartTag=None,
+                EndTag=None,
+                StartDistAlong=xPBG,
+                HorizontalLength=gradient_length,
+                StartHeight=yPBG,
+                StartGradient=start_slope,
+                EndGradient=start_slope,
+                RadiusOfCurvature=None,
+                PredefinedType="CONSTANTGRADIENT",
+            )
+            ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
 
         # create vertical curve
         if 0.0 < length:
@@ -103,17 +94,7 @@ def layout_vertical_alignment_by_pi_method(
                 RadiusOfCurvature=1 / k,
                 PredefinedType="PARABOLICARC",
             )
-            alignment_segment = file.createIfcAlignmentSegment(
-                GlobalId=ifcopenshell.guid.new(),
-                OwnerHistory=None,
-                Name=None,
-                Description=None,
-                ObjectType=None,
-                ObjectPlacement=None,
-                Representation=None,
-                DesignParameters=design_parameters,
-            )
-            _add_segment_to_layout(file, layout, alignment_segment)
+            ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
 
         # start of next curve is end of this curve
         xPBG = xEVC
@@ -127,49 +108,16 @@ def layout_vertical_alignment_by_pi_method(
     slope = math.tan(math.atan2(dy, dx))
     gradient_length = dx
 
-    design_parameters = file.createIfcAlignmentVerticalSegment(
-        StartTag=None,
-        EndTag=None,
-        StartDistAlong=xPBG,
-        HorizontalLength=gradient_length,
-        StartHeight=yPBG,
-        StartGradient=slope,
-        EndGradient=slope,
-        RadiusOfCurvature=None,
-        PredefinedType="CONSTANTGRADIENT",
-    )
-    alignment_segment = file.createIfcAlignmentSegment(
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        Description=None,
-        ObjectType=None,
-        ObjectPlacement=None,
-        Representation=None,
-        DesignParameters=design_parameters,
-    )
-    _add_segment_to_layout(file, layout, alignment_segment)
-
-    # create zero length terminator segment
-    design_parameters = file.createIfcAlignmentVerticalSegment(
-        StartTag="VPOE",
-        EndTag="VPOE",
-        StartDistAlong=xPVI,
-        HorizontalLength=0.0,
-        StartHeight=yPVI,
-        StartGradient=slope,
-        EndGradient=slope,
-        RadiusOfCurvature=None,
-        PredefinedType="CONSTANTGRADIENT",
-    )
-    alignment_segment = file.createIfcAlignmentSegment(
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        Description=None,
-        ObjectType=None,
-        ObjectPlacement=None,
-        Representation=None,
-        DesignParameters=design_parameters,
-    )
-    _add_segment_to_layout(file, layout, alignment_segment)
+    if 1.0e-03 < gradient_length:
+        design_parameters = file.createIfcAlignmentVerticalSegment(
+            StartTag=None,
+            EndTag=None,
+            StartDistAlong=xPBG,
+            HorizontalLength=gradient_length,
+            StartHeight=yPBG,
+            StartGradient=slope,
+            EndGradient=slope,
+            RadiusOfCurvature=None,
+            PredefinedType="CONSTANTGRADIENT",
+        )
+        ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)

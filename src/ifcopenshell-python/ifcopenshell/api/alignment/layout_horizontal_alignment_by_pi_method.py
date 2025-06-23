@@ -22,7 +22,7 @@ from ifcopenshell import entity_instance
 import math
 from collections.abc import Sequence
 
-from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
+import ifcopenshell.api.alignment.create_layout_segment
 
 
 def layout_horizontal_alignment_by_pi_method(
@@ -77,32 +77,22 @@ def layout_horizontal_alignment_by_pi_method(
         tangent_run = lengthBT - tangent
 
         # create back tangent run
-        pt = file.createIfcCartesianPoint(
-            Coordinates=(xBT, yBT),
-        )
-        design_parameters = file.createIfcAlignmentHorizontalSegment(
-            StartTag=None,
-            EndTag=None,
-            StartPoint=pt,
-            StartDirection=angleBT,
-            StartRadiusOfCurvature=0.0,
-            EndRadiusOfCurvature=0.0,
-            SegmentLength=tangent_run,
-            GravityCenterLineHeight=None,
-            PredefinedType="LINE",
-        )
-        alignment_segment = file.createIfcAlignmentSegment(
-            GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=None,
-            Name=None,
-            Description=None,
-            ObjectType=None,
-            ObjectPlacement=None,
-            Representation=None,
-            DesignParameters=design_parameters,
-        )
-
-        _add_segment_to_layout(file, layout, alignment_segment)
+        if 1.0e-03 < tangent_run:
+            pt = file.createIfcCartesianPoint(
+                Coordinates=(xBT, yBT),
+            )
+            design_parameters = file.createIfcAlignmentHorizontalSegment(
+                StartTag=None,
+                EndTag=None,
+                StartPoint=pt,
+                StartDirection=angleBT,
+                StartRadiusOfCurvature=0.0,
+                EndRadiusOfCurvature=0.0,
+                SegmentLength=tangent_run,
+                GravityCenterLineHeight=None,
+                PredefinedType="LINE",
+            )
+            ifcopenshell.api.alignment.create_layout_segment(file,layout,design_parameters)
 
         # create circular curve
         if radius != 0.0:
@@ -120,17 +110,7 @@ def layout_horizontal_alignment_by_pi_method(
                 GravityCenterLineHeight=None,
                 PredefinedType="CIRCULARARC",
             )
-            alignment_segment = file.createIfcAlignmentSegment(
-                GlobalId=ifcopenshell.guid.new(),
-                OwnerHistory=None,
-                Name=None,
-                Description=None,
-                ObjectType=None,
-                ObjectPlacement=None,
-                Representation=None,
-                DesignParameters=design_parameters,
-            )
-            _add_segment_to_layout(file, layout, alignment_segment)
+            ifcopenshell.api.alignment.create_layout_segment(file,layout,design_parameters)
 
         xBT = xPT
         yBT = yPT
@@ -143,53 +123,19 @@ def layout_horizontal_alignment_by_pi_method(
     dy = yPI - yBT
     angleBT = math.atan2(dy, dx)
     tangent_run = math.sqrt(dx * dx + dy * dy)
-    pt = file.createIfcCartesianPoint(Coordinates=(xBT, yBT))
 
-    design_parameters = file.createIfcAlignmentHorizontalSegment(
-        StartTag=None,
-        EndTag=None,
-        StartPoint=pt,
-        StartDirection=angleBT,
-        StartRadiusOfCurvature=0.0,
-        EndRadiusOfCurvature=0.0,
-        SegmentLength=tangent_run,
-        GravityCenterLineHeight=None,
-        PredefinedType="LINE",
-    )
-    alignment_segment = file.createIfcAlignmentSegment(
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        Description=None,
-        ObjectType=None,
-        ObjectPlacement=None,
-        Representation=None,
-        DesignParameters=design_parameters,
-    )
-    _add_segment_to_layout(file, layout, alignment_segment)
+    if 1.e-03 < tangent_run:
+        pt = file.createIfcCartesianPoint(Coordinates=(xBT, yBT))
 
-    # create zero length terminator segment
-    poe = file.createIfcCartesianPoint(Coordinates=(xPI, yPI))
-
-    design_parameters = file.createIfcAlignmentHorizontalSegment(
-        StartTag="POE",
-        EndTag="POE",
-        StartPoint=poe,
-        StartDirection=angleBT,
-        StartRadiusOfCurvature=0.0,
-        EndRadiusOfCurvature=0.0,
-        SegmentLength=0.0,
-        GravityCenterLineHeight=None,
-        PredefinedType="LINE",
-    )
-    alignment_segment = file.createIfcAlignmentSegment(
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        Description=None,
-        ObjectType=None,
-        ObjectPlacement=None,
-        Representation=None,
-        DesignParameters=design_parameters,
-    )
-    _add_segment_to_layout(file, layout, alignment_segment)
+        design_parameters = file.createIfcAlignmentHorizontalSegment(
+            StartTag=None,
+            EndTag=None,
+            StartPoint=pt,
+            StartDirection=angleBT,
+            StartRadiusOfCurvature=0.0,
+            EndRadiusOfCurvature=0.0,
+            SegmentLength=tangent_run,
+            GravityCenterLineHeight=None,
+            PredefinedType="LINE",
+        )
+        ifcopenshell.api.alignment.create_layout_segment(file,layout,design_parameters)

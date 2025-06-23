@@ -138,7 +138,7 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
         zero_length_segment.DesignParameters.StartDistAlong = start_dist_along
 
     end_referent = zero_length_segment.IsNestedBy[0].RelatedObjects[0]
-    end_referent.Name = f"{_get_segment_start_point_label(zero_length_segment,None)} ({ifcopenshell.util.stationing.station_as_string(file,station)})"
+    end_referent.Name = f"{_get_segment_start_point_label(zero_length_segment,None)} ({ifcopenshell.util.stationing.station_as_string(file,start_station+start_dist_along)})"
 
     # update the referent's geometric representation's location
     end_referent.ObjectPlacement.RelativePlacement.Location.DistanceAlong.wrappedValue = start_dist_along
