@@ -76,16 +76,12 @@ class BIM_PT_cost_schedules(Panel):
             col = row0.column()
             col.label(text="Linked CSV:")
             row_1 = col.row(align=True)
-            if self.props.active_cost_schedule_id in [item.cost_schedule_id for item in self.props.cost_schedule_files]:
-                file = next(
-                    (
-                        item.csv_filepath
-                        for item in self.props.cost_schedule_files
-                        if item.cost_schedule_id == self.props.active_cost_schedule_id
-                    ),
-                    None,
-                )
-                row_1.label(text=file)
+            
+            # Get filepath from document reference instead of props
+            file_path = tool.Cost.get_cost_schedule_csv_filepath(self.props.active_cost_schedule_id)
+            
+            if file_path:
+                row_1.label(text=file_path)
                 row_1.operator("bim.refresh_cost_schedule_csv", icon="FILE_REFRESH", text="")
             else:
                 row_1.label(text="No CSV file found")

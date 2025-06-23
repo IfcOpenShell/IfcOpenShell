@@ -541,11 +541,10 @@ class SelectCostScheduleProducts(bpy.types.Operator):
         )
         return {"FINISHED"}
 
-
 class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     bl_idname = "bim.import_cost_schedule_csv"
     bl_label = "Import Cost Schedule CSV"
-    bl_description = "Import cost schdule from the provided .csv file."
+    bl_description = "Import cost schedule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
@@ -568,11 +567,27 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
 class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.refresh_cost_schedule_csv"
     bl_label = "Refresh Cost Schedule CSV"
+    bl_description = "Refresh cost schedule data from the associated CSV file"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
+    def poll(cls, context):
+        props = tool.Cost.get_cost_props()
+        if not props.active_cost_schedule_id:
+            cls.poll_message_set("No active cost schedule")
+            return False
+        
+        filepath = tool.Cost.get_cost_schedule_csv_filepath(props.active_cost_schedule_id)
+        if not filepath:
+            cls.poll_message_set("No CSV file associated with this cost schedule")
+            return False
+            
+        return True
+
     def _execute(self, context):
-        core.refresh_cost_schedule_csv(tool.Ifc, tool.Cost)
+        tool.Cost.delete_all_cost_items()
+        tool.Cost.refresh_cost_schedule_csv()
+        tool.Cost.load_cost_schedule_tree()
         return {"FINISHED"}
 
 
