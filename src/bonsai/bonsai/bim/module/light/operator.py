@@ -28,8 +28,7 @@ from datetime import datetime
 import bpy
 import bonsai.tool as tool
 from pathlib import Path
-from typing import Union, Optional
-from collections.abc import Sequence
+from typing import Union, TYPE_CHECKING
 import json
 import math
 import time
@@ -38,6 +37,7 @@ import ifcopenshell.util.geolocation
 import webbrowser
 import ifcopenshell.geom
 import multiprocessing
+import requests
 from mathutils import Vector
 from bonsai.bim.module.light.data import SolarData
 from bpy_extras.io_utils import ExportHelper
@@ -562,6 +562,52 @@ class ViewFromSun(bpy.types.Operator):
         tool.Blender.activate_camera(camera)
         props = tool.Blender.get_solar_props()
         props.hour = props.hour  # Just to refresh camera position
+        return {"FINISHED"}
+
+
+class LightPickCoordinates(bpy.types.Operator):
+    bl_idname = "bim.light_pick_coordinates"
+    bl_label = "Pick Coordinates"
+    bl_description = (
+        "Open web browser with Google Maps to pick coordinates (Right Mouse Click in maps to copy selected location).\n\n"
+        "ALT+Click to insert current location based on the current IP-address (using ip-api.com)."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    use_current_location: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        use_current_location: bool
+
+    def invoke(self, context, event):
+        if event.alt:
+            self.use_current_location = True
+        return self.execute(context)
+
+    def execute(self, context):
+        props = tool.Blender.get_solar_props()
+        if not self.use_current_location:
+            zoom = 13.5
+            url = f"https://www.google.com/maps/@{props.latitude},{props.longitude},{zoom}z"
+            webbrowser.open(url)
+            return {"FINISHED"}
+
+        response = requests.get("http://ip-api.com/json/")
+        data = response.json()
+        props.latitude = data["lat"]
+        props.longitude = data["lon"]
+        return {"FINISHED"}
+
+
+class LightSetTimeToNow(bpy.types.Operator):
+    bl_idname = "bim.light_set_time_to_now"
+    bl_label = "Now"
+    bl_description = "Set time to current local time."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = tool.Blender.get_solar_props()
+        props.set_from_datetime(datetime.now())
         return {"FINISHED"}
 
 

@@ -165,7 +165,11 @@ class BIM_PT_solar(bpy.types.Panel):
 
         sun_props = tool.Blender.get_sun_props()
 
-        row = self.layout.row()
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.operator("bim.light_pick_coordinates", icon="URL", text="Pick")
+
+        row = self.layout.row(align=True)
         row.prop(sun_props, "coordinates", icon="URL")
         row = self.layout.row(align=True)
         row.prop(props, "latitude")
@@ -175,6 +179,10 @@ class BIM_PT_solar(bpy.types.Panel):
         row.prop(props, "true_north")
         if SolarData.data["true_north"] is not None:
             row.operator("bim.import_true_north", icon="IMPORT", text="")
+
+        row = self.layout.row()
+        row.alignment = "RIGHT"
+        row.operator("bim.light_set_time_to_now", icon="TIME", text="Now")
 
         row = self.layout.row()
         row.prop(props, "year")

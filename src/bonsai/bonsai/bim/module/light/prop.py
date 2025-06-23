@@ -41,6 +41,7 @@ from bonsai.bim.module.light.data import SolarData
 from bonsai.bim.module.light.decorator import SolarDecorator
 
 sun_position = tool.Blender.get_sun_position_addon()
+now = datetime.datetime.now()
 
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
     spectraldb: dict[str, dict[str, str]] = json.load(f)
@@ -441,15 +442,27 @@ class RadianceExporterProperties(PropertyGroup):
 
 class BIMSolarProperties(PropertyGroup):
     sites: EnumProperty(items=get_sites, name="Sites")
-    latitude: FloatProperty(name="Latitude", min=-90, max=90, update=update_latlong)
-    longitude: FloatProperty(name="Longitude", min=-180, max=180, update=update_latlong)
+    latitude: FloatProperty(
+        name="Latitude",
+        min=-90,
+        max=90,
+        update=update_latlong,
+        default=-33.865143,
+    )
+    longitude: FloatProperty(
+        name="Longitude",
+        min=-180,
+        max=180,
+        update=update_latlong,
+        default=151.209900,
+    )
     timezone: StringProperty(name="Timezone", default="Etc/GMT")
     true_north: FloatProperty(name="True North", min=-180, max=180, update=update_true_north)
-    year: IntProperty(name="Year", min=1, max=9999, default=2025, update=update_date)
-    month: IntProperty(name="Month", min=1, max=12, default=1, update=update_date)
-    day: IntProperty(name="Date", min=1, max=31, default=1, update=update_date)
-    hour: IntProperty(name="Hour", min=0, max=23, default=12, update=update_hourminute)
-    minute: IntProperty(name="Minute", min=0, max=59, update=update_hourminute)
+    year: IntProperty(name="Year", min=1, max=9999, default=now.year, update=update_date)
+    month: IntProperty(name="Month", min=1, max=12, default=now.month, update=update_date)
+    day: IntProperty(name="Date", min=1, max=31, default=now.day, update=update_date)
+    hour: IntProperty(name="Hour", min=0, max=23, default=now.hour, update=update_hourminute)
+    minute: IntProperty(name="Minute", min=0, max=59, default=now.minute, update=update_hourminute)
     sun_position: FloatVectorProperty(name="Sun Position", subtype="XYZ", default=(0, 0, 0))
     sun_path_origin: FloatVectorProperty(name="Sun Path Origin", subtype="XYZ", default=(0, 0, 0))
     sun_path_size: FloatProperty(name="Sun Path Size", min=0.1, default=50, update=update_sun_path_size)
@@ -504,3 +517,10 @@ class BIMSolarProperties(PropertyGroup):
         UTC_zone: float
         shadow_mode: Literal["NONE", "SHADING", "RENDERING"]
         display_sun_path: bool
+
+    def set_from_datetime(self, dt: datetime.datetime) -> None:
+        self.year = dt.year
+        self.month = dt.month
+        self.day = dt.day
+        self.hour = dt.hour
+        self.minute = dt.minute
