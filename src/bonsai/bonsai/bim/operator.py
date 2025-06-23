@@ -977,6 +977,8 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     def draw(self, context):
         # Mandatory to access context.data in update :
         self.layout.context_pointer_set(name="data", data=self.data)
+        # NOTE: activate_init don't work with prop_search, so cannot activate field for typing,
+        # though it would fit perfectly.
         self.layout.prop_search(self, "dummy_name", self, "collection_names")
 
     def execute(self, context):
