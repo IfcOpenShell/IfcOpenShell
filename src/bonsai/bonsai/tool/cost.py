@@ -590,38 +590,67 @@ class Cost(bonsai.core.tool.Cost):
         return csv2ifc.cost_schedule
 
     @classmethod
-    def add_csv_filepath(
-        cls,
-        file_path: Optional[str] = None,
-        is_schedule_of_rates: bool = False,
-        cost_schedule: ifcopenshell.entity_instance = None,
-    ) -> None:
-        if not file_path:
+    def add_csv_filepath(cls, file_path: str, is_schedule_of_rates: bool, cost_schedule) -> None:
+        """Store CSV filepath as a document reference in the IFC file."""
+        if not file_path or not cost_schedule:
             return
 
-        props = cls.get_cost_props()
-        if not props.active_cost_schedule_id in [item.cost_schedule_id for item in props.cost_schedule_files]:
-            item = props.cost_schedule_files.add()
-            item.cost_schedule_id = cost_schedule.id()
-            item.csv_filepath = file_path
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = next(
+            (
+                document
+                for document in ifc_file.by_type("IfcDocumentInformation")
+                if document.Name == "BBIM_Cost_Documents"
+            ),
+            None,
+        )
+
+        if not cost_docs_document:
+            cost_docs_document = ifcopenshell.api.document.add_information(ifc_file)
+            cost_docs_document.Name = "BBIM_Cost_Documents"
+            cost_docs_document.Description = "Bonsai internal document containing references to cost CSV files"
+
+        # Create a reference with the filepath
+        reference = ifcopenshell.api.document.add_reference(ifc_file, cost_docs_document)
+        reference.Location = file_path
+        
+        # Store the cost schedule ID in the reference description
+        reference.Description = f"Cost Schedule ID: {cost_schedule.id()}"
+        
+        # If it's a schedule of rates, store that info too
+        if is_schedule_of_rates:
+            reference.Identification = "SCHEDULE_OF_RATES"
         else:
-            return
+            reference.Identification = "COST_SCHEDULE"
 
     @classmethod
     def remove_csv_filepath(cls, cost_schedule: ifcopenshell.entity_instance = None) -> None:
+        """Remove CSV filepath reference from IFC file."""
         if not cost_schedule:
             return
 
-        props = cls.get_cost_props()
-        cost_schedule_id = cost_schedule.id()
-        if cost_schedule_id in [item.cost_schedule_id for item in props.cost_schedule_files]:
-            for i, item in enumerate(props.cost_schedule_files):
-                if item.cost_schedule_id == cost_schedule_id:
-                    props.cost_schedule_files.remove(i)
-                    print(f"Cost schedule id={cost_schedule_id} csv filepath correctly removed")
-                    return
-        else:
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = next(
+            (
+                document
+                for document in ifc_file.by_type("IfcDocumentInformation")
+                if document.Name == "BBIM_Cost_Documents"
+            ),
+            None,
+        )
+
+        if not cost_docs_document:
             return
+
+        cost_schedule_id = cost_schedule.id()
+        references = tool.Document.get_document_references(cost_docs_document)
+        
+        for reference in references:
+            # Check if this reference is for the given cost schedule
+            if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
+                ifcopenshell.api.document.remove_reference(ifc_file, reference)
+                print(f"Cost schedule id={cost_schedule_id} csv filepath correctly removed")
+                return
 
     @classmethod
     def delete_all_cost_items(cls):
@@ -633,24 +662,74 @@ class Cost(bonsai.core.tool.Cost):
             tool.Cost.clean_up_cost_item_tree(cost_item_id)
 
     @classmethod
+    def is_schedule_of_rates_csv(cls, cost_schedule_id: int) -> bool:
+        """Check if a cost schedule is a schedule of rates based on document references."""
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = next(
+            (
+                document
+                for document in ifc_file.by_type("IfcDocumentInformation")
+                if document.Name == "BBIM_Cost_Documents"
+            ),
+            None,
+        )
+
+        if not cost_docs_document:
+            return False
+
+        references = tool.Document.get_document_references(cost_docs_document)
+        
+        for reference in references:
+            if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
+                return reference.Identification == "SCHEDULE_OF_RATES"
+                
+        return False
+
+    @classmethod
+    def get_cost_schedule_csv_filepath(cls, cost_schedule_id: int) -> Optional[str]:
+        """Get CSV filepath for a cost schedule from document references."""
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = next(
+            (
+                document
+                for document in ifc_file.by_type("IfcDocumentInformation")
+                if document.Name == "BBIM_Cost_Documents"
+            ),
+            None,
+        )
+
+        if not cost_docs_document:
+            return None
+
+        references = tool.Document.get_document_references(cost_docs_document)
+        
+        for reference in references:
+            if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
+                return reference.Location
+                
+        return None
+
+
+    @classmethod
     def refresh_cost_schedule_csv(cls):
+        """Refresh cost schedule from CSV file stored in document references."""
         from ifc5d.csv2ifc import Csv2Ifc
 
         props = cls.get_cost_props()
         cost_schedule_id = props.active_cost_schedule_id
-        file_path = next(
-            (item.csv_filepath for item in props.cost_schedule_files if item.cost_schedule_id == cost_schedule_id), None
-        )
+        file_path = cls.get_cost_schedule_csv_filepath(cost_schedule_id)
+        
         if not file_path:
             return
 
         cost_schedule = tool.Ifc.get_entity_by_id(cost_schedule_id)
+        is_schedule_of_rates = cls.is_schedule_of_rates_csv(cost_schedule_id)
 
         csv2ifc = Csv2Ifc()
         csv2ifc.csv = file_path
         csv2ifc.file = tool.Ifc.get()
         csv2ifc.cost_schedule = cost_schedule
-        csv2ifc.is_schedule_of_rates = False
+        csv2ifc.is_schedule_of_rates = is_schedule_of_rates
         csv2ifc.refresh()
 
         print("Csv file correctly refreshed")
@@ -1032,3 +1111,51 @@ class Cost(bonsai.core.tool.Cost):
         if results["quantity_type"] == "IfcQuantityCount":
             results["unit_symbol"] = "U"
         return results
+
+    @classmethod
+    def get_cost_schedule_documents(cls) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the document information entity that stores CSV references."""
+        for document in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if document.Name == "BBIM_Cost_Documents":
+                return document
+        return None
+
+    @classmethod
+    def add_csv_filepath(
+        cls,
+        file_path: Optional[str] = None,
+        is_schedule_of_rates: bool = False,
+        cost_schedule: ifcopenshell.entity_instance = None,
+    ) -> None:
+        """Store CSV filepath as a document reference in the IFC file."""
+        if not file_path or not cost_schedule:
+            return
+
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = next(
+            (
+                document
+                for document in ifc_file.by_type("IfcDocumentInformation")
+                if document.Name == "BBIM_Cost_Documents"
+            ),
+            None,
+        )
+
+        if not cost_docs_document:
+            cost_docs_document = ifcopenshell.api.document.add_information(ifc_file)
+            cost_docs_document.Name = "BBIM_Cost_Documents"
+            cost_docs_document.Description = "Bonsai internal document containing references to cost CSV files"
+
+        # Create a reference with the filepath
+        reference = ifcopenshell.api.document.add_reference(ifc_file, cost_docs_document)
+        reference.Location = file_path
+        
+        # Store the cost schedule ID in the reference description
+        reference.Description = f"Cost Schedule ID: {cost_schedule.id()}"
+        
+        # If it's a schedule of rates, store that info too
+        if is_schedule_of_rates:
+            reference.Identification = "SCHEDULE_OF_RATES"
+        else:
+            reference.Identification = "COST_SCHEDULE"
+
