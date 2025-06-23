@@ -146,9 +146,16 @@ class BIM_PT_solar(bpy.types.Panel):
             SolarData.load()
 
         assert self.layout
-        if (sun_position := SolarData.data["sun_position"]) is None:
+
+        # Props are more reliable as they'll come and go regardless of Data update.
+        if (sun_props := tool.Blender.get_sun_props()) is None:
             self.layout.label(text="Enable 'Sun Position' Add-on To Continue", icon="ERROR")
             return
+
+        sun_position = SolarData.data["sun_position"]
+        if sun_position is None:
+            # There are props, so there must be an addon.
+            SolarData.data["sun_position"] = SolarData.sun_position()
 
         if TYPE_CHECKING:
             import sun_position
@@ -162,8 +169,6 @@ class BIM_PT_solar(bpy.types.Panel):
         else:
             row = self.layout.row(align=True)
             row.label(text="No Sites With Lat/Longs Found", icon="ERROR")
-
-        sun_props = tool.Blender.get_sun_props()
 
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
