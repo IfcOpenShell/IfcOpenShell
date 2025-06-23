@@ -104,12 +104,7 @@ class SolarDecorator:
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.line_shader.uniform_float("lineWidth", 2.0)
 
-        # general shader
-        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-
         vertex_shader = """
-            uniform mat4 ModelViewProjectionMatrix;
-            in vec3 pos;
             void main()
             {
                 gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
@@ -118,8 +113,6 @@ class SolarDecorator:
         """
 
         fragment_shader = """
-            uniform vec4 color;
-            out vec4 fragColor;
             void main()
             {
                 float dist = length(gl_PointCoord - vec2(0.5));
@@ -131,7 +124,14 @@ class SolarDecorator:
             }
         """
 
-        self.shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
+        shader_info = gpu.types.GPUShaderCreateInfo()
+        shader_info.push_constant("MAT4", "ModelViewProjectionMatrix")
+        shader_info.vertex_in(0, "VEC3", "pos")
+        shader_info.vertex_source(vertex_shader)
+        shader_info.fragment_out(0, "VEC4", "fragColor")
+        shader_info.push_constant("VEC4", "color")
+        shader_info.fragment_source(fragment_shader)
+        self.shader = gpu.shader.create_from_info(shader_info)
 
         props = tool.Blender.get_solar_props()
 
