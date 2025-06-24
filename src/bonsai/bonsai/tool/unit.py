@@ -206,3 +206,11 @@ class Unit(bonsai.core.tool.Unit):
             precision = 1e-5
             decimal_places = 5
         return str(round(precision * round(value / precision), decimal_places))
+
+    @classmethod
+    def get_icon_for_unit_class(cls, ifc_class: str) -> str:
+        if ifc_class == "IfcSIUnit":
+            return "SNAP_GRID"
+        elif ifc_class == "IfcMonetaryUnit":
+            return "COPY_ID"
+        return "MOD_MESHDEFORM"

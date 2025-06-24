@@ -120,12 +120,7 @@ class BIM_UL_units(UIList):
     ) -> None:
         props = tool.Unit.get_unit_props()
         if item:
-            icon = "MOD_MESHDEFORM"
-            if item.ifc_class == "IfcSIUnit":
-                icon = "SNAP_GRID"
-            elif item.ifc_class == "IfcMonetaryUnit":
-                icon = "COPY_ID"
-
+            icon = tool.Unit.get_icon_for_unit_class(item.ifc_class)
             row = layout.row(align=True)
             row.label(text=item.unit_type or "No Type", icon=icon)
             row.label(text=item.name or "Unnamed")
