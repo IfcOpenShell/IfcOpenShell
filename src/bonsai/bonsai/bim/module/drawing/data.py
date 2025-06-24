@@ -285,7 +285,7 @@ class DecoratorData:
             return thickness
 
     @classmethod
-    def get_section_markers_display_data(cls, obj):
+    def get_section_markers_display_data(cls, obj: bpy.types.Object) -> Union[dict[str, Any], None]:
         """used by IfcAnnotations with ObjectType = "SECTION" """
         result = cls.data.get(obj.name, None)
         if result is not None:
@@ -327,10 +327,11 @@ class DecoratorData:
         return display_data
 
     @classmethod
-    def get_text_data(cls, obj: bpy.types.Object) -> dict:
+    def get_text_data(cls, obj: bpy.types.Object) -> dict[str, Any]:
         """used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"\n
         returns font size in mm for current ifc text object"""
         element = tool.Ifc.get_entity(obj)
+        assert element
         props = tool.Drawing.get_text_props(obj)
         # getting font size
         pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
@@ -371,16 +372,18 @@ class DecoratorData:
         return {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}
 
     @classmethod
-    def get_dimension_data(cls, obj):
+    def get_dimension_data(cls, obj: bpy.types.Object) -> dict[str, Any]:
         """used by Ifc Annotations with ObjectType:
 
         DIMENSION / DIAMETER / SECTION_LEVEL / PLAN_LEVEL / RADIUS
         """
         element = tool.Ifc.get_entity(obj)
+        assert element
         dimension_style = "arrow"
         fill_bg = False
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
         if classes:
+            assert type(classes) is str
             classes_split = classes.lower().split()
             if "oblique" in classes_split:
                 dimension_style = "oblique"
@@ -406,15 +409,17 @@ class DecoratorData:
         }
 
     @classmethod
-    def get_fall_data(cls, obj):
+    def get_fall_data(cls, obj: bpy.types.Object) -> dict[str, Union[str, None]]:
         object_type = None
         if element := tool.Ifc.get_entity(obj):
             object_type = ifcopenshell.util.element.get_predefined_type(element)
         return {"object_type": object_type}
 
     @classmethod
-    def get_symbol_data(cls, obj):
-        return tool.Drawing.get_annotation_symbol(tool.Ifc.get_entity(obj))
+    def get_symbol_data(cls, obj: bpy.types.Object) -> Union[str, None]:
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        return tool.Drawing.get_annotation_symbol(element)
 
     @classmethod
     def object_decorators(cls, handler):
