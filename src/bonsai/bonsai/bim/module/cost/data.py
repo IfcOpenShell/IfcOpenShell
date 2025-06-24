@@ -56,8 +56,36 @@ class CostSchedulesData:
             "cost_values": cls.cost_values(),
             "quantity_types": cls.quantity_types(),
             "currency": cls.currency(),
+            "csv_filepaths": cls.get_csv_filepaths(),  # Add this line
         }
         cls.is_loaded = True
+
+    @classmethod
+    def get_csv_filepaths(cls) -> dict[int, str]:
+        """Get CSV filepaths for cost schedules from document references."""
+        filepaths = {}
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = next(
+            (
+                document
+                for document in ifc_file.by_type("IfcDocumentInformation")
+                if document.Name == "BBIM_Cost_Documents"
+            ),
+            None,
+        )
+
+        if cost_docs_document:
+            references = tool.Document.get_document_references(cost_docs_document)
+            for reference in references:
+                if reference.Description and "Cost Schedule ID:" in reference.Description:
+                    schedule_id_str = reference.Description.split("Cost Schedule ID:")[1].strip()
+                    try:
+                        schedule_id = int(schedule_id_str)
+                        filepaths[schedule_id] = reference.Location
+                    except ValueError:
+                        pass
+        
+        return filepaths
 
     @classmethod
     def currency(cls) -> Union[Currency, None]:
