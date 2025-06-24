@@ -22,7 +22,7 @@ from typing import Optional
 def unassign_unit(file: ifcopenshell.file, units: Optional[list[ifcopenshell.entity_instance]] = None) -> None:
     """Unassigns units as default units for the project
 
-    :param units: A list of units to assign as project defaults.
+    :param units: A list of units to unassign as project defaults.
     :return: None
 
     Example:
