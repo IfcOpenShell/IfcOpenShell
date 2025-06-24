@@ -332,11 +332,11 @@ class TestDisableEditingDrawings:
 
 
 class TestAddDrawing:
-    def test_run(self, ifc, collector, drawing):
+    def test_run(self, ifc: Prophecy, collector: Prophecy, drawing: Prophecy):
         drawing.generate_drawing_name("target_view", "location_hint").should_be_called().will_return("drawing_name")
         drawing.ensure_unique_drawing_name("drawing_name").should_be_called().will_return("name")
         drawing.generate_drawing_matrix("target_view", "location_hint").should_be_called().will_return("matrix")
-        drawing.create_camera("name", "matrix", "location_hint").should_be_called().will_return("obj")
+        drawing.create_camera("name", "matrix", "location_hint", "target_view").should_be_called().will_return("obj")
         drawing.get_body_context().should_be_called().will_return("context")
         drawing.run_root_assign_class(
             obj="obj",
