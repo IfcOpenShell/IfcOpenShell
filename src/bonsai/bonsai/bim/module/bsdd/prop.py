@@ -111,7 +111,7 @@ class BSDDPset(PropertyGroup):
 
 
 class BIMBSDDProperties(PropertyGroup):
-    active_dictionary: StringProperty(name="Active Dictionary")
+    # TODO: `active_dictionary` is not used anywhere?
     active_dictionary: EnumProperty(items=get_active_dictionary, name="Active Dictionary")
     active_uri: StringProperty(name="Active URI")
     dictionaries: CollectionProperty(name="Dictionaries", type=BSDDDictionary)
