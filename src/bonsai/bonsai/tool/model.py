@@ -1063,12 +1063,15 @@ class Model(bonsai.core.tool.Model):
             return  # Already processed
 
         assert isinstance(obj, bpy.types.Object)
-        obj.asset_generate_preview()
-        while not obj.preview:
-            pass
+        # Since Blender 4.5 have to use `preview_ensure` instead of `asset_generate_preview`, see #6839.
+        obj.preview_ensure()
 
-        # if object has .data we can use default blender .asset_generate_preview()
-        if not obj.data:
+        if obj.data:
+            # If object has .data we can use default Blender preview.
+            # No need to preview to update, Blender will do it in background,
+            # `preview.icon_id` doesn't change after `asset_generate_preview()`.
+            obj.asset_generate_preview()
+        else:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             size = 128
             img = Image.new("RGBA", (size, size))
