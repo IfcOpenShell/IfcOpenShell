@@ -610,7 +610,7 @@ class LoadTypeThumbnails(bpy.types.Operator):
         while queue:
             # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation
             element = queue.pop()
-            tool.Model.mark_thumbnail_for_update(element)
+            tool.Model.update_thumbnail_for_element(element)
         return {"FINISHED"}
 
 

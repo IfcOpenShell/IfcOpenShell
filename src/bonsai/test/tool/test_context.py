@@ -68,7 +68,7 @@ class TestImportAttributes(test.bim.bootstrap.NewFile):
         assert props.context_attributes["TargetScale"].float_value == 0.5
         assert props.context_attributes["TargetView"].enum_value == "NOTDEFINED"
         assert props.context_attributes["UserDefinedTargetView"].string_value == "UserDefinedTargetView"
-        assert not props.context_attributes["Precision"]
+        assert "Precision" not in props.context_attributes
 
     def test_importing_twice(self):
         ifc = ifcopenshell.file()

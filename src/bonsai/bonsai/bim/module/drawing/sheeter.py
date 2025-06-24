@@ -66,7 +66,7 @@ class SheetBuilder:
         view = ET.SubElement(root, "g")
         view.attrib["data-type"] = "titleblock"
         titleblock = ET.SubElement(view, "image")
-        titleblock.attrib["xlink:href"] = os.path.relpath(titleblock_path, sheet_dir)
+        titleblock.attrib["xlink:href"] = Path(os.path.relpath(titleblock_path, sheet_dir)).as_posix()
         titleblock.attrib["x"] = "0"
         titleblock.attrib["y"] = "0"
         titleblock.attrib["width"] = str(view_width)

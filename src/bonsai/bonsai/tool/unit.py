@@ -125,7 +125,7 @@ class Unit(bonsai.core.tool.Unit):
         props = tool.Unit.get_unit_props()
         props.units.clear()
 
-        units = []
+        units: list[ifcopenshell.entity_instance] = []
         for unit_class in ["IfcDerivedUnit", "IfcMonetaryUnit", "IfcNamedUnit"]:
             units += tool.Ifc.get().by_type(unit_class)
 
@@ -206,3 +206,11 @@ class Unit(bonsai.core.tool.Unit):
             precision = 1e-5
             decimal_places = 5
         return str(round(precision * round(value / precision), decimal_places))
+
+    @classmethod
+    def get_icon_for_unit_class(cls, ifc_class: str) -> str:
+        if ifc_class == "IfcSIUnit":
+            return "SNAP_GRID"
+        elif ifc_class == "IfcMonetaryUnit":
+            return "COPY_ID"
+        return "MOD_MESHDEFORM"

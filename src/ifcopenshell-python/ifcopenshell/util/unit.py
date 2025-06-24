@@ -695,12 +695,14 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     if not (projects := ifc_file.by_type("IfcProject")) or not (units := projects[0].UnitsInContext):
         return 1
     unit_scale = 1
+    unit: ifcopenshell.entity_instance
     for unit in units.Units:
-        if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:
+        if getattr(unit, "UnitType", ...) != unit_type:
             continue
         while unit.is_a("IfcConversionBasedUnit"):
-            unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
-            unit = unit.ConversionFactor.UnitComponent
+            conversion_factor = unit.ConversionFactor
+            unit_scale *= conversion_factor.ValueComponent.wrappedValue
+            unit = conversion_factor.UnitComponent
         if unit.is_a("IfcSIUnit"):
             unit_scale *= get_prefix_multiplier(unit.Prefix)
     return unit_scale

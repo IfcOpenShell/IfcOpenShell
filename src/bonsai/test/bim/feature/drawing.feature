@@ -247,8 +247,8 @@ Scenario: Add sheet
     And I look at the "Sheets" panel
     And I click "IMPORT"
     When I click "ADD"
-    Then the file "{ifc_dir}/layouts/A00 - UNTITLED.svg" should contain "titleblocks/A1.svg"
-    And the file "{ifc_dir}/layouts/A00 - UNTITLED.svg" should not contain "GRID NORTH"
+    Then the file "{ifc_dir}/layouts/A01 - UNTITLED.svg" should contain "titleblocks/A1.svg"
+    And the file "{ifc_dir}/layouts/A01 - UNTITLED.svg" should not contain "GRID NORTH"
 
 Scenario: Create sheet
     Given an empty IFC project
@@ -258,8 +258,8 @@ Scenario: Create sheet
     And I click "ADD"
     And I select the "UNTITLED" item in the "BIM_UL_sheets" list
     When I click "OUTPUT"
-    Then the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should not contain "titleblocks/A1.svg"
-    And the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should contain "GRID NORTH"
+    Then the file "{ifc_dir}/sheets/A01 - UNTITLED.svg" should not contain "titleblocks/A1.svg"
+    And the file "{ifc_dir}/sheets/A01 - UNTITLED.svg" should contain "GRID NORTH"
 
 Scenario: Add drawing to sheet
     Given an empty IFC project
@@ -310,4 +310,4 @@ Scenario: Create sheet - with a drawing added to it
     And I press "bim.expand_sheet(sheet={sheet})"
     And I click "IMAGE_PLANE"
     When I click "OUTPUT"
-    Then the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should contain "IfcWall"
+    Then the file "{ifc_dir}/sheets/A01 - UNTITLED.svg" should contain "IfcWall"
