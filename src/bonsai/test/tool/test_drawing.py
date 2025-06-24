@@ -832,7 +832,7 @@ class TestUpdateTextValue(NewFile):
             bpy.ops.bim.edit_text()
         annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
         assert "title" in annotation_classes
-        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
 
     def test_add_second_literal(self, setup=True):
         if setup:
@@ -869,7 +869,7 @@ class TestUpdateTextValue(NewFile):
         annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
         assert props.font_size == "7.0"
         assert "title" in annotation_classes
-        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
 
         # test second literal is present
         assert props.literals[1].attributes["Literal"].string_value == "test_value"
