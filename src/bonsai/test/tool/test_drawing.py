@@ -724,7 +724,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         props = tool.Drawing.get_document_props()
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
-        sheet_path = Path.cwd() / "layouts" / "A00 - UNTITLED.svg"
+        sheet_path = Path.cwd() / "layouts" / "A01 - UNTITLED.svg"
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
