@@ -29,7 +29,7 @@ from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from functools import partial
 
 
@@ -506,15 +506,17 @@ class CreateObjectUI:
             cls.draw_type_manager_launcher(context)
 
     @classmethod
-    def draw_container_info(cls, context):
+    def draw_container_info(cls, context: bpy.types.Context) -> None:
         text = AuthoringData.data["default_container"]
+        assert context.region
         if context.region.type == "UI":
             text = f"Container: {text}"
 
         cls.layout.row(align=True).label(text=text, icon="OUTLINER_COLLECTION")
 
     @classmethod
-    def draw_type_manager_launcher(cls, context):
+    def draw_type_manager_launcher(cls, context: bpy.types.Context) -> None:
+        assert context.region
         ui_context = context.region.type
         props = tool.Model.get_model_props()
         row = cls.layout.row(align=True)
@@ -568,7 +570,8 @@ class CreateObjectUI:
             op.ifc_element_type = AuthoringData.data["ifc_element_type"]
 
     @classmethod
-    def draw_add_object(cls, context):
+    def draw_add_object(cls, context: bpy.types.Context) -> None:
+        assert context.region
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
         if AuthoringData.data["relating_type_id"]:
@@ -580,7 +583,8 @@ class CreateObjectUI:
             row.label(text="No Construction Type", icon="FILE_3D")
 
     @classmethod
-    def draw_add_object_parameters(cls, context):
+    def draw_add_object_parameters(cls, context: bpy.types.Context) -> None:
+        assert context.region
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
         if not AuthoringData.data["relating_type_id"]:
@@ -633,7 +637,8 @@ class CreateObjectUI:
             row.prop(data=cls.props, property="rl_mode", text="RL Mode" if ui_context != "TOOL_HEADER" else "RL")
 
     @classmethod
-    def draw_thumbnail(cls, context):
+    def draw_thumbnail(cls, context: bpy.types.Context) -> None:
+        assert context.region
         ui_context = context.region.type
         row = cls.layout.row(align=True)
         if not AuthoringData.data["ifc_element_type"]:

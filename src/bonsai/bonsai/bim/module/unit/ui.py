@@ -16,11 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bonsai.bim.helper
 import bonsai.tool as tool
+import bpy
 from bpy.types import Panel, UIList
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.unit.data import UnitsData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.unit.prop import BIMUnitProperties, Unit
 
 
 class BIM_PT_units(Panel):
@@ -102,7 +108,16 @@ class BIM_PT_units(Panel):
 
 
 class BIM_UL_units(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMUnitProperties,
+        item: Unit,
+        icon_: int,
+        active_data,
+        active_propname,
+    ) -> None:
         props = tool.Unit.get_unit_props()
         if item:
             icon = "MOD_MESHDEFORM"

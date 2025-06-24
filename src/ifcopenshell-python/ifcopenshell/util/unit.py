@@ -695,6 +695,7 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     if not (projects := ifc_file.by_type("IfcProject")) or not (units := projects[0].UnitsInContext):
         return 1
     unit_scale = 1
+    unit: ifcopenshell.entity_instance
     for unit in units.Units:
         if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:
             continue

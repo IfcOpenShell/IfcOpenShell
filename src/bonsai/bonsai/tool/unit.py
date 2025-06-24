@@ -125,7 +125,7 @@ class Unit(bonsai.core.tool.Unit):
         props = tool.Unit.get_unit_props()
         props.units.clear()
 
-        units = []
+        units: list[ifcopenshell.entity_instance] = []
         for unit_class in ["IfcDerivedUnit", "IfcMonetaryUnit", "IfcNamedUnit"]:
             units += tool.Ifc.get().by_type(unit_class)
 
