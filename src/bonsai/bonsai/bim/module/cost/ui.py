@@ -76,28 +76,10 @@ class BIM_PT_cost_schedules(Panel):
             col = row0.column()
             col.label(text="Linked CSV:")
             row_1 = col.row(align=True)
-
-            ifc_file = tool.Ifc.get()
-            cost_docs_document = next(
-                (
-                    document
-                    for document in ifc_file.by_type("IfcDocumentInformation")
-                    if document.Name == "BBIM_Cost_Documents"
-                ),
-                None,
-            )
-
-            file_path = None
-            if cost_docs_document:
-                references = tool.Document.get_document_references(cost_docs_document)
-                for reference in references:
-                    if (
-                        reference.Description
-                        and f"Cost Schedule ID: {self.props.active_cost_schedule_id}" in reference.Description
-                    ):
-                        file_path = reference.Location
-                        break
-
+            
+            csv_filepaths = CostSchedulesData.data["csv_filepaths"]
+            file_path = csv_filepaths.get(self.props.active_cost_schedule_id)
+            
             if file_path:
                 row_1.label(text=file_path)
                 row_1.operator("bim.refresh_cost_schedule_csv", icon="FILE_REFRESH", text="")
