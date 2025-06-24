@@ -67,6 +67,7 @@ classes = (
     product.SetActiveType,
     workspace.Hotkey,
     workspace.BIM_MT_add_representation_item,
+    workspace.SyncIfcClass,
     wall.AddWallsFromSlab,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,

@@ -464,6 +464,27 @@ class BIM_MT_add_representation_item(Menu):
             "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
         ).shape = "CYLINDER"
 
+class SyncIfcClass(bpy.types.Operator):
+    bl_idname = "bim.sync_ifc_class"
+    bl_label = "Sync IFC Class"
+    bl_description = "Synchronize root class to model class"
+    bl_options = {"REGISTER", "UNDO"}
+    source: bpy.props.StringProperty(default="ROOT")
+    
+    def execute(self, context):
+        root_props = tool.Root.get_root_props()
+        model_props = tool.Model.get_model_props()
+        
+        if self.source == "ROOT":
+            enum_items = [item[0] for item in get_ifc_class(model_props, context)]
+            if root_props.ifc_class in enum_items:
+                model_props.ifc_class = root_props.ifc_class
+            else:
+                self.report({"WARNING"}, f"Class '{root_props.ifc_class}' not available in model classes")
+        else:
+            root_props.ifc_class = model_props.ifc_class
+            
+        return {"FINISHED"}
 
 class CreateObjectUI:
     layout: bpy.types.UILayout
@@ -486,6 +507,9 @@ class CreateObjectUI:
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
+        original_should_continue_drawing = getattr(cls, "should_continue_drawing", True)
+        cls.should_continue_drawing = True
+
         if context.region.type == "TOOL_HEADER":
             tool_name = (
                 "Multi Object Tool"
@@ -496,14 +520,19 @@ class CreateObjectUI:
 
         if AuthoringData.data["ifc_classes"] and AuthoringData.data["relating_type_id"]:
             cls.draw_thumbnail(context)
-            cls.draw_add_object_parameters(context)
-            cls.draw_add_object(context)
+            if cls.should_continue_drawing:
+                cls.draw_add_object_parameters(context)
+                cls.draw_add_object(context)
+            cls.should_continue_drawing = original_should_continue_drawing
+            
             if len(context.selected_objects) == 2 and tool.Ifc.get_entity(context.selected_objects[0]):
                 op_icon = custom_icon_previews["APPLY_VOID"].icon_id
                 row = layout.row(align=True)
                 row.operator("bim.add_opening", text="Apply Void", icon_value=op_icon)
         else:
-            cls.draw_type_manager_launcher(context)
+            # Only draw type manager launcher if should_continue_drawing is True
+            if cls.should_continue_drawing:
+                cls.draw_type_manager_launcher(context)
 
     @classmethod
     def draw_container_info(cls, context):
@@ -637,7 +666,27 @@ class CreateObjectUI:
         ui_context = context.region.type
         row = cls.layout.row(align=True)
         if not AuthoringData.data["ifc_element_type"]:
-            prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
+            root_props = tool.Root.get_root_props()
+            model_props = tool.Model.get_model_props()
+            
+            prop_with_search(row, root_props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "", 
+                            original_operator_path="bim.bim_tool")
+            
+            if root_props.ifc_class != model_props.ifc_class:
+                enum_items = [item[0] for item in get_ifc_class(model_props, context)]
+                if root_props.ifc_class in enum_items:
+                    op = row.operator("bim.sync_ifc_class", text="", icon="FILE_REFRESH")
+                    op.source = "ROOT"
+                    cls.should_continue_drawing = False
+                    cls.layout.label(text="Click the refresh button to use this class")
+                else:
+                    row.label(text="", icon="ERROR")
+                    cls.layout.label(text=f"'{root_props.ifc_class}' not available in model classes")
+                    cls.should_continue_drawing = False
+                return
+            else:
+                cls.should_continue_drawing = True
+        
         if not AuthoringData.data["ifc_classes"]:
             return
         if not (ifc_class := AuthoringData.data["ifc_class_current"]):
@@ -645,7 +694,6 @@ class CreateObjectUI:
 
         relating_type_data = AuthoringData.data["relating_type_data"]
         box = cls.layout.box()
-
         row = box.row(align=True)
         thumbnail: int = AuthoringData.type_thumbnails.get(relating_type_data["id"], 0)
         row.template_icon(icon_value=thumbnail)
