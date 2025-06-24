@@ -20,6 +20,7 @@ import bpy
 import bonsai.tool as tool
 from bpy.types import PropertyGroup
 from bonsai.bim.module.bsdd.data import BSDDData
+from bonsai.bim.module.classification.data import ClassificationsData
 from bonsai.bim.prop import Attribute, StrProperty
 from bpy.props import (
     PointerProperty,
@@ -42,6 +43,21 @@ def get_active_dictionary(self, context):
 
 def update_is_active(self: "BSDDDictionary", context: bpy.types.Context) -> None:
     BSDDData.data["active_dictionary"] = BSDDData.active_dictionary()
+    if ClassificationsData.is_loaded:
+        props = tool.Classification.get_classification_props()
+        # Preserve original enum value.
+        classification_source = props.classification_source
+        ClassificationsData.data["classification_source"] = ClassificationsData.classification_source()
+
+        # Try to restore enum value.
+        if "classification_source" not in props:
+            # It's already on the default value, nothing to restore.
+            return
+        try:
+            props.classification_source = classification_source
+        except TypeError:
+            # Item is no longer active and not present in enum, fallback to the default.
+            del props["classification_source"]
 
 
 def update_is_selected(self: "BSDDProperty", context: bpy.types.Context) -> None:
@@ -111,7 +127,7 @@ class BSDDPset(PropertyGroup):
 
 
 class BIMBSDDProperties(PropertyGroup):
-    active_dictionary: StringProperty(name="Active Dictionary")
+    # TODO: `active_dictionary` is not used anywhere?
     active_dictionary: EnumProperty(items=get_active_dictionary, name="Active Dictionary")
     active_uri: StringProperty(name="Active URI")
     dictionaries: CollectionProperty(name="Dictionaries", type=BSDDDictionary)

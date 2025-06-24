@@ -492,7 +492,7 @@ class TestGenerateSheetIdentification(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         assert subject.generate_sheet_identification() == "A01"
-        document = ifc.createIfcDocumentInformation()
+        document = ifc.createIfcDocumentInformation(Scope="SHEET")
         assert subject.generate_sheet_identification() == "A02"
 
 
@@ -724,7 +724,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         props = tool.Drawing.get_document_props()
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
-        sheet_path = Path.cwd() / "layouts" / "A00 - UNTITLED.svg"
+        sheet_path = Path.cwd() / "layouts" / "A01 - UNTITLED.svg"
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -832,7 +832,7 @@ class TestUpdateTextValue(NewFile):
             bpy.ops.bim.edit_text()
         annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
         assert "title" in annotation_classes
-        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
 
     def test_add_second_literal(self, setup=True):
         if setup:
@@ -869,7 +869,7 @@ class TestUpdateTextValue(NewFile):
         annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
         assert props.font_size == "7.0"
         assert "title" in annotation_classes
-        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
 
         # test second literal is present
         assert props.literals[1].attributes["Literal"].string_value == "test_value"

@@ -28,8 +28,7 @@ from datetime import datetime
 import bpy
 import bonsai.tool as tool
 from pathlib import Path
-from typing import Union, Optional
-from collections.abc import Sequence
+from typing import Union, TYPE_CHECKING
 import json
 import math
 import time
@@ -38,6 +37,8 @@ import ifcopenshell.util.geolocation
 import webbrowser
 import ifcopenshell.geom
 import multiprocessing
+import requests
+from math import radians
 from mathutils import Vector
 from bonsai.bim.module.light.data import SolarData
 from bpy_extras.io_utils import ExportHelper
@@ -58,7 +59,7 @@ class ExportOBJ(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         if not props.should_load_from_memory and not props.ifc_file:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
@@ -66,10 +67,11 @@ class ExportOBJ(bpy.types.Operator):
 
     def execute(self, context):
         # Get the output directory
-        should_load_from_memory = context.scene.radiance_exporter_properties.should_load_from_memory
-        output_dir = context.scene.radiance_exporter_properties.output_dir
+        props = tool.Blender.get_radiance_exporter_props()
+        should_load_from_memory = props.should_load_from_memory
+        output_dir = props.output_dir
 
-        context.scene.radiance_exporter_properties.is_exporting = True
+        props.is_exporting = True
 
         # Conversion from IFC to OBJ
         # Settings for obj
@@ -86,7 +88,7 @@ class ExportOBJ(bpy.types.Operator):
             ifc_file = tool.Ifc.get()
 
         else:
-            ifc_file_path = context.scene.radiance_exporter_properties.ifc_file
+            ifc_file_path = props.ifc_file
             ifc_file = ifcopenshell.open(ifc_file_path)
 
         obj_file_path = os.path.join(output_dir, "model.obj")
@@ -121,7 +123,7 @@ class ExportOBJ(bpy.types.Operator):
                     break
 
         serialiser.finalize()
-        context.scene.radiance_exporter_properties.is_exporting = False
+        props.is_exporting = False
 
         self.report({"INFO"}, "Exported OBJ file to: {}".format(obj_file_path))
 
@@ -141,9 +143,10 @@ class RadianceRender(bpy.types.Operator):
             return {"CANCELLED"}
 
         print("Starting Radiance rendering process...")
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
 
+        assert context.scene
         context.scene.render.resolution_x = resolution_x
         context.scene.render.resolution_y = resolution_y
 
@@ -172,8 +175,9 @@ class RadianceRender(bpy.types.Operator):
 
         obj_file_path = os.path.join(output_dir, "model.obj")
 
-        sun_props = context.scene.BIMSolarProperties
-        sun_pos_props = context.scene.sun_pos_properties
+        sun_props = tool.Blender.get_solar_props()
+        sun_pos_props = tool.Blender.get_sun_props()
+        assert sun_pos_props
         sky_file_path = os.path.join(output_dir, "sky.rad")
         # latitude = sun_props.latitude
         # longitude = sun_props.longitude
@@ -331,7 +335,7 @@ ground_glow source ground
                 # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
                 # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
 
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
 
         data = props.get_mappings_dict()
 
@@ -458,7 +462,7 @@ ground_glow source ground
         return {"FINISHED"}
 
     def get_active_camera(self, context):
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         if props.use_active_camera:
             return context.scene.camera
         else:
@@ -475,8 +479,7 @@ ground_glow source ground
         return (position.x, position.y, position.z), (direction.x, direction.y, direction.z)
 
     def getResolution(self, context):
-        scene = context.scene
-        props = scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         resolution_x = props.radiance_resolution_x
         resolution_y = props.radiance_resolution_y
         return resolution_x, resolution_y
@@ -505,12 +508,12 @@ class ImportTrueNorth(bpy.types.Operator):
         return SolarData.data["true_north"] is not None
 
     def execute(self, context):
-        props = context.scene.BIMSolarProperties
+        props = tool.Blender.get_solar_props()
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if not context.TrueNorth:
                 continue
             value = context.TrueNorth.DirectionRatios
-            props.true_north = ifcopenshell.util.geolocation.yaxis2angle(*value[:2])
+            props.true_north = radians(ifcopenshell.util.geolocation.yaxis2angle(*value[:2]))
         return {"FINISHED"}
 
 
@@ -521,7 +524,7 @@ class ImportLatLong(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMSolarProperties
+        props = tool.Blender.get_solar_props()
         site = tool.Ifc.get().by_id(int(props.sites))
         if site.RefLatitude and site.RefLongitude:
             props.latitude = ifcopenshell.util.geolocation.dms2dd(*site.RefLatitude)
@@ -536,8 +539,9 @@ class MoveSunPathTo3DCursor(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMSolarProperties
-        props.sun_path_origin = bpy.context.scene.cursor.location
+        props = tool.Blender.get_solar_props()
+        assert context.scene
+        props.sun_path_origin = context.scene.cursor.location
         tool.Blender.update_viewport()
         return {"FINISHED"}
 
@@ -557,8 +561,54 @@ class ViewFromSun(bpy.types.Operator):
             camera.data.ortho_scale = 100  # The default of 6m is too small
             context.scene.collection.objects.link(camera)
         tool.Blender.activate_camera(camera)
-        props = context.scene.BIMSolarProperties
+        props = tool.Blender.get_solar_props()
         props.hour = props.hour  # Just to refresh camera position
+        return {"FINISHED"}
+
+
+class LightPickCoordinates(bpy.types.Operator):
+    bl_idname = "bim.light_pick_coordinates"
+    bl_label = "Pick Coordinates"
+    bl_description = (
+        "Open web browser with Google Maps to pick coordinates (Right Mouse Click in maps to copy selected location).\n\n"
+        "ALT+Click to insert current location based on the current IP-address (using ip-api.com)."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    use_current_location: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        use_current_location: bool
+
+    def invoke(self, context, event):
+        if event.alt:
+            self.use_current_location = True
+        return self.execute(context)
+
+    def execute(self, context):
+        props = tool.Blender.get_solar_props()
+        if not self.use_current_location:
+            zoom = 13.5
+            url = f"https://www.google.com/maps/@{props.latitude},{props.longitude},{zoom}z"
+            webbrowser.open(url)
+            return {"FINISHED"}
+
+        response = requests.get("http://ip-api.com/json/")
+        data = response.json()
+        props.latitude = data["lat"]
+        props.longitude = data["lon"]
+        return {"FINISHED"}
+
+
+class LightSetTimeToNow(bpy.types.Operator):
+    bl_idname = "bim.light_set_time_to_now"
+    bl_label = "Now"
+    bl_description = "Set time to current local time."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = tool.Blender.get_solar_props()
+        props.set_from_datetime(datetime.now())
         return {"FINISHED"}
 
 
@@ -568,7 +618,7 @@ class RefreshIFCMaterials(bpy.types.Operator):
     bl_description = "Refresh the list of IFC materials for mapping"
 
     def execute(self, context):
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         ifc_file: ifcopenshell.file
         ifc_file = tool.Ifc.get() if props.should_load_from_memory else ifcopenshell.open(props.ifc_file)
 
@@ -616,7 +666,7 @@ class UnmapMaterial(bpy.types.Operator):
     material_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         material = props.materials[self.material_index]
         props.unmap_material(material.name)
         return {"FINISHED"}
@@ -633,7 +683,7 @@ class RADIANCE_OT_select_camera(bpy.types.Operator):
         return context.object is not None and context.object.type == "CAMERA"
 
     def execute(self, context):
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         props.selected_camera = context.object
         props.use_active_camera = False
         return {"FINISHED"}
@@ -648,7 +698,7 @@ class RADIANCE_OT_export_material_mappings(bpy.types.Operator, ExportHelper):
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def execute(self, context):
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         mappings = {}
 
         for material in props.materials:
@@ -674,7 +724,7 @@ class RADIANCE_OT_import_material_mappings(bpy.types.Operator, ImportHelper):
     filename_ext = ".json"
 
     def execute(self, context):
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         props.import_mappings(self.filepath)
         self.report({"INFO"}, f"Material mappings imported from {self.filepath}")
         return {"FINISHED"}

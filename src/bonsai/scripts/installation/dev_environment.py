@@ -38,14 +38,23 @@ REPO_PATH = r""
 # Usually don't need to change, just ensure Blender version matches.
 BLENDER_PATH = Path.home() / r"AppData/Roaming/Blender Foundation/Blender/4.4"
 
-# BONSAI_PATH: Path to 'bonsai' extension folder inside BLENDER_PATH.
-# Need to ensure extensions repo folder in the path below ('raw_githubusercontent_com') matches yours.
-#
-# Typical scenarios:
-# - Bonsai is installed from Bonsai Unstalble Repo - use 'raw_githubusercontent_com' (as it is by default)
-# - Bonsai is installed via offline installation - use 'user_default'
-# - Bonsai is installed from Blender's official extensions platform - use 'blender_org'
-BONSAI_PATH = BLENDER_PATH / r"extensions/raw_githubusercontent_com/bonsai"
+
+# Determine BONSAI_PATH from existing options
+def find_bonsai_path(blender_path):
+    candidates = [
+        blender_path / r"extensions/raw_githubusercontent_com/bonsai",
+        blender_path / r"extensions/user_default/bonsai",
+        blender_path / r"extensions/blender_org/bonsai",
+    ]
+    for path in candidates:
+        if path.exists():
+            print(f"Found Bonsai at: {path}")
+            return path
+    raise FileNotFoundError("Could not find Bonsai path in expected locations.")
+
+
+BONSAI_PATH = find_bonsai_path(BLENDER_PATH)
+
 
 # ---------------------------
 
