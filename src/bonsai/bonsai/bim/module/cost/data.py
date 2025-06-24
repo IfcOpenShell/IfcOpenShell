@@ -56,7 +56,7 @@ class CostSchedulesData:
             "cost_values": cls.cost_values(),
             "quantity_types": cls.quantity_types(),
             "currency": cls.currency(),
-            "csv_filepaths": cls.get_csv_filepaths(),  # Add this line
+            "csv_filepaths": cls.get_csv_filepaths(),
         }
         cls.is_loaded = True
 
@@ -199,6 +199,7 @@ class CostSchedulesData:
         #         parametric_quantities.extend(quantities)
         data["TotalCostQuantity"] = ifcopenshell.util.cost.get_total_quantity(cost_item)
         data["UnitSymbol"] = "-"
+        data["QuantityType"] = None
         quantities: list[ifcopenshell.entity_instance] = cost_item.CostQuantities
         if quantities:
             quantity = quantities[0]
