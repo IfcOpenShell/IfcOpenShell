@@ -35,6 +35,7 @@ class AssignSceneUnits(bpy.types.Operator, tool.Ifc.Operator):
 class AssignUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_unit"
     bl_label = "Assign Unit"
+    bl_description = "Assign provided unit as the default project unit for it's unit type."
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
@@ -45,6 +46,7 @@ class AssignUnit(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_unit"
     bl_label = "Unassign Unit"
+    bl_description = "Unassign the specified unit as the project default."
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
