@@ -25,6 +25,9 @@ import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
+from bonsai.bim.module.cost.data import CostSchedulesData
+from pathlib import Path
+
 from typing import get_args, TYPE_CHECKING, Literal
 
 
@@ -100,6 +103,7 @@ class EnableEditingCostItems(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.enable_editing_cost_items(tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+        CostSchedulesData.is_loaded = False
 
 
 class DisableEditingCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -565,8 +569,6 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
         return True
 
     def _execute(self, context):
-        from pathlib import Path
-        from bonsai.bim.module.cost.data import CostSchedulesData
         
         store_path = self.filepath
         if self.use_relative_path:
@@ -604,7 +606,7 @@ class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
             cls.poll_message_set("No active cost schedule")
             return False
             
-        file_path = tool.Cost.get_cost_schedule_csv_filepath(props.active_cost_schedule_id)
+        file_path = core.get_cost_schedule_csv_filepath(tool.Cost, props.active_cost_schedule_id)
         if not file_path:
             cls.poll_message_set("No CSV file associated with this cost schedule")
             return False
@@ -612,44 +614,14 @@ class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        from pathlib import Path
-        from bonsai.bim.module.cost.data import CostSchedulesData
-        
-        props = tool.Cost.get_cost_props()
-        cost_schedule_id = props.active_cost_schedule_id
-        
-        file_path = tool.Cost.get_cost_schedule_csv_filepath(cost_schedule_id)
-        if not file_path:
-            self.report({"ERROR"}, "No CSV file associated with this cost schedule")
+        error_message = core.refresh_cost_schedule_csv(tool.Cost)
+        if error_message:
+            self.report({"ERROR"}, error_message)
             return {"CANCELLED"}
-            
-        resolved_path = Path(tool.Ifc.resolve_uri(file_path))
-        if not resolved_path.exists():
-            self.report({"ERROR"}, f"File does not exist: '{file_path}' (resolved to '{resolved_path}')")
-            return {"CANCELLED"}
-            
-        tool.Cost.delete_all_cost_items()
-        
-        cost_schedule = tool.Ifc.get_entity_by_id(cost_schedule_id)
-        is_schedule_of_rates = tool.Cost.is_schedule_of_rates_csv(cost_schedule_id)
+        CostSchedulesData.is_loaded = False
 
-        try:
-            from ifc5d.csv2ifc import Csv2Ifc
-            
-            csv2ifc = Csv2Ifc()
-            csv2ifc.csv = str(resolved_path)
-            csv2ifc.file = tool.Ifc.get()
-            csv2ifc.cost_schedule = cost_schedule
-            csv2ifc.is_schedule_of_rates = is_schedule_of_rates
-            csv2ifc.refresh()
-            
-            tool.Cost.load_cost_schedule_tree()
-            CostSchedulesData.is_loaded = False
-            
-            return {"FINISHED"}
-        except Exception as e:
-            self.report({"ERROR"}, f"Error refreshing CSV: {str(e)}")
-            return {"CANCELLED"}
+        return {"FINISHED"}
+
 
 class AddCostColumn(bpy.types.Operator):
     bl_idname = "bim.add_cost_column"
