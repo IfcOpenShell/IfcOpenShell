@@ -1235,7 +1235,6 @@ class BoundingBoxDecorator:
         region = bpy.context.region
         rv3d = bpy.context.region_data
 
-        # Preferences
         addon_prefs = tool.Blender.get_addon_preferences()
         font_id = 0
         font_size = tool.Blender.scale_font_size(12)
@@ -1246,18 +1245,79 @@ class BoundingBoxDecorator:
         blf.color(font_id, *color)
 
         closest_indices = self.find_closest_trihedron(corners, edges, region, rv3d)
-        for axis in "XYZ":
+        
+        screen_coords = {}
+        for axis_idx, axis in enumerate("XYZ"):
             pair = closest_indices[axis]
             if pair is not None:
                 i1, i2 = pair
-                center = (corners[i1] + corners[i2]) / 2
+                offset_factor = 0.6 - (axis_idx * 0.1)  
+                center = corners[i1].lerp(corners[i2], offset_factor)
                 value = getattr(dims, axis.lower())
                 screen_co = location_3d_to_region_2d(region, rv3d, center)
                 if screen_co is not None:
-                    blf.position(font_id, screen_co.x, screen_co.y, 0)
-                    blf.color(font_id, 1, 1, 1, 1)
-                    value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
-                    text_length = blf.dimensions(font_id, value_str)
-                    self.draw_text_background(context, screen_co, text_length)
-                    blf.draw(font_id, value_str)
+                    screen_coords[axis] = (screen_co, value)
+        
+        self.adjust_overlapping_labels(screen_coords)
+        
+        for axis, (screen_co, value) in screen_coords.items():
+            blf.position(font_id, screen_co.x, screen_co.y, 0)
+            blf.color(font_id, 1, 1, 1, 1)
+            value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
+            text_length = blf.dimensions(font_id, value_str)
+            self.draw_text_background(context, screen_co, text_length)
+            blf.draw(font_id, value_str)
+        
         blf.disable(font_id, blf.SHADOW)
+
+    def adjust_overlapping_labels(self, screen_coords):
+        font_id = 0
+        text_dimensions = {}
+        for axis, (screen_co, value) in screen_coords.items():
+            value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
+            text_dimensions[axis] = blf.dimensions(font_id, value_str)
+        
+        min_spacing = 5
+        
+        axes = list(screen_coords.keys())
+        for i in range(len(axes)):
+            for j in range(i + 1, len(axes)):
+                axis1, axis2 = axes[i], axes[j]
+                co1, _ = screen_coords[axis1]
+                co2, _ = screen_coords[axis2]
+                dim1 = text_dimensions[axis1]
+                dim2 = text_dimensions[axis2]
+                
+                bounds1 = {
+                    "left": co1.x - min_spacing,
+                    "right": co1.x + dim1[0] + min_spacing,
+                    "top": co1.y + dim1[1] + min_spacing,
+                    "bottom": co1.y - min_spacing
+                }
+                bounds2 = {
+                    "left": co2.x - min_spacing,
+                    "right": co2.x + dim2[0] + min_spacing,
+                    "top": co2.y + dim2[1] + min_spacing,
+                    "bottom": co2.y - min_spacing
+                }
+                
+                if (bounds1["left"] < bounds2["right"] and bounds1["right"] > bounds2["left"] and
+                    bounds1["bottom"] < bounds2["top"] and bounds1["top"] > bounds2["bottom"]):
+                    
+                    x_overlap = min(bounds1["right"], bounds2["right"]) - max(bounds1["left"], bounds2["left"])
+                    y_overlap = min(bounds1["top"], bounds2["top"]) - max(bounds1["bottom"], bounds2["bottom"])
+                    
+                    if x_overlap < y_overlap:
+                        if co1.x < co2.x:
+                            co1.x -= x_overlap / 2 + min_spacing
+                            co2.x += x_overlap / 2 + min_spacing
+                        else:
+                            co1.x += x_overlap / 2 + min_spacing
+                            co2.x -= x_overlap / 2 + min_spacing
+                    else:
+                        if co1.y < co2.y:
+                            co1.y -= y_overlap / 2 + min_spacing
+                            co2.y += y_overlap / 2 + min_spacing
+                        else:
+                            co1.y += y_overlap / 2 + min_spacing
+                            co2.y -= y_overlap / 2 + min_spacing
