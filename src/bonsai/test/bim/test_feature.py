@@ -1561,7 +1561,7 @@ def the_file_name_should_contain_value(name, value):
 
 
 @then(parsers.parse('the file "{name}" should not contain "{value}"'))
-def the_file_name_should_contain_value(name, value):
+def the_file_name_should_not_contain_value(name, value):
     name = replace_variables(name)
     with open(name, "r") as f:
         content = f.read()
