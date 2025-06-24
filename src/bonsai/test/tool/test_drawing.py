@@ -492,7 +492,7 @@ class TestGenerateSheetIdentification(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         assert subject.generate_sheet_identification() == "A01"
-        document = ifc.createIfcDocumentInformation()
+        document = ifc.createIfcDocumentInformation(Scope="SHEET")
         assert subject.generate_sheet_identification() == "A02"
 
 
