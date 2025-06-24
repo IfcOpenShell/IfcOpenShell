@@ -222,7 +222,7 @@ class BIM_PT_cost_schedules(Panel):
         quantities = CostSchedulesData.data["cost_quantities"]
         row = self.layout.row(align=True)
         # In IFC, all quantities of IfcCostTime should have 1 type.
-        if quantities:
+        if quantities and cost_item.get("QuantityType"):
             quantity_class = cost_item["QuantityType"]
             row.label(text=quantity_class)
         else:
