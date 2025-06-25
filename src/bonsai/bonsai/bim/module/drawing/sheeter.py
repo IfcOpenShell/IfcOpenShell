@@ -215,7 +215,7 @@ class SheetBuilder:
         layout_tree = ET.parse(layout_path)
         layout_root = layout_tree.getroot()
 
-        for g in layout_root.findall("{http://www.w3.org/2000/svg}g"):
+        for g in layout_root.findall(f"{SVG}g"):
             if g.attrib.get("data-id") == str(reference.id()):
                 layout_root.remove(g)
                 break
@@ -313,14 +313,14 @@ class SheetBuilder:
         return self.references
 
     def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
-        titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
-        image = titleblock.findall("{http://www.w3.org/2000/svg}image")[0]
+        titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
+        image = titleblock.findall(f"{SVG}image")[0]
         g = self.parse_embedded_svg(image, sheet.get_info())
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
-        for north in g.iterfind('.//{http://www.w3.org/2000/svg}g[@data-type="grid-north"]'):
+        for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
             north.attrib["transform"] = f"rotate({grid_north})"
-        for north in g.iterfind('.//{http://www.w3.org/2000/svg}g[@data-type="true-north"]'):
+        for north in g.iterfind(f'.//{SVG}g[@data-type="true-north"]'):
             north.attrib["transform"] = f"rotate({true_north})"
         titleblock.append(g)
         titleblock.remove(image)
@@ -386,7 +386,7 @@ class SheetBuilder:
         return svg
 
     def build_drawings(self, root: ET.Element, sheet: ifcopenshell.entity_instance):
-        for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
+        for view in root.findall(f'{SVG}g[@data-type="drawing"]'):
             drawing_id = int(view.attrib["data-id"])
             try:
                 reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
@@ -395,7 +395,7 @@ class SheetBuilder:
                 # Perhaps the SVG has outdated content or is edited externally which we cannot control.
                 continue
 
-            images = view.findall("{http://www.w3.org/2000/svg}image")
+            images = view.findall(f"{SVG}image")
 
             foreground = None
             view_title = None
@@ -436,8 +436,8 @@ class SheetBuilder:
                 view.remove(image)
 
     def build_documents(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
-        schedules = root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]')
-        references = root.findall('{http://www.w3.org/2000/svg}g[@data-type="reference"]')
+        schedules = root.findall(f'{SVG}g[@data-type="schedule"]')
+        references = root.findall(f'{SVG}g[@data-type="reference"]')
         documents = schedules + references
         for view in documents:
             try:
@@ -447,7 +447,7 @@ class SheetBuilder:
                 # Perhaps the SVG has outdated content or is edited externally which we cannot control.
                 continue
 
-            images = view.findall("{http://www.w3.org/2000/svg}image")
+            images = view.findall(f"{SVG}image")
 
             table = None
             view_title = None
@@ -473,7 +473,7 @@ class SheetBuilder:
                 view.remove(image)
 
     def get_href(self, element: ET.Element) -> str:
-        return urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href")).replace("\\", "/")
+        return urllib.parse.unquote(element.attrib.get(f"{XLINK}href")).replace("\\", "/")
 
     def parse_embedded_svg(self, image: ET.Element, data: dict) -> ET.Element:
         group = ET.Element("g")
@@ -501,16 +501,16 @@ class SheetBuilder:
             embedded.attrib["viewBox"] = ""
             # TODO: This should not be in this function
             self.scale = embedded.attrib.get("data-scale")
-            images = embedded.findall("{http://www.w3.org/2000/svg}image")
+            images = embedded.findall(f"{SVG}image")
             for image in images:
-                old_href = Path(image.attrib.get("{http://www.w3.org/1999/xlink}href"))
+                old_href = Path(image.attrib.get(f"{XLINK}href"))
                 if not os.path.isabs(old_href):
                     template_dir = Path(os.path.join(self.layout_dir, svg_path)).resolve().parent
                     old_href = Path(os.path.join(template_dir, old_href))
                 old_href = old_href.absolute().resolve().as_posix()
                 new_href = Path(os.path.join(self.sheets_dir, Path(old_href).name)).absolute().resolve().as_posix()
                 shutil.copy(old_href, new_href)
-                image.attrib["{http://www.w3.org/1999/xlink}href"] = Path(old_href).name
+                image.attrib[f"{XLINK}href"] = Path(old_href).name
         for child in embedded:
             if "namedview" in child.tag:
                 continue
@@ -541,9 +541,9 @@ class SheetBuilder:
         sheet_tree = ET.parse(sheet_path)
         root = sheet_tree.getroot()
 
-        titleblock = sheet_tree.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
-        image = titleblock.findall("{http://www.w3.org/2000/svg}image[@{http://www.w3.org/1999/xlink}href]")[0]
-        image.attrib["{http://www.w3.org/1999/xlink}href"] = os.path.relpath(titleblock_path, sheet_dir)
+        titleblock = sheet_tree.findall(f'{SVG}g[@data-type="titleblock"]')[0]
+        image = titleblock.findall(f"{SVG}image[@{XLINK}href]")[0]
+        image.attrib[f"{XLINK}href"] = os.path.relpath(titleblock_path, sheet_dir)
         image.attrib["width"] = str(view_width)
         image.attrib["height"] = str(view_height)
 
