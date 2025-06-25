@@ -17,12 +17,236 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util
 from ifcopenshell import entity_instance
 from typing import Sequence
 
-import ifcopenshell.util.representation
 
+_horizontal_callback = None
+_vertical_callback = None
+_cant_callback = None
+
+def register_referent_name_callback(horizontal,vertical,cant):
+    global _horizontal_callback
+    _horizontal_callback = horizontal
+    
+    global _vertical_callback 
+    _vertical_callback = vertical
+    
+    global _cant_callback 
+    _cant_callback = cant
+
+    
+def _horizontal_label(prev_segment : entity_instance, segment : entity_instance) -> str:
+    if prev_segment == None and segment != None:
+        label = "P.O.B."
+    elif prev_segment != None and segment == None:
+        label = "P.O.E."
+    else:
+        lookup_table = {
+            "BLOSSCURVE": {
+                "BLOSSCURVE": "xx",
+                "CIRCULARARC": "S.C.",
+                "CLOTHOID": "xx",
+                "COSINECURVE": "xx",
+                "CUBIC": "xx",
+                "HELMERTCURVE": "xx",
+                "LINE": "S.T.",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "CIRCULARARC": {
+                "BLOSSCURVE": "C.S.",
+                "CIRCULARARC": "P.C.C.",
+                "CLOTHOID": "xx",
+                "COSINECURVE": "xx",
+                "CUBIC": "xx",
+                "HELMERTCURVE": "xx",
+                "LINE": "P.T.",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "CLOTHOID": {
+                "BLOSSCURVE": "xx",
+                "CIRCULARARC": "S.C.",
+                "CLOTHOID": "xx",
+                "COSINECURVE": "xx",
+                "CUBIC": "xx",
+                "HELMERTCURVE": "xx",
+                "LINE": "S.T.",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "COSINECURVE": {
+                "BLOSSCURVE": "xx",
+                "CIRCULARARC": "S.C.",
+                "CLOTHOID": "xx",
+                "COSINECURVE": "xx",
+                "CUBIC": "xx",
+                "HELMERTCURVE": "xx",
+                "LINE": "S.T.",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "CUBIC": {
+                "BLOSSCURVE": "xx",
+                "CIRCULARARC": "S.C.",
+                "CLOTHOID": "xx",
+                "COSINECURVE": "xx",
+                "CUBIC": "xx",
+                "HELMERTCURVE": "xx",
+                "LINE": "S.T.",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "HELMERTCURVE": {
+                "BLOSSCURVE": "xx",
+                "CIRCULARARC": "S.C.",
+                "CLOTHOID": "xx",
+                "COSINECURVE": "xx",
+                "CUBIC": "xx",
+                "HELMERTCURVE": "xx",
+                "LINE": "S.T.",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "LINE": {
+                "BLOSSCURVE": "T.S.",
+                "CIRCULARARC": "P.C.",
+                "CLOTHOID": "T.S.",
+                "COSINECURVE": "T.S.",
+                "CUBIC": "T.S.",
+                "HELMERTCURVE": "T.S.",
+                "LINE": "P.I.",
+                "SINECURVE": "T.S.",
+                "VIENNESEBEND": "T.S.",
+            },
+            "SINECURVE": {
+                "BLOSSCURVE": "xx",
+                "CIRCULARARC": "S.C.",
+                "CLOTHOID": "xx",
+                "COSINECURVE": "xx",
+                "CUBIC": "xx",
+                "HELMERTCURVE": "xx",
+                "LINE": "S.T.",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "VIENNESEBEND": {
+                "BLOSSCURVE": "xx",
+                "CIRCULARARC": "S.C.",
+                "CLOTHOID": "xx",
+                "COSINECURVE": "xx",
+                "CUBIC": "xx",
+                "HELMERTCURVE": "xx",
+                "LINE": "S.T.",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+        }
+        label = lookup_table[prev_segment.DesignParameters.PredefinedType][segment.DesignParameters.PredefinedType]
+
+    return label
+
+def _vertical_label(prev_segment : entity_instance, segment : entity_instance) -> str:
+    if prev_segment == None and segment != None:
+        label = "V.P.O.B."
+    elif prev_segment != None and segment == None:
+         label = "V.P.O.E."
+    else:
+        lookup_table = {
+            "CIRCULARARC": {"CIRCULARARC": "xx", "CLOTHOID": "xx", "CONSTANTGRADIENT": "xx", "PARABOLICARC": "xx"},
+            "CLOTHOID": {"CIRCULARARC": "xx", "CLOTHOID": "xx", "CONSTANTGRADIENT": "xx", "PARABOLICARC": "xx"},
+            "CONSTANTGRADIENT": {
+                "CIRCULARARC": "xx",
+                "CLOTHOID": "xx",
+                "CONSTANTGRADIENT": "P.V.I",
+                "PARABOLICARC": "P.V.C.",
+            },
+            "PARABOLICARC": {
+                "CIRCULARARC": "xx",
+                "CLOTHOID": "xx",
+                "CONSTANTGRADIENT": "P.V.T.",
+                "PARABOLICARC": "V.C.C.",
+            },
+        }
+        label = lookup_table[prev_segment.DesignParameters.PredefinedType][segment.DesignParameters.PredefinedType]
+
+    return label
+
+def _cant_label(prev_segment: entity_instance,segment: entity_instance) -> str:
+    if prev_segment == None and segment != None:
+        label = "C.P.O.B."
+    elif prev_segment != None and segment == None:
+        label = "C.P.O.E."
+    else:
+        lookup_table = {
+            "BLOSSCURVE": {
+                "BLOSSCURVE": "xx",
+                "CONSTANTCANT": "xx",
+                "COSINECURVE": "xx",
+                "HELMERTCURVE": "xx",
+                "LINEARTRANSITION": "xx",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "CONSTANTCANT": {
+                "BLOSSCURVE": "xx",
+                "CONSTANTCANT": "xx",
+                "COSINECURVE": "xx",
+                "HELMERTCURVE": "xx",
+                "LINEARTRANSITION": "xx",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "COSINECURVE": {
+                "BLOSSCURVE": "xx",
+                "CONSTANTCANT": "xx",
+                "COSINECURVE": "xx",
+                "HELMERTCURVE": "xx",
+                "LINEARTRANSITION": "xx",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "HELMERTCURVE": {
+                "BLOSSCURVE": "xx",
+                "CONSTANTCANT": "xx",
+                "COSINECURVE": "xx",
+                "HELMERTCURVE": "xx",
+                "LINEARTRANSITION": "xx",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "LINEARTRANSITION": {
+                "BLOSSCURVE": "xx",
+                "CONSTANTCANT": "xx",
+                "COSINECURVE": "xx",
+                "HELMERTCURVE": "xx",
+                "LINEARTRANSITION": "xx",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "SINECURVE": {
+                "BLOSSCURVE": "xx",
+                "CONSTANTCANT": "xx",
+                "COSINECURVE": "xx",
+                "HELMERTCURVE": "xx",
+                "LINEARTRANSITION": "xx",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+            "VIENNESEBEND": {
+                "BLOSSCURVE": "xx",
+                "CONSTANTCANT": "xx",
+                "COSINECURVE": "xx",
+                "HELMERTCURVE": "xx",
+                "LINEARTRANSITION": "xx",
+                "SINECURVE": "xx",
+                "VIENNESEBEND": "xx",
+            },
+        }
+        label = lookup_table[prev_segment.DesignParameters.PredefinedType][segment.DesignParameters.PredefinedType]
+
+    return label
 
 def _get_segment_start_point_label(prev_segment: entity_instance, segment: entity_instance) -> str:
     """
@@ -43,209 +267,24 @@ def _get_segment_start_point_label(prev_segment: entity_instance, segment: entit
             f"Expected segment.DesignParameters type to be one of {[_ for _ in expected_types]}, instead received {segment.DesignParameters.is_a()}"
         )
 
-    label = "Unknown"
-    if prev_segment == None and segment != None:
-        if segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
-            label = "P.O.B."
-        elif segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
-            label = "V.P.O.B."
-        elif segment.DesignParameters.is_a("IfcAlignmentCantSegment"):
-            label = "C.P.O.B."
-    elif prev_segment != None and segment == None:
-        if prev_segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
-            label = "P.O.E."
-        elif prev_segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
-            label = "V.P.O.E."
-        elif prev_segment.DesignParameters.is_a("IfcAlignmentCantSegment"):
-            label = "C.P.O.E."
-    else:
-        if segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
-            lookup_table = {
-                "BLOSSCURVE": {
-                    "BLOSSCURVE": "xx",
-                    "CIRCULARARC": "S.C.",
-                    "CLOTHOID": "xx",
-                    "COSINECURVE": "xx",
-                    "CUBIC": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINE": "S.T.",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "CIRCULARARC": {
-                    "BLOSSCURVE": "C.S.",
-                    "CIRCULARARC": "P.C.C.",
-                    "CLOTHOID": "xx",
-                    "COSINECURVE": "xx",
-                    "CUBIC": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINE": "P.T.",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "CLOTHOID": {
-                    "BLOSSCURVE": "xx",
-                    "CIRCULARARC": "S.C.",
-                    "CLOTHOID": "xx",
-                    "COSINECURVE": "xx",
-                    "CUBIC": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINE": "S.T.",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "COSINECURVE": {
-                    "BLOSSCURVE": "xx",
-                    "CIRCULARARC": "S.C.",
-                    "CLOTHOID": "xx",
-                    "COSINECURVE": "xx",
-                    "CUBIC": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINE": "S.T.",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "CUBIC": {
-                    "BLOSSCURVE": "xx",
-                    "CIRCULARARC": "S.C.",
-                    "CLOTHOID": "xx",
-                    "COSINECURVE": "xx",
-                    "CUBIC": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINE": "S.T.",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "HELMERTCURVE": {
-                    "BLOSSCURVE": "xx",
-                    "CIRCULARARC": "S.C.",
-                    "CLOTHOID": "xx",
-                    "COSINECURVE": "xx",
-                    "CUBIC": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINE": "S.T.",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "LINE": {
-                    "BLOSSCURVE": "T.S.",
-                    "CIRCULARARC": "P.C.",
-                    "CLOTHOID": "T.S.",
-                    "COSINECURVE": "T.S.",
-                    "CUBIC": "T.S.",
-                    "HELMERTCURVE": "T.S.",
-                    "LINE": "P.I.",
-                    "SINECURVE": "T.S.",
-                    "VIENNESEBEND": "T.S.",
-                },
-                "SINECURVE": {
-                    "BLOSSCURVE": "xx",
-                    "CIRCULARARC": "S.C.",
-                    "CLOTHOID": "xx",
-                    "COSINECURVE": "xx",
-                    "CUBIC": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINE": "S.T.",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "VIENNESEBEND": {
-                    "BLOSSCURVE": "xx",
-                    "CIRCULARARC": "S.C.",
-                    "CLOTHOID": "xx",
-                    "COSINECURVE": "xx",
-                    "CUBIC": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINE": "S.T.",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-            }
-            label = lookup_table[prev_segment.DesignParameters.PredefinedType][segment.DesignParameters.PredefinedType]
-        elif segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
-            lookup_table = {
-                "CIRCULARARC": {"CIRCULARARC": "xx", "CLOTHOID": "xx", "CONSTANTGRADIENT": "xx", "PARABOLICARC": "xx"},
-                "CLOTHOID": {"CIRCULARARC": "xx", "CLOTHOID": "xx", "CONSTANTGRADIENT": "xx", "PARABOLICARC": "xx"},
-                "CONSTANTGRADIENT": {
-                    "CIRCULARARC": "xx",
-                    "CLOTHOID": "xx",
-                    "CONSTANTGRADIENT": "P.V.I",
-                    "PARABOLICARC": "P.V.C.",
-                },
-                "PARABOLICARC": {
-                    "CIRCULARARC": "xx",
-                    "CLOTHOID": "xx",
-                    "CONSTANTGRADIENT": "P.V.T.",
-                    "PARABOLICARC": "V.C.C.",
-                },
-            }
-            label = lookup_table[prev_segment.DesignParameters.PredefinedType][segment.DesignParameters.PredefinedType]
-        elif segment.DesignParameters.is_a("IfcAlignmentCantSegment"):
-            lookup_table = {
-                "BLOSSCURVE": {
-                    "BLOSSCURVE": "xx",
-                    "CONSTANTCANT": "xx",
-                    "COSINECURVE": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINEARTRANSITION": "xx",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "CONSTANTCANT": {
-                    "BLOSSCURVE": "xx",
-                    "CONSTANTCANT": "xx",
-                    "COSINECURVE": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINEARTRANSITION": "xx",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "COSINECURVE": {
-                    "BLOSSCURVE": "xx",
-                    "CONSTANTCANT": "xx",
-                    "COSINECURVE": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINEARTRANSITION": "xx",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "HELMERTCURVE": {
-                    "BLOSSCURVE": "xx",
-                    "CONSTANTCANT": "xx",
-                    "COSINECURVE": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINEARTRANSITION": "xx",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "LINEARTRANSITION": {
-                    "BLOSSCURVE": "xx",
-                    "CONSTANTCANT": "xx",
-                    "COSINECURVE": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINEARTRANSITION": "xx",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "SINECURVE": {
-                    "BLOSSCURVE": "xx",
-                    "CONSTANTCANT": "xx",
-                    "COSINECURVE": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINEARTRANSITION": "xx",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-                "VIENNESEBEND": {
-                    "BLOSSCURVE": "xx",
-                    "CONSTANTCANT": "xx",
-                    "COSINECURVE": "xx",
-                    "HELMERTCURVE": "xx",
-                    "LINEARTRANSITION": "xx",
-                    "SINECURVE": "xx",
-                    "VIENNESEBEND": "xx",
-                },
-            }
-            label = lookup_table[prev_segment.DesignParameters.PredefinedType][segment.DesignParameters.PredefinedType]
+    s = segment if segment != None else prev_segment
+    if s.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
+        global _horizontal_callback
+        if _horizontal_callback:
+            label = _horizontal_callback(prev_segment,segment)
+        else:
+            label = _horizontal_label(prev_segment,segment)
+    elif s.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
+        global _vertical_callback
+        if _vertical_callback:
+            label = _vertical_callback(prev_segment,segment)
+        else:
+            label = _vertical_label(prev_segment,segment)
+    elif s.DesignParameters.is_a("IfcAlignmentCantSegment"):
+        global _cant_callback
+        if _cant_callback:
+            label = _cant_callback(prev_segment,segment)
+        else:
+            label = _cant_label(prev_segment,segment)
 
     return label

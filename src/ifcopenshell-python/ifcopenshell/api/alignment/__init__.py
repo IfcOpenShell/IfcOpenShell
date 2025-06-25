@@ -73,6 +73,8 @@ from .layout_vertical_alignment_by_pi_method import layout_vertical_alignment_by
 from .name_segments import name_segments
 from .util import *
 
+from ._get_segment_start_point_label import register_referent_name_callback
+
 __all__ = [
     "add_stationing_referent",
     "add_vertical_layout",
@@ -97,4 +99,5 @@ __all__ = [
     "layout_horizontal_alignment_by_pi_method",
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
+    "register_referent_name_callback"
 ]
