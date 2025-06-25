@@ -1734,7 +1734,7 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
 
 class SelectAllSheets(bpy.types.Operator):
     bl_idname = "bim.select_all_sheets"
-    bl_label = "Select All Sheetss"
+    bl_label = "Select All Sheets"
     view: bpy.props.StringProperty()
     bl_description = "Select all sheets in the sheet list.\n\n" + "SHIFT+CLICK to deselect all sheets"
     select_all: bpy.props.BoolProperty(name="Open All", default=True, options={"SKIP_SAVE"})
