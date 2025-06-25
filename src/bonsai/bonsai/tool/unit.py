@@ -69,6 +69,7 @@ class Unit(bonsai.core.tool.Unit):
     def get_scene_unit_name(cls, unit_type: UNIT_TYPE) -> str:
         bim_props = tool.Blender.get_bim_props()
         if unit_type == "LENGTHUNIT":
+            assert bpy.context.scene
             props = bpy.context.scene.unit_settings
             if props.length_unit == "MILES":
                 return "mile"
@@ -84,12 +85,13 @@ class Unit(bonsai.core.tool.Unit):
         elif unit_type == "VOLUMEUNIT":
             return bim_props.volume_unit
         else:
-            assert_never()
+            assert_never(unit_type)
 
     @classmethod
     def get_scene_unit_si_prefix(cls, unit_type: UNIT_TYPE) -> Union[str, None]:
         bim_props = tool.Blender.get_bim_props()
         if unit_type == "LENGTHUNIT":
+            assert bpy.context.scene
             props = bpy.context.scene.unit_settings
             if props.length_unit == "ADAPTIVE" or props.length_unit == "METERS":
                 return
@@ -163,6 +165,7 @@ class Unit(bonsai.core.tool.Unit):
 
     @classmethod
     def is_scene_unit_metric(cls) -> bool:
+        assert bpy.context.scene
         return bpy.context.scene.unit_settings.system in ["METRIC", "NONE"]
 
     @classmethod
@@ -189,6 +192,7 @@ class Unit(bonsai.core.tool.Unit):
 
     @classmethod
     def blender_format_unit(cls, value: float) -> str:
+        assert bpy.context.scene
         return bpy.utils.units.to_string(
             bpy.context.scene.unit_settings.system,
             "LENGTH",

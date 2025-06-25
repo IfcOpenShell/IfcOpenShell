@@ -25,7 +25,9 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def add_instance_flooring_covering_from_cursor(ifc: tool.Ifc, root: tool.Root, spatial: tool.Spatial) -> None:
+def add_instance_flooring_covering_from_cursor(
+    ifc: type[tool.Ifc], root: type[tool.Root], spatial: type[tool.Spatial]
+) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 
@@ -68,7 +70,7 @@ def add_instance_flooring_covering_from_cursor(ifc: tool.Ifc, root: tool.Root, s
 
 
 def add_instance_ceiling_covering_from_cursor(
-    ifc: tool.Ifc, root: tool.Root, covering: tool.Covering, spatial: tool.Spatial
+    ifc: type[tool.Ifc], root: type[tool.Root], covering: type[tool.Covering], spatial: type[tool.Spatial]
 ) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
@@ -111,7 +113,7 @@ def add_instance_ceiling_covering_from_cursor(
     spatial.regen_obj_representation(obj, body)
 
 
-def regen_selected_covering_object(root: tool.Root, spatial: tool.Spatial) -> None:
+def regen_selected_covering_object(root: type[tool.Root], spatial: type[tool.Spatial]) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 
@@ -142,7 +144,7 @@ def regen_selected_covering_object(root: tool.Root, spatial: tool.Spatial) -> No
 
 
 # TODO CHECK IF IT IS POSSIBLE TO CREATE ONLY ONE CORE FUNCTION FOR _FROM_WALLS
-def add_instance_flooring_coverings_from_walls(root: tool.Root, spatial: tool.Spatial) -> None:
+def add_instance_flooring_coverings_from_walls(root: type[tool.Root], spatial: type[tool.Spatial]) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 
@@ -168,7 +170,9 @@ def add_instance_flooring_coverings_from_walls(root: tool.Root, spatial: tool.Sp
         spatial.regen_obj_representation(obj, body)
 
 
-def add_instance_ceiling_coverings_from_walls(root: tool.Root, spatial: tool.Spatial, covering: tool.Covering) -> None:
+def add_instance_ceiling_coverings_from_walls(
+    root: type[tool.Root], spatial: type[tool.Spatial], covering: type[tool.Covering]
+) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 

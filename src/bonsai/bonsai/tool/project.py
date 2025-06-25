@@ -159,7 +159,6 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def set_default_modeling_dimensions(cls) -> None:
         props = tool.Model.get_model_props()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props.extrusion_depth = 3
         props.length = 1
         props.rl1 = 0

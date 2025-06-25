@@ -48,6 +48,7 @@ class BIM_PT_units(Panel):
             UnitsData.load()
 
         self.props = tool.Unit.get_unit_props()
+        assert self.layout
 
         row = self.layout.row(align=True)
         row.label(text="{} Units Found".format(UnitsData.data["total_units"]), icon="SNAP_GRID")

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 def add_context(
-    ifc: tool.Ifc,
+    ifc: type[tool.Ifc],
     context_type: Optional[str] = None,
     context_identifier: Optional[str] = None,
     target_view: Optional[str] = None,
@@ -41,19 +41,19 @@ def add_context(
     )
 
 
-def remove_context(ifc: tool.Ifc, context: ifcopenshell.entity_instance) -> None:
+def remove_context(ifc: type[tool.Ifc], context: ifcopenshell.entity_instance) -> None:
     ifc.run("context.remove_context", context=context)
 
 
-def enable_editing_context(context_tool: tool.Context, context: ifcopenshell.entity_instance) -> None:
+def enable_editing_context(context_tool: type[tool.Context], context: ifcopenshell.entity_instance) -> None:
     context_tool.set_context(context)
     context_tool.import_attributes()
 
 
-def disable_editing_context(context: tool.Context) -> None:
+def disable_editing_context(context: type[tool.Context]) -> None:
     context.clear_context()
 
 
-def edit_context(ifc: tool.Ifc, context: tool.Context) -> None:
+def edit_context(ifc: type[tool.Ifc], context: type[tool.Context]) -> None:
     ifc.run("context.edit_context", context=context.get_context(), attributes=context.export_attributes())
     disable_editing_context(context)
