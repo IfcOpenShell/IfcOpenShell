@@ -30,10 +30,12 @@ if TYPE_CHECKING:
 class AssignSceneUnits(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_scene_units"
     bl_label = "Assign Scene Units"
+    bl_description = "Add new units based on the current Blender scene units and assign them as project default."
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         core.assign_scene_units(tool.Ifc, tool.Unit)
+        core.load_units(tool.Unit)
 
 
 class AssignUnit(bpy.types.Operator, tool.Ifc.Operator):
