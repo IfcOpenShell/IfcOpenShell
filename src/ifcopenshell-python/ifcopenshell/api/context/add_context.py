@@ -108,6 +108,9 @@ def add_context(
         the common target views above or consult the IFC documentation
         (under the IfcShapeRepresentation page) for more details. Optional
         for contexts, but mandatory for subcontexts.
+    :param target_scale: It defines the intended scale at which the representation
+        is designed to be viewed or printed
+    :type target_scale: float, optional
     :param parent: the parent context. Must be left as None (the default)
         for contexts, and only set for subcontexts. Note that there are only
         contexts and subcontexts, a subcontext cannot have any children.
