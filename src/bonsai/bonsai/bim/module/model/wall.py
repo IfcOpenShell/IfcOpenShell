@@ -1132,21 +1132,24 @@ class DumbWallJoiner:
         relating_element = None
         connections = element1.ConnectedTo
         for conn in connections:
-            if conn.RelatingConnectionType == "ATEND":
+            if conn.is_a("IfcRelConnectsPathElements") and conn.RelatingConnectionType == "ATEND":
                 relating_element = conn.RelatedElement
+                relating_connection = conn.RelatedConnectionType
                 description = conn.Description
+                bonsai.core.geometry.remove_connection(tool.Geometry, connection=conn)
         connections = element1.ConnectedFrom
         for conn in connections:
-            if conn.RelatedConnectionType == "ATEND":
+            if conn.is_a("IfcRelConnectsPathElements") and conn.RelatedConnectionType == "ATEND":
                 relating_element = conn.RelatingElement
+                relating_connection = conn.RelatingConnectionType
                 description = conn.Description
-
+                bonsai.core.geometry.remove_connection(tool.Geometry, connection=conn)
         if relating_element:
             ifcopenshell.api.geometry.connect_path(
                 tool.Ifc.get(),
                 relating_element=relating_element,
                 related_element=element2,
-                relating_connection="ATSTART",
+                relating_connection=relating_connection,
                 related_connection="ATEND",
                 description=description,
             )
