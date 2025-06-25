@@ -26,5 +26,5 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def run_migrate_patch(patch: tool.Patch, infile: str, outfile: str, schema: str) -> None:
+def run_migrate_patch(patch: type[tool.Patch], infile: str, outfile: str, schema: str) -> None:
     patch.run_migrate_patch(infile, outfile, schema)

@@ -21,15 +21,21 @@ import ifcopenshell.api
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.unit as core
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
 
 
 class AssignSceneUnits(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_scene_units"
     bl_label = "Assign Scene Units"
+    bl_description = "Add new units based on the current Blender scene units and assign them as project default."
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         core.assign_scene_units(tool.Ifc, tool.Unit)
+        core.load_units(tool.Unit)
 
 
 class AssignUnit(bpy.types.Operator, tool.Ifc.Operator):
@@ -54,24 +60,26 @@ class UnassignUnit(bpy.types.Operator, tool.Ifc.Operator):
         core.unassign_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
 
 
-class LoadUnits(bpy.types.Operator, tool.Ifc.Operator):
+class LoadUnits(bpy.types.Operator):
     bl_idname = "bim.load_units"
     bl_label = "Load Units"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Open the loaded units"
 
-    def _execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         core.load_units(tool.Unit)
+        return {"FINISHED"}
 
 
-class DisableUnitEditingUI(bpy.types.Operator, tool.Ifc.Operator):
+class DisableUnitEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_unit_editing_ui"
     bl_label = "Disable Unit Editing UI"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Close the editing units mode"
 
-    def _execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         core.disable_unit_editing_ui(tool.Unit)
+        return {"FINISHED"}
 
 
 class RemoveUnit(bpy.types.Operator, tool.Ifc.Operator):
@@ -124,23 +132,25 @@ class AddContextDependentUnit(bpy.types.Operator, tool.Ifc.Operator):
         core.add_context_dependent_unit(tool.Ifc, tool.Unit, unit_type=self.unit_type, name=self.name)
 
 
-class EnableEditingUnit(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingUnit(bpy.types.Operator):
     bl_idname = "bim.enable_editing_unit"
     bl_label = "Enable Editing Unit"
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         core.enable_editing_unit(tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
+        return {"FINISHED"}
 
 
-class DisableEditingUnit(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingUnit(bpy.types.Operator):
     bl_idname = "bim.disable_editing_unit"
     bl_label = "Disable Editing Unit"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         core.disable_editing_unit(tool.Unit)
+        return {"FINISHED"}
 
 
 class EditUnit(bpy.types.Operator, tool.Ifc.Operator):

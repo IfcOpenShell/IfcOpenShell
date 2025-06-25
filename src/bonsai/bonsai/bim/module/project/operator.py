@@ -63,10 +63,14 @@ from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneD
 from bonsai.bim.module.project.prop import BreadcrumbType
 from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, TYPE_CHECKING, get_args
+from typing import Union, TYPE_CHECKING, get_args, Literal
 
 if TYPE_CHECKING:
+    import bpy.stub_internal.rna_enums as rna_enums
     from bonsai.bim.module.project.prop import Link
+
+
+PresetType = Literal["metric_m", "metric_mm", "imperial_ft", "demo", "wizard"]
 
 
 class NewProject(bpy.types.Operator):
@@ -74,13 +78,19 @@ class NewProject(bpy.types.Operator):
     bl_label = "New Project"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Start a new IFC project in a fresh session"
-    preset: bpy.props.StringProperty()
+    preset: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(i, i, "") for i in get_args(PresetType)]
+    )
 
-    def execute(self, context):
+    if TYPE_CHECKING:
+        preset: PresetType
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         bpy.ops.wm.read_homefile()
         pprops = tool.Project.get_project_props()
         bim_props = tool.Blender.get_bim_props()
 
+        assert bpy.context.scene
         if self.preset == "metric_m":
             pprops.export_schema = "IFC4"
             bpy.context.scene.unit_settings.system = "METRIC"

@@ -25,18 +25,18 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def enable_editing_nest(nest: tool.Nest, obj: bpy.types.Object) -> None:
+def enable_editing_nest(nest: type[tool.Nest], obj: bpy.types.Object) -> None:
     nest.enable_editing(obj)
 
 
-def disable_editing_nest(nest: tool.Nest, obj: bpy.types.Object) -> None:
+def disable_editing_nest(nest: type[tool.Nest], obj: bpy.types.Object) -> None:
     nest.disable_editing(obj)
 
 
 def assign_object(
-    ifc: tool.Ifc,
-    nest: tool.Nest,
-    collector: tool.Collector,
+    ifc: type[tool.Ifc],
+    nest: type[tool.Nest],
+    collector: type[tool.Collector],
     relating_obj: bpy.types.Object,
     related_obj: bpy.types.Object,
 ) -> Union[ifcopenshell.entity_instance, None]:
@@ -54,9 +54,9 @@ def assign_object(
 
 
 def unassign_object(
-    ifc: tool.Ifc,
-    nest: tool.Nest,
-    collector: tool.Collector,
+    ifc: type[tool.Ifc],
+    nest: type[tool.Nest],
+    collector: type[tool.Collector],
     relating_obj: bpy.types.Object,
     related_obj: bpy.types.Object,
 ) -> Union[ifcopenshell.entity_instance, None]:
@@ -77,10 +77,10 @@ def unassign_object(
 
 
 def add_part_to_object(
-    ifc: tool.Ifc,
-    nest: tool.Nest,
-    collector: tool.Collector,
-    blender: tool.Blender,
+    ifc: type[tool.Ifc],
+    nest: type[tool.Nest],
+    collector: type[tool.Collector],
+    blender: type[tool.Blender],
     obj: bpy.types.Object,
     part_class: str,
     part_name: str,
@@ -90,7 +90,7 @@ def add_part_to_object(
 
 
 def enable_nest_mode(
-    nest: tool.Nest,
+    nest: type[tool.Nest],
     obj: bpy.types.Object,
 ) -> None:
     if nest.get_nest_mode():
@@ -99,5 +99,5 @@ def enable_nest_mode(
     nest.enable_nest_mode(obj)
 
 
-def disable_nest_mode(nest: tool.Nest) -> None:
+def disable_nest_mode(nest: type[tool.Nest]) -> None:
     nest.disable_nest_mode()

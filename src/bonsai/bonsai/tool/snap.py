@@ -355,6 +355,16 @@ class Snap(bonsai.core.tool.Snap):
 
         # Objects
         objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
+        # Wireframes
+        # For wireframe we have to get all the objects so we can further calculate edge intersection
+        for snap_obj in objs_to_raycast:
+            if snap_obj.type in {"EMPTY", "CURVE"} or (snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0):
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj)
+                if snap_points:
+                    for point in snap_points:
+                        point["group"] = "Wireframe"
+                        detected_snaps.append(point)
+
         if (space.shading.type == "SOLID" and space.shading.show_xray) or (
             space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
         ):
@@ -374,12 +384,7 @@ class Snap(bonsai.core.tool.Snap):
                 if snap_obj.type in {"EMPTY", "CURVE"} or (
                     snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0
                 ):
-                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj)
-                    if snap_points:
-                        for point in snap_points:
-                            point["group"] = "Wireframe"
-                            detected_snaps.append(point)
-
+                    continue
                 # Meshes
                 else:
                     # Add face snap

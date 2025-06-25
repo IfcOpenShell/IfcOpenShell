@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 
 
 def copy_property_to_selection(
-    ifc: tool.Ifc,
-    pset: tool.Pset,
+    ifc: type[tool.Ifc],
+    pset: type[tool.Pset],
     obj: bpy.types.Object,
     pset_name: str,
     prop_name: str,
@@ -48,7 +48,11 @@ def copy_property_to_selection(
 
 
 def add_pset(
-    ifc: tool.Ifc, pset: tool.Pset, blender: tool.Blender, obj_name: str, obj_type: tool.Ifc.OBJECT_TYPE
+    ifc: type[tool.Ifc],
+    pset: type[tool.Pset],
+    blender: type[tool.Blender],
+    obj_name: str,
+    obj_type: type[tool.Ifc].OBJECT_TYPE,
 ) -> None:
     pset_name = pset.get_pset_name(obj_name, obj_type, pset_type="PSET")
     if obj_type == "Object":
@@ -64,12 +68,12 @@ def add_pset(
 
 
 def enable_pset_editing(
-    pset_tool: tool.Pset,
+    pset_tool: type[tool.Pset],
     pset: Union[ifcopenshell.entity_instance, None],
     pset_name: str,
-    pset_type: tool.Pset.PSET_TYPE,
+    pset_type: type[tool.Pset].PSET_TYPE,
     obj_name: str,
-    obj_type: tool.Ifc.OBJECT_TYPE,
+    obj_type: type[tool.Ifc].OBJECT_TYPE,
 ) -> None:
     props = pset_tool.get_pset_props(obj_name, obj_type)
     pset_tool.clear_blender_pset_properties(props)
@@ -90,7 +94,7 @@ def enable_pset_editing(
 
 
 def add_proposed_prop(
-    pset: tool.Pset, obj_name: str, obj_type: tool.Ifc.OBJECT_TYPE, name: str, value: Any
+    pset: type[tool.Pset], obj_name: str, obj_type: type[tool.Ifc].OBJECT_TYPE, name: str, value: Any
 ) -> Union[None, str]:
     props = pset.get_pset_props(obj_name, obj_type)
     res = pset.add_proposed_property(name, pset.cast_string_to_primitive(value), props)
@@ -99,7 +103,7 @@ def add_proposed_prop(
 
 
 def unshare_pset(
-    ifc: tool.Ifc, pset_tool: tool.Pset, obj_type: tool.Ifc.OBJECT_TYPE, obj_name: str, pset_id: int
+    ifc: type[tool.Ifc], pset_tool: type[tool.Pset], obj_type: type[tool.Ifc].OBJECT_TYPE, obj_name: str, pset_id: int
 ) -> None:
     elements: list[ifcopenshell.entity_instance]
     pset = ifc.get_entity_by_id(pset_id)

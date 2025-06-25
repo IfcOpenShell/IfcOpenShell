@@ -61,8 +61,8 @@ class SheetBuilder:
             shutil.copy(ootb_titleblock_path, titleblock_path)
 
         view_root = ET.parse(titleblock_path).getroot()
-        view_width = self.convert_to_mm(view_root.attrib.get("width"))
-        view_height = self.convert_to_mm(view_root.attrib.get("height"))
+        view_width = self.convert_to_mm(view_root.attrib["width"])
+        view_height = self.convert_to_mm(view_root.attrib["height"])
         view = ET.SubElement(root, "g")
         view.attrib["data-type"] = "titleblock"
         titleblock = ET.SubElement(view, "image")
@@ -87,6 +87,7 @@ class SheetBuilder:
     ) -> None:
         filename = drawing.Name
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
         layout_dir = os.path.dirname(layout_path)
 
         drawing_path = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_reference(drawing))
@@ -110,8 +111,8 @@ class SheetBuilder:
         view.attrib["data-type"] = "drawing"
         view.attrib["data-id"] = str(reference.id())
         view.attrib["data-drawing"] = drawing.GlobalId
-        view_width = self.convert_to_mm(view_root.attrib.get("width"))
-        view_height = self.convert_to_mm(view_root.attrib.get("height"))
+        view_width = self.convert_to_mm(view_root.attrib["width"])
+        view_height = self.convert_to_mm(view_root.attrib["height"])
 
         x, y = self.next_drawing_location(layout_root, view_width)
 
@@ -134,16 +135,16 @@ class SheetBuilder:
 
         # how wide is the title block frame
         try:
-            titleblock_width = self.convert_to_mm(titleblocks[0][0].attrib.get("width"))
+            titleblock_width = self.convert_to_mm(titleblocks[0][0].attrib["width"])
         except (IndexError, AttributeError):
             titleblock_width = 840.0
 
         # where does the last drawing finish
         try:
             last = drawings[-1][0]
-            last_width = self.convert_to_mm(last.attrib.get("width"))
-            last_x = self.convert_to_mm(last.attrib.get("x"))
-            last_y = self.convert_to_mm(last.attrib.get("y"))
+            last_width = self.convert_to_mm(last.attrib["width"])
+            last_x = self.convert_to_mm(last.attrib["x"])
+            last_y = self.convert_to_mm(last.attrib["y"])
         except (IndexError, AttributeError):
             return [DEFAULT_POSITION.x, DEFAULT_POSITION.y]
 
@@ -155,8 +156,8 @@ class SheetBuilder:
         for drawing in drawings:
             for image in drawing:
                 try:
-                    image_y = self.convert_to_mm(image.attrib.get("y"))
-                    image_height = self.convert_to_mm(image.attrib.get("height"))
+                    image_y = self.convert_to_mm(image.attrib["y"])
+                    image_height = self.convert_to_mm(image.attrib["height"])
                 except AttributeError:
                     return [DEFAULT_POSITION.x, DEFAULT_POSITION.y]
                 if image_y + image_height + DRAWING_PADDING > last_y:
@@ -167,6 +168,7 @@ class SheetBuilder:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
         layout_tree = ET.parse(layout_path)
         layout_root = layout_tree.getroot()
         ifc_file = tool.Ifc.get()
@@ -210,12 +212,13 @@ class SheetBuilder:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
         if not os.path.exists(layout_path):
             return
         layout_tree = ET.parse(layout_path)
         layout_root = layout_tree.getroot()
 
-        for g in layout_root.findall("{http://www.w3.org/2000/svg}g"):
+        for g in layout_root.findall(f"{SVG}g"):
             if g.attrib.get("data-id") == str(reference.id()):
                 layout_root.remove(g)
                 break
@@ -233,6 +236,7 @@ class SheetBuilder:
             tool.Drawing.create_svg_document(document)
         document_name = os.path.splitext(os.path.basename(view_path))[0]
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
         layout_dir = os.path.dirname(layout_path)
 
         ET.register_namespace("", "http://www.w3.org/2000/svg")
@@ -278,13 +282,14 @@ class SheetBuilder:
         title.attrib["xlink:href"] = os.path.relpath(title_path, layout_dir)
         title.attrib["x"] = str(x)
         title.attrib["y"] = str(y)
-        title.attrib["width"] = str(self.convert_to_mm(title_root.attrib.get("width")))
-        title.attrib["height"] = str(self.convert_to_mm(title_root.attrib.get("height")))
+        title.attrib["width"] = str(self.convert_to_mm(title_root.attrib["width"]))
+        title.attrib["height"] = str(self.convert_to_mm(title_root.attrib["height"]))
 
     def build(self, sheet: ifcopenshell.entity_instance) -> dict:
         self.references = {"SHEET": None, "RASTER": []}
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
         self.layout_dir = os.path.dirname(layout_path)
 
         sheet_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_sheet_path(sheet[0], sheet.Name))
@@ -313,14 +318,14 @@ class SheetBuilder:
         return self.references
 
     def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
-        titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
-        image = titleblock.findall("{http://www.w3.org/2000/svg}image")[0]
+        titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
+        image = titleblock.findall(f"{SVG}image")[0]
         g = self.parse_embedded_svg(image, sheet.get_info())
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
-        for north in g.iterfind('.//{http://www.w3.org/2000/svg}g[@data-type="grid-north"]'):
+        for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
             north.attrib["transform"] = f"rotate({grid_north})"
-        for north in g.iterfind('.//{http://www.w3.org/2000/svg}g[@data-type="true-north"]'):
+        for north in g.iterfind(f'.//{SVG}g[@data-type="true-north"]'):
             north.attrib["transform"] = f"rotate({true_north})"
         titleblock.append(g)
         titleblock.remove(image)
@@ -333,7 +338,9 @@ class SheetBuilder:
 
         # add .prefix class to all css selectors
         style = svg.find(f"{SVG}defs/{SVG}style")
+        assert style
         style_data = style.text
+        assert style_data is not None
         text = ""
         brackets_level = 0
         for l in style_data:
@@ -374,6 +381,8 @@ class SheetBuilder:
             if "filter" in attrib:
                 # example use "#fill-background" filter
                 attrib["filter"] = replace_urls(attrib["filter"])
+            if "style" in attrib:
+                attrib["style"] = replace_urls(attrib["style"])
             if svg_element.tag == f"{SVG}use":
                 href_attrib = f"{XLINK}href"
                 if href_attrib in attrib:
@@ -384,16 +393,16 @@ class SheetBuilder:
         return svg
 
     def build_drawings(self, root: ET.Element, sheet: ifcopenshell.entity_instance):
-        for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
+        for view in root.findall(f'{SVG}g[@data-type="drawing"]'):
             drawing_id = int(view.attrib["data-id"])
             try:
                 reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
-                drawing = tool.Ifc.get().by_id(view.attrib["data-drawing"])
-            except:
+                drawing = tool.Ifc.get().by_guid(view.attrib["data-drawing"])
+            except RuntimeError:
                 # Perhaps the SVG has outdated content or is edited externally which we cannot control.
                 continue
 
-            images = view.findall("{http://www.w3.org/2000/svg}image")
+            images = view.findall(f"{SVG}image")
 
             foreground = None
             view_title = None
@@ -410,6 +419,7 @@ class SheetBuilder:
                 view.append(svg)
 
             if view_title is not None:
+                assert foreground
                 foreground_path = self.get_href(foreground)
                 data = reference.get_info()
                 data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
@@ -434,8 +444,8 @@ class SheetBuilder:
                 view.remove(image)
 
     def build_documents(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
-        schedules = root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]')
-        references = root.findall('{http://www.w3.org/2000/svg}g[@data-type="reference"]')
+        schedules = root.findall(f'{SVG}g[@data-type="schedule"]')
+        references = root.findall(f'{SVG}g[@data-type="reference"]')
         documents = schedules + references
         for view in documents:
             try:
@@ -445,7 +455,7 @@ class SheetBuilder:
                 # Perhaps the SVG has outdated content or is edited externally which we cannot control.
                 continue
 
-            images = view.findall("{http://www.w3.org/2000/svg}image")
+            images = view.findall(f"{SVG}image")
 
             table = None
             view_title = None
@@ -471,13 +481,12 @@ class SheetBuilder:
                 view.remove(image)
 
     def get_href(self, element: ET.Element) -> str:
-        return urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href")).replace("\\", "/")
+        return urllib.parse.unquote(element.attrib[f"{XLINK}href"]).replace("\\", "/")
 
     def parse_embedded_svg(self, image: ET.Element, data: dict) -> ET.Element:
         group = ET.Element("g")
-        group.attrib["transform"] = "translate({},{})".format(
-            self.convert_to_mm(image.attrib.get("x")), self.convert_to_mm(image.attrib.get("y"))
-        )
+        x, y = self.convert_to_mm(image.attrib["x"]), self.convert_to_mm(image.attrib["y"])
+        group.attrib["transform"] = f"translate({x},{y})"
 
         # Convert viewBox into a clip path
         clip_id = str(uuid.uuid4())
@@ -487,8 +496,8 @@ class SheetBuilder:
         rect = ET.Element("rect")
         rect.attrib["x"] = "0"
         rect.attrib["y"] = "0"
-        rect.attrib["width"] = str(self.convert_to_mm(image.attrib.get("width")))
-        rect.attrib["height"] = str(self.convert_to_mm(image.attrib.get("height")))
+        rect.attrib["width"] = str(self.convert_to_mm(image.attrib["width"]))
+        rect.attrib["height"] = str(self.convert_to_mm(image.attrib["height"]))
         clip_path.append(rect)
         self.defs.append(clip_path)
 
@@ -499,16 +508,16 @@ class SheetBuilder:
             embedded.attrib["viewBox"] = ""
             # TODO: This should not be in this function
             self.scale = embedded.attrib.get("data-scale")
-            images = embedded.findall("{http://www.w3.org/2000/svg}image")
+            images = embedded.findall(f"{SVG}image")
             for image in images:
-                old_href = Path(image.attrib.get("{http://www.w3.org/1999/xlink}href"))
+                old_href = Path(image.attrib[f"{XLINK}href"])
                 if not os.path.isabs(old_href):
                     template_dir = Path(os.path.join(self.layout_dir, svg_path)).resolve().parent
                     old_href = Path(os.path.join(template_dir, old_href))
                 old_href = old_href.absolute().resolve().as_posix()
                 new_href = Path(os.path.join(self.sheets_dir, Path(old_href).name)).absolute().resolve().as_posix()
                 shutil.copy(old_href, new_href)
-                image.attrib["{http://www.w3.org/1999/xlink}href"] = Path(old_href).name
+                image.attrib[f"{XLINK}href"] = Path(old_href).name
         for child in embedded:
             if "namedview" in child.tag:
                 continue
@@ -539,9 +548,9 @@ class SheetBuilder:
         sheet_tree = ET.parse(sheet_path)
         root = sheet_tree.getroot()
 
-        titleblock = sheet_tree.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
-        image = titleblock.findall("{http://www.w3.org/2000/svg}image[@{http://www.w3.org/1999/xlink}href]")[0]
-        image.attrib["{http://www.w3.org/1999/xlink}href"] = os.path.relpath(titleblock_path, sheet_dir)
+        titleblock = sheet_tree.findall(f'{SVG}g[@data-type="titleblock"]')[0]
+        image = titleblock.findall(f"{SVG}image[@{XLINK}href]")[0]
+        image.attrib[f"{XLINK}href"] = os.path.relpath(titleblock_path, sheet_dir)
         image.attrib["width"] = str(view_width)
         image.attrib["height"] = str(view_height)
 

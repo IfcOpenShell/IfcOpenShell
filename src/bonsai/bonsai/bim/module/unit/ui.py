@@ -48,10 +48,12 @@ class BIM_PT_units(Panel):
             UnitsData.load()
 
         self.props = tool.Unit.get_unit_props()
+        assert self.layout
 
         row = self.layout.row(align=True)
         row.label(text="{} Units Found".format(UnitsData.data["total_units"]), icon="SNAP_GRID")
         if self.props.is_editing:
+            row.operator("bim.assign_scene_units", text="", icon="TOOL_SETTINGS")
             row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
         else:
             row.operator("bim.load_units", text="", icon="GREASEPENCIL")

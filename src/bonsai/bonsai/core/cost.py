@@ -458,7 +458,5 @@ def add_currency(ifc: type[tool.Ifc], cost: type[tool.Cost]) -> ifcopenshell.ent
     return unit
 
 
-def generate_cost_schedule_browser(
-    cost: type[tool.Cost], cost_schedule: ifcopenshell.entity_instance
-) -> bpy.types.Panel:
+def generate_cost_schedule_browser(cost: type[tool.Cost], cost_schedule: ifcopenshell.entity_instance) -> None:
     return cost.generate_cost_schedule_browser(cost_schedule)
