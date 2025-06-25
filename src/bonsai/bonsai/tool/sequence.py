@@ -1788,3 +1788,22 @@ class Sequence(bonsai.core.tool.Sequence):
         if include_time:
             return isodate.datetime_isoformat(datetime_)
         return isodate.date_isoformat(datetime_)
+
+    @classmethod
+    def set_visibility_by_status(cls, visible_statuses: list[str]) -> None:
+        query = []
+        for name in visible_statuses:
+            if name == "No Status":
+                q = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
+            else:
+                q = f"IfcProduct, /Pset_.*Common/.Status={name} + IfcProduct, EPset_Status.Status={name}"
+            query.append(q)
+        query = " + ".join(query)
+
+        visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+
+        for obj in bpy.context.view_layer.objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcProduct"):
+                continue
+            obj.hide_set(element not in visible_elements)
