@@ -397,8 +397,8 @@ class SheetBuilder:
             drawing_id = int(view.attrib["data-id"])
             try:
                 reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
-                drawing = tool.Ifc.get().by_id(view.attrib["data-drawing"])
-            except:
+                drawing = tool.Ifc.get().by_guid(view.attrib["data-drawing"])
+            except RuntimeError:
                 # Perhaps the SVG has outdated content or is edited externally which we cannot control.
                 continue
 
