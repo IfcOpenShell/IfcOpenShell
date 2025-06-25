@@ -168,6 +168,10 @@ class Drawing(bonsai.core.tool.Drawing):
         elif object_type == "TEXT_LEADER":
             co1, _, co2, _ = annotation.Annotator.get_placeholder_coords()
             obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
+        elif object_type == "PLAN_LEVEL":
+            co1, co2, _, _ = annotation.Annotator.get_placeholder_coords()
+            obj = annotation.Annotator.add_line_to_annotation(obj, co1 + (co2 - co1) * 0.15, co1)
+            obj.matrix_world = obj.matrix_world @ Matrix.Rotation(math.radians(-90), 4, 'Z')
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
 
