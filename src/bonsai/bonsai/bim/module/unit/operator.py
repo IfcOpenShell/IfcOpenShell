@@ -21,6 +21,10 @@ import ifcopenshell.api
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.unit as core
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
 
 
 class AssignSceneUnits(bpy.types.Operator, tool.Ifc.Operator):
@@ -60,7 +64,7 @@ class LoadUnits(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Open the loaded units"
 
-    def execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         core.load_units(tool.Unit)
         return {"FINISHED"}
 
@@ -71,7 +75,7 @@ class DisableUnitEditingUI(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Close the editing units mode"
 
-    def execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         core.disable_unit_editing_ui(tool.Unit)
         return {"FINISHED"}
 
@@ -132,7 +136,7 @@ class EnableEditingUnit(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         core.enable_editing_unit(tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
         return {"FINISHED"}
 
@@ -142,7 +146,7 @@ class DisableEditingUnit(bpy.types.Operator):
     bl_label = "Disable Editing Unit"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         core.disable_editing_unit(tool.Unit)
         return {"FINISHED"}
 
