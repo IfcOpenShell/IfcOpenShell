@@ -67,7 +67,7 @@ class EnableStatusFilters(bpy.types.Operator):
             if new.name in hidden_statuses:
                 new.is_visible = False
 
-        visible_statuses = {s.name for s in props.statuses} - hidden_statuses
+        visible_statuses = {s.name for s in props.statuses if s.is_visible}
         tool.Sequence.set_visibility_by_status(visible_statuses)
         return {"FINISHED"}
 
@@ -80,8 +80,8 @@ class DisableStatusFilters(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMStatusProperties
 
-        visible_statuses = {s.name for s in props.statuses}
-        tool.Sequence.set_visibility_by_status(visible_statuses)
+        all_statuses = {s.name for s in props.statuses}
+        tool.Sequence.set_visibility_by_status(all_statuses)
         props.is_enabled = False
         return {"FINISHED"}
 
