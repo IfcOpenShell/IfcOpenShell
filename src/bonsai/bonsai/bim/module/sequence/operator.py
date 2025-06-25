@@ -43,17 +43,19 @@ class EnableStatusFilters(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMStatusProperties
         props.is_enabled = True
+        hidden_statuses = {s.name for s in props.statuses if not s.is_visible}
 
         props.statuses.clear()
 
         statuses = set()
         for element in tool.Ifc.get().by_type("IfcPropertyEnumeratedValue"):
             if element.Name == "Status":
-                pset = element.PartOfPset[0]
-                if pset.Name.startswith("Pset_") and pset.Name.endswith("Common"):
-                    statuses.update(element.EnumerationValues)
-                elif pset.Name == "EPset_Status":  # Our secret sauce
-                    statuses.update(element.EnumerationValues)
+                if element.PartOfPset and isinstance(element.EnumerationValues, tuple):
+                    pset = element.PartOfPset[0]
+                    if pset.Name.startswith("Pset_") and pset.Name.endswith("Common"):
+                        statuses.update(element.EnumerationValues)
+                    elif pset.Name == "EPset_Status":  # Our secret sauce
+                        statuses.update(element.EnumerationValues)
             elif element.Name == "UserDefinedStatus":
                 statuses.add(element.NominalValue)
 
@@ -62,6 +64,11 @@ class EnableStatusFilters(bpy.types.Operator):
         for status in statuses:
             new = props.statuses.add()
             new.name = status
+            if new.name in hidden_statuses:
+                new.is_visible = False
+
+        visible_statuses = {s.name for s in props.statuses} - hidden_statuses
+        tool.Sequence.set_visibility_by_status(visible_statuses)
         return {"FINISHED"}
 
 
@@ -73,27 +80,8 @@ class DisableStatusFilters(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMStatusProperties
 
-        query = []
         visible_statuses = {s.name for s in props.statuses}
-        for name in visible_statuses:
-            if name == "No Status":
-                q = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
-            else:
-                q = f"IfcProduct, /Pset_.*Common/.Status={name} + IfcProduct, EPset_Status.Status={name}"
-            query.append(q)
-        query = " + ".join(query)
-
-        if not query:
-            self.report({"INFO"}, "No statuses selected.")
-
-        visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
-
-        for obj in bpy.context.view_layer.objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element or not element.is_a("IfcProduct"):
-                continue
-            obj.hide_set(element not in visible_elements)
-
+        tool.Sequence.set_visibility_by_status(visible_statuses)
         props.is_enabled = False
         return {"FINISHED"}
 
@@ -106,26 +94,8 @@ class ActivateStatusFilters(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMStatusProperties
 
-        query = []
         visible_statuses = {s.name for s in props.statuses if s.is_visible}
-        for name in visible_statuses:
-            if name == "No Status":
-                q = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
-            else:
-                q = f"IfcProduct, /Pset_.*Common/.Status={name} + IfcProduct, EPset_Status.Status={name}"
-            query.append(q)
-        query = " + ".join(query)
-
-        if not query:
-            self.report({"INFO"}, "No statuses selected.")
-
-        visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
-
-        for obj in bpy.context.view_layer.objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element or not element.is_a("IfcProduct"):
-                continue
-            obj.hide_set(element not in visible_elements)
+        tool.Sequence.set_visibility_by_status(visible_statuses)
         return {"FINISHED"}
 
 
