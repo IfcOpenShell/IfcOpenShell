@@ -464,27 +464,6 @@ class BIM_MT_add_representation_item(Menu):
             "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
         ).shape = "CYLINDER"
 
-class SyncIfcClass(bpy.types.Operator):
-    bl_idname = "bim.sync_ifc_class"
-    bl_label = "Sync IFC Class"
-    bl_description = "Synchronize root class to model class"
-    bl_options = {"REGISTER", "UNDO"}
-    source: bpy.props.StringProperty(default="ROOT")
-    
-    def execute(self, context):
-        root_props = tool.Root.get_root_props()
-        model_props = tool.Model.get_model_props()
-        
-        if self.source == "ROOT":
-            enum_items = [item[0] for item in get_ifc_class(model_props, context)]
-            if root_props.ifc_class in enum_items:
-                model_props.ifc_class = root_props.ifc_class
-            else:
-                self.report({"WARNING"}, f"Class '{root_props.ifc_class}' not available in model classes")
-        else:
-            root_props.ifc_class = model_props.ifc_class
-            
-        return {"FINISHED"}
 
 class CreateObjectUI:
     layout: bpy.types.UILayout
@@ -673,16 +652,9 @@ class CreateObjectUI:
                             original_operator_path="bim.bim_tool")
             
             if root_props.ifc_class != model_props.ifc_class:
-                enum_items = [item[0] for item in get_ifc_class(model_props, context)]
-                if root_props.ifc_class in enum_items:
-                    op = row.operator("bim.sync_ifc_class", text="", icon="FILE_REFRESH")
-                    op.source = "ROOT"
-                    cls.should_continue_drawing = False
-                    cls.layout.label(text="Click the refresh button to use this class")
-                else:
-                    row.label(text="", icon="ERROR")
-                    cls.layout.label(text=f"'{root_props.ifc_class}' not available in model classes")
-                    cls.should_continue_drawing = False
+                row.label(text="", icon="ERROR")
+                cls.layout.label(text=f"'{root_props.ifc_class}' not available in model classes")
+                cls.should_continue_drawing = False
                 return
             else:
                 cls.should_continue_drawing = True
