@@ -29,8 +29,13 @@ from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
+from bonsai.bim.module.root.prop import refresh_predefined_types
+from bonsai.bim.prop import StrProperty
+from bonsai.bim.helper import get_enum_items
+
 from typing import Optional, Union
 from functools import partial
+from collections.abc import Iterable
 
 
 def load_custom_icons():
@@ -648,16 +653,10 @@ class CreateObjectUI:
             root_props = tool.Root.get_root_props()
             model_props = tool.Model.get_model_props()
             
-            prop_with_search(row, root_props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "", 
-                            original_operator_path="bim.bim_tool")
-            
-            if root_props.ifc_class != model_props.ifc_class:
-                row.label(text="", icon="ERROR")
-                cls.layout.label(text=f"'{root_props.ifc_class}' not available in model classes")
-                cls.should_continue_drawing = False
-                return
-            else:
-                cls.should_continue_drawing = True
+            row.prop(model_props, "ifc_class", 
+                    text="Type Class" if ui_context != "TOOL_HEADER" else "")
+            row.operator("bim.enum_property_search_root_to_model", text="", icon="VIEWZOOM")
+
         
         if not AuthoringData.data["ifc_classes"]:
             return
@@ -711,6 +710,138 @@ class CreateObjectUI:
             emboss=False,
         )
 
+        if thumbnail != 0:
+            row1 = box.row()
+            row1.ui_units_y = 0.01
+            row1.template_icon(icon_value=thumbnail, scale=4)
+            row2 = box.column(align=True)
+            row2.ui_units_y = 4
+            for _ in range(4):
+                row2.operator("bim.launch_type_manager", text="", emboss=False)
+        else:
+            box.operator(
+                "bim.load_type_thumbnails",
+                text="",
+                icon="FILE_REFRESH",
+                emboss=False,
+            )
+
+        row = box.row(align=True)
+        row.alignment = "CENTER"
+        row.operator(
+            "bim.launch_type_manager",
+            text=AuthoringData.data["relating_type_data"].get("predefined_type"),
+            emboss=False,
+        )
+
+def update_enum_property_search_prop_root_to_model(self, context):
+    """Update callback for the search property that handles both IFC class and predefined type"""
+    for i, prop in enumerate(self.collection_names):
+        if prop.name == self.dummy_name:
+            ifc_class = self.collection_identifiers[i].name
+            predefined_type = self.collection_predefined_types[i].name
+            model_props = tool.Model.get_model_props()
+            model_props.ifc_class = ifc_class
+
+            if predefined_type:
+                try:
+                    model_props.ifc_predefined_type = predefined_type
+                    refresh_predefined_types(model_props, None)
+                except (TypeError, AttributeError):
+                    pass
+            
+            if not self.first_launch:
+                if not self.should_click_ok:
+                    context.window.screen = context.window.screen
+            
+            self.first_launch = False
+            
+            if not AuthoringData.is_loaded:
+                AuthoringData.load()
+            elif AuthoringData.data["ifc_element_type"] != model_props.ifc_class:
+                AuthoringData.load()
+                
+            break
+
+class BIM_enum_property_search_root_to_model(bpy.types.Operator):
+    bl_idname = "bim.enum_property_search_root_to_model"
+    bl_label = "Search"
+    bl_description = "Search For IFC Class"
+    bl_options = {"REGISTER", "UNDO"}
+    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+    dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop_root_to_model)
+    collection_names: bpy.props.CollectionProperty(type=StrProperty)
+    collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
+    collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
+    prop_name: bpy.props.StringProperty(default="ifc_class")
+    should_click_ok: bpy.props.BoolProperty(default=False)
+    original_operator_path: bpy.props.StringProperty(name="Original Operator Path", default="", options={"SKIP_SAVE"})
+
+
+    def invoke(self, context, event):
+        self.clear_collections()
+        self.identifiers = []
+        
+        root_props = tool.Root.get_root_props()
+        model_props = tool.Model.get_model_props()
+
+        self.data = model_props
+        items = get_enum_items(self.data, self.prop_name, context, original_operator_path=self.original_operator_path)
+        self.add_items_regular(items)
+
+        self.data = root_props
+        self.add_items_suggestions()
+        
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        self.layout.prop_search(self, "dummy_name", self, "collection_names")
+
+    def clear_collections(self) -> None:
+        self.collection_names.clear()
+        self.collection_identifiers.clear()
+        self.collection_predefined_types.clear()
+
+    def add_item(self, identifier: str, name: str, predefined_type: str = ""):
+        self.collection_identifiers.add().name = identifier
+        self.collection_names.add().name = name
+        self.collection_predefined_types.add().name = predefined_type
+
+    def add_items_regular(
+        self,
+        items: Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]],
+    ) -> None:
+        self.identifiers = []
+        current_value = getattr(self.data, self.prop_name)
+        for item in items:
+            if item is None:  # Used as a separator
+                continue
+            self.identifiers.append(item[0])
+            self.add_item(identifier=item[0], name=item[1])
+            if item[0] == current_value:
+                self.dummy_name = item[1] 
+
+    def add_items_suggestions(self) -> None:
+        getter_suggestions = getattr(self.data, "getter_enum_suggestions", None)
+        if getter_suggestions is not None:
+            mapping = getter_suggestions.get(self.prop_name)
+            if mapping is None:
+                return
+            for key, suggestions in mapping().items():
+                if key in self.identifiers:
+                    if not isinstance(suggestions, (tuple, list)):
+                        suggestions = [suggestions]
+                    for suggestion in suggestions:
+                        predefined_type = suggestion.get("predefined_type", "NOTDEFINED").upper()
+                        name = suggestion.get("name")
+                        self.add_item(
+                            identifier=key,
+                            name=f"{key} > {name if name else predefined_type }",
+                            predefined_type=predefined_type,
+                        )
 
 class EditObjectUI:
     layout: bpy.types.UILayout

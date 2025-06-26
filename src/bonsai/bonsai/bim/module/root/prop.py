@@ -93,12 +93,6 @@ def refresh_predefined_types(self: "BIMRootProperties", context: bpy.types.Conte
     enum = get_ifc_predefined_types(self, context)
     if enum:
         self.ifc_predefined_type = enum[0][0]
-    
-    # Sync root class to model class if possible
-    model_props = tool.Model.get_model_props()
-    enum_items = [item[0] for item in model_get_ifc_class(model_props, context)]
-    if self.ifc_class in enum_items:
-        model_props.ifc_class = self.ifc_class
 
 
 def get_ifc_products(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
