@@ -53,7 +53,7 @@ class ContextData:
         results = []
         for subcontext in context.HasSubContexts:
             target_scale_denominator = None
-            if hasattr(subcontext, "TargetScale") and subcontext.TargetScale is not None:
+            if subcontext.TargetScale is not None:
                 scale_value = float(subcontext.TargetScale)
                 if scale_value > 0:
                     target_scale_denominator = 1.0 / scale_value

@@ -65,7 +65,7 @@ class TestImportAttributes(test.bim.bootstrap.NewFile):
         subject.set_context(subcontext)
         subject.import_attributes()
         props = subject.get_context_props()
-        assert props.context_attributes["TargetScale"].float_value == 0.5
+        assert props.context_attributes["ScaleDenominator"].float_value == 2.0  # ScaleDenominator = 1.0 / TargetScale
         assert props.context_attributes["TargetView"].enum_value == "NOTDEFINED"
         assert props.context_attributes["UserDefinedTargetView"].string_value == "UserDefinedTargetView"
         assert not props.context_attributes["Precision"]
@@ -119,4 +119,3 @@ class TestExportAttributes(test.bim.bootstrap.NewFile):
             "ContextIdentifier": None,
             "ContextType": None,
         }
-
