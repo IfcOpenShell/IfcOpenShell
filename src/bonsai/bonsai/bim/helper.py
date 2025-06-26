@@ -59,7 +59,7 @@ def draw_attributes(
     You can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
     on it first
-    
+
     :param enable_search: Add search button to string, integer, and float attributes
     """
     for attribute in props:
@@ -72,12 +72,13 @@ def draw_attributes(
 
 
 def draw_attribute(
-    attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None,
-    enable_search: bool = False
+    attribute: bonsai.bim.prop.Attribute,
+    layout: bpy.types.UILayout,
+    copy_operator: Optional[str] = None,
+    enable_search: bool = False,
 ) -> None:
     value_name = attribute.get_value_name(display_only=True)
-    
-    # Draw the main attribute control
+
     if value_name == "enum_value":
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
     elif value_name == "filepath_value":
@@ -102,7 +103,6 @@ def draw_attribute(
             text=attribute.display_name,
         )
 
-    # Add special buttons based on attribute type
     if attribute.is_uri:
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.data_path = attribute.path_from_id("string_value")
@@ -110,8 +110,7 @@ def draw_attribute(
         op = layout.operator("bim.datepicker", text="", icon="TIME")
         op.target_prop = attribute.path_from_id("string_value")
         op.include_time = attribute.special_type == "DATETIME"
-        
-    # Add search button for appropriate types
+
     if enable_search and attribute.data_type in ("string", "integer", "float"):
         op = layout.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
         op.attribute_name = attribute.name

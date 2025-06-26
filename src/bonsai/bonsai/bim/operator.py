@@ -1325,8 +1325,8 @@ class ShowSystemInfo(bpy.types.Operator):
 def update_attribute_search_value(self, context):
     for prop in self.collection_values:
         if prop.name == self.search_value:
-            path_parts = self.data_path.split('.')
-            obj_path = '.'.join(path_parts[:-1])
+            path_parts = self.data_path.split(".")
+            obj_path = ".".join(path_parts[:-1])
             attr_name = path_parts[-1]
             attribute = eval(f"bpy.context.scene.{obj_path}")
             setattr(attribute, attr_name, self.search_value)
@@ -1338,57 +1338,54 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     bl_label = "Search Attribute Values"
     bl_description = "Search for attribute values within a collection"
     bl_options = {"REGISTER", "UNDO"}
-    
+
     attribute_name: bpy.props.StringProperty(name="Attribute Name")
     attribute_ifc_class: bpy.props.StringProperty(name="Attribute IFC Class")
     data_path: bpy.props.StringProperty(name="Data Path")
     data_type: bpy.props.StringProperty(name="Data Type")
     search_value: bpy.props.StringProperty(
-        name="Search", 
-        description="Search for attribute values",
-        update=update_attribute_search_value
+        name="Search", description="Search for attribute values", update=update_attribute_search_value
     )
     collection_values: bpy.props.CollectionProperty(type=StrProperty)
-    
+
     def invoke(self, context, event):
         self.collection_values.clear()
-        
+
         unique_values = self.get_unique_attribute_values()
-        
+
         for value in unique_values:
             if value is not None:
                 value_str = str(value)
                 if not any(item.name == value_str for item in self.collection_values):
                     self.collection_values.add().name = value_str
-        
-        sorted_items = sorted([(i, item.name) for i, item in enumerate(self.collection_values)], 
-                             key=lambda x: x[1])
-        
+
+        sorted_items = sorted([(i, item.name) for i, item in enumerate(self.collection_values)], key=lambda x: x[1])
+
         temp_collection = []
         for _, item_name in sorted_items:
             temp_collection.append(item_name)
-        
+
         self.collection_values.clear()
         for value in temp_collection:
             self.collection_values.add().name = value
-            
+
         return context.window_manager.invoke_props_dialog(self)
-        
+
     def get_unique_attribute_values(self):
         """Get unique values for the specified attribute across elements of the specified IFC class"""
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             return []
-            
+
         unique_values = set()
-        
+
         try:
             ifc_class = self.attribute_ifc_class
             if not ifc_class:
                 return []
-                
+
             elements = ifc_file.by_type(ifc_class, include_subtypes=True)
-            
+
             for element in elements:
                 # We check just direct entity attributes and simply check if the attribute exists
                 if hasattr(element, self.attribute_name):
@@ -1405,18 +1402,17 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
                             unique_values.add(str(value))
                         else:
                             unique_values.add(value)
-                        
+
         except Exception as e:
             print(f"Error collecting attribute values: {e}")
-        
+
         return list(unique_values)
-        
+
     def draw(self, context):
         row = self.layout.row()
         row.label(text=f"Select {self.attribute_name} value:")
         row = self.layout.row()
         row.prop_search(self, "search_value", self, "collection_values", text="")
-        
-    def execute(self, context):
-        return {'FINISHED'}
 
+    def execute(self, context):
+        return {"FINISHED"}
