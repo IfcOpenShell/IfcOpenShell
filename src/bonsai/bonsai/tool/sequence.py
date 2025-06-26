@@ -29,10 +29,9 @@ import isodate
 import ifcopenshell
 import ifcopenshell.api.group
 import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.sequence
 import ifcopenshell.util.date
-import ifcopenshell.util.element
-import ifcopenshell.util.unit
+import ifcopenshell.util.selector
+import ifcopenshell.util.sequence
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
@@ -45,7 +44,12 @@ from mathutils import Color
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
-    from bonsai.bim.module.sequence.prop import BIMTaskTreeProperties, BIMWorkScheduleProperties, BIMAnimationProperties
+    from bonsai.bim.module.sequence.prop import (
+        BIMTaskTreeProperties,
+        BIMWorkScheduleProperties,
+        BIMAnimationProperties,
+        BIMStatusProperties,
+    )
 
 
 class Sequence(bonsai.core.tool.Sequence):
@@ -63,6 +67,11 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def get_work_schedule_props(cls) -> BIMWorkScheduleProperties:
         return bpy.context.scene.BIMWorkScheduleProperties
+
+    @classmethod
+    def get_status_props(cls) -> BIMStatusProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMStatusProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_work_plan_attributes(cls) -> dict[str, Any]:
@@ -1790,7 +1799,8 @@ class Sequence(bonsai.core.tool.Sequence):
         return isodate.date_isoformat(datetime_)
 
     @classmethod
-    def set_visibility_by_status(cls, visible_statuses: list[str]) -> None:
+    def set_visibility_by_status(cls, visible_statuses: set[str]) -> None:
+        assert bpy.context.view_layer
         query = []
         for name in visible_statuses:
             if name == "No Status":

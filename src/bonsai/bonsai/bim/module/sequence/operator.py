@@ -41,7 +41,7 @@ class EnableStatusFilters(bpy.types.Operator):
     bl_label = "Enable Status Filters"
 
     def execute(self, context):
-        props = context.scene.BIMStatusProperties
+        props = tool.Sequence.get_status_props()
         props.is_enabled = True
         hidden_statuses = {s.name for s in props.statuses if not s.is_visible}
 
@@ -78,7 +78,7 @@ class DisableStatusFilters(bpy.types.Operator):
     bl_description = "Deactivate status filters panel.\nCan be used to refresh the displayed statuses"
 
     def execute(self, context):
-        props = context.scene.BIMStatusProperties
+        props = tool.Sequence.get_status_props()
 
         all_statuses = {s.name for s in props.statuses}
         tool.Sequence.set_visibility_by_status(all_statuses)
@@ -92,7 +92,7 @@ class ActivateStatusFilters(bpy.types.Operator):
     bl_description = "Filter and display objects based on currently selected IFC statuses"
 
     def execute(self, context):
-        props = context.scene.BIMStatusProperties
+        props = tool.Sequence.get_status_props()
 
         visible_statuses = {s.name for s in props.statuses if s.is_visible}
         tool.Sequence.set_visibility_by_status(visible_statuses)
@@ -106,7 +106,6 @@ class SelectStatusFilter(bpy.types.Operator):
     name: bpy.props.StringProperty()
 
     def execute(self, context):
-        props = context.scene.BIMStatusProperties
         query = f"IfcProduct, /Pset_.*Common/.Status={self.name} + IfcProduct, EPset_Status.Status={self.name}"
         if self.name == "No Status":
             query = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
