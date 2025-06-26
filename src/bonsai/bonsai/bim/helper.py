@@ -75,29 +75,28 @@ def draw_attribute(
     attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None,
     enable_search: bool = False
 ) -> None:
-    row = layout.row(align=True)
     value_name = attribute.get_value_name(display_only=True)
     
     # Draw the main attribute control
     if value_name == "enum_value":
-        prop_with_search(row, attribute, "enum_value", text=attribute.name)
+        prop_with_search(layout, attribute, "enum_value", text=attribute.name)
     elif value_name == "filepath_value":
-        attribute.filepath_value.layout_file_select(row, filter_glob=attribute.filter_glob, text=attribute.name)
+        attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
     elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
         props = tool.Sequence.get_work_schedule_props()
         for item in props.durations_attributes:
             if item.name == attribute.name:
                 duration_props = item
-                row.label(text=attribute.name)
-                row.prop(duration_props, "years", text="Y")
-                row.prop(duration_props, "months", text="M")
-                row.prop(duration_props, "days", text="D")
-                row.prop(duration_props, "hours", text="H")
-                row.prop(duration_props, "minutes", text="Min")
-                row.prop(duration_props, "seconds", text="S")
+                layout.label(text=attribute.name)
+                layout.prop(duration_props, "years", text="Y")
+                layout.prop(duration_props, "months", text="M")
+                layout.prop(duration_props, "days", text="D")
+                layout.prop(duration_props, "hours", text="H")
+                layout.prop(duration_props, "minutes", text="Min")
+                layout.prop(duration_props, "seconds", text="S")
                 break
     else:
-        row.prop(
+        layout.prop(
             attribute,
             value_name,
             text=attribute.display_name,
@@ -105,28 +104,28 @@ def draw_attribute(
 
     # Add special buttons based on attribute type
     if attribute.is_uri:
-        op = row.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.data_path = attribute.path_from_id("string_value")
     elif attribute.special_type in ("DATE", "DATETIME"):
-        op = row.operator("bim.datepicker", text="", icon="TIME")
+        op = layout.operator("bim.datepicker", text="", icon="TIME")
         op.target_prop = attribute.path_from_id("string_value")
         op.include_time = attribute.special_type == "DATETIME"
         
     # Add search button for appropriate types
     if enable_search and attribute.data_type in ("string", "integer", "float"):
-        op = row.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
+        op = layout.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
         op.attribute_name = attribute.name
         op.attribute_ifc_class = attribute.ifc_class
         op.data_path = attribute.path_from_id(value_name)
         op.data_type = attribute.data_type
 
     if attribute.is_optional:
-        row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
     if attribute.name == "GlobalId":
-        row.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
+        layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
     elif copy_operator:
-        op = row.operator(f"{copy_operator}", text="", icon="COPYDOWN")
+        op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
 
 
