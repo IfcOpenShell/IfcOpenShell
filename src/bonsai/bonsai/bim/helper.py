@@ -116,6 +116,7 @@ def draw_attribute(
     if enable_search and attribute.data_type in ("string", "integer", "float"):
         op = row.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
         op.attribute_name = attribute.name
+        op.attribute_ifc_class = attribute.ifc_class
         op.data_path = attribute.path_from_id(value_name)
         op.data_type = attribute.data_type
 
