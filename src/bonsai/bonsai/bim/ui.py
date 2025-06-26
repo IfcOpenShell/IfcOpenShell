@@ -437,6 +437,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(props, "should_disable_undo_on_save")
         layout.prop(props, "should_stream")
         bprops = tool.Bsdd.get_bsdd_props()
+        layout.label(text="bSDD:")
         layout.prop(bprops, "load_preview_dictionaries")
         layout.prop(bprops, "load_inactive_dictionaries")
         layout.prop(bprops, "load_test_dictionaries")
