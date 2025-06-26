@@ -71,7 +71,6 @@ class BIM_PT_context(bpy.types.Panel):
             op.context_type = ifc_context["context_type"]
             op.context_identifier = props.subcontexts
             op.target_view = props.target_views
-            op.context_target_scale_denominator = props.representation_target_scale_denominator
             op.parent = ifc_context["id"]
 
             for subcontext in ifc_context["subcontexts"]:
