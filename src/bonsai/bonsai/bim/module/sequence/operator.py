@@ -94,6 +94,11 @@ class ActivateStatusFilters(bpy.types.Operator):
     def execute(self, context):
         props = tool.Sequence.get_status_props()
 
+        if not props.is_enabled:
+            # In case if operator was added to Quick Favorites.
+            bpy.ops.bim.disable_status_fitlers()
+            return {"FINISHED"}
+
         visible_statuses = {s.name for s in props.statuses if s.is_visible}
         tool.Sequence.set_visibility_by_status(visible_statuses)
         return {"FINISHED"}

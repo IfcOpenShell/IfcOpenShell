@@ -61,6 +61,7 @@ class BIM_PT_status(Panel):
 
         row = self.layout.row(align=True)
         row.label(text="Statuses found in the project:")
+        row.operator("bim.activate_status_filters", icon="FILE_REFRESH", text="")
         row.operator("bim.disable_status_filters", icon="CANCEL", text="")
 
         for status in self.props.statuses:
