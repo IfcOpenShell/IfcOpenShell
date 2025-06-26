@@ -39,6 +39,7 @@ from typing import get_args, TYPE_CHECKING, assert_never
 class EnableStatusFilters(bpy.types.Operator):
     bl_idname = "bim.enable_status_filters"
     bl_label = "Enable Status Filters"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = tool.Sequence.get_status_props()
@@ -76,6 +77,7 @@ class DisableStatusFilters(bpy.types.Operator):
     bl_idname = "bim.disable_status_filters"
     bl_label = "Disable Status Filters"
     bl_description = "Deactivate status filters panel.\nCan be used to refresh the displayed statuses"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = tool.Sequence.get_status_props()
@@ -90,6 +92,7 @@ class ActivateStatusFilters(bpy.types.Operator):
     bl_idname = "bim.activate_status_filters"
     bl_label = "Activate Status Filters"
     bl_description = "Filter and display objects based on currently selected IFC statuses"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = tool.Sequence.get_status_props()
@@ -108,6 +111,7 @@ class SelectStatusFilter(bpy.types.Operator):
     bl_idname = "bim.select_status_filter"
     bl_label = "Select Status Filter"
     bl_description = "Select elements with currently selected status"
+    bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
     def execute(self, context):
