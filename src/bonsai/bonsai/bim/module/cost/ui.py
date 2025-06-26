@@ -53,6 +53,7 @@ class BIM_PT_cost_schedules(Panel):
             if CostSchedulesData.data["total_cost_schedules"]:
                 row.alignment = "RIGHT"
                 row.operator("bim.export_cost_schedules", icon="EXPORT", text="Export All Schedules")
+                row.operator("bim.export_cost_schedules_to_pdf", icon="OUTPUT", text="")
                 row = self.layout.row(align=True)
                 row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
             else:

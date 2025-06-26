@@ -223,6 +223,7 @@ class Cost:
     def expand_cost_item(cls, cost_item_id): pass
     def expand_cost_items(cls): pass
     def export_cost_schedules(cls, filepath, format, cost_schedule): pass
+    def export_cost_schedules_to_pdf(cls, filepath, cost_schedule, options): pass
     def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
     def get_active_cost_schedule(cls): pass

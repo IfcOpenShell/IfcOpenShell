@@ -517,6 +517,79 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
             row += 1
 
 
+class Ifc5DPdfWriter(Ifc5Dwriter):
+    def __init__(
+        self,
+        file: Union[str, ifcopenshell.file],
+        output: str,
+        options: dict,
+        cost_schedule: Optional[ifcopenshell.entity_instance] = None,
+    ):
+        """
+        PDF Writer is based on typst library, be sure it is available.
+        :param file: IFC file to exprot cost schedules from.
+        :param output: Output file path including name and .pdf extension.
+        :param cost_schedule: exported cost schedule. If not provided, will export all available schedules. Output will be different accoding to Cost Schedule PredefinedType.
+        """
+        self.output = output
+        if isinstance(file, str):
+            self.file = ifcopenshell.open(file)
+        else:
+            self.file = file
+        self.cost_schedule = cost_schedule
+        self.options = options
+        self.colours = self.default_colors.copy() #perhaps to delete
+
+    def write(self) -> None:
+        import os
+        import ifc5d
+        import shutil
+        import typst
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            #export csv file
+            csv_file_writer = Ifc5DCsvWriter(file=self.file, output=temp_dir, cost_schedule=self.cost_schedule)
+            csv_file_writer.write()
+            csv_file_name = self.cost_schedule.Name + ".csv"
+
+            #locate typst template file
+            typst_template_file_path = os.path.join(os.path.dirname(ifc5d.__file__), "typst_template_ifc_cost_schedule.typ")
+            shutil.copy(typst_template_file_path, temp_dir)
+
+            # generate typst main file content and write it
+            project = self.file.by_type("IfcProject")[0]
+            self.check_options()
+            typst_main_content =  ''
+            typst_main_content += '#import "{}": *\n'.format("typst_template_ifc_cost_schedule.typ")
+            typst_main_content += '#show: project.with(\n'
+            typst_main_content += 'schedule_path: "{}",\n'.format(csv_file_name)
+            typst_main_content += 'title: "{}",\n'.format(project.Name)
+            typst_main_content += 'schedule_name: "{}",\n'.format(self.cost_schedule.Name)
+            typst_main_content += 'schedule_type: "{}",\n'.format(self.cost_schedule.PredefinedType)
+            typst_main_content += 'cover_page: {},\n'.format("false")
+            typst_main_content += 'root_items_to_new_page: {},\n'.format("false")
+            typst_main_content += 'summary: {},\n'.format(self.options["should_print_summary"])
+            typst_main_content += ")"
+            typst_main_path = os.path.join(temp_dir, "main.typ")
+            with open(typst_main_path, "w") as typ_file:
+                typ_file.write(typst_main_content)
+            
+            # compile pdf file and write it
+            pdf_bytes = typst.compile(typst_main_path)
+            with open(self.output, "wb") as f:
+                f.write(pdf_bytes)
+    
+    def check_options(self):
+        options_keys = self.options.keys()
+        if "should_print_cover" in options_keys and self.options["should_print_cover"] is True:
+            self.options["should_print_cover"] = "true"
+        else: self.options["should_print_cover"] = "false"
+        if "should_print_summary" in options_keys and self.options["should_print_summary"] is True:
+            self.options["should_print_summary"] = "true"
+        else: self.options["should_print_summary"] = "false"
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Specify an IFC file to process")
