@@ -91,6 +91,24 @@ class BIM_PT_camera(Panel):
         row = self.layout.row()
         row.prop(props, "height")
 
+        render = context.scene.render
+        MEGAPIXELS_WARNING_THRESHOLD = 50
+        # See #6686.
+        if (
+            props.has_underlay
+            and str(render.engine) == "BLENDER_EEVEE_NEXT"
+            and ((megapixels := (render.resolution_x * render.resolution_y / 10**6)) > MEGAPIXELS_WARNING_THRESHOLD)
+        ):
+            box = self.layout.box()
+            box.label(
+                text=f"Resulting image size is {render.resolution_x} x {render.resolution_y} ({round(megapixels, 2)} MP).",
+                icon="WARNING_LARGE",
+            )
+            box.label(
+                text=(f"Which is more than {MEGAPIXELS_WARNING_THRESHOLD} megapixels and will require a lot of VRAM.")
+            )
+            box.label(text="Underlay render might crash if VRAM requirement is not met.")
+
         row = self.layout.row()
         row.prop(camera_data, "clip_end", text="Depth")
 
