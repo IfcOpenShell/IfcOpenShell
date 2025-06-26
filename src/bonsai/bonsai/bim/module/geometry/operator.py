@@ -843,6 +843,7 @@ class OverrideDelete(bpy.types.Operator):
         return self.execute(context)
 
     def draw(self, context):
+        assert self.layout
         row = self.layout.row()
         row.prop(self, "is_batch", text="Enable Faster Deletion")
         if self.is_batch:

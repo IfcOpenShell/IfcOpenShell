@@ -1148,7 +1148,9 @@ class Geometry(bonsai.core.tool.Geometry):
             if is_global and element.is_a("IfcTypeProduct"):
                 ocurrences = ifcopenshell.util.element.get_types(element)
                 for occurrence in ocurrences:
-                    cls.recreate_object_with_data(tool.Ifc.get_object(occurrence), data)
+                    obj_ = tool.Ifc.get_object(occurrence)
+                    assert isinstance(obj_, bpy.types.Object)
+                    cls.recreate_object_with_data(obj_, data)
 
             tool.Ifc.unlink(element=element)
 

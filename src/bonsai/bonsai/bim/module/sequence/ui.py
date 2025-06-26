@@ -51,7 +51,8 @@ class BIM_PT_status(Panel):
         return tool.Ifc.get()
 
     def draw(self, context):
-        self.props = context.scene.BIMStatusProperties
+        self.props = tool.Sequence.get_status_props()
+        assert self.layout
 
         if not self.props.is_enabled:
             row = self.layout.row()

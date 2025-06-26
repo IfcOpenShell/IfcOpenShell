@@ -85,7 +85,7 @@ class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
 
-    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int]]
+    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]
     """
     Options:
 

@@ -60,7 +60,7 @@ def blender_formatted_enum_from_psets(psets: list[ifcopenshell.entity_instance])
 
 
 # TODO: unsafe?
-def get_pset_name(self, context):
+def get_pset_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     pset_type = repr(self)
     prop_type = pset_type.split(".")[-1]
     results = []
@@ -81,6 +81,8 @@ def get_pset_name(self, context):
         results = get_profile_pset_names(self, context)
     elif prop_type == "WorkSchedulePsetProperties":
         results = get_work_schedule_pset_names(self, context)
+
+    items: list[tool.Blender.BLENDER_ENUM_ITEM]
     items = [("BBIM_CUSTOM", "Custom Pset", "Create a property set without using a template.")]
     bprops = tool.Bsdd.get_bsdd_props()
     dictionaries = [(d.uri, f"bSDD: {d.name}", "") for d in bprops.dictionaries if d.is_active]

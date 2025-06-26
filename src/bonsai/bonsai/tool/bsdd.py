@@ -164,7 +164,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
     @classmethod
     def get_related_ifc_entities(cls) -> list[str]:
         active_object = bpy.context.active_object
-        related_ifc_entities = []
+        related_ifc_entities: list[str] = []
         if cls.should_filter_ifc_class() and active_object:
             if element := tool.Ifc.get_entity(active_object):
                 ifc_class = element.is_a()
