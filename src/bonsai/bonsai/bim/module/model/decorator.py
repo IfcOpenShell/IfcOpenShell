@@ -1170,9 +1170,11 @@ class BoundingBoxDecorator:
         if not objects:
             return None, None, None
         if len(objects) == 1:
+            bpy.context.scene.transform_orientation_slots[1].type = "LOCAL"
             obj = objects[0]
             corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
         else:
+            bpy.context.scene.transform_orientation_slots[1].type = "GLOBAL"
             all_corners = []
             for obj in objects:
                 if hasattr(obj, "bound_box"):
