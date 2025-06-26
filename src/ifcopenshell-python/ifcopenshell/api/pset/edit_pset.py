@@ -320,7 +320,7 @@ class Usecase:
         return prop
 
     def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
-        properties = []
+        properties: list[ifcopenshell.entity_instance] = []
         for name, value in self.settings["properties"].items():
             if value is None and self.settings["should_purge"]:
                 continue
