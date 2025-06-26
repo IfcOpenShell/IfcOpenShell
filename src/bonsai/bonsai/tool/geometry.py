@@ -288,14 +288,43 @@ class Geometry(bonsai.core.tool.Geometry):
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
             for port in ifcopenshell.util.system.get_ports(element):
                 bonsai.core.system.remove_port(tool.Ifc, tool.System, port=port)
+
+            occurrences: list[ifcopenshell.entity_instance] = []
+            if element.is_a("IfcTypeProduct"):
+                occurrences = ifcopenshell.util.element.get_types(element)
             ifcopenshell.api.root.remove_product(ifc_file, product=element)
 
+            def get_active_representation_not_strict(
+                obj: bpy.types.Object,
+            ) -> Union[ifcopenshell.entity_instance, None]:
+                if (
+                    (data := obj.data)
+                    and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
+                    and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
+                ):
+                    return tool.Ifc.get_entity_by_id(ifc_id)
+
+            # Removing unused Blender mesh representation.
             data = obj.data
-            if (
-                tool.Geometry.has_mesh_properties(data)
-                and tool.Ifc.get_entity_by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id) is None
-            ):
-                tool.Blender.remove_data_block(data)
+            if tool.Geometry.has_mesh_properties(data) and get_active_representation_not_strict(obj) is None:
+                # If it's was a type, need to be careful not to remove still used mesh
+                # as it would implicitly remove all Blender objects-users.
+                data_to_remove: set[Geometry.TYPES_WITH_MESH_PROPERTIES] = {data}
+                for occurrence in occurrences:
+                    occ_obj = tool.Ifc.get_object(occurrence)
+                    assert isinstance(occ_obj, bpy.types.Object)
+                    occ_data = occ_obj.data
+                    assert isinstance(occ_data, Geometry.TYPES_WITH_MESH_PROPERTIES)
+
+                    occ_repr = get_active_representation_not_strict(occ_obj)
+                    if occ_repr is not None:
+                        continue
+                    # In theory we could look for another representation that object might have
+                    # but it occurs pretty rare.
+                    cls.recreate_object_with_data(occ_obj, None)
+                    data_to_remove.add(occ_data)
+                for data_ in data_to_remove:
+                    tool.Blender.remove_data_block(data_)
 
             if is_spatial:
                 bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
