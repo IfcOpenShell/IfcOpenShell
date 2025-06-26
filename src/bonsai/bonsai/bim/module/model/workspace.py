@@ -735,7 +735,7 @@ class CreateObjectUI:
         )
 
 def update_enum_property_search_prop_root_to_model(self, context):
-    """Update callback for the search property that handles both IFC class and predefined type"""
+    """Update callback for the search property"""
     for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
             ifc_class = self.collection_identifiers[i].name
@@ -750,15 +750,7 @@ def update_enum_property_search_prop_root_to_model(self, context):
                 except (TypeError, AttributeError):
                     pass
             
-            if not self.first_launch:
-                if not self.should_click_ok:
-                    context.window.screen = context.window.screen
-            
-            self.first_launch = False
-            
-            if not AuthoringData.is_loaded:
-                AuthoringData.load()
-            elif AuthoringData.data["ifc_element_type"] != model_props.ifc_class:
+            if not AuthoringData.is_loaded or AuthoringData.data["ifc_element_type"] != model_props.ifc_class:
                 AuthoringData.load()
                 
             break
@@ -768,15 +760,10 @@ class BIM_enum_property_search_root_to_model(bpy.types.Operator):
     bl_label = "Search"
     bl_description = "Search For IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop_root_to_model)
     collection_names: bpy.props.CollectionProperty(type=StrProperty)
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
     collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
-    prop_name: bpy.props.StringProperty(default="ifc_class")
-    should_click_ok: bpy.props.BoolProperty(default=False)
-    original_operator_path: bpy.props.StringProperty(name="Original Operator Path", default="", options={"SKIP_SAVE"})
-
 
     def invoke(self, context, event):
         self.clear_collections()
@@ -786,7 +773,7 @@ class BIM_enum_property_search_root_to_model(bpy.types.Operator):
         model_props = tool.Model.get_model_props()
 
         self.data = model_props
-        items = get_enum_items(self.data, self.prop_name, context, original_operator_path=self.original_operator_path)
+        items = get_enum_items(self.data, "ifc_class", context)
         self.add_items_regular(items)
 
         self.data = root_props
@@ -815,9 +802,9 @@ class BIM_enum_property_search_root_to_model(bpy.types.Operator):
         items: Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]],
     ) -> None:
         self.identifiers = []
-        current_value = getattr(self.data, self.prop_name)
+        current_value = getattr(self.data, "ifc_class")
         for item in items:
-            if item is None:  # Used as a separator
+            if item is None:
                 continue
             self.identifiers.append(item[0])
             self.add_item(identifier=item[0], name=item[1])
@@ -827,7 +814,7 @@ class BIM_enum_property_search_root_to_model(bpy.types.Operator):
     def add_items_suggestions(self) -> None:
         getter_suggestions = getattr(self.data, "getter_enum_suggestions", None)
         if getter_suggestions is not None:
-            mapping = getter_suggestions.get(self.prop_name)
+            mapping = getter_suggestions.get("ifc_class")
             if mapping is None:
                 return
             for key, suggestions in mapping().items():
