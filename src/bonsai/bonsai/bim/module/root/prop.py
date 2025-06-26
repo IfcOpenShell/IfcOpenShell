@@ -34,7 +34,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from bonsai.bim.module.model.prop import get_ifc_class as model_get_ifc_class
 from typing import TYPE_CHECKING, Union
 
 
