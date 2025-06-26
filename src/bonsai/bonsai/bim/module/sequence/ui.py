@@ -65,7 +65,7 @@ class BIM_PT_status(Panel):
         row.operator("bim.disable_status_filters", icon="CANCEL", text="")
 
         for status in self.props.statuses:
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.label(text=status.name)
             row.prop(status, "is_visible", text="", emboss=False, icon="HIDE_OFF" if status.is_visible else "HIDE_ON")
             row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").name = status.name
