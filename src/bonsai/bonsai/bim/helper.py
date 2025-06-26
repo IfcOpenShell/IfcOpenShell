@@ -52,65 +52,80 @@ def draw_attributes(
     copy_operator: Optional[str] = None,
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
+    enable_search: bool = False,
 ) -> None:
     """Draw editable UI for prop.Attributes.
 
     You can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
     on it first
+    
+    :param enable_search: Add search button to string, integer, and float attributes
     """
     for attribute in props:
         row = layout.row(align=True)
         if attribute == popup_active_attribute:
             row.activate_init = True
-        draw_attribute(attribute, row, copy_operator)
+        draw_attribute(attribute, row, copy_operator, enable_search=enable_search)
         if callback:
             callback(attribute, row)
 
 
 def draw_attribute(
-    attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+    attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None,
+    enable_search: bool = False
 ) -> None:
+    row = layout.row(align=True)
     value_name = attribute.get_value_name(display_only=True)
+    
+    # Draw the main attribute control
     if value_name == "enum_value":
-        prop_with_search(layout, attribute, "enum_value", text=attribute.name)
+        prop_with_search(row, attribute, "enum_value", text=attribute.name)
     elif value_name == "filepath_value":
-        attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
+        attribute.filepath_value.layout_file_select(row, filter_glob=attribute.filter_glob, text=attribute.name)
     elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
         props = tool.Sequence.get_work_schedule_props()
         for item in props.durations_attributes:
             if item.name == attribute.name:
                 duration_props = item
-                layout.label(text=attribute.name)
-                layout.prop(duration_props, "years", text="Y")
-                layout.prop(duration_props, "months", text="M")
-                layout.prop(duration_props, "days", text="D")
-                layout.prop(duration_props, "hours", text="H")
-                layout.prop(duration_props, "minutes", text="Min")
-                layout.prop(duration_props, "seconds", text="S")
+                row.label(text=attribute.name)
+                row.prop(duration_props, "years", text="Y")
+                row.prop(duration_props, "months", text="M")
+                row.prop(duration_props, "days", text="D")
+                row.prop(duration_props, "hours", text="H")
+                row.prop(duration_props, "minutes", text="Min")
+                row.prop(duration_props, "seconds", text="S")
                 break
     else:
-        layout.prop(
+        row.prop(
             attribute,
             value_name,
             text=attribute.display_name,
         )
 
+    # Add special buttons based on attribute type
     if attribute.is_uri:
-        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+        op = row.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.data_path = attribute.path_from_id("string_value")
     elif attribute.special_type in ("DATE", "DATETIME"):
-        op = layout.operator("bim.datepicker", text="", icon="TIME")
+        op = row.operator("bim.datepicker", text="", icon="TIME")
         op.target_prop = attribute.path_from_id("string_value")
         op.include_time = attribute.special_type == "DATETIME"
+        
+    # Add search button for appropriate types
+    if enable_search and attribute.data_type in ("string", "integer", "float"):
+        op = row.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
+        op.attribute_name = attribute.name
+        op.data_path = attribute.path_from_id(value_name)
+        op.data_type = attribute.data_type
 
     if attribute.is_optional:
-        layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+        row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
     if attribute.name == "GlobalId":
-        layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
+        row.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
     elif copy_operator:
-        op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
+        op = row.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
 
 

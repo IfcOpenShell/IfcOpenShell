@@ -1320,3 +1320,19 @@ class ShowSystemInfo(bpy.types.Operator):
 
         col.separator()
         col.label(text="(The information has been copied to the clipboard.)")
+
+
+
+
+def update_attribute_search_value(self, context):
+#tbd
+    return
+
+
+class BIM_OT_attribute_search_values(bpy.types.Operator):
+    bl_idname = "bim.attribute_search_values"
+    bl_label = "Search Attribute Values"
+    bl_description = "Search for attribute values within a collection"
+    bl_options = {"REGISTER", "UNDO"}
+    
+#tbd
