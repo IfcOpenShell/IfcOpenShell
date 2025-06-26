@@ -382,6 +382,10 @@ class DrawingStyle(PropertyGroup):
 class RasterStyleProperty(enum.Enum):
     # EVAL_PROP_ props will be evaluated explicitly
     EVAL_PROP_WORLD_COLOR = "bpy.data.worlds[0].color"
+    EVAL_PROP_EEVEE_USE_SHADOWS = "scene.eevee.use_shadows"
+    EVAL_PROP_EEVEE_SHADOW_RAY_COUNT = "scene.eevee.shadow_ray_count"
+    EVAL_PROP_EEVEE_SHADOW_STEP_COUNT = "scene.eevee.shadow_step_count"
+    EVAL_PROP_EEVEE_SHADOW_RES_SCALE = "scene.eevee.shadow_resolution_scale"
 
     # those props attributes used as a source for shading style properties
     RENDER = "scene.render"

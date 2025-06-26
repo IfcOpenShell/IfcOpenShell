@@ -499,6 +499,10 @@
                 0.05087608844041824,
                 0.05087608844041824
             ],
+            "scene.eevee.use_shadows": true,
+            "scene.eevee.shadow_ray_count": 1,
+            "scene.eevee.shadow_step_count": 6,
+            "scene.eevee.shadow_resolution_scale": 1.0,
             "scene.render.bake_bias": 0.0010000000474974513,
             "scene.render.bake_margin": 16,
             "scene.render.bake_margin_type": "ADJACENT_FACES",
