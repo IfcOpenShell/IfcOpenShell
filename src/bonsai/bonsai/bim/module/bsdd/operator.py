@@ -22,6 +22,7 @@ import bonsai.tool as tool
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 from bonsai.core import bsdd as core
+from typing import Any
 
 
 class LoadBSDDDictionaries(bpy.types.Operator):
@@ -88,7 +89,7 @@ class AddBSDDProperties(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         bprops = tool.Bsdd.get_bsdd_props()
 
-        psets = {}
+        psets: dict[str, dict[str, Any]] = {}
         for selected_property in bprops.selected_properties:
             psets.setdefault(selected_property.metadata, {})[selected_property.name] = selected_property.get_value()
 

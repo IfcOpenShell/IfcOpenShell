@@ -2437,7 +2437,9 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         style = {}
         eval_namespace = {"context": context, "scene": scene, "space": space}
 
-        def add_prop_to_style(prop_path, context, scene, space):
+        def add_prop_to_style(
+            prop_path: str, context: bpy.types.Context, scene: bpy.types.Scene, space: bpy.types.SpaceView3D
+        ) -> None:
             value = eval(prop_path)
             if not isinstance(value, str):
                 try:
