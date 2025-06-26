@@ -70,21 +70,6 @@ class TestImportAttributes(test.bim.bootstrap.NewFile):
         assert props.context_attributes["UserDefinedTargetView"].string_value == "UserDefinedTargetView"
         assert not props.context_attributes["Precision"]
 
-    def test_importing_another_subcontext_with_different_scale(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        subcontext = ifc.createIfcGeometricRepresentationSubcontext()
-        subcontext.TargetScale = 10000
-        subcontext.TargetView = "NOTDEFINED"
-        subcontext.UserDefinedTargetView = "UserDefinedTargetView"
-        subject.set_context(subcontext)
-        subject.import_attributes()
-        props = subject.get_context_props()
-        assert props.context_attributes["TargetScale"].float_value == 10000
-        assert props.context_attributes["TargetView"].enum_value == "NOTDEFINED"
-        assert props.context_attributes["UserDefinedTargetView"].string_value == "UserDefinedTargetView"
-        assert not props.context_attributes["Precision"]
-
     def test_importing_twice(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
@@ -135,12 +120,3 @@ class TestExportAttributes(test.bim.bootstrap.NewFile):
             "ContextType": None,
         }
 
-    def test_exporting_another_subcontext_with_different_scale(self):
-        TestImportAttributes().test_importing_another_subcontext_with_different_scale()
-        assert subject.export_attributes() == {
-            "TargetScale": 10000,
-            "TargetView": "NOTDEFINED",
-            "UserDefinedTargetView": "UserDefinedTargetView",
-            "ContextIdentifier": None,
-            "ContextType": None,
-        }

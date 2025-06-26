@@ -67,7 +67,6 @@ class BIM_PT_context(bpy.types.Panel):
             row = box.row(align=True)
             bonsai.bim.helper.prop_with_search(row, props, "subcontexts", text="")
             bonsai.bim.helper.prop_with_search(row, props, "target_views", text="")
-            row.prop(props, "representation_target_scale_denominator", text="Scale 1:")
             op = row.operator("bim.add_context", icon="ADD", text="")
             op.context_type = ifc_context["context_type"]
             op.context_identifier = props.subcontexts
