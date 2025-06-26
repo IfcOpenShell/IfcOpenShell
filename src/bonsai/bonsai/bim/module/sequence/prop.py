@@ -443,7 +443,9 @@ class ISODuration(PropertyGroup):
 
 class IFCStatus(PropertyGroup):
     name: StringProperty(name="Name")
-    is_visible: BoolProperty(name="Is Visible", default=True, update=lambda x, y: bpy.ops.bim.activate_status_filters())
+    is_visible: BoolProperty(
+        name="Is Visible", default=True, update=lambda x, y: (None, bpy.ops.bim.activate_status_filters())[0]
+    )
 
     if TYPE_CHECKING:
         name: str
