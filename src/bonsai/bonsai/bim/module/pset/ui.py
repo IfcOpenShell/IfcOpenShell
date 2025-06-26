@@ -291,7 +291,7 @@ class BIM_PT_object_psets(Panel):
                         )
                     else:
                         row = self.layout.row()
-                        row.label(text="No Results")
+                        row.label(text="No bSDD Props Found")
                 else:
                     row = self.layout.row()
                     row.label(text="No Results")
@@ -312,7 +312,7 @@ class BIM_PT_object_psets(Panel):
                     )
                 else:
                     row = self.layout.row()
-                    row.label(text="No Results")
+                    row.label(text="No bSDD Props Found")
 
             for selected_property in self.bprops.selected_properties:
                 row = self.layout.row(align=True)
