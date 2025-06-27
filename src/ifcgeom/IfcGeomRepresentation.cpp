@@ -204,12 +204,12 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 		if (it->Placement()->components_) {
 			gp_Trsf tr;
 			const auto& m = it->Placement()->ccomponents();
-			tr.SetValues(
-				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-			);
-			trsf = tr;
+			trsf.SetVectorialPart(gp_Mat(
+				m(0, 0), m(0, 1), m(0, 2),
+				m(1, 0), m(1, 1), m(1, 2),
+				m(2, 0), m(2, 1), m(2, 2)
+			));
+			trsf.SetTranslationPart(gp_XYZ(m(0, 3), m(1, 3), m(2, 3)));
 		}
 
 		if (!force_meters && settings().get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
