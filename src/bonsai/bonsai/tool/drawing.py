@@ -157,6 +157,8 @@ class Drawing(bonsai.core.tool.Drawing):
     def create_annotation_object(cls, drawing: ifcopenshell.entity_instance, object_type: str) -> bpy.types.Object:
         import bonsai.bim.module.drawing.annotation as annotation
 
+        pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        scale = 1 / float(Fraction(pset["Scale"]))
         data_type = cls.get_annotation_data_type(object_type)
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
@@ -170,8 +172,15 @@ class Drawing(bonsai.core.tool.Drawing):
             obj = annotation.Annotator.add_line_to_annotation(obj, co2, co1)
         elif object_type == "PLAN_LEVEL":
             co1, co2, _, _ = annotation.Annotator.get_placeholder_coords()
-            obj = annotation.Annotator.add_line_to_annotation(obj, co1 + (co2 - co1) * 0.15, co1)
-            obj.matrix_world = obj.matrix_world @ Matrix.Rotation(math.radians(-90), 4, 'Z')
+            vec = co2 - co1
+            if vec.length == 0:
+                vec = Vector((1, 0, 0))  # Fallback to a unit vector
+            else:
+                vec = vec.normalized()
+            scaled_length = 0.023 * scale #0.023 could probably be a preference
+            co_end = co1 + vec * scaled_length
+            obj = annotation.Annotator.add_line_to_annotation(obj, co_end, co1)
+            obj.matrix_world = obj.matrix_world @ Matrix.Rotation(math.radians(-90), 4, "Z")
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
 
