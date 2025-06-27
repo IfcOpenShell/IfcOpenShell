@@ -338,7 +338,7 @@ class SheetBuilder:
 
         # add .prefix class to all css selectors
         style = svg.find(f"{SVG}defs/{SVG}style")
-        assert style
+        assert style is not None
         style_data = style.text
         assert style_data is not None
         text = ""
@@ -419,7 +419,7 @@ class SheetBuilder:
                 view.append(svg)
 
             if view_title is not None:
-                assert foreground
+                assert foreground is not None
                 foreground_path = self.get_href(foreground)
                 data = reference.get_info()
                 data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
