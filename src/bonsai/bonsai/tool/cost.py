@@ -593,10 +593,7 @@ class Cost(bonsai.core.tool.Cost):
         return csv2ifc.cost_schedule
 
     @classmethod
-    def add_csv_filepath(cls, file_path: str, is_schedule_of_rates: bool, cost_schedule) -> None:
-        if not file_path or not cost_schedule:
-            return
-
+    def get_or_create_cost_documents(cls) -> ifcopenshell.entity_instance:
         ifc_file = tool.Ifc.get()
         cost_docs_document = next(
             (
@@ -606,11 +603,26 @@ class Cost(bonsai.core.tool.Cost):
             ),
             None,
         )
-
+        
         if not cost_docs_document:
             cost_docs_document = ifcopenshell.api.document.add_information(ifc_file)
             cost_docs_document.Name = "BBIM_Cost_Documents"
             cost_docs_document.Description = "Bonsai internal document containing references to cost CSV files"
+        
+        return cost_docs_document
+
+    @classmethod
+    def add_csv_filepath(
+        cls,
+        file_path: Optional[str] = None,
+        is_schedule_of_rates: bool = False,
+        cost_schedule: ifcopenshell.entity_instance = None,
+    ) -> None:
+        if not file_path or not cost_schedule:
+            return
+
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = cls.get_or_create_cost_documents()
 
         reference = ifcopenshell.api.document.add_reference(ifc_file, cost_docs_document)
         reference.Location = file_path
@@ -628,14 +640,7 @@ class Cost(bonsai.core.tool.Cost):
             return
 
         ifc_file = tool.Ifc.get()
-        cost_docs_document = next(
-            (
-                document
-                for document in ifc_file.by_type("IfcDocumentInformation")
-                if document.Name == "BBIM_Cost_Documents"
-            ),
-            None,
-        )
+        cost_docs_document = cls.get_or_create_cost_documents()
 
         if not cost_docs_document:
             return
@@ -646,7 +651,6 @@ class Cost(bonsai.core.tool.Cost):
         for reference in references:
             if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
                 ifcopenshell.api.document.remove_reference(ifc_file, reference)
-                print(f"Cost schedule id={cost_schedule_id} csv filepath correctly removed")
                 return
 
     @classmethod
@@ -661,15 +665,7 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def is_schedule_of_rates_csv(cls, cost_schedule_id: int) -> bool:
         """Check if a cost schedule is a schedule of rates based on document references."""
-        ifc_file = tool.Ifc.get()
-        cost_docs_document = next(
-            (
-                document
-                for document in ifc_file.by_type("IfcDocumentInformation")
-                if document.Name == "BBIM_Cost_Documents"
-            ),
-            None,
-        )
+        cost_docs_document = cls.get_or_create_cost_documents()
 
         if not cost_docs_document:
             return False
@@ -684,15 +680,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def get_cost_schedule_csv_filepath(cls, cost_schedule_id: int) -> Optional[str]:
-        ifc_file = tool.Ifc.get()
-        cost_docs_document = next(
-            (
-                document
-                for document in ifc_file.by_type("IfcDocumentInformation")
-                if document.Name == "BBIM_Cost_Documents"
-            ),
-            None,
-        )
+        cost_docs_document = cls.get_or_create_cost_documents()
 
         if not cost_docs_document:
             return None
@@ -1110,12 +1098,5 @@ class Cost(bonsai.core.tool.Cost):
             results["unit_symbol"] = "U"
         return results
 
-    @classmethod
-    def get_cost_schedule_documents(cls) -> Union[ifcopenshell.entity_instance, None]:
-        """Get the document information entity that stores CSV references."""
-        for document in tool.Ifc.get().by_type("IfcDocumentInformation"):
-            if document.Name == "BBIM_Cost_Documents":
-                return document
-        return None
 
 

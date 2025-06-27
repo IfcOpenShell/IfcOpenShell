@@ -64,15 +64,7 @@ class CostSchedulesData:
     def get_csv_filepaths(cls) -> dict[int, str]:
         """Get CSV filepaths for cost schedules from document references."""
         filepaths = {}
-        ifc_file = tool.Ifc.get()
-        cost_docs_document = next(
-            (
-                document
-                for document in ifc_file.by_type("IfcDocumentInformation")
-                if document.Name == "BBIM_Cost_Documents"
-            ),
-            None,
-        )
+        cost_docs_document = tool.Cost.get_or_create_cost_documents()
 
         if cost_docs_document:
             references = tool.Document.get_document_references(cost_docs_document)

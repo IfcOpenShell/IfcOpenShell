@@ -606,7 +606,7 @@ class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
             cls.poll_message_set("No active cost schedule")
             return False
             
-        file_path = core.get_cost_schedule_csv_filepath(tool.Cost, props.active_cost_schedule_id)
+        file_path = tool.Cost.get_cost_schedule_csv_filepath(props.active_cost_schedule_id)
         if not file_path:
             cls.poll_message_set("No CSV file associated with this cost schedule")
             return False
@@ -614,10 +614,7 @@ class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        error_message = core.refresh_cost_schedule_csv(tool.Cost)
-        if error_message:
-            self.report({"ERROR"}, error_message)
-            return {"CANCELLED"}
+        core.refresh_cost_schedule_csv(tool.Cost)
         CostSchedulesData.is_loaded = False
 
         return {"FINISHED"}
