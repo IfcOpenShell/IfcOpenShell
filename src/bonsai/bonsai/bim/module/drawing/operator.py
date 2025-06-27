@@ -2264,22 +2264,6 @@ class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
         return True
 
 
-# TODO: not exposed to the UI.
-class SelectDocIfcFile(bpy.types.Operator, ImportHelper):
-    bl_idname = "bim.select_doc_ifc_file"
-    bl_label = "Select Documentation IFC File"
-    bl_description = "Selection .ifc file for documentation."
-    bl_options = {"REGISTER", "UNDO"}
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    filename_ext = ".ifc"
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        props = tool.Drawing.get_document_props()
-        props.ifc_files[self.index].name = self.filepath
-        return {"FINISHED"}
-
-
 class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
@@ -2483,6 +2467,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+# TODO: operator is not exposed to UI, move it to tool.
 class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_drawing_styles_data"
     bl_label = "Save Drawing Styles Data"
@@ -2556,7 +2541,6 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         self.drawing_style = drawing_style
 
         self.set_raster_style(context)
-        self.set_query(context)
 
         props = tool.Drawing.get_document_props()
         assert (drawing := props.get_active_drawing())
@@ -2649,46 +2633,6 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 self.has_errors_during_activation = True
                 if "PYTEST_VERSION" in os.environ:
                     raise
-
-    def set_query(self, context: bpy.types.Context) -> None:
-        self.include_global_ids = []
-        self.exclude_global_ids = []
-        props = tool.Drawing.get_document_props()
-        for ifc_file in props.ifc_files:
-            try:
-                ifc = ifcopenshell.open(ifc_file.name)
-            except:
-                continue
-            if self.drawing_style.include_query:
-                results = ifcopenshell.util.selector.filter_elements(ifc, self.drawing_style.include_query)
-                self.include_global_ids.extend([e.GlobalId for e in results])
-            if self.drawing_style.exclude_query:
-                results = ifcopenshell.util.selector.filter_elements(ifc, self.drawing_style.exclude_query)
-                self.exclude_global_ids.extend([e.GlobalId for e in results])
-        if self.drawing_style.include_query:
-            self.parse_filter_query("INCLUDE", context)
-        if self.drawing_style.exclude_query:
-            self.parse_filter_query("EXCLUDE", context)
-
-    def parse_filter_query(self, mode: Literal["INCLUDE", "EXCLUDE"], context: bpy.types.Context) -> None:
-        if mode == "INCLUDE":
-            assert context.scene
-            objects = context.scene.objects
-        elif mode == "EXCLUDE":
-            objects = context.visible_objects
-        for obj in objects:
-            if mode == "INCLUDE":
-                obj.hide_viewport = False  # Note: this breaks alt-H
-            global_id = obj.BIMObjectProperties.attributes.get("GlobalId")
-            if not global_id:
-                continue
-            global_id = global_id.string_value
-            if mode == "INCLUDE":
-                if global_id not in self.include_global_ids:
-                    obj.hide_viewport = True  # Note: this breaks alt-H
-            elif mode == "EXCLUDE":
-                if global_id in self.exclude_global_ids:
-                    obj.hide_viewport = True  # Note: this breaks alt-H
 
 
 class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):

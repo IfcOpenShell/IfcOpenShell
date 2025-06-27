@@ -1640,10 +1640,6 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         print("Export finished in {:.2f} seconds".format(time.time() - start))
         # New project created in Bonsai should be in recent projects too.
         tool.Project.add_recent_ifc_project(Path(output_file))
-        props = tool.Drawing.get_document_props()
-        if not props.ifc_files:
-            new = props.ifc_files.add()
-            new.name = output_file
         props = tool.Project.get_project_props()
         if props.use_relative_project_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))

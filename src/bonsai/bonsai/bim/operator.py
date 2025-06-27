@@ -887,29 +887,6 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class AddIfcFile(bpy.types.Operator):
-    bl_idname = "bim.add_ifc_file"
-    bl_label = "Add IFC File"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        props = tool.Drawing.get_document_props()
-        props.ifc_files.add()
-        return {"FINISHED"}
-
-
-class RemoveIfcFile(bpy.types.Operator):
-    bl_idname = "bim.remove_ifc_file"
-    bl_label = "Remove IFC File"
-    index: bpy.props.IntProperty()
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        props = tool.Drawing.get_document_props()
-        props.ifc_files.remove(self.index)
-        return {"FINISHED"}
-
-
 class FetchObjectPassport(bpy.types.Operator):
     bl_idname = "bim.fetch_object_passport"
     bl_label = "Fetch Object Passport"

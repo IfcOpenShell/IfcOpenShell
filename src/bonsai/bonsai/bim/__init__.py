@@ -97,7 +97,6 @@ for name in modules.keys():
 
 
 classes = [
-    operator.AddIfcFile,
     operator.BIM_OT_add_section_plane,
     operator.BIM_OT_delete_object,
     operator.BIM_OT_remove_section_plane,
@@ -117,7 +116,6 @@ classes = [
     operator.OpenUpstream,
     operator.OpenUri,
     operator.ReloadIfcFile,
-    operator.RemoveIfcFile,
     operator.RevertClippingPlaneCut,
     operator.SelectDir,
     operator.SelectIfcFile,
