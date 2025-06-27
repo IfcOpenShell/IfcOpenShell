@@ -368,15 +368,11 @@ class DrawingStyle(PropertyGroup):
         name="Render Type",
         default="VIEWPORT",
     )
-    include_query: StringProperty(name="Include Query")
-    exclude_query: StringProperty(name="Exclude Query")
 
     if TYPE_CHECKING:
         name: str
         raster_style: str
         render_type: RenderType
-        include_query: str
-        exclude_query: str
 
 
 class RasterStyleProperty(enum.Enum):
@@ -425,7 +421,6 @@ class DocProperties(PropertyGroup):
     is_editing_sheets: BoolProperty(name="Is Editing Sheets", default=False)
     sheets: CollectionProperty(name="Sheets", type=Sheet)
     active_sheet_index: IntProperty(name="Active Sheet Index")
-    ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
     sheets_dir: StringProperty(default=os.path.join("sheets") + os.path.sep, name="Default Sheets Directory")
@@ -483,7 +478,6 @@ class DocProperties(PropertyGroup):
         is_editing_sheets: bool
         sheets: bpy.types.bpy_prop_collection_idprop[Sheet]
         active_sheet_index: int
-        ifc_files: bpy.types.bpy_prop_collection_idprop[StrProperty]
         drawing_styles: bpy.types.bpy_prop_collection_idprop[DrawingStyle]
         should_draw_decorations: bool
         sheets_dir: str

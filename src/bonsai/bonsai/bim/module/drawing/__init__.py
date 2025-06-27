@@ -88,7 +88,6 @@ classes = (
     operator.SelectAllDrawings,
     operator.SelectAllSheets,
     operator.SelectAssignedProduct,
-    operator.SelectDocIfcFile,
     operator.OpenDocumentationWebUi,
     prop.Variable,
     prop.Drawing,

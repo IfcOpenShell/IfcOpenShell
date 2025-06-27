@@ -234,10 +234,6 @@ class BIM_PT_drawing_underlay(Panel):
 
         row = layout.row()
         row.prop(drawing_style, "render_type")
-        row = layout.row(align=True)
-        row.prop(drawing_style, "include_query")
-        row = layout.row(align=True)
-        row.prop(drawing_style, "exclude_query")
 
         row = layout.row(align=True)
         row.operator("bim.save_drawing_style")
@@ -302,16 +298,6 @@ class BIM_PT_drawings(Panel):
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
-
-        # Commented out until federated drawing generation is rebuilt
-        # row = self.layout.row()
-        # row.operator("bim.add_ifc_file")
-
-        # for index, ifc_file in enumerate(self.props.ifc_files):
-        #     row = self.layout.row(align=True)
-        #     row.prop(ifc_file, "name", text="IFC #{}".format(index + 1))
-        #     row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="").index = index
-        #     row.operator("bim.remove_ifc_file", icon="X", text="").index = index
 
 
 class BIM_PT_schedules(Panel):
