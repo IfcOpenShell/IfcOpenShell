@@ -268,14 +268,7 @@ class Project(bonsai.core.tool.Project):
         for link in links:
             filepaths.add(Path(link.name))
 
-        links_document = next(
-            (
-                document
-                for document in ifc_file.by_type("IfcDocumentInformation")
-                if document.Name == "BBIM_Linked_Models"
-            ),
-            None,
-        )
+        links_document = cls.get_linked_models_document()
 
         if not filepaths and links_document is None:
             return
