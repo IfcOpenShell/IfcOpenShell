@@ -59,8 +59,10 @@ def add_information(
     """
     id_attribute = "DocumentId" if file.schema == "IFC2X3" else "Identification"
     information = file.create_entity("IfcDocumentInformation", **{id_attribute: "X", "Name": "Unnamed"})
-    if not parent and file.by_type("IfcProject"):
-        parent = file.by_type("IfcProject")[0]
+
+    if not parent and not (parent := next(iter(file.by_type("IfcProject")), None)):
+        raise Exception("IfcProject is not found.")
+
     if parent.is_a("IfcProject") or parent.is_a("IfcContext"):
         file.create_entity(
             "IfcRelAssociatesDocument",
