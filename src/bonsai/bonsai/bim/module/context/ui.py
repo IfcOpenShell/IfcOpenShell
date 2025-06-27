@@ -84,5 +84,26 @@ class BIM_PT_context(bpy.types.Panel):
                     row.label(text=subcontext["context_type"])
                     row.label(text=subcontext["context_identifier"])
                     row.label(text=subcontext["target_view"])
+
+                    scale_col = row.column()
+                    scale_col.ui_units_x = 6
+
+                    if subcontext["target_scale_denominator"] is not None:
+                        scale_value = subcontext["target_scale_denominator"]
+
+                        if scale_value == int(scale_value):
+                            scale_str = str(int(scale_value))
+                            if len(scale_str) > 4:
+                                scale_str = f"{float(scale_value):.3g}"
+                        else:
+                            scale_str = f"{scale_value:.4g}"
+
+                        if len(scale_str) > 4:
+                            scale_str = f"{float(scale_value):.3g}"
+
+                        scale_col.label(text=f"1:{scale_str}")
+                    else:
+                        scale_col.label(text="")
+
                     row.operator("bim.enable_editing_context", icon="GREASEPENCIL", text="").context = subcontext["id"]
                     row.operator("bim.remove_context", icon="X", text="").context = subcontext["id"]
