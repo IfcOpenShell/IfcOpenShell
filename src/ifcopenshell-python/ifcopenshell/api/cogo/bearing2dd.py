@@ -16,12 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.cogo.angle_from_dms
-import math
+import ifcopenshell.util.geolocation
 
-def angle_from_bearing(bearing: str)->float:
+def bearing2dd(bearing: str)->float:
     """
-    Compute an angle, in radian, from a quadrant bearing string.
+    Converts a quadrant bearing string to decimal degrees
 
     The format of the string is "N|S dd (mm (ss.s)) E|W"
     where:
@@ -36,7 +35,7 @@ def angle_from_bearing(bearing: str)->float:
     """
     error_msg = "Invalid bearing string"
 
-    direcbearingtion = bearing.strip() # trim external white space
+    bearing = bearing.strip() # trim external white space
     bearing = ' '.join(bearing.split()) # make sure all parts separated by a single space
     parts = bearing.split()
     nParts = len(parts)
@@ -56,6 +55,7 @@ def angle_from_bearing(bearing: str)->float:
     d = 0
     m = 0
     s = 0.
+    ms = 0
 
     if nParts == 3:
         d = int(parts[1])
@@ -67,31 +67,39 @@ def angle_from_bearing(bearing: str)->float:
         m = int(parts[2])
         s = float(parts[3])
 
+    # s in a decimal number
+    # need to break it into whole seconds and milliseconds
+    ms = 100.*(s - int(s))
+    s = int(s)
+
+    if d < 0 or (m < 0 or 60 <= m) or (s < 0 or 60 <= s) or ms < 0:
+        raise ValueError(error_msg)
+    
     if cY == 'N' and cX == 'E':
-        angle = math.pi/2
+        angle = 90.
         sign = -1.
     elif cY == 'N' and cX == 'W':
-        angle = math.pi/2
+        angle = 90.
         sign = 1.
     elif cY == 'S' and cX == 'E':
-        angle = 1.5*math.pi
+        angle = 270.
         sign = 1.
     elif cY == 'S' and cX == 'W':
-        angle = 1.5*math.pi
+        angle = 270.
         sign = -1.
 
     try:
-        dms = ifcopenshell.api.cogo.angle_from_dms(d,m,s)
+        dms = ifcopenshell.util.geolocation.dms2dd(d,m,s,ms)
     except ValueError:
         raise ValueError(error_msg)
     
-    if dms < 0 or math.pi/2 < dms:
+    if dms < 0. or 90. < dms:
         raise ValueError(error_msg)
 
     angle += sign*dms
 
-    # S 90 E will evaluate to 2*pi
-    if angle == 2.*math.pi:
+    # S 90 E will evaluate to 360
+    if angle == 360.:
         angle = 0.
 
     return angle
