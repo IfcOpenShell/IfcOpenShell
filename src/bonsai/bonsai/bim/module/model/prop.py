@@ -147,7 +147,6 @@ def update_measure_xyz(self: "BIMModelProperties", context: bpy.types.Context) -
                 self.prev_show_gizmo_object_translate = False
 
 
-                
 def update_cut_decorator(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     if self.show_cut_decorator:
         CutDecorator.install(bpy.context)
@@ -286,11 +285,7 @@ class BIMModelProperties(PropertyGroup):
     prev_transform_orientation_slot_type: bpy.props.StringProperty(name="Previous Gizmo Orientation Type")
     prev_show_gizmo_object_translate: bpy.props.BoolProperty(name="Previous Gizmo Translate")
 
-    show_bounding_box: bpy.props.BoolProperty(
-        name="Measure XYZ Dimensions",
-        default=False,
-        update=update_measure_xyz
-    )
+    show_bounding_box: bpy.props.BoolProperty(name="Measure XYZ Dimensions", default=False, update=update_measure_xyz)
     show_cut_decorator: bpy.props.BoolProperty(
         name="Show Cut Decorator",
         default=True,
