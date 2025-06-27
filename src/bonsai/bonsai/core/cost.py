@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union, Literal
-import bonsai.tool as tool
 import os
 from bonsai.bim.module.cost.data import CostSchedulesData
 
@@ -26,6 +25,7 @@ if TYPE_CHECKING:
     import bpy
     import ifcopenshell
     import ifcopenshell.util.cost
+    import bonsai.tool as tool
 
 
 def add_cost_schedule(ifc: type[tool.Ifc], name: str, predefined_type: str) -> None:
@@ -342,13 +342,9 @@ def select_cost_schedule_products(
 
 
 def import_cost_schedule_csv(
-    cost: type[tool.Cost], file_path: str, is_schedule_of_rates: bool
+    cost: type[tool.Cost], resolved_path: str, is_schedule_of_rates: bool
 ) -> ifcopenshell.entity_instance:
 
-    resolved_path = tool.Ifc.resolve_uri(file_path)
-    if not os.path.exists(resolved_path):
-        print(f"Error: Could not find CSV file at {file_path} (resolved to {resolved_path})")
-        return None
 
     cost_schedule = cost.import_cost_schedule_csv(resolved_path, is_schedule_of_rates)
     return cost_schedule
@@ -364,18 +360,7 @@ def remove_csv_filepath(cost: type[tool.Cost], cost_schedule) -> None:
 
 def refresh_cost_schedule_csv(cost: type[tool.Cost]) -> Optional[str]:
 
-    props = cost.get_cost_props()
-    cost_schedule_id = props.active_cost_schedule_id
-    file_path = cost.get_cost_schedule_csv_filepath(cost_schedule_id)
-
-    if not file_path:
-        return "No CSV file associated with this cost schedule"
-
-    resolved_path = tool.Ifc.resolve_uri(file_path)
-
-    if not os.path.exists(resolved_path):
-        return f"Could not find CSV file at {file_path} (resolved to {resolved_path})"
-
+    
     cost.delete_all_cost_items()
     cost.refresh_cost_schedule_csv()
     cost.load_cost_schedule_tree()
@@ -487,9 +472,7 @@ def generate_cost_schedule_browser(cost: type[tool.Cost], cost_schedule: ifcopen
     return cost.generate_cost_schedule_browser(cost_schedule)
 
 
-def get_cost_schedule_csv_filepath(cost: type[tool.Cost], cost_schedule_id: int) -> Optional[str]:
-    return cost.get_cost_schedule_csv_filepath(cost_schedule_id)
 
 
-def is_schedule_of_rates_csv(cost: type[tool.Cost], cost_schedule_id: int) -> bool:
-    return cost.is_schedule_of_rates_csv(cost_schedule_id)
+
+
