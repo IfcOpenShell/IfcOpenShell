@@ -44,6 +44,7 @@ from pathlib import Path
 from collections import namedtuple
 from typing import Union, TYPE_CHECKING
 from collections.abc import Iterable
+from natsort import natsorted
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import MultipleFileSelect
@@ -1323,14 +1324,24 @@ class ShowSystemInfo(bpy.types.Operator):
 
 
 def update_attribute_search_value(self, context):
-    for prop in self.collection_values:
-        if prop.name == self.search_value:
-            path_parts = self.data_path.split(".")
-            obj_path = ".".join(path_parts[:-1])
-            attr_name = path_parts[-1]
-            attribute = eval(f"bpy.context.scene.{obj_path}")
-            setattr(attribute, attr_name, self.search_value)
-            break
+    path_parts = self.data_path.split(".")
+    obj_path = ".".join(path_parts[:-1])
+    attr_name = path_parts[-1]
+    attribute = eval(f"bpy.context.scene.{obj_path}")
+
+    value = self.search_value
+    if self.data_type == "integer":
+        value = int(value)
+    elif self.data_type == "float":
+        value = float(value)
+
+    setattr(attribute, attr_name, value)
+
+    if self.first_launch:
+        self.first_launch = False
+    else:
+        if not self.should_click_ok:
+            context.window.screen = context.window.screen
 
 
 class BIM_OT_attribute_search_values(bpy.types.Operator):
@@ -1338,7 +1349,7 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     bl_label = "Search Attribute Values"
     bl_description = "Search for attribute values within a collection"
     bl_options = {"REGISTER", "UNDO"}
-
+    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     attribute_name: bpy.props.StringProperty(name="Attribute Name")
     attribute_ifc_class: bpy.props.StringProperty(name="Attribute IFC Class")
     data_path: bpy.props.StringProperty(name="Data Path")
@@ -1347,64 +1358,34 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
         name="Search", description="Search for attribute values", update=update_attribute_search_value
     )
     collection_values: bpy.props.CollectionProperty(type=StrProperty)
+    should_click_ok: bpy.props.BoolProperty(default=False)
 
     def invoke(self, context, event):
         self.collection_values.clear()
-
+        self.search_value = ""
         unique_values = self.get_unique_attribute_values()
 
-        for value in unique_values:
-            if value is not None:
-                value_str = str(value)
-                if not any(item.name == value_str for item in self.collection_values):
-                    self.collection_values.add().name = value_str
+        string_values = [str(value) for value in unique_values if value is not None]
+        string_values = natsorted(string_values)
 
-        sorted_items = sorted([(i, item.name) for i, item in enumerate(self.collection_values)], key=lambda x: x[1])
-
-        temp_collection = []
-        for _, item_name in sorted_items:
-            temp_collection.append(item_name)
-
-        self.collection_values.clear()
-        for value in temp_collection:
+        for value in string_values:
             self.collection_values.add().name = value
 
         return context.window_manager.invoke_props_dialog(self)
 
     def get_unique_attribute_values(self):
-        """Get unique values for the specified attribute across elements of the specified IFC class"""
         ifc_file = tool.Ifc.get()
-        if not ifc_file:
-            return []
-
         unique_values = set()
+        ifc_class = self.attribute_ifc_class
 
-        try:
-            ifc_class = self.attribute_ifc_class
-            if not ifc_class:
-                return []
+        elements = ifc_file.by_type(ifc_class, include_subtypes=True)
 
-            elements = ifc_file.by_type(ifc_class, include_subtypes=True)
-
-            for element in elements:
-                # We check just direct entity attributes and simply check if the attribute exists
-                if hasattr(element, self.attribute_name):
-                    value = getattr(element, self.attribute_name)
-                    if value is not None:
-                        if isinstance(value, ifcopenshell.entity_instance):
-                            if hasattr(value, "Name") and value.Name:
-                                unique_values.add(value.Name)
-                            elif hasattr(value, "GlobalId"):
-                                unique_values.add(value.GlobalId)
-                            else:
-                                unique_values.add(str(value))
-                        elif isinstance(value, (list, tuple)):
-                            unique_values.add(str(value))
-                        else:
-                            unique_values.add(value)
-
-        except Exception as e:
-            print(f"Error collecting attribute values: {e}")
+        for element in elements:
+            # We check just direct entity attributes and simply check if the attribute exists
+            if hasattr(element, self.attribute_name):
+                value = getattr(element, self.attribute_name)
+                if value is not None:
+                    unique_values.add(str(value))
 
         return list(unique_values)
 
@@ -1412,7 +1393,14 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
         row = self.layout.row()
         row.label(text=f"Select {self.attribute_name} value:")
         row = self.layout.row()
-        row.prop_search(self, "search_value", self, "collection_values", text="")
+        row.prop_search(
+            self,
+            "search_value",
+            self,
+            "collection_values",
+            text="",
+            results_are_suggestions=True,
+        )
 
     def execute(self, context):
         return {"FINISHED"}
