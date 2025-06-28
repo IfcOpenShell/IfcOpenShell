@@ -779,6 +779,6 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(props, "representation_obj", text="Object")
         elif props.representation_template == "PROFILESET":
             row = self.layout.row()
-            row.prop(props, "profile", text="Profile")
+            prop_with_search(self.layout, props, "profile", text="Profile", should_click_ok=True)
         if props.representation_template != "EMPTY":
             prop_with_search(self.layout, props, "contexts", should_click_ok=True)
