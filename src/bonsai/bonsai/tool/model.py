@@ -1683,7 +1683,7 @@ class Model(bonsai.core.tool.Model):
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
         bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
 
         # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
