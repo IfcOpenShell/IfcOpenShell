@@ -305,10 +305,24 @@ class SelectContainer(bpy.types.Operator):
 class SelectSimilarContainer(bpy.types.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
+    bl_description = "Recurvisevly selects all objects in the container.\n\nCtrl+click to select only one level deep"
     bl_options = {"REGISTER", "UNDO"}
 
+    is_recursive: bpy.props.BoolProperty(default=True)
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.ctrl:
+            self.is_recursive = False
+        return self.execute(context)
+
     def execute(self, context):
-        core.select_similar_container(tool.Ifc, tool.Spatial, obj=context.active_object)
+        core.select_similar_container(
+            tool.Ifc,
+            tool.Spatial,
+            obj=context.active_object,
+            is_recursive=self.is_recursive,
+        )
+        self.is_recursive = True # <-- forcibly reset
         return {"FINISHED"}
 
 

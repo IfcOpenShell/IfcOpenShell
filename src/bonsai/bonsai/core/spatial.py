@@ -110,10 +110,15 @@ def select_container(
     spatial.set_active_object(ifc.get_object(container), selection_mode=selection_mode)
 
 
-def select_similar_container(ifc: type[tool.Ifc], spatial: type[tool.Spatial], obj: bpy.types.Object) -> None:
+def select_similar_container(
+    ifc: type[tool.Ifc],
+    spatial: type[tool.Spatial],
+    obj: bpy.types.Object,
+    is_recursive: bool = True,
+) -> None:
     element = ifc.get_entity(obj)
     if element:
-        spatial.select_products(spatial.get_decomposed_elements(spatial.get_container(element)))
+        spatial.select_products(spatial.get_decomposed_elements(spatial.get_container(element), is_recursive))
 
 
 def select_product(spatial: type[tool.Spatial], product: ifcopenshell.entity_instance) -> None:
