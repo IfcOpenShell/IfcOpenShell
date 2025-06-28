@@ -1304,8 +1304,9 @@ class Spatial(bonsai.core.tool.Spatial):
             props = cls.get_object_spatial_props(obj)
             props.container_obj = container_obj
 
+
     @classmethod
-    def get_filtered_elements(cls, should_filter: bool = True) -> Iterable[ifcopenshell.entity_instance]:
+    def get_filtered_elements(cls, should_filter: bool = True, is_recursive: bool = True) -> Iterable[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         props = cls.get_spatial_props()
         container = ifc_file.by_id(props.active_container.ifc_definition_id)
@@ -1314,7 +1315,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
         if not should_filter:
             if props.should_include_children:
-                elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+                elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
             else:
                 queue = list(set(ifcopenshell.util.element.get_contained(container)))
                 elements = set()
@@ -1386,15 +1387,16 @@ class Spatial(bonsai.core.tool.Spatial):
                     relating_type = ifc_file.by_id(ifc_id)
 
             if props.should_include_children:
-                elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+                elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
             else:
                 elements = set(ifcopenshell.util.element.get_contained(container))
-                for e in elements:
-                    elements.update(ifcopenshell.util.element.get_decomposition(e))
+                if is_recursive:
+                    for e in list(elements):
+                        elements.update(ifcopenshell.util.element.get_decomposition(e))
             return cls.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter)
         elif props.element_mode == "DECOMPOSITION":
             occurrence = ifc_file.by_id(active_element.ifc_definition_id)
-            elements = ifcopenshell.util.element.get_decomposition(occurrence, is_recursive=True)
+            elements = ifcopenshell.util.element.get_decomposition(occurrence, is_recursive=is_recursive)
             elements.add(occurrence)
             return elements
         elif props.element_mode == "CLASSIFICATION":
@@ -1404,11 +1406,12 @@ class Spatial(bonsai.core.tool.Spatial):
             if active_element.type == "CLASSIFICATION":
                 identification = active_element.identification
                 if props.should_include_children:
-                    elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+                    elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
                 else:
                     elements = set(ifcopenshell.util.element.get_contained(container))
-                    for e in elements:
-                        elements.update(ifcopenshell.util.element.get_decomposition(e))
+                    if is_recursive:
+                        for e in list(elements):
+                            elements.update(ifcopenshell.util.element.get_decomposition(e))
 
                 def filter_element(element: ifcopenshell.entity_instance) -> bool:
                     references = ifcopenshell.util.classification.get_references(element)

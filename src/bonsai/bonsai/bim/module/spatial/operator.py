@@ -322,7 +322,7 @@ class SelectSimilarContainer(bpy.types.Operator):
             obj=context.active_object,
             is_recursive=self.is_recursive,
         )
-        self.is_recursive = True # <-- forcibly reset
+        self.is_recursive = True  # <-- forcibly reset
         return {"FINISHED"}
 
 
@@ -445,18 +445,36 @@ class SelectDecomposedElements(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     container: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, operator):
-        return "Select the active item" + "\nALT+CLICK to select all listed elements"
+        return (
+            "Select the active item"
+            + "\nALT+CLICK to select all listed elements.\nCTRL + CLICK to select only one level deep"
+        )
 
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE" and event.alt:
-            self.should_filter = False
+        if event.type == "LEFTMOUSE":
+            if event.alt:
+                self.should_filter = False
+            if event.ctrl:
+                self.is_recursive = False
         return self.execute(context)
 
     def execute(self, context):
-        tool.Spatial.select_products(tool.Spatial.get_filtered_elements(self.should_filter))
+        tool.Spatial.select_products(tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive))
+
+        # Make selected active element in list, the active object
+        props = tool.Spatial.get_spatial_props()
+        active_element = props.active_element
+        if active_element and active_element.type == "OCCURRENCE":
+            ifc_file = tool.Ifc.get()
+            ifc_entity = ifc_file.by_id(active_element.ifc_definition_id)
+            obj = tool.Ifc.get_object(ifc_entity)
+            if obj:
+                context.view_layer.objects.active = obj
+                obj.select_set(True)
         return {"FINISHED"}
 
 
