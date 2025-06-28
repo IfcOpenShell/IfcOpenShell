@@ -225,15 +225,24 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
     bl_idname = "bim.select_aggregate"
     bl_label = "Select Aggregate"
     bl_options = {"REGISTER", "UNDO"}
+
     obj: bpy.props.StringProperty()
     select_parts: bpy.props.BoolProperty(default=False)
+    one_level_deep: bpy.props.BoolProperty(
+        name="One Level Deep", description="Select only immediate children, not recursively", default=False
+    )
 
     @classmethod
     def description(cls, context, properties):
         if properties.select_parts:
-            return "Select Aggregate and Parts"
+            return "Select Aggregate and Parts.\n\nCtrl+click to select only one level deep"
         else:
             return "Select Aggregate"
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.ctrl:
+            self.one_level_deep = True
+        return self.execute(context)
 
     def execute(self, context):
         all_parts = []
@@ -250,14 +259,27 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
                 obj.select_set(False)
 
         if self.select_parts:
-            all_objs = []
+            selected_parts = []
+
             for part in all_parts:
                 if part.IsDecomposedBy:
-                    for subpart in part.IsDecomposedBy[0].RelatedObjects:
-                        all_parts.append(subpart)
-                all_objs.append(part)
+                    for rel in part.IsDecomposedBy:
+                        for subpart in rel.RelatedObjects:
+                            selected_parts.append(subpart)
 
-            for element in all_objs:
+                            # If not limited to one level, traverse deeper
+                            if not self.one_level_deep:
+
+                                def add_descendants(elem):
+                                    if elem.IsDecomposedBy:
+                                        for rel in elem.IsDecomposedBy:
+                                            for deeper in rel.RelatedObjects:
+                                                selected_parts.append(deeper)
+                                                add_descendants(deeper)
+
+                                add_descendants(subpart)
+
+            for element in set(selected_parts + all_parts):
                 obj = tool.Ifc.get_object(element)
                 if obj:
                     obj.select_set(True)
@@ -265,9 +287,11 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         else:
             for aggregate_element in all_parts:
                 aggregate_obj = tool.Ifc.get_object(aggregate_element)
-                aggregate_obj.select_set(True)
-                bpy.context.view_layer.objects.active = aggregate_obj
+                if aggregate_obj:
+                    aggregate_obj.select_set(True)
+                    bpy.context.view_layer.objects.active = aggregate_obj
 
+        self.one_level_deep = False  # <-- forcibly reset
         return {"FINISHED"}
 
 
