@@ -125,8 +125,8 @@ class Spatial(bonsai.core.tool.Spatial):
         return ifcopenshell.util.element.get_container(element)
 
     @classmethod
-    def get_decomposed_elements(cls, container: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        return ifcopenshell.util.element.get_decomposition(container)
+    def get_decomposed_elements(cls, container: ifcopenshell.entity_instance, is_recursive=True) -> list[ifcopenshell.entity_instance]:
+        return ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
 
     @classmethod
     def get_object_matrix(cls, obj: bpy.types.Object) -> Matrix:
