@@ -142,6 +142,7 @@ class IfcDataGetter:
             "Id": cost_item.id(),
             "Identification": cost_item.Identification,
             "Name": cost_item.Name,
+            "Description": cost_item.Description,
             "Unit": unit,
             "Quantity": quantity_data["quantity"],
             "RateSubtotal": rate_subtotal,
@@ -300,6 +301,7 @@ class Ifc5Dwriter:
                 "Index",
                 "Identification",
                 "Name",
+                "Description",
                 "Unit",
             ]
             if cost_schedule.PredefinedType != "SCHEDULEOFRATES":

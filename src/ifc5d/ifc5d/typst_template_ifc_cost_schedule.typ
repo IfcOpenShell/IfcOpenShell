@@ -119,7 +119,7 @@
 
 #let arrange_summary_row(row) = {
   let name = strong(upper(row.at("Name")))
-  let description = [#par(justify: true, text(8pt, row.at("Description", default: lorem(35))))]
+  let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
   let total = if row.at("RateSubtotal") == "" {0.0} else {float(row.at("RateSubtotal"))}
   if row.at("TotalPrice") != "0.0" {
     if row.at("Index") == "1" {
@@ -148,7 +148,7 @@
   if row.at("TotalPrice") != "0.0" {
     // CATEGORY
     let name = strong(upper(row.at("Name")))
-    let description = [#par(justify: true, text(8pt, row.at("Description", default: lorem(35))))]
+    let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
     let total_price = format-decimal(float(row.at("TotalPrice", default: "0.0")), places: 2)
   
     (
@@ -169,7 +169,7 @@
   } else {
     // COST ITEM
     let name = strong(upper(row.at("Name")))
-    let description = [#par(justify: true, text(8pt, row.at("Description", default: lorem(35))))]
+    let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
     let unit = table.cell(align: right)[Sum #unit_map.at(row.at("Unit"), default: "")]
     let quant = if row.at("Quantity") == "" {0.0} else {
       format-decimal(float(row.at("Quantity")))}
@@ -209,7 +209,7 @@
 
 #let arrange_schedule_of_rates_row(row) = {
   let name = strong(upper(row.at("Name")))
-  let description = [#par(justify: true, text(8pt, row.at("Description", default: lorem(35))))]
+  let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
   let unit = table.cell(align: right)[#unit_map.at(row.at("Unit"), default: "")]
   let rate = if row.at("RateSubtotal") == "" {0.0} else {
       format-decimal(float(row.at("RateSubtotal")))}
