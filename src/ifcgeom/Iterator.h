@@ -84,7 +84,8 @@
 #include <chrono>
 #include <atomic>
 
-namespace {
+namespace IfcGeom {
+
 	struct geometry_conversion_result {
 		int index;
 
@@ -99,9 +100,7 @@ namespace {
 		std::vector<IfcGeom::BRepElement*> breps;
 		std::vector<IfcGeom::Element*> elements;
 	};
-}
 
-namespace IfcGeom {
 
 	class Iterator {
 	private:
