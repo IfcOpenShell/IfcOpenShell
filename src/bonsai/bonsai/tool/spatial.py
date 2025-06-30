@@ -125,7 +125,9 @@ class Spatial(bonsai.core.tool.Spatial):
         return ifcopenshell.util.element.get_container(element)
 
     @classmethod
-    def get_decomposed_elements(cls, container: ifcopenshell.entity_instance, is_recursive=True) -> list[ifcopenshell.entity_instance]:
+    def get_decomposed_elements(
+        cls, container: ifcopenshell.entity_instance, is_recursive=True
+    ) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
 
     @classmethod
@@ -1304,9 +1306,10 @@ class Spatial(bonsai.core.tool.Spatial):
             props = cls.get_object_spatial_props(obj)
             props.container_obj = container_obj
 
-
     @classmethod
-    def get_filtered_elements(cls, should_filter: bool = True, is_recursive: bool = True) -> Iterable[ifcopenshell.entity_instance]:
+    def get_filtered_elements(
+        cls, should_filter: bool = True, is_recursive: bool = True
+    ) -> Iterable[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         props = cls.get_spatial_props()
         container = ifc_file.by_id(props.active_container.ifc_definition_id)
