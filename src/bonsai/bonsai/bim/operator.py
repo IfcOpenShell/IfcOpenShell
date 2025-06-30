@@ -47,7 +47,7 @@ from collections.abc import Iterable
 from natsort import natsorted
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import MultipleFileSelect
+    from bonsai.bim.prop import MultipleFileSelect, Attribute
 
 
 class SetTab(bpy.types.Operator):
@@ -1343,7 +1343,7 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     collection_values: bpy.props.CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
 
     @staticmethod
-    def resolve_data_path(data_path: str) -> tuple[str, object]:
+    def resolve_data_path(data_path: str) -> tuple[str, "Attribute"]:
         """Resolve the data path of an object's attribute to get the attribute name and the object."""
         path_parts = data_path.split(".")
         obj_path = ".".join(path_parts[:-1])
@@ -1361,11 +1361,12 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
         for value in string_values:
             self.collection_values.add().name = value
 
+        assert context.window_manager
         return context.window_manager.invoke_props_dialog(self)
 
-    def get_unique_attribute_values(self):
+    def get_unique_attribute_values(self) -> list[str]:
         ifc_file = tool.Ifc.get()
-        unique_values = set()
+        unique_values: set[str] = set()
         ifc_class = self.attribute_ifc_class
 
         elements = ifc_file.by_type(ifc_class, include_subtypes=True)
@@ -1379,7 +1380,8 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
 
         return list(unique_values)
 
-    def draw(self, context):
+    def draw(self, context) -> None:
+        assert self.layout
         row = self.layout.row()
         row.label(text=f"Select {self.attribute_name} value:")
         row = self.layout.row()

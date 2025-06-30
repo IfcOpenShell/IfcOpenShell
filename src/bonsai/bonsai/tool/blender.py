@@ -61,6 +61,7 @@ if TYPE_CHECKING:
     from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
+    from bonsai.bim.module.fm.prop import BIMFMProperties
     from bonsai.bim.module.group.prop import BIMGroupProperties
     from bonsai.bim.module.light.prop import BIMSolarProperties, RadianceExporterProperties
 
@@ -1663,51 +1664,56 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_object_constraint_props(cls, obj: bpy.types.Object) -> BIMObjectConstraintProperties:
-        return obj.BIMObjectConstraintProperties
+        return obj.BIMObjectConstraintProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_constraint_props(cls) -> BIMConstraintProperties:
         assert (scene := bpy.context.scene)
-        return scene.BIMConstraintProperties
+        return scene.BIMConstraintProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_csv_props(cls) -> CsvProperties:
         assert (scene := bpy.context.scene)
-        return scene.CsvProperties
+        return scene.CsvProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_diff_props(cls) -> DiffProperties:
         assert (scene := bpy.context.scene)
-        return scene.DiffProperties
+        return scene.DiffProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_group_props(cls) -> BIMGroupProperties:
         assert (scene := bpy.context.scene)
-        return scene.BIMGroupProperties
+        return scene.BIMGroupProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_bim_props(cls, scene: Optional[bpy.types.Scene] = None) -> BIMProperties:
         if scene is None:
-            scene = bpy.context.scene
-        return scene.BIMProperties
+            assert (scene := bpy.context.scene)
+        return scene.BIMProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_object_bim_props(cls, obj: bpy.types.Object) -> BIMObjectProperties:
-        return obj.BIMObjectProperties
+        return obj.BIMObjectProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_object_attribute_props(cls, obj: bpy.types.Object) -> BIMAttributeProperties:
-        return obj.BIMAttributeProperties
+        return obj.BIMAttributeProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_solar_props(cls) -> BIMSolarProperties:
         assert (scene := bpy.context.scene)
-        return scene.BIMSolarProperties
+        return scene.BIMSolarProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_radiance_exporter_props(cls) -> RadianceExporterProperties:
         assert (scene := bpy.context.scene)
-        return scene.BIMRadianceExporeterProperies
+        return scene.BIMRadianceExporeterProperies  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_fm_props(cls) -> BIMFMProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMFMProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:

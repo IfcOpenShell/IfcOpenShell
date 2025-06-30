@@ -45,10 +45,11 @@ from mathutils import Color
 if TYPE_CHECKING:
     import bonsai.bim.prop
     from bonsai.bim.module.sequence.prop import (
-        BIMTaskTreeProperties,
-        BIMWorkScheduleProperties,
         BIMAnimationProperties,
         BIMStatusProperties,
+        BIMTaskTreeProperties,
+        BIMWorkPlanProperties,
+        BIMWorkScheduleProperties,
     )
 
 
@@ -58,20 +59,28 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_animation_props(cls) -> BIMAnimationProperties:
-        return bpy.context.scene.BIMAnimationProperties
+        assert (scene := bpy.context.scene)
+        return scene.BIMAnimationProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_task_tree_props(cls) -> BIMTaskTreeProperties:
-        return bpy.context.scene.BIMTaskTreeProperties
+        assert (scene := bpy.context.scene)
+        return scene.BIMTaskTreeProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_work_schedule_props(cls) -> BIMWorkScheduleProperties:
-        return bpy.context.scene.BIMWorkScheduleProperties
+        assert (scene := bpy.context.scene)
+        return scene.BIMWorkScheduleProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_status_props(cls) -> BIMStatusProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMStatusProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_work_plan_props(cls) -> BIMWorkPlanProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMWorkPlanProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_work_plan_attributes(cls) -> dict[str, Any]:
@@ -91,7 +100,7 @@ class Sequence(bonsai.core.tool.Sequence):
                 attributes[prop.name] = helper.parse_duration(prop.string_value)
                 return True
 
-        props = bpy.context.scene.BIMWorkPlanProperties
+        props = cls.get_work_plan_props()
         return bonsai.bim.helper.export_attributes(props.work_plan_attributes, callback)
 
     @classmethod
@@ -101,25 +110,28 @@ class Sequence(bonsai.core.tool.Sequence):
                 prop.string_value = "" if prop.is_null else data[name]
                 return True
 
-        props = bpy.context.scene.BIMWorkPlanProperties
+        props = cls.get_work_plan_props()
         props.work_plan_attributes.clear()
         bonsai.bim.helper.import_attributes2(work_plan, props.work_plan_attributes, callback)
 
     @classmethod
     def enable_editing_work_plan(cls, work_plan: Union[ifcopenshell.entity_instance, None]) -> None:
         if work_plan:
-            bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id = work_plan.id()
-            bpy.context.scene.BIMWorkPlanProperties.editing_type = "ATTRIBUTES"
+            props = cls.get_work_plan_props()
+            props.active_work_plan_id = work_plan.id()
+            props.editing_type = "ATTRIBUTES"
 
     @classmethod
     def disable_editing_work_plan(cls) -> None:
-        bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id = 0
+        props = cls.get_work_plan_props()
+        props.active_work_plan_id = 0
 
     @classmethod
     def enable_editing_work_plan_schedules(cls, work_plan: Union[ifcopenshell.entity_instance, None]) -> None:
         if work_plan:
-            bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id = work_plan.id()
-            bpy.context.scene.BIMWorkPlanProperties.editing_type = "SCHEDULES"
+            props = cls.get_work_plan_props()
+            props.active_work_plan_id = work_plan.id()
+            props.editing_type = "SCHEDULES"
 
     @classmethod
     def get_work_schedule_attributes(cls) -> dict[str, Any]:
