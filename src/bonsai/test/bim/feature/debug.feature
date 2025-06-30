@@ -26,3 +26,9 @@ Scenario: Use the inspector - inspect from object
     When the object "IfcProject/My Project" is selected
     And I press "bim.inspect_from_object"
     Then nothing happens
+
+Scenario: Run IFC validation
+    Given an empty IFC project
+    And I load the demo construction library
+    And I press "bim.validate_ifc_file"
+    Then nothing happens

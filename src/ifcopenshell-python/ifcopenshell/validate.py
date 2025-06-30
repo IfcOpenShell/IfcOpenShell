@@ -42,6 +42,7 @@ options:
 
 """
 
+from __future__ import annotations
 import os
 import sys
 import json
@@ -50,7 +51,7 @@ import types
 import argparse
 
 from collections import namedtuple
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, TYPE_CHECKING
 from collections.abc import Iterator
 from logging import Logger, Handler
 
@@ -60,10 +61,12 @@ else:
     EllipsisType = type(...)
 
 import ifcopenshell
-import ifcopenshell.simple_spf
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.express.rule_executor
+
+if TYPE_CHECKING:
+    import ifcopenshell.simple_spf
 
 named_type = ifcopenshell.ifcopenshell_wrapper.named_type
 aggregation_type = ifcopenshell.ifcopenshell_wrapper.aggregation_type
