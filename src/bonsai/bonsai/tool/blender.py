@@ -785,7 +785,6 @@ class Blender(bonsai.core.tool.Blender):
             to False, which will make datablock deletion significantly faster
             by avoiding unnecessary Blender data checks.
         :return: None
-        :rtype: None
         """
         collection_name = repr(data_block).split(".", 2)[-1].split("[", 1)[0]
         getattr(bpy.data, collection_name).remove(
@@ -799,7 +798,6 @@ class Blender(bonsai.core.tool.Blender):
         :param data_blocks: iterable of data blocks to remove
         :param remove_unused_data: set to True to purge data that would be orphaned by the operation
         :return: None
-        :rtype: None
         """
         data_blocks = list(data_blocks)
         if remove_unused_data:

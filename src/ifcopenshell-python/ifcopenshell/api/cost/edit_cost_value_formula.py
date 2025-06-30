@@ -34,11 +34,8 @@ def edit_cost_value_formula(file: ifcopenshell.file, cost_value: ifcopenshell.en
     For more information, see ifcopenshell.util.cost
 
     :param cost_value: The IfcCostValue to set the values of
-    :type cost_value: ifcopenshell.entity_instance
     :param formula: The formula following the language of ifcopenshell.util.cost
-    :type formula: str
     :return: None
-    :rtype: None
 
     Example:
 

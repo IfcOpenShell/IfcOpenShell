@@ -37,9 +37,7 @@ def add_information(
     is considered the latest version and the children are older revisions.
 
     :param parent: The parent document, if necessary.
-    :type parent: ifcopenshell.entity_instance, optional
     :return: The newly created IfcDocumentInformation entity
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

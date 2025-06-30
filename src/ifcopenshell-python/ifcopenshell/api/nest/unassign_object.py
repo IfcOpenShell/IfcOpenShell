@@ -31,9 +31,7 @@ def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.
 
     :param related_objects: The list of children of the nesting relationship,
         typically IfcElements.
-    :type related_objects: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 

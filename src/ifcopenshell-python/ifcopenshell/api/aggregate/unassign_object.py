@@ -38,9 +38,7 @@ def unassign_object(file: ifcopenshell.file, products: list[ifcopenshell.entity_
 
     :param products: The list of parts of the aggregate, typically of IfcElements or
         IfcSpatialStructureElement subclass
-    :type product: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 

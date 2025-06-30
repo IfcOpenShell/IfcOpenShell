@@ -40,22 +40,17 @@ def add_work_schedule(
     either for maintenance or for construction scheduling.
 
     :param name: The name of the work schedule.
-    :type name: str
     :param predefined_type: The type of schedule, chosen from ACTUAL,
         BASELINE, and PLANNED. Typically you would start with PLANNED, then
         convert to a BASELINE when changes are made with separate schedules,
         then have a parallel ACTUAL schedule.
-    :type predefined_type: str
     :param start_time: The earlier start time when the schedule is relevant.
         May be represented with an ISO standard string.
-    :type start_time: str,datetime.time,optional
     :param work_plan: The IfcWorkPlan the schedule will be part of. If not
         provided, the schedule will not be grouped in a work plan and would
         exist as a top level schedule in the project. This is not
         recommended.
-    :type work_plan: ifcopenshell.entity_instance,optional
     :return: The newly created IfcWorkSchedule
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

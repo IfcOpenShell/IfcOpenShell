@@ -29,9 +29,7 @@ def remove_constraint(file: ifcopenshell.file, constraint: ifcopenshell.entity_i
     unclear.
 
     :param constraint: The IfcObjective you want to remove.
-    :type constraint: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

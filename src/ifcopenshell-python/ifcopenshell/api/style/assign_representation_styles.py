@@ -47,23 +47,18 @@ def assign_representation_styles(
     :param shape_representation: The IfcShapeRepresentation of the object
         that you want to assign styles to. This implicitly defines the
         context at which the styles should be used.
-    :type shape_representation: ifcopenshell.entity_instance
     :param styles: A list of presentation styles, typically IfcSurfaceStyle.
         The number of items in the list should correlate with the number of
         items in the shape_representation's Items attribute. If you have
         more items than styles, the last style is used.
-    :type styles: list[ifcopenshell.entity_instance]
     :param replace_previous_same_type_style: Remove previously assigned styles
         of the same type as currently assign style`. Defaults to `True`.
-    :type replace_previous_same_type_style: bool
     :param should_use_presentation_style_assignment: This is a technical
         detail to accomodate a bug in Revit. This should always be left as
         the default of False, unless you are finding that colours aren't
         showing up in Revit. In that case, set it to True, but keep in mind
         that this is no longer a valid IFC. Blame Autodesk.
-    :type should_use_presentation_style_assignment: bool
     :return: List of created IfcStyledItems
-    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 

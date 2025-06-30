@@ -35,9 +35,7 @@ def add_reference(file: ifcopenshell.file, library: ifcopenshell.entity_instance
     library's references.
 
     :param library: The IfcLibraryInformation element to add a reference to
-    :type library: ifcopenshell.entity_instance
     :return: The newly created IfcLibraryReference element
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

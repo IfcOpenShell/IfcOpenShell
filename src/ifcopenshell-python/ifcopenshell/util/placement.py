@@ -33,13 +33,9 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixTyp
     provide the Y axis.
 
     :param o: The origin (i.e. location) of the matrix
-    :type o: iterable[float]
     :param z: The +Z vector / axis of the matrix
-    :type z: iterable[float]
     :param x: The +X vector / axis of the matrix
-    :type x: iterable[float]
     :return: A 4x4 numpy matrix
-    :rtype: MatrixType
     """
     x = x / np.linalg.norm(x)
     z = z / np.linalg.norm(z)
@@ -60,9 +56,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     should use ``get_local_placement`` instead.
 
     :param placement: The IfcLocalPlacement enitity
-    :type placement: ifcopenshell.entity_instance
     :return: A 4x4 numpy matrix
-    :rtype: MatrixType
     """
     ifc_class = placement.is_a()
     if ifc_class in ("IfcAxis2Placement3D", "IfcAxis2PlacementLinear"):
@@ -117,9 +111,7 @@ def get_local_placement(placement: Optional[ifcopenshell.entity_instance] = None
         matrix = ifcopenshell.util.placement.get_local_placement(placement)
 
     :param placement: The IfcLocalPlacement entity
-    :type placement: ifcopenshell.entity_instance, optional
     :return: A 4x4 numpy matrix
-    :rtype: MatrixType
     """
     if placement is None:
         return np.eye(4)
@@ -183,9 +175,7 @@ def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixT
     transformation matrix.
 
     :param item: The IfcMappedItem entity
-    :type item: ifcopenshell.entity_instance
     :return: A 4x4 numpy transformation matrix
-    :rtype: MatrixType
     """
     m4 = get_axis2placement(item.MappingSource.MappingOrigin)
     # TODO 2d
@@ -200,9 +190,7 @@ def get_storey_elevation(storey: ifcopenshell.entity_instance) -> float:
     its placement, or as a fallback the ``Elevation`` attribute.
 
     :param storey: The IfcBuildingStorey entity
-    :type storey: ifcopenshell.entity_instance
     :return: The elevation in project units
-    :rtype: float
     """
     if storey.ObjectPlacement:
         matrix = get_local_placement(storey.ObjectPlacement)
@@ -214,14 +202,10 @@ def rotation(angle: float, axis: Literal["X", "Y", "Z"], is_degrees=True) -> Mat
     """Create a 4x4 numpy matrix representing an euler rotation
 
     :param angle: The angle of rotation
-    :type angle: float
     :param axis: The axis to rotate around, either X, Y, or Z.
-    :type axis: str
     :param is_degrees: Whether or not the angle is specified in degrees or
         radians. Defaults to true (i.e. degrees).
-    :type is_degrees: bool
     :return: A 4x4 numpy rotation matrix
-    :rtype: MatrixType
     """
     theta = np.radians(angle) if is_degrees else angle
     cos, sin = np.cos(theta), np.sin(theta)
