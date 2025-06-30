@@ -150,6 +150,8 @@ class Regenerator:
                     continue
                 self.join(wall, wall2, layers1, layers2, rel.RelatedConnectionType, rel.RelatingConnectionType)
 
+        miny = axes[-2][0][1]
+        maxy = axes[-1][0][1]
         if not self.start_points:
             minx = axes[0][0][0]
             self.start_points = [
@@ -265,6 +267,13 @@ class Regenerator:
             split_points.insert(0, start_points)
             split_points.append(end_points)
             split_points = iter(split_points)
+
+            if maxy < miny:
+                self.maxpath_points, self.minpath_points = self.minpath_points, self.maxpath_points
+                if self.maxpath_points:
+                    self.maxpath_points[0] = list(reversed(self.maxpath_points[0]))
+                if self.minpath_points:
+                    self.minpath_points[0] = list(reversed(self.minpath_points[0]))
 
             while True:
                 # Draw each profile as clockwise starting from (minx, miny)
