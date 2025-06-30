@@ -57,11 +57,8 @@ def add_feature(
     booleaned or be part of the shape of the object).
 
     :param feature: The IfcFeatureElement to affect the element.
-    :type feature: ifcopenshell.entity_instance
     :param element: The IfcElement to add the feature to.
-    :type element: ifcopenshell.entity_instance
     :return: The new IfcRelVoidsElement relationship
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

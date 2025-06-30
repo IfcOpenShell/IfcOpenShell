@@ -50,9 +50,7 @@ def add_library(file: ifcopenshell.file, name: str) -> ifcopenshell.entity_insta
     to a particular table and row within that database.
 
     :param name: The name of the library
-    :type name: str
     :return: The newly created IfcLibraryInformation
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

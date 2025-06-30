@@ -30,13 +30,10 @@ def add_structural_load(
     may be defined as a configuration of multiple loads.
 
     :param name: The name of the load
-    :type name: str,optional
     :param ifc_class: The subtype of IfcStructuralLoad to create. Consult
         the IFC documentation to see all the types of loads.
-    :type ifc_class: str
     :return: The newly created load entity, depending on the ifc_class
         specified.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

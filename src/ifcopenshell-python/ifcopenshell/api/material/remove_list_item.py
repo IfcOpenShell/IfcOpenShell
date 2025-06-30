@@ -29,12 +29,9 @@ def remove_list_item(
 
     :param material_list: The IfcMaterialList entity you want to remove an
         item from.
-    :type material_list: ifcopenshell.entity_instance
     :param material_index: The index of the material you want to remove from
         the list. Starts counting at 0. Defaults to 0.
-    :type material_index: int, optional
     :return: None
-    :rtype: None
 
     Example:
 

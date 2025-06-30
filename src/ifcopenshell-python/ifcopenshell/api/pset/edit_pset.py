@@ -60,10 +60,8 @@ def edit_pset(
     to ensure that data types are always consistent and correct.
 
     :param pset: The IfcPropertySet to edit.
-    :type pset: ifcopenshell.entity_instance
     :param name: A new name for the property set. If no name is specified,
         the property set name is not changed.
-    :type name: str, optional
     :param properties: A dictionary of properties. The keys must be a string
         of the name of the property. The data type of the value will be
         determined by the property set template. If no property set
@@ -73,18 +71,14 @@ def edit_pset(
         become IfcBoolean, and integers will become IfcInteger. If more
         control is desired, you may explicitly specify IFC data objects
         directly. Note that provided `properties` might be mutated in the process.
-    :type properties: dict
     :param pset_template: If a property set template is provided, this will
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
-    :type pset_template: ifcopenshell.entity_instance, optional
     :param should_purge: If set as False, properties set to None will be
         left as None but not removed. If set to true, properties set to None
         will actually be removed. The default of true is the same behaviour as
         :func:`ifcopenshell.api.pset.edit_qto`.
-    :type should_purge: bool, optional
     :return: None
-    :rtype: None
 
     Example:
 

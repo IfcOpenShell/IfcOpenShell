@@ -73,7 +73,6 @@ def edit_qto(
     :param pset_template: If a quantity set template is provided, this will
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
-    :type pset_template: ifcopenshell.entity_instance, optional
     :return: None
 
     Example:
