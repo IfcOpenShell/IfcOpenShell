@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# pyright: reportAttributeAccessIssue=false
+
 import bpy
 from . import ui, prop, operator
 

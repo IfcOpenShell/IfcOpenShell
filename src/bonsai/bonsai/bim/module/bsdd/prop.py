@@ -35,7 +35,7 @@ from bpy.props import (
 from typing import Union, TYPE_CHECKING, Literal
 
 
-def get_active_dictionary(self, context):
+def get_active_dictionary(self: "BIMBSDDProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not BSDDData.is_loaded:
         BSDDData.load()
     return BSDDData.data["active_dictionary"]

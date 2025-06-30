@@ -662,7 +662,7 @@ class IfcImporter:
         settings: Optional[ifcopenshell.geom.main.settings] = None,
     ) -> set[ifcopenshell.entity_instance]:
         checkpoint = time.time()
-        results = set()
+        results: set[ifcopenshell.entity_instance] = set()
         if not products:
             return results
 

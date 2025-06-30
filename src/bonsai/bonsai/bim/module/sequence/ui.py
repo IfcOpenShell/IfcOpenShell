@@ -88,7 +88,8 @@ class BIM_PT_work_plans(Panel):
     def draw(self, context):
         if not WorkPlansData.is_loaded:
             WorkPlansData.load()
-        self.props = context.scene.BIMWorkPlanProperties
+        assert self.layout
+        self.props = tool.Sequence.get_work_plan_props()
 
         row = self.layout.row()
         if WorkPlansData.data["total_work_plans"]:
@@ -99,7 +100,7 @@ class BIM_PT_work_plans(Panel):
         for work_plan in WorkPlansData.data["work_plans"]:
             self.draw_work_plan_ui(work_plan)
 
-    def draw_work_plan_ui(self, work_plan):
+    def draw_work_plan_ui(self, work_plan: dict[str, Any]) -> None:
         row = self.layout.row(align=True)
         row.label(text=work_plan["name"], icon="TEXT")
         if self.props.active_work_plan_id == work_plan["id"]:
@@ -121,10 +122,10 @@ class BIM_PT_work_plans(Panel):
             elif self.props.editing_type == "SCHEDULES":
                 self.draw_work_schedule_ui()
 
-    def draw_editable_ui(self):
+    def draw_editable_ui(self) -> None:
         draw_attributes(self.props.work_plan_attributes, self.layout)
 
-    def draw_work_schedule_ui(self):
+    def draw_work_schedule_ui(self) -> None:
         if WorkPlansData.data["has_work_schedules"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "work_schedules", text="")
@@ -177,7 +178,8 @@ class BIM_PT_work_schedules(Panel):
         for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
             self.draw_work_schedule_ui(work_schedule_id, work_schedule)
 
-    def draw_work_schedule_ui(self, work_schedule_id, work_schedule):
+    def draw_work_schedule_ui(self, work_schedule_id: int, work_schedule: dict[str, Any]) -> None:
+        assert self.layout
         if work_schedule["PredefinedType"] == "BASELINE":
             self.draw_readonly_work_schedule_ui(work_schedule_id)
         else:
@@ -250,7 +252,7 @@ class BIM_PT_work_schedules(Panel):
                     self.draw_column_ui()
                     self.draw_editable_task_ui(work_schedule_id)
 
-    def draw_task_operators(self):
+    def draw_task_operators(self) -> None:
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         ifc_definition_id = None
@@ -285,9 +287,10 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.duplicate_task", text="Copy", icon="DUPLICATE").task = ifc_definition_id
                 row.operator("bim.remove_task", text="Delete", icon="X").task = ifc_definition_id
 
-    def draw_column_ui(self):
+    def draw_column_ui(self) -> None:
         if not self.props.should_show_column_ui:
             return
+        assert self.layout
         row = self.layout.row()
         row.operator("bim.setup_default_task_columns", text="Setup Default Columns", icon="ANCHOR_BOTTOM")
         row.alignment = "RIGHT"
@@ -318,7 +321,8 @@ class BIM_PT_work_schedules(Panel):
     def draw_editable_work_schedule_ui(self):
         draw_attributes(self.props.work_schedule_attributes, self.layout)
 
-    def draw_editable_task_ui(self, work_schedule_id):
+    def draw_editable_task_ui(self, work_schedule_id: int) -> None:
+        assert self.layout
         row = self.layout.row(align=True)
         row.label(text="Task Tools")
         row = self.layout.row(align=True)

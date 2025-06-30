@@ -367,9 +367,10 @@ class WorkPlansData:
     @classmethod
     def active_work_plan_schedules(cls):
         results = []
-        if not bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id:
+        props = tool.Sequence.get_work_plan_props()
+        if not props.active_work_plan_id:
             return []
-        for rel in tool.Ifc.get().by_id(bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id).IsDecomposedBy:
+        for rel in tool.Ifc.get().by_id(props.active_work_plan_id).IsDecomposedBy:
             for work_schedule in rel.RelatedObjects:
                 results.append({"id": work_schedule.id(), "name": work_schedule.Name or "Unnamed"})
         return results

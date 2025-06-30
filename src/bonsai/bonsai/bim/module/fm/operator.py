@@ -36,24 +36,25 @@ class ExecuteIfcFM(bpy.types.Operator, ExportHelper):
 
     @property
     def filename_ext(self) -> str:
-        props = bpy.context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         return f".{props.format}"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
-        props = context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         layout.prop(props, "format")
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         if not props.should_load_from_memory and not props.ifc_files.single_file:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
         return True
 
     def execute(self, context):
-        props = context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         ifc_file = tool.Ifc.get()
         filepaths = []
         if ifc_file and props.should_load_from_memory:
@@ -95,7 +96,7 @@ class SelectFMSpreadsheetFiles(bpy.types.Operator, ImportHelper):
     files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
 
     def execute(self, context):
-        props = context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         props.spreadsheet_files.clear()
         dirname = os.path.dirname(self.filepath)
         for f in self.files:
@@ -112,24 +113,24 @@ class ExecuteIfcFMFederate(bpy.types.Operator, ExportHelper):
 
     @property
     def filename_ext(self) -> str:
-        props = bpy.context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         return f".{props.format}"
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         layout.prop(props, "format")
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         if not props.spreadsheet_files:
             cls.poll_message_set("No spreadsheet files selected.")
             return False
         return True
 
     def execute(self, context):
-        props = context.scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
         parser = ifcfm.Parser(preset=props.engine)
         parser.federate([f.name for f in props.spreadsheet_files])
         writer = ifcfm.Writer(parser)

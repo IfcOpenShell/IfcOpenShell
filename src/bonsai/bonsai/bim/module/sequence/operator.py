@@ -140,10 +140,11 @@ class EditWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Edit Work Plan"
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_plan_props()
         core.edit_work_plan(
             tool.Ifc,
             tool.Sequence,
-            work_plan=tool.Ifc.get().by_id(context.scene.BIMWorkPlanProperties.active_work_plan_id),
+            work_plan=tool.Ifc.get().by_id(props.active_work_plan_id),
         )
 
 
