@@ -1345,6 +1345,7 @@ def update_attribute_search_value(self, context):
 
 
 class BIM_OT_attribute_search_values(bpy.types.Operator):
+    """Search for attribute values. This implementation is based on bim.enum_property_search"""
     bl_idname = "bim.attribute_search_values"
     bl_label = "Search Attribute Values"
     bl_description = "Search for attribute values within a collection"
@@ -1356,17 +1357,19 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     data_type: bpy.props.StringProperty(name="Data Type")
     search_value: bpy.props.StringProperty(
         name="Search", description="Search for attribute values", update=update_attribute_search_value
-    )
-    collection_values: bpy.props.CollectionProperty(type=StrProperty)
+    , default="", options={"SKIP_SAVE"})
     should_click_ok: bpy.props.BoolProperty(default=False)
+    collection_values: bpy.props.CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        self.collection_values.clear()
-        self.search_value = ""
-        unique_values = self.get_unique_attribute_values()
+        path_parts = self.data_path.split(".")
+        obj_path = ".".join(path_parts[:-1])
+        attr_name = path_parts[-1]
+        attribute = eval(f"bpy.context.scene.{obj_path}")
 
-        string_values = [str(value) for value in unique_values if value is not None]
-        string_values = natsorted(string_values)
+        self.search_value = str(value := getattr(attribute, attr_name, ""))
+        unique_values = self.get_unique_attribute_values()
+        string_values = natsorted(unique_values)
 
         for value in string_values:
             self.collection_values.add().name = value
