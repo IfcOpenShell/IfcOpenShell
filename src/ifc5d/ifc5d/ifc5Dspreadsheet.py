@@ -161,9 +161,11 @@ class IfcDataGetter:
     @staticmethod
     def get_schedule_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[CostItem]:
         cost_items_data: list[CostItem] = []
-        index=1
+        index = 1
         for cost_item in IfcDataGetter.get_root_costs(schedule):
-            cost_items_data.extend(IfcDataGetter.get_cost_items_data(file=file, cost_item=cost_item, hierarchy=str(index)))
+            cost_items_data.extend(
+                IfcDataGetter.get_cost_items_data(file=file, cost_item=cost_item, hierarchy=str(index))
+            )
             index += 1
         return cost_items_data
 
@@ -542,7 +544,7 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             self.file = file
         self.cost_schedule = cost_schedule
         self.options = options
-        self.colours = self.default_colors.copy() #perhaps to delete
+        self.colours = self.default_colors.copy()  # perhaps to delete
 
     def write(self) -> None:
         import os
@@ -552,13 +554,15 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
         import tempfile
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            #export csv file
+            # export csv file
             csv_file_writer = Ifc5DCsvWriter(file=self.file, output=temp_dir, cost_schedule=self.cost_schedule)
             csv_file_writer.write()
             csv_file_name = self.cost_schedule.Name + ".csv"
 
-            #locate typst template file
-            typst_template_file_path = os.path.join(os.path.dirname(ifc5d.__file__), "typst_template_ifc_cost_schedule.typ")
+            # locate typst template file
+            typst_template_file_path = os.path.join(
+                os.path.dirname(ifc5d.__file__), "typst_template_ifc_cost_schedule.typ"
+            )
             shutil.copy(typst_template_file_path, temp_dir)
 
             # generate typst main file content and write it
@@ -578,20 +582,22 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             typst_main_path = os.path.join(temp_dir, "main.typ")
             with open(typst_main_path, "w") as typ_file:
                 typ_file.write(typst_main_content)
-            
+
             # compile pdf file and write it
             pdf_bytes = typst.compile(typst_main_path)
             with open(self.output, "wb") as f:
                 f.write(pdf_bytes)
-    
+
     def check_options(self):
         options_keys = self.options.keys()
         if "should_print_cover" in options_keys and self.options["should_print_cover"] is True:
             self.options["should_print_cover"] = "true"
-        else: self.options["should_print_cover"] = "false"
+        else:
+            self.options["should_print_cover"] = "false"
         if "should_print_summary" in options_keys and self.options["should_print_summary"] is True:
             self.options["should_print_summary"] = "true"
-        else: self.options["should_print_summary"] = "false"
+        else:
+            self.options["should_print_summary"] = "false"
 
 
 if __name__ == "__main__":

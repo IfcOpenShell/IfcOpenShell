@@ -48,14 +48,22 @@ def update_schedule_of_rates(self: "BIMCostProperties", context: bpy.types.Conte
     tool.Cost.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(self.schedule_of_rates)))
 
 
-def get_cost_schedules_enum_items(self: "BIMCostProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
-    file=tool.Ifc.get()
-    schedules=file.by_type("IfcCostSchedule")
+def get_cost_schedules_enum_items(
+    self: "BIMCostProperties", context: bpy.types.Context
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    file = tool.Ifc.get()
+    schedules = file.by_type("IfcCostSchedule")
     counter = 0
     schedule_names = ()
     for schedule in schedules:
-        schedule_names += ((str(counter), schedule.Name + ' (' + schedule.PredefinedType + ')', '',),)
-        counter +=1
+        schedule_names += (
+            (
+                str(counter),
+                schedule.Name + " (" + schedule.PredefinedType + ")",
+                "",
+            ),
+        )
+        counter += 1
     return schedule_names
 
 
@@ -283,9 +291,7 @@ class BIMCostProperties(PropertyGroup):
     schedule_of_rates: EnumProperty(
         items=get_schedule_of_rates, name="Schedule Of Rates", update=update_schedule_of_rates
     )
-    cost_schedules_enum: EnumProperty(
-        items=get_cost_schedules_enum_items, name="Cost Schedules"
-    )
+    cost_schedules_enum: EnumProperty(items=get_cost_schedules_enum_items, name="Cost Schedules")
     cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
     active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
     contracted_cost_item_rates: StringProperty(name="Contracted Cost Item Rates", default="[]")

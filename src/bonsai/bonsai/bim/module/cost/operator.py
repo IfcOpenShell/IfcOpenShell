@@ -791,14 +791,20 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Print chosen cost schedule to pdf.\nMake sure typst is available,\neventually installing Typst Importer extension."
     filename_ext = ".pdf"
-    filter_glob: bpy.props.StringProperty(default="*.pdf", options={'HIDDEN'}, maxlen=255)
+    filter_glob: bpy.props.StringProperty(default="*.pdf", options={"HIDDEN"}, maxlen=255)
     chosen_schedule: bpy.props.EnumProperty(
         name="",
         description="Choose IfcCostSchedule to print",
-        items=[('0','Default','Export first schedule in the IfcProject',),],
-        default='0',
+        items=[
+            (
+                "0",
+                "Default",
+                "Export first schedule in the IfcProject",
+            ),
+        ],
+        default="0",
     )
-    '''should_print_cover: bpy.props.BoolProperty(
+    """should_print_cover: bpy.props.BoolProperty(
         name="Should print document cover",
         description="Create a cover page with project data",
         default=False,
@@ -817,7 +823,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         name="Should print rates and totals",
         description="Print rates and totals for each voice",
         default=True,
-    )'''
+    )"""
     should_print_summary: bpy.props.BoolProperty(
         name="Should print summary",
         description="Print summary at the end of the document",
@@ -837,31 +843,29 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         # box.prop(self, "should_print_description")
         # box.prop(self, "should_print_each_quantity")
         box.prop(self, "should_print_summary")
-   
+
     @classmethod
     def poll(cls, context):
         try:
             import typst
+
             return True
         except:
             return False
-        
+
     def execute(self, context):
         file = tool.Ifc.get()
         self.props = tool.Cost.get_cost_props()
         cost_schedule = file.by_type("IfcCostSchedule")[int(self.props.cost_schedules_enum)]
         options = {
-            #"should_print_cover" : self.should_print_cover,
-            #"should_print_description" : self.should_print_description,
-            #"should_print_each_quantity" : self.should_print_each_quantity,
-            #"should_print_rates" : self.should_print_rates,
-            "should_print_summary" : self.should_print_summary
+            # "should_print_cover" : self.should_print_cover,
+            # "should_print_description" : self.should_print_description,
+            # "should_print_each_quantity" : self.should_print_each_quantity,
+            # "should_print_rates" : self.should_print_rates,
+            "should_print_summary": self.should_print_summary
         }
         r = core.export_cost_schedules_to_pdf(
-            tool.Cost, 
-            filepath=self.filepath, 
-            cost_schedule=cost_schedule,
-            options=options
+            tool.Cost, filepath=self.filepath, cost_schedule=cost_schedule, options=options
         )
         return {"FINISHED"}
 

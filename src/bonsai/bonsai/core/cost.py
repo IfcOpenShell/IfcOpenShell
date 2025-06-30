@@ -395,13 +395,13 @@ def export_cost_schedules(
     cost.play_sound()
     return cost.export_cost_schedules(dirpath, format, cost_schedule)
 
+
 def export_cost_schedules_to_pdf(
-    cost: type[tool.Cost],
-    filepath: str,
-    cost_schedule: ifcopenshell.entity_instance,
-    options:dict):
+    cost: type[tool.Cost], filepath: str, cost_schedule: ifcopenshell.entity_instance, options: dict
+):
     cost.play_sound()
     return cost.export_cost_schedules_to_pdf(filepath, cost_schedule, options)
+
 
 def clear_cost_item_assignments(
     ifc: type[tool.Ifc],
