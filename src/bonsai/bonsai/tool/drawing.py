@@ -177,7 +177,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 vec = Vector((1, 0, 0))  # Fallback to a unit vector
             else:
                 vec = vec.normalized()
-            scaled_length = 0.023 * scale #0.023 could probably be a preference
+            scaled_length = 0.023 * scale  # 0.023 could probably be a preference
             co_end = co1 + vec * scaled_length
             obj = annotation.Annotator.add_line_to_annotation(obj, co_end, co1)
             obj.matrix_world = obj.matrix_world @ Matrix.Rotation(math.radians(-90), 4, "Z")
