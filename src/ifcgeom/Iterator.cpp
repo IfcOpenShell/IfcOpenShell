@@ -53,7 +53,7 @@ bool IfcGeom::Iterator::initialize() {
 	if (settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get()) {
 		std::unordered_map<
 			ifcopenshell::geometry::taxonomy::item::ptr,
-			std::vector<std::pair<const IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>>> folded;
+			std::vector<std::pair<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>>> folded;
 
 		for (auto& r : tasks_) {
 			auto i = r.item;
@@ -92,6 +92,10 @@ bool IfcGeom::Iterator::initialize() {
 			}
 			Logger::Notice("Merged " + std::to_string(old_size) + " tasks into " + std::to_string(tasks_.size()) + " tasks due to permissive shape reuse");
 		}
+	}
+
+	if (settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+		remove_offset_();
 	}
 
 	size_t num_products = 0;
@@ -136,7 +140,7 @@ bool IfcGeom::Iterator::initialize() {
 	if (tasks_.size() == 0) {
 		Logger::Warning("No representations encountered, aborting");
 		initialization_outcome_.reset(false);
-	} else {
+	} else if (!settings_.get<ifcopenshell::geometry::settings::DeferProcessingFirstElement>().get()) {
 
 		task_iterator_ = tasks_.begin();
 
@@ -153,6 +157,8 @@ bool IfcGeom::Iterator::initialize() {
 		} else {
 			initialization_outcome_ = create();
 		}
+	} else {
+		initialization_outcome_.reset(true);
 	}
 
 	return *initialization_outcome_;
@@ -505,6 +511,10 @@ IfcGeom::Element* IfcGeom::Iterator::get()
 		throw std::runtime_error("Iterator not initialized");
 	}
 
+	if (settings_.get<ifcopenshell::geometry::settings::DeferProcessingFirstElement>().get() && !task_result_ptr_initialized) {
+		throw std::runtime_error("No elements processed");
+	}
+
 	auto ret = *task_result_iterator_;
 
 	// If we want to organize the element considering their hierarchy
@@ -623,6 +633,178 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::create() {
 		had_error_processing_elements_ = true;
 	}
 	return product;
+}
+
+ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offset_() {
+	
+	using namespace ifcopenshell::geometry::taxonomy;
+	using namespace ifcopenshell::geometry::settings;
+	
+	if (!settings_.get<MaxOffset>().has()) {
+		return nullptr;
+	}
+	
+	if (!settings_.get<NoParallelMapping>().get()) {
+		throw std::runtime_error("remove_offset() can only be called with defer-processing-first-element and no-parallel-mapping settings");
+	}
+
+	auto collect_offset = [&](const item::ptr& itm, const std::vector<std::pair<IfcUtil::IfcBaseEntity*, matrix4::ptr>>& pr) -> std::pair<double, Eigen::Vector3d> {
+		std::function<std::pair<double, Eigen::Vector3d>(const item::ptr&, Eigen::Matrix4d)> traverse;
+		traverse = [&](const item::ptr& node, Eigen::Matrix4d m4) -> std::pair<double, Eigen::Vector3d> {
+			if (auto shl = std::dynamic_pointer_cast<shell>(node)) {
+				auto p = shl->centroid();
+				Eigen::Vector4d v;
+				v << p->components()(0), p->components()(1), p->components()(2), 1.0;
+				Eigen::Vector3d translation_part = (m4 * v).head<3>();
+				double translation_amnt = translation_part.norm();
+				if (translation_amnt > settings_.get<MaxOffset>().get()) {
+					return { translation_amnt, translation_part };
+				} else {
+					return { 0.0, Eigen::Vector3d::Zero() };
+				}
+			} else {
+				if (auto gi = std::dynamic_pointer_cast<geom_item>(node)) {
+					if (gi->matrix) {
+						m4 = m4 * gi->matrix->ccomponents();
+					}
+				}
+				Eigen::Vector3d translation_part = m4.block<3, 1>(0, 3);
+				double translation_amnt = translation_part.norm();
+				if (translation_amnt > settings_.get<MaxOffset>().get()) {
+					return { translation_amnt, translation_part };
+				} else if (auto col = std::dynamic_pointer_cast<collection>(node)) {
+					std::vector<std::pair<double, Eigen::Vector3d>> child_transforms;
+					for (const auto& child : col->children) {
+						child_transforms.push_back(traverse(child, m4));
+					}
+					if (!child_transforms.empty()) {
+						return *std::max_element(child_transforms.begin(), child_transforms.end(),
+							[](const auto& a, const auto& b) { return a.first < b.first; });
+					}
+				}
+				return { 0.0, Eigen::Vector3d::Zero() };
+			}
+		};
+
+		Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
+		if (pr.size() == 1 && pr[0].second) {
+			m4 = pr[0].second->ccomponents();
+		}
+		return traverse(itm, m4);
+	};
+
+	Eigen::Vector3d vec;
+
+	if (settings_.get<ApplyOffset>().has()) {
+		auto vs = settings_.get<ApplyOffset>().get();
+		if (vs.size() != 3) {
+			throw std::runtime_error("ApplyOffset setting must be a vector of size 3");
+		}
+		vec = Eigen::Vector3d(vs[0], vs[1], vs[2]);
+	} else {
+		// Collect all norms and vectors
+		std::vector<double> norms;
+		std::vector<Eigen::Vector3d> vectors;
+		for (const auto& task : tasks_) {
+			auto result = collect_offset(task.item, task.products);
+			norms.push_back(result.first);
+			vectors.push_back(result.second);
+		}
+
+		// Find the median norm index
+		std::vector<double> sorted_norms = norms;
+		std::nth_element(sorted_norms.begin(), sorted_norms.begin() + sorted_norms.size() / 2, sorted_norms.end());
+		double median = sorted_norms[sorted_norms.size() / 2];
+		auto median_it = std::find(norms.begin(), norms.end(), median);
+		size_t median_index = std::distance(norms.begin(), median_it);
+
+		if (median_index >= vectors.size()) {
+			return nullptr;
+		}
+
+		vec = -vectors[median_index];
+	}
+
+	Eigen::Matrix4d translation_matrix = Eigen::Matrix4d::Identity();
+	translation_matrix.block<3, 1>(0, 3) = vec;
+
+	auto remove_offset = [&](const item::ptr& itm, const std::vector<std::pair<IfcUtil::IfcBaseEntity*, matrix4::ptr>>& pr) -> bool {
+		std::function<bool(const item::ptr&, Eigen::Matrix4d)> traverse;
+		traverse = [&](const item::ptr& node, Eigen::Matrix4d m4) -> bool {
+			if (auto shl = std::dynamic_pointer_cast<shell>(node)) {
+				auto p = shl->centroid();
+				Eigen::Vector4d v;
+				v << p->components()(0), p->components()(1), p->components()(2), 1.0;
+				Eigen::Vector3d translation_part = (m4 * v).head<3>();
+				double translation_amnt = translation_part.norm();
+				if (translation_amnt > settings_.get<MaxOffset>().get()) {
+					shl->matrix = make<matrix4>(translation_matrix);
+				}
+				return true;
+			} else {
+				auto m4b = m4;
+				if (auto gi = std::dynamic_pointer_cast<geom_item>(node)) {
+					if (gi->matrix) {
+						m4b = m4 * gi->matrix->ccomponents();
+					}
+					Eigen::Vector3d translation_part = m4b.block<3, 1>(0, 3);
+					double translation_amnt = translation_part.norm();
+					if (translation_amnt > settings_.get<MaxOffset>().get()) {
+						auto inverted_rot_scale3 = m4.block<3, 3>(0, 0).inverse();
+						Eigen::Matrix4d inverted_rot_scale = Eigen::Matrix4d::Identity();
+						inverted_rot_scale.block<3, 3>(0, 0) = inverted_rot_scale3;
+						if (!gi->matrix) {
+							gi->matrix = make<matrix4>();
+						}
+						gi->matrix->components() = (inverted_rot_scale * translation_matrix) * gi->matrix->ccomponents();
+						return true;
+					}
+				}
+				bool b = true;
+				if (auto col = std::dynamic_pointer_cast<collection>(node)) {
+					for (const auto& child : col->children) {
+						if (!traverse(child, m4b)) {
+							b = false;
+						}
+					}
+				}
+				return b;
+			}
+		};
+
+		Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
+		if (pr.size() == 1 && pr[0].second) {
+			m4 = pr[0].second->ccomponents();
+		}
+		return traverse(itm, m4);
+	};
+
+	size_t num_offset_applied = 0;
+	for (auto& task : tasks_) {
+		bool all_applied = true;
+		for (auto& p : task.products) {
+			auto bb = p.second->components().block<3, 1>(0, 3);
+			double translation_amnt = bb.norm();
+			if (translation_amnt > settings_.get<MaxOffset>().get()) {
+				// block has an underlying mutable ref to the matrix
+				bb -= vec;
+			} else {
+				all_applied = false;
+			}
+		}
+		if (all_applied) {
+			num_offset_applied += 1;
+			continue;
+		}
+		if (remove_offset(task.item, task.products)) {
+			num_offset_applied += 1;
+		}
+	}
+
+	Logger::Notice("Removed large offsets within " + std::to_string(num_offset_applied) + " products");
+	Logger::Notice("Offset applied (" + std::to_string(vec(0)) + "," + std::to_string(vec(1)) + "," + std::to_string(vec(2)) + ")");
+
+	return make<direction3>(vec);
 }
 
 IfcGeom::Iterator::~Iterator() {

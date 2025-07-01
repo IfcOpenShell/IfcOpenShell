@@ -299,8 +299,11 @@ class iterator(ifcopenshell_wrapper.Iterator):
     ):
         self.settings = settings
         if isinstance(file_or_filename, file):
+            self.file = file
             file_or_filename = file_or_filename.wrapped_data
         else:
+            # @todo?
+            self.file = None
             # Makes sure people are able to use python's platform agnostic paths
             file_or_filename = os.path.abspath(file_or_filename)
 
@@ -345,6 +348,9 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 yield self.get()
                 if not self.next():
                     break
+
+    def get_task_products(self):
+        return entity_instance.wrap_value(ifcopenshell_wrapper.Iterator.get_task_products(self), self.file)
 
 
 ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
@@ -453,9 +459,7 @@ def create_shape(
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
     """
-    Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
-    or
-    Return an OpenCASCADE BRep if 'use-python-opencascade' is True
+    Returns a geometric interpretation of the IFC entity instance
 
     Note that in Python, you must store a reference to the element returned by this function to prevent garbage
     collection when you access its children. See #1124.
@@ -502,6 +506,20 @@ def create_shape(
             settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None, geometry_library
         ),
     )
+
+
+def map_shape(settings: settings, inst: entity_instance) -> ifcopenshell_wrapper.item:
+    """
+    Returns an interpretation of the geometry encoded as per IfcOpenShell's taxonomy layer.
+    In many cases this is somewhat equivalent to the raw IFC data (but schema-agnostic in C++), but
+    in other cases such as IfcParameterizedProfileDef the returned item is the equivalent
+    of an explicit composite curve.
+
+    >>> point = ifc_file.by_type('IfcCartesianPoint')[0]
+    >>> ifcopenshell.geom.map_shape(ifcopenshell.geom.settings(), point).components
+    (0.0, 0.0, 0.0)
+    """
+    return ifcopenshell_wrapper.map_shape(settings, inst.wrapped_data)
 
 
 @overload
