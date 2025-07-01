@@ -544,7 +544,6 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             self.file = file
         self.cost_schedule = cost_schedule
         self.options = options
-        self.colours = self.default_colors.copy()  # perhaps to delete
 
     def write(self) -> None:
         import os
@@ -554,10 +553,17 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
         import tempfile
 
         with tempfile.TemporaryDirectory() as temp_dir:
+            project_name = getattr(self.file.by_type("IfcProject")[0], "Name")
+            if project_name is None: project_name = "Unnamed"
+            schedule_name = getattr(self.cost_schedule, "Name")
+            if schedule_name is None: schedule_name = "Unnamed"
+            schedule_type = getattr(self.cost_schedule, "PredefinedType")
+            if schedule_type is None: schedule_type = "UNTYPED"
+            
             # export csv file
             csv_file_writer = Ifc5DCsvWriter(file=self.file, output=temp_dir, cost_schedule=self.cost_schedule)
             csv_file_writer.write()
-            csv_file_name = self.cost_schedule.Name + ".csv"
+            csv_file_name = schedule_name + ".csv"
 
             # locate typst template file
             typst_template_file_path = os.path.join(
@@ -566,18 +572,16 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             shutil.copy(typst_template_file_path, temp_dir)
 
             # generate typst main file content and write it
-            project = self.file.by_type("IfcProject")[0]
-            self.check_options()
-            typst_main_content =  ''
+            typst_main_content = ""
             typst_main_content += '#import "{}": *\n'.format("typst_template_ifc_cost_schedule.typ")
-            typst_main_content += '#show: project.with(\n'
+            typst_main_content += "#show: project.with(\n"
             typst_main_content += 'schedule_path: "{}",\n'.format(csv_file_name)
-            typst_main_content += 'title: "{}",\n'.format(project.Name)
-            typst_main_content += 'schedule_name: "{}",\n'.format(self.cost_schedule.Name)
-            typst_main_content += 'schedule_type: "{}",\n'.format(self.cost_schedule.PredefinedType)
-            typst_main_content += 'cover_page: {},\n'.format("false")
-            typst_main_content += 'root_items_to_new_page: {},\n'.format("false")
-            typst_main_content += 'summary: {},\n'.format(self.options["should_print_summary"])
+            typst_main_content += 'title: "{}",\n'.format(project_name)
+            typst_main_content += 'schedule_name: "{}",\n'.format(schedule_name)
+            typst_main_content += 'schedule_type: "{}",\n'.format(schedule_type)
+            typst_main_content += "cover_page: {},\n".format("false")
+            typst_main_content += "root_items_to_new_page: {},\n".format("false")
+            typst_main_content += "summary: {},\n".format(str(self.options.get("should_print_summary", False)).lower())
             typst_main_content += ")"
             typst_main_path = os.path.join(temp_dir, "main.typ")
             with open(typst_main_path, "w") as typ_file:
@@ -587,17 +591,6 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             pdf_bytes = typst.compile(typst_main_path)
             with open(self.output, "wb") as f:
                 f.write(pdf_bytes)
-
-    def check_options(self):
-        options_keys = self.options.keys()
-        if "should_print_cover" in options_keys and self.options["should_print_cover"] is True:
-            self.options["should_print_cover"] = "true"
-        else:
-            self.options["should_print_cover"] = "false"
-        if "should_print_summary" in options_keys and self.options["should_print_summary"] is True:
-            self.options["should_print_summary"] = "true"
-        else:
-            self.options["should_print_summary"] = "false"
 
 
 if __name__ == "__main__":

@@ -789,41 +789,10 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules_to_pdf"
     bl_label = "Export Cost Schedule to PDF"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Print chosen cost schedule to pdf.\nMake sure typst is available,\neventually installing Typst Importer extension."
+    bl_description = "Print chosen cost schedule to pdf."
     filename_ext = ".pdf"
     filter_glob: bpy.props.StringProperty(default="*.pdf", options={"HIDDEN"}, maxlen=255)
-    chosen_schedule: bpy.props.EnumProperty(
-        name="",
-        description="Choose IfcCostSchedule to print",
-        items=[
-            (
-                "0",
-                "Default",
-                "Export first schedule in the IfcProject",
-            ),
-        ],
-        default="0",
-    )
-    """should_print_cover: bpy.props.BoolProperty(
-        name="Should print document cover",
-        description="Create a cover page with project data",
-        default=False,
-    )
-    should_print_description: bpy.props.BoolProperty(
-        name="Should print description",
-        description="Export the full description if present",
-        default=True,
-    )
-    should_print_each_quantity: bpy.props.BoolProperty(
-        name="Should print each quantity",
-        description="Export the full list of quantities",
-        default=False,
-    )   
-    should_print_rates: bpy.props.BoolProperty(
-        name="Should print rates and totals",
-        description="Print rates and totals for each voice",
-        default=True,
-    )"""
+
     should_print_summary: bpy.props.BoolProperty(
         name="Should print summary",
         description="Print summary at the end of the document",
@@ -848,9 +817,9 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     def poll(cls, context):
         try:
             import typst
-
             return True
         except:
+            cls.poll_message_set("Typst not available.\nConsider installing Typst Importer extension.")
             return False
 
     def execute(self, context):
@@ -864,7 +833,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
             # "should_print_rates" : self.should_print_rates,
             "should_print_summary": self.should_print_summary
         }
-        r = core.export_cost_schedules_to_pdf(
+        core.export_cost_schedules_to_pdf(
             tool.Cost, filepath=self.filepath, cost_schedule=cost_schedule, options=options
         )
         return {"FINISHED"}

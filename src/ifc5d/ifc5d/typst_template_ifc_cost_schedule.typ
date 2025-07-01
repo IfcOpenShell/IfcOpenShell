@@ -5,11 +5,18 @@
 
 // custom cell styles
 #let total-cell-style = (stroke: (top: 0.25pt + gray))
+
+
+
 #let root-cost-cell-style = (
   stroke: (bottom: (dash: "dotted")), 
   fill: gray.transparentize(90%),
   align: bottom
 )
+
+
+
+#let template_fonts = ("Liberation Sans", "Roboto", "Arial", "Calibri")
 
 
 
@@ -318,7 +325,7 @@
     numbering: "1/1",
     number-align: end,
     header:[
-      #set text(font: "Liberation Sans", size: 9pt, lang: "en");
+      #set text(font: template_fonts, size: 9pt, lang: "en");
       #table(
         columns: (1fr, 2fr),
         rows: 10mm,
@@ -338,11 +345,11 @@
     ],
     background: 
     place( top + left, dx: 15mm, dy: 25mm,
-      format_table.at(schedule_type)
+      format_table.at(schedule_type, default: bill_of_quantities_table)
     )
   )
   
-  set text(font: "Liberation Sans", size: 8pt, lang: "en");
+  set text(font: template_fonts, size: 8pt, lang: "en");
   
   if schedule_type == "PRICEDBILLOFQUANTITIES" {
     create-schedule(schedule_path, type: "PRICEDBILLOFQUANTITIES", should_hide_rates: should_hide_rates)
@@ -350,11 +357,13 @@
     create-schedule(schedule_path, type: "PRICEDBILLOFQUANTITIES", should_hide_rates: true)
   } else if schedule_type == "SCHEDULEOFRATES" {
     create-schedule(schedule_path, type: "SCHEDULEOFRATES", should_hide_rates: true)
+  } else {
+    create-schedule(schedule_path, type: "PRICEDBILLOFQUANTITIES", should_hide_rates: should_hide_rates)
   }
     
   if summary == true {
     pagebreak()
-    set text(font: "Liberation Sans", size: 8pt, lang: "en");
+    set text(font: template_fonts, size: 8pt, lang: "en");
     set page(
     background:
       place( top + left, dx: 15mm, dy: 25mm,
