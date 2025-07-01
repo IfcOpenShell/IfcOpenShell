@@ -441,6 +441,27 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "Experimental as not all topology hash functions fully implemented";
 				static constexpr bool defaultvalue = false;
 			};
+
+			struct DeferProcessingFirstElement : public SettingBase<DeferProcessingFirstElement, bool, true> {
+				static constexpr const char* const name = "defer-processing-first-element";
+				static constexpr const char* const description = "Don't process first element in Iterator::initialize call()";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct MaxOffset : public SettingBase<MaxOffset, double> {
+				static constexpr const char* const name = "max-offset";
+				static constexpr const char* const description = "Maximum translation offset to be observed after which median offset in model gets removed and logged. Requires --no-parallel-mapping.";
+			};
+
+			struct MaxOffsetDeviation : public SettingBase<MaxOffsetDeviation, double> {
+				static constexpr const char* const name = "max-offset-deviation";
+				static constexpr const char* const description = "To retain field of view, completely remove elements outside of the median offset. Requires --no-parallel-mapping.";
+			};
+
+			struct ApplyOffset : public SettingBase<ApplyOffset, std::vector<double>> {
+				static constexpr const char* const name = "apply-offset";
+				static constexpr const char* const description = "Slight variation of --model-offset where large offsets are applied by negating existing large offsets to retain maximum precision. Requires --no-parallel-mapping.";
+			};
 		}
 		
 		namespace impl {
@@ -616,7 +637,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset>
 		>
 		{};
 }

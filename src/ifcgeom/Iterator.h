@@ -91,7 +91,7 @@ namespace IfcGeom {
 
 		// For NoParallelMapping==true
 		ifcopenshell::geometry::taxonomy::ptr item;
-		std::vector<std::pair<const IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
+		std::vector<std::pair<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
 
 		// For NoParallelMapping==false
 		IfcUtil::IfcBaseEntity* representation;
@@ -209,7 +209,7 @@ namespace IfcGeom {
 
 		void log_timepoints() const;
 
-		/// @todo public/private sections all over the place: move all public to the beginning of the class
+		ifcopenshell::geometry::taxonomy::direction3::ptr remove_offset_();
 	public:
 		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings_(settings)
@@ -261,6 +261,31 @@ namespace IfcGeom {
 		~Iterator();
 
 		void set_cache(GeometrySerializer* cache) { cache_ = cache; }
+
+		std::vector<ifcopenshell::geometry::taxonomy::item::ptr> get_task_items() const {
+			std::vector<ifcopenshell::geometry::taxonomy::item::ptr> items;
+			items.reserve(tasks_.size());
+			for (const auto& task : tasks_) {
+				items.push_back(task.item);
+			}
+			return items;
+		}
+
+		aggregate_of_aggregate_of_instance::ptr get_task_products() const {
+			aggregate_of_aggregate_of_instance::ptr products = aggregate_of_aggregate_of_instance::ptr(new aggregate_of_aggregate_of_instance);
+			for (const auto& task : tasks_) {
+				if (task.products_2) {
+					products->push(task.products_2);
+				} else {
+					for (auto& product : task.products) {
+						aggregate_of_instance::ptr p(new aggregate_of_instance);
+						p->push(product.first);
+						products->push(p);
+					}
+				}
+			}
+			return products;
+		}
 
 		const std::string& unit_name() const { return converter_->mapping()->get_length_unit_name(); }
 		double unit_magnitude() const { return converter_->mapping()->get_length_unit(); }

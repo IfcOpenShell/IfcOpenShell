@@ -952,6 +952,21 @@ typedef item const* ptr;
 					auto v = std::make_tuple(static_cast<size_t>(LOOP), hash_elements(), external ? *external ? 2 : 1 : 0, closed ? *closed ? 2 : 1 : 0);
 					return boost::hash<decltype(v)>{}(v);
 				}
+
+				// nb only takes into account explicit points
+				taxonomy::point3::ptr centroid() const {
+					Eigen::Vector3d c(0, 0, 0);
+					for (auto& e : children) {
+						if (e->start.which() == 1) {
+							c += boost::get<point3::ptr>(e->start)->ccomponents();
+						}
+						if (e->end.which() == 1) {
+							c += boost::get<point3::ptr>(e->end)->ccomponents();
+						}
+					}
+					c /= static_cast<double>(children.size());
+					return make<taxonomy::point3>(c);
+				}
 			};
 
 			struct face : public collection_base<loop> {
@@ -991,6 +1006,25 @@ typedef item const* ptr;
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SHELL), hash_elements(), closed ? *closed ? 2 : 1 : 0);
 					return boost::hash<decltype(v)>{}(v);
+				}
+
+				// nb only takes into account explicit points
+				taxonomy::point3::ptr centroid() const {
+					Eigen::Vector3d c(0, 0, 0);
+					for (auto& f : children) {
+						for (auto& l : f->children) {
+							for (auto& e : l->children) {
+								if (e->start.which() == 1) {
+									c += boost::get<point3::ptr>(e->start)->ccomponents();
+								}
+								if (e->end.which() == 1) {
+									c += boost::get<point3::ptr>(e->end)->ccomponents();
+								}
+							}
+						}
+					}
+					c /= static_cast<double>(children.size());
+					return make<taxonomy::point3>(c);
 				}
 			};
 
