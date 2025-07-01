@@ -817,6 +817,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     def poll(cls, context):
         try:
             import typst
+
             return True
         except:
             cls.poll_message_set("Typst not available.\nConsider installing Typst Importer extension.")

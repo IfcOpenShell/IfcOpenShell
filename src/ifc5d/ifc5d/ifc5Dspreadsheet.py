@@ -554,12 +554,15 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             project_name = getattr(self.file.by_type("IfcProject")[0], "Name")
-            if project_name is None: project_name = "Unnamed"
+            if project_name is None:
+                project_name = "Unnamed"
             schedule_name = getattr(self.cost_schedule, "Name")
-            if schedule_name is None: schedule_name = "Unnamed"
+            if schedule_name is None:
+                schedule_name = "Unnamed"
             schedule_type = getattr(self.cost_schedule, "PredefinedType")
-            if schedule_type is None: schedule_type = "UNTYPED"
-            
+            if schedule_type is None:
+                schedule_type = "UNTYPED"
+
             # export csv file
             csv_file_writer = Ifc5DCsvWriter(file=self.file, output=temp_dir, cost_schedule=self.cost_schedule)
             csv_file_writer.write()

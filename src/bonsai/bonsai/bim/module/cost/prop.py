@@ -57,16 +57,15 @@ def get_cost_schedules_enum_items(
     schedule_names = ()
     for schedule in schedules:
         schedule_name = getattr(schedule, "Name")
-        if schedule_name is None: schedule_name = "Unnamed"
+        if schedule_name is None:
+            schedule_name = "Unnamed"
         schedule_type = getattr(schedule, "PredefinedType")
-        if schedule_type is None: schedule_type = "UNTYPED"
+        if schedule_type is None:
+            schedule_type = "UNTYPED"
         schedule_names += (
             (
                 str(counter),
-                "{} ({})".format(
-                    schedule_name,
-                    schedule_type
-                ),
+                "{} ({})".format(schedule_name, schedule_type),
                 "",
             ),
         )
