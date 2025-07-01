@@ -277,7 +277,7 @@
   let new_rows = data.map(arrange_summary_row)
   let general_total = data.filter(row => row.at("Index") == "1") 
    .map(row => float(row.at("TotalPrice")))
-   .sum()
+   .sum(default: 0.00)
   
   set text(size: 10pt)
   pad(left: 2cm)[SUMMARY:]
