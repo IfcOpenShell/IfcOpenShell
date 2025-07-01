@@ -824,6 +824,10 @@ class PipInstall(bpy.types.Operator):
     bl_description = "Installs a package from PyPI"
     name: bpy.props.StringProperty()
 
+    @classmethod
+    def description(cls, context, properties):
+        return f"Installs a package from PyPI: '{properties.name}'."
+
     def execute(self, context):
         blender_path = Path(bpy.app.binary_path).parent
         target = next(
