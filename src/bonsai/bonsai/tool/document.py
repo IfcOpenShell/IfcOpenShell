@@ -23,6 +23,7 @@ import ifcopenshell.util.system
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
+import json
 from typing import Any, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -86,7 +87,7 @@ class Document(bonsai.core.tool.Document):
         props.documents.clear()
         file = tool.Ifc.get()
         try:
-            expanded_documents = json.loads(bpy.context.scene.ExpandedDocuments.json_string)
+            expanded_documents = json.loads(props.json_string)
         except (AttributeError, json.JSONDecodeError):
             expanded_documents = []
 
@@ -116,7 +117,7 @@ class Document(bonsai.core.tool.Document):
                     document_children[parent_id].append(ref)
         else:
             for ref in file.by_type("IfcDocumentReference"):
-                if hasattr(ref, "ReferencedDocument") and ref.ReferencedDocument:
+                if ref.ReferencedDocument:
                     parent = ref.ReferencedDocument
                     parent_id = parent.id()
                     if parent_id not in document_children:
@@ -198,21 +199,18 @@ class Document(bonsai.core.tool.Document):
 
             info_children = [d for d in children if d.is_a("IfcDocumentInformation")]
             ref_children = [d for d in children if not d.is_a("IfcDocumentInformation")]
-            
+
             info_children.sort(
-                key=lambda doc: (
-                    (cls.get_document_information_id(doc) or "").lower(),
-                    (doc.Name or "").lower()
-                )
+                key=lambda doc: ((cls.get_document_information_id(doc) or "").lower(), (doc.Name or "").lower())
             )
-            
+
             ref_children.sort(
                 key=lambda doc: (
                     (cls.get_external_reference_id(doc) or "").lower(),
-                    (doc.Description or doc.Name or "").lower()
+                    (doc.Description or doc.Name or "").lower(),
                 )
             )
-            
+
             for child in info_children + ref_children:
                 cls._process_document(child, props, document_children, expanded_documents, depth + 1)
 
@@ -253,3 +251,48 @@ class Document(bonsai.core.tool.Document):
         if document.file.schema == "IFC2X3":
             return document.DocumentReferences or ()
         return document.HasDocumentReferences
+
+    @classmethod
+    def enable_document_editing(cls) -> None:
+        props = cls.get_document_props()
+        props.is_editing = True
+
+    @classmethod
+    def disable_document_editing(cls) -> None:
+        props = cls.get_document_props()
+        props.is_editing = False
+
+    @classmethod
+    def clear_active_document(cls) -> None:
+        props = cls.get_document_props()
+        props.active_document_id = 0
+
+    @classmethod
+    def clear_document_attributes(cls) -> None:
+        props = cls.get_document_props()
+        props.document_attributes.clear()
+
+    @classmethod
+    def expand_document(cls, document: ifcopenshell.entity_instance) -> None:
+        props = cls.get_document_props()
+        try:
+            expanded_docs = json.loads(props.json_string)
+        except (AttributeError, json.JSONDecodeError):
+            expanded_docs = []
+
+        if document.id() not in expanded_docs:
+            expanded_docs.append(document.id())
+            props.json_string = json.dumps(expanded_docs)
+
+    @classmethod
+    def get_default_parent_for_information(cls, ifc) -> Union[ifcopenshell.entity_instance, None]:
+        projects = ifc.get().by_type("IfcProject")
+        return projects[0] if projects else None
+
+    @classmethod
+    def get_selected_document_information(cls, ifc) -> Union[ifcopenshell.entity_instance, None]:
+        props = cls.get_document_props()
+
+        if props.active_document and props.active_document.is_information:
+            return ifc.get().by_id(props.active_document.ifc_definition_id)
+        return None

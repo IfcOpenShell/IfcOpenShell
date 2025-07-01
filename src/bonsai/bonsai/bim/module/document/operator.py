@@ -35,10 +35,8 @@ def update_document_objects(document_id=None):
 
     if document_id is None:
         props = tool.Document.get_document_props()
-        if props.documents and props.active_document_index < len(props.documents):
-            document = props.documents[props.active_document_index]
-            if document.ifc_definition_id:
-                document_id = document.ifc_definition_id
+        if props.active_document and props.active_document.ifc_definition_id:
+            document_id = props.active_document.ifc_definition_id
 
     if document_id:
         DocumentData.load_document_objects_into_props(document_id)
@@ -122,8 +120,8 @@ class AddInformation(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = tool.Document.get_document_props()
         parent = None
-        if props.documents and props.active_document_index < len(props.documents):
-            selected_document = props.documents[props.active_document_index]
+        if props.active_document:
+            selected_document = props.active_document
 
             if selected_document.ifc_definition_id == -1:
                 parent = tool.Ifc.get().by_type("IfcProject")[0] if tool.Ifc.get().by_type("IfcProject") else None
@@ -139,7 +137,7 @@ class AddInformation(bpy.types.Operator, tool.Ifc.Operator):
 
         expanded_docs = []
         try:
-            expanded_docs = json.loads(context.scene.ExpandedDocuments.json_string)
+            expanded_docs = json.loads(props.json_string)
         except (AttributeError, json.JSONDecodeError):
             pass
 
@@ -152,7 +150,7 @@ class AddInformation(bpy.types.Operator, tool.Ifc.Operator):
             if parent.id() not in expanded_docs:
                 expanded_docs.append(parent.id())
 
-        context.scene.ExpandedDocuments.json_string = json.dumps(expanded_docs)
+        props.json_string = json.dumps(expanded_docs)
 
         bpy.ops.bim.load_project_documents()
 
@@ -165,11 +163,11 @@ class AddDocumentReference(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = tool.Document.get_document_props()
 
-        if not props.documents or props.active_document_index >= len(props.documents):
+        if not props.active_document:
             self.report({"ERROR"}, "No document selected")
             return {"CANCELLED"}
 
-        selected_document = props.documents[props.active_document_index]
+        selected_document = props.active_document
 
         if not selected_document.is_information:
             self.report({"ERROR"}, "Cannot add a reference to a reference element")
@@ -181,13 +179,13 @@ class AddDocumentReference(bpy.types.Operator, tool.Ifc.Operator):
         core.add_reference(tool.Ifc, tool.Document)
         expanded_docs = []
         try:
-            expanded_docs = json.loads(context.scene.ExpandedDocuments.json_string)
+            expanded_docs = json.loads(props.json_string)
         except (AttributeError, json.JSONDecodeError):
             pass
 
         if parent.id() not in expanded_docs:
             expanded_docs.append(parent.id())
-            context.scene.ExpandedDocuments.json_string = json.dumps(expanded_docs)
+            props.json_string = json.dumps(expanded_docs)
 
         bpy.ops.bim.load_project_documents()
 
@@ -292,9 +290,8 @@ class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
                 core.unassign_document(tool.Ifc, product=element, document=document)
         props = tool.Document.get_document_props()
         active_document_id = None
-        if props.documents and props.active_document_index < len(props.documents):
-            active_document = props.documents[props.active_document_index]
-            active_document_id = active_document.ifc_definition_id
+        if props.active_document:
+            active_document_id = props.active_document.ifc_definition_id
 
         if active_document_id and active_document_id != self.document:
             update_document_objects(active_document_id)
@@ -420,8 +417,9 @@ class ToggleDocument(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         expanded_documents = []
+        props = tool.Document.get_document_props()
         try:
-            expanded_documents = json.loads(context.scene.ExpandedDocuments.json_string)
+            expanded_documents = json.loads(props.json_string)
         except (AttributeError, json.JSONDecodeError):
             expanded_documents = []
 
@@ -439,8 +437,7 @@ class ToggleDocument(bpy.types.Operator, tool.Ifc.Operator):
                 expanded_documents.append(virtual_root_id)
             elif self.option == "Collapse" and virtual_root_id in expanded_documents:
                 expanded_documents.remove(virtual_root_id)
-
-        context.scene.ExpandedDocuments.json_string = json.dumps(expanded_documents)
+        props.json_string = json.dumps(expanded_documents)
 
         bpy.ops.bim.load_project_documents()
         return {"FINISHED"}

@@ -68,14 +68,11 @@ class BIM_PT_documents(Panel):
             row.operator("bim.edit_document", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_document", text="", icon="CANCEL")
         else:
-            if not self.props.documents or not self.props.active_document_index < len(self.props.documents) or \
-            (self.props.active_document_index < len(self.props.documents) and 
-                self.props.documents[self.props.active_document_index].is_information):
+            if not self.props.active_document or self.props.active_document.is_information:
                 row.operator("bim.add_information", text="", icon="ADD")
 
-            if self.props.documents and self.props.active_document_index < len(self.props.documents):
-                active_doc = self.props.documents[self.props.active_document_index]
-                if active_doc.is_information and active_doc.ifc_definition_id != -1:
+            if self.props.active_document:
+                if self.props.active_document.is_information and self.props.active_document.ifc_definition_id != -1:
                     row.operator("bim.add_document_reference", text="", icon="FILE_HIDDEN")
 
             active_document = self.props.active_document
@@ -84,7 +81,7 @@ class BIM_PT_documents(Panel):
                 row.operator("bim.select_document_objects", text="", icon="RESTRICT_SELECT_OFF").document = (
                     ifc_definition_id
                 )
-                
+
                 row.operator("bim.assign_document", text="", icon="BRUSH_DATA").document = ifc_definition_id
                 row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = ifc_definition_id
                 row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id
@@ -97,12 +94,8 @@ class BIM_PT_documents(Panel):
             else:
                 draw_attributes(self.props.document_attributes, self.layout, filter_attributes=["Name"])
 
-        if (
-            self.props.is_editing
-            and self.props.documents
-            and self.props.active_document_index < len(self.props.documents)
-        ):
-            document = self.props.documents[self.props.active_document_index]
+        if self.props.is_editing and self.props.active_document:
+            document = self.props.active_document
             box = self.layout.box()
             row = box.row(align=True)
             row.label(text="Assigned Objects", icon="OUTLINER_OB_EMPTY")
@@ -181,21 +174,19 @@ class BIM_PT_object_documents(Panel):
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
 
-            if self.props.documents and self.props.active_document_index < len(self.props.documents):
-                document = self.props.documents[self.props.active_document_index]
+            if self.props.active_document:
+                document = self.props.active_document
 
                 assigned_doc_ids = []
                 for doc in ObjectDocumentData.data["documents"]:
                     assigned_doc_ids.append(doc["id"])
 
                 # Only show assign button if the document is information (not reference) and not already assigned
-                if (document.is_information and 
-                    document.ifc_definition_id not in assigned_doc_ids):
+                if document.is_information and document.ifc_definition_id not in assigned_doc_ids:
                     doc_op = row.operator("bim.assign_document", text="", icon="BRUSH_DATA")
                     doc_op.document = document.ifc_definition_id  # Pass the current document's ID
                 elif document.ifc_definition_id in assigned_doc_ids:
                     row.label(text="", icon="CHECKMARK")
-
             self.layout.template_list(
                 "BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index"
             )
@@ -249,8 +240,8 @@ class BIM_UL_document_objects(UIList):
             row.operator("bim.select_object", text="", icon="RESTRICT_SELECT_OFF").obj_name = item.name
 
             props = tool.Document.get_document_props()
-            if props.documents and props.active_document_index < len(props.documents):
-                document = props.documents[props.active_document_index]
+            if props.active_document:
+                document = props.active_document
 
                 op = row.operator("bim.unassign_document", text="", icon="X")
                 op.document = document.ifc_definition_id
