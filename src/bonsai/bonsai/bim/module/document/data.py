@@ -119,13 +119,15 @@ class ObjectDocumentData:
             return results
         for rel in getattr(element, "HasAssociations", []):
             if rel.is_a("IfcRelAssociatesDocument"):
-                is_information = rel.RelatingDocument.is_a("IfcDocumentInformation")
-                is_reference = rel.RelatingDocument.is_a("IfcDocumentReference")
+                relating_document = rel.RelatingDocument
+
+                is_information = relating_document.is_a("IfcDocumentInformation")
+                is_reference = relating_document.is_a("IfcDocumentReference")
 
                 if not (is_information or is_reference):
                     continue
 
-                name = rel.RelatingDocument.Name
+                name = relating_document.Name
 
                 location = None
                 identification = None
@@ -133,33 +135,35 @@ class ObjectDocumentData:
 
                 if is_information:
                     if tool.Ifc.get_schema() == "IFC2X3":
-                        identification = rel.RelatingDocument.DocumentId
+                        identification = relating_document.DocumentId
                     else:
-                        identification = rel.RelatingDocument.Identification
+                        identification = relating_document.Identification
 
-                    location = getattr(rel.RelatingDocument, "Location", None)
+                    location = getattr(relating_document, "Location", None)
 
                 else:
-                    description = rel.RelatingDocument.Description
+                    description = relating_document.Description
                     if tool.Ifc.get_schema() == "IFC2X3":
-                        if not name and rel.RelatingDocument.ReferenceToDocument:
-                            name = rel.RelatingDocument.ReferenceToDocument[0].Name
+                        reference_to_document = relating_document.ReferenceToDocument
+                        if not name and reference_to_document:
+                            name = reference_to_document[0].Name
 
-                        identification = rel.RelatingDocument.ItemReference
-                        if not identification and rel.RelatingDocument.ReferenceToDocument:
-                            identification = rel.RelatingDocument.ReferenceToDocument[0].DocumentId
-                        location = rel.RelatingDocument.Location
+                        identification = relating_document.ItemReference
+                        if not identification and reference_to_document:
+                            identification = reference_to_document[0].DocumentId
+                        location = relating_document.Location
                     else:
-                        if not name and rel.RelatingDocument.ReferencedDocument:
-                            name = rel.RelatingDocument.ReferencedDocument.Name
+                        referenced_document = relating_document.ReferencedDocument
+                        if not name and referenced_document:
+                            name = referenced_document.Name
 
-                        identification = rel.RelatingDocument.Identification
-                        if not identification and rel.RelatingDocument.ReferencedDocument:
-                            identification = rel.RelatingDocument.ReferencedDocument.Identification
+                        identification = relating_document.Identification
+                        if not identification and referenced_document:
+                            identification = referenced_document.Identification
 
-                        location = rel.RelatingDocument.Location
-                        if location is None and rel.RelatingDocument.ReferencedDocument:
-                            location = rel.RelatingDocument.ReferencedDocument.Location
+                        location = relating_document.Location
+                        if location is None and referenced_document:
+                            location = referenced_document.Location
 
                 if location:
                     if not "://" in location:
@@ -169,7 +173,7 @@ class ObjectDocumentData:
 
                 results.append(
                     {
-                        "id": rel.RelatingDocument.id(),
+                        "id": relating_document.id(),
                         "identification": identification,
                         "name": name,
                         "location": location,

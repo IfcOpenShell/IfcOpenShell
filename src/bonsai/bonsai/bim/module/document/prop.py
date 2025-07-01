@@ -80,13 +80,6 @@ class Document(PropertyGroup):
         is_expanded: bool
 
 
-class ExpandedDocuments(PropertyGroup):
-    json_string: StringProperty(name="JSON String", default="[]")
-
-    if TYPE_CHECKING:
-        json_string: str
-
-
 class DocumentObject(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -124,6 +117,7 @@ class BIMDocumentProperties(PropertyGroup):
     active_document_object_index: IntProperty(name="Active Document Object Index")
     assigned_documents: CollectionProperty(name="Assigned Documents", type=AssignedDocument)
     active_assigned_document_index: IntProperty(name="Active Assigned Document Index")
+    json_string: StringProperty(name="JSON String", default="[]")
 
     if TYPE_CHECKING:
         document_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -137,6 +131,7 @@ class BIMDocumentProperties(PropertyGroup):
         active_document_object_index: int
         assigned_documents: bpy.types.bpy_prop_collection_idprop[AssignedDocument]
         active_assigned_document_index: int
+        json_string: str
 
     @property
     def active_document(self) -> Union[Document, None]:

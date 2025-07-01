@@ -18,8 +18,6 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
-import bpy
-import json
 
 if TYPE_CHECKING:
     import ifcopenshell
@@ -34,15 +32,7 @@ def load_project_documents(document: tool.Document) -> None:
 
 def load_document(document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
     document_tool.clear_document_tree()
-    try:
-        expanded_docs = json.loads(bpy.context.scene.ExpandedDocuments.json_string)
-    except (AttributeError, json.JSONDecodeError):
-        expanded_docs = []
-
-    if document.id() not in expanded_docs:
-        expanded_docs.append(document.id())
-        bpy.context.scene.ExpandedDocuments.json_string = json.dumps(expanded_docs)
-
+    document_tool.expand_document(document)
     document_tool.import_project_documents()
     document_tool.disable_editing_document()
 
@@ -53,60 +43,40 @@ def disable_document_editing_ui(document: tool.Document) -> None:
 
 
 def enable_editing_document(document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
-    props = document_tool.get_document_props()
-    props.active_document_id = document.id()
-    props.is_document_editing = True
+    document_tool.set_active_document(document)
+    document_tool.enable_document_editing()
     document_tool.import_document_attributes(document)
 
 
 def disable_editing_document(document: tool.Document) -> None:
-    props = document.get_document_props()
-    props.active_document_id = 0
-    props.is_document_editing = False
-    props.document_attributes.clear()
+    document.clear_active_document()
+    document.disable_document_editing()
+    document.clear_document_attributes()
 
 
 def add_information(ifc: tool.Ifc, document_tool: tool.Document, parent=None) -> ifcopenshell.entity_instance:
     document_tool.clear_document_tree()
 
-    if parent is None and ifc.get().by_type("IfcProject"):
-        parent = ifc.get().by_type("IfcProject")[0]
+    if parent is None:
+        parent = document_tool.get_default_parent_for_information(ifc)
 
     information = ifc.run("document.add_information", parent=parent)
     ifc.run("document.add_reference", information=information)
-    if parent and parent.is_a("IfcDocumentInformation"):
-        try:
-            expanded_docs = json.loads(bpy.context.scene.ExpandedDocuments.json_string)
-        except (AttributeError, json.JSONDecodeError):
-            expanded_docs = []
 
-        if parent.id() not in expanded_docs:
-            expanded_docs.append(parent.id())
-            bpy.context.scene.ExpandedDocuments.json_string = json.dumps(expanded_docs)
+    if document_tool.is_document_information(parent):
+        document_tool.expand_document(parent)
 
     document_tool.import_project_documents()
+    return information
 
 
 def add_reference(ifc: tool.Ifc, document: tool.Document) -> None:
-    props = document.get_document_props()
-    parent = None
-
-    if props.documents and props.active_document_index < len(props.documents):
-        selected_document = props.documents[props.active_document_index]
-        if selected_document.is_information:
-            parent = ifc.get().by_id(selected_document.ifc_definition_id)
+    parent = document.get_selected_document_information(ifc)
 
     if parent:
         reference = ifc.run("document.add_reference", information=parent)
         reference.Location = ""
-        try:
-            expanded_docs = json.loads(bpy.context.scene.ExpandedDocuments.json_string)
-        except (AttributeError, json.JSONDecodeError):
-            expanded_docs = []
-
-        if parent.id() not in expanded_docs:
-            expanded_docs.append(parent.id())
-            bpy.context.scene.ExpandedDocuments.json_string = json.dumps(expanded_docs)
+        document.expand_document(parent)
 
     document.import_project_documents()
 

@@ -18,7 +18,6 @@
 
 import bpy
 from . import ui, prop, operator
-from bpy.types import VIEW3D_MT_object_context_menu
 
 classes = (
     operator.AddDocumentReference,
@@ -41,7 +40,6 @@ classes = (
     prop.Document,
     prop.DocumentObject,
     prop.AssignedDocument,
-    prop.ExpandedDocuments,
     prop.BIMDocumentProperties,
     ui.BIM_PT_documents,
     ui.BIM_PT_object_documents,
@@ -54,11 +52,9 @@ classes = (
 
 def register():
     bpy.types.Scene.BIMDocumentProperties = bpy.props.PointerProperty(type=prop.BIMDocumentProperties)
-    bpy.types.Scene.ExpandedDocuments = bpy.props.PointerProperty(type=prop.ExpandedDocuments)
-    VIEW3D_MT_object_context_menu.append(ui.add_object_documents_context_menu)
+    bpy.types.VIEW3D_MT_object_context_menu.append(ui.add_object_documents_context_menu)
 
 
 def unregister():
     del bpy.types.Scene.BIMDocumentProperties
-    del bpy.types.Scene.ExpandedDocuments
-    VIEW3D_MT_object_context_menu.remove(ui.add_object_documents_context_menu)
+    bpy.types.VIEW3D_MT_object_context_menu.remove(ui.add_object_documents_context_menu)
