@@ -110,7 +110,7 @@ class BIM_PT_materials(Panel):
             return
         ifc_definition_id = self.props.active_material_id
         if self.props.editing_material_type == "ATTRIBUTES":
-            bonsai.bim.helper.draw_attributes(self.props.material_attributes, self.layout, enable_search=True, should_click_ok=True)
+            bonsai.bim.helper.draw_attributes(self.props.material_attributes, self.layout, enable_search=True)
             row = self.layout.row(align=True)
             row.operator("bim.edit_material", text="Save Material", icon="CHECKMARK").material = ifc_definition_id
             row.operator("bim.disable_editing_material", text="", icon="CANCEL")

@@ -1324,10 +1324,8 @@ class ShowSystemInfo(bpy.types.Operator):
 
 
 def update_attribute_search_value(self, context):
-    path_parts = self.data_path.split(".")
-    obj_path = ".".join(path_parts[:-1])
-    attr_name = path_parts[-1]
-    attribute = eval(f"bpy.context.scene.{obj_path}")
+    should_click_ok = False
+    attr_name, attribute_obj = BIM_OT_attribute_search_values.resolve_data_path(self.data_path)
 
     value = self.search_value
     if self.data_type == "integer":
@@ -1335,17 +1333,18 @@ def update_attribute_search_value(self, context):
     elif self.data_type == "float":
         value = float(value)
 
-    setattr(attribute, attr_name, value)
+    setattr(attribute_obj, attr_name, value)
 
     if self.first_launch:
         self.first_launch = False
     else:
-        if not self.should_click_ok:
+        if not should_click_ok:
             context.window.screen = context.window.screen
 
 
 class BIM_OT_attribute_search_values(bpy.types.Operator):
     """Search for attribute values. This implementation is based on bim.enum_property_search"""
+
     bl_idname = "bim.attribute_search_values"
     bl_label = "Search Attribute Values"
     bl_description = "Search for attribute values within a collection"
@@ -1356,18 +1355,27 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     data_path: bpy.props.StringProperty(name="Data Path")
     data_type: bpy.props.StringProperty(name="Data Type")
     search_value: bpy.props.StringProperty(
-        name="Search", description="Search for attribute values", update=update_attribute_search_value
-    , default="", options={"SKIP_SAVE"})
-    should_click_ok: bpy.props.BoolProperty(default=False)
+        name="Search",
+        description="Search for attribute values",
+        update=update_attribute_search_value,
+        default="",
+        options={"SKIP_SAVE"},
+    )
     collection_values: bpy.props.CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
 
-    def invoke(self, context, event):
-        path_parts = self.data_path.split(".")
+    @staticmethod
+    def resolve_data_path(data_path: str) -> tuple[str, object]:
+        """Resolve the data path of an object's attribute to get the attribute name and the object."""
+        path_parts = data_path.split(".")
         obj_path = ".".join(path_parts[:-1])
         attr_name = path_parts[-1]
-        attribute = eval(f"bpy.context.scene.{obj_path}")
+        attribute_obj = eval(f"bpy.context.scene.{obj_path}")
+        return attr_name, attribute_obj
 
-        self.search_value = str(value := getattr(attribute, attr_name, ""))
+    def invoke(self, context, event):
+        attr_name, attribute_obj = self.resolve_data_path(self.data_path)
+        self.search_value = str(getattr(attribute_obj, attr_name, ""))
+
         unique_values = self.get_unique_attribute_values()
         string_values = natsorted(unique_values)
 
