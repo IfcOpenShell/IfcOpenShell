@@ -119,8 +119,7 @@ class Clash(bonsai.core.tool.Clash):
         if not clash_set:
             return
         clash_set.clashes.clear()
-        if "clashes_loaded" in clash_set:
-            del clash_set["clashes_loaded"]
+        clash_set.property_unset("clashes_loaded")
 
     @classmethod
     def load_clash_sets(cls, fn: str) -> None:

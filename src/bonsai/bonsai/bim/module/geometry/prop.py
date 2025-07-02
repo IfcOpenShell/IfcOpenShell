@@ -193,9 +193,8 @@ def update_is_adding_representation_layer(self: "BIMObjectGeometryProperties", c
             return
         return
 
-    if "representation_layer" in self:
-        del self["representation_layer"]
-        del self["is_adding_representation_layer"]
+    self.property_unset("representation_layer")
+    self.property_unset("is_adding_representation_layer")
 
 
 def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
@@ -216,9 +215,8 @@ def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: b
             self.representation_item_layer = str(layer.id())
         return
 
-    if "representation_item_layer" in self:
-        del self["representation_item_layer"]
-        del self["is_editing_item_layer"]
+    self.property_unset("representation_item_layer")
+    self.property_unset("is_editing_item_layer")
 
 
 class BIMObjectGeometryProperties(PropertyGroup):
