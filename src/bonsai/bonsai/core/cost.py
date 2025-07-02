@@ -18,8 +18,6 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union, Literal
-import os
-from bonsai.bim.module.cost.data import CostSchedulesData
 
 if TYPE_CHECKING:
     import bpy
@@ -345,7 +343,6 @@ def import_cost_schedule_csv(
     cost: type[tool.Cost], resolved_path: str, is_schedule_of_rates: bool
 ) -> ifcopenshell.entity_instance:
 
-
     cost_schedule = cost.import_cost_schedule_csv(resolved_path, is_schedule_of_rates)
     return cost_schedule
 
@@ -359,15 +356,9 @@ def remove_csv_filepath(cost: type[tool.Cost], cost_schedule) -> None:
 
 
 def refresh_cost_schedule_csv(cost: type[tool.Cost]) -> Optional[str]:
-
-    
     cost.delete_all_cost_items()
     cost.refresh_cost_schedule_csv()
     cost.load_cost_schedule_tree()
-
-    CostSchedulesData.is_loaded = False
-
-    return None
 
 
 def add_cost_column(cost: type[tool.Cost], name: str) -> None:
@@ -470,9 +461,3 @@ def add_currency(ifc: type[tool.Ifc], cost: type[tool.Cost]) -> ifcopenshell.ent
 
 def generate_cost_schedule_browser(cost: type[tool.Cost], cost_schedule: ifcopenshell.entity_instance) -> None:
     return cost.generate_cost_schedule_browser(cost_schedule)
-
-
-
-
-
-

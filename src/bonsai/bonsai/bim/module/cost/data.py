@@ -76,7 +76,7 @@ class CostSchedulesData:
                         filepaths[schedule_id] = reference.Location
                     except ValueError:
                         pass
-        
+
         return filepaths
 
     @classmethod
