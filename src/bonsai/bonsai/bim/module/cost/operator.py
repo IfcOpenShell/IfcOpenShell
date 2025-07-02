@@ -785,6 +785,13 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
         self.layout.label(text="Select a directory.")
 
 
+cost_schedules_items = []
+
+
+def get_cost_schedules_enum_items(self, context):
+    return cost_schedules_items
+
+
 class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules_to_pdf"
     bl_label = "Export Cost Schedule to PDF"
@@ -792,6 +799,12 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     bl_description = "Print chosen cost schedule to pdf."
     filename_ext = ".pdf"
     filter_glob: bpy.props.StringProperty(default="*.pdf", options={"HIDDEN"}, maxlen=255)
+
+    cost_schedules_enum: bpy.props.EnumProperty(
+        name="",
+        description="Choose IfcCostSchedule to print",
+        items=get_cost_schedules_enum_items,
+    )
 
     should_print_summary: bpy.props.BoolProperty(
         name="Should print summary",
@@ -803,14 +816,10 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         layout = self.layout
         box = layout.box()
         box.label(text="Select Ifc Cost Schedule:")
-        self.props = tool.Cost.get_cost_props()
-        box.prop(self.props, "cost_schedules_enum", text="")
+        box.prop(self, "cost_schedules_enum", text="")
         layout.separator()
         box = layout.box()
         box.label(text="Export properties:")
-        # box.prop(self, "should_print_cover")
-        # box.prop(self, "should_print_description")
-        # box.prop(self, "should_print_each_quantity")
         box.prop(self, "should_print_summary")
 
     @classmethod
@@ -820,20 +829,35 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
 
             return True
         except:
-            cls.poll_message_set("Typst not available.\nConsider installing Typst Importer extension.")
+            cls.poll_message_set(
+                "Typst not available.\nIt can be installed from Quality and\nControl -> Debug and using 'typst' with Pip Install.\n(Run Blender as Administrator)"
+            )
             return False
+
+    def invoke(self, context, event):
+        global cost_schedules_items
+        cost_schedules_items.clear()
+
+        file = tool.Ifc.get()
+        schedules = file.by_type("IfcCostSchedule")
+        counter = 0
+        for schedule in schedules:
+            schedule_name = getattr(schedule, "Name", "Unnamed")
+            if schedule_name is None:
+                schedule_name = "Unnamed"
+            schedule_type = getattr(schedule, "PredefinedType", "UNTYPED")
+            if schedule_type is None:
+                schedule_type = "UNTYPED"
+            cost_schedules_items.append((str(counter), "{} ({})".format(schedule_name, schedule_type), ""))
+            counter += 1
+
+        return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         file = tool.Ifc.get()
         self.props = tool.Cost.get_cost_props()
-        cost_schedule = file.by_type("IfcCostSchedule")[int(self.props.cost_schedules_enum)]
-        options = {
-            # "should_print_cover" : self.should_print_cover,
-            # "should_print_description" : self.should_print_description,
-            # "should_print_each_quantity" : self.should_print_each_quantity,
-            # "should_print_rates" : self.should_print_rates,
-            "should_print_summary": self.should_print_summary
-        }
+        cost_schedule = file.by_type("IfcCostSchedule")[int(self.cost_schedules_enum)]
+        options = {"should_print_summary": self.should_print_summary}
         core.export_cost_schedules_to_pdf(
             tool.Cost, filepath=self.filepath, cost_schedule=cost_schedule, options=options
         )

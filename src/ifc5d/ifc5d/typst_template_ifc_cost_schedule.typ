@@ -9,7 +9,7 @@
 
 
 #let root-cost-cell-style = (
-  stroke: (bottom: (dash: "dotted")), 
+  stroke: (bottom: (thickness: 0.4pt, dash: "dotted")), 
   fill: gray.transparentize(90%),
   align: bottom
 )
@@ -289,8 +289,8 @@
     stroke: (x, y) => (
       left: none,
       right: none,
-      top: (dash: "dotted"),
-      bottom:  (dash: "dotted")
+      top: (thickness: 0.4pt, dash: "dotted"),
+      bottom:  (thickness: 0.4pt, dash: "dotted")
     ),
     ..new_rows.flatten()
   )
