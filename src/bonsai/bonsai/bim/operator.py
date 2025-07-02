@@ -44,6 +44,7 @@ from pathlib import Path
 from collections import namedtuple
 from typing import Union, TYPE_CHECKING
 from collections.abc import Iterable
+from natsort import natsorted
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import MultipleFileSelect
@@ -1299,3 +1300,97 @@ class ShowSystemInfo(bpy.types.Operator):
 
         col.separator()
         col.label(text="(The information has been copied to the clipboard.)")
+
+
+def update_attribute_search_value(self, context):
+    should_click_ok = False
+    attr_name, attribute_obj = BIM_OT_attribute_search_values.resolve_data_path(self.data_path)
+
+    value = self.search_value
+    if self.data_type == "integer":
+        value = int(value)
+    elif self.data_type == "float":
+        value = float(value)
+
+    setattr(attribute_obj, attr_name, value)
+
+    if self.first_launch:
+        self.first_launch = False
+    else:
+        if not should_click_ok:
+            context.window.screen = context.window.screen
+
+
+class BIM_OT_attribute_search_values(bpy.types.Operator):
+    """Search for attribute values. This implementation is based on bim.enum_property_search"""
+
+    bl_idname = "bim.attribute_search_values"
+    bl_label = "Search Attribute Values"
+    bl_description = "Search for attribute values within a collection"
+    bl_options = {"REGISTER", "UNDO"}
+    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+    attribute_name: bpy.props.StringProperty(name="Attribute Name")
+    attribute_ifc_class: bpy.props.StringProperty(name="Attribute IFC Class")
+    data_path: bpy.props.StringProperty(name="Data Path")
+    data_type: bpy.props.StringProperty(name="Data Type")
+    search_value: bpy.props.StringProperty(
+        name="Search",
+        description="Search for attribute values",
+        update=update_attribute_search_value,
+        default="",
+        options={"SKIP_SAVE"},
+    )
+    collection_values: bpy.props.CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
+
+    @staticmethod
+    def resolve_data_path(data_path: str) -> tuple[str, object]:
+        """Resolve the data path of an object's attribute to get the attribute name and the object."""
+        path_parts = data_path.split(".")
+        obj_path = ".".join(path_parts[:-1])
+        attr_name = path_parts[-1]
+        attribute_obj = eval(f"bpy.context.scene.{obj_path}")
+        return attr_name, attribute_obj
+
+    def invoke(self, context, event):
+        attr_name, attribute_obj = self.resolve_data_path(self.data_path)
+        self.search_value = str(getattr(attribute_obj, attr_name, ""))
+
+        unique_values = self.get_unique_attribute_values()
+        string_values = natsorted(unique_values)
+
+        for value in string_values:
+            self.collection_values.add().name = value
+
+        return context.window_manager.invoke_props_dialog(self)
+
+    def get_unique_attribute_values(self):
+        ifc_file = tool.Ifc.get()
+        unique_values = set()
+        ifc_class = self.attribute_ifc_class
+
+        elements = ifc_file.by_type(ifc_class, include_subtypes=True)
+
+        for element in elements:
+            # We check just direct entity attributes and simply check if the attribute exists
+            if hasattr(element, self.attribute_name):
+                value = getattr(element, self.attribute_name)
+                if value is not None:
+                    unique_values.add(str(value))
+
+        return list(unique_values)
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.label(text=f"Select {self.attribute_name} value:")
+        row = self.layout.row()
+        row.prop_search(
+            self,
+            "search_value",
+            self,
+            "collection_values",
+            text="",
+            results_are_suggestions=True,
+        )
+
+    def execute(self, context):
+        return {"FINISHED"}
