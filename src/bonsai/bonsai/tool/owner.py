@@ -319,8 +319,7 @@ class Owner(bonsai.core.tool.Owner):
     @classmethod
     def clear_application(cls) -> None:
         props = cls.get_owner_props()
-        if "active_application_id" in props:
-            del props["active_application_id"]
+        props.property_unset("active_application_id")
 
     @classmethod
     def import_application_attributes(cls) -> None:
