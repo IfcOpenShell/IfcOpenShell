@@ -174,6 +174,7 @@ class CostItemQuantity(PropertyGroup):
         unit_symbol: str
         total_cost_quantity: float
 
+
 class CostItemType(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
