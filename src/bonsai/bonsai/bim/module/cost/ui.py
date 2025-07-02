@@ -76,10 +76,10 @@ class BIM_PT_cost_schedules(Panel):
             col = row0.column()
             col.label(text="Linked CSV:")
             row_1 = col.row(align=True)
-            
+
             csv_filepaths = CostSchedulesData.data["csv_filepaths"]
             file_path = csv_filepaths.get(self.props.active_cost_schedule_id)
-            
+
             if file_path:
                 row_1.label(text=file_path)
                 row_1.operator("bim.refresh_cost_schedule_csv", icon="FILE_REFRESH", text="")
