@@ -125,6 +125,7 @@ classes = [
     operator.ShowSystemInfo,
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
+    operator.BIM_OT_attribute_search_values,
     prop.ObjProperty,
     prop.MultipleFileSelect,
     prop.Attribute,

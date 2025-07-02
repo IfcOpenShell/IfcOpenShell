@@ -52,26 +52,33 @@ def draw_attributes(
     copy_operator: Optional[str] = None,
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
+    enable_search: bool = False,
 ) -> None:
     """Draw editable UI for prop.Attributes.
 
     You can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
     on it first
+
+    :param enable_search: Add search button to string, integer, and float attributes
     """
     for attribute in props:
         row = layout.row(align=True)
         if attribute == popup_active_attribute:
             row.activate_init = True
-        draw_attribute(attribute, row, copy_operator)
+        draw_attribute(attribute, row, copy_operator, enable_search=enable_search)
         if callback:
             callback(attribute, row)
 
 
 def draw_attribute(
-    attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+    attribute: bonsai.bim.prop.Attribute,
+    layout: bpy.types.UILayout,
+    copy_operator: Optional[str] = None,
+    enable_search: bool = False,
 ) -> None:
     value_name = attribute.get_value_name(display_only=True)
+
     if value_name == "enum_value":
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
     elif value_name == "filepath_value":
@@ -103,6 +110,13 @@ def draw_attribute(
         op = layout.operator("bim.datepicker", text="", icon="TIME")
         op.target_prop = attribute.path_from_id("string_value")
         op.include_time = attribute.special_type == "DATETIME"
+
+    if enable_search and attribute.data_type in ("string", "integer", "float"):
+        op = layout.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
+        op.attribute_name = attribute.name
+        op.attribute_ifc_class = attribute.ifc_class
+        op.data_path = attribute.path_from_id(value_name)
+        op.data_type = attribute.data_type
 
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
