@@ -882,6 +882,9 @@ class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded")
+            return False
         props = tool.Material.get_material_props()
         active_style = tool.Blender.get_enum_safe(props, "styles")
         if not active_style:
