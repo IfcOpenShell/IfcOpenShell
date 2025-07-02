@@ -322,8 +322,10 @@ class iterator(ifcopenshell_wrapper.Iterator):
             if include_or_exclude_type == {"entity_instance"}:
                 include_or_exclude = cast(set[entity_instance], include_or_exclude)
 
-                if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
-                    raise ValueError("include and exclude need to be an aggregate of IfcProduct")
+                if not all((last_inst := inst).is_a("IfcProduct") for inst in include_or_exclude):
+                    raise ValueError(
+                        f"include and exclude need to be an aggregate of IfcProduct. Violating element: '{last_inst}'."
+                    )
 
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_id
 
