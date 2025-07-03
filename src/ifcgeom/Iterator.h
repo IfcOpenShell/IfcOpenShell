@@ -122,6 +122,7 @@ namespace IfcGeom {
 
 		std::mutex element_ready_mutex_;
 		bool task_result_ptr_initialized = false;
+		bool task_result_ptr_exhausted = false;
 		size_t async_elements_returned_ = 0;
 		
 		ifcopenshell::geometry::Settings settings_;
@@ -207,6 +208,7 @@ namespace IfcGeom {
 		bool wait_for_element();
 
 		void log_timepoints() const;
+		void validate_iterator_state() const;
 
 		ifcopenshell::geometry::taxonomy::direction3::ptr remove_offset_();
 	public:

@@ -1,6 +1,10 @@
 #include "Iterator.h"
 
 /**
+* Initialize iterator's list of tasks.
+*
+* Will automatically process first element, if 'defer-processing-first-element' is not set to `true`.
+*
 * @return Returns true if the iterator is initialized with any elements, false otherwise.
 *
 * @note
@@ -462,10 +466,29 @@ void IfcGeom::Iterator::log_timepoints() const {
 	}
 }
 
+void IfcGeom::Iterator::validate_iterator_state() const {
+	if (!initialization_outcome_) {
+		throw std::runtime_error("Iterator not initialized");
+	}
+
+	// Causes:
+	// - iterator was initialized but there were no elements to process
+	// - iterator was initialized but 'defer-processing-first-element' setting is enabled
+	// and some element should be processed manually first
+	if (!task_result_ptr_initialized) {
+		throw std::runtime_error("No elements processed");
+	}
+
+	if (task_result_ptr_exhausted) {
+		throw std::runtime_error("Iterator is exhausted");
+	}
+}
+
 /// Moves to the next shape representation, create its geometry, and returns the associated product.
 /// Use get() to retrieve the created geometry.
 const IfcUtil::IfcBaseClass* IfcGeom::Iterator::next() {
 	using std::chrono::high_resolution_clock;
+	validate_iterator_state();
 
 	if (*native_task_result_iterator_ != *task_result_iterator_) {
 		delete* native_task_result_iterator_;
@@ -477,6 +500,7 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::next() {
 			Logger::SetProduct(boost::none);
 			time_points[3] = high_resolution_clock::now();
 			log_timepoints();
+			task_result_ptr_exhausted = true;
 			return nullptr;
 		}
 
@@ -492,6 +516,7 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::next() {
 				Logger::SetProduct(boost::none);
 				time_points[3] = high_resolution_clock::now();
 				log_timepoints();
+				task_result_ptr_exhausted = true;
 				return nullptr;
 			}
 		}
@@ -506,13 +531,7 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::next() {
 /// Gets the representation of the current geometrical entity.
 IfcGeom::Element* IfcGeom::Iterator::get()
 {
-	if (!initialization_outcome_) {
-		throw std::runtime_error("Iterator not initialized");
-	}
-
-	if (settings_.get<ifcopenshell::geometry::settings::DeferProcessingFirstElement>().get() && !task_result_ptr_initialized) {
-		throw std::runtime_error("No elements processed");
-	}
+	validate_iterator_state();
 
 	auto ret = *task_result_iterator_;
 
