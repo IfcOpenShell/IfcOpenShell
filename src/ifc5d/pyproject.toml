@@ -19,6 +19,11 @@ dependencies = [
     "ifcopenshell",
 ]
 
+ [project.optional-dependencies] 
+ advanced = [ 
+   "typst", 
+ ] 
+
 [project.urls]
 Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
