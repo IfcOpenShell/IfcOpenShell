@@ -837,26 +837,18 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     def invoke(self, context, event):
         global cost_schedules_items
         cost_schedules_items.clear()
-
         file = tool.Ifc.get()
         schedules = file.by_type("IfcCostSchedule")
-        counter = 0
         for schedule in schedules:
-            schedule_name = getattr(schedule, "Name", "Unnamed")
-            if schedule_name is None:
-                schedule_name = "Unnamed"
-            schedule_type = getattr(schedule, "PredefinedType", "UNTYPED")
-            if schedule_type is None:
-                schedule_type = "UNTYPED"
-            cost_schedules_items.append((str(counter), "{} ({})".format(schedule_name, schedule_type), ""))
-            counter += 1
-
+            schedule_name = getattr(schedule, "Name", None) or "Unnamed"
+            schedule_type = getattr(schedule, "PredefinedType", None) or "UNTYPED"
+            cost_schedules_items.append((str(schedule.id()), "{} ({})".format(schedule_name, schedule_type), ""))
         return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         file = tool.Ifc.get()
         self.props = tool.Cost.get_cost_props()
-        cost_schedule = file.by_type("IfcCostSchedule")[int(self.cost_schedules_enum)]
+        cost_schedule = file.by_id(int(self.cost_schedules_enum))
         options = {"should_print_summary": self.should_print_summary}
         core.export_cost_schedules_to_pdf(
             tool.Cost, filepath=self.filepath, cost_schedule=cost_schedule, options=options
