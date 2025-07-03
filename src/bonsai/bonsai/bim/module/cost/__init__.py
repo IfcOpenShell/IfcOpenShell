@@ -59,6 +59,7 @@ classes = (
     operator.ExpandCostItemRate,
     operator.ExpandCostItems,
     operator.ExportCostSchedules,
+    operator.ExportCostSchedulesToPDF,
     operator.HighlightProductCostItem,
     operator.ImportCostScheduleCsv,
     operator.RefreshCostScheduleCsv,

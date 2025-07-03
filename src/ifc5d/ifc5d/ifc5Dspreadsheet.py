@@ -142,6 +142,7 @@ class IfcDataGetter:
             "Id": cost_item.id(),
             "Identification": cost_item.Identification,
             "Name": cost_item.Name,
+            "Description": cost_item.Description,
             "Unit": unit,
             "Quantity": quantity_data["quantity"],
             "RateSubtotal": rate_subtotal,
@@ -160,8 +161,12 @@ class IfcDataGetter:
     @staticmethod
     def get_schedule_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[CostItem]:
         cost_items_data: list[CostItem] = []
+        index = 1
         for cost_item in IfcDataGetter.get_root_costs(schedule):
-            cost_items_data.extend(IfcDataGetter.get_cost_items_data(file, cost_item))
+            cost_items_data.extend(
+                IfcDataGetter.get_cost_items_data(file=file, cost_item=cost_item, hierarchy=str(index))
+            )
+            index += 1
         return cost_items_data
 
     @staticmethod
@@ -300,6 +305,7 @@ class Ifc5Dwriter:
                 "Index",
                 "Identification",
                 "Name",
+                "Description",
                 "Unit",
             ]
             if cost_schedule.PredefinedType != "SCHEDULEOFRATES":
@@ -515,6 +521,73 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
                 worksheet.write(row, col, cost_item_data.get(header, ""))
                 col += 1
             row += 1
+
+
+class Ifc5DPdfWriter(Ifc5Dwriter):
+    def __init__(
+        self,
+        file: Union[str, ifcopenshell.file],
+        output: str,
+        options: dict,
+        cost_schedule: Optional[ifcopenshell.entity_instance] = None,
+    ):
+        """
+        PDF Writer is based on typst library, be sure it is available.
+        :param file: IFC file to exprot cost schedules from.
+        :param output: Output file path including name and .pdf extension.
+        :param cost_schedule: exported cost schedule. If not provided, will export all available schedules. Output will be different accoding to Cost Schedule PredefinedType.
+        """
+        self.output = output
+        if isinstance(file, str):
+            self.file = ifcopenshell.open(file)
+        else:
+            self.file = file
+        self.cost_schedule = cost_schedule
+        self.options = options
+
+    def write(self) -> None:
+        import os
+        import ifc5d
+        import shutil
+        import typst
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            project_name = self.file.by_type("IfcProject")[0].Name
+            schedule_name = getattr(self.cost_schedule, "Name", None) or "Unnamed"
+            schedule_type = getattr(self.cost_schedule, "PredefinedType", None) or "UNTYPED"
+
+            # export csv file
+            csv_file_writer = Ifc5DCsvWriter(file=self.file, output=temp_dir, cost_schedule=self.cost_schedule)
+            csv_file_writer.write()
+            csv_file_name = schedule_name + ".csv"
+
+            # locate typst template file
+            typst_template_file_path = os.path.join(
+                os.path.dirname(ifc5d.__file__), "typst_template_ifc_cost_schedule.typ"
+            )
+            shutil.copy(typst_template_file_path, temp_dir)
+
+            # generate typst main file content and write it
+            typst_main_content = ""
+            typst_main_content += '#import "{}": *\n'.format("typst_template_ifc_cost_schedule.typ")
+            typst_main_content += "#show: project.with(\n"
+            typst_main_content += 'schedule_path: "{}",\n'.format(csv_file_name)
+            typst_main_content += 'title: "{}",\n'.format(project_name)
+            typst_main_content += 'schedule_name: "{}",\n'.format(schedule_name)
+            typst_main_content += 'schedule_type: "{}",\n'.format(schedule_type)
+            typst_main_content += "cover_page: {},\n".format("false")
+            typst_main_content += "root_items_to_new_page: {},\n".format("false")
+            typst_main_content += "summary: {},\n".format(str(self.options.get("should_print_summary", False)).lower())
+            typst_main_content += ")"
+            typst_main_path = os.path.join(temp_dir, "main.typ")
+            with open(typst_main_path, "w") as typ_file:
+                typ_file.write(typst_main_content)
+
+            # compile pdf file and write it
+            pdf_bytes = typst.compile(typst_main_path)
+            with open(self.output, "wb") as f:
+                f.write(pdf_bytes)
 
 
 if __name__ == "__main__":
