@@ -651,11 +651,7 @@ class Cost(bonsai.core.tool.Cost):
         for reference in references:
             if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
                 ifcopenshell.api.document.remove_reference(ifc_file, reference)
-                break
-
-        remaining_references = tool.Document.get_document_references(cost_docs_document)
-        if not remaining_references:
-            ifcopenshell.api.document.remove_information(ifc_file, cost_docs_document)
+                return
 
     @classmethod
     def delete_all_cost_items(cls):
