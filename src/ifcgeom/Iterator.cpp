@@ -144,7 +144,6 @@ bool IfcGeom::Iterator::initialize() {
 
 		task_iterator_ = tasks_.begin();
 
-		task_result_index_ = 0;
 		done = 0;
 		total = (int)tasks_.size();
 

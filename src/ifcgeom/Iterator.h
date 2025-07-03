@@ -123,7 +123,6 @@ namespace IfcGeom {
 		std::mutex element_ready_mutex_;
 		bool task_result_ptr_initialized = false;
 		size_t async_elements_returned_ = 0;
-		size_t task_result_index_ = 0;
 		
 		ifcopenshell::geometry::Settings settings_;
 		IfcParse::IfcFile* ifc_file;
