@@ -838,7 +838,14 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         schedules = file.by_type("IfcCostSchedule")
         for schedule in schedules:
             ExportCostSchedulesToPDF.cost_schedules_items.append(
-                (str(schedule.id()), "{} ({})".format(schedule.Name, schedule.PredefinedType), "")
+                (
+                    str(schedule.id()),
+                    "{} ({})".format(
+                        schedule.Name if schedule.Name is not None else "Unnamed",
+                        schedule.PredefinedType if schedule.PredefinedType is not None else "UNTYPED",
+                    ),
+                    "",
+                )
             )
         return ExportHelper.invoke(self, context, event)
 
