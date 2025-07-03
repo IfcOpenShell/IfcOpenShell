@@ -614,6 +614,33 @@ class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
         core.refresh_cost_schedule_csv(tool.Cost)
         return {"FINISHED"}
 
+class RemoveCostScheduleCsvLink(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_cost_schedule_csv_link"
+    bl_label = "Remove CSV Link"
+    bl_description = "Remove the link to the CSV file and delete the related document reference"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Cost.get_cost_props()
+        if not props.active_cost_schedule_id:
+            cls.poll_message_set("No active cost schedule")
+            return False
+
+        file_path = tool.Cost.get_cost_schedule_csv_filepath(props.active_cost_schedule_id)
+        if not file_path:
+            cls.poll_message_set("No CSV file associated with this cost schedule")
+            return False
+
+        return True
+
+    def _execute(self, context):
+        core.remove_cost_schedule_csv_link(tool.Cost)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
 
 class AddCostColumn(bpy.types.Operator):
     bl_idname = "bim.add_cost_column"

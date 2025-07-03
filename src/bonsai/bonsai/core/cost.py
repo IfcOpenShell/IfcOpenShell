@@ -360,6 +360,11 @@ def refresh_cost_schedule_csv(cost: type[tool.Cost]) -> Optional[str]:
     cost.refresh_cost_schedule_csv()
     cost.load_cost_schedule_tree()
 
+def remove_cost_schedule_csv_link(cost: type[tool.Cost]) -> None:
+    cost_schedule = cost.get_active_cost_schedule()
+    if cost_schedule:
+        cost.remove_csv_filepath(cost_schedule)
+        #cost.load_cost_schedule_tree()
 
 def add_cost_column(cost: type[tool.Cost], name: str) -> None:
     cost.add_cost_column(name)
