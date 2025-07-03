@@ -274,6 +274,11 @@ class Patcher(ifcpatch.BasePatcher):
         products = self.elements
         iterator = ifcopenshell.geom.iterator(self.settings, self.file, multiprocessing.cpu_count(), include=products)
         valid_file = iterator.initialize()
+        if not valid_file:
+            # If there were no elements, iterator will also fail and it's okay not to report it.
+            if products:
+                print("WARNING. Geometry iterator failed to initialize.")
+            return
         checkpoint = time.time()
         progress = 0
         total = len(products)
