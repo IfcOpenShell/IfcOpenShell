@@ -55,7 +55,7 @@ if has_occ:
     except ImportError:
         from OCC import TopoDS
 
-    def wrap_shape_creation(settings, shape):
+    def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.Element):
         if getattr(settings, "use_python_opencascade", False):
             return utils.create_shape_from_serialization(shape)
         else:
