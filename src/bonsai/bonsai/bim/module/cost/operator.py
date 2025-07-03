@@ -614,6 +614,7 @@ class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
         core.refresh_cost_schedule_csv(tool.Cost)
         return {"FINISHED"}
 
+
 class RemoveCostScheduleCsvLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_schedule_csv_link"
     bl_label = "Remove CSV Link"

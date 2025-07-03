@@ -603,12 +603,12 @@ class Cost(bonsai.core.tool.Cost):
             ),
             None,
         )
-        
+
         if not cost_docs_document:
             cost_docs_document = ifcopenshell.api.document.add_information(ifc_file)
             cost_docs_document.Name = "BBIM_Cost_Documents"
             cost_docs_document.Description = "Bonsai internal document containing references to cost CSV files"
-        
+
         return cost_docs_document
 
     @classmethod
@@ -652,7 +652,7 @@ class Cost(bonsai.core.tool.Cost):
             if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
                 ifcopenshell.api.document.remove_reference(ifc_file, reference)
                 break
-        
+
         remaining_references = tool.Document.get_document_references(cost_docs_document)
         if not remaining_references:
             ifcopenshell.api.document.remove_information(ifc_file, cost_docs_document)
@@ -1100,6 +1100,3 @@ class Cost(bonsai.core.tool.Cost):
         if results["quantity_type"] == "IfcQuantityCount":
             results["unit_symbol"] = "U"
         return results
-
-
-
