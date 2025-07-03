@@ -785,13 +785,6 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
         self.layout.label(text="Select a directory.")
 
 
-cost_schedules_items = []
-
-
-def get_cost_schedules_enum_items(self, context):
-    return cost_schedules_items
-
-
 class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules_to_pdf"
     bl_label = "Export Cost Schedule to PDF"
@@ -799,6 +792,11 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     bl_description = "Print chosen cost schedule to pdf."
     filename_ext = ".pdf"
     filter_glob: bpy.props.StringProperty(default="*.pdf", options={"HIDDEN"}, maxlen=255)
+
+    cost_schedules_items = []
+
+    def get_cost_schedules_enum_items(self, context):
+        return ExportCostSchedulesToPDF.cost_schedules_items
 
     cost_schedules_enum: bpy.props.EnumProperty(
         name="",
@@ -835,14 +833,13 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
             return False
 
     def invoke(self, context, event):
-        global cost_schedules_items
-        cost_schedules_items.clear()
+        ExportCostSchedulesToPDF.cost_schedules_items.clear()
         file = tool.Ifc.get()
         schedules = file.by_type("IfcCostSchedule")
         for schedule in schedules:
-            schedule_name = getattr(schedule, "Name", None) or "Unnamed"
-            schedule_type = getattr(schedule, "PredefinedType", None) or "UNTYPED"
-            cost_schedules_items.append((str(schedule.id()), "{} ({})".format(schedule_name, schedule_type), ""))
+            ExportCostSchedulesToPDF.cost_schedules_items.append(
+                (str(schedule.id()), "{} ({})".format(schedule.Name, schedule.PredefinedType), "")
+            )
         return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
