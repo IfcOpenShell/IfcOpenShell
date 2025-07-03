@@ -117,8 +117,8 @@ namespace IfcGeom {
 		std::list<IfcGeom::Element*> all_processed_elements_;
 		std::list<IfcGeom::BRepElement*> all_processed_native_elements_;
 
-		typename std::list<IfcGeom::Element*>::const_iterator task_result_iterator_;
-		typename std::list<IfcGeom::BRepElement*>::const_iterator native_task_result_iterator_;
+		std::list<IfcGeom::Element*>::const_iterator task_result_iterator_;
+		std::list<IfcGeom::BRepElement*>::const_iterator native_task_result_iterator_;
 
 		std::mutex element_ready_mutex_;
 		bool task_result_ptr_initialized = false;
