@@ -99,7 +99,7 @@ class ActivateStatusFilters(bpy.types.Operator):
 
         if not props.is_enabled:
             # In case if operator was added to Quick Favorites.
-            bpy.ops.bim.disable_status_fitlers()
+            bpy.ops.bim.disable_status_filters()
             return {"FINISHED"}
 
         visible_statuses = {s.name for s in props.statuses if s.is_visible}
