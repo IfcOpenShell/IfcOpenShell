@@ -843,10 +843,69 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         items=get_cost_schedules_enum_items,
     )
 
+    nested_structure_depth: bpy.props.IntProperty(
+        name="Nested structure depth: ",
+        description="Define till which level of the structure the parent cost items are displayed.\n0: no parent cost item is displayed.",
+        default=3,
+        min=0,
+        max=9,
+    )
+    parent_to_new_page_up_to_depth: bpy.props.IntProperty(
+        name="Parents to new page up to depth: ",
+        description="Define till which level of the structure the parent is printed to a new page.\n0: no parent is split to a new page.",
+        default=0,
+        min=0,
+        max=9,
+    )
+    show_only_parents: bpy.props.BoolProperty(
+        name="Show only parent cost items",
+        description="Hide cost items and show only container costs",
+        default=False,
+    )
+    should_print_cover: bpy.props.BoolProperty(
+        name="Cover page",
+        description="Create a cover page with project data",
+        default=False,
+    )
+    should_print_description: bpy.props.BoolProperty(
+        name="Full Cost Items Description",
+        description="Export the full description if present",
+        default=True,
+    )
+    should_print_each_quantity: bpy.props.BoolProperty(
+        name="Show each quantity",
+        description="Export the full list of quantities",
+        default=False,
+    )   
+    should_print_rates: bpy.props.BoolProperty(
+        name="Rates and totals",
+        description="Print rates and totals for each voice",
+        default=True,
+    )
     should_print_summary: bpy.props.BoolProperty(
-        name="Should print summary",
+        name="Final Summary",
         description="Print summary at the end of the document",
         default=True,
+    )
+    force_schedule_type: bpy.props.EnumProperty(
+        name="Force output type",
+        description="Force the output to this type\nalso if it is not coincident with the cost schedule Predefined Type",
+        items=[
+            (
+                "0",
+                "Off",
+                "Uses Cost Schedule Predefined Type",
+            ),(
+                "1",
+                "PRICEDBILLOFQUANTITIES",
+                "Forces the output as a priced bill of quantities",
+            ),(
+                "2",
+                "SCHEDULEOFRATES",
+                "Forces the output as a schedule of rates",
+            ),
+        ],
+        default="0",
     )
 
     def draw(self, context):
@@ -856,8 +915,18 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         box.prop(self, "cost_schedules_enum", text="")
         layout.separator()
         box = layout.box()
-        box.label(text="Export properties:")
+        box.label(text="Nested cost structure:")
+        box.prop(self, "nested_structure_depth")
+        box.prop(self, "parent_to_new_page_up_to_depth")
+        box.prop(self, "show_only_parents")
+        layout.separator()
+        box = layout.box()
+        box.label(text="PDF Document properties:")
+        box.prop(self, "should_print_cover")
+        box.prop(self, "should_print_description")
+        box.prop(self, "should_print_each_quantity")
         box.prop(self, "should_print_summary")
+        box.prop(self, "force_schedule_type")
 
     @classmethod
     def poll(cls, context):
