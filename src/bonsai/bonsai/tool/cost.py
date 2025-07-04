@@ -697,7 +697,6 @@ class Cost(bonsai.core.tool.Cost):
     def refresh_cost_schedule_csv(cls):
         """Refresh cost schedule from CSV file stored in document references."""
         from ifc5d.csv2ifc import Csv2Ifc
-        import os
 
         props = cls.get_cost_props()
         cost_schedule_id = props.active_cost_schedule_id
