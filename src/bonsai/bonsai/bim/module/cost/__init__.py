@@ -63,6 +63,7 @@ classes = (
     operator.HighlightProductCostItem,
     operator.ImportCostScheduleCsv,
     operator.RefreshCostScheduleCsv,
+    operator.RemoveCostScheduleCsvLink,
     operator.LoadCostItemElementQuantities,
     operator.LoadCostItemQuantities,
     operator.ShowAssignedCostRate,

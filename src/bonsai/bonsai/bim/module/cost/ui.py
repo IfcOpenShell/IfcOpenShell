@@ -84,6 +84,7 @@ class BIM_PT_cost_schedules(Panel):
             if file_path:
                 row_1.label(text=file_path)
                 row_1.operator("bim.refresh_cost_schedule_csv", icon="FILE_REFRESH", text="")
+                row_1.operator("bim.remove_cost_schedule_csv_link", icon="X", text="")
             else:
                 row_1.label(text="No CSV file found")
                 row_1.operator("bim.import_cost_schedule_csv", icon="IMPORT", text="")
