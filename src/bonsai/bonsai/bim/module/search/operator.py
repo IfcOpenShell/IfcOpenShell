@@ -19,6 +19,7 @@
 import bpy
 import json
 import bisect
+import traceback
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.group
@@ -193,6 +194,8 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             query = tool.Search.export_filter_query(filter_groups)
             results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
         except:
+            print(traceback.format_exc())
+            self.report({"ERROR"}, "Error occurred trying save search.")
             return
 
         description = json.dumps({"type": "BBIM_Search", "query": query})
