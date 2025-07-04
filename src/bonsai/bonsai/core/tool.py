@@ -76,6 +76,11 @@ class Aggregate:
 
 
 @interface
+class Attribute:
+    pass
+
+
+@interface
 class Bcf:
     pass
 

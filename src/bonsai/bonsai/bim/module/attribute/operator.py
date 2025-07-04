@@ -28,6 +28,9 @@ import bonsai.core.attribute as core
 import bonsai.core.spatial
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    import bpy.stub_internal.rna_enums as rna_enums
+
 
 def get_objs_for_operation(
     operator_properties: "AttributesOperator", context: bpy.types.Context
@@ -204,3 +207,62 @@ class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc, tool.Blender, tool.Root, tool.Spatial, name=self.name, value=value
         )
         self.report({"INFO"}, f"Attribute was successfully copied to {total} elements.")
+
+
+class ExplorerAddEntity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.explorer_add_entity"
+    bl_label = "Add Entity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context) -> None:
+        props = tool.Attribute.get_explorer_props()
+        ifc_file = tool.Ifc.get()
+
+        entity = ifc_file.create_entity(props.ifc_class)
+        tool.Attribute.refresh_uilist_entities()
+        tool.Attribute.enable_editing_entity(entity)
+        tool.Attribute.import_entity_attributes(entity)
+
+
+class ExplorerEnableEditingEntity(bpy.types.Operator):
+    bl_idname = "bim.explorer_enable_editing_entity"
+    bl_label = "Enable Editing Entity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
+        props = tool.Attribute.get_explorer_props()
+        ifc_file = tool.Ifc.get()
+        assert (active_entity := props.active_entity)
+        entity = ifc_file.by_id(active_entity.ifc_definition_id)
+
+        tool.Attribute.disable_editing_entity()
+        tool.Attribute.enable_editing_entity(entity)
+        tool.Attribute.import_entity_attributes(entity)
+        return {"FINISHED"}
+
+
+class ExplorerDisableEditingEntity(bpy.types.Operator):
+    bl_idname = "bim.explorer_disable_editing_entity"
+    bl_label = "Disable Editing Entity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        tool.Attribute.disable_editing_entity()
+        return {"FINISHED"}
+
+
+class ExplorerEditEntity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.explorer_edit_entity"
+    bl_label = "Edit Entity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context) -> None:
+        ifc_file = tool.Ifc.get()
+        props = tool.Attribute.get_explorer_props()
+        entity = ifc_file.by_id(props.editing_entity_id)
+
+        attrs = tool.Attribute.export_entity_attributes()
+        for attr, value in attrs.items():
+            setattr(entity, attr, value)
+        tool.Attribute.refresh_uilist_entities()
+        tool.Attribute.disable_editing_entity()

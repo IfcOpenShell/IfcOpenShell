@@ -25,13 +25,22 @@ classes = (
     operator.EditAttributes,
     operator.GenerateGlobalId,
     operator.CopyAttributeToSelection,
+    operator.ExplorerAddEntity,
+    operator.ExplorerEnableEditingEntity,
+    operator.ExplorerDisableEditingEntity,
+    operator.ExplorerEditEntity,
     prop.BIMAttributeProperties,
+    prop.ExplorerEntity,
+    prop.BIMExplorerProperties,
     ui.BIM_PT_object_attributes,
+    ui.BIM_PT_explorer,
+    ui.BIM_UL_explorer,
 )
 
 
 def register():
     bpy.types.Object.BIMAttributeProperties = bpy.props.PointerProperty(type=prop.BIMAttributeProperties)
+    bpy.types.Scene.BIMExplorerProperties = bpy.props.PointerProperty(type=prop.BIMExplorerProperties)
 
 
 def unregister():
