@@ -2275,7 +2275,6 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False

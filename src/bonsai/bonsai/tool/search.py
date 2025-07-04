@@ -42,6 +42,8 @@ class Search(bonsai.core.tool.Search):
     def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]
 
+    FilterModule = Union[Literal["search", "csv", "diff", "drawing_include", "drawing_exclude"], str]
+
     @classmethod
     def get_filter_groups(cls, module: FilterModule) -> bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]:
         if module == "search":
