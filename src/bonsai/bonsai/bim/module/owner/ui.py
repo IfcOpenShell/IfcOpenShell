@@ -54,12 +54,11 @@ def draw_addresses(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
     props = tool.Owner.get_owner_props()
     row = box.row(align=True)
     row.label(text="Addresses")
-    op = row.operator("bim.add_address", icon="LINK_BLEND", text="")
+
+    assert (wm := bpy.context.window_manager)
+    row.prop(wm.operator_properties_last(bpy.ops.bim.add_address.idname()), "ifc_class", text="")
+    op = row.operator("bim.add_address", icon="ADD", text="")
     op.parent = parent["id"]
-    op.ifc_class = "IfcTelecomAddress"
-    op = row.operator("bim.add_address", icon="APPEND_BLEND", text="")
-    op.parent = parent["id"]
-    op.ifc_class = "IfcPostalAddress"
 
     for address in parent["addresses"]:
         if props.active_address_id == address["id"]:
