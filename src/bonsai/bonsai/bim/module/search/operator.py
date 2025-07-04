@@ -179,10 +179,49 @@ class Search(Operator):
 class SaveSearch(Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_search"
     bl_label = "Save Search"
-    bl_description = "Save search filter to an IFC group"
+    bl_description = (
+        "Save search filter to an IFC group.\n\n"
+        "Search query will be saved to group description, query elements will be assigned to the group."
+    )
     bl_options = {"REGISTER", "UNDO"}
-    name: StringProperty(name="Name")
-    module: StringProperty()
+
+    name_search_items: list[str] = []
+
+    def get_name_search_items(self, context: object, text: str) -> list[str]:
+        # Extra item so it will be easy to select current text.
+        return [text] + SaveSearch.name_search_items
+
+    name: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Name",
+        search=get_name_search_items,
+        search_options={"SORT"},
+    )
+    module: StringProperty()  # pyright: ignore[reportRedeclaration]
+
+    def update_use_all_ifcgroups(self, context: object = None) -> None:
+        ifc_file = tool.Ifc.get()
+        groups = {
+            g.Name or "Unnamed"
+            for g in ifc_file.by_type("IfcGroup")
+            if self.use_all_ifcgroups or g.ObjectType == "SEARCH"
+        }
+        self.name_search_items[:] = natsorted(groups)
+
+    use_all_ifcgroups: BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Use Any IfcGroup",
+        description=(
+            "By default we're targeting only IfcGroups with SEARCH ObjectType "
+            "to prevent breaking internal IfcGroups (e.g. IfcGroups used for Bonsai drawings).\n\n"
+            "Enabling this option allows saving search to any IfcGroup matched by the provided name.\n"
+            "Use with caution."
+        ),
+        update=update_use_all_ifcgroups,
+    )
+
+    if TYPE_CHECKING:
+        name: str
+        module: str
+        use_all_ifcgroups: bool
 
     def _execute(self, context):
         if not self.name:
@@ -199,20 +238,32 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             return
 
         description = json.dumps({"type": "BBIM_Search", "query": query})
-        group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
+        ifc_file = tool.Ifc.get()
+        group = next(
+            (
+                g
+                for g in ifc_file.by_type("IfcGroup")
+                if g.Name == self.name and (self.use_all_ifcgroups or g.ObjectType == "SEARCH")
+            ),
+            None,
+        )
         if group:
-            group = group[0]
             group.Description = description
         else:
             group = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.name, description=description)
+            group.ObjectType = "SEARCH"
         if results:
             ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=list(results), group=group)
 
     def draw(self, context):
-        row = self.layout.row()
-        row.prop(self, "name")
+        assert (layout := self.layout)
+        layout.prop(self, "name")
+        layout.prop(self, "use_all_ifcgroups")
 
     def invoke(self, context, event):
+        assert context.window_manager
+        tool.Search.patch_search_ifcgroups()
+        self.update_use_all_ifcgroups()
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -230,11 +281,13 @@ class LoadSearch(Operator, tool.Ifc.Operator):
         tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
 
     def draw(self, context):
+        assert self.layout
         props = tool.Search.get_search_props()
         row = self.layout.row()
         row.prop(props, "saved_searches", text="")
 
     def invoke(self, context, event):
+        tool.Search.patch_search_ifcgroups()
         return context.window_manager.invoke_props_dialog(self)
 
 

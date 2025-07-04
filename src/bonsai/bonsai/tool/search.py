@@ -311,6 +311,29 @@ class Search(bonsai.core.tool.Search):
             query = f"bpy.data.texts['{name}']"
         return query
 
+    @classmethod
+    def patch_search_ifcgroups(cls) -> None:
+        """Apply a patch trying to convert old search IfcGroups to SEARCH type.
+
+        Previously we were saving search results to IfcGroup with ObjectType None
+        and allowing to write results to any IfcGroup by default, which could lead
+        to breaking by accident drawings or other internal IfcGroups.
+
+        Added temporarily @25.07.04
+        """
+        ifc_file = tool.Ifc.get()
+
+        for group in ifc_file.by_type("IfcGroup"):
+            # It's unsafe to change any other IfcGroup - e.g. it could be DRAWING.
+            if group.ObjectType is not None:
+                continue
+            try:
+                data = json.loads(group.Description)
+                if isinstance(data, dict) and data.get("type") == "BBIM_Search":
+                    group.ObjectType = "SEARCH"
+            except:
+                pass
+
 
 class ImportFilterQueryTransformer(lark.Transformer):
     def __init__(self, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]):
