@@ -845,8 +845,8 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
 
     nested_structure_depth: bpy.props.IntProperty(
         name="Nested structure depth: ",
-        description="Define till which level of the structure the parent cost items are displayed.\n0: no parent cost item is displayed.",
-        default=3,
+        description="Define till which level of the structure the parent cost items are displayed.\n0: display the full structure.",
+        default=0,
         min=0,
         max=9,
     )
@@ -872,11 +872,21 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         description="Export the full description if present",
         default=True,
     )
+    should_print_cost_ids: bpy.props.BoolProperty(
+        name="Print Cost Identification",
+        description="Print Cost Identification under Cost Name if present",
+        default=True,
+    )
     should_print_each_quantity: bpy.props.BoolProperty(
         name="Show each quantity",
         description="Export the full list of quantities",
         default=False,
-    )   
+    )
+    should_print_each_cost_value: bpy.props.BoolProperty(
+        name="Show each cost value",
+        description="Export the full list of cost values\nassociated with each cost item\nin the schedule of rates",
+        default=False,
+    )
     should_print_rates: bpy.props.BoolProperty(
         name="Rates and totals",
         description="Print rates and totals for each voice",
@@ -892,20 +902,22 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         description="Force the output to this type\nalso if it is not coincident with the cost schedule Predefined Type",
         items=[
             (
-                "0",
+                "OFF",
                 "Off",
                 "Uses Cost Schedule Predefined Type",
-            ),(
-                "1",
+            ),
+            (
                 "PRICEDBILLOFQUANTITIES",
+                "Priced Bill of Quantities",
                 "Forces the output as a priced bill of quantities",
-            ),(
-                "2",
+            ),
+            (
                 "SCHEDULEOFRATES",
+                "Schedule of Rates",
                 "Forces the output as a schedule of rates",
             ),
         ],
-        default="0",
+        default="OFF",
     )
 
     def draw(self, context):
@@ -917,14 +929,14 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         box = layout.box()
         box.label(text="Nested cost structure:")
         box.prop(self, "nested_structure_depth")
-        box.prop(self, "parent_to_new_page_up_to_depth")
-        box.prop(self, "show_only_parents")
         layout.separator()
         box = layout.box()
         box.label(text="PDF Document properties:")
         box.prop(self, "should_print_cover")
+        box.prop(self, "should_print_cost_ids")
         box.prop(self, "should_print_description")
         box.prop(self, "should_print_each_quantity")
+        box.prop(self, "should_print_rates")
         box.prop(self, "should_print_summary")
         box.prop(self, "force_schedule_type")
 
@@ -961,9 +973,25 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         file = tool.Ifc.get()
         self.props = tool.Cost.get_cost_props()
         cost_schedule = file.by_id(int(self.cost_schedules_enum))
-        options = {"should_print_summary": self.should_print_summary}
+        options = {
+            "nested_structure_depth": self.nested_structure_depth,
+            "parent_to_new_page_up_to_depth": self.parent_to_new_page_up_to_depth,
+            "show_only_parents": self.show_only_parents,
+            "should_print_cover": self.should_print_cover,
+            "should_print_cost_ids": self.should_print_cost_ids,
+            "should_print_description": self.should_print_description,
+            "should_print_each_quantity": self.should_print_each_quantity,
+            "should_print_each_cost_value": self.should_print_each_cost_value,
+            "should_print_rates": self.should_print_rates,
+            "should_print_summary": self.should_print_summary,
+        }
+
         core.export_cost_schedules_to_pdf(
-            tool.Cost, filepath=self.filepath, cost_schedule=cost_schedule, options=options
+            tool.Cost,
+            filepath=self.filepath,
+            cost_schedule=cost_schedule,
+            options=options,
+            force_schedule_type=self.force_schedule_type,
         )
         return {"FINISHED"}
 
