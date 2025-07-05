@@ -102,6 +102,20 @@ class IfcDataGetter:
         return values
 
     @staticmethod
+    def cost_item_is_a_sum(
+        cost_item: ifcopenshell.entity_instance
+    ) -> bool:
+        cost_values = []
+        if cost_item.is_a("IfcCostItem"):
+            cost_values = cost_item.CostValues
+        elif cost_item.is_a("IfcCostValue"):
+            cost_values = cost_item.Components
+        for cost_value in cost_values or []:
+            if cost_value.Category == "*":
+                return True
+        return False
+
+    @staticmethod
     def get_cost_items_data(
         file: ifcopenshell.file,
         cost_item: ifcopenshell.entity_instance,
@@ -138,6 +152,7 @@ class IfcDataGetter:
 
         data: CostItem = {
             "Index": index,
+            "Sum": int(IfcDataGetter.cost_item_is_a_sum(cost_item)),
             "Hierarchy": hierarchy,
             "Id": cost_item.id(),
             "Identification": cost_item.Identification,
@@ -301,6 +316,7 @@ class Ifc5Dwriter:
             cost_items = IfcDataGetter.get_schedule_cost_items_data(self.file, cost_schedule)
             headers: list[str] = [
                 "Id",
+                "Sum",
                 "Hierarchy",
                 "Index",
                 "Identification",
