@@ -247,7 +247,7 @@ def generate_spaces_from_walls(
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
 
-        bm = spatial.get_bmesh_from_polygon(poly, h)
+        bm = spatial.get_bmesh_from_polygon(poly, h, polygon_is_si=False)
 
         name = "Space" + str(i)
 
