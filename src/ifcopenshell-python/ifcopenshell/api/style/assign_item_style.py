@@ -83,7 +83,7 @@ def assign_item_style(
 
         # Now specifically our wall's only item only will be coloured grey.
         ifcopenshell.api.style.assign_item_style(model,
-            shape_representation=representation, style=style, item=representation.Items[0])
+            style=style, item=representation.Items[0])
     """
     if not (styled_item := next(iter(item.StyledByItem), None)):
         if style is None:
