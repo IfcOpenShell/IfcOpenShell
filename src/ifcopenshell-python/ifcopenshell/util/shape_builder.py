@@ -636,6 +636,9 @@ class ShapeBuilder:
                 base_position = np.array(c.Position.Location.Coordinates)
                 c.Position.Location.Coordinates = ifc_safe_vector_type(base_position + translation)
 
+            elif c.is_a("IfcTessellatedFaceSet"):
+                c.Coordinates.CoordList = ifc_safe_vector_type(np.array(c.Coordinates.CoordList) + translation)
+
             elif c.is_a("IfcShapeRepresentation"):
                 for item in c.Items:
                     self.translate(item, translation)
