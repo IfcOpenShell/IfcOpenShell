@@ -88,7 +88,7 @@ def assign_item_style(
     if not (styled_item := next(iter(item.StyledByItem), None)):
         if style is None:
             return
-        if file.schema == "IFC2X3":
+        if file.schema == "IFC2X3" or should_use_presentation_style_assignment:
             style = file.create_entity("IfcPresentationStyleAssignment", (style,))
         return file.create_entity("IfcStyledItem", item, (style,))
 
