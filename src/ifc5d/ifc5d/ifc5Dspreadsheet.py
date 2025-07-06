@@ -159,6 +159,7 @@ class IfcDataGetter:
             "Name": cost_item.Name,
             "Description": cost_item.Description,
             "Unit": unit,
+            "Quantities": IfcDataGetter.serialise_cost_quantities(file, cost_item),
             "Quantity": quantity_data["quantity"],
             "RateSubtotal": rate_subtotal,
             "TotalPrice": total_price,
@@ -250,6 +251,49 @@ class IfcDataGetter:
             "quantity": total_cost_quantity,
             "unit": unit,
         }
+    
+    @staticmethod
+    def get_quantity_value(quantity: ifcopenshell.entity_instance) -> float:
+        if hasattr(quantity, 'LengthValue'):
+            return quantity.LengthValue
+        elif hasattr(quantity, 'AreaValue'):
+            return quantity.AreaValue
+        elif hasattr(quantity, 'VolumeValue'):
+            return quantity.VolumeValue
+        elif hasattr(quantity, 'CountValue'):
+            return quantity.CountValue
+        elif hasattr(quantity, 'WeightValue'):
+            return quantity.WeightValue
+        elif hasattr(quantity, 'TimeValue'):
+            return quantity.TimeValue
+        elif hasattr(quantity, 'NominalValue'):
+            return quantity.NominalValue
+        else:
+            return 0.0
+        
+    @staticmethod
+    def serialise_cost_quantities(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> str:
+        if not cost_item.is_a("IfcCostItem"):
+            return ""
+        if cost_item.CostQuantities is None:
+            return ""
+        string = "["
+        for quantity in cost_item.CostQuantities:
+            string += '["'
+            for rel in file.get_inverse(quantity):
+                    if rel.is_a('IfcPropertySet') or rel.is_a('IfcElementQuantity'):
+                        prop_set = rel
+                        # Find elements that have this property set
+                        for prop_rel in file.get_inverse(prop_set):
+                            if prop_rel.is_a('IfcRelDefinesByProperties'):
+                                for obj in prop_rel.RelatedObjects:
+                                    if obj.is_a('IfcElement'):
+                                        string += obj.Name + " - "
+            string += quantity.Name + '", '
+            string += str(IfcDataGetter.get_quantity_value(quantity)) + "],"
+        string = string.removesuffix(",")
+        string += "]"
+        return string
 
 
 class SheetData(TypedDict):
@@ -325,6 +369,7 @@ class Ifc5Dwriter:
                 "Unit",
             ]
             if cost_schedule.PredefinedType != "SCHEDULEOFRATES":
+                headers.insert(-1, "Quantities")
                 headers.insert(-1, "Quantity")
             headers.extend(["RateSubtotal", "TotalPrice"])
 
