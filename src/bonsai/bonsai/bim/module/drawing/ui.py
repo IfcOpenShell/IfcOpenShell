@@ -102,7 +102,7 @@ class BIM_PT_camera(Panel):
             box = self.layout.box()
             box.label(
                 text=f"Resulting image size is {render.resolution_x} x {render.resolution_y} ({round(megapixels, 2)} MP).",
-                icon="WARNING_LARGE",
+                icon="ERROR",
             )
             box.label(
                 text=(f"Which is more than {MEGAPIXELS_WARNING_THRESHOLD} megapixels and will require a lot of VRAM.")
