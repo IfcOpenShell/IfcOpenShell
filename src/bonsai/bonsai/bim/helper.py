@@ -137,6 +137,14 @@ def draw_attribute(
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
+    if attribute.use_explorer_ui:
+        op = layout.operator("bim.explorer_show_ui_popup", text="", icon="ZOOM_SELECTED")
+        op.ifc_class = attribute.ifc_class
+        op.attribute_name = attribute.name
+        op.data_path = tool.Blender.get_full_data_path(attribute, value_name)
+        if ifc_id := attribute.get_value():
+            op.preselect_ifc_id = int(ifc_id)
+
     if attribute.name == "GlobalId":
         layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
     elif copy_operator:
@@ -314,13 +322,14 @@ def export_attributes(
     return attributes
 
 
-def process_exported_entity_attribute(attributes: dict[str, Any], attribute_name: str) -> None:
-    entity_id = attributes[attribute_name]
-    if entity_id is None:
-        # Maybe it was removed by now and enum is invalid.
-        del attributes[attribute_name]
-    else:
-        attributes[attribute_name] = tool.Ifc.get().by_id(int(entity_id))
+def process_exported_entity_attribute(attributes: dict[str, Any], attribute_names: list[str]) -> None:
+    for attribute_name in attribute_names:
+        entity_id = attributes[attribute_name]
+        if entity_id is None:
+            # Maybe it was removed by now and enum is invalid.
+            del attributes[attribute_name]
+        else:
+            attributes[attribute_name] = tool.Ifc.get().by_id(int(entity_id))
 
 
 ENUM_ITEMS_DATA = Union[bpy.types.PropertyGroup, bpy.types.ID, bpy.types.Operator, bpy.types.OperatorProperties]

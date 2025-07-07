@@ -1186,6 +1186,13 @@ class EnumData:
         organizations = tool.Ifc.get().by_type("IfcOrganization")
         return natsorted(((str(e.id()), e.Name, "") for e in organizations), key=lambda x: x[1])
 
+    @classmethod
+    def postal_addresses(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        addresses = tool.Ifc.get().by_type("IfcPostalAddress")
+        items = ((str(e.id()), (e.Description or "Undescribed"), "") for e in addresses)
+        items = natsorted(items, key=lambda x: x[1])
+        return items
+
 
 class UIData:
     data = {}

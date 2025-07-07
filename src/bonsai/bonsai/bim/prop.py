@@ -344,6 +344,7 @@ class Attribute(PropertyGroup):
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
+    use_explorer_ui: BoolProperty()  # pyright: ignore[reportRedeclaration]
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
     update: StringProperty(name="Update", description="Custom update function to be executed")
 
@@ -374,6 +375,7 @@ class Attribute(PropertyGroup):
         value_min_constraint: bool
         value_max: float
         value_max_constraint: bool
+        use_explorer_ui: bool
         metadata: str
         update: str
 

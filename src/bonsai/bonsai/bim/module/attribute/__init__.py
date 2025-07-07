@@ -29,6 +29,7 @@ classes = (
     operator.ExplorerEnableEditingEntity,
     operator.ExplorerDisableEditingEntity,
     operator.ExplorerEditEntity,
+    operator.ExplorerShowUIPopup,
     prop.BIMAttributeProperties,
     prop.ExplorerEntity,
     prop.BIMExplorerProperties,

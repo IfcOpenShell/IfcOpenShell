@@ -75,3 +75,19 @@ class Attribute(bonsai.core.tool.Attribute):
         props = cls.get_explorer_props()
         attributes = helper.export_attributes(props.entity_attributes)
         return attributes
+
+    EXPLORER_UI_LOOKUP_PROPS: dict[str, dict[str, str]] = {
+        "IfcSite": {"SiteAddress": "postal_addresses"},
+        "IfcBuilding": {"BuildingAddress": "postal_addresses"},
+    }
+    """``ifc_class -> {attribute_name -> enum_items_dynamic}``"""
+
+    @classmethod
+    def does_ifc_class_support_explorer_lookup(cls, ifc_class: str) -> Union[dict[str, str], None]:
+        """
+        :return: ``{attribute_name -> enum_items_dynamic}``
+            if IFC class does support explorer UI lookup, otherwise returns ``None``.
+        """
+        if not (lookup_attrs := cls.EXPLORER_UI_LOOKUP_PROPS.get(ifc_class)):
+            return
+        return lookup_attrs
