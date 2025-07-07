@@ -60,30 +60,15 @@ class RolesAddressesData:
         return results
 
     @classmethod
-    def get_address_list_attributes(cls, address: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
-        results: list[dict[str, Any]] = []
-        props = tool.Owner.get_owner_props()
+    def get_address_list_attributes(cls, address: ifcopenshell.entity_instance) -> list[str]:
         if address.is_a("IfcPostalAddress"):
             names = ["AddressLines"]
         elif address.is_a("IfcTelecomAddress"):
             names = ["TelephoneNumbers", "FacsimileNumbers", "ElectronicMailAddresses", "MessagingIDs"]
         else:
             assert False, f"Unexpected entity: {address}"
-        for name in names:
-            if name == "AddressLines":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.address_lines)]
-            elif name == "TelephoneNumbers":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.telephone_numbers)]
-            elif name == "FacsimileNumbers":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.facsimile_numbers)]
-            elif name == "ElectronicMailAddresses":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.electronic_mail_addresses)]
-            elif name == "MessagingIDs":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.messaging_ids)]
-            else:
-                assert False, f"Unexpected name: {name}"
-            results.append({"name": name, "items": items})
-        return results
+
+        return names
 
 
 class PeopleData(RolesAddressesData):

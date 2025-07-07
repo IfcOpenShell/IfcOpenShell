@@ -72,12 +72,13 @@ def draw_addresses(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
                 op = row.operator("bim.add_address_attribute", icon="ADD", text="")
                 op.name = attribute["name"]
 
-                for item in attribute["items"]:
+                collection = tool.Owner.get_address_collection(attribute["name"])
+                for i, item in enumerate(collection):
                     row = box.row(align=True)
-                    row.prop(item["prop"], "name", text="")
+                    row.prop(item, "name", text="")
                     op = row.operator("bim.remove_address_attribute", icon="REMOVE", text="")
                     op.name = attribute["name"]
-                    op.id = item["id"]
+                    op.id = i
         else:
             row = box.row(align=True)
             row.label(text=address["label"])
