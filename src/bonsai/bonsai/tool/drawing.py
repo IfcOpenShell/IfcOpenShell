@@ -374,6 +374,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         sheet_builder = sheeter.SheetBuilder()
         uri = cls.get_document_uri(document, "LAYOUT")
+        assert uri
         sheet_builder.create(uri, titleblock)
         return uri
 
@@ -1244,6 +1245,35 @@ class Drawing(bonsai.core.tool.Drawing):
         )
 
     # TODO below this point is highly experimental prototype code with no tests
+
+    class SheetWarningType(NamedTuple):
+        warning_type: Literal["MISSING_LAYOUT", "MISSING_TITLEBLOCK"]
+        message: str
+
+        def __str__(self) -> str:
+            return f"{self.warning_type:<20} - {self.message}"
+
+    @classmethod
+    def validate_sheet_files(cls, sheet: ifcopenshell.entity_instance) -> list[SheetWarningType]:
+        warnings: list[tool.Drawing.SheetWarningType] = []
+
+        layout_path = cls.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
+        sheet_id = cls.get_sheet_identification(sheet)
+        if not Path(layout_path).exists():
+            warnings.append(
+                cls.SheetWarningType("MISSING_LAYOUT", f"Sheet '{sheet_id}' - missing layout '{layout_path}'.")
+            )
+
+        titleblock_path = cls.get_document_uri(sheet, "TITLEBLOCK")
+        assert titleblock_path
+        if not Path(titleblock_path).exists():
+            warnings.append(
+                cls.SheetWarningType(
+                    "MISSING_TITLEBLOCK", f"Sheet '{sheet_id}' - missing titleblock '{titleblock_path}'."
+                )
+            )
+        return warnings
 
     @classmethod
     def does_file_exist(cls, uri: str) -> bool:

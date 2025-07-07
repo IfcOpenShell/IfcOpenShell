@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, Literal
 
 if TYPE_CHECKING:
     import bpy
@@ -108,13 +108,22 @@ def add_sheet(ifc: type[tool.Ifc], drawing: type[tool.Drawing], titleblock: ifco
     drawing.import_sheets()
 
 
-def regenerate_sheet(drawing: type[tool.Drawing], sheet: ifcopenshell.entity_instance) -> None:
+def regenerate_sheet(
+    drawing: type[tool.Drawing], sheet: ifcopenshell.entity_instance
+) -> Union[list[tool.Drawing.SheetWarningType], None]:
+    warnings = drawing.validate_sheet_files(sheet)
+    if warnings:
+        return warnings
+
     titleblock_uri = drawing.get_document_uri(sheet, "TITLEBLOCK")
+    assert titleblock_uri
+
     drawing.create_svg_sheet(sheet, drawing.sanitise_filename(Path(titleblock_uri).stem))
     try:
         drawing.add_drawings(sheet)
     except FileNotFoundError:
         path_layout = drawing.get_document_uri(sheet, "LAYOUT")
+        assert path_layout
         if drawing.does_file_exist(path_layout):
             drawing.delete_file(path_layout)
 
