@@ -1792,11 +1792,15 @@ class OpenSheet(bpy.types.Operator):
         else:
             sheets = [tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)]
 
-        sheet_uris = []
-        sheets_not_found = []
+        sheet_uris: list[str] = []
+        sheets_not_found: list[str] = []
+        warnings: list[tool.Drawing.SheetWarningType] = []
 
         for sheet in sheets:
             if not sheet.is_a("IfcDocumentInformation"):
+                continue
+            warnings.extend(sheets_warnings := tool.Drawing.validate_sheet_files(sheet))
+            if sheets_warnings:
                 continue
             sheet_builder = sheeter.SheetBuilder()
             references = sheet_builder.build(sheet)
@@ -1806,6 +1810,11 @@ class OpenSheet(bpy.types.Operator):
             sheet_uris.append(sheet_uri)
             if not os.path.exists(sheet_uri):
                 sheets_not_found.append(sheet.Name)
+
+        if warnings:
+            self.report({"ERROR"}, f"There were errors opening sheets. See system console for the details.")
+            print("-" * 10)
+            print("\n".join(str(w) for w in warnings))
 
         if sheets_not_found:
             msg = "Some sheets .svg/.pdf files were not found, need to create them first: \n{}.".format(
@@ -1962,7 +1971,14 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         else:
             sheets = [tool.Ifc.get().by_id(props.sheets[props.active_sheet_index].ifc_definition_id)]
 
+        warnings: list[tool.Drawing.SheetWarningType] = []
+        n_sheets_created = 0
         for sheet in sheets:
+
+            warnings.extend(sheet_warnings := tool.Drawing.validate_sheet_files(sheet))
+            if sheet_warnings:
+                continue
+
             # Update any drawing boundary changes
             sheet_builder = sheeter.SheetBuilder()
             sheet_builder.update_sheet_drawing_sizes(sheet)
@@ -2023,8 +2039,16 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, pdf)
                 else:
                     tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg)
+
+            n_sheets_created += 1
+
         if not self.open_viewer:
-            self.report({"INFO"}, f"{len(sheets)} sheets created...")
+            self.report({"INFO"}, f"{n_sheets_created} sheets created...")
+
+        if warnings:
+            self.report({"ERROR"}, f"There were errors creating sheets. See system console for the details.")
+            print("-" * 10)
+            print("\n".join(str(w) for w in warnings))
 
 
 class SelectAllDrawings(bpy.types.Operator):
@@ -3162,7 +3186,7 @@ class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
         core.load_sheets(tool.Drawing)
 
         props = tool.Drawing.get_document_props()
-        sheets_not_found = []
+        warnings: list[tool.Drawing.SheetWarningType] = []
         for sheet_prop in props.sheets:
             if not sheet_prop.is_sheet:
                 continue
@@ -3173,12 +3197,14 @@ class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
 
             filepath = Path(document_uri)
             if not filepath.is_file():
-                sheet_name = f"{sheet_prop.identification} - {sheet_prop.name}"
-                sheets_not_found.append(f'"{sheet_name}" - {document_uri}')
-                core.regenerate_sheet(tool.Drawing, sheet)
+                res = core.regenerate_sheet(tool.Drawing, sheet)
+                if res:
+                    warnings.extend(res)
 
-        if sheets_not_found:
-            self.report({"ERROR"}, "Some sheets svg files are missing:\n" + "\n".join(sheets_not_found))
+        if warnings:
+            self.report({"WARNING"}, f"There were warnings loading sheets. See system console for the details.")
+            print("-" * 10)
+            print("\n".join(str(w) for w in warnings))
 
 
 class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
