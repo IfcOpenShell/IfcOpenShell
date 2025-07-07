@@ -40,20 +40,27 @@ BLENDER_PATH = Path.home() / r"AppData/Roaming/Blender Foundation/Blender/4.4"
 
 
 # Determine BONSAI_PATH from existing options
-def find_bonsai_path(blender_path):
+def find_bonsai_path() -> Path:
     candidates = [
-        blender_path / r"extensions/raw_githubusercontent_com/bonsai",
-        blender_path / r"extensions/user_default/bonsai",
-        blender_path / r"extensions/blender_org/bonsai",
+        # Installed from Bonsai Unstalble Repo.
+        BLENDER_PATH / r"extensions/raw_githubusercontent_com/bonsai",
+        # Installed via offline installation.
+        BLENDER_PATH / r"extensions/user_default/bonsai",
+        # Installed from Blender's official extensions platform.
+        BLENDER_PATH / r"extensions/blender_org/bonsai",
     ]
     for path in candidates:
         if path.exists():
-            print(f"Found Bonsai at: {path}")
             return path
     raise FileNotFoundError("Could not find Bonsai path in expected locations.")
 
 
-BONSAI_PATH = find_bonsai_path(BLENDER_PATH)
+# BONSAI_PATH: Path to 'bonsai' extension folder inside BLENDER_PATH.
+# Typically resolved automatically, paths priority can be found in `find_bonsai_path`.
+#
+# Should be changed by user only if their installation path doesn't match any of the defaults
+# or if they need different paths priority order.
+BONSAI_PATH = find_bonsai_path()
 
 
 # ---------------------------
@@ -74,6 +81,7 @@ def main():
 
     print("-" * 10)
     print("Script settings:")
+    print("(all paths are confirmed to be existing)")
     print(f"REPO_PATH={REPO_PATH}")
     print(f"BLENDER_PATH={BLENDER_PATH}")
     print(f"BONSAI_PATH={BONSAI_PATH}")
