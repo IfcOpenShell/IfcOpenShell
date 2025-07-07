@@ -188,7 +188,14 @@ class ActorData:
         props = tool.Owner.get_owner_props()
         if not (ifc_class := props.actor_type):
             ifc_class = cls.actor_type()[0][0]
-        return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type(ifc_class)]
+
+        def get_name(entity: ifcopenshell.entity_instance) -> str:
+            if entity.is_a() == "IfcPersonAndOrganization":
+                return f"{get_name(entity.ThePerson)}/{get_name(entity.TheOrganization)}"
+            # 0 IfcPerson/IfcOrganization Id(IFC2X3)/Identification
+            return entity[0] or "Unnamed"
+
+        return [(str(p.id()), get_name(p), "") for p in tool.Ifc.get().by_type(ifc_class)]
 
     @classmethod
     def actors(cls) -> list[dict[str, Any]]:
