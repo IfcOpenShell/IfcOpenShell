@@ -243,7 +243,7 @@ class BIM_PT_owner(bpy.types.Panel):
 
         for user in OwnerData.data["users"]:
             row = self.layout.row(align=True)
-            if user["is_active"]:
+            if props.active_user_id == user["id"]:
                 row.label(text=user["label"], icon="USER")
                 row.operator("bim.clear_user", icon="KEYFRAME", text="").user = user["id"]
             else:
