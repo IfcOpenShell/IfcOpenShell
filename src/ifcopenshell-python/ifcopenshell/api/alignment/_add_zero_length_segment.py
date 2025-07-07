@@ -107,8 +107,7 @@ def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -
 
     ifcopenshell.api.nest.assign_object(file, related_objects=[segment], relating_object=layout)
 
-    alignment = ifcopenshell.api.alignment.get_alignment(layout)
-    curve = ifcopenshell.api.alignment.get_curve(alignment)
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
 
     has_zero_length_segment = False
     if curve.Segments != None and 0 < len(curve.Segments):
@@ -141,38 +140,6 @@ def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -
             curve_segment,
         ]
 
-    basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
-    if basis_curve != curve:
-        has_zero_length_segment = False
-        if basis_curve.Segments != None and 0 < len(basis_curve.Segments):
-            last_segment = basis_curve.Segments[-1]
-            has_zero_length_segment = (
-                True
-                if last_segment.Transition == "DISCONTINUOUS" and last_segment.SegmentLength.wrappedValue == 0.0
-                else False
-            )
-
-        if not has_zero_length_segment:
-            parent_curve = file.createIfcLine(
-                Pnt=file.createIfcCartesianPoint(Coordinates=((0.0, 0.0))),
-                Dir=file.createIfcVector(
-                    Orientation=file.createIfcDirection(DirectionRatios=((1.0, 0.0))),
-                    Magnitude=1.0,
-                ),
-            )
-            curve_segment = file.createIfcCurveSegment(
-                Transition="DISCONTINUOUS",
-                Placement=file.createIfcAxis2Placement2D(
-                    Location=file.createIfcCartesianPoint((0.0, 0.0)),
-                    RefDirection=file.createIfcDirection((1.0, 0.0)),
-                ),
-                SegmentStart=file.createIfcLengthMeasure(0.0),
-                SegmentLength=file.createIfcLengthMeasure(0.0),
-                ParentCurve=parent_curve,
-            )
-            basis_curve.Segments = [
-                curve_segment,
-            ]
 
     name = f"{_get_segment_start_point_label(segment,None)} {ifcopenshell.util.stationing.station_as_string(file,0.0)}"
-    ifcopenshell.api.alignment.add_stationing_referent(file, segment, basis_curve, 0.0, 0.0, name=name)
+    ifcopenshell.api.alignment.add_stationing_referent(file, segment, curve, 0.0, 0.0, name=name)

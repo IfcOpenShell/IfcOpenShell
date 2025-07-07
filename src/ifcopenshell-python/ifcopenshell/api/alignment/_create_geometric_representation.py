@@ -94,7 +94,7 @@ def _create_geometric_representation(file: ifcopenshell.file, alignment: entity_
         assert layouts[0].is_a("IfcAlignmentHorizontal")
         assert layouts[1].is_a("IfcAlignmentVertical")
         assert layouts[2].is_a("IfcAlignmentCant")
-        composite_curve = file.createIfcCompositeCurve()
+        composite_curve = file.createIfcCompositeCurve(Segments=[], SelfIntersect=False)
         representation = file.createIfcShapeRepresentation(
             ContextOfItems=axis_geom_subcontext,
             RepresentationIdentifier="FootPrint",

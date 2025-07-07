@@ -71,6 +71,7 @@ def create(
     for layout in alignment_layouts:
         _add_zero_length_segment(file, layout)
 
+
     # define stationing
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     name = ifcopenshell.util.stationing.station_as_string(file, start_station)

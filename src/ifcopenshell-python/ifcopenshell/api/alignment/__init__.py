@@ -66,6 +66,7 @@ from .get_axis_subcontext import get_axis_subcontext
 from .get_basis_curve import get_basis_curve
 from .get_child_alignments import get_child_alignments
 from .get_curve import get_curve
+from .get_layout_curve import get_layout_curve
 from .get_parent_alignment import get_parent_alignment
 from .has_zero_length_segment import has_zero_length_segment
 from .layout_horizontal_alignment_by_pi_method import layout_horizontal_alignment_by_pi_method
@@ -94,6 +95,7 @@ __all__ = [
     "get_basis_curve",
     "get_child_alignments",
     "get_curve",
+    "get_layout_curve",
     "get_parent_alignment",
     "has_zero_length_segment",
     "layout_horizontal_alignment_by_pi_method",

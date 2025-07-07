@@ -49,14 +49,7 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
     if not (segment.is_a("IfcAlignmentSegment")):
         raise TypeError(f"Expected to see IfcAlignmentSegment, instead received {segment.is_a()}.")
 
-    alignment = ifcopenshell.api.alignment.get_alignment(layout)
-    if layout.is_a("IfcAlignmentHorizontal"):
-        curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
-    else:
-        curve = ifcopenshell.api.alignment.get_curve(alignment)
-
-    # add the new segment to the geometric representation curve
-    _add_segment_to_curve(file, segment, curve)
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
 
     # add the new segment to the layout
     ifcopenshell.api.nest.assign_object(file, related_objects=[segment], relating_object=layout)
@@ -64,6 +57,9 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
     # segment is attached at the end, but this is after the zero length segment
     # swap the last two segments
     ifcopenshell.api.nest.reorder_nesting(file, segment, -1, -1)
+
+    # add the new segment to the geometric representation curve
+    _add_segment_to_curve(file, segment, curve)
 
     # gather information to:
     # (1) add a referent at the start of this segment
