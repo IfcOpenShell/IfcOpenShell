@@ -144,30 +144,28 @@ class OwnerData:
     @classmethod
     def load(cls):
         cls.data = {
-            "user_person": cls.get_user_person(),
-            "user_organisation": cls.get_user_organisation(),
-            "users": cls.get_users(),
+            "user_person": cls.user_person(),
+            "user_organisation": cls.user_organisation(),
+            "users": cls.users(),
         }
         cls.is_loaded = True
 
     @classmethod
-    def get_user_person(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    def user_person(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcPerson")]
 
     @classmethod
-    def get_user_organisation(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    def user_organisation(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcOrganization")]
 
     @classmethod
-    def get_users(cls) -> list[dict[str, Any]]:
-        props = tool.Owner.get_owner_props()
+    def users(cls) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         for user in tool.Ifc.get().by_type("IfcPersonAndOrganization"):
             results.append(
                 {
                     "id": user.id(),
                     "label": "{} ({})".format(user.ThePerson[0] or "Unnamed", user.TheOrganization[0] or "Unnamed"),
-                    "is_active": props.active_user_id == user.id(),
                 }
             )
         return results
