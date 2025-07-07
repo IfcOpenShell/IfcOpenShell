@@ -1037,8 +1037,9 @@ class Drawing(bonsai.core.tool.Drawing):
                 new.reference_type = reference_description
 
     @classmethod
-    def get_active_sheet(cls, context: bpy.types.Context) -> Sheet:
+    def get_active_sheet(cls) -> Sheet:
         props = cls.get_document_props()
+        # Will also get active sheet even if one of it's subitems selected (drawings, etc).
         return next(s for s in props.sheets[: props.active_sheet_index + 1][::-1] if s.is_sheet)
 
     @classmethod
