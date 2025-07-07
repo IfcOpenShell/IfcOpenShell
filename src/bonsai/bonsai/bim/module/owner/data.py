@@ -91,7 +91,6 @@ class PeopleData(RolesAddressesData):
                     "name": cls.get_person_name(person),
                     "roles_label": ", ".join([r["label"] for r in roles]),
                     "is_engaged": bool(person.EngagedIn),
-                    "list_attributes": cls.get_person_list_attributes(person),
                     "roles": roles,
                     "addresses": cls.get_addresses(person),
                 }
@@ -109,23 +108,6 @@ class PeopleData(RolesAddressesData):
             full_name = "{} {}".format(person.GivenName or "", person.FamilyName or "").strip()
             name += f" ({full_name})"
         return name
-
-    @classmethod
-    def get_person_list_attributes(cls, person: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
-        results: list[dict[str, Any]] = []
-        props = tool.Owner.get_owner_props()
-        name: tool.Owner.PersonAttributeType
-        for name in ("MiddleNames", "PrefixTitles", "SuffixTitles"):
-            if name == "MiddleNames":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.middle_names)]
-            elif name == "PrefixTitles":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.prefix_titles)]
-            elif name == "SuffixTitles":
-                items = [{"id": id, "prop": prop} for id, prop in enumerate(props.suffix_titles)]
-            else:
-                assert False, name
-            results.append({"name": name, "items": items})
-        return results
 
 
 class OrganisationsData(RolesAddressesData):

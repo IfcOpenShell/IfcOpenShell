@@ -66,18 +66,19 @@ def draw_addresses(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
             row.operator("bim.edit_address", icon="CHECKMARK")
             row.operator("bim.disable_editing_address", icon="CANCEL", text="")
             bonsai.bim.helper.draw_attributes(props.address_attributes, box)
-            for attribute in address["list_attributes"]:
+            attributes: list[str] = address["list_attributes"]
+            for attribute_name in attributes:
                 row = box.row(align=True)
-                row.label(text=attribute["name"])
+                row.label(text=attribute_name)
                 op = row.operator("bim.add_address_attribute", icon="ADD", text="")
-                op.name = attribute["name"]
+                op.name = attribute_name
 
-                collection = tool.Owner.get_address_collection(attribute["name"])
+                collection = tool.Owner.get_address_collection(attribute_name)
                 for i, item in enumerate(collection):
                     row = box.row(align=True)
                     row.prop(item, "name", text="")
                     op = row.operator("bim.remove_address_attribute", icon="REMOVE", text="")
-                    op.name = attribute["name"]
+                    op.name = attribute_name
                     op.id = i
         else:
             row = box.row(align=True)
@@ -124,18 +125,19 @@ class BIM_PT_people(bpy.types.Panel):
             row.operator("bim.disable_editing_person", icon="CANCEL", text="")
             bonsai.bim.helper.draw_attributes(props.person_attributes, box)
 
-            for attribute in person["list_attributes"]:
+            for attribute_name in tool.Owner.PERSON_ATTRIBUTE_TYPES:
                 row = box.row(align=True)
-                row.label(text=attribute["name"])
+                row.label(text=attribute_name)
                 op = row.operator("bim.add_person_attribute", icon="ADD", text="")
-                op.name = attribute["name"]
+                op.name = attribute_name
 
-                for item in attribute["items"]:
+                collection = tool.Owner.get_names_collection(attribute_name)
+                for i, item in enumerate(collection):
                     row = box.row(align=True)
-                    row.prop(item["prop"], "name", text="")
+                    row.prop(item, "name", text="")
                     op = row.operator("bim.remove_person_attribute", icon="REMOVE", text="")
-                    op.name = attribute["name"]
-                    op.id = item["id"]
+                    op.name = attribute_name
+                    op.id = i
 
             draw_roles(box, person)
             draw_addresses(box, person)
