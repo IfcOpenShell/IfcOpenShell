@@ -26,9 +26,10 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.attribute as core
 import bonsai.core.spatial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Union, Literal
 
 if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
     import bpy.stub_internal.rna_enums as rna_enums
 
 
@@ -78,7 +79,7 @@ class EnableEditingAttributes(bpy.types.Operator, AttributesOperator):
                 None,
             )
 
-        def callback(name, prop, data):
+        def callback(name: str, prop: Union["Attribute", None], data: dict[str, Any]) -> None | Literal[True]:
             if name in ("RefLatitude", "RefLongitude"):
                 new = props.attributes.add()
                 new.name = name
@@ -110,7 +111,8 @@ class DisableEditingAttributes(bpy.types.Operator, AttributesOperator):
 
     def disable_editing_attributes_on_obj(self, obj: bpy.types.Object) -> None:
         props = tool.Blender.get_object_attribute_props(obj)
-        props.is_editing_attributes = False
+        props.attributes.clear()
+        props.property_unset("is_editing_attributes")
 
     def execute(self, context):
         for obj in get_objs_for_operation(self, context):
@@ -130,7 +132,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
         if not obj or not (element := tool.Ifc.get_entity(obj)):
             return
 
-        def callback(attributes, prop):
+        def callback(attributes: dict[str, Any], prop: "Attribute") -> None | Literal[True]:
             if prop.name in ("RefLatitude", "RefLongitude"):
                 if not prop.is_null:
                     try:
