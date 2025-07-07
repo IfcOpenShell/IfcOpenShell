@@ -82,22 +82,24 @@ class BIM_PT_explorer(Panel):
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_project_setup"
 
-    def draw(self, context):
+    def draw(self, context, *, is_popup=False):
         assert (layout := self.layout)
         props = tool.Attribute.get_explorer_props()
 
-        if not props.is_loaded:
+        if is_popup:
+            layout.label(text=props.ifc_class)
+        else:
+            if not props.is_loaded:
+                row = layout.row(align=True)
+                row.label(text="Explorer UI is not Loaded.")
+                row.prop(props, "is_loaded", text="", icon="IMPORT")
+                return
+
             row = layout.row(align=True)
-            row.label(text="Explorer UI is not Loaded.")
-            row.prop(props, "is_loaded", text="", icon="IMPORT")
-            return
+            row.prop(props, "ifc_class", text="")
+            row.prop(props, "is_loaded", text="", icon="CANCEL")
 
         active_entity = props.active_entity
-
-        row = layout.row(align=True)
-        row.prop(props, "ifc_class", text="")
-        row.prop(props, "is_loaded", text="", icon="CANCEL")
-
         row = layout.row(align=True)
         row.label(text=f"{len(props.entities)} entities found")
         row.operator("bim.explorer_add_entity", text="", icon="ADD")
@@ -113,9 +115,12 @@ class BIM_PT_explorer(Panel):
 
         if props.editing_entity_id:
             box = self.layout.box()
-            row = box.row(align=True)
-            row.operator("bim.explorer_edit_entity", icon="CHECKMARK")
-            row.operator("bim.explorer_disable_editing_entity", icon="CANCEL", text="")
+            # In popup we accept edits automatically for the convenience.
+            # Othrewise it seems very unintuitive, when you need to click confirmation twice.
+            if not is_popup:
+                row = box.row(align=True)
+                row.operator("bim.explorer_edit_entity", icon="CHECKMARK")
+                row.operator("bim.explorer_disable_editing_entity", icon="CANCEL", text="")
             bonsai.bim.helper.draw_attributes(props.entity_attributes, box)
 
 
