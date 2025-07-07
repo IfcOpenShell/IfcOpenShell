@@ -178,6 +178,23 @@ class Owner(bonsai.core.tool.Owner):
         props.active_person_id = person.id()
 
     @classmethod
+    def get_names_collection_name(cls, attribute_name: PersonAttributeType) -> str:
+        blender_names = {
+            "MiddleNames": "middle_names",
+            "PrefixTitles": "prefix_titles",
+            "SuffixTitles": "suffix_titles",
+        }
+        return blender_names[attribute_name]
+
+    @classmethod
+    def get_names_collection(
+        cls, attribute_name: PersonAttributeType
+    ) -> bpy.types.bpy_prop_collection_idprop[StrProperty]:
+        props = cls.get_owner_props()
+        blender_name = cls.get_names_collection_name(attribute_name)
+        return getattr(props, blender_name)
+
+    @classmethod
     def import_person_attributes(cls) -> None:
         props = cls.get_owner_props()
         person = tool.Ifc.get().by_id(props.active_person_id)
@@ -187,15 +204,10 @@ class Owner(bonsai.core.tool.Owner):
         props.suffix_titles.clear()
 
         def callback(name: str, prop, data: dict[str, Any]) -> None:
-            if name == "MiddleNames":
-                for name in data["MiddleNames"] or []:
-                    props.middle_names.add().name = name or ""
-            if name == "PrefixTitles":
-                for name in data["PrefixTitles"] or []:
-                    props.prefix_titles.add().name = name or ""
-            if name == "SuffixTitles":
-                for name in data["SuffixTitles"] or []:
-                    props.suffix_titles.add().name = name or ""
+            if name in cls.PERSON_ATTRIBUTE_TYPES:
+                collection = cls.get_names_collection(name)
+                for name_ in data[name] or []:
+                    collection.add().name = name_ or ""
 
         bonsai.bim.helper.import_attributes("IfcPerson", props.person_attributes, person.get_info(), callback)
 
@@ -219,30 +231,17 @@ class Owner(bonsai.core.tool.Owner):
         return tool.Ifc().get().by_id(props.active_person_id)
 
     PersonAttributeType = Literal["MiddleNames", "PrefixTitles", "SuffixTitles"]
+    PERSON_ATTRIBUTE_TYPES = ("MiddleNames", "PrefixTitles", "SuffixTitles")
 
     @classmethod
     def add_person_attribute(cls, name: PersonAttributeType) -> None:
-        props = cls.get_owner_props()
-        if name == "MiddleNames":
-            props.middle_names.add()
-        elif name == "PrefixTitles":
-            props.prefix_titles.add()
-        elif name == "SuffixTitles":
-            props.suffix_titles.add()
-        else:
-            assert_never(name)
+        collection = cls.get_names_collection(name)
+        collection.add()
 
     @classmethod
     def remove_person_attribute(cls, name: PersonAttributeType, id: int) -> None:
-        props = cls.get_owner_props()
-        if name == "MiddleNames":
-            props.middle_names.remove(id)
-        elif name == "PrefixTitles":
-            props.prefix_titles.remove(id)
-        elif name == "SuffixTitles":
-            props.suffix_titles.remove(id)
-        else:
-            assert_never(name)
+        collection = cls.get_names_collection(name)
+        collection.remove(id)
 
     @classmethod
     def set_role(cls, role: ifcopenshell.entity_instance) -> None:
