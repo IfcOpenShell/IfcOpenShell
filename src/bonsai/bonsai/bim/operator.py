@@ -917,6 +917,7 @@ def update_enum_property_search_prop(self, context):
                 self.first_launch = False
             else:
                 if not self.should_click_ok:
+                    # This closes popup immediately, avoiding the need to click "OK".
                     context.window.screen = context.window.screen
             if predefined_type:
                 try:
@@ -1318,6 +1319,7 @@ def update_attribute_search_value(self: "BIM_OT_attribute_search_values", contex
         self.first_launch = False
     else:
         if not should_click_ok:
+            # This closes popup immediately, avoiding the need to click "OK".
             context.window.screen = context.window.screen
 
 
