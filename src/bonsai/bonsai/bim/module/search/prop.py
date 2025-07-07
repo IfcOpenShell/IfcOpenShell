@@ -142,18 +142,85 @@ class BIMSearchProperties(PropertyGroup):
     filter_query: StringProperty(name="Filter Query")
     filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     facet: EnumProperty(
+        name="Facet",
         items=[
-            ("entity", "Class", "", "FILE_3D", 0),
-            ("attribute", "Attribute", "", "COPY_ID", 1),
-            ("property", "Property", "", "PROPERTIES", 2),
-            ("material", "Material", "", "MATERIAL", 3),
-            ("classification", "Classification", "", "OUTLINER", 4),
-            ("location", "Location", "", "PACKAGE", 5),
-            ("type", "Type", "", "FILE_VOLUME", 6),
-            ("group", "Group", "", "OUTLINER_COLLECTION", 7),
-            ("parent", "Parent", "", "FILE_PARENT", 8),
-            ("query", "Query", "", "POINTCLOUD_DATA", 9),
-            ("instance", "GlobalId", "", "GRIP", 10),
+            ("entity", "Class", "Search by IFC class.\n\nExample: 'IfcWall'.", "FILE_3D", 0),
+            (
+                "attribute",
+                "Attribute",
+                "Search by IFC class attribute value.\n\nExample values: 'Name', 'Cube'.",
+                "COPY_ID",
+                1,
+            ),
+            (
+                "property",
+                "Property",
+                "Search by Pset property value.\n\n"
+                "Example values: 'Pset_WallCommon', 'FireRating', 'equal to', '2HR'.",
+                "PROPERTIES",
+                2,
+            ),
+            (
+                "material",
+                "Material",
+                "Search by material name.\n\n"
+                "Example: 'concrete'\n"
+                "(to select all elements with material named 'concrete').",
+                "MATERIAL",
+                3,
+            ),
+            (
+                "classification",
+                "Classification",
+                "Search by classification references.\n\n"
+                "Example: 'MyReference'\n"
+                "(to select all elements that have classification reference with Id 'MyReference').",
+                "OUTLINER",
+                4,
+            ),
+            (
+                "location",
+                "Location",
+                "Search by spatial element.\n\n"
+                "Example: 'My Storey'\n"
+                "(to select all elements contained in 'My Storey' spatial element).",
+                "PACKAGE",
+                5,
+            ),
+            (
+                "type",
+                "Type",
+                "Search by element type.\n\n"
+                "Example: 'BaseType'\n(to select all elements that have element type named 'BaseType').",
+                "FILE_VOLUME",
+                6,
+            ),
+            (
+                "group",
+                "Group",
+                "Search by IfcGroup name.\n\n"
+                "Example: 'MyGroup'\n(to select all elements that are assigned to IfcGroup named 'MyGroup').",
+                "OUTLINER_COLLECTION",
+                7,
+            ),
+            (
+                "parent",
+                "Parent",
+                "Search by parent element.\n\n"
+                "Example: 'My Building'\n"
+                "(to select all children elements of 'My Building').",
+                "FILE_PARENT",
+                8,
+            ),
+            (
+                "query",
+                "Query",
+                "Search elements by special queries.\n\n"
+                "Example values: 'types.count', '0' (to select all elements that have 0 occurrences).",
+                "POINTCLOUD_DATA",
+                9,
+            ),
+            ("instance", "GlobalId", "Search entity by guid.\n\nExample: '2W83_qKWvEGgeo5v66dTxG'.", "GRIP", 10),
         ],
     )
     saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
