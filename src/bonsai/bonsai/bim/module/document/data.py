@@ -21,7 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
 import bonsai.tool as tool
-
+from natsort import natsorted
 
 def refresh():
     DocumentData.is_loaded = False
@@ -87,18 +87,20 @@ class DocumentData:
 
     @classmethod
     def load_document_objects_into_props(cls, document_id):
+        if not cls.is_loaded:
+            cls.load()
+        
         props = tool.Document.get_document_props()
         props.document_objects.clear()
 
-        if "document_objects" not in cls.data or document_id not in cls.data["document_objects"]:
+        if document_id not in cls.data["document_objects"]:
             return
 
-        sorted_objects = sorted(cls.data["document_objects"][document_id], key=lambda x: x["name"].lower())
+        sorted_objects = natsorted(cls.data["document_objects"][document_id], key=lambda x: x["name"].lower())
 
         for obj_data in sorted_objects:
             item = props.document_objects.add()
             item.name = obj_data["name"]
-
 
 class ObjectDocumentData:
     data = {}
@@ -110,6 +112,19 @@ class ObjectDocumentData:
             "documents": cls.documents(),
         }
         cls.is_loaded = True
+
+    @staticmethod
+    def convert_to_file_uri(location: str) -> str:
+        if not location:
+            return ""
+            
+        uri = location
+        if not uri.startswith("file://"):
+            if not os.path.isabs(uri):
+                uri = os.path.abspath(os.path.join(os.path.dirname(tool.Ifc.get_path()), uri))
+            uri = "file://" + uri
+        return uri
+
 
     @classmethod
     def documents(cls):
@@ -165,11 +180,7 @@ class ObjectDocumentData:
                         if location is None and referenced_document:
                             location = referenced_document.Location
 
-                if location:
-                    if not "://" in location:
-                        if not os.path.isabs(location):
-                            location = os.path.abspath(os.path.join(os.path.dirname(tool.Ifc.get_path()), location))
-                        location = "file://" + location
+                location = cls.convert_to_file_uri(location) if location else None
 
                 results.append(
                     {

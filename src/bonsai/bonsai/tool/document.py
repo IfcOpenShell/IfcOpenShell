@@ -18,12 +18,11 @@
 
 from __future__ import annotations
 import bpy
-import json
 import ifcopenshell.util.system
-import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 import json
+from natsort import natsorted
 from typing import Any, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -70,12 +69,15 @@ class Document(bonsai.core.tool.Document):
                 data[attr_name] = ""
                 return True
             if attr_name != "Name":
-                return None
+                return None  # Proceed normally
 
             current_value = data[attr_name]
+            # If Name is already filled, display it so user would be able to correct invalid IFC.
             if current_value is not None:
                 return None
 
+            # Skip import since IFC restricts Name to be filled
+            # for IfcDocumentReference with ReferencedDocument.
             return False
 
         import_callback = callback if document.is_a("IfcDocumentReference") else None
@@ -137,8 +139,8 @@ class Document(bonsai.core.tool.Document):
                     root_documents.append(rel.RelatingDocument)
 
         root = props.documents.add()
-        root.ifc_definition_id = -1
-        root.is_information = True
+        root.ifc_definition_id = -project.id()
+        root.document_type = "PROJECT"
         root.name = f"Project Documents ({project.Name or 'Unnamed Project'})"
         root.identification = ""
         root.location = ""
@@ -150,8 +152,9 @@ class Document(bonsai.core.tool.Document):
         root.is_expanded = root_id not in expanded_documents
 
         if root.is_expanded:
-            root_documents.sort(
-                key=lambda doc: ((cls.get_document_information_id(doc) or "").lower(), (doc.Name or "").lower())
+            root_documents = natsorted(
+                root_documents,
+                key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
             )
 
             for doc in root_documents:
@@ -161,11 +164,11 @@ class Document(bonsai.core.tool.Document):
     def _process_document(cls, document, props, document_children, expanded_documents, depth):
         new = props.documents.add()
         new.ifc_definition_id = document.id()
-        new.is_information = document.is_a("IfcDocumentInformation")
+        new.document_type = "INFORMATION" if document.is_a("IfcDocumentInformation") else "REFERENCE"
         new.tree_depth = depth
 
         file = document.file
-        if new.is_information:
+        if new.document_type == "INFORMATION":
             new.name = document.Name or "Unnamed"
             new.identification = cls.get_document_information_id(document) or ""
             new.location = document.Location or ""
@@ -175,7 +178,7 @@ class Document(bonsai.core.tool.Document):
             new.description = document.Description or ""
             new.location = document.Location or ""
 
-            if not new.is_information:
+            if new.document_type == "REFERENCE":
                 if file.schema == "IFC2X3":
                     if document.ReferenceToDocument:
                         doc_info = document.ReferenceToDocument[0]
@@ -183,7 +186,7 @@ class Document(bonsai.core.tool.Document):
                             new.name = doc_info.Name or ""
                         new.location = new.location or ""
                 else:
-                    if hasattr(document, "ReferencedDocument") and document.ReferencedDocument:
+                    if document.ReferencedDocument:
                         doc_info = document.ReferencedDocument
                         if not new.name:
                             new.name = doc_info.Name or ""
@@ -200,20 +203,22 @@ class Document(bonsai.core.tool.Document):
             info_children = [d for d in children if d.is_a("IfcDocumentInformation")]
             ref_children = [d for d in children if not d.is_a("IfcDocumentInformation")]
 
-            info_children.sort(
-                key=lambda doc: ((cls.get_document_information_id(doc) or "").lower(), (doc.Name or "").lower())
+            info_children = natsorted(
+                info_children,
+                key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
             )
 
-            ref_children.sort(
+            ref_children = natsorted(
+                ref_children,
                 key=lambda doc: (
-                    (cls.get_external_reference_id(doc) or "").lower(),
-                    (doc.Description or doc.Name or "").lower(),
+                    cls.get_external_reference_id(doc) or "",
+                    doc.Description or doc.Name or ""
                 )
             )
 
             for child in info_children + ref_children:
                 cls._process_document(child, props, document_children, expanded_documents, depth + 1)
-
+    
     @classmethod
     def is_document_information(cls, document: ifcopenshell.entity_instance) -> bool:
         return document.is_a("IfcDocumentInformation")
@@ -253,16 +258,6 @@ class Document(bonsai.core.tool.Document):
         return document.HasDocumentReferences
 
     @classmethod
-    def enable_document_editing(cls) -> None:
-        props = cls.get_document_props()
-        props.is_editing = True
-
-    @classmethod
-    def disable_document_editing(cls) -> None:
-        props = cls.get_document_props()
-        props.is_editing = False
-
-    @classmethod
     def clear_active_document(cls) -> None:
         props = cls.get_document_props()
         props.active_document_id = 0
@@ -293,6 +288,58 @@ class Document(bonsai.core.tool.Document):
     def get_selected_document_information(cls, ifc) -> Union[ifcopenshell.entity_instance, None]:
         props = cls.get_document_props()
 
-        if props.active_document and props.active_document.is_information:
+        if props.active_document and props.active_document.document_type == "INFORMATION":
             return ifc.get().by_id(props.active_document.ifc_definition_id)
         return None
+
+    @classmethod
+    def refresh_document_data(cls) -> None:
+        import bonsai.bim.module.document.data as document_data
+        document_data.DocumentData.is_loaded = False
+        document_data.DocumentData.load()
+
+    @classmethod
+    def load_document_objects_into_props(cls, document_id: int) -> None:
+        import bonsai.bim.module.document.data as document_data
+        document_data.DocumentData.load_document_objects_into_props(document_id)
+
+    @classmethod
+    def update_document_objects(cls, document_id: Union[int, None] = None) -> None:
+        cls.refresh_document_data()
+
+        if document_id is None:
+            props = cls.get_document_props()
+            if props.active_document and props.active_document.ifc_definition_id > 0:
+                document_id = props.active_document.ifc_definition_id
+
+        if document_id:
+            cls.load_document_objects_into_props(document_id)
+
+    @classmethod
+    def update_assigned_documents(cls) -> None:
+        from bonsai.bim.module.document.data import ObjectDocumentData
+        
+        ObjectDocumentData.is_loaded = False
+        
+        props = cls.get_document_props()
+        props.assigned_documents.clear()
+
+        if not ObjectDocumentData.is_loaded:
+            ObjectDocumentData.load()
+
+        if not ObjectDocumentData.data.get("documents"):
+            return
+
+        sorted_docs = sorted(
+            ObjectDocumentData.data["documents"],
+            key=lambda doc: ((doc.get("identification") or "").lower(), (doc.get("name") or "").lower()),
+        )
+
+        for document in sorted_docs:
+            new = props.assigned_documents.add()
+            new.name = document["name"] or "Unnamed"
+            new.identification = document["identification"] or "*"
+            new.document_type = "INFORMATION" if document.get("is_information", False) else "REFERENCE"
+            new.ifc_definition_id = document["id"]
+            new.location = document.get("location") or ""
+            new.description = document.get("description") or ""

@@ -51,8 +51,7 @@ def update_document_identification(self: "Document", context: bpy.types.Context)
 
 
 def update_active_document(self, context):
-    if self.documents and self.active_document_index < len(self.documents):
-        document = self.documents[self.active_document_index]
+    if (document := self.active_document):
         if document.ifc_definition_id:
             DocumentData.load_document_objects_into_props(document.ifc_definition_id)
 
@@ -61,23 +60,31 @@ class Document(PropertyGroup):
     name: StringProperty(name="Name")
     identification: StringProperty(name="Identification")
     description: StringProperty(name="Description")
-    is_information: BoolProperty(name="Is Information")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     location: StringProperty(name="Location", default="")
     tree_depth: IntProperty(name="Tree Depth", default=0)
     has_children: BoolProperty(name="Has Children", default=False)
     is_expanded: BoolProperty(name="Is Expanded", default=False)
+    document_type: EnumProperty(
+        name="Document Type",
+        items=[
+            ("PROJECT", "Project", "Virtual project root node"),
+            ("INFORMATION", "Information", "IfcDocumentInformation"),
+            ("REFERENCE", "Reference", "IfcDocumentReference"),
+        ],
+        default="INFORMATION"
+    )
 
     if TYPE_CHECKING:
         name: str
         identification: str
         description: str
-        is_information: bool
         ifc_definition_id: int
         location: str
         tree_depth: int
         has_children: bool
         is_expanded: bool
+        document_type: str
 
 
 class DocumentObject(PropertyGroup):
@@ -93,17 +100,24 @@ class AssignedDocument(PropertyGroup):
     name: StringProperty(name="Name")
     identification: StringProperty(name="Identification")
     description: StringProperty(name="Description", default="")
-    is_information: BoolProperty(name="Is Information")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     location: StringProperty(name="Location", default="")
+    document_type: EnumProperty(
+        name="Document Type",
+        items=[
+            ("PROJECT", "Project", "Virtual project root node"),
+            ("INFORMATION", "Information", "IfcDocumentInformation"),
+            ("REFERENCE", "Reference", "IfcDocumentReference"),
+        ],
+        default="INFORMATION"
+    )
 
     if TYPE_CHECKING:
         name: str
         identification: str
-        is_information: bool
         ifc_definition_id: int
         location: str
-
+        document_type: str
 
 class BIMDocumentProperties(PropertyGroup):
     document_attributes: CollectionProperty(name="Document Attributes", type=Attribute)
