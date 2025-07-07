@@ -419,6 +419,7 @@ class BIM_PT_sheets(Panel):
             draw_project_not_saved_ui(self)
             return
 
+        assert self.layout
         self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_sheets:
@@ -432,8 +433,8 @@ class BIM_PT_sheets(Panel):
         row.operator("bim.add_sheet", text="", icon="ADD")
         row.operator("bim.disable_editing_sheets", text="", icon="CANCEL")
 
-        if self.props.sheets and self.props.active_sheet_index < len(self.props.sheets):
-            active_sheet = self.props.sheets[self.props.active_sheet_index]
+        active_sheet = tool.Drawing.get_active_sheet_item()
+        if active_sheet:
             row = self.layout.row(align=True)
             row2 = row.row(align=True)
             if active_sheet.is_sheet:
