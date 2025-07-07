@@ -285,9 +285,7 @@ class SheetBuilder:
         title.attrib["width"] = str(self.convert_to_mm(title_root.attrib["width"]))
         title.attrib["height"] = str(self.convert_to_mm(title_root.attrib["height"]))
 
-    def build(self, sheet: ifcopenshell.entity_instance) -> dict:
-        self.references = {"SHEET": None, "RASTER": []}
-
+    def build(self, sheet: ifcopenshell.entity_instance) -> dict[str, str]:
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         assert layout_path
         self.layout_dir = os.path.dirname(layout_path)
@@ -313,9 +311,7 @@ class SheetBuilder:
         with open(sheet_path, "wb") as output:
             tree.write(output)
 
-        self.references["SHEET"] = sheet_path
-
-        return self.references
+        return {"SHEET": sheet_path}
 
     def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
