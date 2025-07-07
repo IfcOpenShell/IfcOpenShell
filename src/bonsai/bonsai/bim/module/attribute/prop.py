@@ -50,6 +50,23 @@ class ExplorerEntity(PropertyGroup):
 
 
 class BIMExplorerProperties(PropertyGroup):
+    def update_is_loaded(self, context: object) -> None:
+        if self.is_loaded:
+            # Trigger refresh.
+            self.ifc_class = self.ifc_class
+        else:
+            self.property_unset("is_loaded")
+            self.property_unset("ifc_class")
+            self.entities.clear()
+            self.property_unset("active_entity_index")
+            self.property_unset("editing_entity_id")
+            self.entity_attributes.clear()
+
+    is_loaded: BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Toggle Explorer UI",
+        update=update_is_loaded,
+    )
+
     def get_ifc_class(self, context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
         # TODO: Add more entities.
         classes = [
@@ -72,6 +89,7 @@ class BIMExplorerProperties(PropertyGroup):
     entity_attributes: CollectionProperty(type=Attribute)  # pyright: ignore[reportRedeclaration]
 
     if TYPE_CHECKING:
+        is_loaded: bool
         ifc_class: str
         entities: bpy.types.bpy_prop_collection_idprop[ExplorerEntity]
         active_entity_index: int

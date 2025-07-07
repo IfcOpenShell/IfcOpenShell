@@ -85,11 +85,22 @@ class BIM_PT_explorer(Panel):
     def draw(self, context):
         assert (layout := self.layout)
         props = tool.Attribute.get_explorer_props()
+
+        if not props.is_loaded:
+            row = layout.row(align=True)
+            row.label(text="Explorer UI is not Loaded.")
+            row.prop(props, "is_loaded", text="", icon="IMPORT")
+            return
+
         active_entity = props.active_entity
 
-        layout.prop(props, "ifc_class", text="")
+        row = layout.row(align=True)
+        row.prop(props, "ifc_class", text="")
+        row.prop(props, "is_loaded", text="", icon="CANCEL")
+
         row = layout.row(align=True)
         row.label(text=f"{len(props.entities)} entities found")
+        row.operator("bim.explorer_add_entity", text="", icon="ADD")
 
         if active_entity:
             if active_entity.ifc_definition_id == props.editing_entity_id:
