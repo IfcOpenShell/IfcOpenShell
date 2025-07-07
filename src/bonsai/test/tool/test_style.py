@@ -72,7 +72,7 @@ class TestEnableEditing(NewFile):
 
 class TestEnableEditingStyles(NewFile):
     def test_run(self):
-        props = props = tool.Style.get_style_props()
+        props = tool.Style.get_style_props()
         props.is_editing = False
         subject.enable_editing_styles()
         assert props.is_editing is True

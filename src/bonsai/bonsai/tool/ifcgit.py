@@ -208,7 +208,7 @@ class IfcGit:
     @classmethod
     def get_commits_list(cls, path_ifc: str, lookup: dict[str, Any]) -> None:
 
-        props = props = cls.get_ifcgit_props()
+        props = cls.get_ifcgit_props()
         repo = cls.repo_from_path(path_ifc)
         commits = list(
             git.objects.commit.Commit.iter_items(
