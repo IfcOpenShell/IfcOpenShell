@@ -29,26 +29,28 @@ def load_project_documents(document: tool.Document) -> None:
     document.import_project_documents()
     document.enable_editing_ui()
 
+
 def disable_document_editing_ui(document: tool.Document) -> None:
     document.disable_editing_ui()
     document.disable_editing_document()
+
 
 def disable_object_document_editing_ui(document: tool.Document) -> None:
     props = document.get_document_props()
     props.is_object_editing = False
 
+
 def enable_editing_document(document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
     props = document_tool.get_document_props()
-    props.is_document_editing = True
     document_tool.set_active_document(document)
     document_tool.import_document_attributes(document)
 
 
 def disable_editing_document(document: tool.Document) -> None:
     props = document.get_document_props()
-    props.is_document_editing = False
     document.clear_active_document()
     document.clear_document_attributes()
+
 
 def add_information(ifc: tool.Ifc, document_tool: tool.Document, parent=None) -> ifcopenshell.entity_instance:
     document_tool.clear_document_tree()

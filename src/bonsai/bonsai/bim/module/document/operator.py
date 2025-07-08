@@ -23,6 +23,7 @@ import bonsai.tool as tool
 import bonsai.core.document as core
 from .data import DocumentData, ObjectDocumentData
 
+
 class LoadProjectDocuments(bpy.types.Operator):
     bl_idname = "bim.load_project_documents"
     bl_label = "Load Project Documents"
@@ -31,6 +32,7 @@ class LoadProjectDocuments(bpy.types.Operator):
     def execute(self, context):
         core.load_project_documents(tool.Document)
         return {"FINISHED"}
+
 
 class DisableDocumentEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_document_editing_ui"
@@ -109,6 +111,7 @@ class AddInformation(bpy.types.Operator, tool.Ifc.Operator):
         props.json_string = json.dumps(expanded_docs)
         bpy.ops.bim.load_project_documents()
 
+
 class AddDocumentReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_document_reference"
     bl_label = "Add Document Reference"
@@ -154,8 +157,6 @@ class EditDocument(bpy.types.Operator, tool.Ifc.Operator):
         if props.active_document_id:
             core.edit_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(props.active_document_id))
             props.active_document_id = 0
-            props.is_document_editing = False
-            tool.Document.update_assigned_documents()
 
 
 class RemoveDocument(bpy.types.Operator, tool.Ifc.Operator):
@@ -166,6 +167,7 @@ class RemoveDocument(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.remove_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(self.document))
+
 
 class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_document"
@@ -183,11 +185,9 @@ class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
             if element:
                 core.assign_document(tool.Ifc, product=element, document=document)
 
-
         tool.Document.update_document_objects(self.document)
         ObjectDocumentData.is_loaded = False
         ObjectDocumentData.load()
-        tool.Document.update_assigned_documents()
         return {"FINISHED"}
 
 
@@ -206,7 +206,7 @@ class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
                 element = tool.Ifc.get_entity(obj)
                 if element:
                     core.unassign_document(tool.Ifc, product=element, document=document)
-        
+
         props = tool.Document.get_document_props()
         active_document_id = None
         if props.active_document:
@@ -216,11 +216,9 @@ class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
             tool.Document.update_document_objects(active_document_id)
         else:
             tool.Document.update_document_objects()
-        
+
         ObjectDocumentData.is_loaded = False
         ObjectDocumentData.load()
-
-        tool.Document.update_assigned_documents()
         return {"FINISHED"}
 
 
@@ -253,16 +251,12 @@ class LoadObjectDocuments(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        if not ObjectDocumentData.is_loaded:
-            ObjectDocumentData.load()
-
         core.load_project_documents(tool.Document)
 
         props = tool.Document.get_document_props()
         props.is_object_editing = True
-
-        tool.Document.update_assigned_documents()
-
+        ObjectDocumentData.is_loaded = False
+        ObjectDocumentData.load()
         return {"FINISHED"}
 
 
@@ -277,19 +271,24 @@ class OpenIFCDocument(bpy.types.Operator):
     def execute(self, context):
         import subprocess
         import os
+
         if not self.uri or not self.uri.lower().startswith("file://"):
             self.report({"ERROR"}, "Only local file:// URIs are supported")
             return {"CANCELLED"}
 
         filepath = self.uri[7:]  # Remove file:// prefix
-        
+
         if not os.path.exists(filepath):
             self.report({"ERROR"}, f"File not found: {filepath}")
             return {"CANCELLED"}
 
         try:
             blender_path = bpy.app.binary_path
-            args = [blender_path, "--python-expr", "import bpy; bpy.ops.bim.load_project(filepath='{}')".format(filepath)]
+            args = [
+                blender_path,
+                "--python-expr",
+                "import bpy; bpy.ops.bim.load_project(filepath='{}')".format(filepath),
+            ]
             subprocess.Popen(args)
             self.report({"INFO"}, f"Opening {filepath} in a new Blender instance")
         except Exception as e:
@@ -325,4 +324,3 @@ class ToggleDocument(bpy.types.Operator):
         props.json_string = json.dumps(expanded_documents)
         bpy.ops.bim.load_project_documents()
         return {"FINISHED"}
-
