@@ -165,14 +165,14 @@ class BIM_PT_object_documents(Panel):
                 row = box.row(align=True)
                 row.label(text="Assigned Documents", icon="OUTLINER_OB_EMPTY")
 
-                box.template_list(
-                    "BIM_UL_assigned_documents",
-                    "",
-                    self.props,
-                    "assigned_documents",
-                    self.props,
-                    "active_assigned_document_index",
-                )
+
+                for document in ObjectDocumentData.data["documents"]:
+                    row = self.layout.row(align=True)
+                    row.label(text=document["identification"] or "*", icon="FILE")
+                    row.label(text=document["name"] or "Unnamed")
+                    if document["location"]:
+                        row.operator("bim.open_uri", icon="URL", text="").uri = document["location"]
+                    row.operator("bim.unassign_document", text="", icon="X").document = document["id"]                
 
     def draw_add_ui(self):
         if self.props.is_object_editing:
@@ -257,34 +257,6 @@ class BIM_UL_document_objects(UIList):
                 op = row.operator("bim.unassign_document", text="", icon="X")
                 op.document = document.ifc_definition_id
                 op.obj = item.name
-
-
-class BIM_UL_assigned_documents(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            row = layout.row(align=True)
-
-            if item.document_type == "INFORMATION":
-                row.label(text="", icon="FILE")
-            else:
-                row.label(text="", icon="FILE_HIDDEN")
-
-            split1 = row.split(factor=0.2)
-            split1.label(text=item.identification or "")
-
-            split2 = split1.split(factor=1.0)
-            if item.document_type == "INFORMATION":
-                split2.label(text=item.name or "Unnamed")
-            else:
-                split2.label(text=item.description or "No Description")
-
-            if item.location:
-                uri = ObjectDocumentData.convert_to_file_uri(item.location)
-                if item.location.lower().endswith(".ifc"):
-                    row.operator("bim.open_ifc_document", icon="HIDE_OFF", text="").uri = uri
-                row.operator("bim.open_uri", icon="URL", text="").uri = uri
-            op = row.operator("bim.unassign_document", text="", icon="X")
-            op.document = item.ifc_definition_id
 
 
 def add_object_documents_context_menu(self, context):
