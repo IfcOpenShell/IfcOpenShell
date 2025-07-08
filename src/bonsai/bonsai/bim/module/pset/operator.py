@@ -30,6 +30,7 @@ import bonsai.tool as tool
 import bonsai.core.pset as core
 import bonsai.bim.module.pset.data
 from bonsai.bim.ifc import IfcStore
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -343,27 +344,39 @@ class BIM_OT_pset_bulk_rename_parameters(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Rename Parameters"
     bl_idname = "bim.pset_bulk_rename_parameters"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Rename parameters that are subclasses of IfcElement"
+    bl_description = "Rename pset properties for all IfcElements"
 
     def _execute(self, context):
         props_to_map = tool.Pset.get_global_pset_props().psets_to_rename
         ifc_file = tool.Ifc.get()
         all_ifc_elements = ifc_file.by_type("IfcElement")
 
+        properties_map: defaultdict[str, dict[str, str]] = defaultdict(dict)
+        """pset_name -> {old_name -> new_name}"""
+        for p in props_to_map:
+            properties_map[p.name][p.existing_property_name] = p.new_property_name
+
+        props_renamed = 0
         for ifc_element in all_ifc_elements:
             for definition in ifc_element.IsDefinedBy:
                 if definition.is_a("IfcRelDefinesByProperties"):
                     prop_set = definition.RelatingPropertyDefinition
-                    self.rename_property(prop_set, props_to_map)
+                    props_renamed += self.rename_property(prop_set, properties_map)
 
-        self.report({"INFO"}, "Finished applying changes")
+        self.report({"INFO"}, f"Finished applying changes, {props_renamed} properties renamed.")
         return {"FINISHED"}
 
     def rename_property(
         self,
         property_set: ifcopenshell.entity_instance,
-        properties_to_map: "bpy.types.bpy_prop_collection_idprop[RenamePropertyEntry]",
-    ) -> None:
+        pset_remap: dict[str, dict[str, str]],
+    ) -> int:
+        props_renamed = 0
+        pset_name = property_set.Name
+        if pset_name not in pset_remap:
+            return props_renamed
+
+        properties_remap = pset_remap[pset_name]
         property_container: tuple[ifcopenshell.entity_instance, ...]
         if property_set.is_a() == "IfcPropertySet":
             property_container = property_set.HasProperties
@@ -373,11 +386,12 @@ class BIM_OT_pset_bulk_rename_parameters(bpy.types.Operator, tool.Ifc.Operator):
             assert False
 
         for obj_prop in property_container:
-            for prop2map in properties_to_map:
-                if prop2map.name != property_set.Name:
-                    continue
-                if prop2map.existing_property_name == obj_prop.Name:
-                    obj_prop.Name = prop2map.new_property_name
+            prop_name = obj_prop.Name
+            if prop_name not in properties_remap:
+                continue
+            obj_prop.Name = properties_remap[prop_name]
+            props_renamed += 1
+        return props_renamed
 
 
 class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
