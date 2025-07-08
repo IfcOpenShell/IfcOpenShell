@@ -48,6 +48,7 @@ from natsort import natsorted
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import MultipleFileSelect, Attribute
+    from bpy.stub_internal import rna_enums
 
 
 class SetTab(bpy.types.Operator):
@@ -1406,4 +1407,44 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
         )
 
     def execute(self, context):
+        return {"FINISHED"}
+
+
+class BIM_OT_attribute_add_subitem(bpy.types.Operator):
+    bl_idname = "bim.attribute_add_subitem"
+    bl_label = "Add Subitem"
+    bl_description = "Add subitem to the current attribute"
+    bl_options = {"REGISTER", "UNDO"}
+
+    data_path: bpy.props.StringProperty()
+    """Full data path."""
+
+    if TYPE_CHECKING:
+        data_path: str
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        col: "bpy.types.bpy_prop_collection_idprop[StrProperty]"
+        col = eval(self.data_path)
+        col.add()
+        return {"FINISHED"}
+
+
+class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
+    bl_idname = "bim.attribute_remove_subitem"
+    bl_label = "Add Subitem"
+    bl_description = "Add subitem to the current attribute"
+    bl_options = {"REGISTER", "UNDO"}
+
+    data_path: bpy.props.StringProperty()
+    """Full data path."""
+    index: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        data_path: str
+        index: int
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        col: "bpy.types.bpy_prop_collection_idprop[StrProperty]"
+        col = eval(self.data_path)
+        col.remove(self.index)
         return {"FINISHED"}

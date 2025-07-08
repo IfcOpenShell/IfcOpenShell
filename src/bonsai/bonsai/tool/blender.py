@@ -1535,6 +1535,22 @@ class Blender(bonsai.core.tool.Blender):
         return True
 
     @classmethod
+    def get_full_data_path(cls, bpy_struct: bpy.types.bpy_struct, path: str = "") -> str:
+        """Get full data path to Blender entity or it's attributes.
+
+        :param bpy_struct: Blender entity.
+        :param path: Additional path to add to entity.
+
+        :return: Path in a format
+            ``bpy.data.scenes['Scene'].BIMExplorerProperties.entity_attributes[4].enum_value``
+        """
+        if path:
+            bpy_prop: bpy.types.bpy_prop  # pyright: ignore[reportAttributeAccessIssue]
+            bpy_prop = bpy_struct.path_resolve(path, False)
+            return repr(bpy_prop)
+        return repr(bpy_struct)
+
+    @classmethod
     def set_prop_from_path(cls, bpy_object: bpy.types.bpy_struct, prop_path: str, value: Any) -> None:
         """Set `data_block` property value using path from `path_from_id`."""
 

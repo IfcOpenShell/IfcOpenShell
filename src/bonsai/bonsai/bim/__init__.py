@@ -105,6 +105,8 @@ classes = [
     operator.BIM_OT_select_object,
     operator.BIM_OT_show_description,
     operator.BIM_OT_multiple_file_selector,
+    operator.BIM_OT_attribute_add_subitem,
+    operator.BIM_OT_attribute_remove_subitem,
     operator.ClippingPlaneCutWithCappings,
     operator.CloseBlendWarning,
     operator.CloseError,

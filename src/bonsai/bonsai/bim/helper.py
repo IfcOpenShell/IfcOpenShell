@@ -83,6 +83,22 @@ def draw_attribute(
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
     elif value_name == "filepath_value":
         attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
+
+    elif value_name == "subitems_values":
+        col = layout.column()
+        layout = col.row(align=True)
+        layout.label(text=f"{attribute.name}:")
+        data_path = tool.Blender.get_full_data_path(attribute, value_name)
+        for i, item in enumerate(attribute.subitems_values, 1):
+            row = col.row(align=True)
+            row.alignment = "EXPAND"
+            row.prop(item, "name", text=f"# {i}")
+            op = row.operator("bim.attribute_remove_subitem", text="", icon="X")
+            op.data_path = data_path
+            op.index = i - 1
+        op = layout.operator("bim.attribute_add_subitem", icon="ADD", text="")
+        op.data_path = data_path
+
     elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
         props = tool.Sequence.get_work_schedule_props()
         for item in props.durations_attributes:
@@ -167,6 +183,8 @@ def import_attribute(
 ) -> None:
     data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
     # Complex data types (aggregates and entities) are handled only by callback.
+    if data_type == ("list", "string"):
+        data_type = "list[string]"
     if isinstance(data_type, tuple) or data_type == "entity":
         callback(attribute.name(), None, data) if callback else None
         return
@@ -177,6 +195,7 @@ def import_attribute(
     new.is_optional = attribute.optional()
     new.data_type = data_type if isinstance(data_type, str) else ""
     new.ifc_class = data["type"]
+
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
     data_type = new.data_type  # Allow callback to override data type.
 
@@ -222,6 +241,12 @@ def import_attribute(
 
         if enum_value is not None:
             new.enum_value = enum_value
+    elif data_type == "list[string]":
+        value: Union[list[str], None] = data[attribute.name()]
+        if value:
+            for item in value:
+                new.subitems_values.add().name = str(item).replace("\n", "\\n")
+
     add_attribute_description(new, data)
     add_attribute_min_max(attribute, new)
 
