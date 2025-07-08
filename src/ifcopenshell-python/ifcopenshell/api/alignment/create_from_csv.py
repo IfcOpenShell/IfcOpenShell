@@ -17,27 +17,19 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
-import ifcopenshell.api.geometry
-import ifcopenshell.api.nest
-import ifcopenshell.guid
-import ifcopenshell.util.element
-import ifcopenshell.util.representation
-import ifcopenshell.util.stationing
 import ifcopenshell.api
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment import get_axis_subcontext
 
-import math
+from typing import Sequence
 
 import csv
 
 
-def create_alignment_from_csv(file: ifcopenshell.file, filepath: str) -> entity_instance:
+def create_from_csv(file: ifcopenshell.file, filepath: str) -> entity_instance:
     """
-    Creates an alignment from PI data stored in a CSV file. Only the business logic
-    entities are creaed. Use create_geometric_representation() to create the geometric entities.
+    Creates an alignment from PI data stored in a CSV file.
 
     The format of the file is:
 
@@ -94,22 +86,16 @@ def create_alignment_from_csv(file: ifcopenshell.file, filepath: str) -> entity_
             radii = radii[1:-1]  # The first radius value is a placeholder, remove it
 
             if row_count == 1:
-                # create the alignment
-                alignment = file.createIfcAlignment(GlobalId=ifcopenshell.guid.new())
-                # create the horizontal alignment
-                horizontal_alignment = ifcopenshell.api.alignment.create_horizontal_alignment_by_pi_method(
-                    file, "Alignment_from_CSV", coordinates, radii
-                )
-                # nest them together
-                ifcopenshell.api.nest.assign_object(
-                    file, related_objects=(horizontal_alignment,), relating_object=alignment
+                alignment = ifcopenshell.api.alignment.create(file, "Alignment_from_CSV")
+                horizontal_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+                ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method(
+                    file, horizontal_layout, coordinates, radii
                 )
             else:
                 # add all subsequent vertical alignments
-                ifcopenshell.api.alignment.add_vertical_alignment_by_pi_method(file, alignment, coordinates, radii)
-
-    # IFC 4.1.4.1.1 Alignment Aggregation To Project
-    project = file.by_type("IfcProject")[0]
-    ifcopenshell.api.aggregate.assign_object(file, products=[alignment], relating_object=project)
+                vertical_layout = ifcopenshell.api.alignment.add_vertical_layout(file, alignment)
+                ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method(
+                    file, vertical_layout, coordinates, radii
+                )
 
     return alignment

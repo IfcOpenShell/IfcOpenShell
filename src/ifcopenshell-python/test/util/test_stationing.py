@@ -16,31 +16,67 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import ifcopenshell.util.stationing as sta
+
+def _test_si_stations():
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT") # meter
+    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    
+    s = sta.station_as_string(file,0.0)
+    assert s == "0+000.000"
+
+    s = sta.station_as_string(file,100.00)
+    assert s == "0+100.000"
+
+    s = sta.station_as_string(file,-100.00)
+    assert s == "-0+100.000"
+
+    s = sta.station_as_string(file,123456.789)
+    assert s == "123+456.789"
+
+    s = sta.station_as_string(file,-123456.789)
+    assert s == "-123+456.789"
+
+def _test_si_stations_millimeter():
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
+    ifcopenshell.api.unit.assign_unit(file)
+
+    s = sta.station_as_string(file,100.00)
+    assert s == "0+000.100"
+
+    s = sta.station_as_string(file,1000.00)
+    assert s == "0+001.000"
+
+def _test_us_stations():
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
+    length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
+    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    
+    s = sta.station_as_string(file,0.0)
+    assert s == "0+00.00"
+
+    s = sta.station_as_string(file,100.00)
+    assert s == "1+00.00"
+
+    s = sta.station_as_string(file,-100.00)
+    assert s == "-1+00.00"
+
+    s = sta.station_as_string(file,123456.789)
+    assert s == "1234+56.79"
+
+    s = sta.station_as_string(file,-123456.789)
+    assert s == "-1234+56.79"
 
 
 def test_station_as_string():
-    # test with a bunch of "random" station values
-    s = sta.station_as_string(0.0)
-    assert s == "0+000.000"
+    _test_si_stations()
+    _test_si_stations_millimeter()
+    _test_us_stations()
 
-    s = sta.station_as_string(0.0, 2, 2)
-    assert s == "0+00.00"
 
-    s = sta.station_as_string(0.0, 2)
-    assert s == "0+00.000"
-
-    s = sta.station_as_string(100.00)
-    assert s == "0+100.000"
-
-    s = sta.station_as_string(-100.00)
-    assert s == "-0+100.000"
-
-    s = sta.station_as_string(123456.789, 2, 2)
-    assert s == "1234+56.79"
-
-    s = sta.station_as_string(-123456.789, 2, 2)
-    assert s == "-1234+56.79"
-
-    s = sta.station_as_string(123456.789, 3, 4)
-    assert s == "123+456.7890"
+test_station_as_string()

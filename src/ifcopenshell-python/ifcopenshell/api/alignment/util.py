@@ -123,6 +123,23 @@ def print_alignment(alignment, indent=0):
             print_alignment(child, indent + 2)
 
 
+def print_alignment_deep(alignment, indent=0):
+    """
+    Debugging function to print alignment decomposition, including layout segments
+    """
+    print(" " * indent, alignment)
+
+    for rel in alignment.IsNestedBy:
+        for child in rel.RelatedObjects:
+            print_alignment_deep(child, indent + 2)
+            if child.is_a("IfcAlignmentSegment"):
+                print(" " * (indent + 4), child.DesignParameters)
+
+    for agg in alignment.IsDecomposedBy:
+        for child in agg.RelatedObjects:
+            print_alignmen_deep(child, indent + 2)
+
+
 def print_composite_curve(curve):
     """
     Debugging function to print composite curve segments
@@ -131,3 +148,17 @@ def print_composite_curve(curve):
 
     for segment in curve.Segments:
         print(" " * 2, segment)
+
+
+def print_composite_curve_deep(curve):
+    """
+    Debugging function to print composite curve segments, including curve segment details
+    """
+    print(str(curve)[0:100])
+
+    for segment in curve.Segments:
+        print(" " * 2, segment)
+        print(" " * 4, segment.ParentCurve)
+        print(" " * 4, segment.Placement)
+        print(" " * 4, segment.Placement.Location)
+        print(" " * 4, segment.Placement.RefDirection)

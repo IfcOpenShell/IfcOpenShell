@@ -17,28 +17,24 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util
 from ifcopenshell import entity_instance
-from collections.abc import Sequence
+import typing
 
-import ifcopenshell.util.element
-
-
-def get_child_alignments(alignment: entity_instance) -> Sequence[entity_instance]:
+def edit_survey_point(annotation: entity_instance, x:float,y:float,z:float=0.0):
     """
-    Returns the aggregated child alignments to this alignment per CT 4.1.4.4.1.2 Alignment Layout - Reusing Horizontal Layout
+    Edits the location of a previously defined survey point
+
+    :param survey_point: The survey point
+    :return: None
 
     Example:
 
     .. code:: python
 
-        alignment = model.by_type("IfcAlignment")[0]
-        children = ifcopenshell.api.alignment.get_child_alignments(alignment)
+        annotation = ifcopenshell.api.cogo.add_survey_point(file,file.createIfcCartesianPoint(4000.0,3500.0)))
+        ifcopenshell.api.cogo.edit_surve_point(annotation,3500.0,2000.0)
     """
-    children = []
-    for rel in alignment.IsDecomposedBy:
-        for child in rel.RelatedObjects:
-            if child.is_a("IfcAlignment"):
-                children.append(child)
-
-    return children
+    if annotation.Representation.Representations[0].Items[0].Dim == 2:
+        annotation.Representation.Representations[0].Items[0].Coordinates = ((x,y))
+    else:
+        annotation.Representation.Representations[0].Items[0].Coordinates = ((x,y,z))

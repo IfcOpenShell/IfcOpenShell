@@ -25,17 +25,17 @@ import math
 from collections.abc import Sequence
 
 
-def create_geometric_representation(file: ifcopenshell.file, alignment: entity_instance) -> None:
+def _create_geometric_representation(file: ifcopenshell.file, alignment: entity_instance) -> None:
     """
-    Create geometric representation for the alignment.
+    Create geometric representation for the alignment and its nested layouts.
 
-    There are 5 different cases:
+    There are 5 different cases (the IfcCurve created is indicated):
 
-    1) Horizontal only
-    2) Horizontal + Vertical
-    3) Horizontal + Vertical + Cant
-    4) Vertical only (this occurs when horizontal is reused from a parent alignment)
-    5) Vertical + Cant (this occurs when horizontal is reused from a parent alignment)
+    1) Horizontal only -> IfcCompositeCurve
+    2) Horizontal + Vertical -> IfcCompositeCurve and IfcGradientCurve
+    3) Horizontal + Vertical + Cant -> IfcCompositeCurve and IfcSegmentedReferentCurve
+    4) Vertical only (this occurs when horizontal is reused from a parent alignment) -> IfcGradientCurve
+    5) Vertical + Cant (this occurs when horizontal is reused from a parent alignment) -> IfcSegmentedReferenceCurve
 
     :param alignment: The alignment for which the representation is being created
     :return: None
@@ -43,7 +43,7 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
 
     expected_type = "IfcAlignment"
     if not alignment.is_a(expected_type):
-        raise TypeError("Expected '{expected_type}' but got '{alignment.is_a()}'")
+        raise TypeError(f"Expected {expected_type} but got {alignment.is_a()}")
 
     placement = file.createIfcLocalPlacement(
         PlacementRelTo=None,
@@ -60,11 +60,8 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
     if len(layouts) == 1 and len(children) == 0:
         assert layouts[0].is_a("IfcAlignmentHorizontal")
         # Horizontal only - IFC CT 4.1.7.1.1.1
-        ifcopenshell.api.alignment.add_zero_length_segment(file, layouts[0])
-        composite_curve = file.createIfcCompositeCurve()
-        ifcopenshell.api.alignment.map_alignment_segments(file, layouts[0], composite_curve)
-        representation = file.create_entity(
-            type="IfcShapeRepresentation",
+        composite_curve = file.createIfcCompositeCurve(Segments=[], SelfIntersect=False)
+        representation = file.createIfcShapeRepresentation(
             ContextOfItems=axis_geom_subcontext,
             RepresentationIdentifier="Axis",
             RepresentationType="Curve2D",
@@ -75,12 +72,8 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
         # Horizontal and Vertical - IFC CT 4.1.7.1.1.1
         assert layouts[0].is_a("IfcAlignmentHorizontal")
         assert layouts[1].is_a("IfcAlignmentVertical")
-        ifcopenshell.api.alignment.add_zero_length_segment(file, layouts[0])
-        ifcopenshell.api.alignment.add_zero_length_segment(file, layouts[1])
-        composite_curve = file.createIfcCompositeCurve()
-        ifcopenshell.api.alignment.map_alignment_segments(file, layouts[0], composite_curve)
-        representation = file.create_entity(
-            type="IfcShapeRepresentation",
+        composite_curve = file.createIfcCompositeCurve(Segments=[], SelfIntersect=False)
+        representation = file.createIfcShapeRepresentation(
             ContextOfItems=axis_geom_subcontext,
             RepresentationIdentifier="FootPrint",
             RepresentationType="Curve2D",
@@ -88,10 +81,8 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
         )
         ifcopenshell.api.geometry.assign_representation(file, alignment, representation)
 
-        gradient_curve = file.createIfcGradientCurve(BaseCurve=composite_curve)
-        ifcopenshell.api.alignment.map_alignment_segments(file, layouts[1], gradient_curve)
-        representation = file.create_entity(
-            type="IfcShapeRepresentation",
+        gradient_curve = file.createIfcGradientCurve(Segments=[], BaseCurve=composite_curve, SelfIntersect=False)
+        representation = file.createIfcShapeRepresentation(
             ContextOfItems=axis_geom_subcontext,
             RepresentationIdentifier="Axis",
             RepresentationType="Curve3D",
@@ -103,13 +94,8 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
         assert layouts[0].is_a("IfcAlignmentHorizontal")
         assert layouts[1].is_a("IfcAlignmentVertical")
         assert layouts[2].is_a("IfcAlignmentCant")
-        ifcopenshell.api.alignment.add_zero_length_segment(file, layouts[0])
-        ifcopenshell.api.alignment.add_zero_length_segment(file, layouts[1])
-        ifcopenshell.api.alignment.add_zero_length_segment(file, layouts[2])
-        composite_curve = file.createIfcCompositeCurve()
-        ifcopenshell.api.alignment.map_alignment_segments(file, layouts[0], composite_curve)
-        representation = file.create_entity(
-            type="IfcShapeRepresentation",
+        composite_curve = file.createIfcCompositeCurve(Segments=[], SelfIntersect=False)
+        representation = file.createIfcShapeRepresentation(
             ContextOfItems=axis_geom_subcontext,
             RepresentationIdentifier="FootPrint",
             RepresentationType="Curve2D",
@@ -117,10 +103,10 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
         )
         ifcopenshell.api.geometry.assign_representation(file, alignment, representation)
 
-        gradient_curve = file.createIfcGradientCurve(BaseCurve=composite_curve)
-        ifcopenshell.api.alignment.map_alignment_segments(file, layouts[1], gradient_curve)
-        segmented_reference_curve = file.createIfcSegmentedReferenceCurve(BaseCurve=gradient_curve)
-        ifcopenshell.api.alignment.map_alignment_segments(file, layouts[2], segmented_reference_curve)
+        gradient_curve = file.createIfcGradientCurve(Segments=[], BaseCurve=composite_curve, SelfIntersect=False)
+        segmented_reference_curve = file.createIfcSegmentedReferenceCurve(
+            Segments=[], BaseCurve=gradient_curve, SelfIntersect=False
+        )
         representation = file.create_entity(
             type="IfcShapeRepresentation",
             ContextOfItems=axis_geom_subcontext,
@@ -132,11 +118,8 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
     else:
         # Reusing Horizontal - CT 4.1.4.4.1.2
         # Create a representation on the parent alignment
-        ifcopenshell.api.alignment.add_zero_length_segment(file, layouts[0])
-        composite_curve = file.createIfcCompositeCurve()
-        ifcopenshell.api.alignment.map_alignment_segments(file, layouts[0], composite_curve)
-        representation = file.create_entity(
-            type="IfcShapeRepresentation",
+        composite_curve = file.createIfcCompositeCurve(Segments=[], SelfIntersect=False)
+        representation = file.createIfcShapeRepresentation(
             ContextOfItems=axis_geom_subcontext,
             RepresentationIdentifier="FootPrint",
             RepresentationType="Curve2D",
@@ -149,12 +132,9 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
         child_layouts = ifcopenshell.api.alignment.get_alignment_layouts(child_alignment)
         if len(child_layouts) == 1:
             assert child_layouts[0].is_a("IfcAlignmentVertical")
-            ifcopenshell.api.alignment.add_zero_length_segment(file, child_layouts[0])
             base_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
-            gradient_curve = file.createIfcGradientCurve(BaseCurve=base_curve)
-            ifcopenshell.api.alignment.map_alignment_segments(file, child_layouts[0], gradient_curve)
-            representation = file.create_entity(
-                type="IfcShapeRepresentation",
+            gradient_curve = file.createIfcGradientCurve(Segments=[], BaseCurve=base_curve, SelfIntersect=False)
+            representation = file.createIfcShapeRepresentation(
                 ContextOfItems=axis_geom_subcontext,
                 RepresentationIdentifier="Axis",
                 RepresentationType="Curve3D",
@@ -164,15 +144,12 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
         elif len(child_layouts) == 2:
             assert child_layouts[0].is_a("IfcAlignmentVertical")
             assert child_layouts[1].is_a("IfcAlignmentCant")
-            ifcopenshell.api.alignment.add_zero_length_segment(file, child_layouts[0])
-            ifcopenshell.api.alignment.add_zero_length_segment(file, child_layouts[1])
             base_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
-            gradient_curve = file.createIfcGradientCurve(BaseCurve=base_curve)
-            ifcopenshell.api.alignment.map_alignment_segments(file, child_layouts[0], gradient_curve)
-            segmented_reference_curve = file.createIfcSegmentedReferenceCurve(BaseCurve=gradient_curve)
-            ifcopenshell.api.alignment.map_alignment_segments(file, child_layouts[1], segmented_reference_curve)
-            representation = file.create_entity(
-                type="IfcShapeRepresentation",
+            gradient_curve = file.createIfcGradientCurve(Segments=[], BaseCurve=base_curve, SelfIntersect=False)
+            segmented_reference_curve = file.createIfcSegmentedReferenceCurve(
+                Segments=[], BaseCurve=gradient_curve, SelfIntersect=False
+            )
+            representation = file.creatIfcShapeRepresentation(
                 ContextOfItems=axis_geom_subcontext,
                 RepresentationIdentifier="Axis",
                 RepresentationType="Curve3D",

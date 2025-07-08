@@ -20,7 +20,8 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 
-def test_distance_along_from_station():
+
+def test_create_alignment_pi_method():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
     length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
@@ -39,15 +40,18 @@ def test_distance_along_from_station():
     vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
     lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
 
-    alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        file, "TestAlignment", coordinates, radii, vpoints, lengths,start_station=10000.0
-    )
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(file, "TestAlignment", coordinates, radii, vpoints, lengths)
 
-    # Station 138+83.96
-    assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 13883.96) == pytest.approx(3883.96)
+    assert len(alignment.IsDecomposedBy) == 0  # no child alignments
+    assert len(alignment.IsNestedBy) == 1  # one nest
+    assert len(alignment.IsNestedBy[0].RelatedObjects) == 3  # nesting IfcReferent, IfcAlignmentHorizontal, IfcAlignmentVertical
+    assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
+    assert alignment.IsNestedBy[0].RelatedObjects[1].is_a("IfcAlignmentHorizontal")
+    assert alignment.IsNestedBy[0].RelatedObjects[2].is_a("IfcAlignmentVertical")
+    assert (
+        len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy) == 1
+    )  # nesting of segments beneath IfcAlignmentHorizontal
+    assert len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 8  # segments in horizontal layout
+    assert len(alignment.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects) == 10  # segments in vertical layout
 
-    # Station 175+25.36
-    assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 17525.36) == pytest.approx(7525.36)
-
-
-test_distance_along_from_station()
+test_create_alignment_pi_method()
