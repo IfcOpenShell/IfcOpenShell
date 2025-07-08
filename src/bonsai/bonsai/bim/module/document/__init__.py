@@ -43,7 +43,6 @@ classes = (
     ui.BIM_PT_object_documents,
     ui.BIM_UL_documents,
     ui.BIM_UL_document_objects,
-    ui.BIM_UL_assigned_documents,
     ui.BIM_MT_object_documents_context_menu,
 )
 
