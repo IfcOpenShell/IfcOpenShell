@@ -41,7 +41,7 @@ def get_layout_curve(layout: entity_instance) -> entity_instance:
     alignment = ifcopenshell.api.alignment.get_alignment(layout)
 
     curve = ifcopenshell.api.alignment.get_curve(alignment)
-    if layout.is_a("IfcAlignmentHorizontal") :
+    if layout.is_a("IfcAlignmentHorizontal"):
         # Layout is horizontal so get the IfcCompositeCurve
         if curve.is_a("IfcGradientCurve"):
             curve = curve.BaseCurve

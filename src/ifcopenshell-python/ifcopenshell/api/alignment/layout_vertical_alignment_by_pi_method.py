@@ -63,7 +63,7 @@ def layout_vertical_alignment_by_pi_method(
 
         # create gradient
         gradient_length = dxBG - length / 2.0
-        if 1.0e-03 < gradient_length :
+        if 1.0e-03 < gradient_length:
             design_parameters = file.createIfcAlignmentVerticalSegment(
                 StartTag=None,
                 EndTag=None,

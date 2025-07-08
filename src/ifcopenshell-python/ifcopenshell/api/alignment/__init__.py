@@ -101,5 +101,5 @@ __all__ = [
     "layout_horizontal_alignment_by_pi_method",
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
-    "register_referent_name_callback"
+    "register_referent_name_callback",
 ]

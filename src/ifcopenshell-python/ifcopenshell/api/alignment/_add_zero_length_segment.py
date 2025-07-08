@@ -140,6 +140,5 @@ def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -
             curve_segment,
         ]
 
-
     name = f"{_get_segment_start_point_label(segment,None)} {ifcopenshell.util.stationing.station_as_string(file,0.0)}"
     ifcopenshell.api.alignment.add_stationing_referent(file, segment, curve, 0.0, 0.0, name=name)

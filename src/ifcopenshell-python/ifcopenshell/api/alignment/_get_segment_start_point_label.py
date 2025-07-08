@@ -25,7 +25,8 @@ _horizontal_callback = None
 _vertical_callback = None
 _cant_callback = None
 
-def register_referent_name_callback(horizontal = None,vertical = None,cant = None):
+
+def register_referent_name_callback(horizontal=None, vertical=None, cant=None):
     """
     Referents are automatically created at the start of each horizontal, vertical, and cant segment.
     The referents represent key points in the alignment layout such as Point of Curvature, Point of Tangent, and others.
@@ -35,9 +36,9 @@ def register_referent_name_callback(horizontal = None,vertical = None,cant = Non
     it is called when creating the referent name, otherwise the default naming is used.
 
     The callback function signature is
-    
+
         def mycallback(prev_segment : entity_instance, segment : entity_instance) -> str:
-    
+
     The callback function returns a string that is used in the referent name for the referent at the start of `segment`.
     The callback must accomodate the following cases:
     * prev_segment = None and segment != None - this indicates the last segment so the "End of Alignment" name is returned
@@ -48,15 +49,15 @@ def register_referent_name_callback(horizontal = None,vertical = None,cant = Non
     """
     global _horizontal_callback
     _horizontal_callback = horizontal
-    
-    global _vertical_callback 
+
+    global _vertical_callback
     _vertical_callback = vertical
-    
-    global _cant_callback 
+
+    global _cant_callback
     _cant_callback = cant
 
-    
-def _horizontal_label(prev_segment : entity_instance, segment : entity_instance) -> str:
+
+def _horizontal_label(prev_segment: entity_instance, segment: entity_instance) -> str:
     if prev_segment == None and segment != None:
         label = "P.O.B."
     elif prev_segment != None and segment == None:
@@ -167,11 +168,12 @@ def _horizontal_label(prev_segment : entity_instance, segment : entity_instance)
 
     return label
 
-def _vertical_label(prev_segment : entity_instance, segment : entity_instance) -> str:
+
+def _vertical_label(prev_segment: entity_instance, segment: entity_instance) -> str:
     if prev_segment == None and segment != None:
         label = "V.P.O.B."
     elif prev_segment != None and segment == None:
-         label = "V.P.O.E."
+        label = "V.P.O.E."
     else:
         lookup_table = {
             "CIRCULARARC": {"CIRCULARARC": "xx", "CLOTHOID": "xx", "CONSTANTGRADIENT": "xx", "PARABOLICARC": "xx"},
@@ -193,7 +195,8 @@ def _vertical_label(prev_segment : entity_instance, segment : entity_instance) -
 
     return label
 
-def _cant_label(prev_segment: entity_instance,segment: entity_instance) -> str:
+
+def _cant_label(prev_segment: entity_instance, segment: entity_instance) -> str:
     if prev_segment == None and segment != None:
         label = "C.P.O.B."
     elif prev_segment != None and segment == None:
@@ -268,6 +271,7 @@ def _cant_label(prev_segment: entity_instance,segment: entity_instance) -> str:
 
     return label
 
+
 def _get_segment_start_point_label(prev_segment: entity_instance, segment: entity_instance) -> str:
     """
     Returns the label for the start point of a segment. Typically used in the name of an IfcReferent
@@ -291,20 +295,20 @@ def _get_segment_start_point_label(prev_segment: entity_instance, segment: entit
     if s.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
         global _horizontal_callback
         if _horizontal_callback:
-            label = _horizontal_callback(prev_segment,segment)
+            label = _horizontal_callback(prev_segment, segment)
         else:
-            label = _horizontal_label(prev_segment,segment)
+            label = _horizontal_label(prev_segment, segment)
     elif s.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
         global _vertical_callback
         if _vertical_callback:
-            label = _vertical_callback(prev_segment,segment)
+            label = _vertical_callback(prev_segment, segment)
         else:
-            label = _vertical_label(prev_segment,segment)
+            label = _vertical_label(prev_segment, segment)
     elif s.DesignParameters.is_a("IfcAlignmentCantSegment"):
         global _cant_callback
         if _cant_callback:
-            label = _cant_callback(prev_segment,segment)
+            label = _cant_callback(prev_segment, segment)
         else:
-            label = _cant_label(prev_segment,segment)
+            label = _cant_label(prev_segment, segment)
 
     return label

@@ -109,9 +109,7 @@ def _add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, cur
         raise TypeError(f"Expected to see IfcCompositeCurve, instead received '{curve.is_a()}'.")
     elif segment.DesignParameters.is_a("IfcAlignmentVerticalSegment") and not curve.is_a("IfcGradientCurve"):
         raise TypeError(f"Expected to see IfcGradientCurve, instead received '{curve.is_a()}'.")
-    elif segment.DesignParameters.is_a("IfcAlignmentCantSegment") and not curve.is_a(
-        "IfcSegmentedReferenceCurve"
-    ):
+    elif segment.DesignParameters.is_a("IfcAlignmentCantSegment") and not curve.is_a("IfcSegmentedReferenceCurve"):
         raise TypeError(f"Expected to see IfcSegmentedReferenceCurve, instead received '{curve.is_a()}'.")
 
     expected_type = "IfcCompositeCurve"

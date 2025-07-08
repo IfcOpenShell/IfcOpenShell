@@ -92,7 +92,7 @@ def layout_horizontal_alignment_by_pi_method(
                 GravityCenterLineHeight=None,
                 PredefinedType="LINE",
             )
-            ifcopenshell.api.alignment.create_layout_segment(file,layout,design_parameters)
+            ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
 
         # create circular curve
         if radius != 0.0:
@@ -110,7 +110,7 @@ def layout_horizontal_alignment_by_pi_method(
                 GravityCenterLineHeight=None,
                 PredefinedType="CIRCULARARC",
             )
-            ifcopenshell.api.alignment.create_layout_segment(file,layout,design_parameters)
+            ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
 
         xBT = xPT
         yBT = yPT
@@ -124,7 +124,7 @@ def layout_horizontal_alignment_by_pi_method(
     angleBT = math.atan2(dy, dx)
     tangent_run = math.sqrt(dx * dx + dy * dy)
 
-    if 1.e-03 < tangent_run:
+    if 1.0e-03 < tangent_run:
         pt = file.createIfcCartesianPoint(Coordinates=(xBT, yBT))
 
         design_parameters = file.createIfcAlignmentHorizontalSegment(
@@ -138,4 +138,4 @@ def layout_horizontal_alignment_by_pi_method(
             GravityCenterLineHeight=None,
             PredefinedType="LINE",
         )
-        ifcopenshell.api.alignment.create_layout_segment(file,layout,design_parameters)
+        ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
