@@ -263,7 +263,7 @@ class Pset(bonsai.core.tool.Pset):
         pset_template: ifcopenshell.entity_instance,
         prop_template: ifcopenshell.entity_instance,
         data: dict[str, Any],
-        props: bpy.types.PropertyGroup,
+        props: PsetProperties,
     ) -> None:
         prop = props.properties.add()
         prop.name = prop_template.Name
@@ -293,7 +293,7 @@ class Pset(bonsai.core.tool.Pset):
         cls,
         pset_template: ifcopenshell.entity_instance,
         pset: Union[ifcopenshell.entity_instance, None],
-        props: bpy.types.PropertyGroup,
+        props: PsetProperties,
     ) -> None:
         if pset:
             data = ifcopenshell.util.element.get_property_definition(pset, verbose=True)

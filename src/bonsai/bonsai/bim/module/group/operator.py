@@ -47,7 +47,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.disable_editing_group()
         return {"FINISHED"}
 
-    def load_group(self, group, tree_depth=0):
+    def load_group(self, group: ifcopenshell.entity_instance, tree_depth: int = 0) -> None:
         new = self.props.groups.add()
         new.ifc_definition_id = group.id()
         new.name = group.Name or "Unnamed"

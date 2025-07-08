@@ -170,7 +170,8 @@ def import_attribute(
     if isinstance(data_type, tuple) or data_type == "entity":
         callback(attribute.name(), None, data) if callback else None
         return
-    new: bonsai.bim.prop.Attribute = props.add()
+
+    new = props.add()
     new.name = attribute.name()
     new.is_null = data[attribute.name()] is None
     new.is_optional = attribute.optional()

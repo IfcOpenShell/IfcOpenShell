@@ -568,6 +568,8 @@ class entity_instance:
     ) -> dict[str, Any]:
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
 
+        Resulting dictionary keys: 'id', 'type', all entity attribute names.
+
         :param include_identifier: Whether or not to include the STEP numerical identifier
         :param recursive: Whether or not to convert referenced IFC elements into dictionaries too. All attributes also apply recursively
         :param return_type: The return data type to be casted into

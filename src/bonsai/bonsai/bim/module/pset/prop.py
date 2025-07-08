@@ -103,19 +103,19 @@ def get_pset_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Bl
     return items
 
 
-def get_object_pset_name(self, context):
+def get_object_pset_name(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not ObjectPsetsData.is_loaded:
         ObjectPsetsData.load()
     return ObjectPsetsData.data["pset_name"]
 
 
-def get_material_pset_names(self, context):
+def get_material_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not MaterialPsetsData.is_loaded:
         MaterialPsetsData.load()
     return MaterialPsetsData.data["pset_name"]
 
 
-def get_material_set_pset_names(self, context):
+def get_material_set_pset_names(self: "PsetProperties", context: object):
     global psetnames
     if not ObjectMaterialData.is_loaded:
         ObjectMaterialData.load()
@@ -128,7 +128,7 @@ def get_material_set_pset_names(self, context):
     return psetnames[ifc_class]
 
 
-def get_material_set_item_pset_names(self, context) -> list[tuple[str, str, str]]:
+def get_material_set_item_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     obj = context.active_object
     assert obj
@@ -142,7 +142,7 @@ def get_material_set_item_pset_names(self, context) -> list[tuple[str, str, str]
     return psetnames[ifc_class]
 
 
-def get_task_qto_names(self, context):
+def get_task_qto_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global qtonames
     ifc_class = "IfcTask"
     if ifc_class not in qtonames:
@@ -151,7 +151,7 @@ def get_task_qto_names(self, context):
     return qtonames[ifc_class]
 
 
-def get_resource_pset_names(self, context):
+def get_resource_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     rprops = context.scene.BIMResourceProperties
     rtprops = context.scene.BIMResourceTreeProperties
@@ -162,7 +162,7 @@ def get_resource_pset_names(self, context):
     return psetnames[ifc_class]
 
 
-def get_resource_qto_names(self, context):
+def get_resource_qto_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global qtonames
     rprops = context.scene.BIMResourceProperties
     rtprops = context.scene.BIMResourceTreeProperties
@@ -173,7 +173,7 @@ def get_resource_qto_names(self, context):
     return qtonames[ifc_class]
 
 
-def get_group_pset_names(self, context):
+def get_group_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     ifc_class = "IfcGroup"
     if ifc_class not in psetnames:
@@ -182,7 +182,7 @@ def get_group_pset_names(self, context):
     return psetnames[ifc_class]
 
 
-def get_group_qto_names(self, context):
+def get_group_qto_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global qtonames
     ifc_class = "IfcGroup"
     if ifc_class not in qtonames:
@@ -191,7 +191,7 @@ def get_group_qto_names(self, context):
     return qtonames[ifc_class]
 
 
-def get_profile_pset_names(self, context):
+def get_profile_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     pprops = tool.Profile.get_profile_props()
     ifc_class = tool.Ifc.get().by_id(pprops.profiles[pprops.active_profile_index].ifc_definition_id).is_a()
@@ -201,7 +201,7 @@ def get_profile_pset_names(self, context):
     return psetnames[ifc_class]
 
 
-def get_work_schedule_pset_names(self, context):
+def get_work_schedule_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     ifc_class = "IfcWorkSchedule"
     if ifc_class not in psetnames:
@@ -211,7 +211,7 @@ def get_work_schedule_pset_names(self, context):
 
 
 # TODO: unsafe?
-def get_qto_name(self, context):
+def get_qto_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     pset_type = repr(self)
     prop_type = pset_type.split(".")[-1]
     if "bpy.data.objects" in pset_type:
@@ -226,21 +226,21 @@ def get_qto_name(self, context):
     return [("BBIM_CUSTOM", "Custom Qto", "Create a quantity set without using a template."), None] + results
 
 
-def get_object_qto_name(self, context):
+def get_object_qto_name(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not ObjectPsetsData.is_loaded:
         ObjectPsetsData.load()
     return ObjectPsetsData.data["qto_name"]
 
 
 # TODO: unsafe?
-def get_template_type(self, context):
+def get_template_type(self: "AddEditProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     version = tool.Ifc.get_schema()
     for t in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue"):
         yield (t, t, ifcopenshell.util.doc.get_entity_doc(version, t).get("description", ""))
 
 
 # TODO: unsafe?
-def get_primary_measure_type(self, context):
+def get_primary_measure_type(self: "AddEditProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not AddEditCustomPropertiesData.is_loaded:
         AddEditCustomPropertiesData.load()
     return AddEditCustomPropertiesData.data["primary_measure_type"]
@@ -248,6 +248,9 @@ def get_primary_measure_type(self, context):
 
 class IfcPropertyEnumeratedValue(PropertyGroup):
     enumerated_values: CollectionProperty(type=Attribute)
+
+    if TYPE_CHECKING:
+        enumerated_values: bpy.types.bpy_prop_collection_idprop[Attribute]
 
 
 IfcPropertyValueType = Literal["IfcPropertySingleValue", "IfcPropertyEnumeratedValue"]
@@ -297,6 +300,11 @@ class RenameProperties(PropertyGroup):
     existing_property_name: StringProperty(name="Existing Property Name")
     new_property_name: StringProperty(name="New Property Name")
 
+    if TYPE_CHECKING:
+        pset_name: str
+        existing_property_name: str
+        new_property_name: str
+
 
 class AddEditProperties(PropertyGroup):
     pset_name: StringProperty(name="Pset")
@@ -308,6 +316,17 @@ class AddEditProperties(PropertyGroup):
     primary_measure_type: EnumProperty(items=get_primary_measure_type, name="Primary Measure Type")
     template_type: EnumProperty(items=get_template_type, name="Template Type")
     enum_values: CollectionProperty(name="Enum Values", type=Attribute)
+
+    if TYPE_CHECKING:
+        pset_name: str
+        property_name: str
+        string_value: str
+        bool_value: bool
+        int_value: int
+        float_value: float
+        primary_measure_type: str
+        template_type: str
+        enum_values: bpy.types.bpy_prop_collection_idprop[Attribute]
 
     def get_value_name(self) -> Union[Literal["string_value", "bool_value", "int_value", "float_value"], None]:
         schema = tool.Ifc.schema()
@@ -326,7 +345,14 @@ class AddEditProperties(PropertyGroup):
 class DeletePsets(PropertyGroup):
     pset_name: StringProperty(name="Pset")
 
+    if TYPE_CHECKING:
+        pset_name: str
+
 
 class GlobalPsetProperties(PropertyGroup):
     pset_filter: StringProperty(name="Pset Filter", options={"TEXTEDIT_UPDATE"})
     qto_filter: StringProperty(name="Qto Filter", options={"TEXTEDIT_UPDATE"})
+
+    if TYPE_CHECKING:
+        pset_filter: str
+        qto_filter: str
