@@ -129,7 +129,7 @@ class BIM_UL_groups(UIList):
         active_data,
         active_propname,
         index: int,
-    ):
+    ) -> None:
         if item:
             row = layout.row(align=True)
             for i in range(0, item.tree_depth):

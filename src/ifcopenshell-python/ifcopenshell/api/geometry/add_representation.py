@@ -143,6 +143,7 @@ class Usecase:
         else:
             vx = vz.cross(X_AXIS)
         vy = vx.cross(vz)
+        assert isinstance(vy, Vector)
         tM = Matrix(
             [[vx.x, vy.x, vz.x, co.x], [vx.y, vy.y, vz.y, co.y], [vx.z, vy.z, vz.z, co.z], [0, 0, 0, 1]]
         ).inverted()
