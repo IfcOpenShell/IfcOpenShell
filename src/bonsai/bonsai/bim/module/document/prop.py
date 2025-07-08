@@ -143,8 +143,6 @@ class BIMDocumentProperties(PropertyGroup):
         is_object_editing: bool
         document_objects: bpy.types.bpy_prop_collection_idprop[DocumentObject]
         active_document_object_index: int
-        assigned_documents: bpy.types.bpy_prop_collection_idprop[AssignedDocument]
-        active_assigned_document_index: int
         json_string: str
 
     @property
