@@ -50,7 +50,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     def load_group(self, group: ifcopenshell.entity_instance, tree_depth: int = 0) -> None:
         new = self.props.groups.add()
         new.ifc_definition_id = group.id()
-        new.name = group.Name or "Unnamed"
+        new["name"] = group.Name or "Unnamed"
         new.tree_depth = tree_depth
         new.has_children = False
         new.is_expanded = group.id() in self.expanded_groups

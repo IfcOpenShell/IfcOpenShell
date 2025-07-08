@@ -38,8 +38,18 @@ def update_active_group_index(self, context):
     refresh_pset()
 
 
+def update_name(self: "Group", context: object) -> None:
+    group = tool.Ifc.get_entity_by_id(self.ifc_definition_id)
+    # Theoretically group can be removed outside Group UI.
+    if not group:
+        return
+    if group.Name == self.name:
+        return
+    group.Name = self.name
+
+
 class Group(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_name)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_expanded: BoolProperty(name="Is Expanded", default=False)
     has_children: BoolProperty(name="Has Children", default=False)
