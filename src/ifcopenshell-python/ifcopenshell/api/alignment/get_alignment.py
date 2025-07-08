@@ -19,26 +19,13 @@
 import ifcopenshell
 import ifcopenshell.util
 from ifcopenshell import entity_instance
-from collections.abc import Sequence
+from typing import Sequence
 
-import ifcopenshell.util.element
+import ifcopenshell.util.representation
 
 
-def get_child_alignments(alignment: entity_instance) -> Sequence[entity_instance]:
+def get_alignment(layout: entity_instance) -> entity_instance:
     """
-    Returns the aggregated child alignments to this alignment per CT 4.1.4.4.1.2 Alignment Layout - Reusing Horizontal Layout
-
-    Example:
-
-    .. code:: python
-
-        alignment = model.by_type("IfcAlignment")[0]
-        children = ifcopenshell.api.alignment.get_child_alignments(alignment)
+    Returns the alignment that nests this layout
     """
-    children = []
-    for rel in alignment.IsDecomposedBy:
-        for child in rel.RelatedObjects:
-            if child.is_a("IfcAlignment"):
-                children.append(child)
-
-    return children
+    return layout.Nests[0].RelatingObject if 0 < len(layout.Nests) else None

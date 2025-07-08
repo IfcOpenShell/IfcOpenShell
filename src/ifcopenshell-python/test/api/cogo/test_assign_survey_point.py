@@ -19,35 +19,30 @@
 import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
+import ifcopenshell.api.cogo
 
-def test_distance_along_from_station():
-    file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+
+def test_assign_survey_point():
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    project = file.createIfcProject(Name="Test")
+    site = file.createIfcSite(GlobalId=ifcopenshell.guid.new(),Name="MySite")
+    ifcopenshell.api.aggregate.assign_object(file,relating_object=project,products=[site])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
         context_type="Model",
-        context_identifier="Axis",
+        context_identifier="Annotation",
         target_view="MODEL_VIEW",
         parent=geometric_representation_context,
     )
 
-    coordinates = [(500.0, 2500.0), (3340.0, 660.0), (4340.0, 5000.0), (7600.0, 4560.0), (8480.0, 2010.0)]
-    radii = [(1000.0), (1250.0), (950.0)]
-    vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
-    lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
+    annotation = ifcopenshell.api.cogo.add_survey_point(file,file.createIfcCartesianPoint((50.0,10.0)))
+    assert annotation
+    assert annotation.PredefinedType == "SURVEY"
+    assert annotation.Representation.Representations[0].RepresentationIdentifier == "Annotation"
+    assert annotation.Representation.Representations[0].RepresentationType == "Point"
+    assert annotation.Representation.Representations[0].Items[0].Coordinates == pytest.approx((50.0,10.0))
 
-    alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        file, "TestAlignment", coordinates, radii, vpoints, lengths,start_station=10000.0
-    )
+    ifcopenshell.api.cogo.assign_survey_point(annotation,file.createIfcCartesianPoint((20.0,30.0,40.0)))
+    assert annotation.Representation.Representations[0].Items[0].Coordinates == pytest.approx((20.0,30.0,40.0))
 
-    # Station 138+83.96
-    assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 13883.96) == pytest.approx(3883.96)
-
-    # Station 175+25.36
-    assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 17525.36) == pytest.approx(7525.36)
-
-
-test_distance_along_from_station()

@@ -18,7 +18,7 @@
 
 import ifcopenshell.api.alignment
 
-def test_get_curve():
+def test_get_layout_curve():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
@@ -33,13 +33,25 @@ def test_get_curve():
     )
 
     alignment = ifcopenshell.api.alignment.create(file, "TestAlignment",include_vertical=False,include_cant=False)
-    curve = ifcopenshell.api.alignment.get_curve(alignment)
+    layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     assert curve.is_a("IfcCompositeCurve")
 
     alignment = ifcopenshell.api.alignment.create(file, "TestAlignment",include_vertical=True,include_cant=False)
-    curve = ifcopenshell.api.alignment.get_curve(alignment)
+    layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
+    assert curve.is_a("IfcCompositeCurve")
+    layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     assert curve.is_a("IfcGradientCurve")
 
     alignment = ifcopenshell.api.alignment.create(file, "TestAlignment",include_vertical=True,include_cant=True)
-    curve = ifcopenshell.api.alignment.get_curve(alignment)
+    layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
+    assert curve.is_a("IfcCompositeCurve")
+    layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
+    assert curve.is_a("IfcGradientCurve")
+    layout = ifcopenshell.api.alignment.get_cant_layout(alignment)
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     assert curve.is_a("IfcSegmentedReferenceCurve")

@@ -17,28 +17,24 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util
 from ifcopenshell import entity_instance
-from collections.abc import Sequence
-
-import ifcopenshell.util.element
 
 
-def get_child_alignments(alignment: entity_instance) -> Sequence[entity_instance]:
+def get_alignment_station(file: ifcopenshell.file, alignment: entity_instance) -> float:
     """
-    Returns the aggregated child alignments to this alignment per CT 4.1.4.4.1.2 Alignment Layout - Reusing Horizontal Layout
-
-    Example:
-
-    .. code:: python
-
-        alignment = model.by_type("IfcAlignment")[0]
-        children = ifcopenshell.api.alignment.get_child_alignments(alignment)
+    Returns the start station of the alignment. If the alignment is nested by an IfcReferent
+    the referent is checked for PredefinedType of STATION and an occurance of Pset_Stationing.Station,
+    otherwise start station is taken to be 0.0.
     """
-    children = []
-    for rel in alignment.IsDecomposedBy:
-        for child in rel.RelatedObjects:
-            if child.is_a("IfcAlignment"):
-                children.append(child)
 
-    return children
+    if not alignment.is_a("IfcAlignment"):
+        raise TypeError(f"Expected entity type to be IfcAlignment, instead received {alignment.is_a()}")
+
+    start_station = 0.0
+    components = ifcopenshell.util.element.get_components(alignment)
+    for c in components:
+        if c.is_a("IfcReferent") and ifcopenshell.util.element.get_predefined_type(c) == "STATION":
+            start_station = ifcopenshell.util.element.get_pset(c, name="Pset_Stationing", prop="Station")
+            break
+
+    return start_station

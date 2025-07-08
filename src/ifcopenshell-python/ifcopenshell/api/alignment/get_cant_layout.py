@@ -16,29 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.util
 from ifcopenshell import entity_instance
-from collections.abc import Sequence
-
-import ifcopenshell.util.element
 
 
-def get_child_alignments(alignment: entity_instance) -> Sequence[entity_instance]:
+def get_cant_layout(alignment: entity_instance) -> entity_instance:
     """
-    Returns the aggregated child alignments to this alignment per CT 4.1.4.4.1.2 Alignment Layout - Reusing Horizontal Layout
-
-    Example:
-
-    .. code:: python
-
-        alignment = model.by_type("IfcAlignment")[0]
-        children = ifcopenshell.api.alignment.get_child_alignments(alignment)
+    Returns the IfcAlignmentCant assocated with this alignment
     """
-    children = []
-    for rel in alignment.IsDecomposedBy:
-        for child in rel.RelatedObjects:
-            if child.is_a("IfcAlignment"):
-                children.append(child)
+    for rel in alignment.IsNestedBy:
+        for layout in rel.RelatedObjects:
+            if layout.is_a("IfcAlignmentCant"):
+                return layout
 
-    return children
+    return None

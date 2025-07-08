@@ -17,19 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-import ifcopenshell.api.alignment.remove_last_segment
+import typing
 
-
-def remove_zero_length_segment(file: ifcopenshell.file, entity: entity_instance) -> entity_instance:
+def assign_survey_point(annotation: entity_instance, survey_point: entity_instance):
     """
-    Removes the zero length segment from the end of entity.
+    Assigns a coordinate point to a survey point annotation
 
-    :param entity: An IfcAlignmentHorizontal, IfcAlignmentVertical, IfcAlignmentCant or IfcCompositeCurve
-    :return: The zero length segment
+    :param annotaton: The survey point annotation
+    :param survey_point: The survey point
+    :return: None
+
+    Example:
+
+    .. code:: python
+
+        annotation = ifcopenshell.api.cogo.add_survey_point(file,file.createIfcCartesianPoint(4000.0,3500.0)))
+        ifcopenshell.api.cogo.assign_surve_point(annotation,file.createIfcCartesianPoint(4000.0,3500.0,100.0))
     """
-    if not ifcopenshell.api.alignment.has_zero_length_segment(entity):
-        return None
-
-    return ifcopenshell.api.alignment.remove_last_segment(file, entity)
+    annotation.Representation.Representations[0].Items = [survey_point]
