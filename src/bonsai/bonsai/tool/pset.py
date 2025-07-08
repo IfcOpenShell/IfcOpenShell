@@ -108,7 +108,9 @@ class Pset(bonsai.core.tool.Pset):
         )
 
     @classmethod
-    def get_special_type_for_prop(cls, prop_or_prop_template: ifcopenshell.entity_instance) -> str:
+    def get_special_type_for_prop(
+        cls, prop_or_prop_template: ifcopenshell.entity_instance
+    ) -> Literal["LENGTH"] | Literal["AREA"] | Literal["VOLUME"] | Literal["URI"] | Literal[""]:
         special_type = ""
         if prop_or_prop_template.is_a("IfcPropertyTemplate"):
             primary_measure_type = prop_or_prop_template.PrimaryMeasureType
@@ -119,6 +121,8 @@ class Pset(bonsai.core.tool.Pset):
                 special_type = "AREA"
             elif primary_measure_type == "IfcVolumeMeasure" or template_type == "Q_VOLUME":
                 special_type = "VOLUME"
+            elif primary_measure_type == "IfcURIReference":
+                special_type = "URI"
         else:
             if prop_or_prop_template.is_a("IfcPropertySingleValue"):
                 value = prop_or_prop_template.NominalValue
@@ -246,7 +250,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.name = prop_template.Name
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
-        metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
+        metadata.special_type = "URI" if prop_template.PrimaryMeasureType == "IfcURIReference" else ""
 
         # Cute hack to abuse the metadata to find the Blender data_type
         metadata.set_value(enum_items[0])
@@ -272,7 +276,6 @@ class Pset(bonsai.core.tool.Pset):
         metadata.name = prop_template.Name
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
-        metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
         metadata.data_type = cls.get_prop_template_primitive_type(prop_template)
         metadata.special_type = cls.get_special_type_for_prop(prop_template)
 

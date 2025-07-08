@@ -167,7 +167,6 @@ class ColourRgb(PropertyGroup):
         }
 
     # to fit blender.bim.helper.draw_attribute
-    is_uri = False
     is_optional = False
     special_type = ""
 

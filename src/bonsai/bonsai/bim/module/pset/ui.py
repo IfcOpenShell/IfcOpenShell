@@ -60,7 +60,7 @@ def draw_single_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_ope
         value_name,
         text=prop.metadata.display_name,
     )
-    if prop.metadata.is_uri:
+    if prop.metadata.special_type == "URI":
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.data_path = prop.metadata.path_from_id("string_value")
     if prop.metadata.is_optional:

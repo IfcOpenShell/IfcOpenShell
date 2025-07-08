@@ -103,7 +103,7 @@ def draw_attribute(
             text=attribute.display_name,
         )
 
-    if attribute.is_uri:
+    if attribute.special_type == "URI":
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.data_path = attribute.path_from_id("string_value")
     elif attribute.special_type in ("DATE", "DATETIME"):
@@ -186,8 +186,9 @@ def import_attribute(
         props.remove(len(props) - 1)
     elif data_type == "string":
         new.string_value = "" if new.is_null else str(data[attribute.name()]).replace("\n", "\\n")
-        if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
-            new.is_uri = True
+        attribute_type = attribute.type_of_attribute()
+        if attribute_type._is("IfcURIReference"):
+            new.special_type = "URI"
         elif attribute.type_of_attribute()._is("IfcDate"):
             new.special_type = "DATE"
         elif attribute.type_of_attribute()._is("IfcDateTime"):
