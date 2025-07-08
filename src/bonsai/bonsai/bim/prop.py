@@ -287,7 +287,7 @@ def get_display_name(self: "Attribute") -> str:
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file"]
-AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE", "LOGICAL"]
+AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE", "LOGICAL", "URI"]
 
 
 class Attribute(PropertyGroup):
@@ -331,7 +331,6 @@ class Attribute(PropertyGroup):
     filter_glob: StringProperty()
     is_null: BoolProperty(name="Is Null", update=update_is_null)
     is_optional: BoolProperty(name="Is Optional")
-    is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
     value_min: FloatProperty(description="This is used to validate int_value and float_value")
     value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
@@ -361,7 +360,6 @@ class Attribute(PropertyGroup):
         filter_glob: str
         is_null: bool
         is_optional: bool
-        is_uri: bool
         is_selected: bool
         value_min: float
         value_min_constraint: bool
