@@ -26,7 +26,7 @@ import bonsai.bim.schema
 
 
 # TODO: Should this cache belong here? Dunno. Maybe.
-is_expanded = {}
+is_expanded: dict[int, bool] = {}
 
 
 def refresh():

@@ -815,28 +815,28 @@ class BIM_PT_rename_parameters(Panel):
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
-        props = context.scene.RenameProperties
+        entries = tool.Pset.get_global_pset_props().psets_to_rename
 
         row = layout.row()
         op = row.operator("bim.add_property_to_edit", icon="ADD")
-        op.option = "RenameProperties"
+        op.option = "RENAME"
 
-        if props:
-            for index, prop in enumerate(props):
+        if entries:
+            for index, prop in enumerate(entries):
                 row = layout.row(align=True)
-                prop_with_search(row, prop, "pset_name", text="")
+                row.prop(prop, "name", text="")
                 row.prop(prop, "existing_property_name", text="")
                 row.prop(prop, "new_property_name", text="")
                 op = row.operator("bim.remove_property_to_edit", icon="X", text="")
                 op.index = index
-                op.option = "RenameProperties"
+                op.option = "RENAME"
 
-        if props:
             row = layout.row(align=True)
-            row.operator("bim.rename_parameters", icon="CHECKMARK")
-            clear = row.operator("bim.clear_list", icon="CANCEL", text="")
-            clear.option = "RenameProperties"
+            row.operator("bim.pset_bulk_rename_parameters", icon="CHECKMARK")
+            clear = row.operator("bim.pset_bulk_edit_clear_list", icon="CANCEL", text="")
+            clear.option = "RENAME"
 
 
 class BIM_PT_add_edit_custom_properties(Panel):
@@ -849,30 +849,31 @@ class BIM_PT_add_edit_custom_properties(Panel):
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
-        props = context.scene.AddEditProperties
+        entries = tool.Pset.get_global_pset_props().psets_to_add_edit
 
         row = layout.row()
         op = row.operator("bim.add_property_to_edit", icon="ADD")
-        op.option = "AddEditProperties"
+        op.option = "ADD_EDIT"
         op.index = -1
 
-        if props:
-            for index, prop in enumerate(props):
+        if entries:
+            for index, prop in enumerate(entries):
                 row = layout.row(align=True)
                 prop_with_search(row, prop, "pset_name", text="")
-                row.prop(prop, "property_name", text="")
+                row.prop(prop, "name", text="")
                 if prop.template_type == "IfcPropertySingleValue":
                     row.prop(prop, prop.get_value_name(), text="")
                 prop_with_search(row, prop, "primary_measure_type", text="")
                 row.prop(prop, "template_type", text="")
                 op = row.operator("bim.remove_property_to_edit", icon="X", text="")
                 op.index = index
-                op.option = "AddEditProperties"
+                op.option = "ADD_EDIT"
 
                 if prop.template_type == "IfcPropertyEnumeratedValue":
                     op = row.operator("bim.add_property_to_edit", icon="ADD", text="Add Enum")
-                    op.option = "AddEditProperties"
+                    op.option = "ADD_EDIT"
                     op.index = index
                     for index2, prop2 in enumerate(prop.enum_values):
                         row = layout.row()
@@ -883,13 +884,12 @@ class BIM_PT_add_edit_custom_properties(Panel):
                         op = row.operator("bim.remove_property_to_edit", icon="X", text="")
                         op.index = index
                         op.index2 = index2
-                        op.option = "AddEditProperties"
+                        op.option = "ADD_EDIT"
 
-        if props:
             row = layout.row(align=True)
             op = row.operator("bim.add_edit_custom_property", icon="CHECKMARK", text="Apply Changes")
-            clear = row.operator("bim.clear_list", icon="CANCEL", text="")
-            clear.option = "AddEditProperties"
+            clear = row.operator("bim.pset_bulk_edit_clear_list", icon="CANCEL", text="")
+            clear.option = "ADD_EDIT"
 
 
 class BIM_PT_delete_psets(Panel):
@@ -902,23 +902,23 @@ class BIM_PT_delete_psets(Panel):
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
-        props = context.scene.DeletePsets
+        entries = tool.Pset.get_global_pset_props().psets_to_delete
 
         row = layout.row()
         op = row.operator("bim.add_property_to_edit", icon="ADD")
-        op.option = "DeletePsets"
+        op.option = "DELETE"
 
-        if props:
-            for index, prop in enumerate(props):
+        if entries:
+            for index, prop in enumerate(entries):
                 row = layout.row(align=True)
-                prop_with_search(row, prop, "pset_name", text="")
+                row.prop(prop, "name", text="")
                 op = row.operator("bim.remove_property_to_edit", icon="X", text="")
                 op.index = index
-                op.option = "DeletePsets"
+                op.option = "DELETE"
 
-        if props:
             row = layout.row(align=True)
             op = row.operator("bim.bulk_remove_psets", icon="CHECKMARK", text="Apply Changes")
-            clear = row.operator("bim.clear_list", icon="CANCEL", text="")
-            clear.option = "DeletePsets"
+            clear = row.operator("bim.pset_bulk_edit_clear_list", icon="CANCEL", text="")
+            clear.option = "DELETE"
