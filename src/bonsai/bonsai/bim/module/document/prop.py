@@ -51,7 +51,7 @@ def update_document_identification(self: "Document", context: bpy.types.Context)
 
 
 def update_active_document(self, context):
-    if (document := self.active_document):
+    if document := self.active_document:
         if document.ifc_definition_id:
             DocumentData.load_document_objects_into_props(document.ifc_definition_id)
 
@@ -72,7 +72,7 @@ class Document(PropertyGroup):
             ("INFORMATION", "Information", "IfcDocumentInformation"),
             ("REFERENCE", "Reference", "IfcDocumentReference"),
         ],
-        default="INFORMATION"
+        default="INFORMATION",
     )
 
     if TYPE_CHECKING:
@@ -96,41 +96,15 @@ class DocumentObject(PropertyGroup):
         ifc_definition_id: int
 
 
-class AssignedDocument(PropertyGroup):
-    name: StringProperty(name="Name")
-    identification: StringProperty(name="Identification")
-    description: StringProperty(name="Description", default="")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
-    location: StringProperty(name="Location", default="")
-    document_type: EnumProperty(
-        name="Document Type",
-        items=[
-            ("PROJECT", "Project", "Virtual project root node"),
-            ("INFORMATION", "Information", "IfcDocumentInformation"),
-            ("REFERENCE", "Reference", "IfcDocumentReference"),
-        ],
-        default="INFORMATION"
-    )
-
-    if TYPE_CHECKING:
-        name: str
-        identification: str
-        ifc_definition_id: int
-        location: str
-        document_type: str
-
 class BIMDocumentProperties(PropertyGroup):
     document_attributes: CollectionProperty(name="Document Attributes", type=Attribute)
     active_document_id: IntProperty(name="Active Document Id")
     documents: CollectionProperty(name="Documents", type=Document)
     active_document_index: IntProperty(name="Active Document Index", update=update_active_document)
     is_editing: BoolProperty(name="Is Editing", default=False)
-    is_document_editing: BoolProperty(name="Is Document Editing", default=False)
     is_object_editing: BoolProperty(name="Is Object Editing", default=False)
     document_objects: CollectionProperty(name="Document Objects", type=DocumentObject)
     active_document_object_index: IntProperty(name="Active Document Object Index")
-    assigned_documents: CollectionProperty(name="Assigned Documents", type=AssignedDocument)
-    active_assigned_document_index: IntProperty(name="Active Assigned Document Index")
     json_string: StringProperty(name="JSON String", default="[]")
 
     if TYPE_CHECKING:
@@ -139,7 +113,6 @@ class BIMDocumentProperties(PropertyGroup):
         documents: bpy.types.bpy_prop_collection_idprop[Document]
         active_document_index: int
         is_editing: bool
-        is_document_editing: bool
         is_object_editing: bool
         document_objects: bpy.types.bpy_prop_collection_idprop[DocumentObject]
         active_document_object_index: int

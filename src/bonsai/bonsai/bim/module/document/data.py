@@ -23,10 +23,6 @@ import ifcopenshell.util.schema
 import bonsai.tool as tool
 from natsort import natsorted
 
-def refresh():
-    DocumentData.is_loaded = False
-    ObjectDocumentData.is_loaded = False
-
 
 class DocumentData:
     data = {}
@@ -35,24 +31,16 @@ class DocumentData:
     @classmethod
     def load(cls):
         cls.data = {
-            "total_document_informations": cls.total_document_informations(),
-            "total_document_references": cls.total_document_references(),
+            "total_documents": cls.total_documents(),
             "total_referenced_objects": cls.total_referenced_objects(),
             "document_objects": cls.document_objects(),
         }
         cls.is_loaded = True
 
     @classmethod
-    def total_document_informations(cls):
+    def total_documents(cls):
         file = tool.Ifc.get()
-        info_count = len(file.by_type("IfcDocumentInformation"))
-        return info_count
-
-    @classmethod
-    def total_document_references(cls):
-        file = tool.Ifc.get()
-        ref_count = len(file.by_type("IfcDocumentReference"))
-        return ref_count
+        return len(file.by_type("IfcDocumentInformation")) + len(file.by_type("IfcDocumentReference"))
 
     @classmethod
     def total_referenced_objects(cls):
@@ -89,7 +77,7 @@ class DocumentData:
     def load_document_objects_into_props(cls, document_id):
         if not cls.is_loaded:
             cls.load()
-        
+
         props = tool.Document.get_document_props()
         props.document_objects.clear()
 
@@ -101,6 +89,7 @@ class DocumentData:
         for obj_data in sorted_objects:
             item = props.document_objects.add()
             item.name = obj_data["name"]
+
 
 class ObjectDocumentData:
     data = {}
@@ -117,14 +106,13 @@ class ObjectDocumentData:
     def convert_to_file_uri(location: str) -> str:
         if not location:
             return ""
-            
+
         uri = location
         if not uri.startswith("file://"):
             if not os.path.isabs(uri):
                 uri = os.path.abspath(os.path.join(os.path.dirname(tool.Ifc.get_path()), uri))
             uri = "file://" + uri
         return uri
-
 
     @classmethod
     def documents(cls):

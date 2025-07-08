@@ -153,8 +153,7 @@ class Document(bonsai.core.tool.Document):
 
         if root.is_expanded:
             root_documents = natsorted(
-                root_documents,
-                key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
+                root_documents, key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
             )
 
             for doc in root_documents:
@@ -204,21 +203,17 @@ class Document(bonsai.core.tool.Document):
             ref_children = [d for d in children if not d.is_a("IfcDocumentInformation")]
 
             info_children = natsorted(
-                info_children,
-                key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
+                info_children, key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
             )
 
             ref_children = natsorted(
                 ref_children,
-                key=lambda doc: (
-                    cls.get_external_reference_id(doc) or "",
-                    doc.Description or doc.Name or ""
-                )
+                key=lambda doc: (cls.get_external_reference_id(doc) or "", doc.Description or doc.Name or ""),
             )
 
             for child in info_children + ref_children:
                 cls._process_document(child, props, document_children, expanded_documents, depth + 1)
-    
+
     @classmethod
     def is_document_information(cls, document: ifcopenshell.entity_instance) -> bool:
         return document.is_a("IfcDocumentInformation")
@@ -295,12 +290,14 @@ class Document(bonsai.core.tool.Document):
     @classmethod
     def refresh_document_data(cls) -> None:
         import bonsai.bim.module.document.data as document_data
+
         document_data.DocumentData.is_loaded = False
         document_data.DocumentData.load()
 
     @classmethod
     def load_document_objects_into_props(cls, document_id: int) -> None:
         import bonsai.bim.module.document.data as document_data
+
         document_data.DocumentData.load_document_objects_into_props(document_id)
 
     @classmethod
@@ -314,32 +311,3 @@ class Document(bonsai.core.tool.Document):
 
         if document_id:
             cls.load_document_objects_into_props(document_id)
-
-    @classmethod
-    def update_assigned_documents(cls) -> None:
-        from bonsai.bim.module.document.data import ObjectDocumentData
-        
-        ObjectDocumentData.is_loaded = False
-        
-        props = cls.get_document_props()
-        props.assigned_documents.clear()
-
-        if not ObjectDocumentData.is_loaded:
-            ObjectDocumentData.load()
-
-        if not ObjectDocumentData.data.get("documents"):
-            return
-
-        sorted_docs = sorted(
-            ObjectDocumentData.data["documents"],
-            key=lambda doc: ((doc.get("identification") or "").lower(), (doc.get("name") or "").lower()),
-        )
-
-        for document in sorted_docs:
-            new = props.assigned_documents.add()
-            new.name = document["name"] or "Unnamed"
-            new.identification = document["identification"] or "*"
-            new.document_type = "INFORMATION" if document.get("is_information", False) else "REFERENCE"
-            new.ifc_definition_id = document["id"]
-            new.location = document.get("location") or ""
-            new.description = document.get("description") or ""

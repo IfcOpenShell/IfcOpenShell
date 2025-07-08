@@ -22,6 +22,7 @@ from bpy.types import Panel, UIList
 from bonsai.bim.helper import draw_attributes
 from .data import DocumentData, ObjectDocumentData
 
+
 class BIM_PT_documents(Panel):
     bl_label = "Documents"
     bl_idname = "BIM_PT_documents"
@@ -45,9 +46,7 @@ class BIM_PT_documents(Panel):
         split = row.split(factor=0.55)
 
         left_row = split.row(align=True)
-        total_documents = DocumentData.data["total_document_informations"] + DocumentData.data["total_document_references"]
-        left_row.label(text="{} Documents".format(total_documents), icon="FILE")
-
+        left_row.label(text="{} Documents".format(DocumentData.data["total_documents"]), icon="FILE")
         right_row = split.row(align=True)
         right_row.label(
             text="{} Objects Referenced".format(DocumentData.data["total_referenced_objects"]), icon="OBJECT_DATA"
@@ -63,7 +62,7 @@ class BIM_PT_documents(Panel):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
 
-        if self.props.is_document_editing:
+        if self.props.active_document_id > 0:
             row.operator("bim.edit_document", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_document", text="", icon="CANCEL")
         else:
@@ -71,25 +70,27 @@ class BIM_PT_documents(Panel):
                 row.operator("bim.add_information", text="", icon="ADD")
 
             if self.props.active_document and (
-                self.props.active_document.document_type == "INFORMATION" and 
-                self.props.active_document.document_type != "PROJECT"
+                self.props.active_document.document_type == "INFORMATION"
+                and self.props.active_document.document_type != "PROJECT"
             ):
                 row.operator("bim.add_document_reference", text="", icon="FILE_HIDDEN")
 
             active_document = self.props.active_document
             if active_document:
                 ifc_definition_id = active_document.ifc_definition_id
-                
+
                 if active_document.document_type != "PROJECT":
                     row.operator("bim.select_document_objects", text="", icon="RESTRICT_SELECT_OFF").document = (
                         ifc_definition_id
                     )
                     row.operator("bim.assign_document", text="", icon="BRUSH_DATA").document = ifc_definition_id
-                    row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = ifc_definition_id
-                    row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id        
+                    row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = (
+                        ifc_definition_id
+                    )
+                    row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id
         self.layout.template_list("BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index")
 
-        if self.props.is_document_editing:
+        if self.props.active_document_id > 0:
             active_document = self.props.active_document
             draw_attributes(self.props.document_attributes, self.layout)
 
@@ -106,6 +107,7 @@ class BIM_PT_documents(Panel):
                 self.props,
                 "active_document_object_index",
             )
+
 
 class BIM_PT_object_documents(Panel):
     bl_label = "Documents"
@@ -161,25 +163,27 @@ class BIM_PT_object_documents(Panel):
                 col = box.column(align=True)
                 for document in ObjectDocumentData.data["documents"]:
                     row = col.row(align=True)
-                    
+
                     # Create a split layout to separate left and right sides
                     split = row.split(factor=0.7)  # Adjust factor as needed (0.7 = 70% left, 30% right)
-                    
+
                     # Left side - Document identification and name
                     left_side = split.row(align=True)
-                    left_side.alignment = 'LEFT' 
+                    left_side.alignment = "LEFT"
                     left_side.label(text=document["identification"] or "*", icon="FILE")
                     left_side.label(text=document["name"] or "Unnamed")
-                    
+
                     # Right side - Action buttons
                     right_side = split.row(align=True)
-                    right_side.alignment = 'RIGHT'  # Align buttons to the right
-                    
+                    right_side.alignment = "RIGHT"  # Align buttons to the right
+
                     if document["location"]:
                         if document["location"].lower().endswith(".ifc"):
-                            right_side.operator("bim.open_ifc_document", icon="HIDE_OFF", text="").uri = document["location"]
+                            right_side.operator("bim.open_ifc_document", icon="HIDE_OFF", text="").uri = document[
+                                "location"
+                            ]
                         right_side.operator("bim.open_uri", icon="URL", text="").uri = document["location"]
-                        
+
                     right_side.operator("bim.unassign_document", text="", icon="X").document = document["id"]
 
     def draw_add_ui(self):
@@ -194,9 +198,11 @@ class BIM_PT_object_documents(Panel):
                 for doc in ObjectDocumentData.data["documents"]:
                     assigned_doc_ids.append(doc["id"])
 
-                if (document.document_type == "INFORMATION" and
-                    document.document_type != "PROJECT" and
-                    document.ifc_definition_id not in assigned_doc_ids):
+                if (
+                    document.document_type == "INFORMATION"
+                    and document.document_type != "PROJECT"
+                    and document.ifc_definition_id not in assigned_doc_ids
+                ):
                     doc_op = row.operator("bim.assign_document", text="", icon="BRUSH_DATA")
                     doc_op.document = document.ifc_definition_id
                 elif document.ifc_definition_id in assigned_doc_ids:
@@ -215,15 +221,15 @@ class BIM_UL_documents(UIList):
             if item.document_type != "PROJECT":
                 if item.tree_depth > 1:
                     indent_depth = item.tree_depth - 1
-            
+
             for i in range(indent_depth):
                 row.label(text="", icon="BLANK1")
-            
+
             if item.document_type == "PROJECT":
                 row.label(text="", icon="OUTLINER_COLLECTION")
                 row.label(text=item.name)
                 return
-            
+
             if item.document_type == "INFORMATION" and item.has_children:
                 op = row.operator(
                     "bim.toggle_document", icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", text="", emboss=False
@@ -232,7 +238,7 @@ class BIM_UL_documents(UIList):
                 op.option = "Collapse" if item.is_expanded else "Expand"
             elif item.document_type == "INFORMATION":
                 row.label(text="", icon="BLANK1")
-            
+
             if item.document_type == "INFORMATION":
                 row.label(text="", icon="FILE")
                 text = " - ".join([x for x in [item.name, item.location] if x])

@@ -37,7 +37,6 @@ classes = (
     operator.OpenIFCDocument,
     prop.Document,
     prop.DocumentObject,
-    prop.AssignedDocument,
     prop.BIMDocumentProperties,
     ui.BIM_PT_documents,
     ui.BIM_PT_object_documents,
