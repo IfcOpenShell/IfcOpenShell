@@ -449,25 +449,27 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         props = tool.Pset.get_global_pset_props()
 
+        pset_names_to_delete = {p.name for p in props.psets_to_delete}
+        psets_removed = 0
+
         for obj in tool.Blender.get_selected_objects():
             ifc_element = tool.Ifc.get_entity(obj)
             if not ifc_element:
                 continue
             psets = ifcopenshell.util.element.get_psets(ifc_element)
 
-            for prop in props.psets_to_delete:
-                pset = prop.name
-                if pset in psets:
-                    try:
-                        ifcopenshell.api.pset.remove_pset(
-                            self.file,
-                            product=ifc_element,
-                            pset=self.file.by_id(psets[pset]["id"]),
-                        )
-                    except KeyError:
-                        pass  # Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej
+            for pset_name, pset_data in psets.items():
+                if pset_name not in pset_names_to_delete:
+                    continue
 
-        self.report({"INFO"}, "Finished applying changes")
+                ifcopenshell.api.pset.remove_pset(
+                    self.file,
+                    product=ifc_element,
+                    pset=self.file.by_id(pset_data["id"]),
+                )
+                psets_removed += 1
+
+        self.report({"INFO"}, f"Finished applying changes, {psets_removed} psets removed.")
         return {"FINISHED"}
 
 
