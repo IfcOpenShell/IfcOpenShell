@@ -117,9 +117,6 @@ class BIM_PT_object_documents(Panel):
     bl_order = 1
     bl_parent_id = "BIM_PT_tab_misc"
 
-    # Class variable to track the last selected object
-    _last_object_id = None
-
     @classmethod
     def poll(cls, context):
         if not (obj := context.active_object):
@@ -132,11 +129,7 @@ class BIM_PT_object_documents(Panel):
 
     def draw(self, context):
         obj = context.active_object
-        current_ifc_id = tool.Blender.get_ifc_definition_id(obj)
-        
-        if BIM_PT_object_documents._last_object_id != current_ifc_id:
-            BIM_PT_object_documents._last_object_id = current_ifc_id
-            ObjectDocumentData.is_loaded = False
+        if not ObjectDocumentData.is_loaded:
             ObjectDocumentData.load()
 
         self.oprops = tool.Blender.get_object_bim_props(obj)
@@ -160,19 +153,34 @@ class BIM_PT_object_documents(Panel):
 
         if self.props.is_object_editing:
             self.draw_add_ui()
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.label(text="Assigned Documents", icon="OUTLINER_OB_EMPTY")
+
             if doc_count > 0:
-                box = self.layout.box()
-                row = box.row(align=True)
-                row.label(text="Assigned Documents", icon="OUTLINER_OB_EMPTY")
-
-
+                col = box.column(align=True)
                 for document in ObjectDocumentData.data["documents"]:
-                    row = self.layout.row(align=True)
-                    row.label(text=document["identification"] or "*", icon="FILE")
-                    row.label(text=document["name"] or "Unnamed")
+                    row = col.row(align=True)
+                    
+                    # Create a split layout to separate left and right sides
+                    split = row.split(factor=0.7)  # Adjust factor as needed (0.7 = 70% left, 30% right)
+                    
+                    # Left side - Document identification and name
+                    left_side = split.row(align=True)
+                    left_side.alignment = 'LEFT' 
+                    left_side.label(text=document["identification"] or "*", icon="FILE")
+                    left_side.label(text=document["name"] or "Unnamed")
+                    
+                    # Right side - Action buttons
+                    right_side = split.row(align=True)
+                    right_side.alignment = 'RIGHT'  # Align buttons to the right
+                    
                     if document["location"]:
-                        row.operator("bim.open_uri", icon="URL", text="").uri = document["location"]
-                    row.operator("bim.unassign_document", text="", icon="X").document = document["id"]                
+                        if document["location"].lower().endswith(".ifc"):
+                            right_side.operator("bim.open_ifc_document", icon="HIDE_OFF", text="").uri = document["location"]
+                        right_side.operator("bim.open_uri", icon="URL", text="").uri = document["location"]
+                        
+                    right_side.operator("bim.unassign_document", text="", icon="X").document = document["id"]
 
     def draw_add_ui(self):
         if self.props.is_object_editing:
