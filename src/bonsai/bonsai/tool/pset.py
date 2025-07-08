@@ -30,15 +30,39 @@ from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
 
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.pset.prop import PsetProperties, GlobalPsetProperties
+    from bonsai.bim.module.pset.prop import (
+        PsetProperties,
+        GlobalPsetProperties,
+        AddEditPropertyEntry,
+        RenamePropertyEntry,
+        DeletePsetEntry,
+    )
 
 
 class Pset(bonsai.core.tool.Pset):
     PSET_TYPE = Literal["PSET", "QTO"]
+    BulkOperationType = Literal["ADD_EDIT", "RENAME", "DELETE"]
+    BULK_OPERATION_TYPES = ("ADD_EDIT", "RENAME", "DELETE")
 
     @classmethod
     def get_global_pset_props(cls) -> GlobalPsetProperties:
         return bpy.context.scene.GlobalPsetProperties
+
+    @classmethod
+    def get_bulk_operation_collection(cls, operation_type: BulkOperationType) -> Union[
+        bpy.types.bpy_prop_collection_idprop[AddEditPropertyEntry],
+        bpy.types.bpy_prop_collection_idprop[RenamePropertyEntry],
+        bpy.types.bpy_prop_collection_idprop[DeletePsetEntry],
+    ]:
+        props = cls.get_global_pset_props()
+        if operation_type == "ADD_EDIT":
+            return props.psets_to_add_edit
+        elif operation_type == "RENAME":
+            return props.psets_to_rename
+        elif operation_type == "DELETE":
+            return props.psets_to_delete
+        else:
+            assert False
 
     @classmethod
     def get_element_pset(

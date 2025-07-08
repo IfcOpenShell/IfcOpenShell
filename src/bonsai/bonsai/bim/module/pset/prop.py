@@ -233,14 +233,14 @@ def get_object_qto_name(self: "PsetProperties", context: object) -> tool.Blender
 
 
 # TODO: unsafe?
-def get_template_type(self: "AddEditProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+def get_template_type(self: "AddEditPropertyEntry", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     version = tool.Ifc.get_schema()
     for t in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue"):
         yield (t, t, ifcopenshell.util.doc.get_entity_doc(version, t).get("description", ""))
 
 
 # TODO: unsafe?
-def get_primary_measure_type(self: "AddEditProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+def get_primary_measure_type(self: "AddEditPropertyEntry", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not AddEditCustomPropertiesData.is_loaded:
         AddEditCustomPropertiesData.load()
     return AddEditCustomPropertiesData.data["primary_measure_type"]
@@ -295,20 +295,20 @@ class PsetProperties(PropertyGroup):
         prop_value: str
 
 
-class RenameProperties(PropertyGroup):
-    pset_name: StringProperty(name="Pset")
+class RenamePropertyEntry(PropertyGroup):
+    name: StringProperty(name="Pset")
     existing_property_name: StringProperty(name="Existing Property Name")
     new_property_name: StringProperty(name="New Property Name")
 
     if TYPE_CHECKING:
-        pset_name: str
+        name: str
         existing_property_name: str
         new_property_name: str
 
 
-class AddEditProperties(PropertyGroup):
+class AddEditPropertyEntry(PropertyGroup):
     pset_name: StringProperty(name="Pset")
-    property_name: StringProperty(name="Property")
+    name: StringProperty(name="Property")
     string_value: StringProperty(name="Value")
     bool_value: BoolProperty(name="Value")
     int_value: IntProperty(name="Value")
@@ -319,7 +319,7 @@ class AddEditProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         pset_name: str
-        property_name: str
+        name: str
         string_value: str
         bool_value: bool
         int_value: int
@@ -342,17 +342,26 @@ class AddEditProperties(PropertyGroup):
             return "float_value"
 
 
-class DeletePsets(PropertyGroup):
-    pset_name: StringProperty(name="Pset")
+# This class is needed just to make tooltip more descriptive.
+class DeletePsetEntry(PropertyGroup):
+    name: StringProperty(name="Pset to Remove")
 
     if TYPE_CHECKING:
-        pset_name: str
+        name: str
 
 
 class GlobalPsetProperties(PropertyGroup):
     pset_filter: StringProperty(name="Pset Filter", options={"TEXTEDIT_UPDATE"})
     qto_filter: StringProperty(name="Qto Filter", options={"TEXTEDIT_UPDATE"})
 
+    # Bulk operations.
+    psets_to_delete: CollectionProperty(type=DeletePsetEntry)  # pyright: ignore[reportRedeclaration]
+    psets_to_rename: CollectionProperty(type=RenamePropertyEntry)  # pyright: ignore[reportRedeclaration]
+    psets_to_add_edit: CollectionProperty(type=AddEditPropertyEntry)  # pyright: ignore[reportRedeclaration]
+
     if TYPE_CHECKING:
         pset_filter: str
         qto_filter: str
+        psets_to_delete: bpy.types.bpy_prop_collection_idprop[DeletePsetEntry]
+        psets_to_rename: bpy.types.bpy_prop_collection_idprop[RenamePropertyEntry]
+        psets_to_add_edit: bpy.types.bpy_prop_collection_idprop[AddEditPropertyEntry]

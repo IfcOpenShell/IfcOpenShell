@@ -33,16 +33,16 @@ classes = (
     operator.UnsharePset,
     operator.BIM_OT_add_property_to_edit,
     operator.BIM_OT_remove_property_to_edit,
-    operator.BIM_OT_clear_list,
-    operator.BIM_OT_rename_parameters,
+    operator.BIM_OT_bulk_edit_clear_list,
+    operator.BIM_OT_pset_bulk_rename_parameters,
     operator.BIM_OT_add_edit_custom_property,
     operator.BIM_OT_bulk_remove_psets,
     prop.IfcPropertyEnumeratedValue,
     prop.IfcProperty,
     prop.PsetProperties,
-    prop.RenameProperties,
-    prop.AddEditProperties,
-    prop.DeletePsets,
+    prop.RenamePropertyEntry,
+    prop.AddEditPropertyEntry,
+    prop.DeletePsetEntry,
     prop.GlobalPsetProperties,
     ui.BIM_PT_object_psets,
     ui.BIM_PT_object_qtos,
@@ -71,9 +71,6 @@ def register():
     bpy.types.Scene.GroupPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.ProfilePsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.WorkSchedulePsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
-    bpy.types.Scene.RenameProperties = bpy.props.CollectionProperty(type=prop.RenameProperties)
-    bpy.types.Scene.AddEditProperties = bpy.props.CollectionProperty(type=prop.AddEditProperties)
-    bpy.types.Scene.DeletePsets = bpy.props.CollectionProperty(type=prop.DeletePsets)
     bpy.types.Scene.GlobalPsetProperties = bpy.props.PointerProperty(type=prop.GlobalPsetProperties)
 
 
@@ -86,7 +83,4 @@ def unregister():
     del bpy.types.Scene.GroupPsetProperties
     del bpy.types.Scene.ProfilePsetProperties
     del bpy.types.Scene.WorkSchedulePsetProperties
-    del bpy.types.Scene.RenameProperties
-    del bpy.types.Scene.AddEditProperties
-    del bpy.types.Scene.DeletePsets
     del bpy.types.Scene.GlobalPsetProperties
