@@ -19,7 +19,7 @@
 import ifcopenshell
 import ifcopenshell.util
 from ifcopenshell import entity_instance
-from typing import Sequence
+from collections.abc import Sequence
 
 import ifcopenshell.util.representation
 

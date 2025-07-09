@@ -18,7 +18,7 @@
 
 import ifcopenshell
 from ifcopenshell import entity_instance
-from typing import Sequence
+from collections.abc import Sequence
 
 
 _horizontal_callback = None
