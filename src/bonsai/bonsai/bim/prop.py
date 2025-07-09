@@ -627,11 +627,6 @@ class PsetQto(PropertyGroup):
         is_editable: bool
 
 
-class GlobalId(PropertyGroup):
-    name: StringProperty(name="Name")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
-
-
 class BIMCollectionProperties(PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
 
