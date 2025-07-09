@@ -136,7 +136,6 @@ classes = [
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,
-    prop.GlobalId,
     prop.BIMObjectProperties,
     prop.BIMCollectionProperties,
     prop.BIMMeshProperties,
