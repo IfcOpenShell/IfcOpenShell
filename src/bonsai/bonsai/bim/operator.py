@@ -1423,7 +1423,7 @@ class BIM_OT_attribute_add_subitem(bpy.types.Operator):
         data_path: str
 
     def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
-        col: "bpy.types.bpy_prop_collection_idprop[StrProperty]"
+        col: bpy.types.bpy_prop_collection_idprop[StrProperty]
         col = eval(self.data_path)
         col.add()
         return {"FINISHED"}
@@ -1444,7 +1444,7 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
         index: int
 
     def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
-        col: "bpy.types.bpy_prop_collection_idprop[StrProperty]"
+        col: bpy.types.bpy_prop_collection_idprop[StrProperty]
         col = eval(self.data_path)
         col.remove(self.index)
         return {"FINISHED"}
