@@ -21,7 +21,6 @@ import os
 try:
     import pyradiance as pr
 except ImportError:
-    print("PyRadiance is not available. Rendering functionality will be disabled.")
     pr = None
 
 from datetime import datetime

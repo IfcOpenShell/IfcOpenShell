@@ -24,7 +24,21 @@ from pathlib import Path
 
 import importlib
 import importlib.util
-import pyradiance
+import traceback
+
+# There are unresolved problems with pyradiance import that we couldn't narrow down.
+# So import is optional not to make it a showstopper for random users,
+# who don't even need pyradiance.
+# See #6633.
+try:
+    import pyradiance
+except ImportError as e:
+    print(traceback.format_exc())
+    print(
+        "PyRadiance is not available. Pyradiance Rendering functionality will be disabled. "
+        "See above for more detailed import traceback."
+    )
+    pyradiance = None
 
 
 def get_pyradiance_path():
@@ -58,12 +72,14 @@ classes = (
 def register():
     bpy.types.Scene.BIMRadianceExporeterProperies = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
-    pyradiance_path = Path(get_pyradiance_path())
-    bin_path = pyradiance_path / "bin"
-    if bin_path.exists():
-        for file in bin_path.iterdir():
-            if file.is_file():
-                file.chmod(file.stat().st_mode | stat.S_IEXEC)
+
+    if pyradiance:
+        pyradiance_path = Path(get_pyradiance_path())
+        bin_path = pyradiance_path / "bin"
+        if bin_path.exists():
+            for file in bin_path.iterdir():
+                if file.is_file():
+                    file.chmod(file.stat().st_mode | stat.S_IEXEC)
 
 
 def unregister():
