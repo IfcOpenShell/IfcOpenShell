@@ -46,6 +46,7 @@ class BIM_PT_styles(Panel):
             StylesData.load()
 
         self.props = tool.Style.get_style_props()
+        assert self.layout
 
         if not self.props.is_editing:
             row = self.layout.row(align=True)

@@ -621,6 +621,7 @@ class PsetQto(PropertyGroup):
     is_editable: BoolProperty(name="Is Editable")
 
     if TYPE_CHECKING:
+        name: str
         properties: bpy.types.bpy_prop_collection_idprop[Attribute]
         is_expanded: bool
         is_editable: bool
