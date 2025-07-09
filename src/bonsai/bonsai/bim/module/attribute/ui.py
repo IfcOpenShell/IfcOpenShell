@@ -38,7 +38,9 @@ def draw_ui(context: bpy.types.Context, layout: bpy.types.UILayout, attributes) 
         row.operator("bim.edit_attributes", icon="CHECKMARK", text="Save Attributes")
         row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
 
-        bonsai.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
+        bonsai.bim.helper.draw_attributes(
+            props.attributes, layout, copy_operator="bim.copy_attribute_to_selection", enable_search=True
+        )
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")
@@ -121,7 +123,7 @@ class BIM_PT_explorer(Panel):
                 row = box.row(align=True)
                 row.operator("bim.explorer_edit_entity", icon="CHECKMARK")
                 row.operator("bim.explorer_disable_editing_entity", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(props.entity_attributes, box)
+            bonsai.bim.helper.draw_attributes(props.entity_attributes, box, enable_search=True)
 
 
 class BIM_UL_explorer(bpy.types.UIList):

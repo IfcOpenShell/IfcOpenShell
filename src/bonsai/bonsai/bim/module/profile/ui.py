@@ -140,7 +140,7 @@ class BIM_PT_profiles(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        bonsai.bim.helper.draw_attributes(self.props.profile_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.profile_attributes, self.layout, enable_search=True)
 
 
 class BIM_UL_profiles(UIList):

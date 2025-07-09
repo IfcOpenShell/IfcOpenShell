@@ -52,6 +52,7 @@ def draw_attributes(
     copy_operator: Optional[str] = None,
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
+    *,
     enable_search: bool = False,
 ) -> None:
     """Draw editable UI for prop.Attributes.
