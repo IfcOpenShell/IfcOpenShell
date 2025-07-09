@@ -24,9 +24,9 @@ import ifcopenshell.api.context
 
 def _test_horizontal():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -43,9 +43,9 @@ def _test_horizontal():
 
 def _test_horizontal_and_vertical():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -55,17 +55,16 @@ def _test_horizontal_and_vertical():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(
-        file, "TestAlignment", include_vertical=True
-    )
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True)
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     assert basis_curve.is_a("IfcCompositeCurve")
+
 
 def _test_horizontal_and_vertical_and_cant():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -75,11 +74,10 @@ def _test_horizontal_and_vertical_and_cant():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(
-        file, "TestAlignment", include_vertical=True,include_cant=True
-    )
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True, include_cant=True)
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     assert basis_curve.is_a("IfcCompositeCurve")
+
 
 def test_get_basis_curve():
     _test_horizontal()

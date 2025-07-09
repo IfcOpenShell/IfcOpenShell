@@ -18,11 +18,12 @@
 
 import ifcopenshell.api.alignment
 
+
 def test_get_layout_curve():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -32,12 +33,12 @@ def test_get_layout_curve():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment",include_vertical=False,include_cant=False)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=False, include_cant=False)
     layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     assert curve.is_a("IfcCompositeCurve")
 
-    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment",include_vertical=True,include_cant=False)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True, include_cant=False)
     layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     assert curve.is_a("IfcCompositeCurve")
@@ -45,7 +46,7 @@ def test_get_layout_curve():
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     assert curve.is_a("IfcGradientCurve")
 
-    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment",include_vertical=True,include_cant=True)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True, include_cant=True)
     layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     assert curve.is_a("IfcCompositeCurve")

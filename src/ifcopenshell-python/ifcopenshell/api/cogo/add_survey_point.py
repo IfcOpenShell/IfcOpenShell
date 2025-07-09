@@ -20,7 +20,10 @@ import ifcopenshell
 from ifcopenshell import entity_instance
 import typing
 
-def add_survey_point(file: ifcopenshell.file, survey_point: entity_instance, site:entity_instance = None) -> entity_instance:
+
+def add_survey_point(
+    file: ifcopenshell.file, survey_point: entity_instance, site: entity_instance = None
+) -> entity_instance:
     """
     Adds a single survey point to the model based on IFC Concept Template 4.1.7.1.2.5.
     Survey points are located relative to IfcRepresentationContext.WorldCoordinateSystem
@@ -34,14 +37,21 @@ def add_survey_point(file: ifcopenshell.file, survey_point: entity_instance, sit
 
         annotation = ifcopenshell.api.cogo.add_survey_point(file,file.createIfcCartesianPoint(4000.0,3500.0)))
     """
-    context = ifcopenshell.util.representation.get_context(file,"Model","Annotation","MODEL_VIEW")
-    shape_representation = file.createIfcShapeRepresentation(ContextOfItems=context,RepresentationIdentifier='Annotation',RepresentationType='Point',Items=[survey_point])
+    context = ifcopenshell.util.representation.get_context(file, "Model", "Annotation", "MODEL_VIEW")
+    shape_representation = file.createIfcShapeRepresentation(
+        ContextOfItems=context, RepresentationIdentifier="Annotation", RepresentationType="Point", Items=[survey_point]
+    )
     representation = file.createIfcProductDefinitionShape(Representations=[shape_representation])
-    annotation = file.createIfcAnnotation(ifcopenshell.guid.new(),ObjectPlacement=context.WorldCoordinateSystem,Representation=representation,PredefinedType="SURVEY")
-    
-    if (site == None):
+    annotation = file.createIfcAnnotation(
+        ifcopenshell.guid.new(),
+        ObjectPlacement=context.WorldCoordinateSystem,
+        Representation=representation,
+        PredefinedType="SURVEY",
+    )
+
+    if site == None:
         site = file.by_type("IfcSite")[0]
 
-    ifcopenshell.api.spatial.assign_container(file,relating_structure=site,products=[annotation])
+    ifcopenshell.api.spatial.assign_container(file, relating_structure=site, products=[annotation])
 
     return annotation

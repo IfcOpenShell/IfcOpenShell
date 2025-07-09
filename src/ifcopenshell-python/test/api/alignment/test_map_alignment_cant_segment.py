@@ -21,6 +21,7 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 from ifcopenshell.api.alignment._map_alignment_cant_segment import _map_alignment_cant_segment
 
+
 def _BlossCurve_100_0_300_1000_1_Meter(file):
     design_parameters = file.createIfcAlignmentCantSegment(
         StartDistAlong=0.0,

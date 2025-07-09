@@ -20,14 +20,15 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 
+
 # other test cases cover the typical vertical by PI method (test_create_alignment_by_pi_method)
 # this test will focus on the edge cases of no initial gradient, no final gradient, and
 # compound vertical curve (no gradient between curves)
 def test_vertical_layout_by_pi_method():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -37,35 +38,41 @@ def test_vertical_layout_by_pi_method():
         parent=geometric_representation_context,
     )
 
-
     alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True)
     hlayout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     segment1 = file.createIfcAlignmentHorizontalSegment(
-        StartPoint=file.createIfcCartesianPoint(Coordinates=((0.,0.))), # Actual coordinate unknown
+        StartPoint=file.createIfcCartesianPoint(Coordinates=((0.0, 0.0))),  # Actual coordinate unknown
         StartDirection=0.0,
         StartRadiusOfCurvature=0.0,
         EndRadiusOfCurvature=0.0,
         SegmentLength=10000.0,
-        PredefinedType = "LINE"
+        PredefinedType="LINE",
     )
 
-    ifcopenshell.api.alignment.create_layout_segment(file,hlayout,segment1)
+    ifcopenshell.api.alignment.create_layout_segment(file, hlayout, segment1)
 
     vpoints = [(0.0, 110.0), (400.0, 100.0), (800.0, 115.0), (1300.0, 125.0), (1800.0, 105.0)]
     lengths = [(800.0), (0.0), (1000.0)]
     vlayout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
-    ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method(file,vlayout,vpoints,lengths)
+    ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method(file, vlayout, vpoints, lengths)
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 1  # one nest
-    assert len(alignment.IsNestedBy[0].RelatedObjects) == 3  # nesting IfcReferent, IfcAlignmentHorizontal, IfcAlignmentVertical
+    assert (
+        len(alignment.IsNestedBy[0].RelatedObjects) == 3
+    )  # nesting IfcReferent, IfcAlignmentHorizontal, IfcAlignmentVertical
     assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
     assert alignment.IsNestedBy[0].RelatedObjects[1].is_a("IfcAlignmentHorizontal")
     assert alignment.IsNestedBy[0].RelatedObjects[2].is_a("IfcAlignmentVertical")
     assert (
         len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy) == 1
     )  # nesting of segments beneath IfcAlignmentHorizontal
-    assert len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 2  # segments in horizontal layout
-    assert len(alignment.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects) == 3 # segments in vertical layout
+    assert (
+        len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 2
+    )  # segments in horizontal layout
+    assert (
+        len(alignment.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects) == 3
+    )  # segments in vertical layout
+
 
 test_vertical_layout_by_pi_method()

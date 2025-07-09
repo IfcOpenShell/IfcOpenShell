@@ -20,14 +20,15 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 
+
 # other test cases cover the typical vertical by PI method (test_create_alignment_by_pi_method)
 # this test will focus on the edge cases of no initial tangent run, no final tangent run, and
 # compound curve (no tangent between curves)
 def test_horizontal_layout_by_pi_method():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -50,6 +51,9 @@ def test_horizontal_layout_by_pi_method():
     assert (
         len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy) == 1
     )  # nesting of segments beneath IfcAlignmentHorizontal
-    assert len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 3  # segments in horizontal layout
+    assert (
+        len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 3
+    )  # segments in horizontal layout
+
 
 test_horizontal_layout_by_pi_method()

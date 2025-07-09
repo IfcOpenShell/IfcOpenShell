@@ -23,9 +23,9 @@ import ifcopenshell.api.context
 
 def test_get_alignment():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -35,11 +35,11 @@ def test_get_alignment():
         parent=geometric_representation_context,
     )
 
-    include_vertical = [False,True,True]
+    include_vertical = [False, True, True]
     include_cant = [False, False, True]
 
-    for i in range(0,3) :
-        ali = ifcopenshell.api.alignment.create(file,"A1",include_vertical[i],include_cant[i])
+    for i in range(0, 3):
+        ali = ifcopenshell.api.alignment.create(file, "A1", include_vertical[i], include_cant[i])
         assert ali != None
 
         horiz = ifcopenshell.api.alignment.get_horizontal_layout(ali)
@@ -49,6 +49,6 @@ def test_get_alignment():
         assert ali == ifcopenshell.api.alignment.get_alignment(horiz)
         if include_vertical[i]:
             assert ali == ifcopenshell.api.alignment.get_alignment(vert)
-        
+
         if include_cant[i]:
             assert ali == ifcopenshell.api.alignment.get_alignment(cant)

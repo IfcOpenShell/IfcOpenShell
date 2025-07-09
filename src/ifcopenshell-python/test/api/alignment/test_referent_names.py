@@ -42,8 +42,9 @@ def default_names_alignment():
     vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
     lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
 
-    alignment = ifcopenshell.api.alignment.create_by_pi_method(file, "TestAlignment", coordinates, radii, vpoints,
-                                                               lengths)
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(
+        file, "TestAlignment", coordinates, radii, vpoints, lengths
+    )
     yield alignment
 
 
@@ -88,8 +89,9 @@ def callback_alignment():
     vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
     lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
 
-    alignment = ifcopenshell.api.alignment.create_by_pi_method(file, "TestAlignment", coordinates, radii, vpoints,
-                                                               lengths)
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(
+        file, "TestAlignment", coordinates, radii, vpoints, lengths
+    )
     yield alignment
 
 
@@ -107,6 +109,7 @@ def test_with_default_names(default_names_alignment):
     assert "P.V.C." in vlayout.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects[0].Name
     assert "P.V.T." in vlayout.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects[0].Name
     assert "V.P.O.E." in vlayout.IsNestedBy[0].RelatedObjects[-1].IsNestedBy[0].RelatedObjects[0].Name
+
 
 def test_with_callbacks(callback_alignment):
     hlayout = ifcopenshell.api.alignment.get_horizontal_layout(callback_alignment)

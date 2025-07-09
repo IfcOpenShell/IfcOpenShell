@@ -19,57 +19,60 @@
 import ifcopenshell
 import ifcopenshell.util.stationing as sta
 
+
 def _test_si_stations():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT") # meter
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
-    
-    s = sta.station_as_string(file,0.0)
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")  # meter
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
+
+    s = sta.station_as_string(file, 0.0)
     assert s == "0+000.000"
 
-    s = sta.station_as_string(file,100.00)
+    s = sta.station_as_string(file, 100.00)
     assert s == "0+100.000"
 
-    s = sta.station_as_string(file,-100.00)
+    s = sta.station_as_string(file, -100.00)
     assert s == "-0+100.000"
 
-    s = sta.station_as_string(file,123456.789)
+    s = sta.station_as_string(file, 123456.789)
     assert s == "123+456.789"
 
-    s = sta.station_as_string(file,-123456.789)
+    s = sta.station_as_string(file, -123456.789)
     assert s == "-123+456.789"
+
 
 def _test_si_stations_millimeter():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     ifcopenshell.api.unit.assign_unit(file)
 
-    s = sta.station_as_string(file,100.00)
+    s = sta.station_as_string(file, 100.00)
     assert s == "0+000.100"
 
-    s = sta.station_as_string(file,1000.00)
+    s = sta.station_as_string(file, 1000.00)
     assert s == "0+001.000"
+
 
 def _test_us_stations():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
-    
-    s = sta.station_as_string(file,0.0)
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
+
+    s = sta.station_as_string(file, 0.0)
     assert s == "0+00.00"
 
-    s = sta.station_as_string(file,100.00)
+    s = sta.station_as_string(file, 100.00)
     assert s == "1+00.00"
 
-    s = sta.station_as_string(file,-100.00)
+    s = sta.station_as_string(file, -100.00)
     assert s == "-1+00.00"
 
-    s = sta.station_as_string(file,123456.789)
+    s = sta.station_as_string(file, 123456.789)
     assert s == "1234+56.79"
 
-    s = sta.station_as_string(file,-123456.789)
+    s = sta.station_as_string(file, -123456.789)
     assert s == "-1234+56.79"
 
 
