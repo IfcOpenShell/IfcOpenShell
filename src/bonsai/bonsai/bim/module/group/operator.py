@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
 import json
+from natsort import natsorted
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -38,7 +39,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         groups = [
             group for group in tool.Ifc.get().by_type("IfcGroup", include_subtypes=False) if not group.HasAssignments
         ]
-        sorted_groups = sorted(groups, key=lambda group: group.Name or "Unnamed")
+        sorted_groups = natsorted(groups, key=lambda group: group.Name or "Unnamed")
 
         for group in sorted_groups:
             self.load_group(group)
@@ -55,13 +56,14 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         new.has_children = False
         new.is_expanded = group.id() in self.expanded_groups
 
+        related_groups: list[ifcopenshell.entity_instance]
         related_groups = [
             related_object
             for rel in group.IsGroupedBy or []
             for related_object in rel.RelatedObjects
             if related_object.is_a("IfcGroup")
         ]
-        sorted_related_groups = sorted(related_groups, key=lambda group: group.Name or "Unnamed")
+        sorted_related_groups = natsorted(related_groups, key=lambda group: group.Name or "Unnamed")
 
         for related_group in sorted_related_groups:
             new.has_children = True
