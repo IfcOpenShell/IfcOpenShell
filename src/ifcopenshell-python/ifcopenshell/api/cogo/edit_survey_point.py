@@ -20,7 +20,8 @@ import ifcopenshell
 from ifcopenshell import entity_instance
 import typing
 
-def edit_survey_point(annotation: entity_instance, x:float,y:float,z:float=0.0):
+
+def edit_survey_point(annotation: entity_instance, x: float, y: float, z: float = 0.0):
     """
     Edits the location of a previously defined survey point
 
@@ -35,6 +36,6 @@ def edit_survey_point(annotation: entity_instance, x:float,y:float,z:float=0.0):
         ifcopenshell.api.cogo.edit_surve_point(annotation,3500.0,2000.0)
     """
     if annotation.Representation.Representations[0].Items[0].Dim == 2:
-        annotation.Representation.Representations[0].Items[0].Coordinates = ((x,y))
+        annotation.Representation.Representations[0].Items[0].Coordinates = (x, y)
     else:
-        annotation.Representation.Representations[0].Items[0].Coordinates = ((x,y,z))
+        annotation.Representation.Representations[0].Items[0].Coordinates = (x, y, z)

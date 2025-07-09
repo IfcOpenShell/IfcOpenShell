@@ -23,6 +23,7 @@ import pytest
 import ifcopenshell.api.alignment
 from ifcopenshell.api.alignment._map_alignment_vertical_segment import _map_alignment_vertical_segment
 
+
 def _CircularArc_100_0_10_0_0_0_0_5_1_Meter(file):
     design_parameters = file.createIfcAlignmentVerticalSegment(
         StartDistAlong=0.0,

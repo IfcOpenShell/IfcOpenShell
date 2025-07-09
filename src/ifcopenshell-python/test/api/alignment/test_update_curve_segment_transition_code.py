@@ -17,15 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-from  ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
+from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
 import ifcopenshell.api.context
 
 
 def _test1():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -223,23 +223,26 @@ def _test2():
         ),
     )
 
-    composite_curve = file.createIfcCompositeCurve(Segments=[line1,clothoid1,circular_arc,clothoid2,line2], SelfIntersect=False)
+    composite_curve = file.createIfcCompositeCurve(
+        Segments=[line1, clothoid1, circular_arc, clothoid2, line2], SelfIntersect=False
+    )
 
-    _update_curve_segment_transition_code(line1,clothoid1)
+    _update_curve_segment_transition_code(line1, clothoid1)
     assert line1.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
-    _update_curve_segment_transition_code(clothoid1,circular_arc)
+    _update_curve_segment_transition_code(clothoid1, circular_arc)
     assert clothoid1.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
-    _update_curve_segment_transition_code(circular_arc,clothoid2)
+    _update_curve_segment_transition_code(circular_arc, clothoid2)
     assert circular_arc.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
-    _update_curve_segment_transition_code(clothoid2,line2)
+    _update_curve_segment_transition_code(clothoid2, line2)
     assert clothoid2.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
 
 def test_update_curve_segment_transition_code():
     _test1()
     _test2()
+
 
 test_update_curve_segment_transition_code()

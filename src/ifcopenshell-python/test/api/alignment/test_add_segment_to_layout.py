@@ -22,11 +22,12 @@ import ifcopenshell.api.context
 
 from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
+
 def test_add_segment_to_layout():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -36,7 +37,7 @@ def test_add_segment_to_layout():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file,"")
+    alignment = ifcopenshell.api.alignment.create(file, "")
     horizontal_alignment = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
     design_parameters = file.create_entity(
@@ -66,6 +67,10 @@ def test_add_segment_to_layout():
     _add_segment_to_layout(file, horizontal_alignment, alignment_segment)
 
     assert len(horizontal_alignment.IsNestedBy) == 1
-    assert len(horizontal_alignment.IsNestedBy[0].RelatedObjects) == 2 # The the segment we added and the automatically created zero length segment
+    assert (
+        len(horizontal_alignment.IsNestedBy[0].RelatedObjects) == 2
+    )  # The the segment we added and the automatically created zero length segment
     assert horizontal_alignment.IsNestedBy[0].RelatedObjects[0] == alignment_segment
-    assert alignment_segment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent") # a referent is automatically added at the start of the segment
+    assert (
+        alignment_segment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
+    )  # a referent is automatically added at the start of the segment

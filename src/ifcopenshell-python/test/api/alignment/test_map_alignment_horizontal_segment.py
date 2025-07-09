@@ -23,6 +23,7 @@ import pytest
 import ifcopenshell.api.alignment
 from ifcopenshell.api.alignment._map_alignment_horizontal_segment import __map_alignment_horizontal_segment
 
+
 def _BlossCurve_100_0_300_1000_1_Meter(file):
     design_parameters = file.createIfcAlignmentHorizontalSegment(
         StartPoint=file.createIfcCartesianPoint((0.0, 0.0)),

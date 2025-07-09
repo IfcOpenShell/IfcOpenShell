@@ -20,6 +20,7 @@ import ifcopenshell
 from ifcopenshell import entity_instance
 import typing
 
+
 def assign_survey_point(annotation: entity_instance, survey_point: entity_instance):
     """
     Assigns a coordinate point to a survey point annotation

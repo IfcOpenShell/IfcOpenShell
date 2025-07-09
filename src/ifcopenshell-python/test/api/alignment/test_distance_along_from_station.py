@@ -20,11 +20,12 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 
+
 def test_distance_along_from_station():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_conversion_based_unit(file,name="foot")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -40,7 +41,7 @@ def test_distance_along_from_station():
     lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
 
     alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        file, "TestAlignment", coordinates, radii, vpoints, lengths,start_station=10000.0
+        file, "TestAlignment", coordinates, radii, vpoints, lengths, start_station=10000.0
     )
 
     # Station 138+83.96

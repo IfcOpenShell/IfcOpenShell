@@ -20,11 +20,12 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.alignment.has_zero_length_segment
 import ifcopenshell.api.context
 
+
 def _test_horizontal():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -34,15 +35,16 @@ def _test_horizontal():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file,"TestAlignment")
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment")
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
 
+
 def _test_horizontal_vertical():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -52,17 +54,18 @@ def _test_horizontal_vertical():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file,"TestAlignment",include_vertical=True)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True)
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
     vertical = ifcopenshell.api.alignment.get_vertical_layout(alignment)
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(vertical)
 
+
 def _test_horizontal_vertical_cant():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -72,13 +75,14 @@ def _test_horizontal_vertical_cant():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file,"TestAlignment",include_vertical=True,include_cant=True)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True, include_cant=True)
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
     vertical = ifcopenshell.api.alignment.get_vertical_layout(alignment)
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(vertical)
     cant = ifcopenshell.api.alignment.get_cant_layout(alignment)
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(cant)
+
 
 def test_has_zero_length_segment():
     _test_horizontal()

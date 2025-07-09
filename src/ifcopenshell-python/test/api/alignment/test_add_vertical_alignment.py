@@ -23,9 +23,9 @@ import ifcopenshell.api.context
 
 def test_add_vertical_alignment():
     file = ifcopenshell.file(schema="IFC4X3")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(),Name="Test")
-    length = ifcopenshell.api.unit.add_si_unit(file,unit_type="LENGTHUNIT")
-    ifcopenshell.api.unit.assign_unit(file,units=[length])
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -35,7 +35,7 @@ def test_add_vertical_alignment():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file,"A1",include_vertical=False)
+    alignment = ifcopenshell.api.alignment.create(file, "A1", include_vertical=False)
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 1  # one nest
@@ -45,11 +45,13 @@ def test_add_vertical_alignment():
     curve = ifcopenshell.api.alignment.get_curve(alignment)
     assert curve.is_a("IfcCompositeCurve")
 
-    vertical_layout = ifcopenshell.api.alignment.add_vertical_layout(file,alignment)
+    vertical_layout = ifcopenshell.api.alignment.add_vertical_layout(file, alignment)
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 1  # one nest
-    assert len(alignment.IsNestedBy[0].RelatedObjects) == 3  # nesting IfcReferent, IfcAlignmentHorizontal, IfcAlignmentVertical
+    assert (
+        len(alignment.IsNestedBy[0].RelatedObjects) == 3
+    )  # nesting IfcReferent, IfcAlignmentHorizontal, IfcAlignmentVertical
     assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
     assert alignment.IsNestedBy[0].RelatedObjects[1].is_a("IfcAlignmentHorizontal")
     assert alignment.IsNestedBy[0].RelatedObjects[2].is_a("IfcAlignmentVertical")
@@ -57,7 +59,7 @@ def test_add_vertical_alignment():
     assert curve.is_a("IfcGradientCurve")
 
     # add a second vertical alignment
-    vertical_layout = ifcopenshell.api.alignment.add_vertical_layout(file,alignment)
+    vertical_layout = ifcopenshell.api.alignment.add_vertical_layout(file, alignment)
 
     assert len(alignment.IsDecomposedBy) == 1  # 1 IfcRelAggreates relationship for the child algiments
     assert (
@@ -74,5 +76,6 @@ def test_add_vertical_alignment():
     assert len(alignment.IsNestedBy[0].RelatedObjects) == 2  # nesting IfcReferent and IfcAlignmentHorizontal
     assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
     assert alignment.IsNestedBy[0].RelatedObjects[1].is_a("IfcAlignmentHorizontal")
+
 
 test_add_vertical_alignment()
