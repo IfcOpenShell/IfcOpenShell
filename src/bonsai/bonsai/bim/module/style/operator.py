@@ -25,6 +25,7 @@ import ifcopenshell.api
 import ifcopenshell.api.style
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+from bonsai.bim.module.style.prop import ColourRgb
 from bpy_extras.io_utils import ImportHelper
 from pathlib import Path
 from mathutils import Vector
@@ -739,9 +740,10 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
         callback = None
         if self.ifc_class == "IfcSurfaceStyleLighting":
 
-            def callback(attribute_name, _, data):
+            def callback(attribute_name: str, _: object, data: dict[str, Any]) -> None:
                 assert attributes
                 color = attributes.add()
+                assert isinstance(color, ColourRgb)
                 color.name = attribute_name
                 color_value = data[attribute_name]
                 if color_value is None:

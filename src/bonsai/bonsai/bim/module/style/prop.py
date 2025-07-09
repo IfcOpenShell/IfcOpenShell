@@ -78,6 +78,7 @@ class Style(PropertyGroup):
     )
 
     if TYPE_CHECKING:
+        name: str
         ifc_definition_id: int
         total_elements: int
         style_classes: bpy.types.bpy_prop_collection_idprop[StrProperty]

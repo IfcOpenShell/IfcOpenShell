@@ -48,6 +48,7 @@ class BIM_PT_profiles(Panel):
         self.props = tool.Profile.get_profile_props()
 
         active_profile = None
+        assert self.layout
         if self.props.is_editing and (active_profile := tool.Profile.get_active_profile_ui()):
             preview_collection = ProfileData.preview_collection
             box = self.layout.box()

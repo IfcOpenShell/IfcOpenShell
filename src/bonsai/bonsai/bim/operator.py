@@ -909,7 +909,7 @@ class FetchObjectPassport(bpy.types.Operator):
         context.active_object.data = bpy.data.meshes[reference.name]
 
 
-def update_enum_property_search_prop(self, context):
+def update_enum_property_search_prop(self: "BIM_OT_enum_property_search", context: bpy.types.Context) -> None:
     for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
             setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
@@ -933,6 +933,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_label = "Search"
     bl_description = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
+
     first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
     collection_names: bpy.props.CollectionProperty(type=StrProperty)
@@ -1334,6 +1335,7 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     bl_label = "Search Attribute Values"
     bl_description = "Search for attribute values within a collection"
     bl_options = {"REGISTER", "UNDO"}
+
     first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     attribute_name: bpy.props.StringProperty(name="Attribute Name")
     attribute_ifc_class: bpy.props.StringProperty(name="Attribute IFC Class")
@@ -1352,7 +1354,13 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     collection_values: bpy.props.CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
+        first_launch: bool
+        attribute_name: str
+        attribute_ifc_class: str
+        data_path: str
         data_type: AttributeSearchDataType
+        search_value: str
+        collection_values: bpy.types.bpy_prop_collection_idprop[StrProperty]
 
     @staticmethod
     def resolve_data_path(data_path: str) -> tuple[str, "Attribute"]:
@@ -1406,7 +1414,7 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
             results_are_suggestions=True,
         )
 
-    def execute(self, context):
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
         return {"FINISHED"}
 
 
@@ -1416,7 +1424,7 @@ class BIM_OT_attribute_add_subitem(bpy.types.Operator):
     bl_description = "Add subitem to the current attribute"
     bl_options = {"REGISTER", "UNDO"}
 
-    data_path: bpy.props.StringProperty()
+    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
     """Full data path."""
 
     if TYPE_CHECKING:
@@ -1435,9 +1443,9 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
     bl_description = "Add subitem to the current attribute"
     bl_options = {"REGISTER", "UNDO"}
 
-    data_path: bpy.props.StringProperty()
+    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
     """Full data path."""
-    index: bpy.props.IntProperty()
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
 
     if TYPE_CHECKING:
         data_path: str
