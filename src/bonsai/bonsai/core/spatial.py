@@ -217,6 +217,7 @@ def generate_space(
     if element and element.is_a("IfcSpace"):
         mesh = spatial.get_transformed_mesh_from_local_to_global(mesh)
         spatial.edit_active_space_obj_from_mesh(mesh)
+        spatial.translate_obj_to_z_location(active_obj, z)
     else:
         if relating_type:
             name = model.generate_occurrence_name(relating_type, "IfcSpace")
