@@ -1333,7 +1333,7 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
 
     bl_idname = "bim.attribute_search_values"
     bl_label = "Search Attribute Values"
-    bl_description = "Search for attribute values within a collection"
+    bl_description = "Search for attribute values used in the elements of the same IFC class."
     bl_options = {"REGISTER", "UNDO"}
 
     # Required properties.
