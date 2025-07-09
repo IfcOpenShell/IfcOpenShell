@@ -19,7 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def __get_curve_segment_count(segment: entity_instance) -> int:

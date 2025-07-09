@@ -23,7 +23,7 @@ from ifcopenshell import ifcopenshell_wrapper
 import numpy as np
 import math
 from ifcopenshell import entity_instance
-from typing import Sequence
+from collections.abc import Sequence
 
 from ifcopenshell.api.alignment._add_segment_to_curve import _add_segment_to_curve
 from ifcopenshell.api.alignment._get_mapped_segments import _get_mapped_segments
