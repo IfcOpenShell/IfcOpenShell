@@ -135,7 +135,7 @@ class BIM_PT_styles(Panel):
         # display style elements props during edit
         if self.props.is_editing_style:
             if self.props.is_editing_class == "IfcSurfaceStyle":
-                bonsai.bim.helper.draw_attributes(self.props.attributes, self.layout)
+                bonsai.bim.helper.draw_attributes(self.props.attributes, self.layout, enable_search=True)
                 edit_label = "Save Attributes"
             elif self.props.is_editing_class == "IfcSurfaceStyleShading":
                 self.draw_surface_style_shading()
@@ -246,10 +246,10 @@ class BIM_PT_styles(Panel):
         op = row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
         style = self.props.active_style
         op.active_surface_style_id = style.ifc_definition_id
-        bonsai.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout, enable_search=True)
 
     def draw_refraction_surface_style(self):
-        bonsai.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout, enable_search=True)
         row = self.layout.row(align=True)
 
     def draw_lighting_surface_style(self):

@@ -1373,6 +1373,9 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
         return attr_name, attribute_obj
 
     def invoke(self, context, event):
+        required_props = (self.attribute_name, self.attribute_ifc_class, self.data_path)
+        assert all(required_props), required_props
+
         attr_name, attribute_obj = self.resolve_data_path(self.data_path)
         self.search_value = str(getattr(attribute_obj, attr_name, ""))
 
