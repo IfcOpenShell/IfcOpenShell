@@ -110,6 +110,12 @@ class AddGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     group: bpy.props.IntProperty()
 
+    @classmethod
+    def description(cls, context, properties) -> str:
+        if properties.group:
+            return "Add new subgroup to the active IfcGroup."
+        return "Add new IfcGroup."
+
     def _execute(self, context):
         result = ifcopenshell.api.group.add_group(tool.Ifc.get())
         if self.group:
