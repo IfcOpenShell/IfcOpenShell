@@ -1336,7 +1336,7 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     bl_description = "Search for attribute values within a collection"
     bl_options = {"REGISTER", "UNDO"}
 
-    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+    # Required properties.
     attribute_name: bpy.props.StringProperty(name="Attribute Name")
     attribute_ifc_class: bpy.props.StringProperty(name="Attribute IFC Class")
     data_path: bpy.props.StringProperty(name="Data Path")
@@ -1344,6 +1344,9 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
         name="Data Type",
         items=[(i, i, "") for i in get_args(AttributeSearchDataType)],
     )
+
+    # Internal properties.
+    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     search_value: bpy.props.StringProperty(
         name="Search",
         description="Search for attribute values",
