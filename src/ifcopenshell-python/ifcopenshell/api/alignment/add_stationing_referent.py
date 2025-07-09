@@ -88,7 +88,7 @@ def add_stationing_referent(
                 )
             ),
             CartesianPosition=file.createIfcAxis2Placement3D(
-                Location=file.createIfcCartesianPoint(((x, y, z))),
+                Location=file.createIfcCartesianPoint((x, y, z)),
                 Axis=file.createIfcDirection((ax, ay, az)),
                 RefDirection=file.createIfcDirection((rx, ry, rz)),
             ),
