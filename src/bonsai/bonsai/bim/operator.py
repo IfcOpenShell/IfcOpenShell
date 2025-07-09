@@ -1368,10 +1368,8 @@ class BIM_OT_attribute_search_values(bpy.types.Operator):
     @staticmethod
     def resolve_data_path(data_path: str) -> tuple[str, "Attribute"]:
         """Resolve the data path of an object's attribute to get the attribute name and the object."""
-        path_parts = data_path.split(".")
-        obj_path = ".".join(path_parts[:-1])
-        attr_name = path_parts[-1]
-        attribute_obj = eval(f"bpy.context.scene.{obj_path}")
+        attribute_obj, _, attr_name = data_path.rpartition(".")
+        attribute_obj = eval(attribute_obj)
         return attr_name, attribute_obj
 
     def invoke(self, context, event):

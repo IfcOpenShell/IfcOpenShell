@@ -131,7 +131,7 @@ def draw_attribute(
         op = layout.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
         op.attribute_name = attribute.name
         op.attribute_ifc_class = attribute.ifc_class
-        op.data_path = attribute.path_from_id(value_name)
+        op.data_path = tool.Blender.get_full_data_path(attribute, value_name)
         op.data_type = attribute.data_type
 
     if attribute.is_optional:
