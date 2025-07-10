@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.spatial
+import ifcopenshell.util.representation
 from ifcopenshell import entity_instance
 import typing
 

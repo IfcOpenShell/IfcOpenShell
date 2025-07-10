@@ -19,6 +19,9 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
+import ifcopenshell.geom
+import ifcopenshell.util.stationing
+import ifcopenshell.util.unit
 from ifcopenshell import ifcopenshell_wrapper
 import numpy as np
 import math

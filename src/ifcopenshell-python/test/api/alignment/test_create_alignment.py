@@ -18,8 +18,8 @@
 
 import pytest
 import ifcopenshell.api.alignment
-import ifcopenshell.api.alignment.get_layout_segments
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
 def test_create_alignment():

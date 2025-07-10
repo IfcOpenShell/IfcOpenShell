@@ -17,10 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util
+import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-
-import ifcopenshell.util.representation
 
 
 def get_layout_curve(layout: entity_instance) -> entity_instance:

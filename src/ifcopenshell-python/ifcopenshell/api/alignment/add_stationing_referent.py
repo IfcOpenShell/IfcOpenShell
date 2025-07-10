@@ -20,8 +20,9 @@ import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 import ifcopenshell.api.pset
-import ifcopenshell.util.stationing
+import ifcopenshell.geom
 import ifcopenshell.guid
+import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 from ifcopenshell import ifcopenshell_wrapper
 import numpy as np

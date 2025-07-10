@@ -17,8 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.alignment
-import ifcopenshell.api.alignment.has_zero_length_segment
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
 def _test_horizontal():

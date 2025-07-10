@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
+import ifcopenshell.util.stationing
 from ifcopenshell import entity_instance
 
 from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
