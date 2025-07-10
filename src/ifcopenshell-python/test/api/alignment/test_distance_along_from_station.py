@@ -19,6 +19,7 @@
 import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
 def test_distance_along_from_station():

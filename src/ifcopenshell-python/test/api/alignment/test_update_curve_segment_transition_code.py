@@ -19,6 +19,7 @@
 import pytest
 from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
 def _test1():

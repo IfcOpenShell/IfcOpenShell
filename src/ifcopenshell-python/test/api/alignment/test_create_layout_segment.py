@@ -19,7 +19,7 @@
 import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
-from ifcopenshell import entity_instance
+import ifcopenshell.api.unit
 import math
 
 

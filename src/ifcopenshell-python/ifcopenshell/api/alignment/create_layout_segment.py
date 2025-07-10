@@ -18,7 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.api.alignment
-import ifcopenshell.api.alignment.get_alignment
 import ifcopenshell.geom
 from ifcopenshell import entity_instance
 import math

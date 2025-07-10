@@ -19,6 +19,7 @@
 import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
 # other test cases cover the typical vertical by PI method (test_create_alignment_by_pi_method)

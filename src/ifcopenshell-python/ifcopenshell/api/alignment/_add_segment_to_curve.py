@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.util.unit
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import numpy as np
 from ifcopenshell import entity_instance

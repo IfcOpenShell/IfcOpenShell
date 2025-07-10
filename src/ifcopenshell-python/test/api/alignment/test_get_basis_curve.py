@@ -20,6 +20,7 @@ import pytest
 
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
 def _test_horizontal():
