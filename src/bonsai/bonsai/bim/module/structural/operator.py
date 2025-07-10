@@ -613,11 +613,13 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
         self.props.load_case_editing_type = "ATTRIBUTES"
         self.props.load_case_attributes.clear()
         bonsai.bim.helper.import_attributes2(
-            tool.Ifc.get().by_id(self.load_case), self.props.load_case_attributes, callback=self.import_attributes
+            tool.Ifc.get().by_id(self.load_case),
+            self.props.load_case_attributes,
+            callback=self.import_attributes_callback,
         )
         return {"FINISHED"}
 
-    def import_attributes(self, name: str, prop: object, data: object) -> None | Literal[False]:
+    def import_attributes_callback(self, name: str, prop: object, data: object) -> None | Literal[False]:
         if name in ["SelfWeightCoefficients"]:
             return False
 

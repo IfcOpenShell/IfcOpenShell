@@ -97,7 +97,7 @@ class Owner(bonsai.core.tool.Owner):
                 for line in data[name] or []:
                     collection.add().name = line
 
-        bonsai.bim.helper.import_attributes(address.is_a(), props.address_attributes, address.get_info(), callback)
+        bonsai.bim.helper.import_attributes2(address, props.address_attributes, callback)
 
     @classmethod
     def clear_address(cls) -> None:
@@ -154,7 +154,7 @@ class Owner(bonsai.core.tool.Owner):
         organisation = tool.Ifc.get().by_id(props.active_organisation_id)
         props.organisation_attributes.clear()
 
-        bonsai.bim.helper.import_attributes("IfcOrganization", props.organisation_attributes, organisation.get_info())
+        bonsai.bim.helper.import_attributes2(organisation, props.organisation_attributes)
 
     @classmethod
     def clear_organisation(cls) -> None:
@@ -209,7 +209,7 @@ class Owner(bonsai.core.tool.Owner):
                 for name_ in data[name] or []:
                     collection.add().name = name_ or ""
 
-        bonsai.bim.helper.import_attributes("IfcPerson", props.person_attributes, person.get_info(), callback)
+        bonsai.bim.helper.import_attributes2(person, props.person_attributes, callback)
 
     @classmethod
     def clear_person(cls) -> None:
@@ -253,7 +253,7 @@ class Owner(bonsai.core.tool.Owner):
         role = cls.get_role()
         props = cls.get_owner_props()
         props.role_attributes.clear()
-        bonsai.bim.helper.import_attributes("IfcActorRole", props.role_attributes, role.get_info())
+        bonsai.bim.helper.import_attributes2(role, props.role_attributes)
 
     @classmethod
     def clear_role(cls) -> None:
@@ -329,9 +329,7 @@ class Owner(bonsai.core.tool.Owner):
                 new.enum_value = str(data["ApplicationDeveloper"].id())
                 return True
 
-        bonsai.bim.helper.import_attributes(
-            "IfcApplication", props.application_attributes, application.get_info(), callback
-        )
+        bonsai.bim.helper.import_attributes2(application, props.application_attributes, callback)
 
     @classmethod
     def export_application_attributes(cls) -> dict[str, Any]:

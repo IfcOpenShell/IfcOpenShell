@@ -504,14 +504,14 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
 
         if "Usage" in material.is_a():
             bonsai.bim.helper.import_attributes2(
-                material, props.material_set_usage_attributes, callback=self.import_attributes
+                material, props.material_set_usage_attributes, callback=self.import_attributes_callback
             )
             bonsai.bim.helper.import_attributes2(material[0], props.material_set_attributes)
         else:
             bonsai.bim.helper.import_attributes2(material, props.material_set_attributes)
         return {"FINISHED"}
 
-    def import_attributes(
+    def import_attributes_callback(
         self, name: str, prop: Union["Attribute", None], data: dict[str, Any]
     ) -> None | Literal[True]:
         if name == "CardinalPoint":
