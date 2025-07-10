@@ -23,14 +23,13 @@ import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
-import ifcopenshell.util.attribute
 import bonsai.bim.helper
 import bonsai.core.structural as core
 import bonsai.tool as tool
 from math import degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.module.structural.decorator import LoadsDecorator
-from typing import Literal
+from typing import Literal, Any, TYPE_CHECKING
 
 
 class ShowLoads(bpy.types.Operator):
@@ -175,39 +174,17 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_boundary_condition"
     bl_label = "Enable Editing Structural Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    boundary_condition: bpy.props.IntProperty()
+    boundary_condition: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        boundary_condition: int
 
     def execute(self, context):
         obj = context.active_object
         assert obj
         props = tool.Structural.get_object_structural_props(obj)
-        props.boundary_condition_attributes.clear()
-
         condition = tool.Ifc.get().by_id(self.boundary_condition)
-        schema = tool.Ifc.schema()
-
-        for attribute in schema.declaration_by_name(condition.is_a()).all_attributes():
-            value = getattr(condition, attribute.name(), None)
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            new = props.boundary_condition_attributes.add()
-            new.name = attribute.name()
-            new.is_null = value is None
-            new.is_optional = attribute.optional()
-            if isinstance(data_type, tuple) and data_type[0] == "select":
-                enum_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attribute)]
-                new.enum_items = json.dumps(enum_items)
-            if isinstance(value, bool):
-                new.bool_value = False if new.is_null else value
-                new.data_type = "bool"
-                new.enum_value = "IfcBoolean"
-            elif isinstance(value, float):
-                new.float_value = 0.0 if new.is_null else value
-                new.data_type = "float"
-                new.enum_value = next(i for i in enum_items if i != "IfcBoolean")
-            elif data_type == "string":
-                new.string_value = "" if new.is_null else value
-                new.data_type = "string"
-
+        tool.Structural.import_boundary_condition_attributes(condition, props)
         props.active_boundary_condition = self.boundary_condition
         return {"FINISHED"}
 
@@ -216,7 +193,10 @@ class EditStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_structural_boundary_condition"
     bl_label = "Edit Structural Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    connection: bpy.props.IntProperty()
+    connection: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        connection: int
 
     def _execute(self, context):
         obj = context.active_object
@@ -227,18 +207,7 @@ class EditStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
         connection = file.by_id(self.connection)
         condition = connection.AppliedCondition
 
-        attributes = {}
-        for attribute in props.boundary_condition_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = {"value": None, "type": "null"}
-            elif attribute.data_type == "string":
-                attributes[attribute.name] = {"value": attribute.string_value, "type": "string"}
-            elif attribute.enum_value == "IfcBoolean":
-                attributes[attribute.name] = {"value": attribute.bool_value, "type": attribute.enum_value}
-            else:
-                attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
-
-        ifcopenshell.api.structural.edit_structural_boundary_condition(file, condition=condition, attributes=attributes)
+        tool.Structural.export_and_apply_boundary_condition_attributes(condition, props)
         bpy.ops.bim.disable_editing_structural_boundary_condition()
         return {"FINISHED"}
 
@@ -955,36 +924,15 @@ class EnableEditingBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.enable_editing_boundary_condition"
     bl_label = "Enable Editing Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    boundary_condition: bpy.props.IntProperty()
+    boundary_condition: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        boundary_condition: int
 
     def execute(self, context):
-        props = tool.Structural.get_structural_props()
-        props.boundary_condition_attributes.clear()
-
         boundary_condition = tool.Ifc.get().by_id(self.boundary_condition)
-        # bonsai.bim.helper.import_attributes(data["type"], props.boundary_condition_attributes, data)
-        schema = tool.Ifc.schema()
-        for attribute in schema.declaration_by_name(boundary_condition.is_a()).all_attributes():
-            value = getattr(boundary_condition, attribute.name(), None)
-            data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
-            new = props.boundary_condition_attributes.add()
-            new.name = attribute.name()
-            new.is_null = value is None
-            new.is_optional = attribute.optional()
-            if isinstance(data_type, tuple) and data_type[0] == "select":
-                enum_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attribute)]
-                new.enum_items = json.dumps(enum_items)
-            if isinstance(value, bool):
-                new.bool_value = False if new.is_null else value
-                new.data_type = "bool"
-                new.enum_value = "IfcBoolean"
-            elif isinstance(value, float):
-                new.float_value = 0.0 if new.is_null else value
-                new.data_type = "float"
-                new.enum_value = next(i for i in enum_items if i != "IfcBoolean")
-            elif data_type == "string":
-                new.string_value = "" if new.is_null else value
-                new.data_type = "string"
+        props = tool.Structural.get_structural_props()
+        tool.Structural.import_boundary_condition_attributes(boundary_condition, props)
         props.active_boundary_condition_id = self.boundary_condition
         return {"FINISHED"}
 
@@ -1023,22 +971,8 @@ class EditBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Structural.get_structural_props()
-        self.file = tool.Ifc.get()
-        # attributes = bonsai.bim.helper.export_attributes(props.boundary_condition_attributes)
-        attributes = {}
-        for attribute in props.boundary_condition_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = {"value": None, "type": "null"}
-            elif attribute.data_type == "string":
-                attributes[attribute.name] = {"value": attribute.string_value, "type": "string"}
-            elif attribute.enum_value == "IfcBoolean":
-                attributes[attribute.name] = {"value": attribute.bool_value, "type": attribute.enum_value}
-            else:
-                attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
-        ifcopenshell.api.structural.edit_structural_boundary_condition(
-            self.file,
-            condition=self.file.by_id(props.active_boundary_condition_id),
-            attributes=attributes,
-        )
+        ifc_file = tool.Ifc.get()
+        condition = ifc_file.by_id(props.active_boundary_condition_id)
+        tool.Structural.export_and_apply_boundary_condition_attributes(condition, props)
         bpy.ops.bim.load_boundary_conditions()
         return {"FINISHED"}
