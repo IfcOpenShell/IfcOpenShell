@@ -91,7 +91,7 @@ class Owner(bonsai.core.tool.Owner):
 
         address = cls.get_address()
 
-        def callback(name: str, prop, data: dict[str, Any]) -> None:
+        def callback(name: str, prop: object, data: dict[str, Any]) -> None:
             if name in cls.ADDREESS_ATTRIBUTE_TYPES:
                 collection = cls.get_address_collection(name)
                 for line in data[name] or []:

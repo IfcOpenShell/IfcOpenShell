@@ -46,7 +46,7 @@ class Context(bonsai.core.tool.Context):
         props.context_attributes.clear()
         context = cls.get_context()
 
-        def callback(name: str, prop, data) -> Union[bool, None]:
+        def callback(name: str, prop: Union[Attribute, None], data: dict[str, Any]) -> Union[bool, None]:
             if context.is_a("IfcGeometricRepresentationSubContext"):
                 if name == "Precision":
                     props.context_attributes.remove(props.context_attributes.find("Precision"))
@@ -57,8 +57,9 @@ class Context(bonsai.core.tool.Context):
                 elif name == "TargetScale":
                     props.context_attributes.remove(props.context_attributes.find("TargetScale"))
                     scale_denominator = None
-                    if data.get(name) is not None and data.get(name) != 0:
-                        scale_denominator = 1.0 / data.get(name)
+                    value = data.get(name)
+                    if value not in (None, 0):
+                        scale_denominator = 1.0 / value
                     new_prop = props.context_attributes.add()
                     new_prop.name = "ScaleDenominator"
                     new_prop.data_type = "float"
@@ -68,6 +69,7 @@ class Context(bonsai.core.tool.Context):
             else:  # IfcGeometricRepresentationContext
                 # Import precision as a string because Blender has problem displaying 1e-7 and smaller numbers in UI.
                 if name == "Precision":
+                    assert prop
                     prop.data_type = "string"
 
         bonsai.bim.helper.import_attributes(context.is_a(), props.context_attributes, context.get_info(), callback)
