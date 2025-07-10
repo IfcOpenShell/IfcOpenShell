@@ -20,6 +20,8 @@ from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.structural
+import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import json
 import bonsai.bim.helper
@@ -29,6 +31,7 @@ from typing import Union, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.structural.prop import BIMStructuralProperties, BIMObjectStructuralProperties
+    from ifcopenshell.api.structural.edit_structural_boundary_condition import AttributeDict
 
 
 class Structural(bonsai.core.tool.Structural):
@@ -214,3 +217,68 @@ class Structural(bonsai.core.tool.Structural):
             return None
 
         return undefined_representation
+
+    @classmethod
+    def import_boundary_condition_attributes(
+        cls,
+        boundary_condition: ifcopenshell.entity_instance,
+        props: Union[BIMStructuralProperties, BIMObjectStructuralProperties],
+    ) -> None:
+        props_attrs = props.boundary_condition_attributes
+        props_attrs.clear()
+        schema = tool.Ifc.schema()
+        # Don't use `import_attributes`,
+        # because we need to support 2 types of values for the same props.
+        ifc_class = boundary_condition.is_a()
+        entity = schema.declaration_by_name(ifc_class).as_entity()
+        assert entity
+        for attribute in entity.all_attributes():
+            attribute_name = attribute.name()
+            value = getattr(boundary_condition, attribute_name)
+            new = props_attrs.add()
+            new.name = attribute_name
+            new.ifc_class = ifc_class
+            new.is_null = value is None
+            new.is_optional = attribute.optional()
+
+            # Select attribute values are typically wrapped.
+            if isinstance(value, ifcopenshell.entity_instance):
+                value = value.wrappedValue
+
+            if attribute_name == "Name":
+                new.string_value = "" if new.is_null else value
+                new.data_type = "string"
+            else:
+                enum_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attribute)]
+                new.enum_items = json.dumps(enum_items)
+                if isinstance(value, bool):
+                    new.bool_value = False if new.is_null else value
+                    new.data_type = "boolean"
+                    new.enum_value = "IfcBoolean"
+                else:
+                    print(value)
+                    new.float_value = 0 if new.is_null else value
+                    new.data_type = "float"
+                    new.enum_value = next(i for i in enum_items if i != "IfcBoolean")
+
+    @classmethod
+    def export_and_apply_boundary_condition_attributes(
+        cls,
+        boundary_condition: ifcopenshell.entity_instance,
+        props: Union[BIMStructuralProperties, BIMObjectStructuralProperties],
+    ) -> None:
+        attributes: dict[str, AttributeDict] = {}
+        for attribute in props.boundary_condition_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = {"value": None, "type": "null"}
+            elif attribute.data_type == "string":
+                attributes[attribute.name] = {"value": attribute.string_value, "type": "string"}
+            elif attribute.enum_value == "IfcBoolean":
+                attributes[attribute.name] = {"value": attribute.bool_value, "type": attribute.enum_value}
+            else:
+                attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
+
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.structural.edit_structural_boundary_condition(
+            ifc_file, condition=boundary_condition, attributes=attributes
+        )
