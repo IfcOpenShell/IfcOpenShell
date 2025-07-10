@@ -30,6 +30,7 @@ import bonsai.tool as tool
 from math import degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.module.structural.decorator import LoadsDecorator
+from typing import Literal
 
 
 class ShowLoads(bpy.types.Operator):
@@ -40,6 +41,7 @@ class ShowLoads(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def modal(self, context, event):
+        assert context.screen
         if event.type == "F5":
             LoadsDecorator.update()
             for area in context.screen.areas:
@@ -54,6 +56,7 @@ class ShowLoads(bpy.types.Operator):
         return {"PASS_THROUGH"}
 
     def invoke(self, context, event):
+        assert context.window and context.window_manager and context.screen
         collection = bpy.data.collections.get("IfcStructuralItem")
         if collection is None:
             self.report({"ERROR"}, "No IfcStructuralItems found.")
@@ -87,6 +90,7 @@ class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Structural.get_object_structural_props(obj)
         file = tool.Ifc.get()
         related_structural_connection = file.by_id(oprops.ifc_definition_id)
+        assert props.relating_structural_member
         relating_structural_member = tool.Ifc.get_entity(props.relating_structural_member)
         assert relating_structural_member
         if not relating_structural_member.is_a("IfcStructuralMember"):
@@ -613,7 +617,7 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
         )
         return {"FINISHED"}
 
-    def import_attributes(self, name, prop, data):
+    def import_attributes(self, name: str, prop: object, data: object) -> None | Literal[False]:
         if name in ["SelfWeightCoefficients"]:
             return False
 

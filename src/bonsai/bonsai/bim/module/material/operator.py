@@ -28,8 +28,11 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
-from typing import Any, Union, TYPE_CHECKING
+from typing import Any, Union, TYPE_CHECKING, Literal
 from bonsai.bim.module.model import wall, slab
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
 
 
 class LoadMaterials(bpy.types.Operator):
@@ -508,7 +511,9 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
             bonsai.bim.helper.import_attributes2(material, props.material_set_attributes)
         return {"FINISHED"}
 
-    def import_attributes(self, name, prop, data):
+    def import_attributes(
+        self, name: str, prop: Union["Attribute", None], data: dict[str, Any]
+    ) -> None | Literal[True]:
         if name == "CardinalPoint":
             # TODO: complain to buildingSMART
             cardinal_point_map = {
@@ -532,6 +537,7 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
                 18: "right in line with the shear centre",
                 19: "top in line with the shear centre",
             }
+            assert prop
             prop.data_type = "enum"
             prop.enum_items = json.dumps(cardinal_point_map)
             if data[name]:

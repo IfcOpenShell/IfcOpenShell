@@ -20,11 +20,11 @@ import ifcopenshell
 import ifcopenshell.api.spatial
 import ifcopenshell.util.representation
 from ifcopenshell import entity_instance
-import typing
+from typing import Union
 
 
 def add_survey_point(
-    file: ifcopenshell.file, survey_point: entity_instance, site: entity_instance = None
+    file: ifcopenshell.file, survey_point: entity_instance, site: Union[entity_instance, None] = None
 ) -> entity_instance:
     """
     Adds a single survey point to the model based on IFC Concept Template 4.1.7.1.2.5.
