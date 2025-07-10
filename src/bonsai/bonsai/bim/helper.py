@@ -39,6 +39,9 @@ if TYPE_CHECKING:
     # - None  - property should be imported by default workflow
     # - True  - setting value for imported attribute should be skipped
     # - False - property should be skipped entirely from import
+    # Second argument is optional,
+    # because ImportCallback might be called for attributes that are not created by default
+    # (e.g. IFC entity attributes).
     ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any]], Union[bool, None]]
     # ExportCallback return values:
     # - True  - property should be skipped entirely from export
@@ -153,24 +156,16 @@ def draw_attribute(
         op.name = attribute.name
 
 
-def import_attributes(
-    ifc_class: str,
-    props: bpy.types.bpy_prop_collection_idprop[Attribute],
-    data: dict[str, Any],
-    callback: Optional[ImportCallback] = None,
-) -> None:
-    schema = tool.Ifc.schema()
-    assert (entity := schema.declaration_by_name(ifc_class).as_entity())
-    for attribute in entity.all_attributes():
-        import_attribute(attribute, props, data, callback=callback)
-
-
-# A more elegant attribute importer signature, intended to supersede import_attributes
+# TODO: rename to 'import_attributes'.
 def import_attributes2(
     element: Union[str, ifcopenshell.entity_instance],
     props: bpy.types.bpy_prop_collection_idprop[Attribute],
     callback: Optional[ImportCallback] = None,
 ) -> None:
+    """
+    :param element: Entity or IFC class string.
+    """
+    info: dict[str, Any]
     if isinstance(element, str):
         assert (entity := tool.Ifc.schema().declaration_by_name(element).as_entity())
         attributes = entity.all_attributes()
