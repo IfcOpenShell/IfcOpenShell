@@ -83,6 +83,7 @@ __all__ = [
     "create",
     "create_by_pi_method",
     "create_from_csv",
+    "create_segment_representations",
     "distance_along_from_station",
     "get_alignment",
     "get_alignment_station",
