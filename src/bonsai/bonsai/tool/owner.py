@@ -337,5 +337,5 @@ class Owner(bonsai.core.tool.Owner):
     def export_application_attributes(cls) -> dict[str, Any]:
         props = cls.get_owner_props()
         attributes = bonsai.bim.helper.export_attributes(props.application_attributes)
-        bonsai.bim.helper.process_exported_entity_attribute(attributes, "ApplicationDeveloper")
+        bonsai.bim.helper.process_exported_entity_attribute(attributes, ["ApplicationDeveloper"])
         return attributes
