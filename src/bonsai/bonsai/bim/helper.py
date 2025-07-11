@@ -125,7 +125,7 @@ def draw_attribute(
 
     if attribute.special_type == "URI":
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-        op.data_path = attribute.path_from_id("string_value")
+        op.attribute_data_path = tool.Blender.get_full_data_path(attribute)
     elif attribute.special_type in ("DATE", "DATETIME"):
         op = layout.operator("bim.datepicker", text="", icon="TIME")
         op.target_prop = attribute.path_from_id("string_value")

@@ -62,7 +62,7 @@ def draw_single_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_ope
     )
     if prop.metadata.special_type == "URI":
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-        op.data_path = prop.metadata.path_from_id("string_value")
+        op.attribute_data_path = tool.Blender.get_full_data_path(prop.metadata)
     if prop.metadata.is_optional:
         layout.prop(prop.metadata, "is_null", icon="RADIOBUT_OFF" if prop.metadata.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
