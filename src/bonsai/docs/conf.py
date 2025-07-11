@@ -29,6 +29,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+from datetime import datetime
 
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
@@ -37,7 +38,7 @@ import os
 # -- Project information -----------------------------------------------------
 
 project = "Bonsai"
-copyright = "2020-2024 IfcOpenShell Contributors"
+copyright = f"2020-{datetime.now().year} IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
 
 # The full version, including alpha/beta/rc tags
