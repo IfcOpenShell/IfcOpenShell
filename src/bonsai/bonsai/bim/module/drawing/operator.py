@@ -1470,6 +1470,9 @@ class CreateDrawing(bpy.types.Operator):
                 classes.add(el.attrib["{http://www.ifcopenshell.org/ns}guid"])
                 is_closed_polygon = False
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
+                    # Temporary hack.
+                    if "d" not in path.attrib:
+                        continue
                     for subpath in path.attrib["d"].split("M")[1:]:
                         subpath_co = "M" + subpath.strip(" Z")
                         # Round due to inaccuracies from Blender meshes and bisection
