@@ -156,27 +156,20 @@ class SelectURIAttribute(bpy.types.Operator, ImportHelper):
     bl_label = "Select URI Attribute"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a local file"
-    data_path: bpy.props.StringProperty(name="Data Path")
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    attribute_data_path: bpy.props.StringProperty(name="Data Path")  # pyright: ignore[reportRedeclaration]
+    """Full data path to Attribute."""
+    use_relative_path: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Use Relative Path",
+        default=False,
+    )
+
+    if TYPE_CHECKING:
+        attribute_data_path: str
+        use_relative_path: bool
 
     def execute(self, context):
-        # data_path contains the latter half of the path to the string_value property
-        # I have no idea how to find out the former half, so let's just use brute force.
-        data_path = self.data_path.replace(".string_value", "")
-        attribute = None
-        try:
-            attribute = eval(f"bpy.context.scene.{data_path}")
-        except:
-            try:
-                attribute = eval(f"bpy.context.active_object.{data_path}")
-            except:
-                try:
-                    attribute = eval(f"bpy.context.active_object.active_material.{data_path}")
-                except:
-                    # Do you know a better way?
-                    pass
-        if attribute:
-            attribute.string_value = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+        attribute: Attribute = eval(self.attribute_data_path)
+        attribute.string_value = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
         return {"FINISHED"}
 
 
