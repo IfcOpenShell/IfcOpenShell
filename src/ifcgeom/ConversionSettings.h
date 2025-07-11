@@ -233,12 +233,12 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "";
 			};
 
-			struct ContextTypes : public SettingBase<ContextIds, std::set<std::string>> {
+			struct ContextTypes : public SettingBase<ContextTypes, std::set<std::string>> {
 				static constexpr const char* const name = "context-types";
 				static constexpr const char* const description = "";
 			};
 
-			struct ContextIdentifiers : public SettingBase<ContextIds, std::set<std::string>> {
+			struct ContextIdentifiers : public SettingBase<ContextIdentifiers, std::set<std::string>> {
 				static constexpr const char* const name = "context-identifiers";
 				static constexpr const char* const description = "";
 			};
