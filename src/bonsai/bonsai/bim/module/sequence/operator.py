@@ -94,12 +94,24 @@ class ActivateStatusFilters(bpy.types.Operator):
     bl_description = "Filter and display objects based on currently selected IFC statuses"
     bl_options = {"REGISTER", "UNDO"}
 
+    only_if_enabled: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Only If Filters are Enabled",
+        description="Activate status filters only in case if they were enabled from the UI before.",
+        default=False,
+    )
+
+    if TYPE_CHECKING:
+        only_if_enabled: bool
+
     def execute(self, context):
         props = tool.Sequence.get_status_props()
 
         if not props.is_enabled:
-            # In case if operator was added to Quick Favorites.
-            bpy.ops.bim.disable_status_filters()
+            if not self.only_if_enabled:
+                # Allow users to use the same operator to refresh filters,
+                # even if they were not enabled before.
+                # Typically would occur when operator is added to Quick Favorites.
+                bpy.ops.bim.enable_status_filters()
             return {"FINISHED"}
 
         visible_statuses = {s.name for s in props.statuses if s.is_visible}

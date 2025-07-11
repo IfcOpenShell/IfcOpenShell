@@ -2139,7 +2139,10 @@ class ActivateModel(bpy.types.Operator):
     bl_idname = "bim.activate_model"
     bl_label = "Activate Model"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Activate the model view, hide all annotations"
+    bl_description = (
+        "Activate the model view.\n\n"
+        "Show all objects (and apply status filters if they were enabled before) and hide all annotations."
+    )
 
     def execute(self, context):
         dprops = tool.Drawing.get_document_props()
@@ -2169,7 +2172,7 @@ class ActivateModel(bpy.types.Operator):
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
                 bpy.ops.object.hide_view_clear()
-                bpy.ops.bim.activate_status_filters()
+                bpy.ops.bim.activate_status_filters(only_if_enabled=True)
 
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
