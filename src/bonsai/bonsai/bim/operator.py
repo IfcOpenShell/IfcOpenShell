@@ -1438,7 +1438,7 @@ class BIM_OT_attribute_add_subitem(bpy.types.Operator):
         col: bpy.types.bpy_prop_collection_idprop[StrProperty]
         col = eval(self.data_path)
 
-        attr: "Attribute" = col.data
+        attr: Attribute = col.data
         if attr.is_optional and not col:
             attr.is_null = False
 
@@ -1465,7 +1465,7 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
         col = eval(self.data_path)
         col.remove(self.index)
 
-        attr: "Attribute" = col.data
+        attr: Attribute = col.data
         if attr.is_optional and not col:
             attr.is_null = True
 
