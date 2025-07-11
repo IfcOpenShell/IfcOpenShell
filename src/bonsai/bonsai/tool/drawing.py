@@ -2492,6 +2492,11 @@ class Drawing(bonsai.core.tool.Drawing):
             paths = element_g.findall(f"{SVG}path")
 
             for path in paths:
+                # For some reason `<path/>` without "d" attribute can occur too. See #6871.
+                # It's unclear whether this issue is still present with the updated ifcopenshell core,
+                # but adding this fix for now. Could be reveted later.
+                if "d" not in path.attrib:
+                    continue
                 path = path.attrib["d"]
 
                 if not re.match(MULTI_POLYLINE_PATTERN, path):
