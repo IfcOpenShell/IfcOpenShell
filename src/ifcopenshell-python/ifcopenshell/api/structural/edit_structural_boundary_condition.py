@@ -19,19 +19,12 @@ import ifcopenshell
 from typing import Any, TypedDict, Literal, Union
 
 
-AttributeDict = TypedDict(
-    "AttributeDict",
-    {
-        "type": Union[
-            Literal[
-                "string",
-                "null",
-            ],
-            str,  # IFC Class.
-        ],
-        "value": Any,
-    },
-)
+class AttributeDict(TypedDict):
+    type: Union[
+        Literal["string", "null"],
+        str,  # IFC Class.
+    ]
+    value: Any
 
 
 def edit_structural_boundary_condition(
