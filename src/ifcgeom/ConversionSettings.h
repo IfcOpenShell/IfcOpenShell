@@ -230,17 +230,17 @@ namespace ifcopenshell {
 
 			struct ContextIds : public SettingBase<ContextIds, std::set<int>> {
 				static constexpr const char* const name = "context-ids";
-				static constexpr const char* const description = "";
+				static constexpr const char* const description = "List of comma separated context ids to process - e.g. '15,29' (no quotes needed).";
 			};
 
 			struct ContextTypes : public SettingBase<ContextTypes, std::set<std::string>> {
 				static constexpr const char* const name = "context-types";
-				static constexpr const char* const description = "";
+				static constexpr const char* const description = "Currently option has no effect.";
 			};
 
 			struct ContextIdentifiers : public SettingBase<ContextIdentifiers, std::set<std::string>> {
 				static constexpr const char* const name = "context-identifiers";
-				static constexpr const char* const description = "";
+				static constexpr const char* const description = "Currently option has no effect.";
 			};
 
 			enum OutputDimensionalityTypes {
