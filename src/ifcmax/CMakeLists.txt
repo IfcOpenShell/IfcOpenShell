@@ -46,6 +46,8 @@ if(HAS_MAX)
 
         add_library(IfcMax_${max_year} SHARED IfcMax.h IfcMax.cpp)
 
+        get_property(IFCOPENSHELL_LIBRARIES GLOBAL PROPERTY IFCOPENSHELL_LIBRARIES)
+
         # TODO: find the minimal subset of 3dsmax libraries to reference
         target_link_libraries(IfcMax_${max_year} ${IFCOPENSHELL_LIBRARIES}
             bmm.lib

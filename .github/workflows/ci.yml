@@ -18,7 +18,7 @@ on:
       - 'src/svgfill/**'
       - 'src/serializers/**'
       - 'conda/**'
-      - 'cmake/**'
+      - 'CMakeLists.txt'
       - '.github/workflows/ci.yml'
   pull_request:
 
@@ -67,7 +67,6 @@ jobs:
           libtbb-dev nlohmann-json3-dev \
           libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
           libhdf5-dev libcgal-dev libeigen3-dev
-          
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
         with:
@@ -95,6 +94,8 @@ jobs:
                "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
                -DGLTF_SUPPORT=On \
                -DJSON_INCLUDE_DIR=/usr/include \
+               -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
+               -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so \
                -DCGAL_INCLUDE_DIR=/usr/include \
                -DGMP_INCLUDE_DIR=/usr/include \
                -DMPFR_INCLUDE_DIR=/usr/include \
@@ -102,7 +103,7 @@ jobs:
                -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
                -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
                -DEIGEN_DIR=/usr/include/eigen3 \
-             ../cmake
+             ../
           sudo make -j $(nproc)
           sudo make install
 

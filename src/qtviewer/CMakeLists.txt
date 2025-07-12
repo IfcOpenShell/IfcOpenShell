@@ -82,6 +82,8 @@ set_target_properties(${targetName} PROPERTIES
     RESOURCE "${RESOURCE_FILES}"
 )
 
+get_property(IFCOPENSHELL_LIBRARIES GLOBAL PROPERTY IFCOPENSHELL_LIBRARIES)
+
 target_link_libraries(${targetName}
     ${IFCOPENSHELL_LIBRARIES}
     ${OPENCASCADE_LIBRARIES}

@@ -40,9 +40,11 @@ IF(NOT PYTHONLIBS_FOUND OR "$PYTHON_INCLUDE_DIRS}" STREQUAL "")
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
 ENDIF()
 
+message(STATUS: "PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
+message(STATUS: "SWIG_DEFINES: ${SWIG_DEFINES}")
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
 # Python 3.5 intaller and onwards will have an option to install the debug libraries too.
@@ -67,17 +69,24 @@ SET_PROPERTY(
 		utils/typemaps_in.i
 		utils/typemaps_out.i
 )
-swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
+swig_add_library(ifcopenshell_wrapper TYPE SHARED LANGUAGE python SOURCES IfcPython.i)
+
+get_property(IFCOPENSHELL_LIBRARIES GLOBAL PROPERTY IFCOPENSHELL_LIBRARIES)
+message(STATUS "IFCOPENSHELL_LIBRARIES from ifcwrap: ${IFCOPENSHELL_LIBRARIES}")
 SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
+message(STATUS "Boost_LIBRARIES from ifcwrap: ${Boost_LIBRARIES}")
+message(STATUS "OPENCASCADE_LIBRARIES from ifcwrap: ${OPENCASCADE_LIBRARIES}")
+message(STATUS "LIBSVGFILL from ifcwrap: ${LIBSVGFILL}")
+message(STATUS "PYTHON_LIBRARIES from ifcwrap: ${PYTHON_LIBRARIES}")
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
 SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
 else()
 SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${LIBSVGFILL})
 endif()
-if ((NOT WIN32) AND BUILD_SHARED_LIBS)
-    SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
-endif()
+# if ((NOT WIN32) AND BUILD_SHARED_LIBS)
+#     SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
+# endif()
 
 # Try to find the Python interpreter to get the site-packages
 # directory in which the wrapper can be installed.

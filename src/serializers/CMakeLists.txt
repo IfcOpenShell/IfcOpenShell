@@ -1,0 +1,40 @@
+add_subdirectory(schema_dependent)
+
+file(GLOB SERIALIZERS_H_FILES *.h)
+file(GLOB SERIALIZERS_CPP_FILES *.cpp)
+set(SERIALIZERS_FILES ${SERIALIZERS_H_FILES} ${SERIALIZERS_CPP_FILES})
+
+add_library(Serializers ${SERIALIZERS_FILES})
+set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+
+if(WITH_PROJ)
+    find_package(proj REQUIRED CONFIG)
+    target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
+    if(PROJ_STATIC)
+        target_compile_definitions(Serializers PRIVATE "PROJ_DLL=")
+    endif()
+    target_link_libraries(Serializers PROJ::proj)
+endif()
+
+foreach(schema ${SCHEMA_VERSIONS})
+    list(APPEND SERIALIZER_SCHEMA_LIBRARIES Serializers_ifc${schema})
+endforeach()
+target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES})
+
+get_property(IFCOPENSHELL_LIBRARIES GLOBAL PROPERTY IFCOPENSHELL_LIBRARIES)
+set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
+set_property(GLOBAL PROPERTY IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES})
+
+install(TARGETS Serializers
+    ARCHIVE DESTINATION ${LIBDIR}
+    LIBRARY DESTINATION ${LIBDIR}
+    RUNTIME DESTINATION ${BINDIR}
+)
+
+install(FILES ${SERIALIZERS_H_FILES}
+    DESTINATION ${INCLUDEDIR}/serializers/
+)
+
+install(FILES ${SERIALIZERS_S_H_FILES}
+    DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
+)
