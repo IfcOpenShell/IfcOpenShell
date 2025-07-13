@@ -26,6 +26,7 @@ import ifcopenshell.util.representation
 def get_curve(alignment: entity_instance) -> entity_instance:
     """
     Returns the geometric representation curve for an alignment.
+    An alignment without layouts will have a curve of type IfcPolyLine or IfcIndexedPolyCurve
     A horizontal only will have a curve of type IfcCompositeCurve
     A horizontal+vertical will have a curve of type IfcGradientCurve
     A horizontal+vertical+cant will have a curve of tyep IfcSegmentedReferenceCurve

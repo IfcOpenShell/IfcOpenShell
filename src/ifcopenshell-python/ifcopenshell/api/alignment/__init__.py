@@ -50,7 +50,8 @@ Future versions of this API may support:
 from .add_stationing_referent import add_stationing_referent
 from .add_vertical_layout import add_vertical_layout
 from .create_layout_segment import create_layout_segment
-from .create_alignment import create
+from .create import create
+from .create_as_polyline import create_as_polyline
 from .create_by_pi_method import create_by_pi_method
 from .create_from_csv import create_from_csv
 from .create_segment_representations import create_segment_representations
@@ -81,6 +82,7 @@ __all__ = [
     "add_vertical_layout",
     "create_layout_segment",
     "create",
+    "create_as_polyline",
     "create_by_pi_method",
     "create_from_csv",
     "create_segment_representations",

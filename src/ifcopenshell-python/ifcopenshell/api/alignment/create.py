@@ -76,10 +76,9 @@ def create(
         _add_zero_length_segment(file, layout)
 
     # define stationing
-    basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     name = ifcopenshell.util.stationing.station_as_string(file, start_station)
     referent = ifcopenshell.api.alignment.add_stationing_referent(
-        file, alignment, basis_curve, 0.0, start_station, name
+        file, alignment, 0.0, start_station, name
     )
     ifcopenshell.api.nest.reorder_nesting(file, referent, -1, 0)
 

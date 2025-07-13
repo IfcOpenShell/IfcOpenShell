@@ -22,7 +22,7 @@ import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
 
-def test_create_alignment_pi_method():
+def test_create_by_pi_method():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
@@ -64,4 +64,4 @@ def test_create_alignment_pi_method():
     )  # segments in vertical layout
 
 
-test_create_alignment_pi_method()
+test_create_by_pi_method()
