@@ -171,7 +171,7 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
     prev_segment = layout.IsNestedBy[0].RelatedObjects[-3] if 2 < len(layout.IsNestedBy[0].RelatedObjects) else None
     name = f"{_get_segment_start_point_label(prev_segment,segment)} ({ifcopenshell.util.stationing.station_as_string(file,station)})"
     referent = ifcopenshell.api.alignment.add_stationing_referent(
-        file, segment, basis_curve=basis_curve, distance_along=dist_along, station=station, name=name
+        file, segment, distance_along=dist_along, station=station, name=name
     )
 
     if len(curve.Segments) == 2 and layout.is_a("IfcAlignmentHorizontal"):

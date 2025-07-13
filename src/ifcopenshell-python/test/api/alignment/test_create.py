@@ -22,7 +22,7 @@ import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
 
-def test_create_alignment():
+def test_create():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
@@ -69,3 +69,4 @@ def test_create_alignment():
                 assert ifcopenshell.api.alignment.has_zero_length_segment(
                     a
                 )  # there is a check in this function for the geometry curve
+
