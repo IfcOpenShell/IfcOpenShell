@@ -474,9 +474,10 @@ class BIM_PT_material_psets(Panel):
         return False
 
     def draw(self, context):
+        assert self.layout
         props = tool.Material.get_material_props()
-        if props.materials and props.active_material_index < len(props.materials):
-            ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
+        if material := props.active_material:
+            ifc_definition_id = material.ifc_definition_id
 
         if not MaterialPsetsData.is_loaded:
             MaterialPsetsData.load()

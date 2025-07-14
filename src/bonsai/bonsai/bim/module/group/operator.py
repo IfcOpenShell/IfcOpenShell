@@ -31,6 +31,8 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Load Groups"
     bl_options = {"REGISTER", "UNDO"}
 
+    expanded_groups: list[int]
+
     def _execute(self, context):
         self.props = tool.Blender.get_group_props()
         self.expanded_groups = json.loads(self.props.expanded_groups_json)
@@ -82,6 +84,7 @@ class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Blender.get_group_props()
+        expanded_groups: set[int]
         expanded_groups = set(json.loads(props.expanded_groups_json))
         if self.option == "Expand":
             expanded_groups.add(self.ifc_definition_id)

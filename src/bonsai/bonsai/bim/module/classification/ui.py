@@ -28,7 +28,7 @@ from bonsai.bim.module.classification.data import (
     MaterialClassificationsData,
     CostClassificationsData,
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Union
 
 if TYPE_CHECKING:
     from bonsai.bim.module.classification.prop import BIMClassificationProperties, ClassificationReference
@@ -113,9 +113,15 @@ class BIM_PT_classifications(Panel):
 
 class ReferenceUI:
     layout: bpy.types.UILayout
+    data: type[
+        Union[
+            ClassificationReferencesData,
+            MaterialClassificationsData,
+            CostClassificationsData,
+        ]
+    ]
 
-    def draw_ui(self, context):
-        obj = context.active_object
+    def draw_ui(self, context) -> None:
         self.sprops = tool.Classification.get_classification_props()
         self.bprops = tool.Bsdd.get_bsdd_props()
         self.props = tool.Classification.get_classification_reference_props()
@@ -133,7 +139,7 @@ class ReferenceUI:
             else:
                 self.draw_reference_ui(reference)
 
-    def draw_add_ui(self, context):
+    def draw_add_ui(self, context) -> None:
         row = self.layout.row(align=True)
         row.label(text="Source", icon="OUTLINER")
         row.prop(self.sprops, "classification_source", text="")
@@ -145,7 +151,7 @@ class ReferenceUI:
         else:
             self.draw_add_bsdd_ui(context)
 
-    def draw_add_manual_ui(self, context):
+    def draw_add_manual_ui(self, context) -> None:
         row = self.layout.row()
         row.prop(self.props, "classifications", text="")
         if self.props.is_adding:
@@ -158,7 +164,7 @@ class ReferenceUI:
             row = self.layout.row()
             row.operator("bim.enable_adding_manual_classification_reference", text="Add Reference", icon="ADD")
 
-    def draw_add_bsdd_ui(self, context):
+    def draw_add_bsdd_ui(self, context) -> None:
         row = self.layout.row(align=True)
         row.prop(self.bprops, "keyword", text="")
         row.prop(self.bprops, "should_filter_ifc_class", text="", icon="FILTER")
@@ -185,7 +191,7 @@ class ReferenceUI:
             op.obj = self.obj
             op.obj_type = self.obj_type
 
-    def draw_add_file_ui(self, context):
+    def draw_add_file_ui(self, context) -> None:
         if not self.data.data["active_classification_library"]:
             row = self.layout.row(align=True)
             row.label(text="No Active Classification Library", icon="ERROR")
@@ -219,13 +225,13 @@ class ReferenceUI:
             "active_library_reference_index",
         )
 
-    def draw_editable_ui(self):
+    def draw_editable_ui(self) -> None:
         row = self.layout.row(align=True)
         row.operator("bim.edit_classification_reference", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
         bonsai.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
 
-    def draw_reference_ui(self, reference):
+    def draw_reference_ui(self, reference: dict[str, Any]) -> None:
         row = self.layout.row(align=True)
         if self.file.schema == "IFC2X3":
             name = reference["ItemReference"] or "No Identification"

@@ -70,6 +70,7 @@ class BIMGroupProperties(PropertyGroup):
     active_group_index: IntProperty(name="Active Group Index", update=update_active_group_index)
     active_group_id: IntProperty(name="Active Group Id")
     expanded_groups_json: StringProperty(name="JSON String", default="[]")
+    """JSON serialized list[group_id]."""
 
     if TYPE_CHECKING:
         group_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]

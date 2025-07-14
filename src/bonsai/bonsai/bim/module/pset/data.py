@@ -176,8 +176,8 @@ class MaterialPsetsData(Data):
     def load(cls):
         ifc_definition_id = None
         props = tool.Material.get_material_props()
-        if props.materials and props.active_material_index < len(props.materials):
-            ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
+        if material := props.active_material:
+            ifc_definition_id = material.ifc_definition_id
 
         cls.data = {
             "ifc_definition_id": ifc_definition_id,
@@ -189,8 +189,7 @@ class MaterialPsetsData(Data):
     @classmethod
     def pset_name(cls):
         props = tool.Material.get_material_props()
-        if props.materials and props.active_material_index < len(props.materials):
-            material = props.materials[props.active_material_index]
+        if material := props.active_material:
             if material.ifc_definition_id:
                 material = tool.Ifc.get().by_id(material.ifc_definition_id)
                 category = getattr(material, "Category", None) or None
