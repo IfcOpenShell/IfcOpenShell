@@ -107,20 +107,22 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
     @classmethod
     def get_dictionary(cls, uri: str) -> bsdd.DictionaryContractV1:
-        props = cls.get_bsdd_props()
-        response = cls.client.get_dictionary(dictionary_uri=uri, include_test_dictionaries=props.load_test_dictionaries)
+        prefs = tool.Blender.get_addon_preferences()
+        response = cls.client.get_dictionary(
+            dictionary_uri=uri, include_test_dictionaries=prefs.bsdd_load_test_dictionaries
+        )
         if dicts := response.get("dictionaries"):
             return dicts[0]
 
     @classmethod
     def get_dictionaries(cls) -> list[bsdd.DictionaryContractV1]:
-        props = cls.get_bsdd_props()
-        response = cls.client.get_dictionary(include_test_dictionaries=props.load_test_dictionaries)
+        prefs = tool.Blender.get_addon_preferences()
+        response = cls.client.get_dictionary(include_test_dictionaries=prefs.bsdd_load_test_dictionaries)
         dicts = response.get("dictionaries") or []
         statuses = ["Active"]
-        if props.load_preview_dictionaries:
+        if prefs.bsdd_load_preview_dictionaries:
             statuses.append("Preview")
-        if props.load_inactive_dictionaries:
+        if prefs.bsdd_load_inactive_dictionaries:
             statuses.append("Inactive")
         return list(filter(lambda d: d["status"] in statuses, dicts))
 

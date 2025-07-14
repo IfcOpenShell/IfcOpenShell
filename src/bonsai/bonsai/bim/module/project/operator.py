@@ -1594,14 +1594,15 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
     def execute(self, context):
         project_props = tool.Project.get_project_props()
+        prefs = tool.Blender.get_addon_preferences()
         project_props.use_relative_project_path = self.use_relative_path
-        if project_props.should_disable_undo_on_save:
+        if prefs.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
             old_undo_steps = context.preferences.edit.undo_steps
             tool.Ifc.get().history_size = 0
             context.preferences.edit.undo_steps = 0
         IfcStore.execute_ifc_operator(self, context)
-        if project_props.should_disable_undo_on_save:
+        if prefs.should_disable_undo_on_save:
             tool.Ifc.get().history_size = old_history_size
             context.preferences.edit.undo_steps = old_undo_steps
         return {"FINISHED"}

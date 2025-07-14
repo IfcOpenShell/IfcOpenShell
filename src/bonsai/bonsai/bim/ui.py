@@ -334,6 +334,20 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="When modifying openings, other elements of the model will display with some transparency.\n0 is fully transparent and 100 is fully opaque",
     )
 
+    bsdd_load_preview_dictionaries: BoolProperty(
+        name="Load Preview Dictionaries", description="Load dictionaries marked as Preview status", default=False
+    )
+    bsdd_load_inactive_dictionaries: BoolProperty(
+        name="Load Inactive Dictionaries", description="Load dictionaries marked as Inactive status", default=False
+    )
+    bsdd_load_test_dictionaries: BoolProperty(
+        name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
+    )
+    should_disable_undo_on_save: BoolProperty(
+        name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
+    )
+    should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
+
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -355,6 +369,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         decorator_color_error: tuple[float, float, float, float]
         decorator_color_background: tuple[float, float, float, float]
         opening_focus_opacity: int
+        bsdd_load_preview_dictionaries: bool
+        bsdd_load_inactive_dictionaries: bool
+        bsdd_load_test_dictionaries: bool
+        should_disable_undo_on_save: bool
+        should_stream: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -395,12 +414,14 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "spatial_elements_unselectable")
 
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        # TODO: move props to preferences.
         props = tool.Model.get_model_props()
         layout.prop(props, "occurrence_name_style")
         if props.occurrence_name_style == "CUSTOM":
             layout.prop(props, "occurrence_name_function")
 
     def draw_directories(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        # TODO: move props to preferences.
         props = tool.Blender.get_bim_props()
         row = layout.row(align=True)
         row.prop(props, "data_dir")
@@ -415,6 +436,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "preferences.tmp_dir"
 
     def draw_drawing_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        # TODO: move props to preferences.
         props = tool.Blender.get_bim_props()
         layout.prop(props, "pset_dir")
         dprops = tool.Drawing.get_document_props()
@@ -447,14 +469,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")
-        props = tool.Project.get_project_props()
-        layout.prop(props, "should_disable_undo_on_save")
-        layout.prop(props, "should_stream")
-        bprops = tool.Bsdd.get_bsdd_props()
+        layout.prop(self, "should_disable_undo_on_save")
+        layout.prop(self, "should_stream")
         layout.label(text="bSDD:")
-        layout.prop(bprops, "load_preview_dictionaries")
-        layout.prop(bprops, "load_inactive_dictionaries")
-        layout.prop(bprops, "load_test_dictionaries")
+        layout.prop(self, "bsdd_load_preview_dictionaries")
+        layout.prop(self, "bsdd_load_inactive_dictionaries")
+        layout.prop(self, "bsdd_load_test_dictionaries")
 
 
 # Scene panel groups
