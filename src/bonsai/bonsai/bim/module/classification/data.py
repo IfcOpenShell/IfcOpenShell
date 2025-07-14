@@ -33,7 +33,7 @@ def refresh():
 
 
 class ClassificationsData:
-    data = {}
+    data: dict[str, Any] = {}
     is_loaded = False
 
     @classmethod
@@ -94,7 +94,7 @@ class ReferencesData:
 
 
 class ClassificationReferencesData(ReferencesData):
-    data = {}
+    data: dict[str, Any] = {}
     is_loaded = False
 
     @classmethod
@@ -118,7 +118,7 @@ class ClassificationReferencesData(ReferencesData):
 
 
 class MaterialClassificationsData(ReferencesData):
-    data = {}
+    data: dict[str, Any] = {}
     is_loaded = False
 
     @classmethod
@@ -134,8 +134,7 @@ class MaterialClassificationsData(ReferencesData):
         results = []
 
         props = tool.Material.get_material_props()
-        if props.materials and props.active_material_index < len(props.materials):
-            material = props.materials[props.active_material_index]
+        if material := props.active_material:
             if material.ifc_definition_id:
                 element = tool.Ifc.get().by_id(material.ifc_definition_id)
                 for reference in ifcopenshell.util.classification.get_references(element):
@@ -146,7 +145,7 @@ class MaterialClassificationsData(ReferencesData):
 
 
 class CostClassificationsData(ReferencesData):
-    data = {}
+    data: dict[str, Any] = {}
     is_loaded = False
 
     @classmethod

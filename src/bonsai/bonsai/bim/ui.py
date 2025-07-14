@@ -40,6 +40,8 @@ from natsort import natsorted
 
 
 class IFCFileSelector:
+    layout: bpy.types.UILayout
+
     # Avoid overriding blender prop annotations at runtime.
     if TYPE_CHECKING:
         filepath: str
@@ -76,6 +78,7 @@ class IFCFileSelector:
         assert isinstance(context.space_data, bpy.types.SpaceFileBrowser)
         # Access filepath & Directory https://blender.stackexchange.com/a/207665
         params = context.space_data.params
+        assert params
         # Decode byte string https://stackoverflow.com/a/47737082/
         directory = Path(params.directory.decode("utf-8"))
         filepath = os.path.join(directory, params.filename)
@@ -122,6 +125,7 @@ class BIM_PT_section_plane(Panel):
     bl_parent_id = "BIM_PT_tab_sandbox"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         layout.use_property_split = True
         props = tool.Blender.get_bim_props()
@@ -145,6 +149,7 @@ class BIM_PT_section_with_cappings(Panel):
     bl_parent_id = "BIM_PT_tab_sandbox"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         wm = context.window_manager
         row = layout.row(align=True)
@@ -189,7 +194,16 @@ class BIM_UL_clipping_plane(bpy.types.UIList):
 
 
 class BIM_UL_generic(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data,
+        item: bpy.types.PropertyGroup,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             layout.prop(item, "name", text="", emboss=False)
         else:

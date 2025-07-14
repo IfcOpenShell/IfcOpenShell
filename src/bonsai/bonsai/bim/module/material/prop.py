@@ -169,9 +169,8 @@ class BIMMaterialProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
 
     @property
-    def active_material(self):
-        if 0 <= self.active_material_index < len(self.materials):
-            return self.materials[self.active_material_index]
+    def active_material(self) -> Material | None:
+        return tool.Blender.get_active_uilist_element(self.materials, self.active_material_index)
 
     if TYPE_CHECKING:
         is_editing: bool

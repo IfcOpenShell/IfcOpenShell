@@ -105,7 +105,7 @@ class IfcStore:
         IfcStore.session_files = {}
 
     @staticmethod
-    def get_file():
+    def get_file() -> ifcopenshell.file | None:
         if IfcStore.file is None:
             props = tool.Blender.get_bim_props()
             IfcStore.set_path(props.ifc_file)
@@ -117,14 +117,14 @@ class IfcStore:
         return IfcStore.file
 
     @staticmethod
-    def set_path(value):
+    def set_path(value: str) -> None:
         IfcStore.path = value
         # Interpret relative paths as relative to .blend file.
         if IfcStore.path and not os.path.isabs(IfcStore.path):
             IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
 
     @staticmethod
-    def get_cache():
+    def get_cache() -> ifcopenshell.geom.serializers.hdf5 | None:
         if IfcStore.cache is None and IfcStore.path:
             props = tool.Blender.get_bim_props()
             ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
@@ -163,7 +163,7 @@ class IfcStore:
         return IfcStore.cache
 
     @staticmethod
-    def update_cache():
+    def update_cache() -> None:
         if not IfcStore.cache:
             return
         assert IfcStore.cache_path
@@ -183,7 +183,7 @@ class IfcStore:
         IfcStore.get_cache()
 
     @staticmethod
-    def load_file(path) -> None:
+    def load_file(path: str) -> None:
         if not os.path.isfile(path):
             return
         extension = path.split(".")[-1]
