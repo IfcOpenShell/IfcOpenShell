@@ -30,7 +30,6 @@ def add_context(
     context_type: Optional[str] = None,
     context_identifier: Optional[str] = None,
     target_view: Optional[str] = None,
-    target_scale: Optional[float] = None,
     parent: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
     return ifc.run(
@@ -38,7 +37,6 @@ def add_context(
         context_type=context_type,
         context_identifier=context_identifier,
         target_view=target_view,
-        target_scale=target_scale,
         parent=parent,
     )
 
