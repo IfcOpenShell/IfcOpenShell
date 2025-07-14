@@ -81,7 +81,7 @@ class Georeference(bonsai.core.tool.Georeference):
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
                 projected_crs = context.HasCoordinateOperation[0].TargetCRS
-                bonsai.bim.helper.import_attributes2(projected_crs, props.projected_crs, callback=callback)
+                bonsai.bim.helper.import_attributes(projected_crs, props.projected_crs, callback=callback)
                 return
 
     @classmethod
@@ -153,9 +153,7 @@ class Georeference(bonsai.core.tool.Georeference):
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
                 coordinate_operation = context.HasCoordinateOperation[0]
-                bonsai.bim.helper.import_attributes2(
-                    coordinate_operation, props.coordinate_operation, callback=callback
-                )
+                bonsai.bim.helper.import_attributes(coordinate_operation, props.coordinate_operation, callback=callback)
                 return
 
     @classmethod

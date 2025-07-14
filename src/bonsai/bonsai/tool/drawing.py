@@ -1075,7 +1075,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         for ifc_literal in cls.get_text_literal(obj, return_list=True):
             literal_props = props.literals.add()
-            bonsai.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)
+            bonsai.bim.helper.import_attributes(ifc_literal, literal_props.attributes)
 
             box_alignment_mask = [False] * 9
             position_string = literal_props.attributes["BoxAlignment"].string_value

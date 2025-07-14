@@ -581,7 +581,7 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
         self.props.active_load_case_id = self.load_case
         self.props.load_case_editing_type = "ATTRIBUTES"
         self.props.load_case_attributes.clear()
-        bonsai.bim.helper.import_attributes2(
+        bonsai.bim.helper.import_attributes(
             tool.Ifc.get().by_id(self.load_case),
             self.props.load_case_attributes,
             callback=self.import_attributes_callback,
@@ -782,7 +782,7 @@ class EnableEditingStructuralLoad(bpy.types.Operator):
     def execute(self, context):
         props = tool.Structural.get_structural_props()
         props.structural_load_attributes.clear()
-        bonsai.bim.helper.import_attributes2(
+        bonsai.bim.helper.import_attributes(
             tool.Ifc.get().by_id(self.structural_load), props.structural_load_attributes
         )
         props.active_structural_load_id = self.structural_load

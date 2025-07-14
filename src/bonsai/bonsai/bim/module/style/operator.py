@@ -753,7 +753,7 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
 
         if attributes is not None:
             attributes.clear()
-            bonsai.bim.helper.import_attributes2(surface_style or self.ifc_class, attributes, callback)
+            bonsai.bim.helper.import_attributes(surface_style or self.ifc_class, attributes, callback)
 
         material = tool.Ifc.get_object(style)
         msprops = tool.Style.get_material_style_props(material)

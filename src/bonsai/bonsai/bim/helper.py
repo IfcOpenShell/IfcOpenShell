@@ -156,8 +156,7 @@ def draw_attribute(
         op.name = attribute.name
 
 
-# TODO: rename to 'import_attributes'.
-def import_attributes2(
+def import_attributes(
     element: Union[str, ifcopenshell.entity_instance],
     props: bpy.types.bpy_prop_collection_idprop[Attribute],
     callback: Optional[ImportCallback] = None,

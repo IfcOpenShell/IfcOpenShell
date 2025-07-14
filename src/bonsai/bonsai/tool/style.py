@@ -560,7 +560,7 @@ class Style(bonsai.core.tool.Style):
         props = cls.get_style_props()
         attributes = props.attributes
         attributes.clear()
-        bonsai.bim.helper.import_attributes2(style, attributes)
+        bonsai.bim.helper.import_attributes(style, attributes)
 
     @classmethod
     def has_blender_external_style(cls, style_elements: dict[str, ifcopenshell.entity_instance]) -> bool:

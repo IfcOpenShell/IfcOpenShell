@@ -146,7 +146,7 @@ class EnableAddingManualClassification(bpy.types.Operator):
         props.is_adding = True
         props.active_classification_id = 0
         props.classification_attributes.clear()
-        bonsai.bim.helper.import_attributes2("IfcClassification", props.classification_attributes)
+        bonsai.bim.helper.import_attributes("IfcClassification", props.classification_attributes)
         return {"FINISHED"}
 
 
@@ -170,7 +170,7 @@ class EnableAddingManualClassificationReference(bpy.types.Operator):
         props = tool.Classification.get_classification_reference_props()
         props.is_adding = True
         props.reference_attributes.clear()
-        bonsai.bim.helper.import_attributes2("IfcClassificationReference", props.reference_attributes)
+        bonsai.bim.helper.import_attributes("IfcClassificationReference", props.reference_attributes)
         return {"FINISHED"}
 
 
@@ -205,7 +205,7 @@ class EnableEditingClassification(bpy.types.Operator):
 
         props = tool.Classification.get_classification_props()
         props.classification_attributes.clear()
-        bonsai.bim.helper.import_attributes2(
+        bonsai.bim.helper.import_attributes(
             tool.Ifc.get().by_id(self.classification), props.classification_attributes, callback
         )
         props.active_classification_id = self.classification
@@ -274,7 +274,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
     def execute(self, context):
         props = tool.Classification.get_classification_reference_props()
         props.reference_attributes.clear()
-        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.reference), props.reference_attributes)
+        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.reference), props.reference_attributes)
         props.active_reference_id = self.reference
         return {"FINISHED"}
 

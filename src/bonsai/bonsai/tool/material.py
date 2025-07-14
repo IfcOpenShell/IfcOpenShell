@@ -170,7 +170,7 @@ class Material(bonsai.core.tool.Material):
     def load_material_attributes(cls, material: ifcopenshell.entity_instance) -> None:
         props = tool.Material.get_material_props()
         props.material_attributes.clear()
-        bonsai.bim.helper.import_attributes2(material, props.material_attributes)
+        bonsai.bim.helper.import_attributes(material, props.material_attributes)
 
     @classmethod
     def enable_editing_material(cls, material: ifcopenshell.entity_instance) -> None:
