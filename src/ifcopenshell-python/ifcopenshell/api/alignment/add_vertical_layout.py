@@ -61,6 +61,7 @@ def _move_vertical_layout_to_child_alignment(
             if representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve3D":
                 ifcopenshell.api.geometry.unassign_representation(file, parent_alignment, representation)
                 ifcopenshell.api.geometry.assign_representation(file, child_alignment, representation)
+                child_alignment.ObjectPlacement = parent_alignment.ObjectPlacement
                 break
 
 
