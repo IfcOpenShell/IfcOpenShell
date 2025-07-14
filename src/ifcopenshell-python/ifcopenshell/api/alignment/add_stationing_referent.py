@@ -102,11 +102,11 @@ def add_stationing_referent(
             ay = float(p[1, 2])
             az = float(p[2, 2])
 
-            object_placement.CartesianPosition=file.createIfcAxis2Placement3D(
-                    Location=file.createIfcCartesianPoint((x, y, z)),
-                    Axis=file.createIfcDirection((ax, ay, az)),
-                    RefDirection=file.createIfcDirection((rx, ry, rz)),
-                )
+            object_placement.CartesianPosition = file.createIfcAxis2Placement3D(
+                Location=file.createIfcCartesianPoint((x, y, z)),
+                Axis=file.createIfcDirection((ax, ay, az)),
+                RefDirection=file.createIfcDirection((rx, ry, rz)),
+            )
     # this commented out code is what you would do to add a geometric representation of the referent
     # the example is a circle. a better way would be to pass a representation into the function
     #    representation = file.create_entity(

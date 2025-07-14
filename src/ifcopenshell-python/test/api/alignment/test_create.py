@@ -69,4 +69,3 @@ def test_create():
                 assert ifcopenshell.api.alignment.has_zero_length_segment(
                     a
                 )  # there is a check in this function for the geometry curve
-

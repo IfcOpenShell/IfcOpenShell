@@ -25,7 +25,9 @@ import math
 from collections.abc import Sequence
 
 
-def _create_polyline_representation(file: ifcopenshell.file, alignment: entity_instance, points: Sequence[Sequence[float]]) -> None:
+def _create_polyline_representation(
+    file: ifcopenshell.file, alignment: entity_instance, points: Sequence[Sequence[float]]
+) -> None:
     """
     Create geometric representation for the alignment based on an IfcPolyline
 
@@ -40,9 +42,11 @@ def _create_polyline_representation(file: ifcopenshell.file, alignment: entity_i
 
     placement = file.createIfcLocalPlacement(
         PlacementRelTo=None,
-        RelativePlacement=file.createIfcAxis2Placement3D(Location=file.createIfcCartesianPoint(Coordinates=(0.0, 0.0, 0.0))),
+        RelativePlacement=file.createIfcAxis2Placement3D(
+            Location=file.createIfcCartesianPoint(Coordinates=(0.0, 0.0, 0.0))
+        ),
     )
-        
+
     curve = file.createIfcPolyLine(Points=points)
 
     representation = file.createIfcShapeRepresentation(
@@ -51,7 +55,6 @@ def _create_polyline_representation(file: ifcopenshell.file, alignment: entity_i
         RepresentationType="Curve3D",
         Items=(curve,),
     )
-
 
     alignment.ObjectPlacement = placement
     ifcopenshell.api.geometry.assign_representation(file, alignment, representation)
