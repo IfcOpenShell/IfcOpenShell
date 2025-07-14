@@ -72,7 +72,7 @@ class Context(bonsai.core.tool.Context):
                     assert prop
                     prop.data_type = "string"
 
-        bonsai.bim.helper.import_attributes2(context, props.context_attributes, callback)
+        bonsai.bim.helper.import_attributes(context, props.context_attributes, callback)
 
     @classmethod
     def clear_context(cls) -> None:

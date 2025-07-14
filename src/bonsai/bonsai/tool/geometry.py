@@ -1802,7 +1802,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 return False
             return None
 
-        bonsai.bim.helper.import_attributes2(item, props.item_attributes, callback=callback)
+        bonsai.bim.helper.import_attributes(item, props.item_attributes, callback=callback)
 
         profile = None
         if item.is_a("IfcSweptAreaSolid"):

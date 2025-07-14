@@ -130,7 +130,7 @@ class Cost(bonsai.core.tool.Cost):
 
         props = cls.get_cost_props()
         props.cost_schedule_attributes.clear()
-        bonsai.bim.helper.import_attributes2(cost_schedule, props.cost_schedule_attributes, callback=special_import)
+        bonsai.bim.helper.import_attributes(cost_schedule, props.cost_schedule_attributes, callback=special_import)
 
     @classmethod
     def enable_editing_cost_items(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
@@ -236,7 +236,7 @@ class Cost(bonsai.core.tool.Cost):
     def load_cost_item_attributes(cls, cost_item: ifcopenshell.entity_instance) -> None:
         props = cls.get_cost_props()
         props.cost_item_attributes.clear()
-        bonsai.bim.helper.import_attributes2(cost_item, props.cost_item_attributes)
+        bonsai.bim.helper.import_attributes(cost_item, props.cost_item_attributes)
 
     @classmethod
     def disable_editing_cost_item(cls) -> None:
@@ -381,7 +381,7 @@ class Cost(bonsai.core.tool.Cost):
     def load_cost_item_quantity_attributes(cls, physical_quantity: ifcopenshell.entity_instance) -> None:
         props = cls.get_cost_props()
         props.quantity_attributes.clear()
-        bonsai.bim.helper.import_attributes2(physical_quantity, props.quantity_attributes)
+        bonsai.bim.helper.import_attributes(physical_quantity, props.quantity_attributes)
 
     @classmethod
     def enable_editing_cost_item_values(cls, cost_item: ifcopenshell.entity_instance) -> None:
@@ -460,7 +460,7 @@ class Cost(bonsai.core.tool.Cost):
                             break
                 return True
 
-        bonsai.bim.helper.import_attributes2(
+        bonsai.bim.helper.import_attributes(
             cost_value, props.cost_value_attributes, callback=import_attributes_callback
         )
 

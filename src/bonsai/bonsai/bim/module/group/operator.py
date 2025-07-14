@@ -165,7 +165,7 @@ class EnableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = tool.Blender.get_group_props()
         props.group_attributes.clear()
-        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
+        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.group), props.group_attributes)
         props.active_group_id = self.group
         return {"FINISHED"}
 

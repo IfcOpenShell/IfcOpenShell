@@ -82,7 +82,7 @@ class EnableEditingLayer(bpy.types.Operator):
     def execute(self, context):
         props = tool.Layer.get_layer_props()
         props.layer_attributes.clear()
-        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
+        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
         props.active_layer_id = self.layer
         return {"FINISHED"}
 

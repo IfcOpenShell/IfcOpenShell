@@ -503,12 +503,12 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
         props.material_set_attributes.clear()
 
         if "Usage" in material.is_a():
-            bonsai.bim.helper.import_attributes2(
+            bonsai.bim.helper.import_attributes(
                 material, props.material_set_usage_attributes, callback=self.import_attributes_callback
             )
-            bonsai.bim.helper.import_attributes2(material[0], props.material_set_attributes)
+            bonsai.bim.helper.import_attributes(material[0], props.material_set_attributes)
         else:
-            bonsai.bim.helper.import_attributes2(material, props.material_set_attributes)
+            bonsai.bim.helper.import_attributes(material, props.material_set_attributes)
         return {"FINISHED"}
 
     def import_attributes_callback(
@@ -652,7 +652,7 @@ class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
         self.props.active_material_set_item_id = self.material_set_item
         self.props.material_set_item_profile_attributes.clear()
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
-        bonsai.bim.helper.import_attributes2(profile, self.props.material_set_item_profile_attributes)
+        bonsai.bim.helper.import_attributes(profile, self.props.material_set_item_profile_attributes)
         return {"FINISHED"}
 
 
@@ -713,7 +713,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         self.props.material_set_item_material = str(material_set_item.Material.id())
 
         self.props.material_set_item_attributes.clear()
-        bonsai.bim.helper.import_attributes2(material_set_item, self.props.material_set_item_attributes)
+        bonsai.bim.helper.import_attributes(material_set_item, self.props.material_set_item_attributes)
 
         if material_set_item.is_a("IfcMaterialProfile"):
             if material_set_item.Profile and material_set_item.Profile.ProfileName:

@@ -112,7 +112,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
         props = cls.get_work_plan_props()
         props.work_plan_attributes.clear()
-        bonsai.bim.helper.import_attributes2(work_plan, props.work_plan_attributes, callback)
+        bonsai.bim.helper.import_attributes(work_plan, props.work_plan_attributes, callback)
 
     @classmethod
     def enable_editing_work_plan(cls, work_plan: Union[ifcopenshell.entity_instance, None]) -> None:
@@ -163,7 +163,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
         props = cls.get_work_schedule_props()
         props.work_schedule_attributes.clear()
-        bonsai.bim.helper.import_attributes2(work_schedule, props.work_schedule_attributes, callback)
+        bonsai.bim.helper.import_attributes(work_schedule, props.work_schedule_attributes, callback)
 
     @classmethod
     def enable_editing_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
@@ -382,7 +382,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def load_task_attributes(cls, task: ifcopenshell.entity_instance) -> None:
         props = cls.get_work_schedule_props()
         props.task_attributes.clear()
-        bonsai.bim.helper.import_attributes2(task, props.task_attributes)
+        bonsai.bim.helper.import_attributes(task, props.task_attributes)
 
     @classmethod
     def enable_editing_task_attributes(cls, task: ifcopenshell.entity_instance) -> None:
@@ -424,7 +424,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
         props.task_time_attributes.clear()
         props.durations_attributes.clear()
-        bonsai.bim.helper.import_attributes2(task_time, props.task_time_attributes, callback)
+        bonsai.bim.helper.import_attributes(task_time, props.task_time_attributes, callback)
 
     @classmethod
     def enable_editing_task_time(cls, task: ifcopenshell.entity_instance) -> None:
@@ -562,7 +562,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def load_work_calendar_attributes(cls, work_calendar: ifcopenshell.entity_instance) -> dict[str, Any]:
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.work_calendar_attributes.clear()
-        return bonsai.bim.helper.import_attributes2(work_calendar, props.work_calendar_attributes)
+        return bonsai.bim.helper.import_attributes(work_calendar, props.work_calendar_attributes)
 
     @classmethod
     def enable_editing_work_calendar(cls, work_calendar: ifcopenshell.entity_instance) -> None:
@@ -582,7 +582,7 @@ class Sequence(bonsai.core.tool.Sequence):
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.work_time_attributes.clear()
 
-        bonsai.bim.helper.import_attributes2(work_time, props.work_time_attributes)
+        bonsai.bim.helper.import_attributes(work_time, props.work_time_attributes)
 
     @classmethod
     def enable_editing_work_time(cls, work_time: ifcopenshell.entity_instance) -> None:
@@ -713,7 +713,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def load_rel_sequence_attributes(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
         props = cls.get_work_schedule_props()
         props.sequence_attributes.clear()
-        bonsai.bim.helper.import_attributes2(rel_sequence, props.sequence_attributes)
+        bonsai.bim.helper.import_attributes(rel_sequence, props.sequence_attributes)
 
     @classmethod
     def enable_editing_rel_sequence_attributes(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
@@ -738,7 +738,7 @@ class Sequence(bonsai.core.tool.Sequence):
                 return True
 
         props.lag_time_attributes.clear()
-        bonsai.bim.helper.import_attributes2(lag_time, props.lag_time_attributes, callback)
+        bonsai.bim.helper.import_attributes(lag_time, props.lag_time_attributes, callback)
 
     @classmethod
     def enable_editing_sequence_lag_time(cls, rel_sequence: ifcopenshell.entity_instance) -> None:

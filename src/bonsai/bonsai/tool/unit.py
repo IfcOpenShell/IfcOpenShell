@@ -120,7 +120,7 @@ class Unit(bonsai.core.tool.Unit):
                 return True
 
         props.unit_attributes.clear()
-        bonsai.bim.helper.import_attributes2(unit, props.unit_attributes, callback=callback)
+        bonsai.bim.helper.import_attributes(unit, props.unit_attributes, callback=callback)
 
     @classmethod
     def import_units(cls) -> None:

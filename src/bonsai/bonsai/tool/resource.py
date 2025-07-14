@@ -98,7 +98,7 @@ class Resource(bonsai.core.tool.Resource):
 
     @classmethod
     def load_resource_attributes(cls, resource: ifcopenshell.entity_instance) -> None:
-        bonsai.bim.helper.import_attributes2(resource, bpy.context.scene.BIMResourceProperties.resource_attributes)
+        bonsai.bim.helper.import_attributes(resource, bpy.context.scene.BIMResourceProperties.resource_attributes)
 
     @classmethod
     def enable_editing_resource(cls, resource: ifcopenshell.entity_instance) -> None:
@@ -136,7 +136,7 @@ class Resource(bonsai.core.tool.Resource):
                     prop.string_value = "" if prop.is_null else ifcdateutils.datetime2ifc(data[name], "IfcDuration")
                     return True
 
-        bonsai.bim.helper.import_attributes2(
+        bonsai.bim.helper.import_attributes(
             resource_time, bpy.context.scene.BIMResourceProperties.resource_time_attributes, callback
         )
 
@@ -231,7 +231,7 @@ class Resource(bonsai.core.tool.Resource):
                 return True
 
         props = bpy.context.scene.BIMResourceProperties
-        bonsai.bim.helper.import_attributes2(cost_value, props.cost_value_attributes, callback)
+        bonsai.bim.helper.import_attributes(cost_value, props.cost_value_attributes, callback)
 
     @classmethod
     def enable_editing_cost_value_attributes(cls, cost_value: ifcopenshell.entity_instance) -> None:
@@ -282,7 +282,7 @@ class Resource(bonsai.core.tool.Resource):
         props = bpy.context.scene.BIMResourceProperties
         props.quantity_attributes.clear()
         props.is_editing_quantity = True
-        bonsai.bim.helper.import_attributes2(resource_quantity, props.quantity_attributes)
+        bonsai.bim.helper.import_attributes(resource_quantity, props.quantity_attributes)
 
     @classmethod
     def disable_editing_resource_quantity(cls) -> None:

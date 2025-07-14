@@ -422,7 +422,7 @@ class EnableEditingZone(bpy.types.Operator):
     def execute(self, context):
         props = tool.System.get_zone_props()
         props.attributes.clear()
-        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.zone), props.attributes)
+        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.zone), props.attributes)
         props.is_editing = self.zone
         return {"FINISHED"}
 

@@ -118,7 +118,7 @@ class EnableEditingProfile(bpy.types.Operator):
     def execute(self, context):
         props = tool.Profile.get_profile_props()
         props.profile_attributes.clear()
-        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
+        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
         props.active_profile_id = self.profile
         return {"FINISHED"}
 

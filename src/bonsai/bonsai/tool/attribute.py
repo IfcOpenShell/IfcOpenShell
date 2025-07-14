@@ -68,7 +68,7 @@ class Attribute(bonsai.core.tool.Attribute):
     @classmethod
     def import_entity_attributes(cls, entity: ifcopenshell.entity_instance) -> None:
         props = cls.get_explorer_props()
-        helper.import_attributes2(entity, props.entity_attributes)
+        helper.import_attributes(entity, props.entity_attributes)
 
     @classmethod
     def export_entity_attributes(cls) -> dict[str, Any]:

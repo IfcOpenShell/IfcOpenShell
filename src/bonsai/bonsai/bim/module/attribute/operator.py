@@ -107,7 +107,7 @@ class EnableEditingAttributes(bpy.types.Operator, AttributesOperator):
                 if value is not None:
                     new.enum_value = str(value.id())
 
-        bonsai.bim.helper.import_attributes2(element, props.attributes, callback=callback)
+        bonsai.bim.helper.import_attributes(element, props.attributes, callback=callback)
         props.is_editing_attributes = True
 
     def execute(self, context):

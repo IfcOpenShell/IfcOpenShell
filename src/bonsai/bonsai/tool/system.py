@@ -151,7 +151,7 @@ class System(bonsai.core.tool.System):
     def import_system_attributes(cls, system: ifcopenshell.entity_instance) -> None:
         props = cls.get_system_props()
         props.system_attributes.clear()
-        bonsai.bim.helper.import_attributes2(system, props.system_attributes)
+        bonsai.bim.helper.import_attributes(system, props.system_attributes)
 
     @classmethod
     def get_systems(cls) -> list[ifcopenshell.entity_instance]:

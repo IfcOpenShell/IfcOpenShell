@@ -3045,7 +3045,7 @@ class AddTextLiteral(bpy.types.Operator):
             "Path": "RIGHT",
             "BoxAlignment": "bottom_left",
         }
-        # emulates `bonsai.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)`
+        # emulates `bonsai.bim.helper.import_attributes(ifc_literal, literal_props.attributes)`
         for attr_name in literal_attr_values:
             attr = literal_attributes.add()
             attr.name = attr_name

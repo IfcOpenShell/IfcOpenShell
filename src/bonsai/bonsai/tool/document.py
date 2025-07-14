@@ -94,7 +94,7 @@ class Document(bonsai.core.tool.Document):
             return False
 
         import_callback = callback if document.is_a("IfcDocumentReference") else None
-        bonsai.bim.helper.import_attributes2(document, props.document_attributes, callback=import_callback)
+        bonsai.bim.helper.import_attributes(document, props.document_attributes, callback=import_callback)
 
     @classmethod
     def import_project_documents(cls) -> None:

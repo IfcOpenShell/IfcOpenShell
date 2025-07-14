@@ -81,7 +81,7 @@ class EnableEditingConstraint(bpy.types.Operator):
     def execute(self, context):
         props = tool.Blender.get_constraint_props()
         props.constraint_attributes.clear()
-        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.constraint), props.constraint_attributes)
+        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.constraint), props.constraint_attributes)
         props.active_constraint_id = self.constraint
         return {"FINISHED"}
 
