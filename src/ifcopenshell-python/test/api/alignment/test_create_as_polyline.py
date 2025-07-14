@@ -28,20 +28,19 @@ def test_create_as_polyline():
     ifcopenshell.api.unit.assign_unit(file, units=[length])
 
     points = [
-    file.createIfcCartesianPoint((945.2, 583.6,  50.0)),
-    file.createIfcCartesianPoint((756.3, 871.7,  66.2)),
-    file.createIfcCartesianPoint(( 567.4, 1159.7,   78.5)),
-    file.createIfcCartesianPoint(( 379.4, 1448.3,    86.8)),
-    file.createIfcCartesianPoint(( 201.7, 1743.3,   91.1)),
-    file.createIfcCartesianPoint((  36.8,  2045.7,   91.3)),
-    file.createIfcCartesianPoint((-118.9, 2353.0,   87.5)),
-    file.createIfcCartesianPoint((-274.3, 2660.4,   79.7)),
-    file.createIfcCartesianPoint((-429.6, 2967.8,   68.3)),
-    file.createIfcCartesianPoint((-585.0, 3275.2,   56.2 )),
-            ]
+        file.createIfcCartesianPoint((945.2, 583.6, 50.0)),
+        file.createIfcCartesianPoint((756.3, 871.7, 66.2)),
+        file.createIfcCartesianPoint((567.4, 1159.7, 78.5)),
+        file.createIfcCartesianPoint((379.4, 1448.3, 86.8)),
+        file.createIfcCartesianPoint((201.7, 1743.3, 91.1)),
+        file.createIfcCartesianPoint((36.8, 2045.7, 91.3)),
+        file.createIfcCartesianPoint((-118.9, 2353.0, 87.5)),
+        file.createIfcCartesianPoint((-274.3, 2660.4, 79.7)),
+        file.createIfcCartesianPoint((-429.6, 2967.8, 68.3)),
+        file.createIfcCartesianPoint((-585.0, 3275.2, 56.2)),
+    ]
 
-
-    alignment = ifcopenshell.api.alignment.create_as_polyline(file,"A1",points)
+    alignment = ifcopenshell.api.alignment.create_as_polyline(file, "A1", points)
     curve = ifcopenshell.api.alignment.get_curve(alignment)
     assert curve.is_a("IfcPolyline")
     assert len(curve.Points) == 10
