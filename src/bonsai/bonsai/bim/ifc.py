@@ -187,7 +187,7 @@ class IfcStore:
         if not os.path.isfile(path):
             return
         extension = path.split(".")[-1]
-        props = tool.Project.get_project_props()
+        prefs = tool.Blender.get_addon_preferences()
         if extension.lower() == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
                 with zipfile.ZipFile(path, "r") as zip_ref:
@@ -197,7 +197,7 @@ class IfcStore:
                     return
         elif extension.lower() == "ifcxml":
             IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
-        elif props.should_stream:
+        elif prefs.should_stream:
             IfcStore.file = ifcopenshell.open(path, should_stream=True)
         else:
             IfcStore.file = ifcopenshell.open(path)

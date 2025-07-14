@@ -158,15 +158,6 @@ class BIMBSDDProperties(PropertyGroup):
         description="Whether to display and assign only properties from IFC dictionary",
         default=False,
     )
-    load_preview_dictionaries: BoolProperty(
-        name="Load Preview Dictionaries", description="Load dictionaries marked as Preview status", default=False
-    )
-    load_inactive_dictionaries: BoolProperty(
-        name="Load Inactive Dictionaries", description="Load dictionaries marked as Inactive status", default=False
-    )
-    load_test_dictionaries: BoolProperty(
-        name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
-    )
     classification_psets: CollectionProperty(name="Classification Psets", type=BSDDPset)
 
     if TYPE_CHECKING:
@@ -186,9 +177,6 @@ class BIMBSDDProperties(PropertyGroup):
         keyword: str
         should_filter_ifc_class: bool
         use_only_ifc_properties: bool
-        load_preview_dictionaries: bool
-        load_inactive_dictionaries: bool
-        load_test_dictionaries: bool
         classification_psets: bpy.types.bpy_prop_collection_idprop[BSDDPset]
 
     @property
