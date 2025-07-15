@@ -137,7 +137,7 @@ def print_alignment_deep(alignment, indent=0):
 
     for agg in alignment.IsDecomposedBy:
         for child in agg.RelatedObjects:
-            print_alignmen_deep(child, indent + 2)
+            print_alignment_deep(child, indent + 2)
 
 
 def print_composite_curve(curve):
