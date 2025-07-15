@@ -1303,6 +1303,20 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
+            if len(bpy.context.selected_objects) != 2:
+                self.report(
+                    {"ERROR"},
+                    "Exactly two LAYER2 items (walls, railings, etc) must be selected to perform a merge.",
+                )
+                return
+            for item in bpy.context.selected_objects:
+                element = tool.Ifc.get_entity(item)
+                if tool.Model.get_usage_type(element) != "LAYER2":
+                    self.report(
+                        {"ERROR"},
+                        "Both selected items must be LAYER2 (walls, railings, etc) to perform a merge.",
+                    )
+                    return
             bpy.ops.bim.merge_wall()
         else:
             if len(bpy.context.selected_objects) == 1:
