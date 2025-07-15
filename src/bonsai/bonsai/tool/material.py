@@ -77,14 +77,6 @@ class Material(bonsai.core.tool.Material):
         return ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
 
     @classmethod
-    def get_active_material_item(cls) -> Union[MaterialItem, None]:
-        """Get active material props item if index is valid, otherwise, return None."""
-        props = tool.Material.get_material_props()
-        if 0 <= props.active_material_index < len(props.materials):
-            return props.materials[props.active_material_index]
-        return None
-
-    @classmethod
     def get_material_category(cls, material: ifcopenshell.entity_instance) -> str:
         # IfcMaterial has Category since IFC4.
         return getattr(material, "Category", None) or "Uncategorised"
@@ -95,7 +87,7 @@ class Material(bonsai.core.tool.Material):
 
         # Store active category name to reselect it later.
         # Occurs when we expand/contract all categories.
-        active_item = cls.get_active_material_item()
+        active_item = props.active_material
         previously_selected_category = None
         if active_item and active_item.is_category:
             previously_selected_category = active_item.name

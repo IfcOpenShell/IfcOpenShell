@@ -75,11 +75,11 @@ class Pset(bonsai.core.tool.Pset):
     @classmethod
     def get_pset_props(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> PsetProperties:
         if obj_type == "Object":
-            return bpy.data.objects.get(obj).PsetProperties
+            return bpy.data.objects[obj].PsetProperties
         elif obj_type == "Material":
             return bpy.context.scene.MaterialPsetProperties
         elif obj_type == "MaterialSetItem":
-            return bpy.data.objects.get(obj).MaterialSetItemPsetProperties
+            return bpy.data.objects[obj].MaterialSetItemPsetProperties
         elif obj_type == "Task":
             return bpy.context.scene.TaskPsetProperties
         elif obj_type == "Resource":

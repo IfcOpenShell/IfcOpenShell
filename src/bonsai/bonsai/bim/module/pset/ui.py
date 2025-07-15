@@ -484,7 +484,7 @@ class BIM_PT_material_psets(Panel):
         elif ifc_definition_id != MaterialPsetsData.data["ifc_definition_id"]:
             MaterialPsetsData.load()
 
-        props = context.scene.MaterialPsetProperties
+        props = tool.Pset.get_pset_props("", "Material")
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
@@ -524,6 +524,7 @@ class BIM_PT_material_set_item_psets(Panel):
         if not MaterialSetItemPsetsData.is_loaded:
             MaterialSetItemPsetsData.load()
 
+        assert self.layout
         obj = context.active_object
         assert obj
         omprops = tool.Material.get_object_material_props(obj)
@@ -531,7 +532,7 @@ class BIM_PT_material_set_item_psets(Panel):
             self.layout.label(text="No Material Set Item Edited.")
             return
 
-        props = obj.MaterialSetItemPsetProperties
+        props = tool.Pset.get_pset_props(obj.name, "MaterialSetItem")
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
@@ -570,7 +571,8 @@ class BIM_PT_task_qtos(Panel):
         if not TaskQtosData.is_loaded:
             TaskQtosData.load()
 
-        props = context.scene.TaskPsetProperties
+        assert self.layout
+        props = tool.Pset.get_pset_props("", "Task")
         row = self.layout.row(align=True)
         row.prop(props, "qto_name", text="")
         op = row.operator("bim.add_qto", icon="ADD", text="")
@@ -604,7 +606,8 @@ class BIM_PT_resource_qtos(Panel):
         if not ResourceQtosData.is_loaded:
             ResourceQtosData.load()
 
-        props = context.scene.ResourcePsetProperties
+        assert self.layout
+        props = tool.Pset.get_pset_props("", "Resource")
         row = self.layout.row(align=True)
         row.prop(props, "qto_name", text="")
         op = row.operator("bim.add_qto", icon="ADD", text="")
@@ -638,7 +641,8 @@ class BIM_PT_resource_psets(Panel):
         if not ResourcePsetsData.is_loaded:
             ResourcePsetsData.load()
 
-        props = context.scene.ResourcePsetProperties
+        assert self.layout
+        props = tool.Pset.get_pset_props("", "Resource")
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
@@ -672,7 +676,8 @@ class BIM_PT_group_qtos(Panel):
         if not GroupQtosData.is_loaded:
             GroupQtosData.load()
 
-        props = context.scene.GroupPsetProperties
+        assert self.layout
+        props = tool.Pset.get_pset_props("", "Group")
         row = self.layout.row(align=True)
         row.prop(props, "qto_name", text="")
         op = row.operator("bim.add_qto", icon="ADD", text="")
@@ -706,7 +711,8 @@ class BIM_PT_group_psets(Panel):
         if not GroupPsetData.is_loaded:
             GroupPsetData.load()
 
-        props = context.scene.GroupPsetProperties
+        assert self.layout
+        props = tool.Pset.get_pset_props("", "Group")
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
@@ -750,7 +756,8 @@ class BIM_PT_profile_psets(Panel):
         ):
             ProfilePsetsData.load()
 
-        props = context.scene.ProfilePsetProperties
+        assert self.layout
+        props = tool.Pset.get_pset_props("", "Profile")
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
@@ -782,7 +789,8 @@ class BIM_PT_work_schedule_psets(Panel):
         if not WorkSchedulePsetsData.is_loaded:
             WorkSchedulePsetsData.load()
 
-        props = context.scene.WorkSchedulePsetProperties
+        assert self.layout
+        props = tool.Pset.get_pset_props("", "WorkSchedule")
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")

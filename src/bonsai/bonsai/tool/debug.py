@@ -19,6 +19,7 @@
 from __future__ import annotations
 import os
 import json
+import bmesh
 import bpy
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.material
@@ -70,6 +71,7 @@ class Debug(bonsai.core.tool.Debug):
         mesh = bpy.data.meshes.new("Debug")
         bm.to_mesh(mesh)
         obj = bpy.data.objects.new(name, mesh)
+        assert bpy.context.scene
         bpy.context.scene.collection.objects.link(obj)
         return obj
 
@@ -80,6 +82,7 @@ class Debug(bonsai.core.tool.Debug):
         mesh = bpy.data.meshes.new("Debug")
         mesh.from_pydata(verts, edges, [])
         obj = bpy.data.objects.new(name, mesh)
+        assert bpy.context.scene
         bpy.context.scene.collection.objects.link(obj)
         return obj
 

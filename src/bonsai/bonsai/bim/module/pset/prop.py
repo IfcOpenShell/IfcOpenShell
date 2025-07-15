@@ -115,7 +115,7 @@ def get_material_pset_names(self: "PsetProperties", context: object) -> tool.Ble
     return MaterialPsetsData.data["pset_name"]
 
 
-def get_material_set_pset_names(self: "PsetProperties", context: object):
+def get_material_set_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     if not ObjectMaterialData.is_loaded:
         ObjectMaterialData.load()
@@ -128,12 +128,14 @@ def get_material_set_pset_names(self: "PsetProperties", context: object):
     return psetnames[ifc_class]
 
 
-def get_material_set_item_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+def get_material_set_item_pset_names(
+    self: "PsetProperties", context: bpy.types.Context
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     obj = context.active_object
     assert obj
     omprops = tool.Material.get_object_material_props(obj)
-    if not omprops.active_material_set_item_id:
+    if not (ifc_definition_id := omprops.active_material_set_item_id):
         return []
     ifc_class = tool.Ifc.get().by_id(ifc_definition_id).is_a()
     if ifc_class not in psetnames:
@@ -151,7 +153,7 @@ def get_task_qto_names(self: "PsetProperties", context: object) -> tool.Blender.
     return qtonames[ifc_class]
 
 
-def get_resource_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+def get_resource_pset_names(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     rprops = context.scene.BIMResourceProperties
     rtprops = context.scene.BIMResourceTreeProperties
@@ -162,7 +164,7 @@ def get_resource_pset_names(self: "PsetProperties", context: object) -> tool.Ble
     return psetnames[ifc_class]
 
 
-def get_resource_qto_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+def get_resource_qto_names(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global qtonames
     rprops = context.scene.BIMResourceProperties
     rtprops = context.scene.BIMResourceTreeProperties
@@ -223,7 +225,9 @@ def get_qto_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Ble
         results = get_resource_qto_names(self, context)
     elif prop_type == "GroupPsetProperties":
         results = get_group_qto_names(self, context)
-    return [("BBIM_CUSTOM", "Custom Qto", "Create a quantity set without using a template."), None] + results
+    else:
+        assert False
+    return [("BBIM_CUSTOM", "Custom Qto", "Create a quantity set without using a template."), None] + list(results)
 
 
 def get_object_qto_name(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:

@@ -33,7 +33,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 
 def get_element_key(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
