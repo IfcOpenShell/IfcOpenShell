@@ -689,7 +689,7 @@ def set_element_value(
                         if len(enum_values) == len(current_value) and set(enum_values) == set(current_value):
                             return ...
 
-                    template = ifcopenshell.util.pset.get_template(ifc_file.schema)
+                    template = ifcopenshell.util.pset.get_template(ifc_file.schema_identifier)
                     pset_template = template.get_by_name(pset.Name)
                     if pset_template is None:
                         return value
