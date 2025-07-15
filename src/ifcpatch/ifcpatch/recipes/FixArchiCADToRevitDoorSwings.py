@@ -203,6 +203,5 @@ class Patcher(ifcpatch.BasePatcher):
                         [v[i] / unit_scale, v[i + 1] / unit_scale, v[i + 2] / unit_scale] for i in range(0, len(v), 3)
                     ]
                 edges = [[e[i] + 1, e[i + 1] + 1] for i in range(0, len(e), 2)]
-                points = []
-                curve.Points = f.create_entity(curve.Points.is_a(), vertices)
-                curve.Segments = [f.createIfcLineIndex(e) for e in edges]
+                curve.Points = self.file.create_entity(curve.Points.is_a(), vertices)
+                curve.Segments = [self.file.create("IfcLineIndex", e) for e in edges]
