@@ -874,6 +874,7 @@ class CreateDrawing(bpy.types.Operator):
         cached_linework -= edited_guids
 
         bim_props = tool.Blender.get_bim_props()
+        prefs = tool.Blender.get_addon_preferences()
         files = {bim_props.ifc_file: tool.Ifc.get()}
 
         props = tool.Project.get_project_props()
@@ -890,7 +891,7 @@ class CreateDrawing(bpy.types.Operator):
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
-            ifc_cache_path = os.path.join(bim_props.cache_dir, f"{ifc_hash}.h5")
+            ifc_cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
 
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
@@ -1848,8 +1849,8 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         props = tool.Drawing.get_document_props()
         # Won't be visible in UI anyway.
-        bim_props = tool.Blender.get_bim_props()
-        if not props.sheets or not bim_props.data_dir:
+        prefs = tool.Blender.get_addon_preferences()
+        if not props.sheets or not prefs.data_dir:
             return False
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
@@ -1954,8 +1955,8 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         if not tool.Drawing.get_active_sheet_item(is_sheet=True):
             cls.poll_message_set("No sheet selected.")
             return False
-        bim_props = tool.Blender.get_bim_props()
-        return props.sheets and bim_props.data_dir
+        prefs = tool.Blender.get_addon_preferences()
+        return props.sheets and prefs.data_dir
 
     def invoke(self, context, event):
         # opening all sheets on shift+click
@@ -2741,8 +2742,8 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         if not props.schedules:
             cls.poll_message_set("No schedule selected.")
             return False
-        bim_props = tool.Blender.get_bim_props()
-        return props.schedules and props.sheets and bim_props.data_dir
+        prefs = tool.Blender.get_addon_preferences()
+        return props.schedules and props.sheets and prefs.data_dir
 
     def _execute(self, context):
         props = tool.Drawing.get_document_props()

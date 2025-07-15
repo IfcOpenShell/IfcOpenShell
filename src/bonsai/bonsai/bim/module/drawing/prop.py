@@ -423,39 +423,6 @@ class DocProperties(PropertyGroup):
     active_sheet_index: IntProperty(name="Active Sheet Index")
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
-    sheets_dir: StringProperty(default=os.path.join("sheets") + os.path.sep, name="Default Sheets Directory")
-    layouts_dir: StringProperty(default=os.path.join("layouts") + os.path.sep, name="Default Layouts Directory")
-    titleblocks_dir: StringProperty(
-        default=os.path.join("layouts", "titleblocks") + os.path.sep, name="Default Titleblocks Directory"
-    )
-    drawings_dir: StringProperty(default=os.path.join("drawings") + os.path.sep, name="Default Drawings Directory")
-    stylesheet_path: StringProperty(
-        default=os.path.join("drawings", "assets", "default.css"), name="Default Stylesheet"
-    )
-    schedules_stylesheet_path: StringProperty(
-        default=os.path.join("drawings", "assets", "schedule.css"), name="Default Stylesheet for Schedules"
-    )
-    markers_path: StringProperty(default=os.path.join("drawings", "assets", "markers.svg"), name="Default Markers")
-    symbols_path: StringProperty(default=os.path.join("drawings", "assets", "symbols.svg"), name="Default Symbols")
-    patterns_path: StringProperty(default=os.path.join("drawings", "assets", "patterns.svg"), name="Default Patterns")
-    shadingstyles_path: StringProperty(
-        default=os.path.join("drawings", "assets", "shading_styles.json"), name="Default Shading Styles"
-    )
-    shadingstyle_default: StringProperty(default="Blender Default", name="Default Shading Style")
-    drawing_font: StringProperty(default="OpenGost Type B TT.ttf", name="Drawing Font")
-    magic_font_scale: bpy.props.FloatProperty(default=0.004118616, name="Font Scale Factor")
-    imperial_precision: StringProperty(default="1/32", name="Imperial Precision")
-    tolerance: bpy.props.FloatProperty(default=0.00001, name="A tolerance used when selecting objects")
-    classes_to_wireframe: StringProperty(
-        default="IfcVirtualElement",
-        name="Classes to Wireframe",
-        description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualelement, IfcSpace",
-    )
-    classes_no_cut: StringProperty(
-        default="IfcVirtualElement, IfcSpace",
-        name="Classes that are not cut",
-        description="The cut decoractor will be turned off for these classes\nEx: IfcVirtualelement, IfcSpace",
-    )
 
     if TYPE_CHECKING:
         should_use_underlay_cache: bool
@@ -480,23 +447,6 @@ class DocProperties(PropertyGroup):
         active_sheet_index: int
         drawing_styles: bpy.types.bpy_prop_collection_idprop[DrawingStyle]
         should_draw_decorations: bool
-        sheets_dir: str
-        layouts_dir: str
-        titleblocks_dir: str
-        drawings_dir: str
-        stylesheet_path: str
-        schedules_stylesheet_path: str
-        markers_path: str
-        symbols_path: str
-        patterns_path: str
-        shadingstyles_path: str
-        shadingstyle_default: str
-        drawing_font: str
-        magic_font_scale: float
-        imperial_precision: str
-        tolerance: float
-        classes_to_wireframe: str
-        classes_no_cut: str
 
     def get_active_drawing(self) -> Union[ifcopenshell.entity_instance, None]:
         drawing_id = self.active_drawing_id

@@ -293,9 +293,9 @@ class ObjectMaterialData:
                 if item.is_a("IfcMaterialLayer"):
                     total_thickness = item.LayerThickness
                     unit_system = bpy.context.scene.unit_settings.system
-                    props = tool.Drawing.get_document_props()
+                    prefs = tool.Blender.get_addon_preferences()
                     if unit_system == "IMPERIAL":
-                        precision = props.imperial_precision
+                        precision = prefs.doc.imperial_precision
                     else:
                         precision = None
                     formatted_thickness = format_distance(
@@ -330,11 +330,12 @@ class ObjectMaterialData:
             elif cls.material.is_a("IfcMaterialLayerSet"):
                 layers = cls.material.MaterialLayers
             thickness = sum([l.LayerThickness for l in layers or []])
-            props = tool.Drawing.get_document_props()
+            prefs = tool.Blender.get_addon_preferences()
+            assert bpy.context.scene
             unit_system = bpy.context.scene.unit_settings.system
             precision = None
             if unit_system == "IMPERIAL":
-                precision = props.imperial_precision
+                precision = prefs.doc.imperial_precision
             return format_distance(thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     @classmethod

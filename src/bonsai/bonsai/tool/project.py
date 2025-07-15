@@ -69,7 +69,7 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def load_pset_templates(cls) -> None:
-        props = tool.Blender.get_bim_props()
+        props = tool.Blender.get_addon_preferences()
         pset_dir = tool.Ifc.resolve_uri(props.pset_dir)
         if os.path.isdir(pset_dir):
             for path in Path(pset_dir).glob("*.ifc"):

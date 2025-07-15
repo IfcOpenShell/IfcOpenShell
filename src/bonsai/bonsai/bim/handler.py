@@ -417,3 +417,5 @@ def load_post(scene):
         scene.tool_settings.use_snap = True
         # Match default Bonsai snaps
         scene.tool_settings.snap_elements_base = {"EDGE", "EDGE_PERPENDICULAR", "VERTEX", "EDGE_MIDPOINT", "FACE"}
+
+    tool.Blender.sync_old_preferences()

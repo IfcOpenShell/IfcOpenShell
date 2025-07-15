@@ -815,8 +815,8 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
     def execute(self, context):
         self.calculated_sum = 0  # reset if run before
         key = "predefined_type" if self.key == "PredefinedType" else self.key
-        dprops = tool.Drawing.get_document_props()
-        tolerance = dprops.tolerance
+        prefs = tool.Blender.get_addon_preferences()
+        tolerance = prefs.doc.tolerance
         formatted_tolerance = f"{tolerance:.{max(0, -int(f'{tolerance:.1e}'.split('e')[-1])) if tolerance < 1 else 1}f}"
 
         if self.calculate_sum:
