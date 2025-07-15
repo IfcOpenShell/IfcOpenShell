@@ -30,6 +30,9 @@ templates: dict[str, "PsetQto"] = {}
 
 
 def get_template(schema: str) -> "PsetQto":
+    """
+    :param schema: As in ``file.schema_identifier``, not ``file.schema``.
+    """
     global templates
     if schema not in templates:
         templates[schema] = PsetQto(schema)
