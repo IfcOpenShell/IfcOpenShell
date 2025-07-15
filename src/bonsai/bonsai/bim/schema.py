@@ -24,6 +24,10 @@ import bpy_restrict_state
 
 
 class IfcSchema:
+    data_dir: str
+    cache_dir: str
+    schema_dir: str
+
     def __init__(self, schema_identifier="IFC4"):
         if schema_identifier not in ("IFC2X3", "IFC4", "IFC4X3_ADD2"):
             schema_identifier = "IFC4"

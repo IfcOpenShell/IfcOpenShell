@@ -474,8 +474,8 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             unit_scale = tool.Blender.get_unit_scale()
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            dprops = tool.Drawing.get_document_props()
-            precision = dprops.imperial_precision
+            prefs = tool.Blender.get_addon_preferences()
+            precision = prefs.doc.imperial_precision
             if is_area:
                 unit_scale = 1
         else:

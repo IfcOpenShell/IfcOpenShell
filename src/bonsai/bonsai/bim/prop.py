@@ -19,7 +19,6 @@
 import os
 import bpy
 import json
-import platformdirs
 import ifcopenshell
 import ifcopenshell.util.pset
 import ifcopenshell.util.unit
@@ -126,20 +125,6 @@ def update_schema_dir(self: "BIMProperties", context: bpy.types.Context) -> None
 
     bim_props = tool.Blender.get_bim_props()
     bonsai.bim.schema.ifc.schema_dir = bim_props.schema_dir
-
-
-def update_data_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
-    import bonsai.bim.schema
-
-    bim_props = tool.Blender.get_bim_props()
-    bonsai.bim.schema.ifc.data_dir = bim_props.data_dir
-
-
-def update_cache_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
-    import bonsai.bim.schema
-
-    bim_props = tool.Blender.get_bim_props()
-    bonsai.bim.schema.ifc.cache_dir = bim_props.cache_dir
 
 
 def update_section_color(self: "BIMProperties", context: bpy.types.Context) -> None:
@@ -521,16 +506,7 @@ class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
     )
-    data_dir: StringProperty(
-        default=(platformdirs.user_data_path("bonsai", roaming=True, ensure_exists=True) / "data").__str__(),
-        name="Data Directory",
-        update=update_data_dir,
-    )
-    cache_dir: StringProperty(
-        default=platformdirs.user_cache_dir("bonsai"), name="Cache Directory", update=update_cache_dir
-    )
     has_blend_warning: BoolProperty(name="Has Blend Warning", default=False)
-    pset_dir: StringProperty(default=os.path.join("psets") + os.path.sep, name="Default Psets Directory")
     ifc_file: StringProperty(name="IFC File")
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
@@ -586,8 +562,6 @@ class BIMProperties(PropertyGroup):
     if TYPE_CHECKING:
         is_dirty: bool
         schema_dir: str
-        data_dir: str
-        cache_dir: str
         has_blend_warning: bool
         pset_dir: str
         ifc_file: str

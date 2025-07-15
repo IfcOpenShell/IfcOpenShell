@@ -126,11 +126,11 @@ class IfcStore:
     @staticmethod
     def get_cache() -> ifcopenshell.geom.serializers.hdf5 | None:
         if IfcStore.cache is None and IfcStore.path:
-            props = tool.Blender.get_bim_props()
+            prefs = tool.Blender.get_addon_preferences()
             ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-            os.makedirs(props.cache_dir, exist_ok=True)
-            IfcStore.cache_path = os.path.join(props.cache_dir, f"{ifc_hash}.h5")
+            os.makedirs(prefs.cache_dir, exist_ok=True)
+            IfcStore.cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
             cache_path = Path(IfcStore.cache_path)
             cache_settings = ifcopenshell.geom.settings()
             serializer_settings = ifcopenshell.geom.serializer_settings()
@@ -170,8 +170,8 @@ class IfcStore:
         assert IfcStore.file
         ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-        props = tool.Blender.get_bim_props()
-        new_cache_path = os.path.join(props.cache_dir, f"{ifc_hash}.h5")
+        prefs = tool.Blender.get_addon_preferences()
+        new_cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
         IfcStore.cache = None
         try:
             shutil.move(IfcStore.cache_path, new_cache_path)

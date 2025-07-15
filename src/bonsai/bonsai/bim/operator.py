@@ -235,19 +235,12 @@ class SelectDir(bpy.types.Operator, ImportHelper):
     bl_description = "Open a file browser to choose the directory"
     data_path: bpy.props.StringProperty(name="Data Path")
 
+    if TYPE_CHECKING:
+        data_path: str
+
     def execute(self, context):
-        crumbs = self.data_path.split(".")
-        if crumbs[0] == "preferences":
-            crumbs.pop(0)
-            data = tool.Blender.get_addon_preferences()
-        else:
-            data = context
-        while crumbs:
-            crumb = crumbs.pop(0)
-            if crumbs:
-                data = getattr(data, crumb)
-            else:
-                setattr(data, crumb, os.path.dirname(self.filepath))
+        data, attr = tool.Blender.resolve_data_path_to_data_attr(self.data_path)
+        setattr(data, attr, os.path.dirname(self.filepath))
         return {"FINISHED"}
 
     def invoke(self, context, event):

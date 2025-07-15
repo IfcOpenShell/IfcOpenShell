@@ -191,14 +191,6 @@ class BIMModelProperties(PropertyGroup):
     menu_relating_type_id: bpy.props.IntProperty()
     icon_id: bpy.props.IntProperty()
     updating: bpy.props.BoolProperty(default=False)
-    occurrence_name_style: bpy.props.EnumProperty(
-        items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
-        name="Occurrence Name Style",
-    )
-    occurrence_name_function: bpy.props.StringProperty(
-        name="Occurrence Name Function",
-        description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
-    )
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
     extrusion_depth: bpy.props.FloatProperty(name="Extrusion Depth", min=0.001, default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
@@ -305,8 +297,6 @@ class BIMModelProperties(PropertyGroup):
         menu_relating_type_id: int
         icon_id: int
         updating: bool
-        occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
-        occurrence_name_function: str
         extrusion_depth: float
         cardinal_point: Literal[
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"

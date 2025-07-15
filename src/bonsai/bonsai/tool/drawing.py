@@ -1314,34 +1314,37 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_default_layout_path(cls, identification: str, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        props = tool.Drawing.get_document_props()
+        prefs = tool.Blender.get_addon_preferences()
         layouts_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "LayoutsDir") or props.layouts_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "LayoutsDir") or prefs.doc.layouts_dir
         )
         return os.path.join(layouts_dir, cls.sanitise_filename(f"{identification} - {name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_sheet_path(cls, identification: str, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        props = tool.Drawing.get_document_props()
-        sheets_dir = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "SheetsDir") or props.sheets_dir
+        prefs = tool.Blender.get_addon_preferences()
+        sheets_dir = (
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "SheetsDir") or prefs.doc.sheets_dir
+        )
         return os.path.join(sheets_dir, cls.sanitise_filename(f"{identification} - {name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_titleblock_path(cls, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        props = tool.Drawing.get_document_props()
+        prefs = tool.Blender.get_addon_preferences()
         titleblocks_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir") or props.titleblocks_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
+            or prefs.doc.titleblocks_dir
         )
         return os.path.join(titleblocks_dir, cls.sanitise_filename(f"{name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_drawing_path(cls, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        props = tool.Drawing.get_document_props()
+        prefs = tool.Blender.get_addon_preferences()
         drawings_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "DrawingsDir") or props.drawings_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "DrawingsDir") or prefs.doc.drawings_dir
         )
         return os.path.join(drawings_dir, cls.sanitise_filename(f"{name}.svg")).replace("\\", "/")
 
@@ -1353,19 +1356,20 @@ class Drawing(bonsai.core.tool.Drawing):
     RESOURCE_TYPES = ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles")
 
     @classmethod
-    def get_default_drawing_resource_path(cls, resource: str) -> Union[str, None]:
+    def get_default_drawing_resource_path(cls, resource: ResourceType) -> Union[str, None]:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        props = tool.Drawing.get_document_props()
+        doc_prefs = tool.Blender.get_addon_preferences().doc
         resource_path = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path") or getattr(
-            props, f"{resource.lower()}_path"
+            doc_prefs, f"{resource.lower()}_path"
         )
         if resource_path:
+            assert isinstance(resource_path, str)
             return resource_path.replace("\\", "/")
 
     @classmethod
     def get_default_shading_style(cls) -> str:
-        dprops = tool.Drawing.get_document_props()
-        return dprops.shadingstyle_default
+        prefs = tool.Blender.get_addon_preferences()
+        return prefs.doc.shadingstyle_default
 
     @classmethod
     def setup_shading_styles_path(cls, resource_path: str) -> None:

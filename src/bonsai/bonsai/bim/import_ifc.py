@@ -231,7 +231,8 @@ class IfcImporter:
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
-        classes_to_wireframe_str = tool.Drawing.get_document_props().classes_to_wireframe
+        prefs = tool.Blender.get_addon_preferences()
+        classes_to_wireframe_str = prefs.doc.classes_to_wireframe
         self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:

@@ -49,7 +49,7 @@ from bonsai.bim import import_ifc
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
-from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict
+from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict, assert_never
 from collections.abc import Iterable, Sequence
 
 T = TypeVar("T")
@@ -275,17 +275,19 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def generate_occurrence_name(cls, element_type: ifcopenshell.entity_instance, ifc_class: str) -> str:
-        props = cls.get_model_props()
-        if props.occurrence_name_style == "CLASS":
+        prefs = tool.Blender.get_addon_preferences()
+        if prefs.occurrence_name_style == "CLASS":
             return ifc_class[3:]
-        elif props.occurrence_name_style == "TYPE":
+        elif prefs.occurrence_name_style == "TYPE":
             return element_type.Name or "Unnamed"
-        elif props.occurrence_name_style == "CUSTOM":
+        elif prefs.occurrence_name_style == "CUSTOM":
             try:
                 # Power users gonna power
-                return eval(props.occurrence_name_function) or "Instance"
+                return eval(prefs.occurrence_name_function) or "Instance"
             except:
                 return "Instance"
+        else:
+            assert_never(prefs.occurrence_name_style)
 
     @classmethod
     def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:

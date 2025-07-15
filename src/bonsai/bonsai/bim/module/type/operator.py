@@ -57,13 +57,13 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
             related_objects = [bpy.data.objects[self.related_object]]
         else:
             related_objects = tool.Blender.get_selected_objects()
-        model_props = tool.Model.get_model_props()
+        prefs = tool.Blender.get_addon_preferences()
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcObject"):
                 continue
             core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
-            if model_props.occurrence_name_style == "TYPE":
+            if prefs.occurrence_name_style == "TYPE":
                 obj.name = tool.Model.generate_occurrence_name(relating_type, element.is_a())
 
 
