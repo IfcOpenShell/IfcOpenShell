@@ -239,7 +239,7 @@ class ProfileImportIFC(bpy.types.Operator):
         import cProfile
         import pstats
 
-        profile_file = Path(profile_filename)
+        profile_file = Path(self.profile_filename)
         cProfile.run("import bpy; bpy.ops.bim.load_project_elements()", str(profile_file))
         p = pstats.Stats(str(profile_file))
         p.sort_stats("cumulative").print_stats(50)
