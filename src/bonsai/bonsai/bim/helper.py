@@ -27,6 +27,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 import bonsai.tool as tool
+from types import EllipsisType
 from typing import Optional, Any, Union, TYPE_CHECKING
 from collections.abc import Callable, Iterable
 
@@ -56,7 +57,7 @@ def draw_attributes(
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
     *,
-    enable_search: bool = False,
+    enable_search: Union[bool, EllipsisType] = ...,
 ) -> None:
     """Draw editable UI for prop.Attributes.
 
@@ -65,6 +66,13 @@ def draw_attributes(
     on it first
 
     :param enable_search: Add search button to string, integer, and float attributes
+        Possible values:
+
+        - ``...`` (default value) -
+            add search if possible. If it's not possible, there will be no warnings or errors.
+        - ``True`` - always add search, if it's not possible it will result in errors.
+        - ``False`` - never add search.
+
     """
     for attribute in props:
         row = layout.row(align=True)
@@ -79,7 +87,7 @@ def draw_attribute(
     attribute: bonsai.bim.prop.Attribute,
     layout: bpy.types.UILayout,
     copy_operator: Optional[str] = None,
-    enable_search: bool = False,
+    enable_search: Union[bool, EllipsisType] = ...,
 ) -> None:
     value_name = attribute.get_value_name(display_only=True)
 
@@ -131,7 +139,9 @@ def draw_attribute(
         op.target_prop = attribute.path_from_id("string_value")
         op.include_time = attribute.special_type == "DATETIME"
 
-    if enable_search and attribute.data_type in ("string", "integer", "float"):
+    if attribute.data_type in ("string", "integer", "float") and (
+        enable_search is True or (enable_search is ... and attribute.ifc_class)
+    ):
         op = layout.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
         op.attribute_name = attribute.name
         op.attribute_ifc_class = attribute.ifc_class
