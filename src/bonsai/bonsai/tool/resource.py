@@ -33,9 +33,10 @@ import ifcopenshell.util.date as ifcdateutils
 import ifcopenshell.util.cost
 import ifcopenshell.util.resource
 import ifcopenshell.util.constraint
-from typing import Any, Union, TYPE_CHECKING
+from typing import Any, Union, TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.resource.prop import BIMResourceProperties
 
 
@@ -142,7 +143,9 @@ class Resource(bonsai.core.tool.Resource):
 
     @classmethod
     def get_resource_time_attributes(cls) -> dict[str, Any]:
-        def callback(attributes, prop):
+        import bonsai.bim.module.sequence.helper as helper
+
+        def callback(attributes: dict[str, Any], prop: Attribute) -> bool:
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
                 if prop.is_null:
                     attributes[prop.name] = None
@@ -155,6 +158,7 @@ class Resource(bonsai.core.tool.Resource):
                     return True
                 attributes[prop.name] = helper.parse_duration(prop.string_value)
                 return True
+            return False
 
         props = bpy.context.scene.BIMResourceProperties
         return bonsai.bim.helper.export_attributes(props.resource_time_attributes, callback)

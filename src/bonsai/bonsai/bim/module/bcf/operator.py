@@ -1208,9 +1208,11 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         self.file = tool.Ifc.get()
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+        assert context.scene
 
         props = tool.Bcf.get_bcf_props()
         blender_topic = props.active_topic
+        assert blender_topic
         topic = bcfxml.topics[blender_topic.name]
         if self.viewpoint_guid:
             viewpoint_guid = self.viewpoint_guid
@@ -1234,6 +1236,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         cam_height = context.scene.render.resolution_y
         cam_aspect = cam_width / cam_height
 
+        assert isinstance(obj.data, bpy.types.Camera)
         obj.data.background_images.clear()
         if viewpoint.snapshot:
             obj.data.show_background_images = True

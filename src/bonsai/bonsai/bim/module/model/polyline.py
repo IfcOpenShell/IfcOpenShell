@@ -371,7 +371,9 @@ def get_vertical_profile_preview_data(
     return data
 
 
-def get_horizontal_profile_preview_data(context, relating_type):
+def get_horizontal_profile_preview_data(
+    context: bpy.types.Context, relating_type: ifcopenshell.entity_instance
+) -> dict[str, Any]:
     material = ifcopenshell.util.element.get_material(relating_type)
     try:
         profile_curve = material.MaterialProfiles[0].Profile
@@ -385,7 +387,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
     polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
     polyline_points = polyline_data[0].polyline_points if polyline_data else []
     if len(polyline_points) < 2:
-        return
+        return {}
     for point in polyline_points:
         polyline_verts.append(Vector((point.x, point.y, point.z)))
     polyline_edges = [(i, i + 1) for i in range(len(polyline_verts) - 1)]
@@ -433,7 +435,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
         case "9":
             grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
 
-    data = {}
+    data: dict[str, Any] = {}
     data["verts"] = []
     data["edges"] = []
     data["tris"] = []
