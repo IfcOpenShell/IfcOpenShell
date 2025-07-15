@@ -399,7 +399,7 @@ def get_horizontal_profile_preview_data(
 
     verts = shape.verts
     if not verts:
-        raise RuntimeError(f"Profile shape has no vertices, it probably is invalid: '{profile}'.")
+        raise RuntimeError(f"Profile shape has no vertices, it probably is invalid: '{profile_curve}'.")
 
     edges = shape.edges
 
