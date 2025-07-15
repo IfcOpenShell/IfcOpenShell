@@ -1276,7 +1276,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if tool.Bcf.get_viewpoint_bitmaps(viewpoint):
             self.create_bitmaps(bcfxml, viewpoint, topic)
 
-        self.setup_camera(viewpoint, obj, cam_aspect, context)
+        self.setup_camera(viewpoint, obj, cam_aspect, context, cam_height, cam_width)
         return {"FINISHED"}
 
     def setup_camera(
@@ -1285,6 +1285,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         obj: bpy.types.Object,
         cam_aspect: float,
         context: bpy.types.Context,
+        cam_height: float,
+        cam_width: float,
     ) -> None:
         assert isinstance(obj.data, bpy.types.Camera)
         if viewpoint.visualization_info.orthogonal_camera:
