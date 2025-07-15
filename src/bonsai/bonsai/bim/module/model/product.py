@@ -38,6 +38,7 @@ import bonsai.core.aggregate
 import bonsai.core.type
 import bonsai.core.root
 import bonsai.core.geometry
+import bonsai.core.model as core
 import bonsai.core.spatial
 from . import wall, slab, profile, mep
 from bonsai.bim.ifc import IfcStore
@@ -564,6 +565,7 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
         props.relating_type_id = str(self.relating_type)
 
 
+# TODO: not exposed to UI.
 class AlignProduct(bpy.types.Operator):
     bl_idname = "bim.align_product"
     bl_label = "Align Product"
