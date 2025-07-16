@@ -40,6 +40,11 @@ from typing import Optional, TYPE_CHECKING, Literal
 from natsort import natsorted
 
 
+if TYPE_CHECKING:
+    from bonsai.bim.prop import ObjProperty
+    from bonsai.bim.module.project.prop import BIMProjectProperties
+
+
 class IFCFileSelector:
     layout: bpy.types.UILayout
 
@@ -171,17 +176,26 @@ class BIM_PT_section_with_cappings(Panel):
             props,
             "clipping_planes",
             props,
-            "clipping_planes_active",
+            "clipping_planes_active_index",
         )
 
-        if props.clipping_planes_active < len(props.clipping_planes):
-            active_clipping_plane_obj = props.clipping_planes[props.clipping_planes_active].obj
+        if active_clipping_plane := props.active_clipping_plane:
+            active_clipping_plane_obj = active_clipping_plane.obj
             box.prop(active_clipping_plane_obj, "location")
             box.prop(active_clipping_plane_obj, "rotation_euler")
 
 
 class BIM_UL_clipping_plane(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: "BIMProjectProperties",
+        item: "ObjProperty",
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item and item.obj:
             obj = item.obj
             row = layout.row(align=True)
@@ -199,7 +213,7 @@ class BIM_UL_generic(bpy.types.UIList):
         self,
         context,
         layout: bpy.types.UILayout,
-        data,
+        data: bpy.types.PropertyGroup,
         item: bpy.types.PropertyGroup,
         icon,
         active_data,

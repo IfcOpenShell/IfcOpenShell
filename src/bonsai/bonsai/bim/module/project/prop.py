@@ -405,8 +405,12 @@ class BIMProjectProperties(PropertyGroup):
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
-    clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
+    clipping_planes_active_index: bpy.props.IntProperty(min=0, default=0, max=5)
     edited_objs: bpy.props.CollectionProperty(type=EditedObj)
+
+    @property
+    def active_clipping_plane(self) -> ObjProperty | None:
+        return tool.Blender.get_active_uilist_element(self.clipping_planes, self.clipping_planes_active_index)
 
     @property
     def clipping_planes_objs(self) -> list[bpy.types.Object]:
@@ -486,7 +490,7 @@ class BIMProjectProperties(PropertyGroup):
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
         clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]
-        clipping_planes_active: int
+        clipping_planes_active_index: int
         edited_objs: bpy.types.bpy_prop_collection_idprop[EditedObj]
 
     def get_active_library_breadcrumb(self) -> Union[LibraryBreadcrumb, None]:
