@@ -186,8 +186,9 @@ jobs:
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
              ../cmake
-          sudo make -j $(nproc)
-          sudo make install
+          sudo make -j 1 VERBOSE=1
+          set -x
+          cat /home/runner/work/IfcOpenShell/IfcOpenShell/build/ifcwrap/CMakeFiles/ifcopenshell_wrapper.dir/IfcPythonPYTHON_wrap.cxx
 
       # - name: Run IfcConvert on Sample files
       #   run: |
