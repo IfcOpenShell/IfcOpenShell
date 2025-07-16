@@ -1177,8 +1177,12 @@ class IfcImporter:
 
 
 class IfcImportSettings:
+    """
+    Initialize only using `IfcImportSettings.factory()`.
+    """
+
     input_file: Union[str, None] = None
-    logger: Union[logging.Logger, None] = None
+    logger: logging.Logger
 
     def __init__(self):
         self.diff_file = None
