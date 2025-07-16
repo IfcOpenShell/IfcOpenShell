@@ -225,15 +225,6 @@ class BIM_UL_generic(bpy.types.UIList):
             layout.label(text="", translate=False)
 
 
-class BIM_UL_topics(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
-        if item:
-            layout.prop(item, "title", text="", emboss=False)
-        else:
-            layout.label(text="", translate=False)
-
-
 class DocPreferences(bpy.types.PropertyGroup):
     sheets_dir: StringProperty(
         default=os.path.join("sheets") + os.path.sep,

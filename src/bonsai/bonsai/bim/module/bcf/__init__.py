@@ -71,6 +71,7 @@ classes = (
     ui.BIM_PT_bcf,
     ui.BIM_PT_bcf_metadata,
     ui.BIM_PT_bcf_comments,
+    ui.BIM_UL_topics,
 )
 
 

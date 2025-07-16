@@ -145,7 +145,6 @@ classes = [
     prop.BIMSnapGroups,
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
-    ui.BIM_UL_topics,
     ui.DocPreferences,
     ui.BIM_ADDON_preferences,
     # Tabs panel
