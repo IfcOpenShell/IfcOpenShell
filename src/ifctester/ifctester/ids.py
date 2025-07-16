@@ -63,12 +63,11 @@ def open(filepath: str, validate: bool = False) -> Ids:
 
 
 def from_string(xml: str, validate: bool = False) -> Ids:
-    tree = ET.ElementTree(ET.fromstring(xml))
     try:
         if validate:
             get_schema().validate(tree)
         decode = get_schema().decode(
-            tree, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+            xml, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
         )
     except XMLSchemaValidationError as e:
         raise IdsXmlValidationError(e, "Provided XML appears to be invalid. See details above.")
