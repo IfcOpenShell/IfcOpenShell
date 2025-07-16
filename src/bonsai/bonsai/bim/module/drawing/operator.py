@@ -334,7 +334,15 @@ class CreateDrawing(bpy.types.Operator):
                 annotation_svg = None
 
                 with profile("Generate underlay"):
-                    underlay_svg = self.generate_underlay(context)
+                    if ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
+                        drawing_style = self.cprops.get_active_drawing_style()
+                        if not drawing_style:
+                            self.report(
+                                {"ERROR"},
+                                f"Failed to create drawing '{self.drawing.Name}' - drawing has underlay but there's no active drawing underlay style.",
+                            )
+                            return {"FINISHED"}
+                        underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
                     if tool.Drawing.is_camera_orthographic():
