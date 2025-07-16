@@ -33,6 +33,7 @@ class BIM_PT_debug(Panel):
     def draw(self, context):
         assert self.layout
         layout = self.layout
+        assert (wm := bpy.context.window_manager)
 
         props = tool.Debug.get_debug_props()
         bim_props = tool.Blender.get_bim_props()
@@ -82,6 +83,10 @@ class BIM_PT_debug(Panel):
 
         row = layout.row()
         row.operator("bim.toggle_detailed_ios_logs")
+
+        row = layout.row(align=True)
+        row.prop(wm.operator_properties_last(bpy.ops.bim.change_log_level.idname()), "log_level", text="")
+        row.operator("bim.change_log_level")
 
         row = layout.row()
         row.operator("bim.restart_blender")

@@ -1003,6 +1003,31 @@ class ToggleDetailedIOSLogs(bpy.types.Operator):
         return {"FINISHED"}
 
 
+LogLevelType = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+
+class ChangeLogLevel(bpy.types.Operator):
+    bl_idname = "bim.change_log_level"
+    bl_label = "Change Log Level "
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Change general log level across all Python code in Blender"
+
+    log_level: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Log Level",
+        items=((i, i, "") for i in get_args(LogLevelType)),
+        default="WARNING",
+    )
+
+    if TYPE_CHECKING:
+        log_level: LogLevelType
+
+    def execute(self, context):
+        root = logging.getLogger()
+        root.setLevel(self.log_level)
+        self.report({"INFO"}, f"Log level changed to {self.log_level}.")
+        return {"FINISHED"}
+
+
 class RestartBlender(bpy.types.Operator):
     bl_idname = "bim.restart_blender"
     bl_label = "Restart Blender"
