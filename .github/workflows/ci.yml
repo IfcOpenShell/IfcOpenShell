@@ -120,7 +120,7 @@ jobs:
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
              ../cmake
-          sudo make -j $(nproc)
+          sudo make -j 1 VERBOSE=1
           sudo make install
 
       # - name: Run IfcConvert on Sample files
