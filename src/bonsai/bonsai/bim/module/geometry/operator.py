@@ -1315,6 +1315,10 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         if location_from_3d_cursor:
             get_location_from_3d_cursor(old_to_new, selected_element)
 
+        bpy.ops.object.select_all(action="DESELECT")
+        new_aggregate = old_to_new[selected_element][0]
+        tool.Blender.set_active_object(tool.Ifc.get_object(new_aggregate))
+
         bonsai.bim.handler.refresh_ui_data()
 
         return old_to_new
