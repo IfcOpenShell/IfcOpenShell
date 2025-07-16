@@ -4,8 +4,9 @@ import ifcopenshell.util.element
 import ifcopenshell.geom
 import multiprocessing
 from typing import NamedTuple
+import ifcopenshell.ifcopenshell_wrapper as W
 
-# python standalone_drawer.py model.ifc guid_of_drawing guids,of,bad,elements output.svg
+# W.turn_on_detailed_logging()
 
 
 class LineworkContexts(NamedTuple):
@@ -15,6 +16,13 @@ class LineworkContexts(NamedTuple):
 
 class Drawer:
     def execute(self):
+        if len(sys.argv) < 5:
+            print(f"Expected 4 arguments, got {len(sys.argv) - 1}. Example usage:")
+            print(
+                "python standalone_drawer.py drawing.ifc drawing_guid drawing_element_guid1,drawing_element_guid2,drawing_element_guid3 output.svg"
+            )
+            exit(1)
+
         ifc: ifcopenshell.file
         ifc = ifcopenshell.open(sys.argv[1])
         self.camera_element = ifc.by_guid(sys.argv[2])
