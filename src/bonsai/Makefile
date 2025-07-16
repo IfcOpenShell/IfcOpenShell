@@ -87,7 +87,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=d7cf803
+OLD:=ec13294
 .PHONY: bump
 bump:
 ifndef NEW
@@ -336,7 +336,7 @@ test-core:
 .PHONY: test-bim
 test-bim:
 ifndef MODULE
-	pytest test/bim --maxfail=1
+	pytest test/bim
 else
 	pytest test/bim -m "$(MODULE)" ./ --maxfail=1
 endif
