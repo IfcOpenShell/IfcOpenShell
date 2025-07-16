@@ -136,7 +136,7 @@ class BIM_PT_linked_aggregate(Panel):
         assert (element := tool.Ifc.get_entity(obj))
         row = layout.row(align=True)
 
-        if element.Decomposes:
+        if element.Decomposes or element.IsDecomposedBy:
             Number_Linked_Aggregates = AggregateData.data["total_linked_aggregate"]
             if not Number_Linked_Aggregates:
                 row.label(text="Not a Linked Aggregate")
