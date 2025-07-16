@@ -21,11 +21,6 @@ import bonsai.tool as tool
 from typing import TYPE_CHECKING
 from bonsai.bim.module.light.data import SolarData
 
-try:
-    import pyradiance
-except ImportError:
-    pyradiance = None
-
 
 class BIM_PT_radiance_exporter(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
@@ -42,13 +37,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         assert self.layout
         layout = self.layout
         props = tool.Blender.get_radiance_exporter_props()
-
-        if pyradiance is None:
-            box = layout.box()
-            box.label(text="There was a problem importing Pyradiance", icon="ERROR")
-            box.label(text="and it's functionality is not available.")
-            box.label(text="See system console logs at Bonsai startup.")
-            return
 
         if tool.Ifc.get():
             row = self.layout.row()

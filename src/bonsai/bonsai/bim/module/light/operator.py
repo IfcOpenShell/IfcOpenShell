@@ -18,11 +18,7 @@
 
 import os
 
-try:
-    import pyradiance as pr
-except ImportError:
-    pr = None
-
+import pyradiance as pr
 from datetime import datetime
 import bpy
 import bonsai.tool as tool
@@ -137,10 +133,6 @@ class RadianceRender(bpy.types.Operator):
     bl_description = "Renders the scene using Radiance"
 
     def execute(self, context):
-        if pr is None:
-            self.report({"ERROR"}, "PyRadiance is not available. Cannot perform rendering.")
-            return {"CANCELLED"}
-
         print("Starting Radiance rendering process...")
         props = tool.Blender.get_radiance_exporter_props()
         resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
