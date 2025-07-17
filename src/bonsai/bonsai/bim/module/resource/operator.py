@@ -87,10 +87,11 @@ class EditResource(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Resource.get_resource_props()
         core.edit_resource(
             tool.Ifc,
             tool.Resource,
-            resource=tool.Ifc.get().by_id(context.scene.BIMResourceProperties.active_resource_id),
+            resource=tool.Ifc.get().by_id(props.active_resource_id),
         )
 
 
@@ -174,10 +175,11 @@ class EditResourceTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Resource.get_resource_props()
         core.edit_resource_time(
             tool.Ifc,
             tool.Resource,
-            resource_time=tool.Ifc.get().by_id(context.scene.BIMResourceProperties.active_resource_time_id),
+            resource_time=tool.Ifc.get().by_id(props.active_resource_time_id),
         )
 
 

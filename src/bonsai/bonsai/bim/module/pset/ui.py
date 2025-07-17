@@ -596,11 +596,8 @@ class BIM_PT_resource_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMResourceProperties
-        total_resources = len(context.scene.BIMResourceTreeProperties.resources)
-        if total_resources > 0 and props.active_resource_index < total_resources:
-            return True
-        return False
+        active_resource = tool.Resource.get_resource_props().active_resource
+        return bool(active_resource)
 
     def draw(self, context):
         if not ResourceQtosData.is_loaded:
@@ -631,11 +628,8 @@ class BIM_PT_resource_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMResourceProperties
-        total_resources = len(context.scene.BIMResourceTreeProperties.resources)
-        if total_resources > 0 and props.active_resource_index < total_resources:
-            return True
-        return False
+        active_resource = tool.Resource.get_resource_props().active_resource
+        return bool(active_resource)
 
     def draw(self, context):
         if not ResourcePsetsData.is_loaded:

@@ -386,12 +386,11 @@ class TaskICOMData:
         cls.is_loaded = True
 
     @classmethod
-    def can_active_resource_be_assigned(cls):
-        resource_props = bpy.context.scene.BIMResourceProperties
-        resource_tprops = bpy.context.scene.BIMResourceTreeProperties
-        total_resources = len(resource_tprops.resources)
-        if total_resources and resource_props.active_resource_index < total_resources:
-            resource_id = resource_tprops.resources[resource_props.active_resource_index].ifc_definition_id
+    def can_active_resource_be_assigned(cls) -> bool:
+        props = tool.Resource.get_resource_props()
+        active_resource = props.active_resource
+        if active_resource:
+            resource_id = active_resource.ifc_definition_id
             return not tool.Ifc.get().by_id(resource_id).is_a("IfcCrewResource")
         return False
 

@@ -155,9 +155,9 @@ def get_task_qto_names(self: "PsetProperties", context: object) -> tool.Blender.
 
 def get_resource_pset_names(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
-    rprops = context.scene.BIMResourceProperties
-    rtprops = context.scene.BIMResourceTreeProperties
-    ifc_class = tool.Ifc.get().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
+    active_resource = tool.Resource.get_resource_props().active_resource
+    assert active_resource
+    ifc_class = tool.Ifc.get().by_id(active_resource.ifc_definition_id).is_a()
     if ifc_class not in psetnames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
@@ -166,9 +166,9 @@ def get_resource_pset_names(self: "PsetProperties", context: bpy.types.Context) 
 
 def get_resource_qto_names(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global qtonames
-    rprops = context.scene.BIMResourceProperties
-    rtprops = context.scene.BIMResourceTreeProperties
-    ifc_class = tool.Ifc.get().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
+    active_resource = tool.Resource.get_resource_props().active_resource
+    assert active_resource
+    ifc_class = tool.Ifc.get().by_id(active_resource.ifc_definition_id).is_a()
     if ifc_class not in qtonames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True, schema=tool.Ifc.get_schema())
         qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)

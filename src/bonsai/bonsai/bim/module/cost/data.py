@@ -369,13 +369,13 @@ class CostItemQuantitiesData:
         cls.is_loaded = True
 
     @classmethod
-    def product_quantity_names(cls):
-        elements = tool.Spatial.get_selected_products()
+    def product_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        elements = list(tool.Spatial.get_selected_products())
         names = ifcopenshell.util.cost.get_product_quantity_names(elements)
         return [(n, n, "") for n in names]
 
     @classmethod
-    def process_quantity_names(cls):
+    def process_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         props = tool.Sequence.get_work_schedule_props()
         active_task_index = props.active_task_index
         tprops = tool.Sequence.get_task_tree_props()
@@ -391,14 +391,11 @@ class CostItemQuantitiesData:
         return [(n, n, "") for n in names if n != "id"]
 
     @classmethod
-    def resource_quantity_names(cls):
-        active_resource_index = bpy.context.scene.BIMResourceProperties.active_resource_index
-        total_resources = len(bpy.context.scene.BIMResourceTreeProperties.resources)
-        if not total_resources or active_resource_index >= total_resources:
+    def resource_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        active_resource = tool.Resource.get_resource_props().active_resource
+        if not active_resource:
             return []
-        ifc_definition_id = bpy.context.scene.BIMResourceTreeProperties.resources[
-            active_resource_index
-        ].ifc_definition_id
+        ifc_definition_id = active_resource.ifc_definition_id
         element = tool.Ifc.get().by_id(ifc_definition_id)
         names = set()
         qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True)
