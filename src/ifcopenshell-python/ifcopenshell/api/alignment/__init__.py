@@ -51,6 +51,7 @@ from .add_stationing_referent import add_stationing_referent
 from .add_vertical_layout import add_vertical_layout
 from .create_layout_segment import create_layout_segment
 from .create import create
+from .create_as_offset_curve import create_as_offset_curve
 from .create_as_polyline import create_as_polyline
 from .create_by_pi_method import create_by_pi_method
 from .create_from_csv import create_from_csv
@@ -82,6 +83,7 @@ __all__ = [
     "add_vertical_layout",
     "create_layout_segment",
     "create",
+    "create_as_offset_curve",
     "create_as_polyline",
     "create_by_pi_method",
     "create_from_csv",

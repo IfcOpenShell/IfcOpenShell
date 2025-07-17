@@ -86,6 +86,10 @@ def add_stationing_referent(
 
             settings = ifcopenshell.geom.settings()
             fn = ifcopenshell_wrapper.map_shape(settings, basis_curve.wrapped_data)
+
+            if basis_curve.is_a("IfcPolyline") or basis_curve.is_a("IfcIndexedPolyCurve"):
+                fn = ifcopenshell_wrapper.convert_loop_to_function_item(fn)
+
             evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, fn)
             p = evaluator.evaluate(distance_along * unit_scale)
             p = np.array(p)
