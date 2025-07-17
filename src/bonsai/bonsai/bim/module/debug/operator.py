@@ -973,7 +973,7 @@ class DebugActiveDrawing(bpy.types.Operator):
 class ToggleDetailedIOSLogs(bpy.types.Operator):
     bl_idname = "bim.toggle_detailed_ios_logs"
     bl_label = "Toggle Detailed IfcOpenShell Logs"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = {"REGISTER"}
     bl_description = (
         "Turn on detailed IfcOpenShell logs in the system console.\n"
         + "Could be useful debugging issues "
@@ -1009,7 +1009,7 @@ LogLevelType = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
 class ChangeLogLevel(bpy.types.Operator):
     bl_idname = "bim.change_log_level"
     bl_label = "Change Log Level "
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = {"REGISTER"}
     bl_description = "Change general log level across all Python code in Blender"
 
     log_level: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
