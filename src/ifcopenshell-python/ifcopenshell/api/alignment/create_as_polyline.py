@@ -25,8 +25,94 @@ import ifcopenshell.util.stationing
 from ifcopenshell import entity_instance
 
 from ifcopenshell.api.alignment._create_polyline_representation import _create_polyline_representation
-from ifcopenshell.api.alignment._add_zero_length_segment import _add_zero_length_segment
+
+import math
 from collections.abc import Sequence
+
+
+def _create_layout(file: ifcopenshell.file, alignment: entity_instance, points: Sequence[entity_instance]):
+    """
+    I don't believe it is required for polylines, but the validation serivce gives an error if the alignment doesn't have a layout
+    """
+    include_vertical = False if points[0].Dim == 2 else True
+
+    alignment_layouts = []
+
+    alignment_layouts.append(file.createIfcAlignmentHorizontal(GlobalId=ifcopenshell.guid.new()))
+
+    if include_vertical:
+        alignment_layouts.append(file.createIfcAlignmentVertical(GlobalId=ifcopenshell.guid.new()))
+
+    ifcopenshell.api.nest.assign_object(file, related_objects=alignment_layouts, relating_object=alignment)
+
+    start_dist_along = 0.0
+    for p1, p2 in zip(points, points[1:]):
+        x1, y1, z1 = p1.Coordinates
+        x2, y2, z2 = p2.Coordinates
+        dir = math.atan2(y2 - y1, x2 - x1)
+        gradient = (z2 - z1) / (x2 - x1)
+        length = math.sqrt(math.pow((x2 - x1), 2.0) + math.pow((y2 - y1), 2.0))
+
+        hsegment = file.createIfcAlignmentSegment(
+            ifcopenshell.guid.new(),
+            DesignParameters=file.createIfcAlignmentHorizontalSegment(
+                StartPoint=p1,
+                StartDirection=dir,
+                StartRadiusOfCurvature=0.0,
+                EndRadiusOfCurvature=0.0,
+                SegmentLength=length,
+                PredefinedType="LINE",
+            ),
+        )
+
+        ifcopenshell.api.nest.assign_object(file, related_objects=[hsegment], relating_object=alignment_layouts[0])
+
+        if include_vertical:
+            vsegment = file.createIfcAlignmentSegment(
+                ifcopenshell.guid.new(),
+                DesignParameters=file.createIfcAlignmentVerticalSegment(
+                    StartDistAlong=start_dist_along,
+                    HorizontalLength=length,
+                    StartHeight=z1,
+                    StartGradient=gradient,
+                    EndGradient=gradient,
+                    PredefinedType="CONSTANTGRADIENT",
+                ),
+            )
+
+            ifcopenshell.api.nest.assign_object(file, related_objects=[vsegment], relating_object=alignment_layouts[1])
+
+        start_dist_along += length
+
+    # zero length segment
+    hsegment = file.createIfcAlignmentSegment(
+        ifcopenshell.guid.new(),
+        DesignParameters=file.createIfcAlignmentHorizontalSegment(
+            StartPoint=points[-1],
+            StartDirection=dir,
+            StartRadiusOfCurvature=0.0,
+            EndRadiusOfCurvature=0.0,
+            SegmentLength=0.0,
+            PredefinedType="LINE",
+        ),
+    )
+
+    ifcopenshell.api.nest.assign_object(file, related_objects=[hsegment], relating_object=alignment_layouts[0])
+
+    if include_vertical:
+        vsegment = file.createIfcAlignmentSegment(
+            ifcopenshell.guid.new(),
+            DesignParameters=file.createIfcAlignmentVerticalSegment(
+                StartDistAlong=start_dist_along,
+                HorizontalLength=0.0,
+                StartHeight=points[-1].Coordinates[-1],
+                StartGradient=gradient,
+                EndGradient=gradient,
+                PredefinedType="CONSTANTGRADIENT",
+            ),
+        )
+
+        ifcopenshell.api.nest.assign_object(file, related_objects=[vsegment], relating_object=alignment_layouts[1])
 
 
 def create_as_polyline(
@@ -50,6 +136,8 @@ def create_as_polyline(
         GlobalId=ifcopenshell.guid.new(),
         Name=name,
     )
+
+    # _create_layout(file,alignment,points)
 
     _create_polyline_representation(file, alignment, points)
 

@@ -41,9 +41,14 @@ def get_basis_curve(alignment: entity_instance) -> entity_instance:
 
     representations = ifcopenshell.util.representation.get_representations_iter(alignment)
     for representation in representations:
-        if (representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve2D") or (
-            representation.RepresentationIdentifier == "FootPrint" and representation.RepresentationType == "Curve2D"
-        ):
+        if (
+            (representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve2D")
+            or (
+                representation.RepresentationIdentifier == "FootPrint"
+                and representation.RepresentationType == "Curve2D"
+            )
+            or (representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve3D")
+        ):  # in the case of IfcPolyline or IfcIndexedPolyCurve with 3D points
             axis = representation
             return None if axis.Items == None or len(axis.Items) == 0 else axis.Items[0]
 

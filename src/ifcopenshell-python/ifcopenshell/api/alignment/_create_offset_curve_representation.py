@@ -25,8 +25,8 @@ import math
 from collections.abc import Sequence
 
 
-def _create_polyline_representation(
-    file: ifcopenshell.file, alignment: entity_instance, points: Sequence[entity_instance]
+def _create_offset_curve_representation(
+    file: ifcopenshell.file, alignment: entity_instance, offsets: Sequence[entity_instance]
 ) -> None:
     """
     Create geometric representation for the alignment based on an IfcPolyline
@@ -40,7 +40,9 @@ def _create_polyline_representation(
 
     axis_geom_subcontext = ifcopenshell.api.alignment.get_axis_subcontext(file)
 
-    if points[0].Dim == 3:
+    basis_curve = offsets[0].BasisCurve  # IfcPointByDistanceExpression.BasisCurve
+
+    if basis_curve.Dim == 3:
         placement = file.createIfcLocalPlacement(
             PlacementRelTo=None,
             RelativePlacement=file.createIfcAxis2Placement3D(
@@ -57,7 +59,7 @@ def _create_polyline_representation(
         )
         representation_type = "Curve2D"
 
-    curve = file.createIfcPolyLine(Points=points)
+    curve = file.createIfcOffsetCurveByDistances(BasisCurve=basis_curve, OffsetValues=offsets)
 
     representation = file.createIfcShapeRepresentation(
         ContextOfItems=axis_geom_subcontext,
