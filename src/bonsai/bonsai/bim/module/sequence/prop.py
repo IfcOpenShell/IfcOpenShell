@@ -308,8 +308,9 @@ def updateAssignedResourceName(self, context):
     pass
 
 
-def updateAssignedResourceUsage(self, context):
-    if not context.scene.BIMResourceProperties.is_resource_update_enabled:
+def updateAssignedResourceUsage(self: "TaskResource", context: object) -> None:
+    props = tool.Resource.get_resource_props()
+    if not props.is_resource_update_enabled:
         return
     if not self.schedule_usage:
         return

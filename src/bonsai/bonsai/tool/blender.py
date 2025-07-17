@@ -246,9 +246,9 @@ class Blender(bonsai.core.tool.Blender):
             cost_props = tool.Cost.get_cost_props()
             return cost_props.cost_items[cost_props.active_cost_item_index].ifc_definition_id
         elif obj_type == "Resource":
-            return context.scene.BIMResourceTreeProperties.resources[
-                context.scene.BIMResourceProperties.active_resource_index
-            ].ifc_definition_id
+            active_resource = tool.Resource.get_resource_props().active_resource
+            assert active_resource
+            return active_resource.ifc_definition_id
         elif obj_type == "Profile":
             props = tool.Profile.get_profile_props()
             return props.profiles[props.active_profile_index].ifc_definition_id

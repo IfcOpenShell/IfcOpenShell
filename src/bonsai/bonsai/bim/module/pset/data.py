@@ -239,9 +239,9 @@ class ResourceQtosData(Data):
 
     @classmethod
     def load(cls):
-        rprops = bpy.context.scene.BIMResourceProperties
-        rtprops = bpy.context.scene.BIMResourceTreeProperties
-        ifc_definition_id = rtprops.resources[rprops.active_resource_index].ifc_definition_id
+        active_resource = tool.Resource.get_resource_props().active_resource
+        assert active_resource
+        ifc_definition_id = active_resource.ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True
 
@@ -252,9 +252,9 @@ class ResourcePsetsData(Data):
 
     @classmethod
     def load(cls):
-        rprops = bpy.context.scene.BIMResourceProperties
-        rtprops = bpy.context.scene.BIMResourceTreeProperties
-        ifc_definition_id = rtprops.resources[rprops.active_resource_index].ifc_definition_id
+        active_resource = tool.Resource.get_resource_props().active_resource
+        assert active_resource
+        ifc_definition_id = active_resource.ifc_definition_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 
