@@ -223,6 +223,7 @@ class Profile(bonsai.core.tool.Profile):
         """Set default profile attributes to keep profile valid."""
         class_match = False
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        # We're using for-loop as classes may not match exactly.
         for ifc_class, params in cls.DEFAULT_PROFILE_ATTRS.items():
             if profile.is_a(ifc_class):
                 class_match = True
