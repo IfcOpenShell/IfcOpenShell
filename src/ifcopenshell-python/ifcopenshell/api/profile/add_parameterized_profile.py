@@ -16,9 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+from typing import Literal
 
 
-def add_parameterized_profile(file: ifcopenshell.file, ifc_class: str) -> ifcopenshell.entity_instance:
+ProfileType = Literal["AREA", "CURVE"]
+
+
+def add_parameterized_profile(
+    file: ifcopenshell.file, ifc_class: str, profile_type: str = "AREA"
+) -> ifcopenshell.entity_instance:
     """Adds a new parameterised profile
 
     IFC offers parameterised profiles for common standardised hot roll
@@ -30,6 +36,7 @@ def add_parameterized_profile(file: ifcopenshell.file, ifc_class: str) -> ifcope
 
     :param ifc_class: The subclass of IfcParameterizedProfileDef that you'd
         like to create.
+    :param profile_type:
     :return: The newly created element depending on the specified ifc_class.
 
     Example:
@@ -40,4 +47,4 @@ def add_parameterized_profile(file: ifcopenshell.file, ifc_class: str) -> ifcope
             ifc_class="IfcCircleProfileDef")
         circle.Radius = 1.
     """
-    return file.create_entity(ifc_class)
+    return file.create_entity(ifc_class, ProfileType=profile_type)

@@ -118,7 +118,7 @@ def get_supertypes(
 def get_subtypes(
     declaration: ifcopenshell.ifcopenshell_wrapper.entity,
 ) -> list[ifcopenshell.ifcopenshell_wrapper.entity]:
-    """Get a flat list of subtype declarations
+    """Get a flat list of subtype declarations, recursively.
 
     Abstract classes are skipped.
 
