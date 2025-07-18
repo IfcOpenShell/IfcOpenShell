@@ -260,8 +260,15 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
         Transition=transition,
         Placement=file.create_entity(
             type="IfcAxis2Placement2D",
-            Location=file.createIfcCartesianPoint((x1, y1)),
-            RefDirection=file.createIfcDirection((math.cos(angle1), math.sin(angle1))),
+            Location=file.createIfcCartesianPoint(
+                (
+                    start_point.Coordinates[0] + x1 * math.cos(start_direction) + y1 * math.sin(start_direction),
+                    start_point.Coordinates[1] + x1 * math.sin(start_direction) - y1 * math.cos(start_direction),
+                )
+            ),
+            RefDirection=file.createIfcDirection(
+                (math.cos(start_direction + angle1), math.sin(start_direction + angle1))
+            ),
         ),
         SegmentStart=file.createIfcLengthMeasure(length / 2),
         SegmentLength=file.createIfcLengthMeasure(length / 2),
