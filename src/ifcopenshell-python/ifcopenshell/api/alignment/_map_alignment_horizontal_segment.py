@@ -262,8 +262,8 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
             type="IfcAxis2Placement2D",
             Location=file.createIfcCartesianPoint(
                 (
-                    start_point.Coordinates[0] + x1 * math.cos(start_direction) + y1 * math.sin(start_direction),
-                    start_point.Coordinates[1] + x1 * math.sin(start_direction) - y1 * math.cos(start_direction),
+                    start_point.Coordinates[0] + x1 * math.cos(start_direction) - y1 * math.sin(start_direction),
+                    start_point.Coordinates[1] + x1 * math.sin(start_direction) + y1 * math.cos(start_direction),
                 )
             ),
             RefDirection=file.createIfcDirection(
@@ -274,6 +274,21 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
         SegmentLength=file.createIfcLengthMeasure(length / 2),
         ParentCurve=parent_curve2,
     )
+
+    import numpy as np
+    settings = ifcopenshell.geom.settings()
+    prev_segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment1.wrapped_data)
+    prev_segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, prev_segment_fn)
+    e = prev_segment_evaluator.evaluate(prev_segment_fn.end())
+    end = np.array(e)
+
+    segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment2.wrapped_data)
+    segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
+    s = segment_evaluator.evaluate(segment_fn.start())
+    start = np.array(s)
+
+    assert(np.allclose(end[:3,3],start[:3,3]))
+
 
     return curve_segment1, curve_segment2
 
