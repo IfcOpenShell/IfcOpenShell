@@ -1214,7 +1214,7 @@ def _HelmertCurve_100_0_300_1000_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(300.0)
     mapped_segment = mapped_segments[1]
     assert "DISCONTINUOUS" == mapped_segment.Transition
-    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.7998035122387, -3.91603145329256))
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.7998035122387, 3.91603145329256))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
         (0.9892460407218963, 0.146260968532457)
     )
@@ -1262,7 +1262,7 @@ def _HelmertCurve_100_0__300__1000_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(-300.0)
     mapped_segment = mapped_segments[1]
     assert "DISCONTINUOUS" == mapped_segment.Transition
-    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.7998035122387, 3.91603145329256))
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.7998035122387, -3.91603145329256))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
         (0.9892460407218963, -0.146260968532457)
     )
@@ -1310,7 +1310,7 @@ def _HelmertCurve_100_0_300_inf_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(300.0)
     mapped_segment = mapped_segments[1]
     assert "DISCONTINUOUS" == mapped_segment.Transition
-    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.8122545525202, -3.81263503030693))
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.8122545525202, 3.81263503030693))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
         (0.9904138664989948, 0.1381317235341378)
     )
@@ -1358,7 +1358,7 @@ def _HelmertCurve_100_0__300__inf_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(-300.0)
     mapped_segment = mapped_segments[1]
     assert "DISCONTINUOUS" == mapped_segment.Transition
-    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.8122545525202, 3.81263503030693))
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.8122545525202, -3.81263503030693))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
         (0.9904138664989948, -0.1381317235341378)
     )
@@ -1406,7 +1406,7 @@ def _HelmertCurve_100_0_1000_300_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(1000.0)
     mapped_segment = mapped_segments[1]
     assert "DISCONTINUOUS" == mapped_segment.Transition
-    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9681012468824, -1.49252747074135))
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9681012468824, 1.49252747074135))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
         (0.997594495159641, 0.0693197174487962)
     )
@@ -1454,7 +1454,7 @@ def _HelmertCurve_100_0__1000__300_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(-1000.0)
     mapped_segment = mapped_segments[1]
     assert "DISCONTINUOUS" == mapped_segment.Transition
-    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9681012468824, 1.49252747074135))
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9681012468824, -1.49252747074135))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
         (0.997594495159641, -0.0693197174487962)
     )
@@ -1502,7 +1502,7 @@ def _HelmertCurve_100_0_inf_300_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(None)
     mapped_segment = mapped_segments[1]
     assert "DISCONTINUOUS" == mapped_segment.Transition
-    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9972443634885, -0.347204361427475))
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9972443634885, 0.347204361427475))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
         (0.999614222337484, 0.027769614722351524)
     )
@@ -1550,7 +1550,7 @@ def _HelmertCurve_100_0__inf__300_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(None)
     mapped_segment = mapped_segments[1]
     assert "DISCONTINUOUS" == mapped_segment.Transition
-    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9972443634885, 0.347204361427475))
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9972443634885, -0.347204361427475))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
         (0.999614222337484, -0.027769614722351524)
     )
