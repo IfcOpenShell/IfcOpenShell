@@ -1,11 +1,11 @@
 #!/bin/bash
 # Please update REPO_PATH and BLENDER_PATH in the script below.
-# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.4"
-# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.4"
+# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.5"
+# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.5"
 # REPO_PATH="/path/to/where/your/git/repository/is/cloned/IfcOpenShell"
 set -e
 REPO_PATH="$HOME/bonsaiDevel/IfcOpenShell"
-BLENDER_PATH="$HOME/.config/blender/4.4"
+BLENDER_PATH="$HOME/.config/blender/4.5"
 PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
 # If you are installing offline, use this instead:
 # BONSAI_PATH="${BLENDER_PATH}/extensions/user_default/bonsai"
