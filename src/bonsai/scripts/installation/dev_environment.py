@@ -156,7 +156,8 @@ def main() -> None:
                 path.unlink()
             else:
                 shutil.rmtree(path)
-        elif path.is_file():
+        # Check `is_symlink` in case if it's a broken symlink.
+        elif path.is_file() or path.is_symlink():
             path.unlink()
         else:
             pass
