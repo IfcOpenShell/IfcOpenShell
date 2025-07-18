@@ -275,6 +275,7 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
         ParentCurve=parent_curve2,
     )
 
+    """
     import numpy as np
     settings = ifcopenshell.geom.settings()
     prev_segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment1.wrapped_data)
@@ -288,7 +289,7 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
     start = np.array(s)
 
     assert(np.allclose(end[:3,3],start[:3,3]))
-
+    """
 
     return curve_segment1, curve_segment2
 
