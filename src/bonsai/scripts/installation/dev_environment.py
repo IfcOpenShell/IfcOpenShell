@@ -19,6 +19,7 @@ import subprocess
 import shutil
 import urllib.request
 from pathlib import Path
+from typing import Union
 
 if sys.platform != "win32":
     print("Currently only available on Windows.")
@@ -39,20 +40,21 @@ REPO_PATH = r""
 BLENDER_PATH = Path.home() / r"AppData/Roaming/Blender Foundation/Blender/4.5"
 
 
-# Determine BONSAI_PATH from existing options
-def find_bonsai_path() -> Path:
-    candidates = [
-        # Installed from Bonsai Unstalble Repo.
-        BLENDER_PATH / r"extensions/raw_githubusercontent_com/bonsai",
-        # Installed via offline installation.
-        BLENDER_PATH / r"extensions/user_default/bonsai",
-        # Installed from Blender's official extensions platform.
-        BLENDER_PATH / r"extensions/blender_org/bonsai",
-    ]
-    for path in candidates:
+BONSAI_PATH_CANDIDATES = (
+    # Installed from Bonsai Unstalble Repo.
+    BLENDER_PATH / r"extensions/raw_githubusercontent_com/bonsai",
+    # Installed via offline installation.
+    BLENDER_PATH / r"extensions/user_default/bonsai",
+    # Installed from Blender's official extensions platform.
+    BLENDER_PATH / r"extensions/blender_org/bonsai",
+)
+
+
+# Determine BONSAI_PATH from existing options.
+def find_bonsai_path() -> Union[Path, None]:
+    for path in BONSAI_PATH_CANDIDATES:
         if path.exists():
             return path
-    raise FileNotFoundError("Could not find Bonsai path in expected locations.")
 
 
 # BONSAI_PATH: Path to 'bonsai' extension folder inside BLENDER_PATH.
@@ -67,6 +69,9 @@ BONSAI_PATH = find_bonsai_path()
 
 # Never changed by user.
 PACKAGE_PATH = BLENDER_PATH / r"extensions/.local/lib/python3.11/site-packages"
+
+# Python doesn't allow using escape sequences in f-strings.
+NEW_LINE = chr(10)
 
 
 def main():
@@ -90,7 +95,10 @@ def main():
     assert REPO_PATH.exists(), f"Path '{REPO_PATH=!s}' doesn't exist, ensure variable is set correctly."
     assert BLENDER_PATH.exists(), f"Path '{BLENDER_PATH=!s}' doesn't exist, ensure variable is set correctly."
     assert PACKAGE_PATH.exists(), f"Path '{PACKAGE_PATH=!s}' doesn't exist, ensure variable is set correctly."
-    assert BONSAI_PATH.exists(), f"Path '{BONSAI_PATH=!s}' doesn't exist, ensure variable is set correctly."
+    assert BONSAI_PATH is not None, (
+        "Couldn't find BONSAI_PATH in any of the paths candidates. "
+        f"Example paths: {NEW_LINE.join(str(p) for p in BONSAI_PATH_CANDIDATES)}."
+    )
 
     input("Confirm the settings above and press Enter to continue or Ctrl-C to cancel...")
 
