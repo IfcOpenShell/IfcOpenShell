@@ -187,7 +187,7 @@ GCC (4.7 or newer) or Clang (any version) is required.
 
    .. code-block:: bash
 
-        brew install boost cmake python3 cgal ftgl gmp libaec opencascade swig hdf5 zlib
+        brew install boost cmake python3 cgal ftgl gmp libaec opencascade swig hdf5 zlib eigen
         # homebrew automatically links most libraries, except some keg-only ones
         brew link zlib --force
 
@@ -211,6 +211,7 @@ GCC (4.7 or newer) or Clang (any version) is required.
             -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/ \
             -DHDF5_LIBRARY_DIR=/opt/homebrew/lib/ \
             -DHDF5_INCLUDE_DIR=/opt/homebrew/include/ \
+            -DEIGEN_DIR=/opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3 \
             -DCOLLADA_SUPPORT=0
         # `sysctl -n hw.ncpu` returns the number of cpu cores on macOS
         make -j$(sysctl -n hw.ncpu)
