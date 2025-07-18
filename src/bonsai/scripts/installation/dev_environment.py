@@ -2,7 +2,7 @@
 
 Script links existing Bonsai installation to the provided IfcOpenShell repository.
 
-If you're on Windows, using Blender 4.4, Bonsai is installed from unstable repo (raw_githubusercontent_com)
+If you're on Windows, using Blender 4.5, Bonsai is installed from unstable repo (raw_githubusercontent_com)
 and this script is already part of IfcOpenShell repo you want to link, then you can just run it and it will just work.
 
 Otherwise, see the SETTINGS section below to validate script settings to ensure it fits your evnironment.
@@ -36,7 +36,7 @@ REPO_PATH = r""
 
 # BLENDER_PATH: Path to Blender's configuration folder.
 # Usually don't need to change, just ensure Blender version matches.
-BLENDER_PATH = Path.home() / r"AppData/Roaming/Blender Foundation/Blender/4.4"
+BLENDER_PATH = Path.home() / r"AppData/Roaming/Blender Foundation/Blender/4.5"
 
 
 # Determine BONSAI_PATH from existing options
