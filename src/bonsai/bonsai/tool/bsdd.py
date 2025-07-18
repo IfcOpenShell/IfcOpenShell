@@ -22,13 +22,14 @@ import bonsai.tool as tool
 import bpy
 import json
 import bsdd
+import ifcopenshell.api.library
 import ifcopenshell.util.type
 import ifcopenshell.util.element
 import ifcopenshell.util.classification
-from typing import Any, Union, Optional, TYPE_CHECKING
+from typing import Any, Union, TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.bsdd.prop import BIMBSDDProperties
+    from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDDictionary
 
 
 class Bsdd(bonsai.core.tool.Bsdd):
@@ -84,6 +85,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
     @classmethod
     def create_dictionaries(cls, dictionaries: list[bsdd.DictionaryContractV1]) -> None:
         props = cls.get_bsdd_props()
+        active_bsdds: set[str] = {r.Location for r in cls.get_active_bsdd_ifc()}
         for dictionary in sorted(dictionaries, key=lambda d: d["name"]):
             new = props.dictionaries.add()
             new.name = dictionary["name"]
@@ -92,6 +94,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
             new.organization_name_owner = dictionary["organizationNameOwner"]
             new.status = dictionary["status"]
             new.version = dictionary["version"]
+            new["is_active"] = dictionary["uri"] in active_bsdds
 
     @classmethod
     def get_active_class_data(cls) -> Union[bsdd.ClassContractV1, dict]:
@@ -392,3 +395,80 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 uris.add(uri)
         class_uri, pset_name = pset_uri.rsplit("#", 1)
         return class_uri in uris
+
+    @classmethod
+    def get_active_bsdd_library(cls) -> Union[ifcopenshell.entity_instance, None]:
+        for document in tool.Ifc.get().by_type("IfcLibraryInformation"):
+            if document.Name == "BBIM_Active_bSDD":
+                return document
+
+    @classmethod
+    def get_refs(cls, library: ifcopenshell.entity_instance) -> tuple[ifcopenshell.entity_instance, ...]:
+        if library.file.schema == "IFC2X3":
+            return library.LibraryReference or ()
+        return library.HasLibraryReferences
+
+    @classmethod
+    def get_active_bsdd_ifc(cls) -> tuple[ifcopenshell.entity_instance, ...]:
+        library = cls.get_active_bsdd_library()
+        if not library:
+            return ()
+        return cls.get_refs(library)
+
+    class BSDDJsonData(TypedDict):
+        name: str
+        description: str
+
+    @classmethod
+    def save_active_bsdd_to_ifc(cls) -> None:
+        props = cls.get_bsdd_props()
+        assert props.dictionaries
+
+        ifc_file = tool.Ifc.get()
+        library = cls.get_active_bsdd_library()
+        if not library:
+            library = ifcopenshell.api.library.add_library(ifc_file, "BBIM_Active_bSDD")
+
+        active_bsdd: dict[str, BSDDDictionary] = {d.uri: d for d in props.dictionaries if d.is_active}
+        refs_to_remove: list[ifcopenshell.entity_instance] = []
+        active_bsdd_ifc: set[str] = set()
+        for ref in cls.get_refs(library):
+            uri = ref.Location
+            if uri not in active_bsdd:
+                refs_to_remove.append(ref)
+                continue
+            active_bsdd_ifc.add(uri)
+
+        # There is a possible edge case here.
+        # E.g. user had some dicts from test/preview previously active.
+        # But now other user opens file in Bonsai, where test/preview are not enabled in preferences,
+        # and makes changes to active dictionaries.
+        # Then, this will also unmark those test/preview dicts as active,
+        # which can be sometimes confusing.
+        #
+        # But the alternative is to only change status just for the dictionary
+        # changed by users, but then we need to come up with some other mechanism
+        # how to keep this library clean from dead urls
+        # (e.g. when dictionaries will go out of date).
+        for ref in refs_to_remove:
+            ifcopenshell.api.library.remove_reference(ifc_file, ref)
+
+        missing_bsdd = set(active_bsdd) - active_bsdd_ifc
+        for uri in missing_bsdd:
+            blender_dict = active_bsdd[uri]
+            ref = ifcopenshell.api.library.add_reference(ifc_file, library)
+            ref.Location = blender_dict.uri
+            # Can't use Description as it's not present in IFC2X3.
+            data: Bsdd.BSDDJsonData = {
+                "name": blender_dict.name,
+                "description": f"{blender_dict.status} - {blender_dict.version}",
+            }
+            ref.Name = json.dumps(data)
+
+    @classmethod
+    def get_active_bsdd_enum_items(cls) -> list[tuple[str, str, str]]:
+        results: list[tuple[str, str, str]] = []
+        for ref in tool.Bsdd.get_active_bsdd_ifc():
+            data: Bsdd.BSDDJsonData = json.loads(ref.Name)
+            results.append((ref.Location, data["name"], data["description"]))
+        return results

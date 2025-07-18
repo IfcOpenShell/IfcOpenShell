@@ -38,8 +38,7 @@ class BSDDData:
         cls.data["active_dictionary"] = cls.active_dictionary()
 
     @classmethod
-    def active_dictionary(cls):
-        props = tool.Bsdd.get_bsdd_props()
+    def active_dictionary(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         results = [("ALL", "All Dictionaries", "All active dictionaries")]
-        results.extend([(d.uri, d.name, f"{d.status} - {d.version}") for d in props.dictionaries if d.is_active])
+        results.extend(tool.Bsdd.get_active_bsdd_enum_items())
         return results
