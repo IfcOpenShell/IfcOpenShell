@@ -180,12 +180,16 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Assign the IFC Class to the selected non-ifc objects."
+    bl_description = (
+        "Assign the IFC Class to the selected non-ifc objects.\n\n"
+        + "SHIFT+CLICK to also convert object's custom properties to custom Pset."
+    )
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
     userdefined_type: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
+    props_to_pset: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     # TODO: is never used?
     should_add_representation: bpy.props.BoolProperty(default=True)
@@ -212,7 +216,11 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
-    def _execute(self, context):
+    def invoke(self, context, event):
+        self.props_to_pset = event.shift
+        return self.execute(context)
+
+    def execute(self, context):
         ifc_file = tool.Ifc.get()
         props = tool.Root.get_root_props()
         objects: list[bpy.types.Object] = []
@@ -359,6 +367,14 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry.reload_representation(obj)
                 elif obj.data is not None:
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
+            if self.props_to_pset:
+                custom_props = {
+                    k: v
+                    for (k, v) in obj.items()
+                    if (k not in ["_RNA_UI", "BIMObjectProperties"]) and type(v) in [bool, int, float, str]
+                }
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_ImportedBlenderProps")
+                ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=custom_props)
 
         # TODO: reload representation might lead to the object being replaced by object of the other type.
         # We probably should track it somehow and keep the original selection.
@@ -371,6 +387,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         current_selection = (current_selection[0], active_object, new_selected_objects)
 
         tool.Blender.set_objects_selection(*current_selection)
+        return {"FINISHED"}
 
 
 class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
