@@ -65,13 +65,12 @@ class ClassificationsData:
         return [(str(e.id()), e.Name, "") for e in IfcStore.classification_file.by_type("IfcClassification")]
 
     @classmethod
-    def classification_source(cls):
+    def classification_source(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         items = [
             ("FILE", "IFC File", ""),
             ("MANUAL", "Manual Entry", ""),
         ]
-        bprops = tool.Bsdd.get_bsdd_props()
-        dictionaries = [(d.uri, f"bSDD: {d.name}", "") for d in bprops.dictionaries if d.is_active]
+        dictionaries = tool.Bsdd.get_active_bsdd_enum_items()
         if dictionaries:
             items.append(("BSDD", "All Active bSDDs", ""))
         items.extend(dictionaries)
