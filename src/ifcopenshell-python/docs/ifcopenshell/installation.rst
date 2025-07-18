@@ -201,9 +201,9 @@ GCC (4.7 or newer) or Clang (any version) is required.
         # set library flags
         export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
         cmake ../cmake \
-            -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.10 \
-            -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/lib/libpython3.10.dylib \
-            -DPYTHON_INCLUDE_DIR=/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/include/python3.10/ \
+            -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.13 \
+            -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/lib/libpython3.13.dylib \
+            -DPYTHON_INCLUDE_DIR=/opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/include/python3.13/ \
             -DOCC_LIBRARY_DIR=/opt/homebrew/lib/ \
             -DOCC_INCLUDE_DIR=/opt/homebrew/include/opencascade/ \
             -DCGAL_INCLUDE_DIR=/opt/homebrew/include/ \
