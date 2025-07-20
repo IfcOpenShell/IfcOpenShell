@@ -18,7 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api.unit
-import ifcopenshell.util.stationing as sta
+import ifcopenshell.util.alignment as sta
 
 
 def _test_si_stations():

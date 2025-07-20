@@ -1,0 +1,170 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2025 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+import ifcopenshell
+import ifcopenshell.api.alignment
+import ifcopenshell.api.nest
+import ifcopenshell.util.alignment
+from ifcopenshell import entity_instance
+import ifcopenshell.ifcopenshell_wrapper as wrapper
+import numpy as np
+
+from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
+
+
+def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, include_referent : bool = True) -> bool:
+    """
+    Adds a zero length segment to the end of a layout.
+
+    If the layout already has a zero length segment, nothing is changed.
+
+    :param layout: An IfcAlignmentHorizontal, IfcAlignmentVertical, IfcAlignmentCant, IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve
+    :param include_referent: If True, an IfcReferent representing the ending point of the layout is included for IfcLinearElement layouts (i.e. business logic)
+    :return: True if segment is added
+    """
+    expected_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant","IfcCompositeCurve","IfcGradientCurve","IfcSegmentedReferenceCurve"]
+    if not layout.is_a() in expected_types:
+        raise TypeError(
+            f"Expected layout type to be one of {[_ for _ in expected_types]}, instead received {layout.is_a()}"
+        )
+
+    
+    if ifcopenshell.api.alignment.has_zero_length_segment(layout):
+        return False
+    
+    if layout.is_a("IfcCompositeCurve") or layout.is_a("IfcGradientCurve") or layout.is_a("IfcSegmentedReferenceCurve"):
+        x = 0.
+        y = 0.
+        dx = 1.
+        dy = 0.
+        segment_start = 0.
+
+        if layout.Segments and 0 < len(layout.Segments):
+            # If there are segments, get the last segment and compute the end point and tangent direction
+            # because this becomes of placement of the zero length segment
+            last_segment = layout.Segments[-1]
+            settings = ifcopenshell.geom.settings()
+            fn = wrapper.map_shape(settings,last_segment.wrapped_data)
+            eval = wrapper.function_item_evaluator(settings,fn)
+            e = np.array(eval.evaluate(fn.end()))
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+            e[:3,3] /= unit_scale
+            x = float(e[0,3])
+            y = float(e[1,3])
+            dx = float(e[0,0])
+            dy = float(e[1,0])
+            segment_start = last_segment.SegmentStart.wrappedValue + last_segment.SegmentLength.wrappedValue
+
+        parent_curve = file.createIfcLine(
+            Pnt=file.createIfcCartesianPoint(Coordinates=((0.0, 0.0))),
+            Dir=file.createIfcVector(
+                Orientation=file.createIfcDirection(DirectionRatios=((1.0, 0.0))),
+                Magnitude=1.0,
+            ),
+        )
+        curve_segment = file.createIfcCurveSegment(
+            Transition="DISCONTINUOUS",
+            Placement=file.createIfcAxis2Placement2D(
+                Location=file.createIfcCartesianPoint((x, y)),
+                RefDirection=file.createIfcDirection((dx, dy)),
+            ),
+            SegmentStart=file.createIfcLengthMeasure(segment_start),
+            SegmentLength=file.createIfcLengthMeasure(0.0),
+            ParentCurve=parent_curve,
+        )
+        layout.Segments += (curve_segment,)
+
+        # add zero length segments to base curves
+        if layout.is_a("IfcSegmentedReferenceCurve"):
+            ifcopenshell.api.alignment.add_zero_length_segment(file,layout.BaseCurve)
+        elif layout.is_a("IfcGradientCurve"):
+            ifcopenshell.api.alignment.add_zero_length_segment(file,layout.BaseCurve)
+
+    else:
+        segment = None
+        if layout.is_a("IfcAlignmentHorizontal"):
+            design_parameters = file.createIfcAlignmentHorizontalSegment(
+                StartPoint=file.createIfcCartesianPoint(
+                    (0.0, 0.0)
+                ),  # this is a little problematic. need to know the end point and tangent
+                StartDirection=0.0,  # of the previous segment, which requires geometry mapping
+                StartRadiusOfCurvature=0.0,
+                EndRadiusOfCurvature=0.0,
+                SegmentLength=0.0,
+                PredefinedType="LINE",
+            )
+            segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
+        elif layout.is_a("IfcAlignmentVertical"):
+            last_segment_dist_along = 0.0
+            last_segment_end_gradient = 0.0
+            for rel in layout.IsNestedBy:
+                if 0 < len(rel.RelatedObjects):
+                    last_segment = rel.RelatedObjects[1]
+                    last_segment_dist_along = (
+                        last_segment.DesignParameters.StartDistAlong + last_segment.DesignParameters.HorizontalLength
+                    )
+                    last_segment_end_gradient = last_segment.DesignParameters.EndGradient
+
+            design_parameters = file.createIfcAlignmentVerticalSegment(
+                StartDistAlong=last_segment_dist_along,
+                HorizontalLength=0.0,
+                StartHeight=0.0,
+                StartGradient=last_segment_end_gradient,
+                EndGradient=last_segment_end_gradient,
+                PredefinedType="CONSTANTGRADIENT",
+            )
+            segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
+        elif layout.is_a("IfcAlignmentCant"):
+            last_segment_dist_along = 0.0
+            last_segment_cant_left = 0.0
+            last_segment_cant_right = 0.0
+            for rel in layout.IsNestedBy:
+                if 0 < len(rel.RelatedObjects):
+                    last_segment = rel.RelatedObjects[1]
+                    last_segment_dist_along = (
+                        last_segment.DesignParameters.StartDistAlong + last_segment.DesignParameters.HorizontalLength
+                    )
+                    last_segment_cant_left = (
+                        last_segment.DesignParameters.EndCantLeft
+                        if last_segment.DesignParameters.EndCantLeft != None
+                        else last_segment.DesignParameters.StartCantLeft
+                    )
+                    last_segment_cant_right = (
+                        last_segment.DesignParameters.EndCantRight
+                        if last_segment.DesignParameters.EndCantRight != None
+                        else last_segment.DesignParameters.StartCantRight
+                    )
+
+            design_parameters = file.createIfcAlignmentCantSegment(
+                StartDistAlong=last_segment_dist_along,
+                HorizontalLength=0.0,
+                StartCantLeft=last_segment_cant_left,
+                StartCantRight=last_segment_cant_right,
+                PredefinedType="CONSTANTCANT",
+            )
+            segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
+
+        ifcopenshell.api.nest.assign_object(file, related_objects=[segment], relating_object=layout)
+
+        if include_referent:
+            alignment = ifcopenshell.api.alignment.get_alignment(layout)
+            station = ifcopenshell.api.alignment.get_alignment_station(file,alignment)
+            name = f"{_get_segment_start_point_label(segment,None)} {ifcopenshell.util.alignment.station_as_string(file,station)}"
+            ifcopenshell.api.alignment.add_stationing_referent(file, segment, 0.0, station, name=name)
+    
+    return True

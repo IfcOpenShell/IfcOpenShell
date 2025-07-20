@@ -29,7 +29,7 @@ import ifcopenshell.template
 from ifcopenshell import entity_instance
 from ifcopenshell import ifcopenshell_wrapper
 import ifcopenshell.util
-import ifcopenshell.util.stationing
+import ifcopenshell.util.alignment
 
 
 def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np.ndarray:
