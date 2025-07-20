@@ -28,13 +28,6 @@ def test_add_vertical_alignment():
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
-    axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
-        file,
-        context_type="Model",
-        context_identifier="Axis",
-        target_view="MODEL_VIEW",
-        parent=geometric_representation_context,
-    )
 
     alignment = ifcopenshell.api.alignment.create(file, "A1", include_vertical=False)
 

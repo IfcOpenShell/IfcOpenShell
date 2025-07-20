@@ -75,3 +75,5 @@ def test_add_segment_to_layout():
     assert (
         alignment_segment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
     )  # a referent is automatically added at the start of the segment
+
+test_add_segment_to_layout()

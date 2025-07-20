@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
-import ifcopenshell.util.stationing
+import ifcopenshell.util.alignment
 
 from ifcopenshell import entity_instance
 
@@ -54,7 +54,7 @@ def create_as_offset_curve(
     _create_offset_curve_representation(file, alignment, offsets)
 
     # define stationing
-    name = ifcopenshell.util.stationing.station_as_string(file, start_station)
+    name = ifcopenshell.util.alignment.station_as_string(file, start_station)
     referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name)
     ifcopenshell.api.nest.reorder_nesting(file, referent, -1, 0)
 

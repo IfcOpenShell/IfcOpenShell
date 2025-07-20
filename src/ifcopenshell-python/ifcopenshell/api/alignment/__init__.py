@@ -49,6 +49,7 @@ Future versions of this API may support:
 
 from .add_stationing_referent import add_stationing_referent
 from .add_vertical_layout import add_vertical_layout
+from .add_zero_length_segment import add_zero_length_segment
 from .create_layout_segment import create_layout_segment
 from .create import create
 from .create_as_offset_curve import create_as_offset_curve
@@ -56,6 +57,7 @@ from .create_as_polyline import create_as_polyline
 from .create_by_pi_method import create_by_pi_method
 from .create_from_csv import create_from_csv
 from .create_segment_representations import create_segment_representations
+from .create_representation import create_representation
 from .distance_along_from_station import distance_along_from_station
 from .get_alignment import get_alignment
 from .get_alignment_station import get_alignment_station
@@ -69,11 +71,13 @@ from .get_basis_curve import get_basis_curve
 from .get_child_alignments import get_child_alignments
 from .get_curve import get_curve
 from .get_layout_curve import get_layout_curve
+from .get_mapped_segments import get_mapped_segments
 from .get_parent_alignment import get_parent_alignment
 from .has_zero_length_segment import has_zero_length_segment
 from .layout_horizontal_alignment_by_pi_method import layout_horizontal_alignment_by_pi_method
 from .layout_vertical_alignment_by_pi_method import layout_vertical_alignment_by_pi_method
 from .name_segments import name_segments
+from .update_fallback_position import update_fallback_position
 from .util import *
 
 from ._get_segment_start_point_label import register_referent_name_callback
@@ -81,6 +85,7 @@ from ._get_segment_start_point_label import register_referent_name_callback
 __all__ = [
     "add_stationing_referent",
     "add_vertical_layout",
+    "add_zero_length_segment",
     "create_layout_segment",
     "create",
     "create_as_offset_curve",
@@ -88,6 +93,7 @@ __all__ = [
     "create_by_pi_method",
     "create_from_csv",
     "create_segment_representations",
+    "create_representation",
     "distance_along_from_station",
     "get_alignment",
     "get_alignment_station",
@@ -105,6 +111,7 @@ __all__ = [
     "has_zero_length_segment",
     "layout_horizontal_alignment_by_pi_method",
     "layout_vertical_alignment_by_pi_method",
+    "update_fallback_position",
     "name_segments",
     "register_referent_name_callback",
 ]

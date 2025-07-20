@@ -61,11 +61,25 @@ def test_create():
             assert cant != None
 
         # verify each layout has a zero length segment (which also tests if the geometry curve has a zero length segment)
-        alignments = [horiz, vert, cant]
-        for a in alignments:
-            if a != None:
-                segments = ifcopenshell.api.alignment.get_layout_segments(a)
+        layouts = [horiz, vert, cant]
+        for layout in layouts:
+            if layout != None:
+                segments = ifcopenshell.api.alignment.get_layout_segments(layout)
                 assert len(segments) == 1
-                assert ifcopenshell.api.alignment.has_zero_length_segment(
-                    a
-                )  # there is a check in this function for the geometry curve
+                assert ifcopenshell.api.alignment.has_zero_length_segment(layout)
+                curve = ifcopenshell.api.alignment.get_layout_curve(layout)
+                assert ifcopenshell.api.alignment.has_zero_length_segment(curve)
+
+        curves = file.by_type("IfcCompositeCurve")
+        for curve in curves:
+            assert ifcopenshell.api.alignment.has_zero_length_segment(curve)
+
+        curves = file.by_type("IfcGradientCurve")
+        for curve in curves:
+            assert ifcopenshell.api.alignment.has_zero_length_segment(curve)
+
+        curves = file.by_type("IfcSegmentedReferenceCurve")
+        for curve in curves:
+            assert ifcopenshell.api.alignment.has_zero_length_segment(curve)
+
+test_create()
