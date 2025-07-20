@@ -78,6 +78,8 @@ if TYPE_CHECKING:
 
 
 class Geometry(bonsai.core.tool.Geometry):
+    skip_list = set()
+
     @classmethod
     def get_geometry_props(cls) -> BIMGeometryProperties:
         return bpy.context.scene.BIMGeometryProperties
@@ -779,6 +781,12 @@ class Geometry(bonsai.core.tool.Geometry):
         return False
 
     @classmethod
+    def clear_skip_list(
+        cls
+    ):
+        cls.skip_list = set()
+
+    @classmethod
     def reimport_element_representations(
         cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance, apply_openings: bool = True
     ) -> None:
@@ -880,6 +888,7 @@ class Geometry(bonsai.core.tool.Geometry):
             while True:
                 shape = iterator.get()
                 element = tool.Ifc.get().by_id(shape.id)
+                cls.skip_list.add(element)
                 if obj := tool.Ifc.get_object(element):
                     # It's possible that there will be multiple shapes for the same context,
                     # Unfortunately, iterator still processes them all and

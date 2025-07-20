@@ -2186,9 +2186,10 @@ class ActivateModel(bpy.types.Operator):
                 bpy.ops.object.hide_view_clear()
                 bpy.ops.bim.activate_status_filters(only_if_enabled=True)
 
+        tool.Geometry.clear_skip_list()
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
-            if not element:
+            if not element or element in tool.Geometry.skip_list:
                 continue
             model = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if model:
