@@ -74,12 +74,21 @@
 
 
 
-  
+#let analysis_of_raters_table = table(
+  columns: (185mm),
+  rows: (254mm),
+  stroke: 1pt,
+  text(size: 8pt)[]
+)
+
+
+
 #let format_table = (
   "SCHEDULEOFRATES": schedule_of_rates_table,
   "PRICEDBILLOFQUANTITIES" : bill_of_quantities_table,
   "UNPRICEDBILLOFQUANTITIES" : bill_of_quantities_table,
-  "SUMMARY" : summary_table
+  "SUMMARY" : summary_table,
+  "ANALYSISOFRATES": analysis_of_raters_table,
 )
 
 
@@ -92,6 +101,7 @@
   "m3": "m³",
   "VOLUMEUNIT / CUBIC_METRE": "m³",
   "KILOGRAM": "kg",
+  "": "",
   // add more mappings as needed
 )
 
@@ -277,6 +287,103 @@
 
 
 
+#let arrange_analysis_row(row, options) = {
+  if row.at("CostValues") == "" {
+    return none
+  }
+  let json_str = row.at("CostValues")
+  let cost_values = json.decode(json_str)
+  if cost_values.len() > 1 { 
+  //More than one value is present, item need analysis
+    // Create analysis header
+    (
+      table.cell(
+        stroke: (bottom: (thickness: 1pt),
+          top: (thickness: 1pt)
+        ), 
+        fill: gray.transparentize(90%),
+        align: bottom
+      )[#row.at("Identification")],
+      table.cell(
+        stroke: (bottom: (thickness: 1pt),
+          top: (thickness: 1pt)), 
+        fill: gray.transparentize(90%),
+        align: bottom
+      )[#row.at("Name")],
+      table.cell(
+        stroke: (bottom: (thickness: 1pt),
+          top: (thickness: 1pt)), 
+        fill: gray.transparentize(90%),
+        align: bottom
+      )[],
+    )
+    (
+      [],
+      table.cell(
+        colspan: 2,
+        stroke: (bottom: (thickness: 0.5pt))
+      )[#row.at("Description")],
+    )
+    (
+      [],[],[]
+    )
+    (
+      [],[Cost Values:],[]
+    )
+    // Arrange Cost Values table
+    let categories = ()
+    for cost_value in cost_values {
+      if not cost_value.at("Category") in categories {
+        categories.push(cost_value.at("Category"))
+      }
+    } 
+    for category in categories {
+      (
+        [],
+        table.cell(..root-cost-cell-style)[#category],
+        table.cell(..root-cost-cell-style)[],
+      )
+      let category_total = 0.0
+      for cost_value in cost_values {
+        if cost_value.at("Category") == category {
+          (
+            [],
+            cost_value.at("Name"),
+            format-decimal(cost_value.at("Value")),
+          )
+          category_total += cost_value.at("Value")
+        }
+      }
+      (
+        [],
+        table.cell(stroke: (top: (thickness: 0.5pt, dash: "dotted")), align: right)[Sum #category],
+        table.cell(stroke: (top: (thickness: 0.5pt, dash: "dotted")))[*#format-decimal(category_total)*],
+      )
+      (
+        [],[],[]
+      )
+    }
+    // Create cost value analysis final row
+    (
+      [],[],[]
+    )
+    (
+      [],
+      table.cell(
+        stroke: (top: (thickness: 0.5pt)),
+        align: right
+      )[Total rate value: #row.at("Name") #unit_map.at(row.at("Unit"), default: "")],
+      table.cell(
+        stroke: (top: (thickness: 0.5pt))
+      )[*#format-decimal(float(row.at("RateSubtotal", default: 0.0)))*]
+    )
+    (
+      [PAGEBREAK],
+    )
+  }
+}
+
+
 
 #let arrange_schedule_of_rates_row(row, options) = {
   let name = strong(upper(row.at("Name")))
@@ -347,7 +454,7 @@
    .sum(default: 0.00)
   
   set text(size: 10pt)
-  pad(left: 2cm)[SUMMARY:]
+  pad(left: 2cm, top:5mm)[SUMMARY:]
   
   set text(size: 8pt)
   table(
@@ -376,6 +483,32 @@
 )
 }
 
+#let create-analysis-of-rates(
+    path: str, 
+    delimiter: ",",
+    options: (),
+) = {
+  let data = csv(path, delimiter: delimiter, row-type: dictionary)
+  let new_rows = data.map(item => arrange_analysis_row(item, options))
+  let flattened_data = new_rows.flatten()
+  let cleaned_flattened_data = flattened_data.filter(item => item != none)
+  let splitted_data = cleaned_flattened_data.split([PAGEBREAK])
+  for (index, analysis) in splitted_data.slice(0,-1).enumerate(){
+    // Removed last item because it's none due to array splitting
+    set align(center)
+    [*ANALYSIS OF RATES*]
+    table(
+      columns: (30mm,130mm, 25mm),
+      align: (center, left, right),
+      stroke: none,
+      ..analysis
+    )
+    if index < splitted_data.slice(0,-2).len(){
+      pagebreak()
+    }
+  }
+
+}
 
 
 #let create-cover(
@@ -437,10 +570,9 @@
   should_print_cost_ids: bool,
   should_print_description: bool,
   should_print_each_quantity: bool,
-  should_print_each_cost_value: bool,
   should_print_rates: bool,
   should_print_summary: bool,
-  
+  should_print_analysis_of_rates: bool,
   body) = {   
   
   if should_print_cover {
@@ -455,7 +587,7 @@
   }
   
   set page(
-    margin: (left: 15mm, right: 10mm, top: 35mm, bottom: 20mm),
+    margin: (left: 15mm, right: 10mm, top: 31mm, bottom: 20mm),
     numbering: "1/1",
     number-align: end,
     header:[
@@ -465,7 +597,7 @@
         rows: 10mm,
         stroke: none,
         inset: 0mm,
-        align:(top+left, top+right),
+        align:(left+horizon, right+horizon),
         [#title], [#schedule_name]
       )
     ],
@@ -492,8 +624,8 @@
     "should_print_cost_ids": should_print_cost_ids,
     "should_print_description": should_print_description,
     "should_print_each_quantity": should_print_each_quantity,
-    "should_print_each_cost_value": should_print_each_cost_value,
     "should_print_rates": should_print_rates,
+    "should_print_analysis_of_rates": should_print_analysis_of_rates,
   )
   
   if schedule_type == "UNPRICEDBILLOFQUANTITIES" {
@@ -526,5 +658,21 @@
     )
   )
     create-summary(schedule_path, options)
+  }
+
+  if should_print_analysis_of_rates == true and schedule_type == "SCHEDULEOFRATES" {
+    pagebreak()
+    set page(
+      margin: (top: 31mm),
+      background: 
+      place( top + left, dx: 15mm, dy: 25mm,
+        format_table.at("ANALYSISOFRATES"),
+      )
+    )
+    create-analysis-of-rates(
+    path: schedule_path, 
+    delimiter: ",",
+    options: options
+    )
   }
 }

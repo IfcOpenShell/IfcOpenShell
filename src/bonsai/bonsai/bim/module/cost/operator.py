@@ -924,11 +924,6 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         description="Export the full list of quantities",
         default=False,
     )
-    should_print_each_cost_value: bpy.props.BoolProperty(
-        name="Show each cost value",
-        description="Export the full list of cost values\nassociated with each cost item\nin the schedule of rates",
-        default=False,
-    )
     should_print_rates: bpy.props.BoolProperty(
         name="Rates and totals",
         description="Print rates and totals for each voice",
@@ -937,6 +932,11 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     should_print_summary: bpy.props.BoolProperty(
         name="Final Summary",
         description="Print summary at the end of the document",
+        default=True,
+    )
+    should_print_analysis_of_rates: bpy.props.BoolProperty(
+        name="Analysis of rates",
+        description="Print Analysis of Rates at the\n end of the document",
         default=True,
     )
     force_schedule_type: bpy.props.EnumProperty(
@@ -967,6 +967,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         box = layout.box()
         box.label(text="Select Ifc Cost Schedule:")
         box.prop(self, "cost_schedules_enum", text="")
+        box.prop(self, "force_schedule_type")
         layout.separator()
         box = layout.box()
         box.label(text="Nested cost structure:")
@@ -980,7 +981,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         box.prop(self, "should_print_each_quantity")
         box.prop(self, "should_print_rates")
         box.prop(self, "should_print_summary")
-        box.prop(self, "force_schedule_type")
+        box.prop(self, "should_print_analysis_of_rates")
 
     @classmethod
     def poll(cls, context):
@@ -1023,7 +1024,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
             "should_print_cost_ids": self.should_print_cost_ids,
             "should_print_description": self.should_print_description,
             "should_print_each_quantity": self.should_print_each_quantity,
-            "should_print_each_cost_value": self.should_print_each_cost_value,
+            "should_print_analysis_of_rates": self.should_print_analysis_of_rates,
             "should_print_rates": self.should_print_rates,
             "should_print_summary": self.should_print_summary,
         }

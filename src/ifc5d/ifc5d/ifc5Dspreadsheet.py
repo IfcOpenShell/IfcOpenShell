@@ -44,6 +44,7 @@ class CostItem(TypedDict):
     Unit: str
     Quantities: str
     Quantity: Union[float, None]
+    CostValues: str
     RateSubtotal: float
     TotalPrice: float
 
@@ -157,6 +158,7 @@ class IfcDataGetter:
             "Unit": unit,
             "Quantities": IfcDataGetter.serialise_cost_quantities(file, cost_item),
             "Quantity": quantity_data["quantity"],
+            "CostValues": IfcDataGetter.serialise_cost_values(file, cost_item),
             "RateSubtotal": rate_subtotal,
             "TotalPrice": total_price,
             "cost_categories": cost_categories,
@@ -247,6 +249,32 @@ class IfcDataGetter:
             "quantity": total_cost_quantity,
             "unit": unit,
         }
+
+
+    @staticmethod
+    def serialise_cost_values(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> str:
+        if not cost_item.is_a("IfcCostItem"):
+            return ""
+        if cost_item.CostValues is None:
+            return ""
+        if IfcDataGetter.cost_item_is_a_sum(cost_item):
+            return ""
+        string = '['
+        for cost_value in cost_item.CostValues:
+            cost_value_name = cost_value.Name or "Unnamed"
+            cost_value_description = cost_value.Description or ""
+            cost_value_category = cost_value.Category or "Not categorized"
+            applied_value = getattr(cost_value, "AppliedValue") 
+            if applied_value:
+                value = getattr(applied_value, "wrappedValue", 0.0)
+            string += '{"Category": "' + cost_value_category + '",'
+            string += '"Name": "' + cost_value_name + '",'
+            string += '"Description": "' + cost_value_description + '",'
+            string += '"Value": ' + str(value) + "},"
+        string = string.removesuffix(",")
+        string += ']'
+        return string
+    
 
     @staticmethod
     def serialise_cost_quantities(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> str:
@@ -351,6 +379,7 @@ class Ifc5Dwriter:
             if cost_schedule.PredefinedType != "SCHEDULEOFRATES":
                 headers.insert(-1, "Quantities")
                 headers.insert(-1, "Quantity")
+            headers.extend(["CostValues"])
             headers.extend(["RateSubtotal", "TotalPrice"])
 
             # Handle cost categories.
@@ -604,9 +633,9 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             "should_print_cost_ids": True,
             "should_print_description": False,
             "should_print_each_quantity": True,
-            "should_print_each_cost_value": False,
             "should_print_rates": True,
             "should_print_summary": True,
+            "should_print_analysis_of_rates": True
         }
 
         HANDLED_COST_SCHEDULE_TYPES = (
