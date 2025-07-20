@@ -626,13 +626,13 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             cost_schedule_name = self.cost_schedule.Name or "Unnamed"
             if self.force_schedule_type in ("PRICEDBILLOFQUANTITIES", "SCHEDULEOFRATES"):
                 schedule_type = self.force_schedule_type
-            elif self.force_schedule_type is None or self.force_schedule_type == "OFF":
+            elif self.force_schedule_type is None or self.force_schedule_type == "AUTO":
                 schedule_type = self.cost_schedule.PredefinedType
                 if schedule_type not in HANDLED_COST_SCHEDULE_TYPES:
                     schedule_type = "PRICEDBILLOFQUANTITIES"
             else:
                 raise ValueError(
-                    "force_schedule_type can be set to OFF, PRICEDBILLOFQUANTITIES, SCHEDULEOFRATES values only."
+                    "force_schedule_type can be set to AUTO, PRICEDBILLOFQUANTITIES, SCHEDULEOFRATES values only."
                 )
             project_monetary_unit = self.file.by_type("IfcMonetaryUnit")
             if project_monetary_unit:
