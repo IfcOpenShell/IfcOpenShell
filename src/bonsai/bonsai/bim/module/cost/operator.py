@@ -936,7 +936,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     )
     should_print_analysis_of_rates: bpy.props.BoolProperty(
         name="Analysis of rates",
-        description="Print Analysis of Rates at the\n end of the document",
+        description="If printing a Schedule of Rates, display\nthe Analysis of Rates for each\nitem that has more than one Cost Value.",
         default=True,
     )
     force_schedule_type: bpy.props.EnumProperty(
