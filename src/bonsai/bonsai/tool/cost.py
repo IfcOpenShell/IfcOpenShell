@@ -846,10 +846,18 @@ class Cost(bonsai.core.tool.Cost):
             return "Could not open file location"
 
     @classmethod
-    def export_cost_schedules_to_pdf(cls, filepath: str, cost_schedule: ifcopenshell.entity_instance, options: dict):
+    def export_cost_schedules_to_pdf(
+        cls, filepath: str, cost_schedule: ifcopenshell.entity_instance, options: dict, force_schedule_type: str = ""
+    ):
         from ifc5d.ifc5Dspreadsheet import Ifc5DPdfWriter
 
-        writer = Ifc5DPdfWriter(file=tool.Ifc.get(), output=filepath, cost_schedule=cost_schedule, options=options)
+        writer = Ifc5DPdfWriter(
+            file=tool.Ifc.get(),
+            output=filepath,
+            cost_schedule=cost_schedule,
+            options=options,
+            force_schedule_type=force_schedule_type,
+        )
         writer.write()
 
     @classmethod
