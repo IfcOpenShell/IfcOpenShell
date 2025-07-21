@@ -2204,6 +2204,7 @@ class ActivateModel(bpy.types.Operator):
                         is_global=True,
                         should_sync_changes_first=True,
                     )
+        tool.Geometry.clear_skip_list()
 
         # restore visibility after hide_view_clear()
         for obj, hide_status in visibility_status.items():
