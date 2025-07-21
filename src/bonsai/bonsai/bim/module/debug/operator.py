@@ -183,6 +183,9 @@ class ValidateIfcAssets(bpy.types.Operator):
 
         ifc_classes = {
             "IfcMaterial": "Name",
+            "IfcMaterialLayerSet": "LayerSetName",
+            "IfcMaterialConstituentSet": "Name",
+            "IfcMaterialProfileSet": "Name",
             "IfcProfileDef": "ProfileName",
             "IfcPresentationStyle": "Name",
         }

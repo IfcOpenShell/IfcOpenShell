@@ -774,3 +774,47 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         assert len(materials) == 2 and all(m.Name == "TestMaterial" for m in materials)
         styles = self.file.by_type("IfcSurfaceStyle")
         assert len(styles) == 2 and all(s.Name == "TestStyle" for s in styles)
+
+    def test_not_duplicate_material_sets_based_on_name(self):
+        # Setup library.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        column_type = ifcopenshell.api.root.create_entity(library, "IfcColumnType")
+        material_set = ifcopenshell.api.material.add_material_set(
+            library, set_type="IfcMaterialProfileSet", name="TestProfileSet"
+        )
+        ifcopenshell.api.material.assign_material(
+            library, [column_type], material=material_set, type="IfcMaterialProfileSet"
+        )
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        # Test adding a profile with existing name.
+        ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialProfileSet", name="TestProfileSet")
+        ifcopenshell.api.project.append_asset(self.file, library, column_type)
+        assert len(self.file.by_type("IfcMaterialProfileSet")) == 1
+
+    def test_duplicate_material_sets_if_uniqueness_is_not_assumed(self):
+        # Setup library.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        column_type = ifcopenshell.api.root.create_entity(library, "IfcColumnType")
+        material_set = ifcopenshell.api.material.add_material_set(
+            library, set_type="IfcMaterialProfileSet", name="TestProfileSet"
+        )
+        ifcopenshell.api.material.assign_material(
+            library, [column_type], material=material_set, type="IfcMaterialProfileSet"
+        )
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        # Test adding a profile with existing name.
+        ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialProfileSet", name="TestProfileSet")
+        ifcopenshell.api.project.append_asset(self.file, library, column_type, assume_asset_uniqueness_by_name=False)
+        assert len(self.file.by_type("IfcMaterialProfileSet")) == 2

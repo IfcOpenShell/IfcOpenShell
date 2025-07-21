@@ -40,6 +40,7 @@ APPENDABLE_ASSET = Literal[
     "IfcPresentationStyle",
 ]
 APPENDABLE_ASSET_TYPES = get_args(APPENDABLE_ASSET)
+MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
 
 
 def append_asset(
@@ -261,6 +262,15 @@ class Usecase:
         elif element.is_a("IfcMaterial"):
             name = element.Name
             return next((e for e in self.file.by_type("IfcMaterial") if e.Name == name), None)
+
+        elif element in MATERIAL_SETS:
+            ifc_class = element.is_a()
+            name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
+            material_set_name = getattr(element, name_attr)
+            if material_set_name is None:
+                return
+            return next((e for e in self.file.by_type(ifc_class) if getattr(e, name_attr) == material_set_name), None)
+
         elif element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
             if profile_name is None:
@@ -643,6 +653,17 @@ class Usecase:
             if existing_material is not None:
                 reuse_identities[element_identity] = existing_material
                 return existing_material
+
+        elif ifc_class in MATERIAL_SETS:
+            name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
+            material_set_name = getattr(element, name_attr)
+            if material_set_name is not None:
+                existing_material_set = next(
+                    (e for e in ifc_file.by_type(ifc_class) if getattr(e, name_attr) == material_set_name), None
+                )
+                if existing_material_set is not None:
+                    reuse_identities[element_identity] = existing_material_set
+                    return existing_material_set
 
         elif element.is_a("IfcPresentationStyle"):
             style_name = element.Name
