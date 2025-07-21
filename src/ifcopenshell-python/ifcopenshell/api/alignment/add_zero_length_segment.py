@@ -23,8 +23,10 @@ import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
 import ifcopenshell.ifcopenshell_wrapper as wrapper
 import numpy as np
+import math
 
 from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
+from ifcopenshell.api.alignment._map_alignment_horizontal_segment import _map_alignment_horizontal_segment
 
 
 def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, include_referent : bool = True) -> bool:
@@ -68,7 +70,6 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
             y = float(e[1,3])
             dx = float(e[0,0])
             dy = float(e[1,0])
-            segment_start = last_segment.SegmentStart.wrappedValue + last_segment.SegmentLength.wrappedValue
 
         parent_curve = file.createIfcLine(
             Pnt=file.createIfcCartesianPoint(Coordinates=((0.0, 0.0))),
@@ -83,7 +84,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                 Location=file.createIfcCartesianPoint((x, y)),
                 RefDirection=file.createIfcDirection((dx, dy)),
             ),
-            SegmentStart=file.createIfcLengthMeasure(segment_start),
+            SegmentStart=file.createIfcLengthMeasure(0.0),
             SegmentLength=file.createIfcLengthMeasure(0.0),
             ParentCurve=parent_curve,
         )
@@ -98,11 +99,40 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
     else:
         segment = None
         if layout.is_a("IfcAlignmentHorizontal"):
+            x = 0.
+            y = 0.
+            dx = 1.
+            dy = 0.
+            last_segment = None
+            for rel in layout.IsNestedBy:
+                if 0 < len(rel.RelatedObjects):
+                    last_segment = rel.RelatedObjects[-1]
+                    break
+
+            if last_segment:
+                file.begin_transaction() # use a transaction so we can discard any temporary IFC entities created
+
+                settings = ifcopenshell.geom.settings()
+                mapped_segments = _map_alignment_horizontal_segment(file,last_segment)
+                geometry_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
+                fn = wrapper.map_shape(settings,geometry_segment.wrapped_data)
+                eval = wrapper.function_item_evaluator(settings,fn)
+                e = np.array(eval.evaluate(fn.end()))
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+                x = float(e[0,3]) / unit_scale
+                y = float(e[1,3]) / unit_scale
+                dx = float(e[0,0])
+                dy = float(e[1,0])
+
+                file.discard_transaction()
+
+
+            angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
             design_parameters = file.createIfcAlignmentHorizontalSegment(
                 StartPoint=file.createIfcCartesianPoint(
-                    (0.0, 0.0)
-                ),  # this is a little problematic. need to know the end point and tangent
-                StartDirection=0.0,  # of the previous segment, which requires geometry mapping
+                    (x,y)
+                ),
+                StartDirection=math.atan2(dy,dx) / angle_unit_scale,
                 StartRadiusOfCurvature=0.0,
                 EndRadiusOfCurvature=0.0,
                 SegmentLength=0.0,
@@ -114,11 +144,12 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
             last_segment_end_gradient = 0.0
             for rel in layout.IsNestedBy:
                 if 0 < len(rel.RelatedObjects):
-                    last_segment = rel.RelatedObjects[1]
+                    last_segment = rel.RelatedObjects[-1]
                     last_segment_dist_along = (
                         last_segment.DesignParameters.StartDistAlong + last_segment.DesignParameters.HorizontalLength
                     )
                     last_segment_end_gradient = last_segment.DesignParameters.EndGradient
+                    break
 
             design_parameters = file.createIfcAlignmentVerticalSegment(
                 StartDistAlong=last_segment_dist_along,
@@ -135,7 +166,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
             last_segment_cant_right = 0.0
             for rel in layout.IsNestedBy:
                 if 0 < len(rel.RelatedObjects):
-                    last_segment = rel.RelatedObjects[1]
+                    last_segment = rel.RelatedObjects[-1]
                     last_segment_dist_along = (
                         last_segment.DesignParameters.StartDistAlong + last_segment.DesignParameters.HorizontalLength
                     )
@@ -149,6 +180,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                         if last_segment.DesignParameters.EndCantRight != None
                         else last_segment.DesignParameters.StartCantRight
                     )
+                    break
 
             design_parameters = file.createIfcAlignmentCantSegment(
                 StartDistAlong=last_segment_dist_along,

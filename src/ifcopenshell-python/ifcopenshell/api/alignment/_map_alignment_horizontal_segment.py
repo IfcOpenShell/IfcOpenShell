@@ -37,6 +37,9 @@ def _map_line(file: ifcopenshell.file, design_parameters: entity_instance) -> Se
     start_direction = design_parameters.StartDirection
     length = design_parameters.SegmentLength
 
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    start_direction *= angle_unit_scale
+
     transition = "DISCONTINUOUS"
 
     parent_curve = file.create_entity(
@@ -77,6 +80,9 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    start_direction *= angle_unit_scale
+
     transition = "DISCONTINUOUS"
 
     parent_curve = file.createIfcCircle(
@@ -107,6 +113,9 @@ def _map_clothoid(file: ifcopenshell.file, design_parameters: entity_instance) -
     start_radius = design_parameters.StartRadiusOfCurvature
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
 
@@ -146,6 +155,9 @@ def _map_cubic(file: ifcopenshell.file, design_parameters: entity_instance) -> S
     start_radius = design_parameters.StartRadiusOfCurvature
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
 
@@ -196,6 +208,9 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
     start_radius = design_parameters.StartRadiusOfCurvature
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
     f = _get_curve_factor(design_parameters)
@@ -300,6 +315,9 @@ def _map_bloss_curve(file: ifcopenshell.file, design_parameters: entity_instance
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    start_direction *= angle_unit_scale
+
     transition = "DISCONTINUOUS"
     f = _get_curve_factor(design_parameters)
 
@@ -344,6 +362,9 @@ def _map_cosine_curve(file: ifcopenshell.file, design_parameters: entity_instanc
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    start_direction *= angle_unit_scale
+
     transition = "DISCONTINUOUS"
 
     f = _get_curve_factor(design_parameters)
@@ -383,6 +404,9 @@ def _map_sine_curve(file: ifcopenshell.file, design_parameters: entity_instance)
     start_direction = design_parameters.StartDirection
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
 
@@ -424,7 +448,7 @@ def _map_viennese_bend(file: ifcopenshell.file, design_parameters: entity_instan
     raise NotImplementedError("VIENNESEBEND not implemented")
 
 
-def __map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
+def _map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
     """
     Creates IfcCurveSegment entities for the represention of the supplied IfcAlignmentHorizontalSegment business logic entity instance.
     A pair of entities is returned because a single business logic segment of type HELMERTCURVE maps to two representaiton entities.
