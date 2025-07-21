@@ -157,7 +157,7 @@ class SelectURIAttribute(bpy.types.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a local file"
     attribute_data_path: bpy.props.StringProperty(name="Data Path")  # pyright: ignore[reportRedeclaration]
-    """Full data path to Attribute."""
+    """Full data path to `Attribute`/string property."""
     use_relative_path: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Use Relative Path",
         default=False,
@@ -168,8 +168,16 @@ class SelectURIAttribute(bpy.types.Operator, ImportHelper):
         use_relative_path: bool
 
     def execute(self, context):
-        attribute: Attribute = eval(self.attribute_data_path)
-        attribute.string_value = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+        from bonsai.bim.prop import Attribute
+
+        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+
+        attribute = eval(self.attribute_data_path)
+        if isinstance(attribute, Attribute):
+            attribute.string_value = filepath
+        else:
+            bpy_struct_path, _, attr_name = self.attribute_data_path.rpartition(".")
+            setattr(eval(bpy_struct_path), attr_name, filepath)
         return {"FINISHED"}
 
 

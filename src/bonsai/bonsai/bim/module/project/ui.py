@@ -615,6 +615,8 @@ class BIM_UL_links(UIList):
                 op.filepath = item.name
             else:
                 row.prop(item, "name", text="")
+                op = row.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+                op.attribute_data_path = tool.Blender.get_full_data_path(item, "name")
                 op = row.operator("bim.load_link", text="", icon="LINKED")
                 op.filepath = item.name
                 op = row.operator("bim.unlink_ifc", text="", icon="X")
