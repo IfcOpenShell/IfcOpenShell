@@ -1886,12 +1886,12 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         print("Finished", time.time() - start)
         return {"FINISHED"}
 
-    def process_occurrence(self, shape: ShapeElementType) -> None:
+    def process_occurrence(self, shape: W.TriangulationElement) -> None:
         element = self.file.by_id(shape.id)
-        faces: tuple[int, ...] = shape.geometry.faces
-        verts: tuple[float, ...] = shape.geometry.verts
-        materials: tuple[W.style, ...] = shape.geometry.materials
-        material_ids: tuple[int, ...] = shape.geometry.material_ids
+        faces = shape.geometry.faces
+        verts = shape.geometry.verts
+        materials = shape.geometry.materials
+        material_ids = shape.geometry.material_ids
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)
 
@@ -1920,7 +1920,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                 verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            material_to_slot = {}
+            material_to_slot: dict[int, int] = {}
             max_slot_index = 0
 
             for i, material in enumerate(materials):
