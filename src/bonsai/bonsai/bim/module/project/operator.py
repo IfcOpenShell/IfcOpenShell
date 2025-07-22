@@ -41,6 +41,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import bonsai.bim.handler
 import bonsai.bim.helper
@@ -1888,42 +1889,32 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
 
     def process_occurrence(self, shape: W.TriangulationElement) -> None:
         element = self.file.by_id(shape.id)
-        faces = shape.geometry.faces
-        verts = shape.geometry.verts
-        materials = shape.geometry.materials
-        material_ids = shape.geometry.material_ids
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)
 
-        mesh = self.meshes.get(shape.geometry.id, None)
+        geometry = shape.geometry
+        mesh = self.meshes.get(geometry.id, None)
         if not mesh:
-            mesh = bpy.data.meshes.new("Mesh")
+            verts = ifcopenshell.util.shape.get_vertices(geometry)
+            material_ids = geometry.material_ids
+            mesh = tool.Loader.create_mesh_from_shape(geometry, mesh)
 
-            geometry = shape.geometry
             gprops = tool.Georeference.get_georeference_props()
-            if (
-                gprops.has_blender_offset
-                and geometry.verts
-                and tool.Loader.is_point_far_away(
-                    (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
-                )
-            ):
+            if gprops.has_blender_offset and verts.size and tool.Loader.is_point_far_away(verts[0], is_meters=True):
+                vert: np.ndarray = verts[0]
                 # Shift geometry close to the origin based off that first vert it found
-                verts_array = np.array(geometry.verts)
-                offset = np.array([-geometry.verts[0], -geometry.verts[1], -geometry.verts[2]])
-                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-                verts = offset_verts.tolist()
+                offset = ifcopenshell.util.shape_builder.np_translation_matrix(-vert)
+                mat = offset @ mat
 
                 mesh["has_cartesian_point_offset"] = True
-                mesh["cartesian_point_offset"] = f"{geometry.verts[0]},{geometry.verts[1]},{geometry.verts[2]}"
+                mesh["cartesian_point_offset"] = ",".join(vert.astype(str))
             else:
-                verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
             material_to_slot: dict[int, int] = {}
             max_slot_index = 0
 
-            for i, material in enumerate(materials):
+            for i, material in enumerate(geometry.materials):
                 alpha = 1.0
                 if material.has_transparency and material.transparency > 0:
                     alpha = 1.0 - material.transparency
@@ -1946,11 +1937,10 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
 
             material_index = np.array([(material_to_slot[i] if i != -1 else 0) for i in material_ids], dtype="I")
 
-            mesh = tool.Loader.create_mesh_from_shape(geometry, mesh)
             mesh.polygons.foreach_set("material_index", material_index)
             mesh.update()
 
-            self.meshes[shape.geometry.id] = mesh
+            self.meshes[geometry.id] = mesh
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, mat)
