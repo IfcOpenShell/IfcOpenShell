@@ -38,7 +38,7 @@ from ifcopenshell.util.shape_builder import np_to_4d
 from math import atan, radians
 from mathutils import Vector, Matrix
 from pathlib import Path
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, cast
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -640,7 +640,10 @@ class Loader(bonsai.core.tool.Loader):
     ) -> bool:
         limit = cls.settings.distance_limit
         limit = limit if is_meters else (limit / cls.unit_scale)
-        coords = getattr(point, "Coordinates", point)
+        if isinstance(point, ifcopenshell.entity_instance):
+            coords = cast(tuple[float, ...], point.Coordinates)
+        else:
+            coords = point
         return any(abs(c) > limit for c in coords)
 
     @classmethod
