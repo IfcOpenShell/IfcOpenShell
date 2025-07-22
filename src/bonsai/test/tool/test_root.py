@@ -238,3 +238,87 @@ class TestReassignClass(NewFile):
         assert len(ifc_file.by_type("IfcSlab")) == 0
         assert len(ifc_file.by_type("IfcWallType")) == n_wall_types + 1
         assert len(ifc_file.by_type("IfcSlabType")) == n_slab_types - 1
+
+
+class TestAssignClass(NewFile):
+    def test_normal_assign_ifc_class(self):
+        # Setup project
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        # Create blender cube w/ props
+        context = bpy.context
+        bpy.ops.mesh.primitive_cylinder_add(vertices=10, location=(0, 4, 0))
+        datablock_obj = bpy.data.objects["Cylinder"]
+        bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0))
+        obj = bpy.data.objects["Cube"]
+        # Set all the custom properties on the obj
+        obj["01_float"] = 3.14159
+        obj["02_float_array"] = [3.14159, 1.61803, 2.71828]
+        obj["03_integer"] = 2
+        obj["04_integer_array"] = [2, 3, 5, 7]
+        obj["05_boolean"] = True
+        obj["06_boolean_array"] = [True, False]
+        obj["07_string"] = "Bonsai!"
+        # Data Block is not proper Pointer in UI. Probably doesn't matter.
+        obj["08_data_block"] = datablock_obj
+        # Certain python expressions (list and dicts) can also be stored.
+        obj["09_python"] = {"test": 12}
+        obj["10_python"] = bpy.context.selected_objects
+
+        # Assign IfcClass
+        bpy.ops.bim.assign_class(ifc_class="IfcBuildingElementProxy", predefined_type="ELEMENT", userdefined_type="")
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        # Get Psets
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        assert psets == {}
+
+    def test_alternative_assign_ifc_class(self):
+        # Setup project
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        # Create blender cube w/ props
+        context = bpy.context
+        bpy.ops.mesh.primitive_cylinder_add(vertices=10, location=(0, 4, 0))
+        datablock_obj = bpy.data.objects["Cylinder"]
+        bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0))
+        obj = bpy.data.objects["Cube"]
+        # Set all the custom properties on the obj
+        obj["01_float"] = 3.14159
+        obj["02_float_array"] = [3.14159, 1.61803, 2.71828]
+        obj["03_integer"] = 2
+        obj["04_integer_array"] = [2, 3, 5, 7]
+        obj["05_boolean"] = True
+        obj["06_boolean_array"] = [True, False]
+        obj["07_string"] = "Bonsai!"
+        # Data Block is not proper Pointer in UI. Probably doesn't matter.
+        obj["08_data_block"] = datablock_obj
+        # Python expressions can also be stored, i.e. dictionary
+        obj["09_python"] = {"test": 12}
+        # Or a list of things, i.e. objects: [bpy.data.objects['IfcBuildingElementProxy/Cube']]
+        obj["10_python"] = bpy.context.selected_objects
+
+        # Assign IfcClass
+        bpy.ops.bim.assign_class(
+            ifc_class="IfcBuildingElementProxy", predefined_type="ELEMENT", userdefined_type="", props_to_pset=True
+        )
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        # Get Psets
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        assert "BBIM_ImportedBlenderProps" in psets
+        pset = psets["BBIM_ImportedBlenderProps"]
+        assert "01_float" in pset and type(pset["01_float"]) is float
+        assert "02_float_array.1" in pset and type(pset["02_float_array.1"]) is float
+        assert "03_integer" in pset and type(pset["03_integer"]) is int
+        assert "04_integer_array.1" in pset and type(pset["04_integer_array.1"]) is int
+        assert "05_boolean" in pset and type(pset["05_boolean"]) is bool
+        assert "06_boolean_array.1" in pset and type(pset["06_boolean_array.1"]) is bool
+        assert "07_string" in pset and type(pset["07_string"]) is str
+        assert "08_data_block" not in pset
+        assert "09_python" not in pset
+        assert "10_python" not in pset

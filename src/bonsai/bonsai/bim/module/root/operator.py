@@ -18,6 +18,7 @@
 
 import bpy
 import bmesh
+import idprop
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -370,11 +371,15 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
 
             # Accomodate existing importers to Blender from other formats that set custom props
             if self.props_to_pset:
-                custom_props = {
+                custom_props = {k: v for (k, v) in obj.items() if type(v) in [bool, int, float, str]}
+                custom_array_props = {
                     k: v
                     for (k, v) in obj.items()
-                    if type(v) in [bool, int, float, str]
+                    if type(v) is idprop.types.IDPropertyArray and v.typecode in ["d", "i", "b"]
                 }
+                for k in custom_array_props.keys():
+                    for idx in range(len(custom_array_props[k])):
+                        custom_props["{}.{}".format(k, idx + 1)] = custom_array_props[k][idx]
                 pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_ImportedBlenderProps")
                 ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=custom_props)
 
