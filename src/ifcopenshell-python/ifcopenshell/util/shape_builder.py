@@ -157,6 +157,20 @@ def np_angle_signed(a: VectorType, b: VectorType) -> float:
     return np.arctan2(det, dot)
 
 
+def np_translation_matrix(vector: VectorType) -> npt.NDArray[np.float64]:
+    """Get translation matrix.
+
+    Designed to be similar to mathutils Matrix.Rotation but to use numpy.
+
+    :param vector: 3D translation vector.
+    :return: An 4x4 identity matrix with a translation
+    """
+    eye = np.eye(4, dtype=np.float64)
+    M_TRANSLATION = (slice(0, 3), 3)
+    eye[M_TRANSLATION] = vector
+    return eye
+
+
 def np_rotation_matrix(
     angle: float, size: int, axis: Optional[Union[Literal["X", "Y", "Z"], VectorType]] = None
 ) -> np.ndarray:
