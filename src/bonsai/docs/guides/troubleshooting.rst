@@ -43,7 +43,7 @@ installation` which is updated every day.
 Installation issues
 -------------------
 
-If you are unable to install Bonsai, make sure you are using **Blender 4.2**
+If you are unable to install Bonsai, make sure you are using **Blender 4.5**
 installed from https://blender.org/.
 
 Other common solutions are listed below. If none of these fix the problem, you
@@ -216,6 +216,6 @@ click on **Uninstall**.
 
 Alternatively, you may start from a fresh setup by renaming or deleting the
 Blender version folder, found in the add-on path. In the screenshot above, this
-is ``/home/dion/.config/blender/4.2``.
+is ``/home/dion/.config/blender/4.5``.
 
 
