@@ -213,28 +213,62 @@ class DoubleArray3:
     def swap(self, v): ...
 
 class Element:
+    # TODO: Remove from the wrapper?
     def SetParents(self, newparents): ...
+    # TODO: could it be None?
     @property
-    def context(self): ...
+    def context(self) -> str:
+        """Element's geometry context.
+
+        E.g 'Body':
+        """
+        ...
+
     @property
-    def guid(self): ...
+    def guid(self) -> str:
+        """Mirroring IfcRoot.GlobalId."""
+        ...
+
     @property
-    def id(self) -> int: ...
+    def id(self) -> int:
+        """Element's STEP ID."""
+        ...
+    # TODO: could it be None?
     @property
-    def name(self): ...
+    def name(self) -> str:
+        """Mirroring IfcRoot.Name."""
+        ...
+
     @property
-    def parent_id(self): ...
+    def parent_id(self) -> int:
+        """Parent object STEP id.
+
+        E.g. IfcBuildingStorey that element's in.
+        """
+        ...
+    # TODO: Returns SwigPyObject. Should we just remove it from the wrapper?
     def parents(self): ...
     @property
-    def product(self): ...
+    def product(self) -> entity_instance: ...
     @property
     def transformation(self) -> Transformation: ...
     @property
     def transformation_buffer(self) -> bytes: ...
     @property
-    def type(self): ...
+    def type(self) -> str:
+        """Element's IFC Class.
+
+        E.g. 'IfcWall'.
+        """
+        ...
+
     @property
-    def unique_id(self): ...
+    def unique_id(self) -> str:
+        """Interal unique id for the element.
+
+        E.g. 'product-186f8dc2-070c-46e1-a65b-a435a043ba3e-body'.
+        """
+        ...
 
 class FileSchema(HeaderEntity):
     schema_identifiers: Any
