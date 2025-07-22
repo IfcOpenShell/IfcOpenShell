@@ -27,6 +27,7 @@ SED:=sed -i '' -e
 endif
 endif
 
+# TODO: we should simplify this at some point...
 ifeq ($(PYVERSION), py39)
 PYNUMBER:=39
 endif
@@ -38,6 +39,12 @@ PYNUMBER:=311
 endif
 ifeq ($(PYVERSION), py312)
 PYNUMBER:=312
+endif
+ifeq ($(PYVERSION), py313)
+PYNUMBER:=313
+endif
+ifndef PYNUMBER
+$(error Unsupported PYVERSION '$(PYVERSION)')
 endif
 
 # We actually do support glibc 2.28-2.30 (see #5636)
