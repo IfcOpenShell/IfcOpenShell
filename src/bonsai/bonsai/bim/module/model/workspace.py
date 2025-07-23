@@ -72,6 +72,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "B", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_B")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
+        ("bim.hotkey", {"type": "E", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_E")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
@@ -90,7 +91,6 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
         ("bim.hotkey", {"type": "P", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_P")]}),
         ("bim.hotkey", {"type": "P", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_P")]}),
-        ("bim.hotkey", {"type": "Z", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Z")]}),
     )
     ifc_element_type = "all"
 
@@ -837,7 +837,7 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
-                row, "Extend Height", "S_Z", "Extend wall height to 3D cursor Z position", ui_context
+                row, "Extend Height", "C_E", "Extend wall height to 3D cursor Z position", ui_context
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
@@ -1419,7 +1419,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         else:
             bpy.ops.bim.show_openings()
 
-    def hotkey_S_Z(self):
+    def hotkey_C_E(self):
         if not bpy.context.selected_objects:
             return
 
