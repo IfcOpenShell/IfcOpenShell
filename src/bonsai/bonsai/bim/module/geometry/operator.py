@@ -2373,11 +2373,14 @@ class FlipObject(bpy.types.Operator):
 class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_representation_items"
     bl_label = "Enable Editing Representation Items"
+    bl_description = "Enable editing representation items for all selected objects."
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = tool.Geometry.get_active_or_representation_obj()
+        for obj in tool.Geometry.get_selected_objects_with_representations():
+            self.process_obj(obj)
 
+    def process_obj(self, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_object_geometry_props(obj)
         props.is_editing = True
 
@@ -2455,12 +2458,13 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_representation_items"
     bl_label = "Disable Editing Representation Items"
+    bl_description = "Disable editing representation items for all selected objects"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = tool.Geometry.get_active_or_representation_obj()
-        assert obj
-        tool.Geometry.get_object_geometry_props(obj).is_editing = False
+        for obj in tool.Geometry.get_selected_objects_with_representations():
+            props = tool.Geometry.get_object_geometry_props(obj)
+            props.is_editing = False
 
 
 class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
