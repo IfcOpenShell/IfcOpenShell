@@ -126,6 +126,7 @@ class BIM_PT_spatial_decomposition(Panel):
         if not SpatialDecompositionData.is_loaded:
             SpatialDecompositionData.load()
         self.props = tool.Spatial.get_spatial_props()
+        self.props
 
         if SpatialDecompositionData.data["default_container"]:
             row = self.layout.row(align=True)
