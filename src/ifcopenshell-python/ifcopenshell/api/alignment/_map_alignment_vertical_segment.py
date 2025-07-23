@@ -54,8 +54,6 @@ def _map_constant_gradient(file: ifcopenshell.file, design_parameters: entity_in
     horizontal_length = design_parameters.HorizontalLength
     start_height = design_parameters.StartHeight
     start_gradient = design_parameters.StartGradient
-    end_gradient = design_parameters.EndGradient
-    radius_of_curvature = design_parameters.RadiusOfCurvature
     transition = "DISCONTINUOUS"
 
     parent_curve = file.create_entity(
@@ -94,7 +92,6 @@ def _map_parabolic_arc(file: ifcopenshell.file, design_parameters: entity_instan
     start_height = design_parameters.StartHeight
     start_gradient = design_parameters.StartGradient
     end_gradient = design_parameters.EndGradient
-    radius_of_curvature = design_parameters.RadiusOfCurvature
     transition = "DISCONTINUOUS"
 
     A = start_height
@@ -139,7 +136,7 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
     start_height = design_parameters.StartHeight
     start_gradient = design_parameters.StartGradient
     end_gradient = design_parameters.EndGradient
-    radius_of_curvature = design_parameters.RadiusOfCurvature
+    #radius = design_parameters.RadiusOfCurvature
     transition = "DISCONTINUOUS"
 
     start_angle = math.atan(start_gradient)
