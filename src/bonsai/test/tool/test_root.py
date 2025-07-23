@@ -247,8 +247,6 @@ class TestAssignClass(NewFile):
         datablock_obj = bpy.data.objects["Cylinder"]
 
         # Create blender cube w/ props
-        bpy.ops.mesh.primitive_cylinder_add(vertices=10, location=(0, 4, 0))
-        datablock_obj = bpy.data.objects["Cylinder"]
         bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0))
         obj = bpy.data.objects["Cube"]
         # Set all the custom properties on the obj

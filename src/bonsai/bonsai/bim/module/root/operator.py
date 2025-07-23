@@ -371,15 +371,14 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
 
             # Accomodate existing importers to Blender from other formats that set custom props
             if self.props_to_pset:
-                custom_props = {k: v for (k, v) in obj.items() if type(v) in [bool, int, float, str]}
-                custom_array_props = {
-                    k: v
-                    for (k, v) in obj.items()
-                    if type(v) is idprop.types.IDPropertyArray and v.typecode in ["d", "i", "b"]
-                }
-                for k in custom_array_props.keys():
-                    for idx in range(len(custom_array_props[k])):
-                        custom_props["{}.{}".format(k, idx + 1)] = custom_array_props[k][idx]
+                custom_props = {}
+                for k, v in obj.items():
+                    if type(v) in [bool, int, float, str]:
+                        custom_props[k] = v
+                    elif type(v) is idprop.types.IDPropertyArray:
+                        for idx in range(len(v)):
+                            custom_props["{}.{}".format(k, idx + 1)] = v[idx]
+
                 pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_ImportedBlenderProps")
                 ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=custom_props)
 
