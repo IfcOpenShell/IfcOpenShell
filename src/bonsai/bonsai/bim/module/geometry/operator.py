@@ -2115,7 +2115,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
     def has_aggregates(self, objs):
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
-            if not element:
+            if not element or element.is_a("IfcSpatialElement"):
                 continue
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             parts = ifcopenshell.util.element.get_parts(element)
