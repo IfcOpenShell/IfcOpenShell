@@ -27,6 +27,7 @@ import math
 
 from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
 from ifcopenshell.api.alignment._map_alignment_horizontal_segment import _map_alignment_horizontal_segment
+from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
 
 
 def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, include_referent : bool = True) -> bool:
@@ -56,6 +57,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
         dy = 0.
         segment_start = 0.
 
+        last_segment = None
         if layout.Segments and 0 < len(layout.Segments):
             # If there are segments, get the last segment and compute the end point and tangent direction
             # because this becomes of placement of the zero length segment
@@ -78,7 +80,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                 Magnitude=1.0,
             ),
         )
-        curve_segment = file.createIfcCurveSegment(
+        zero_length_curve_segment = file.createIfcCurveSegment(
             Transition="DISCONTINUOUS",
             Placement=file.createIfcAxis2Placement2D(
                 Location=file.createIfcCartesianPoint((x, y)),
@@ -88,7 +90,11 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
             SegmentLength=file.createIfcLengthMeasure(0.0),
             ParentCurve=parent_curve,
         )
-        layout.Segments += (curve_segment,)
+
+        layout.Segments += (zero_length_curve_segment,)
+
+        if last_segment:
+            _update_curve_segment_transition_code(last_segment,zero_length_curve_segment)
 
         # add zero length segments to base curves
         if layout.is_a("IfcSegmentedReferenceCurve"):
@@ -97,7 +103,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
             ifcopenshell.api.alignment.add_zero_length_segment(file,layout.BaseCurve)
 
     else:
-        segment = None
+        zero_length_curve_segment = None
         if layout.is_a("IfcAlignmentHorizontal"):
             x = 0.
             y = 0.
@@ -138,7 +144,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                 SegmentLength=0.0,
                 PredefinedType="LINE",
             )
-            segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
+            zero_length_curve_segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
         elif layout.is_a("IfcAlignmentVertical"):
             last_segment_dist_along = 0.0
             last_segment_end_gradient = 0.0
@@ -159,7 +165,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                 EndGradient=last_segment_end_gradient,
                 PredefinedType="CONSTANTGRADIENT",
             )
-            segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
+            zero_length_curve_segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
         elif layout.is_a("IfcAlignmentCant"):
             last_segment_dist_along = 0.0
             last_segment_cant_left = 0.0
@@ -189,14 +195,14 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                 StartCantRight=last_segment_cant_right,
                 PredefinedType="CONSTANTCANT",
             )
-            segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
+            zero_length_curve_segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
 
-        ifcopenshell.api.nest.assign_object(file, related_objects=[segment], relating_object=layout)
+        ifcopenshell.api.nest.assign_object(file, related_objects=[zero_length_curve_segment], relating_object=layout)
 
         if include_referent:
             alignment = ifcopenshell.api.alignment.get_alignment(layout)
             station = ifcopenshell.api.alignment.get_alignment_station(file,alignment)
-            name = f"{_get_segment_start_point_label(segment,None)} {ifcopenshell.util.alignment.station_as_string(file,station)}"
-            ifcopenshell.api.alignment.add_stationing_referent(file, segment, 0.0, station, name=name)
+            name = f"{_get_segment_start_point_label(zero_length_curve_segment,None)} {ifcopenshell.util.alignment.station_as_string(file,station)}"
+            ifcopenshell.api.alignment.add_stationing_referent(file, zero_length_curve_segment, 0.0, station, name=name)
     
     return True
