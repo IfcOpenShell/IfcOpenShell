@@ -265,7 +265,7 @@ class TestAssignClass(NewFile):
         obj["09_python"] = {"test": 12}
         # Or a list of things, i.e. objects: [bpy.data.objects['IfcBuildingElementProxy/Cube']]
         obj["10_python"] = bpy.context.selected_objects
-        
+
         return obj, datablock_obj
 
     def test_normal_assign_ifc_class(self):
