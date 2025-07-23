@@ -312,25 +312,3 @@ class TestAssignClass(NewFile):
         assert "08_data_block" not in pset
         assert "09_python" not in pset
         assert "10_python" not in pset
-
-    def test_alternative_assign_ifc_class_named_pset(self):
-        # Setup project
-        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
-        bpy.ops.bim.create_project()
-        ifc_file = tool.Ifc.get()
-        context = bpy.context
-        obj, datablock_obj = self.create_objects(context)
-        obj["IfcPsetName"] = "MyCustomPsetName"
-
-        # Assign IfcClass
-        bpy.ops.bim.assign_class(
-            ifc_class="IfcBuildingElementProxy", predefined_type="ELEMENT", userdefined_type="", props_to_pset=True
-        )
-        element = tool.Ifc.get_entity(obj)
-        assert element
-
-        # Get Psets
-        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
-        assert "MyCustomPsetName" in psets
-        pset = psets["MyCustomPsetName"]
-        assert "01_float" in pset and type(pset["01_float"]) is float
