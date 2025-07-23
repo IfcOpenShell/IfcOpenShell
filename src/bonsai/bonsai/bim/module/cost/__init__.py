@@ -37,6 +37,7 @@ classes = (
     operator.ContractCostItemRate,
     operator.ContractCostItems,
     operator.CopyCostItem,
+    operator.CopyCostSchedule,
     operator.CopyCostItemValues,
     operator.DisableEditingCostItem,
     operator.DisableEditingCostItemQuantity,

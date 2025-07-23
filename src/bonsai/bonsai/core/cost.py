@@ -48,6 +48,10 @@ def remove_cost_schedule(
     ifc.run("cost.remove_cost_schedule", cost_schedule=cost_schedule)
 
 
+def copy_cost_schedule(cost: type[tool.Cost], cost_schedule: ifcopenshell.entity_instance) -> None:
+    cost.copy_cost_schedule(cost_schedule)
+
+
 def enable_editing_cost_schedule_attributes(cost: type[tool.Cost], cost_schedule: ifcopenshell.entity_instance) -> None:
     cost.load_cost_schedule_attributes(cost_schedule)
     cost.enable_editing_cost_schedule_attributes(cost_schedule)
