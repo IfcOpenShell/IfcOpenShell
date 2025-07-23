@@ -129,6 +129,7 @@ class BIM_PT_cost_schedules(Panel):
             row.operator("bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL").cost_schedule = (
                 cost_schedule["id"]
             )
+            row.operator("bim.copy_cost_schedule", text="", icon="DUPLICATE").cost_schedule = cost_schedule["id"]
             row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
         if self.props.active_cost_schedule_id == cost_schedule["id"]:
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":

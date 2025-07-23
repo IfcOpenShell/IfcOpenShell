@@ -82,6 +82,20 @@ class RemoveCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_cost_schedule(tool.Ifc, tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
+class CopyCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_cost_schedule"
+    bl_label = "Copy Cost Schedule"
+    bl_description = "Create a duplicate of the provided cost schedule."
+    bl_options = {"REGISTER", "UNDO"}
+    cost_schedule: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        cost_schedule: int
+
+    def _execute(self, context):
+        core.copy_cost_schedule(tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+
+
 class EnableEditingCostSchedule(bpy.types.Operator):
     bl_idname = "bim.enable_editing_cost_schedule_attributes"
     bl_label = "Enable Editing Cost Schedule"
