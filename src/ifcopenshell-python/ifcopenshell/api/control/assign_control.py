@@ -74,9 +74,8 @@ def assign_control(
             if assignment.is_a("IfcRelAssignsToControl") and assignment.RelatingControl == relating_control:
                 return
 
-    controls = None
-    if relating_control.Controls:
-        controls = relating_control.Controls[0]
+    controls: Union[ifcopenshell.entity_instance, None]
+    controls = next(iter(relating_control.Controls), None)
 
     if controls:
         if related_object in controls.RelatedObjects:
