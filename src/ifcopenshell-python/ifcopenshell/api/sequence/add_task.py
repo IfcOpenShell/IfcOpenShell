@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.control
 import ifcopenshell.api.root
 import ifcopenshell.api.nest
-import ifcopenshell.api.owner
 import ifcopenshell
 import ifcopenshell.guid
 from typing import Optional
@@ -139,15 +139,7 @@ def add_task(
         task.Identification = identification
     task.IsMilestone = False
     if work_schedule:
-        file.create_entity(
-            "IfcRelAssignsToControl",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [task],
-                "RelatingControl": work_schedule,
-            }
-        )
+        ifcopenshell.api.control.assign_control(file, work_schedule, task)
     elif parent_task:
         rel = ifcopenshell.api.nest.assign_object(
             file,
