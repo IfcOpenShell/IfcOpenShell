@@ -38,6 +38,8 @@ class BIM_PT_cost_schedules(Panel):
     bl_parent_id = "BIM_PT_tab_cost"
     bl_options = {"HIDE_HEADER"}
 
+    layout: bpy.types.UILayout
+
     @classmethod
     def poll(cls, context):
         file = tool.Ifc.get()
@@ -138,13 +140,13 @@ class BIM_PT_cost_schedules(Panel):
                     self.draw_currency_ui()
                 self.draw_editable_cost_item_ui()
 
-    def draw_column_ui(self):
+    def draw_column_ui(self) -> None:
         row = self.layout.row(align=True)
         row.prop(self.props, "cost_column", text="")
         row.operator("bim.add_cost_column", text="", icon="ADD").name = self.props.cost_column
         self.layout.template_list("BIM_UL_cost_columns", "", self.props, "columns", self.props, "active_column_index")
 
-    def draw_currency_ui(self):
+    def draw_currency_ui(self) -> None:
         row = self.layout.row(align=True)
         if CostSchedulesData.data["currency"]:
             text = "Currency used: {}".format(CostSchedulesData.data["currency"]["name"])
@@ -161,7 +163,7 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_schedule_ui(self):
         bonsai.bim.helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
-    def draw_editable_cost_item_ui(self):
+    def draw_editable_cost_item_ui(self) -> None:
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         ifc_definition_id = None
@@ -217,7 +219,7 @@ class BIM_PT_cost_schedules(Panel):
             elif self.props.cost_item_editing_type == "VALUES":
                 self.draw_editable_cost_item_values_ui()
 
-    def draw_editable_cost_item_attributes_ui(self):
+    def draw_editable_cost_item_attributes_ui(self) -> None:
         bonsai.bim.helper.draw_attributes(self.props.cost_item_attributes, self.layout)
 
     def draw_editable_cost_item_quantities_ui(self, cost_item: dict[str, Any]):
