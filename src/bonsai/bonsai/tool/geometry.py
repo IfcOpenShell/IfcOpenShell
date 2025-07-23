@@ -2302,3 +2302,19 @@ class Geometry(bonsai.core.tool.Geometry):
     def name_item_object(cls, obj: bpy.types.Object, item: ifcopenshell.entity_instance) -> None:
         assert (data := obj.data)
         obj.name = data.name = f"Item/{item.is_a()}/{item.id()}"
+
+    @classmethod
+    def get_selected_objects_with_representations(cls) -> set[bpy.types.Object]:
+        objects: set[bpy.types.Object] = set()
+        props = tool.Geometry.get_geometry_props()
+        for obj in tool.Blender.get_selected_objects():
+            if not obj.data:
+                continue
+            if not tool.Ifc.get_entity(obj):
+                if tool.Geometry.is_representation_item(obj):
+                    assert (obj := props.representation_obj)
+                    objects.add(obj)
+                    continue
+                continue
+            objects.add(obj)
+        return objects
