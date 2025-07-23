@@ -241,47 +241,12 @@ class TestReassignClass(NewFile):
 
 
 class TestAssignClass(NewFile):
-    def test_normal_assign_ifc_class(self):
-        # Setup project
-        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
-        bpy.ops.bim.create_project()
-        ifc_file = tool.Ifc.get()
-        # Create blender cube w/ props
-        context = bpy.context
+    def create_objects(self, context):
+        # Create blender cylinder
         bpy.ops.mesh.primitive_cylinder_add(vertices=10, location=(0, 4, 0))
         datablock_obj = bpy.data.objects["Cylinder"]
-        bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0))
-        obj = bpy.data.objects["Cube"]
-        # Set all the custom properties on the obj
-        obj["01_float"] = 3.14159
-        obj["02_float_array"] = [3.14159, 1.61803, 2.71828]
-        obj["03_integer"] = 2
-        obj["04_integer_array"] = [2, 3, 5, 7]
-        obj["05_boolean"] = True
-        obj["06_boolean_array"] = [True, False]
-        obj["07_string"] = "Bonsai!"
-        # Data Block is not proper Pointer in UI. Probably doesn't matter.
-        obj["08_data_block"] = datablock_obj
-        # Certain python expressions (list and dicts) can also be stored.
-        obj["09_python"] = {"test": 12}
-        obj["10_python"] = bpy.context.selected_objects
 
-        # Assign IfcClass
-        bpy.ops.bim.assign_class(ifc_class="IfcBuildingElementProxy", predefined_type="ELEMENT", userdefined_type="")
-        element = tool.Ifc.get_entity(obj)
-        assert element
-
-        # Get Psets
-        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
-        assert psets == {}
-
-    def test_alternative_assign_ifc_class(self):
-        # Setup project
-        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
-        bpy.ops.bim.create_project()
-        ifc_file = tool.Ifc.get()
         # Create blender cube w/ props
-        context = bpy.context
         bpy.ops.mesh.primitive_cylinder_add(vertices=10, location=(0, 4, 0))
         datablock_obj = bpy.data.objects["Cylinder"]
         bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0))
@@ -300,6 +265,33 @@ class TestAssignClass(NewFile):
         obj["09_python"] = {"test": 12}
         # Or a list of things, i.e. objects: [bpy.data.objects['IfcBuildingElementProxy/Cube']]
         obj["10_python"] = bpy.context.selected_objects
+        
+        return obj, datablock_obj
+
+    def test_normal_assign_ifc_class(self):
+        # Setup project
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+        obj, datablock_obj = self.create_objects(context)
+
+        # Assign IfcClass
+        bpy.ops.bim.assign_class(ifc_class="IfcBuildingElementProxy", predefined_type="ELEMENT", userdefined_type="")
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        # Get Psets
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        assert psets == {}
+
+    def test_alternative_assign_ifc_class(self):
+        # Setup project
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+        obj, datablock_obj = self.create_objects(context)
 
         # Assign IfcClass
         bpy.ops.bim.assign_class(
