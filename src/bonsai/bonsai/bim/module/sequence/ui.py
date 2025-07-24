@@ -571,7 +571,12 @@ class BIM_PT_animation_tools(Panel):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         if AnimationColorSchemeData.data["saved_color_schemes"]:
-            row.prop(self.animation_props, "saved_color_schemes", text="Color Scheme", icon="SEQUENCE_COLOR_04")
+            row.prop(
+                self.animation_props,
+                "saved_color_schemes",
+                text="Color Scheme",
+                icon=tool.Blender.SEQUENCE_COLOR_SCHEME_ICON,
+            )
         else:
             row.label(text="No Color Scheme Saved", icon="INFO")
         op = row.operator("bim.visualise_work_schedule_date_range", text="Create Animation", icon="OUTLINER_OB_CAMERA")
@@ -611,7 +616,9 @@ class BIM_PT_animation_Color_Scheme(Panel):
         self.animation_props = tool.Sequence.get_animation_props()
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        row.operator("bim.load_default_animation_color_scheme", text="Load default", icon="SEQUENCE_COLOR_04")
+        row.operator(
+            "bim.load_default_animation_color_scheme", text="Load default", icon=tool.Blender.SEQUENCE_COLOR_SCHEME_ICON
+        )
         if AnimationColorSchemeData.data["saved_color_schemes"]:
             row.operator("bim.load_animation_color_scheme", text="Load Scheme", icon="IMPORT")
         row.operator("bim.save_animation_color_scheme", text="Save Scheme", icon="EXPORT")
