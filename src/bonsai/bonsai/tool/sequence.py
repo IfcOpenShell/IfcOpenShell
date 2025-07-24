@@ -195,16 +195,12 @@ class Sequence(bonsai.core.tool.Sequence):
         props = cls.get_work_schedule_props()
         if prop.is_null:
             out_attributes[prop.name] = None
-            for value in props.durations_attributes.values():
-                value = 0
         else:
             duration_type = out_attributes["DurationType"] if "DurationType" in out_attributes else None
             time_split_iso_duration = helper.blender_props_to_iso_duration(
                 props.durations_attributes, duration_type, prop.name
             )
             out_attributes[prop.name] = time_split_iso_duration
-            for value in props.durations_attributes.values():
-                value = 0
         return True
 
     @classmethod
