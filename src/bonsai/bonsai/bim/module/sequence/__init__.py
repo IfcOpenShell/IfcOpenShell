@@ -46,6 +46,7 @@ classes = (
     operator.ContractTask,
     operator.CopyTask,
     operator.CopyTaskAttribute,
+    operator.CopyWorkSchedule,
     operator.CreateBaseline,
     operator.DisableEditingSequence,
     operator.DisableEditingTask,

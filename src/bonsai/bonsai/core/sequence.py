@@ -71,6 +71,10 @@ def remove_work_schedule(ifc: type[tool.Ifc], work_schedule: ifcopenshell.entity
     ifc.run("sequence.remove_work_schedule", work_schedule=work_schedule)
 
 
+def copy_work_schedule(sequence: type[tool.Sequence], work_schedule: ifcopenshell.entity_instance) -> None:
+    sequence.copy_work_schedule(work_schedule)
+
+
 def assign_work_schedule(
     ifc: type[tool.Ifc], work_plan: ifcopenshell.entity_instance, work_schedule: ifcopenshell.entity_instance
 ) -> Union[ifcopenshell.entity_instance, None]:
