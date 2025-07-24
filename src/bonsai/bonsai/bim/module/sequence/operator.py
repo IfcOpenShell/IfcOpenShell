@@ -692,7 +692,7 @@ class ImportWorkScheduleCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper)
         csv2ifc.csv = self.filepath
         csv2ifc.file = self.file
         csv2ifc.execute()
-        self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
 class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
