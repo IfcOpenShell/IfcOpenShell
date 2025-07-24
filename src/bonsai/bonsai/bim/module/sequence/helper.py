@@ -23,7 +23,7 @@ import bpy
 from dateutil import parser
 import ifcopenshell.util.date
 from datetime import timedelta, datetime
-from typing import Union
+from typing import Union, Any
 
 from bonsai.bim.prop import ISODuration
 
@@ -49,8 +49,8 @@ def canonicalise_time(time: Union[datetime, None]) -> str:
     return time.strftime("%d/%m/%y")
 
 
-def parse_duration_as_blender_props(dt, simplify=True):
-    if simplify:
+def parse_duration_as_blender_props(dt: Union[Any, str]) -> dict[str, int]:
+    if True:
         if isinstance(dt, str):
             dt = ifcopenshell.util.date.ifc2datetime(dt)
 

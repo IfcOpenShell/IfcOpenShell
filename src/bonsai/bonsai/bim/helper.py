@@ -111,7 +111,7 @@ def draw_attribute(
         op = layout.operator("bim.attribute_add_subitem", icon="ADD", text="")
         op.data_path = data_path
 
-    elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
+    elif attribute.special_type == "DURATION":
         props = tool.Sequence.get_work_schedule_props()
         for item in props.durations_attributes:
             if item.name == attribute.name:

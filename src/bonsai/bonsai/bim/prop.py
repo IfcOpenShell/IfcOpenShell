@@ -274,7 +274,18 @@ def get_display_name(self: "Attribute") -> str:
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file", "list[string]"]
-AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE", "LOGICAL", "URI"]
+AttributeSpecialType = Literal[
+    "",
+    "DATE",
+    "DATETIME",
+    "LENGTH",
+    "AREA",
+    "VOLUME",
+    "FORCE",
+    "LOGICAL",
+    "URI",
+    "DURATION",
+]
 
 
 class Attribute(PropertyGroup):
