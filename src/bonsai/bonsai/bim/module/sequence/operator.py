@@ -269,6 +269,7 @@ class EditWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_work_schedule"
     bl_label = "Remove Work Schedule"
+    back_reference = "Remove provided work schedule."
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
@@ -279,6 +280,7 @@ class RemoveWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingWorkSchedule(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_schedule"
     bl_label = "Enable Editing Work Schedule"
+    bl_description = "Enable editing work schedule attributes."
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
@@ -290,6 +292,7 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
 class EnableEditingWorkScheduleTasks(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_schedule_tasks"
     bl_label = "Enable Editing Work Schedule Tasks"
+    bl_description = "Enable editing work scheduke tasks."
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
