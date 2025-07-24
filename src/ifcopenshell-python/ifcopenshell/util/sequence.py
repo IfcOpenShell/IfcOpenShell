@@ -307,10 +307,6 @@ def get_root_tasks(work_schedule: ifcopenshell.entity_instance) -> list[ifcopens
     return [obj for rel in work_schedule.Controls for obj in rel.RelatedObjects if obj.is_a("IfcTask")]
 
 
-def get_root_tasks_ids(work_schedule: ifcopenshell.entity_instance) -> list[int]:
-    return [obj.id() for rel in work_schedule.Controls for obj in rel.RelatedObjects if obj.is_a("IfcTask")]
-
-
 def guess_date_range(work_schedule: ifcopenshell.entity_instance):
     earliest = None
     latest = None
