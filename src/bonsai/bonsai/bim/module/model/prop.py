@@ -323,6 +323,13 @@ class BIMModelProperties(PropertyGroup):
         show_wall_axis: bool
         show_slab_direction: bool
 
+        prev_transform_orientation_slot_type: str
+        prev_show_gizmo_object_translate: bool
+
+        show_bounding_box: bool
+        show_cut_decorator: bool
+        show_cut_decorator_fill: bool
+
 
 class BIMArrayProperties(PropertyGroup):
     is_editing: bpy.props.IntProperty(
@@ -1157,6 +1164,13 @@ class SnapMousePoint(PropertyGroup):
     snap_type: bpy.props.StringProperty(name="Snap Type")
     snap_object: bpy.props.StringProperty(name="Object Name")
 
+    if TYPE_CHECKING:
+        x: float
+        y: float
+        z: float
+        snap_type: str
+        snap_object: str
+
 
 class PolylinePoint(PropertyGroup):
     x: bpy.props.FloatProperty(name="X")
@@ -1166,6 +1180,14 @@ class PolylinePoint(PropertyGroup):
     angle: bpy.props.StringProperty(name="Angle")
     position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
 
+    if TYPE_CHECKING:
+        x: float
+        y: float
+        z: float
+        dim: str
+        angle: str
+        position: tuple[float, float, float]
+
 
 class Polyline(PropertyGroup):
     id: bpy.props.StringProperty(name="Id")
@@ -1174,6 +1196,13 @@ class Polyline(PropertyGroup):
     area: bpy.props.StringProperty(name="Measured Area")
     total_length: bpy.props.StringProperty(name="Total Length")
 
+    if TYPE_CHECKING:
+        id: str
+        polyline_points: bpy.types.bpy_prop_collection_idprop[PolylinePoint]
+        measurement_type: str
+        area: str
+        total_length: str
+
 
 class BIMPolylineProperties(PropertyGroup):
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
@@ -1181,16 +1210,31 @@ class BIMPolylineProperties(PropertyGroup):
     insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
     measurement_polyline: bpy.props.CollectionProperty(type=Polyline)
 
+    if TYPE_CHECKING:
+        snap_mouse_point: bpy.types.bpy_prop_collection_idprop[SnapMousePoint]
+        snap_mouse_ref: bpy.types.bpy_prop_collection_idprop[SnapMousePoint]
+        insertion_polyline: bpy.types.bpy_prop_collection_idprop[Polyline]
+        measurement_polyline: bpy.types.bpy_prop_collection_idprop[Polyline]
+
 
 class ProductPreviewItem(PropertyGroup):
     value_3d: bpy.props.FloatVectorProperty()
     value_2d: bpy.props.FloatVectorProperty(size=2)
+
+    if TYPE_CHECKING:
+        value_3d: tuple[float, float, float]
+        value_2d: tuple[float, float]
 
 
 class BIMProductPreviewProperties(PropertyGroup):
     verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
     edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
     tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
+
+    if TYPE_CHECKING:
+        verts: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
+        edges: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
+        tris: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
 
 
 def update_is_editing(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:

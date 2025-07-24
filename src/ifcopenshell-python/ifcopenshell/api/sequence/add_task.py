@@ -20,7 +20,6 @@ import ifcopenshell.api.control
 import ifcopenshell.api.root
 import ifcopenshell.api.nest
 import ifcopenshell
-import ifcopenshell.guid
 from typing import Optional
 
 

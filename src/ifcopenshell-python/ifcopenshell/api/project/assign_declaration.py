@@ -30,6 +30,8 @@ def assign_declaration(
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Declares the list of elements to the project
 
+    Feature was added in IFC4.
+
     All data in a model must be directly or indirectly related to the
     project. Most data is indirectly related, existing instead within the
     spatial decomposition tree. Other data, such as types, may be declared
@@ -82,21 +84,16 @@ def assign_declaration(
         # All done, just for fun let's save our asset library to disk for later use.
         library.write("/path/to/my-library.ifc")
     """
-    settings = {
-        "definitions": definitions,
-        "relating_context": relating_context,
-    }
 
-    relating_context = settings["relating_context"]
     all_declares = relating_context.Declares
-    definitions = set(settings["definitions"])
+    definitions_set = set(definitions)
 
     previous_declares_rels: set[ifcopenshell.entity_instance] = set()
     objects_without_contexts: list[ifcopenshell.entity_instance] = []
     objects_with_contexts: list[ifcopenshell.entity_instance] = []
 
     # check if there is anything to change
-    for definition in definitions:
+    for definition in definitions_set:
         has_context = getattr(definition, "HasContext", None)
         if has_context is None:
             continue

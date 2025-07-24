@@ -163,7 +163,8 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
         # Point related to the mouse
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         angle = atan2(direcion.y, direcion.x)
@@ -214,13 +215,14 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
                 if result:
                     self.report({"WARNING"}, result)
 
-            snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+            polyline_props = tool.Model.get_polyline_props()
+            snap_prop = polyline_props.snap_mouse_point[0]
             snap_obj = bpy.data.objects.get(snap_prop.snap_object)
             if snap_obj and tool.Ifc.get_entity(snap_obj).is_a("IfcWall"):
                 tool.Blender.set_active_object(snap_obj)
                 ExtendWallsToWall._execute(self, context)
             else:
-                point = context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points[1]
+                point = polyline_props.insertion_polyline[0].polyline_points[1]
                 core.extend_walls(
                     tool.Ifc,
                     tool.Blender,
@@ -867,7 +869,8 @@ class DumbWallGenerator:
             return self.derive_from_cursor()
 
     def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         is_polyline_closed = False
         if len(polyline_points) > 3:

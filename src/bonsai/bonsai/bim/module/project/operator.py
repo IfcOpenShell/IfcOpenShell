@@ -2625,11 +2625,11 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         single_mode = False
-
+        polyline_props = tool.Model.get_polyline_props()
         if (
             self.measure_type == "SINGLE"
-            and context.scene.BIMPolylineProperties.insertion_polyline
-            and len(context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points) >= 2
+            and polyline_props.insertion_polyline
+            and len(polyline_props.insertion_polyline[0].polyline_points) >= 2
         ):
             single_mode = True
 
@@ -2652,19 +2652,19 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_inserting_polyline(context, event)
 
         # Add measurement type to the insertion polyline
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_data = polyline_props.insertion_polyline
         if not polyline_data:
             pass
         else:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
-            measurement_type = bpy.context.scene.MeasureToolSettings.measurement_type
+            polyline_data = polyline_props.insertion_polyline[0]
+            measurement_type = tool.Project.get_measure_tool_settings().measurement_type
             if not polyline_data.measurement_type:
                 polyline_data.measurement_type = measurement_type
 
         tool.Polyline.calculate_area(context, self.input_ui)
 
         if event.type == "E":
-            context.scene.BIMPolylineProperties.measurement_polyline.clear()
+            polyline_props.measurement_polyline.clear()
             MeasureDecorator.uninstall()
             tool.Blender.update_viewport()
 
@@ -2727,6 +2727,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
             return {"PASS_THROUGH"}
 
         self.handle_mouse_move(context, event)
+        polyline_props = tool.Model.get_polyline_props()
 
         if event.value == "PRESS" and event.type == "LEFTMOUSE":
             tool.Blender.update_viewport()
@@ -2737,7 +2738,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
                     self.clicked_faces.append(obj.data.polygons[face_index])
                     self.total_area += obj.data.polygons[face_index].area
                     self.input_ui.set_value("AREA", self.total_area)
-                    polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline.add()
+                    polyline_data = polyline_props.insertion_polyline.add()
                     polyline_data.id = obj.name + str(face_index)
                     for v_id in obj.data.polygons[face_index].vertices:
                         vertex = obj.matrix_world @ obj.data.vertices[v_id].co
@@ -2755,14 +2756,14 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
                     self.clicked_faces.remove(obj.data.polygons[face_index])
                     self.total_area -= obj.data.polygons[face_index].area
                     self.input_ui.set_value("AREA", self.total_area)
-                    polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+                    polyline_data = polyline_props.insertion_polyline
                     for i, polyline in enumerate(polyline_data):
                         if polyline.id == obj.name + str(face_index):
                             polyline_data.remove(i)
             tool.Blender.update_viewport()
 
         if event.value == "RELEASE" and event.type in {"ESC", "RIGHTMOUSE"}:
-            bpy.context.scene.BIMPolylineProperties.insertion_polyline.clear()
+            polyline_props.insertion_polyline.clear()
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             FaceAreaDecorator.uninstall()
@@ -2786,10 +2787,12 @@ class ClearMeasurement(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.scene.BIMPolylineProperties.measurement_polyline) > 0
+        polyline_props = tool.Model.get_polyline_props()
+        return len(polyline_props.measurement_polyline) > 0
 
     def execute(self, context):
-        context.scene.BIMPolylineProperties.measurement_polyline.clear()
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_props.measurement_polyline.clear()
         MeasureDecorator.uninstall()
         tool.Blender.update_viewport()
         return {"FINISHED"}

@@ -202,7 +202,7 @@ def get_root_cost_items(cost_schedule: ifcopenshell.entity_instance) -> list[ifc
 
 def get_all_nested_cost_items(
     cost_item: ifcopenshell.entity_instance,
-) -> Generator[ifcopenshell.entity_instance, None, None]:
+) -> Generator[ifcopenshell.entity_instance]:
     for cost_item in get_nested_cost_items(cost_item):
         yield cost_item
         yield from get_all_nested_cost_items(cost_item)
@@ -217,7 +217,7 @@ def get_nested_cost_items(cost_item: ifcopenshell.entity_instance, is_deep=False
 
 def get_schedule_cost_items(
     cost_schedule: ifcopenshell.entity_instance,
-) -> Generator[ifcopenshell.entity_instance, None, None]:
+) -> Generator[ifcopenshell.entity_instance]:
     """Get all cost schedule cost items, including the nested ones."""
     for cost_item in get_root_cost_items(cost_schedule):
         yield cost_item

@@ -646,10 +646,11 @@ class EditWorkCalendar(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_calendar_props()
         core.edit_work_calendar(
             tool.Ifc,
             tool.Sequence,
-            work_calendar=tool.Ifc.get().by_id(context.scene.BIMWorkCalendarProperties.active_work_calendar_id),
+            work_calendar=tool.Ifc.get().by_id(props.active_work_calendar_id),
         )
 
 

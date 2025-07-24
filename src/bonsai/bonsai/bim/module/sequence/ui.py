@@ -1021,11 +1021,13 @@ class BIM_PT_work_calendars(Panel):
         file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
+    layout: bpy.types.UILayout
+
     def draw(self, context):
         if not SequenceData.is_loaded:
             SequenceData.load()
 
-        self.props = context.scene.BIMWorkCalendarProperties
+        self.props = tool.Sequence.get_work_calendar_props()
         row = self.layout.row()
         if SequenceData.data["has_work_calendars"]:
             row.label(

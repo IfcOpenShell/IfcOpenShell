@@ -59,7 +59,7 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Disable Culling" if LinksData.enable_culling else "Enable Culling", icon="EVENT_C")
 
-        prop = context.scene.MeasureToolSettings
+        prop = tool.Project.get_measure_tool_settings()
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_M")
@@ -105,7 +105,7 @@ class ExploreHotkey(bpy.types.Operator):
     def hotkey_S_M(self):
         for obj in tool.Blender.get_selected_objects():
             obj.select_set(False)
-        measure_type = bpy.context.scene.MeasureToolSettings.measurement_type
+        measure_type = tool.Project.get_measure_tool_settings().measurement_type
         if measure_type == "FACE_AREA":
             bpy.ops.bim.measure_face_area_tool("INVOKE_DEFAULT")
         else:

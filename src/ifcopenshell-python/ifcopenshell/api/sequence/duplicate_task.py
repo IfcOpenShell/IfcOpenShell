@@ -23,14 +23,12 @@ import ifcopenshell.api.owner
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.element
-import ifcopenshell.util.sequence
-from typing import Union, Any
 
 
 # TODO: inconsistent name with other copy_xxx api methods.
 def duplicate_task(
     file: ifcopenshell.file, task: ifcopenshell.entity_instance
-) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
+) -> tuple[list[ifcopenshell.entity_instance], list[ifcopenshell.entity_instance]]:
     """Duplicates a task in the project
 
     The following relationships are also duplicated:
@@ -53,24 +51,27 @@ def duplicate_task(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"task": task}
-    return usecase.execute()
+    return usecase.execute(task)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, list[ifcopenshell.entity_instance]]
+    current: list[ifcopenshell.entity_instance]
+    duplicate: list[ifcopenshell.entity_instance]
 
-    def execute(self):
-        self.tracker = {"current": [], "duplicate": []}
-        self.duplicate_task(self.settings["task"])
-        self.copy_sequence_relationship(self.tracker["current"], self.tracker["duplicate"])
-        return self.tracker["current"], self.tracker["duplicate"]
+    def execute(
+        self, task: ifcopenshell.entity_instance
+    ) -> tuple[list[ifcopenshell.entity_instance], list[ifcopenshell.entity_instance]]:
+        self.current = []
+        self.duplicate = []
+        self.duplicate_task(task)
+        self.copy_sequence_relationship()
+        return self.current, self.duplicate
 
     def duplicate_task(self, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         new_task = ifcopenshell.util.element.copy_deep(self.file, task)
-        self.tracker["current"].append(task)
-        self.tracker["duplicate"].append(new_task)
+        self.current.append(task)
+        self.duplicate.append(new_task)
         self.copy_indirect_attributes(task, new_task)
         return new_task
 
@@ -118,7 +119,9 @@ class Usecase:
                         new_value.append(to_element)
                         inverse[i] = new_value
 
-    def copy_sequence_relationship(self, original_tasks, duplicated_tasks):
+    def copy_sequence_relationship(self) -> None:
+        original_tasks = self.current
+        duplicated_tasks = self.duplicate
         for i, original_task in enumerate(original_tasks):
             for inverse in self.file.get_inverse(original_task):
                 if inverse.is_a("IfcRelSequence") and (

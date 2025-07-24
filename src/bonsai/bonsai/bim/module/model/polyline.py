@@ -92,7 +92,8 @@ def get_wall_preview_data(context, relating_type):
 
     # Verts
     polyline_vertices = []
-    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_props = tool.Model.get_polyline_props()
+    polyline_data = polyline_props.insertion_polyline
     polyline_points = polyline_data[0].polyline_points if polyline_data else []
     if len(polyline_points) < 2:
         data = []
@@ -212,7 +213,8 @@ def get_slab_preview_data(context, relating_type):
     data["verts"] = []
     # Verts
     polyline_vertices = []
-    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_props = tool.Model.get_polyline_props()
+    polyline_data = polyline_props.insertion_polyline
     polyline_points = polyline_data[0].polyline_points if polyline_data else []
     if len(polyline_points) < 3:
         data = []
@@ -340,7 +342,8 @@ def get_vertical_profile_preview_data(
     tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
 
     # Calculate rotation, mouse position, angle and cardinal point
-    snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+    polyline_props = tool.Model.get_polyline_props()
+    snap_prop = polyline_props.snap_mouse_point[0]
     mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
     data = {}
 
@@ -384,7 +387,8 @@ def get_horizontal_profile_preview_data(
     cardinal_point = model_props.cardinal_point
 
     polyline_verts = []
-    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_props = tool.Model.get_polyline_props()
+    polyline_data = polyline_props.insertion_polyline
     polyline_points = polyline_data[0].polyline_points if polyline_data else []
     if len(polyline_points) < 2:
         return {}
@@ -530,7 +534,8 @@ def get_generic_product_preview_data(context, relating_type):
         rl = float(model_props.rl2)
     else:
         rl = 0
-    snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+    polyline_props = tool.Model.get_polyline_props()
+    snap_prop = polyline_props.snap_mouse_point[0]
     default_container_elevation = tool.Root.get_default_container_elevation()
     mouse_point = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
     snap_obj = bpy.data.objects.get(snap_prop.snap_object)
@@ -646,7 +651,8 @@ class PolylineOperator:
 
     def choose_plane(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = True) -> None:
         def get_plane_origin():
-            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+            polyline_props = tool.Model.get_polyline_props()
+            polyline_data = polyline_props.insertion_polyline
             polyline_points = polyline_data[0].polyline_points if polyline_data else []
             if len(polyline_points) > 0:
                 reference_point = polyline_points[-1]
@@ -824,7 +830,8 @@ class PolylineOperator:
 
         if event.value == "PRESS" and event.type == "C":
             # Get the first point coordinates to close the polyline
-            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+            polyline_props = tool.Model.get_polyline_props()
+            polyline_data = polyline_props.insertion_polyline
             polyline_points = polyline_data[0].polyline_points if polyline_data else []
             if len(polyline_points) > 2:
                 first_point = polyline_points[0]
@@ -832,7 +839,7 @@ class PolylineOperator:
                 if not (
                     first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z
                 ):
-                    mouse_point = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+                    mouse_point = polyline_props.snap_mouse_point[0]
                     mouse_point.x = first_point.x
                     mouse_point.y = first_point.y
                     if self.input_ui.get_number_value("Z") is not None:
