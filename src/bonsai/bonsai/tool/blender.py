@@ -85,6 +85,9 @@ class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
+    SEQUENCE_COLOR_SCHEME_ICON: Literal["STRIP_COLOR_03"] = (  # pyright: ignore[reportAssignmentType]
+        "STRIP_COLOR_03" if bpy.app.version >= (4, 4, 0) else "SEQUENCE_COLOR_04"
+    )
 
     BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]
     """
