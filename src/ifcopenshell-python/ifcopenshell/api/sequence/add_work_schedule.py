@@ -30,7 +30,7 @@ def add_work_schedule(
     file: ifcopenshell.file,
     name: str = "Unnamed",
     predefined_type: str = "NOTDEFINED",
-    object_type=None,
+    object_type: Union[str, None] = None,
     start_time: Optional[Union[str, time]] = None,
     work_plan: Optional[ifcopenshell.entity_instance] = None,
 ) -> ifcopenshell.entity_instance:
@@ -44,6 +44,8 @@ def add_work_schedule(
         BASELINE, and PLANNED. Typically you would start with PLANNED, then
         convert to a BASELINE when changes are made with separate schedules,
         then have a parallel ACTUAL schedule.
+    :param object_type: Work schedule Object Type. Should be provided
+        in case if ``predefined_type`` is USERDEFINED.
     :param start_time: The earlier start time when the schedule is relevant.
         May be represented with an ISO standard string.
     :param work_plan: The IfcWorkPlan the schedule will be part of. If not
