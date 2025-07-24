@@ -880,7 +880,10 @@ class EditObjectUI:
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Extend", "S_E", "", ui_context)
-
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(
+                row, "Extend Height", "C_E", "Extend wall height to 3D cursor Z position", ui_context
+            )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             if AuthoringData.data["active_class"] in (
                 "IfcCableCarrierSegment",
@@ -1423,47 +1426,42 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
 
-        if self.active_material_usage != "LAYER2":
-            self.report({"INFO"}, "Height extension only works for walls")
-            return
-
         cursor_z = bpy.context.scene.cursor.location.z
-        wall_objects = []
-        wall_bases = []
+        layer2_objects = []
+        layer2_bases = []
 
         for obj in bpy.context.selected_objects:
             element = tool.Ifc.get_entity(obj)
-            if element and element.is_a("IfcWall"):
-                wall_base_z = obj.matrix_world.translation.z
-                wall_objects.append(obj)
-                wall_bases.append(wall_base_z)
+            if element and tool.Model.get_usage_type(element) == "LAYER2":
+                obj_base_z = obj.matrix_world.translation.z
+                layer2_objects.append(obj)
+                layer2_bases.append(obj_base_z)
 
-        if not wall_objects:
+        if not layer2_objects:
+            self.report({"ERROR"}, "No LAYER2 objects selected")
             return
 
-        if wall_bases and len(set(wall_bases)) > 1:
-            min_base = min(wall_bases)
-            max_base = max(wall_bases)
+        if layer2_bases and len(set(layer2_bases)) > 1:
+            min_base = min(layer2_bases)
+            max_base = max(layer2_bases)
             self.report(
                 {"ERROR"},
-                f"Selected walls have different base heights ({min_base:.3f}m to {max_base:.3f}m). All walls must be at the exact same base level.",
+                f"Selected LAYER2 objects have different base heights ({min_base:.3f}m to {max_base:.3f}m). All objects must be at the exact same base level.",
             )
             return
 
-        common_base = wall_bases[0]
+        common_base = layer2_bases[0]
         new_height = cursor_z - common_base
 
         if new_height > 0:
             props = tool.Model.get_model_props()
             props.extrusion_depth = new_height
             bpy.ops.bim.change_extrusion_depth(depth=new_height)
-            self.report({"INFO"}, f"Extended {len(wall_objects)} wall(s) to z: {cursor_z:.2f}m")
+            self.report({"INFO"}, f"Extended {len(layer2_objects)} LAYER2 object(s) to z: {cursor_z:.2f}m")
         else:
             self.report(
                 {"ERROR"},
-                f"Negative height not allowed. Cursor ({cursor_z:.2f}m) must be above wall base ({common_base:.2f}m)",
+                f"Negative height not allowed. Cursor ({cursor_z:.2f}m) must be above object base ({common_base:.2f}m)",
             )
-
-
 custom_icon_previews = None
 display_mode = None
