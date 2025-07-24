@@ -191,7 +191,8 @@ class BIM_PT_work_schedules(Panel):
                     icon="LINENUMBERS_ON",
                 )
                 if self.props.editing_type == "WORK_SCHEDULE":
-                    row.operator("bim.edit_work_schedule", text="Apply", icon="CHECKMARK")
+                    row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
                 elif self.props.editing_type == "TASKS":
                     grid = self.layout.grid_flow(columns=2, even_columns=True)
                     col = grid.column()
