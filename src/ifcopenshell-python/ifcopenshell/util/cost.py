@@ -22,6 +22,7 @@ from typing import Optional, Union, Literal, Any
 from collections.abc import Generator
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 from ifcopenshell.util.doc import get_predefined_type_doc
 from ifcopenshell.util.element import get_psets
 from ifcopenshell.util.unit import get_unit_symbol
@@ -211,12 +212,13 @@ def get_nested_cost_items(cost_item: ifcopenshell.entity_instance, is_deep=False
     if is_deep:
         return list(get_all_nested_cost_items(cost_item))
     else:
-        return [obj for rel in cost_item.IsNestedBy for obj in rel.RelatedObjects]
+        return ifcopenshell.util.element.get_components(cost_item)
 
 
 def get_schedule_cost_items(
     cost_schedule: ifcopenshell.entity_instance,
 ) -> Generator[ifcopenshell.entity_instance, None, None]:
+    """Get all cost schedule cost items, including the nested ones."""
     for cost_item in get_root_cost_items(cost_schedule):
         yield cost_item
         yield from get_all_nested_cost_items(cost_item)
