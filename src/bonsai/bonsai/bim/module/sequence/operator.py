@@ -667,9 +667,9 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
-    bl_idname = "bim.import_csv"
-    bl_label = "Import CSV"
+class ImportWorkScheduleCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
+    bl_idname = "bim.import_work_schedule_csv"
+    bl_label = "Import Work Schedule CSV"
     bl_description = "Import work schedule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
