@@ -27,6 +27,7 @@ import ifcopenshell.util.sequence
 from typing import Union, Any
 
 
+# TODO: inconsistent name with other copy_xxx api methods.
 def duplicate_task(
     file: ifcopenshell.file, task: ifcopenshell.entity_instance
 ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
@@ -58,7 +59,7 @@ def duplicate_task(
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
+    settings: dict[str, list[ifcopenshell.entity_instance]]
 
     def execute(self):
         self.tracker = {"current": [], "duplicate": []}
@@ -66,14 +67,16 @@ class Usecase:
         self.copy_sequence_relationship(self.tracker["current"], self.tracker["duplicate"])
         return self.tracker["current"], self.tracker["duplicate"]
 
-    def duplicate_task(self, task):
+    def duplicate_task(self, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         new_task = ifcopenshell.util.element.copy_deep(self.file, task)
         self.tracker["current"].append(task)
         self.tracker["duplicate"].append(new_task)
         self.copy_indirect_attributes(task, new_task)
         return new_task
 
-    def copy_indirect_attributes(self, from_element, to_element):
+    def copy_indirect_attributes(
+        self, from_element: ifcopenshell.entity_instance, to_element: ifcopenshell.entity_instance
+    ) -> None:
         for inverse in self.file.get_inverse(from_element):
             if inverse.is_a("IfcRelDefinesByProperties"):
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)

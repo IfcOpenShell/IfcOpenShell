@@ -38,6 +38,7 @@ from .assign_sequence import assign_sequence
 from .assign_work_plan import assign_work_plan
 from .calculate_task_duration import calculate_task_duration
 from .cascade_schedule import cascade_schedule
+from .copy_work_schedule import copy_work_schedule
 from .create_baseline import create_baseline
 from .duplicate_task import duplicate_task
 from .edit_lag_time import edit_lag_time
@@ -84,6 +85,7 @@ __all__ = [
     "assign_work_plan",
     "calculate_task_duration",
     "cascade_schedule",
+    "copy_work_schedule",
     "create_baseline",
     "duplicate_task",
     "edit_lag_time",

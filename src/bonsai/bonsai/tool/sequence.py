@@ -22,6 +22,7 @@ import re
 import bpy
 import json
 import base64
+import ifcopenshell.api.sequence
 import pystache
 import mathutils
 import webbrowser
@@ -1846,3 +1847,9 @@ class Sequence(bonsai.core.tool.Sequence):
             if not element or not element.is_a("IfcProduct"):
                 continue
             obj.hide_set(element not in visible_elements)
+
+    @classmethod
+    def copy_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
+        ifc_file = tool.Ifc.get()
+        new_schedule = ifcopenshell.api.sequence.copy_work_schedule(ifc_file, work_schedule)
+        new_schedule.Name = (new_schedule.Name or "Unnamed") + " Copy"

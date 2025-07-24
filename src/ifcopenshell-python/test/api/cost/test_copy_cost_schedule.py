@@ -23,6 +23,7 @@ import test.bootstrap
 
 class TestCopyCostSchedule(test.bootstrap.IFC4):
     def test_run(self):
+        # Shared code logic with test_copy_work_schedule.
         schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="Foo")
         item = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         ifcopenshell.api.cost.add_cost_item(self.file, cost_item=item)  # Subitem.

@@ -246,6 +246,7 @@ class BIM_PT_work_schedules(Panel):
                 row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL").work_schedule = (
                     work_schedule_id
                 )
+                row.operator("bim.copy_work_schedule", text="", icon="DUPLICATE").work_schedule = work_schedule_id
                 row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
             if self.props.active_work_schedule_id == work_schedule_id:
                 if self.props.editing_type == "WORK_SCHEDULE":
