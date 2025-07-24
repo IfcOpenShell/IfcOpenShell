@@ -24,7 +24,7 @@ import bonsai.tool as tool
 import bonsai.bim.module.pset.data
 import bonsai.bim.module.resource.data
 import bonsai.bim.module.sequence.data
-from bonsai.bim.prop import Attribute
+from bonsai.bim.prop import Attribute, ISODuration
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -93,25 +93,6 @@ def updateResourceUsage(self: "Resource", context: object) -> None:
     bonsai.bim.module.resource.data.refresh()
     bonsai.bim.module.sequence.data.refresh()
     bonsai.bim.module.pset.data.refresh()
-
-
-class ISODuration(PropertyGroup):
-    name: StringProperty(name="Name")
-    years: IntProperty(name="Years", default=0)
-    months: IntProperty(name="Months", default=0)
-    days: IntProperty(name="Days", default=0)
-    hours: IntProperty(name="Hours", default=0)
-    minutes: IntProperty(name="Minutes", default=0)
-    seconds: IntProperty(name="Seconds", default=0)
-
-    if TYPE_CHECKING:
-        name: str
-        years: int
-        months: int
-        days: int
-        hours: int
-        minutes: int
-        seconds: int
 
 
 class Resource(PropertyGroup):

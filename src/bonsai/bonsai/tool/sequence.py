@@ -43,7 +43,7 @@ from collections.abc import Iterable
 from mathutils import Color
 
 if TYPE_CHECKING:
-    import bonsai.bim.prop
+    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.sequence.prop import (
         BIMAnimationProperties,
         BIMStatusProperties,
@@ -405,9 +405,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
         props = cls.get_work_schedule_props()
 
-        def callback(
-            name: str, prop: Union[bonsai.bim.prop.Attribute, None], data: dict[str, Any]
-        ) -> Union[bool, None]:
+        def callback(name: str, prop: Union[Attribute, None], data: dict[str, Any]) -> Union[bool, None]:
             if prop and prop.data_type == "string":
                 # TODO: Check actual attribute type instead of providing attribute names.
                 if name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
@@ -451,7 +449,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
         props = cls.get_work_schedule_props()
 
-        def callback(attributes, prop):
+        def callback(attributes: dict[str, Any], prop: Attribute) -> bool:
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
                 if prop.is_null:
                     attributes[prop.name] = None
@@ -473,6 +471,7 @@ class Sequence(bonsai.core.tool.Sequence):
                     for value in props.durations_attributes.values():
                         value = 0
                     return True
+            return False
 
         return bonsai.bim.helper.export_attributes(props.task_time_attributes, callback)
 

@@ -127,7 +127,6 @@ classes = (
     prop.Task,
     prop.TaskResource,
     prop.TaskProduct,
-    prop.ISODuration,
     prop.IFCStatus,
     prop.BIMStatusProperties,
     prop.BIMWorkScheduleProperties,
