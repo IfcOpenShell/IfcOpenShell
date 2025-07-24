@@ -316,7 +316,8 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline[0]
         polyline_points = polyline_data.polyline_points
         polyline_points = polyline_points[
             : len(polyline_points) - 1

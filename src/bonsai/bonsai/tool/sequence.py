@@ -49,6 +49,7 @@ if TYPE_CHECKING:
         BIMAnimationProperties,
         BIMStatusProperties,
         BIMTaskTreeProperties,
+        BIMWorkCalendarProperties,
         BIMWorkPlanProperties,
         BIMWorkScheduleProperties,
     )
@@ -82,6 +83,11 @@ class Sequence(bonsai.core.tool.Sequence):
     def get_work_plan_props(cls) -> BIMWorkPlanProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMWorkPlanProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_work_calendar_props(cls) -> BIMWorkCalendarProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMWorkCalendarProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_work_plan_attributes(cls) -> dict[str, Any]:
@@ -411,7 +417,8 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_active_work_time(cls) -> ifcopenshell.entity_instance:
-        return tool.Ifc.get().by_id(bpy.context.scene.BIMWorkCalendarProperties.active_work_time_id)
+        props = cls.get_work_calendar_props()
+        return tool.Ifc.get().by_id(props.active_work_time_id)
 
     @classmethod
     def get_task_time(cls, task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -571,32 +578,35 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def enable_editing_work_calendar_times(cls, work_calendar: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkCalendarProperties
+        props = cls.get_work_calendar_props()
         props.active_work_calendar_id = work_calendar.id()
         props.editing_type = "WORKTIMES"
 
     @classmethod
     def load_work_calendar_attributes(cls, work_calendar: ifcopenshell.entity_instance) -> dict[str, Any]:
-        props = bpy.context.scene.BIMWorkCalendarProperties
+        props = cls.get_work_calendar_props()
         props.work_calendar_attributes.clear()
         return bonsai.bim.helper.import_attributes(work_calendar, props.work_calendar_attributes)
 
     @classmethod
     def enable_editing_work_calendar(cls, work_calendar: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMWorkCalendarProperties.active_work_calendar_id = work_calendar.id()
-        bpy.context.scene.BIMWorkCalendarProperties.editing_type = "ATTRIBUTES"
+        props = cls.get_work_calendar_props()
+        props.active_work_calendar_id = work_calendar.id()
+        props.editing_type = "ATTRIBUTES"
 
     @classmethod
     def disable_editing_work_calendar(cls) -> None:
-        bpy.context.scene.BIMWorkCalendarProperties.active_work_calendar_id = 0
+        props = cls.get_work_calendar_props()
+        props.active_work_calendar_id = 0
 
     @classmethod
     def get_work_calendar_attributes(cls) -> dict[str, Any]:
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMWorkCalendarProperties.work_calendar_attributes)
+        props = cls.get_work_calendar_props()
+        return bonsai.bim.helper.export_attributes(props.work_calendar_attributes)
 
     @classmethod
     def load_work_time_attributes(cls, work_time: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkCalendarProperties
+        props = cls.get_work_calendar_props()
         props.work_time_attributes.clear()
 
         bonsai.bim.helper.import_attributes(work_time, props.work_time_attributes)
@@ -642,7 +652,7 @@ class Sequence(bonsai.core.tool.Sequence):
             for component in recurrence_pattern.MonthComponent or []:
                 props.month_components[component - 1].is_specified = True
 
-        props = bpy.context.scene.BIMWorkCalendarProperties
+        props = cls.get_work_calendar_props()
         initialise_recurrence_components(props)
         load_recurrence_pattern_data(work_time, props)
         props.active_work_time_id = work_time.id()
@@ -661,12 +671,12 @@ class Sequence(bonsai.core.tool.Sequence):
                 return True
             return False
 
-        props = bpy.context.scene.BIMWorkCalendarProperties
+        props = cls.get_work_calendar_props()
         return bonsai.bim.helper.export_attributes(props.work_time_attributes, callback)
 
     @classmethod
     def get_recurrence_pattern_attributes(cls, recurrence_pattern):
-        props = bpy.context.scene.BIMWorkCalendarProperties
+        props = props = cls.get_work_calendar_props()
         attributes = {
             "Interval": props.interval if props.interval > 0 else None,
             "Occurrences": props.occurrences if props.occurrences > 0 else None,
@@ -693,11 +703,12 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def disable_editing_work_time(cls) -> None:
-        bpy.context.scene.BIMWorkCalendarProperties.active_work_time_id = 0
+        props = cls.get_work_calendar_props()
+        props.active_work_time_id = 0
 
     @classmethod
     def get_recurrence_pattern_times(cls) -> Union[tuple[datetime, datetime], None]:
-        props = bpy.context.scene.BIMWorkCalendarProperties
+        props = props = cls.get_work_calendar_props()
         try:
             start_time = parser.parse(props.start_time)
             end_time = parser.parse(props.end_time)
@@ -707,8 +718,9 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def reset_time_period(cls) -> None:
-        bpy.context.scene.BIMWorkCalendarProperties.start_time = ""
-        bpy.context.scene.BIMWorkCalendarProperties.end_time = ""
+        props = cls.get_work_calendar_props()
+        props.start_time = ""
+        props.end_time = ""
 
     @classmethod
     def enable_editing_task_calendar(cls, task: ifcopenshell.entity_instance) -> None:

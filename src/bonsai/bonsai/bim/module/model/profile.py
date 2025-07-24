@@ -40,7 +40,10 @@ from math import pi, degrees, atan2
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, Literal
+
+
+ProfileFrom2PointsReturn = Union[dict[str, Any], None]
 
 
 class DumbProfileGenerator:
@@ -48,7 +51,9 @@ class DumbProfileGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self, insertion_type="CURSOR"):
+    def generate(
+        self, insertion_type: Literal["CURSOR", "POLYLINE"] = "CURSOR"
+    ) -> Union[tuple[list[ProfileFrom2PointsReturn], bool], bpy.types.Object, None]:
         self.insertion_type = insertion_type
         self.file = tool.Ifc.get()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -77,8 +82,9 @@ class DumbProfileGenerator:
         elif self.insertion_type == "CURSOR":
             return self.derive_from_cursor()
 
-    def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+    def derive_from_polyline(self) -> tuple[list[ProfileFrom2PointsReturn], bool]:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         is_polyline_closed = False
         if len(polyline_points) > 3:
@@ -87,7 +93,7 @@ class DumbProfileGenerator:
             if first_vec == last_vec:
                 is_polyline_closed = True
 
-        profiles = []
+        profiles: list[ProfileFrom2PointsReturn] = []
         for i in range(len(polyline_points) - 1):
             vec1 = Vector((polyline_points[i].x, polyline_points[i].y, polyline_points[i].z))
             vec2 = Vector((polyline_points[i + 1].x, polyline_points[i + 1].y, polyline_points[i + 1].z))
@@ -95,11 +101,12 @@ class DumbProfileGenerator:
             profiles.append(self.create_profile_from_2_points(coords))
         return profiles, is_polyline_closed
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self) -> bpy.types.Object:
+        assert bpy.context.scene
         self.location = bpy.context.scene.cursor.location
         return self.create_profile()
 
-    def create_profile(self):
+    def create_profile(self) -> bpy.types.Object:
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
         ifc_class = next(c for c in ifc_classes if "StandardCase" not in c)
@@ -109,7 +116,7 @@ class DumbProfileGenerator:
 
         matrix_world = Matrix()
         if self.relating_type.is_a() not in ("IfcColumnType", "IfcPileType"):
-            if self.insertion_type not in {"POLYLINE"}:
+            if self.insertion_type != "POLYLINE":
                 matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
                 matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
             else:
@@ -117,7 +124,7 @@ class DumbProfileGenerator:
                 matrix_world = rotation_matrix.to_matrix().to_4x4() @ matrix_world
 
         matrix_world.translation = self.location
-        if self.insertion_type not in {"POLYLINE"} and self.container_obj:
+        if self.insertion_type != "POLYLINE" and self.container_obj:
             matrix_world.translation.z = self.container_obj.location.z
         element = bonsai.core.root.assign_class(
             tool.Ifc,
@@ -171,12 +178,14 @@ class DumbProfileGenerator:
 
         return obj
 
-    def create_profile_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
+    def create_profile_from_2_points(
+        self, coords: tuple[Vector, Vector], should_round: bool = False
+    ) -> ProfileFrom2PointsReturn:
         self.direction = coords[1] - coords[0]
         length = self.direction.length
         if round(length, 4) < 0.1:
             return
-        data = {"coords": coords}
+        data: dict[str, Any] = {"coords": coords}
 
         self.depth = length
         self.rotation = atan2(self.direction[1], self.direction[0])
