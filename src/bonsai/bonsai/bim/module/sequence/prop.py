@@ -41,7 +41,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, get_args
 
 
 def getTaskColumns(self, context):
@@ -406,9 +406,14 @@ class TaskProduct(PropertyGroup):
         ifc_definition_id: int
 
 
+WorkPlanEditingType = Literal["-", "ATTRIBUTES", "SCHEDULES", "WORK_SCHEDULE", "TASKS", "WORKTIMES"]
+
+
 class BIMWorkPlanProperties(PropertyGroup):
     work_plan_attributes: CollectionProperty(name="Work Plan Attributes", type=Attribute)
-    editing_type: StringProperty(name="Editing Type")
+    editing_type: EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(i, i, "") for i in get_args(WorkPlanEditingType)],
+    )
     work_plans: CollectionProperty(name="Work Plans", type=WorkPlan)
     active_work_plan_index: IntProperty(name="Active Work Plan Index")
     active_work_plan_id: IntProperty(name="Active Work Plan Id")
@@ -416,7 +421,7 @@ class BIMWorkPlanProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         work_plan_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
-        editing_type: str
+        editing_type: WorkPlanEditingType
         work_plans: bpy.types.bpy_prop_collection_idprop[WorkPlan]
         active_work_plan_index: int
         active_work_plan_id: int
