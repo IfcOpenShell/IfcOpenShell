@@ -131,6 +131,7 @@ classes = [
     prop.ObjProperty,
     prop.MultipleFileSelect,
     prop.Attribute,
+    prop.ISODuration,
     prop.BIMAreaProperties,
     prop.BIMTabProperties,
     prop.BIMProperties,

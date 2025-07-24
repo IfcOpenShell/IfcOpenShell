@@ -444,6 +444,23 @@ class Attribute(PropertyGroup):
         setattr(self, self.get_value_name(), value)
 
 
+class ISODuration(PropertyGroup):
+    years: IntProperty(name="Years", default=0)
+    months: IntProperty(name="Months", default=0)
+    days: IntProperty(name="Days", default=0)
+    hours: IntProperty(name="Hours", default=0)
+    minutes: IntProperty(name="Minutes", default=0)
+    seconds: IntProperty(name="Seconds", default=0)
+
+    if TYPE_CHECKING:
+        years: int
+        months: int
+        days: int
+        hours: int
+        minutes: int
+        seconds: int
+
+
 def get_tab(
     self: "Union[BIMAreaProperties, BIMTabProperties]", context: bpy.types.Context
 ) -> list[tuple[str, str, str, str, int]]:

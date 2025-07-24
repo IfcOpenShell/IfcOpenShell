@@ -25,7 +25,8 @@ from bonsai.bim.module.resource.data import ResourceData
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.resource.prop import ISODuration, Resource, BIMResourceTreeProperties
+    from bonsai.bim.prop import ISODuration
+    from bonsai.bim.module.resource.prop import Resource, BIMResourceTreeProperties
 
 
 class BIM_PT_resources(Panel):
