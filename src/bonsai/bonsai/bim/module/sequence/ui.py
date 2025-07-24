@@ -238,13 +238,14 @@ class BIM_PT_work_schedules(Panel):
                 )
                 col2 = grid.column()
                 row = col2.row(align=True)
-                row.operator("bim.enable_editing_work_schedule_tasks", text="Tasks", icon="ACTION").work_schedule = (
+                row.alignment = "RIGHT"
+                row.operator("bim.enable_editing_work_schedule_tasks", text="", icon="ACTION").work_schedule = (
                     work_schedule_id
                 )
-                row.operator(
-                    "bim.enable_editing_work_schedule", text="Attributes", icon="GREASEPENCIL"
-                ).work_schedule = work_schedule_id
-                row.operator("bim.remove_work_schedule", text="Delete", icon="X").work_schedule = work_schedule_id
+                row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL").work_schedule = (
+                    work_schedule_id
+                )
+                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
             if self.props.active_work_schedule_id == work_schedule_id:
                 if self.props.editing_type == "WORK_SCHEDULE":
                     self.draw_editable_work_schedule_ui()
