@@ -86,7 +86,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def get_work_plan_attributes(cls) -> dict[str, Any]:
         import bonsai.bim.module.sequence.helper as helper
 
-        def callback(attributes, prop):
+        def callback(attributes: dict[str, Any], prop: Attribute) -> bool:
             if "Date" in prop.name or "Time" in prop.name:
                 if prop.is_null:
                     attributes[prop.name] = None
@@ -99,14 +99,16 @@ class Sequence(bonsai.core.tool.Sequence):
                     return True
                 attributes[prop.name] = helper.parse_duration(prop.string_value)
                 return True
+            return False
 
         props = cls.get_work_plan_props()
         return bonsai.bim.helper.export_attributes(props.work_plan_attributes, callback)
 
     @classmethod
     def load_work_plan_attributes(cls, work_plan: ifcopenshell.entity_instance) -> None:
-        def callback(name, prop, data):
+        def callback(name: str, prop: Union[Attribute, None], data: dict[str, Any]) -> None | Literal[True]:
             if name in ["CreationDate", "StartTime", "FinishTime"]:
+                assert prop
                 prop.string_value = "" if prop.is_null else data[name]
                 return True
 
@@ -137,7 +139,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def get_work_schedule_attributes(cls) -> dict[str, Any]:
         import bonsai.bim.module.sequence.helper as helper
 
-        def callback(attributes, prop):
+        def callback(attributes: dict[str, Any], prop: Attribute) -> bool:
             if "Date" in prop.name or "Time" in prop.name:
                 if prop.is_null:
                     attributes[prop.name] = None
@@ -150,14 +152,16 @@ class Sequence(bonsai.core.tool.Sequence):
                     return True
                 attributes[prop.name] = helper.parse_duration(prop.string_value)
                 return True
+            return False
 
         props = cls.get_work_schedule_props()
         return bonsai.bim.helper.export_attributes(props.work_schedule_attributes, callback)
 
     @classmethod
     def load_work_schedule_attributes(cls, work_schedule: ifcopenshell.entity_instance) -> None:
-        def callback(name, prop, data):
+        def callback(name: str, prop: Union[Attribute, None], data: dict[str, Any]) -> None | Literal[True]:
             if name in ["CreationDate", "StartTime", "FinishTime"]:
+                assert prop
                 prop.string_value = "" if prop.is_null else data[name]
                 return True
 
@@ -419,6 +423,7 @@ class Sequence(bonsai.core.tool.Sequence):
                             duration_props[key] = value
                         return True
             if isinstance(data[name], datetime):
+                assert prop
                 prop.string_value = "" if prop.is_null else data[name].isoformat()
                 return True
 
@@ -635,13 +640,14 @@ class Sequence(bonsai.core.tool.Sequence):
     def get_work_time_attributes(cls) -> dict[str, Any]:
         import bonsai.bim.module.sequence.helper as helper
 
-        def callback(attributes, prop):
+        def callback(attributes: dict[str, Any], prop: Attribute) -> bool:
             if "Start" in prop.name or "Finish" in prop.name:
                 if prop.is_null:
                     attributes[prop.name] = None
                     return True
                 attributes[prop.name] = helper.parse_datetime(prop.string_value)
                 return True
+            return False
 
         props = bpy.context.scene.BIMWorkCalendarProperties
         return bonsai.bim.helper.export_attributes(props.work_time_attributes, callback)
@@ -725,7 +731,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def load_lag_time_attributes(cls, lag_time: ifcopenshell.entity_instance) -> None:
         props = cls.get_work_schedule_props()
 
-        def callback(name, prop, data):
+        def callback(name: str, prop: Union[Attribute, None], data: dict[str, Any]) -> None | Literal[True]:
             if name == "LagValue":
                 prop = props.lag_time_attributes.add()
                 prop.name = name
