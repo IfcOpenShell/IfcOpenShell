@@ -18,6 +18,7 @@
 
 from collections import defaultdict
 import bpy
+import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
@@ -83,14 +84,15 @@ class IfcClassData:
         types_enum = []
         rprops = tool.Root.get_root_props()
         ifc_class = rprops.ifc_class
-        declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
+        assert declaration
         version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
                 types_enum.extend(
                     [
                         (e, e, get_predefined_type_doc(version, ifc_class, e) or "")
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                        for e in ifcopenshell.util.attribute.get_enum_items(attribute)
                     ]
                 )
                 break

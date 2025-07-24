@@ -161,7 +161,7 @@ class Structural(bonsai.core.tool.Structural):
             new.is_null = data[attribute.name()] is None
             new.is_optional = attribute.optional()
             if attribute.name() == "PredefinedType":
-                new.enum_items = json.dumps(attribute.type_of_attribute().declared_type().enumeration_items())
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                 new.data_type = "enum"
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]

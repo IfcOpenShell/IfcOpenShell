@@ -147,5 +147,6 @@ def add_task(
             relating_object=parent_task,
         )
         if file.schema != "IFC2X3" and parent_task.Identification:
+            assert rel
             task.Identification = parent_task.Identification + "." + str(len(rel.RelatedObjects))
     return task

@@ -21,6 +21,7 @@ import ifcopenshell
 from typing import Optional, Union, Literal, Any
 from collections.abc import Generator
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+import ifcopenshell.util.attribute
 from ifcopenshell.util.doc import get_predefined_type_doc
 from ifcopenshell.util.element import get_psets
 from ifcopenshell.util.unit import get_unit_symbol
@@ -283,13 +284,13 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
 
 def get_cost_schedule_types(file: ifcopenshell.file) -> list[dict[str, str]]:
     schema = ifcopenshell_wrapper.schema_by_name(file.schema_identifier)
-    results = []
+    results: list[dict[str, str]] = []
     declaration = schema.declaration_by_name("IfcCostSchedule").as_entity()
     assert declaration
     version = file.schema_identifier
     for attribute in declaration.attributes():
         if attribute.name() == "PredefinedType":
-            for enumeration in attribute.type_of_attribute().declared_type().enumeration_items():
+            for enumeration in ifcopenshell.util.attribute.get_enum_items(attribute):
                 results.append(
                     {
                         "name": enumeration,
