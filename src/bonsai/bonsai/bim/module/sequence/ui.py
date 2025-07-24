@@ -174,6 +174,7 @@ class BIM_PT_work_schedules(Panel):
             else:
                 row.label(text="No Work Schedules found.", icon="TEXT")
             row.operator("bim.add_work_schedule", text="", icon="ADD")
+            row.operator("bim.import_work_schedule_csv", text="", icon="IMPORT")
 
         for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
             self.draw_work_schedule_ui(work_schedule_id, work_schedule)
