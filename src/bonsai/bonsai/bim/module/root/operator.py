@@ -18,6 +18,7 @@
 
 import bpy
 import bmesh
+import idprop
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -180,12 +181,16 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Assign the IFC Class to the selected non-ifc objects."
+    bl_description = (
+        "Assign the IFC Class to the selected non-ifc objects.\n\n"
+        + "ALT+CLICK to also convert object's custom properties to custom Pset."
+    )
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
     userdefined_type: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
+    props_to_pset: bpy.props.BoolProperty(options={"SKIP_SAVE"})
 
     # TODO: is never used?
     should_add_representation: bpy.props.BoolProperty(default=True)
@@ -211,6 +216,10 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
             cls.poll_message_set(f"Can only assign class in OBJECT mode, not in {context.mode} mode.")
             return False
         return True
+
+    def invoke(self, context, event):
+        self.props_to_pset = event.alt
+        return self.execute(context)
 
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
@@ -359,6 +368,19 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry.reload_representation(obj)
                 elif obj.data is not None:
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
+
+            # Accomodate existing importers to Blender from other formats that set custom props
+            if self.props_to_pset:
+                custom_props = {}
+                for k, v in obj.items():
+                    if type(v) in [bool, int, float, str]:
+                        custom_props[k] = v
+                    elif type(v) is idprop.types.IDPropertyArray:
+                        for idx in range(len(v)):
+                            custom_props["{}.{}".format(k, idx + 1)] = v[idx]
+
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_ImportedBlenderProps")
+                ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=custom_props)
 
         # TODO: reload representation might lead to the object being replaced by object of the other type.
         # We probably should track it somehow and keep the original selection.
