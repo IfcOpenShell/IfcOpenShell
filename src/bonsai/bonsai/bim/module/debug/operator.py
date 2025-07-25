@@ -348,6 +348,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        assert context.scene
         geometry_library = self.custom_geometry_library or self.geometry_library
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
@@ -365,6 +366,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         else:
             mesh = None
         obj = bpy.data.objects.new(f"Debug/{element.is_a()}/{element.id()}", mesh)
+        obj.location = context.scene.cursor.location
         context.scene.collection.objects.link(obj)
         return {"FINISHED"}
 
