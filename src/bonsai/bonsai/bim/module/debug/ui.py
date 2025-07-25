@@ -92,8 +92,7 @@ class BIM_PT_debug(Panel):
         row.operator("bim.restart_blender")
 
         row = layout.split(factor=0.5, align=True)
-        row.operator("bim.create_shape_from_step_id").should_include_curves = False
-        row.operator("bim.create_shape_from_step_id", text="", icon="IPO_ELASTIC").should_include_curves = True
+        row.operator("bim.create_shape_from_step_id")
         row.prop(props, "step_id", text="")
 
         row = layout.split(factor=0.7, align=True)
