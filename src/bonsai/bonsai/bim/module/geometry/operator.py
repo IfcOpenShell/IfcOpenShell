@@ -3447,23 +3447,23 @@ class UnassignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 class CreateInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_instance"
     bl_label = "IFC Create Instance"
-    bl_description = "Create an instance of the type associated with the selected object"
+    bl_description = "Create an instance of the type associated with the active object."
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        if not context.selected_objects or len(context.selected_objects) > 1:
-            self.report({"ERROR"}, "Select exactly one object to create an instance of its type")
-            return {"CANCELLED"}
+    @classmethod
+    def poll(cls, context):
+        if not (obj := context.active_object) or not tool.Ifc.get_entity(obj):
+            cls.poll_message_set("Active object is not an IFC element.")
+            return False
+        return True
 
-        active_obj = context.active_object
-        element = tool.Ifc.get_entity(active_obj)
-        if not element:
-            self.report({"ERROR"}, "Selected object is not an IFC element")
-            return {"CANCELLED"}
+    def _execute(self, context):
+        assert (obj := context.active_object)
+        assert (element := tool.Ifc.get_entity(obj))
 
         relating_type = ifcopenshell.util.element.get_type(element)
         if not relating_type:
-            self.report({"ERROR"}, "Selected object has no associated type")
+            self.report({"ERROR"}, "Active object has no associated type")
             return {"CANCELLED"}
 
         try:
