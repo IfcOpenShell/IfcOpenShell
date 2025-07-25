@@ -47,10 +47,14 @@ def duplicate_task(
     .. code:: python
 
         # We have a task
-        original_task = Task(name="Design new feature", deadline="2023-03-01")
+        original_task = ifcopenshell.api.sequence.add_task(
+            model, work_schedule=work_schedule,
+            name="Design new feature",
+        )
 
         # And now we have two
-        duplicated_task = project.duplicate_task(original_task)
+        original_tasks, duplicated_tasks = ifcopenshell.api.sequence.duplicate_task(original_task)
+        print(duplicated_tasks[0])  # A copy of ``original_task``.
     """
     usecase = Usecase()
     usecase.file = file
