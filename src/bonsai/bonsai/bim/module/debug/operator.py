@@ -322,7 +322,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
     bl_description = "Recreate a mesh object from a STEP ID"
     bl_options = {"REGISTER", "UNDO"}
 
-    should_include_curves: bpy.props.BoolProperty()
+    should_include_curves: bpy.props.BoolProperty(default=True)
     step_id: bpy.props.IntProperty(default=0)
     geometry_library: bpy.props.EnumProperty(
         name="Geometry Library",
