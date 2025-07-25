@@ -23,6 +23,7 @@ managing recurring facility maintenance schedules.
 """
 
 from .. import wrap_usecases
+from .add_date_time import add_date_time
 from .add_task import add_task
 from .add_task_time import add_task_time
 from .add_time_period import add_time_period
@@ -70,6 +71,7 @@ from .unassign_sequence import unassign_sequence
 wrap_usecases(__path__, __name__)
 
 __all__ = [
+    "add_date_time",
     "add_task",
     "add_task_time",
     "add_time_period",
