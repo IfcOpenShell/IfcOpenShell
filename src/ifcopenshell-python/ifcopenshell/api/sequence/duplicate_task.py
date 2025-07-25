@@ -38,7 +38,10 @@ def duplicate_task(
     * The copy will have duplicated nested tasks
 
     :param task: The task to be duplicated
-    :return: The duplicated task or the list of duplicated tasks if the latter has children
+    :return: A tuple that consists of two lists of tasks:
+
+        - Original task and it's nested tasks.
+        - Their corresponding duplicated tasks.
 
     Example:
     .. code:: python
