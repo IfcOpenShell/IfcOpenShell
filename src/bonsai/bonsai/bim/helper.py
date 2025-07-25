@@ -360,9 +360,17 @@ def prop_with_search(
     prop_name: str,
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
+    *,
+    button_kwargs: Union[dict[str, Any], None] = None,
     **kwargs: Any,
 ) -> bpy.types.UILayout:
     """
+    Draw a row with enum prop and enum search operator.
+
+    Search operator appears only in case if there's more than 10 item in enum.
+
+    :arg button_kwargs: kwargs to pass to ``UILayout.operator()``.
+    :arg kwargs: kwargs to pass to ``UILayout.prop()``.
     :return: Added row.
     """
     # kwargs are layout.prop arguments (text, icon, etc.)
@@ -372,7 +380,7 @@ def prop_with_search(
         if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > 10:
             # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
             row.context_pointer_set(name="data", data=data)
-            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM", **(button_kwargs or {}))
             op.prop_name = prop_name
             op.should_click_ok = should_click_ok
             op.original_operator_path = original_operator_path or ""
