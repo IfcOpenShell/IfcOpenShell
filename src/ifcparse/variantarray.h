@@ -193,7 +193,7 @@ public:
         free_();
     }
 
-    std::size_t index(std::size_t index) const noexcept {
+    std::size_t index(std::size_t index) const {
         if (index >= size()) {
             throw IfcParse::IfcException(
                 "Index " + std::to_string(index) + " is out of range for variant of size " + std::to_string(size())
