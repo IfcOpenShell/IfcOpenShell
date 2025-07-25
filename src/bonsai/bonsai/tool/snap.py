@@ -269,7 +269,7 @@ class Snap(bonsai.core.tool.Snap):
             last_point_data = polyline_points[-1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         else:
-            last_point = Vector(0, 0, 0)
+            last_point = Vector()
 
         valid_intersections = []
         for i in intersections:
