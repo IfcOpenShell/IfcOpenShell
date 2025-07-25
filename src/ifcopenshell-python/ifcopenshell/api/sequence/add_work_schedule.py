@@ -20,7 +20,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.project
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner.settings
-import ifcopenshell.util.date
+import ifcopenshell.api.sequence
 from datetime import time
 from datetime import datetime
 from typing import Union, Optional
@@ -81,17 +81,11 @@ def add_work_schedule(
         predefined_type=predefined_type,
         name=name,
     )
-    if file.schema == "IFC2X3":
-        work_schedule.CreationDate = createIfcDateAndTime(file, datetime.now())
-    else:
-        work_schedule.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+    work_schedule.CreationDate = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
     user = ifcopenshell.api.owner.settings.get_user(file)
     if user:
         work_schedule.Creators = [user.ThePerson]
-    if file.schema == "IFC2X3":
-        work_schedule.StartTime = createIfcDateAndTime(file, start_time)
-    else:
-        work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(start_time, "IfcDateTime")
+    work_schedule.StartTime = ifcopenshell.api.sequence.add_date_time(file, start_time)
     if object_type:
         work_schedule.ObjectType = object_type
     if work_plan:
@@ -110,12 +104,3 @@ def add_work_schedule(
             relating_context=context,
         )
     return work_schedule
-
-
-def createIfcDateAndTime(file: ifcopenshell.file, dt: datetime):
-    ifc_dt = file.create_entity("IfcDateAndTime")
-    ifc_dt.DateComponent = file.create_entity(
-        "IfcCalendarDate", **ifcopenshell.util.date.datetime2ifc(dt, "IfcCalendarDate")
-    )
-    ifc_dt.TimeComponent = file.create_entity("IfcLocalTime", **ifcopenshell.util.date.datetime2ifc(dt, "IfcLocalTime"))
-    return ifc_dt
