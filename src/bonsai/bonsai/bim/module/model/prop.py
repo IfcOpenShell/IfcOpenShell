@@ -83,6 +83,8 @@ def update_relating_type_id(self: "BIMModelProperties", context: bpy.types.Conte
 
 def update_type_page(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
+    AuthoringData.data["next_page"] = AuthoringData.next_page()
+    AuthoringData.data["prev_page"] = AuthoringData.prev_page()
     bpy.ops.bim.load_type_thumbnails()
     self["type_page"] = min(self["type_page"], AuthoringData.data["total_pages"])
     self["type_page"] = max(self["type_page"], 1)
