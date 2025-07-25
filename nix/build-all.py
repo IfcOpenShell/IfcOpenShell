@@ -18,6 +18,30 @@
 #                                                                             #
 ###############################################################################
 
+"""
+Example usage:
+    # Build all targets by default.
+    python build-all.py
+
+    # Build just the provided targets.
+    python build-all.py IfcParse IfcOpenShell-Python
+
+
+Available arguments:
+    ``-py-313`` - build for specific Python version
+        (building for all supported Python version by default).
+    ``-wasm`` - compile for wasm
+    ``-shared`` - build shared libraries. By default will build static.
+
+
+Used environment variables:
+    - ``CXXFLAGS``, ``CPPFLAGS``, ``CFLAGS``, ``LDFLAGS``
+    - ``BUILD_DIR`` - build directory. By default will use "build" folder in IfcOpenShell repository.
+    - ``DEPS_DIR`` - dependencies directory. By default will create automatic folder in build directory.
+    - ``BUILD_CFG`` - build configuration, 'RelWithDebInfo' by default.
+"""
+
+
 ###############################################################################
 #                                                                             #
 # This script builds IfcOpenShell and its dependencies                        #
@@ -72,6 +96,9 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 import time
 from urllib.request import urlretrieve
+from collections.abc import Generator, Sequence
+from pathlib import Path
+from typing import Union, Literal
 
 
 logger = logging.getLogger(__name__)
@@ -118,7 +145,9 @@ wget = "wget"
 strip = "strip"
 
 explicit_targets = [s for s in sys.argv[1:] if not s.startswith("-")]
+"""Targets provided by CLI."""
 flags = set(s.lstrip("-") for s in sys.argv[1:] if s.startswith("-"))
+"""CLI flags."""
 
 # Helper function for coloured printing
 
@@ -160,10 +189,10 @@ CMAKE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "cmak
 
 build_dir = os.environ.get("BUILD_DIR", os.path.join(os.path.dirname(__file__), "..", "build"))
 
-path = [build_dir, platform.system(), "wasm" if "wasm" in flags else platform.machine()]
+DEFAULT_DEPS_DIR = Path(build_dir) / platform.system() / ("wasm" if "wasm" in flags else platform.machine())
 if TOOLSET:
-    path.append(TOOLSET)
-DEFAULT_DEPS_DIR = os.path.realpath(os.path.join(*path))
+    DEFAULT_DEPS_DIR = DEFAULT_DEPS_DIR / TOOLSET
+DEFAULT_DEPS_DIR = os.path.realpath(DEFAULT_DEPS_DIR)
 
 DEPS_DIR = os.getenv("DEPS_DIR", DEFAULT_DEPS_DIR)
 
@@ -208,7 +237,7 @@ cecho(
 """
 )
 
-dependency_tree = {
+dependency_tree: dict[str, tuple[str, ...]] = {
     "IfcParse": ("boost", "libxml2", "hdf5"),
     "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen"),
     "IfcConvert": ("IfcGeom",),
@@ -230,10 +259,10 @@ dependency_tree = {
 }
 
 
-def v(dep):
+def gather_dependencies(dep: str) -> Generator[str]:
     yield dep
     for d in dependency_tree[dep]:
-        for x in v(d):
+        for x in gather_dependencies(d):
             yield x
 
 
@@ -247,21 +276,21 @@ BUILD_STATIC = "shared" not in flags
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
 LINK_TYPE = "static" if BUILD_STATIC else "shared"
-LINK_TYPE_UCFIRST = LINK_TYPE[0].upper() + LINK_TYPE[1:]
+LINK_TYPE_UCFIRST = LINK_TYPE.capitalize()
 LIBRARY_EXT = "a" if BUILD_STATIC else "so"
 PIC = "-fPIC" if BUILD_STATIC else ""
 
 if any(f.startswith("py-") for f in flags):
-    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if "py-%s" % "".join(pyv.split(".")[0:2]) in flags]
+    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if f"py-{''.join(pyv.split('.')[:2])}" in flags]
 
-if len(explicit_targets):
-    targets = set(sum((list(v(target)) for target in explicit_targets), []))
+if explicit_targets:
+    targets = {dep for target in explicit_targets for dep in gather_dependencies(target)}
 else:
     targets = set(dependency_tree.keys())
 
 targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
 
-print("Building:", *sorted(targets, key=lambda t: len(list(v(t)))))
+print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t)))))
 
 # Check that required tools are in PATH
 
@@ -290,7 +319,7 @@ except:
     pass
 
 
-def run(cmds, cwd=None, can_fail=False):
+def run(cmds: Sequence[str], cwd: Union[str, None] = None, can_fail: bool = False) -> str:
     """
     Wraps `subprocess.Popen.communicate()` and logs the command being executed,
     sets up logging `stderr` to `LOG_FILE` (in append mode) and returns stdout
@@ -384,7 +413,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     )
 
 
-def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
+def git_clone_or_pull_repository(clone_url: str, target_dir: str, revision: Union[str, None] = None) -> None:
     """Lazily clones the `git` repository denoted by `clone_url` into
     the `target_dir` or pulls latest changes if the `target_dir` exists (naively assumes
     that a working clone exists there) and optionally checks out a revision
@@ -408,24 +437,34 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
 
 
 def build_dependency(
-    name,
-    mode,
-    build_tool_args,
-    download_url,
-    download_name,
-    download_tool=download_tool_default,
-    revision=None,
-    patch=None,
+    name: str,
+    mode: Literal[
+        "cmake",
+        "autoconf",
+        "ctest",
+        "bjam",
+    ],
+    build_tool_args: list[str],
+    download_url: str,
+    download_name: str,
+    download_tool: Literal["py", "git"] = download_tool_default,
+    revision: Union[str, None] = None,
+    patch: Union[str, list[str], None] = None,
     shell=None,
-    pre_compile_subs=[],
-    additional_files={},
+    pre_compile_subs: Sequence[tuple[str, str, str]] = (),
+    additional_files: Union[dict[str, str], None] = None,
     no_append_name=False,
     **kwargs,
-):
+) -> None:
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
     a list which is necessary in order to not mess up quoting of compiler and
-    linker flags."""
+    linker flags.
+
+    :param pre_compile_subs: A sequence of ``(fn, before, after)``
+    :param additional_files: Mapping path->url.
+    :param kwargs: Additional ``mode`` related kwargs.
+    """
     check_dir = os.path.join(DEPS_DIR, "install", name)
     if os.path.exists(check_dir):
         logger.info(f"Found existing {name}, skipping")
@@ -488,9 +527,10 @@ def build_dependency(
         if not os.path.exists(extract_dir):
             run([tar, "-xf", download_name], cwd=build_dir)
 
-    for path, url in additional_files.items():
-        if not os.path.exists(path):
-            urlretrieve(url, os.path.join(extract_dir, path))
+    if additional_files:
+        for path, url in additional_files.items():
+            if not os.path.exists(path):
+                urlretrieve(url, os.path.join(extract_dir, path))
 
     if patch is not None:
         if isinstance(patch, str):
@@ -786,7 +826,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
 
     # On OSX a dynamic python library is built or it would not be compatible
     # with the system python because of some threading initialization
-    PYTHON_CONFIGURE_ARGS = []
+    PYTHON_CONFIGURE_ARGS: list[str] = []
     if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
 
@@ -851,8 +891,8 @@ if "boost" in targets:
         )
 
 if "cgal" in targets:
-    gmp_args = []
-    mpfr_args = []
+    gmp_args: list[str] = []
+    mpfr_args: list[str] = []
     if "wasm" in flags:
         gmp_args.extend(("--disable-assembly", "--host", "none", "--enable-cxx"))
         mpfr_args.extend(("--host", "none"))
@@ -1057,7 +1097,12 @@ if "IfcOpenShell-Python" in targets:
     python_dir = os.path.join(IFCOS_DIR, "pythonwrapper")
     os.makedirs(python_dir, exist_ok=True)
 
-    def compile_python_wrapper(python_version, python_library, python_include, python_executable):
+    def compile_python_wrapper(
+        python_version: str, python_library: str, python_include: str, python_executable: Union[str, None]
+    ) -> Union[str, None]:
+        """
+        :return: Path to module dir if ``python_executable`` was provided, otherwise ``None``.
+        """
         logger.info(f"\rConfiguring python {python_version} wrapper...")
 
         cache_path = os.path.join(python_dir, "CMakeCache.txt")
@@ -1144,6 +1189,7 @@ if "IfcOpenShell-Python" in targets:
             )
 
             module_dir = compile_python_wrapper(python_version, python_library, python_include, python_executable)
+            assert module_dir
             run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")])
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
