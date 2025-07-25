@@ -67,6 +67,7 @@ import sysconfig
 
 # @todo temporary for expired mpfr.org certificate on 2023-04-08
 import ssl
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import time
@@ -95,7 +96,7 @@ OPENCOLLADA_VERSION = "v1.6.68"
 HDF5_VERSION = "1.12.1"
 
 GMP_VERSION = "6.2.1"
-MPFR_VERSION = "3.1.6" # latest is 4.1.0
+MPFR_VERSION = "3.1.6"  # latest is 4.1.0
 CGAL_VERSION = "5.6.x-branch"
 USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
@@ -117,20 +118,24 @@ wget = "wget"
 strip = "strip"
 
 explicit_targets = [s for s in sys.argv[1:] if not s.startswith("-")]
-flags = set(s.lstrip('-') for s in sys.argv[1:] if s.startswith("-"))
+flags = set(s.lstrip("-") for s in sys.argv[1:] if s.startswith("-"))
 
 # Helper function for coloured printing
 
-NO_COLOR = "\033[0m" # <ref>http://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux</ref>
+NO_COLOR = (
+    "\033[0m"  # <ref>http://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux</ref>
+)
 BLACK_ON_WHITE = "\033[0;30;107m"
 RED = "\033[31m"
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
 MAGENTA = "\033[35m"
 
+
 def cecho(message, color=NO_COLOR):
     """Logs message `message` in color `color`."""
     logger.info(f"{color}{message}\033[0m")
+
 
 def which(cmd):
     for path in os.getenv("PATH").split(":"):
@@ -170,11 +175,17 @@ BUILD_CFG = os.getenv("BUILD_CFG", "RelWithDebInfo")
 
 # Print build configuration information
 
-cecho (f"""This script fetches and builds {PROJECT_NAME} and its dependencies
-""", BLACK_ON_WHITE)
-cecho("""Script configuration:
+cecho(
+    f"""This script fetches and builds {PROJECT_NAME} and its dependencies
+""",
+    BLACK_ON_WHITE,
+)
+cecho(
+    """Script configuration:
 
-""", GREEN)
+""",
+    GREEN,
+)
 cecho(f"""* USE_OCCT               = {USE_OCCT}""", MAGENTA)
 if USE_OCCT:
     cecho(" - Compiling against official Open Cascade")
@@ -183,42 +194,48 @@ else:
 cecho(f"* Dependency Directory   = {DEPS_DIR}", MAGENTA)
 cecho(f" - The directory where {PROJECT_NAME} dependencies are installed.")
 cecho(f"* Build Config Type      = {BUILD_CFG}", MAGENTA)
-cecho(""" - The used build configuration type for the dependencies.
-   Defaults to RelWithDebInfo if not specified.""")
+cecho(
+    """ - The used build configuration type for the dependencies.
+   Defaults to RelWithDebInfo if not specified."""
+)
 
 if BUILD_CFG == "MinSizeRel":
     cecho("     WARNING: MinSizeRel build can suffer from a significant performance loss.", RED)
 
 cecho(f"* IFCOS_NUM_BUILD_PROCS  = {IFCOS_NUM_BUILD_PROCS}", MAGENTA)
-cecho(""" - How many compiler processes may be run in parallel.
-""")
+cecho(
+    """ - How many compiler processes may be run in parallel.
+"""
+)
 
 dependency_tree = {
-    'IfcParse': ('boost', 'libxml2', 'hdf5'),
-    'IfcGeom': ('IfcParse', 'occ', 'json', 'cgal', 'eigen'),
-    'IfcConvert': ('IfcGeom',),
-    'OpenCOLLADA': ('libxml2', 'pcre'),
-    'IfcGeomServer': ('IfcGeom',),
-    'IfcOpenShell-Python': ('python', 'swig', 'IfcGeom'),
-    'swig': ('pcre',),
-    'boost': (),
-    'libxml2': (),
-    'python': (),
-    'occ': ('freetype',),
-    'pcre': (),
-    'json': (),
-    'hdf5': (),
-    'cgal': (),
-    'eigen': (),
-    'freetype': (),
+    "IfcParse": ("boost", "libxml2", "hdf5"),
+    "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen"),
+    "IfcConvert": ("IfcGeom",),
+    "OpenCOLLADA": ("libxml2", "pcre"),
+    "IfcGeomServer": ("IfcGeom",),
+    "IfcOpenShell-Python": ("python", "swig", "IfcGeom"),
+    "swig": ("pcre",),
+    "boost": (),
+    "libxml2": (),
+    "python": (),
+    "occ": ("freetype",),
+    "pcre": (),
+    "json": (),
+    "hdf5": (),
+    "cgal": (),
+    "eigen": (),
+    "freetype": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
+
 def v(dep):
-   yield dep
-   for d in dependency_tree[dep]:
-     for x in v(d):
-       yield x
+    yield dep
+    for d in dependency_tree[dep]:
+        for x in v(d):
+            yield x
+
 
 if "v" in flags:
     logger.setLevel(logging.DEBUG)
@@ -235,14 +252,14 @@ LIBRARY_EXT = "a" if BUILD_STATIC else "so"
 PIC = "-fPIC" if BUILD_STATIC else ""
 
 if any(f.startswith("py-") for f in flags):
-    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if "py-%s" % "".join(pyv.split('.')[0:2]) in flags]
+    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if "py-%s" % "".join(pyv.split(".")[0:2]) in flags]
 
 if len(explicit_targets):
     targets = set(sum((list(v(target)) for target in explicit_targets), []))
 else:
     targets = set(dependency_tree.keys())
-    
-targets = set(t for t in targets if 'without-%s' % t.lower() not in flags)
+
+targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
 
 print("Building:", *sorted(targets, key=lambda t: len(list(v(t)))))
 
@@ -268,11 +285,12 @@ logger.info(f"using command log file '{LOG_FILE}'")
 
 # Causing havoc in python 3.11 build
 try:
-    del os.environ['__PYVENV_LAUNCHER__']
-except: pass
+    del os.environ["__PYVENV_LAUNCHER__"]
+except:
+    pass
+
 
 def run(cmds, cwd=None, can_fail=False):
-
     """
     Wraps `subprocess.Popen.communicate()` and logs the command being executed,
     sets up logging `stderr` to `LOG_FILE` (in append mode) and returns stdout
@@ -296,6 +314,7 @@ def run(cmds, cwd=None, can_fail=False):
 
     return stdout.strip()
 
+
 if platform.system() == "Darwin":
     if run(["sw_vers", "-productVersion"]) >= "11.":
         # Apparently not supported
@@ -316,15 +335,27 @@ BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BO
 def run_autoconf(arg1, configure_args, cwd):
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
     if not os.path.exists(configure_path):
-        run([bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))) # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
-    # Using `sh` over `bash` fixes issues with building swig 
+        run(
+            [bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))
+        )  # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
+    # Using `sh` over `bash` fixes issues with building swig
     prefix = os.path.realpath(f"{DEPS_DIR}/install/{arg1}")
 
     wasm = []
     if "wasm" in flags:
         wasm.append("emconfigure")
 
-    run([*wasm, "/bin/sh", "../configure", *(["--host=wasm32"] if "wasm" in flags and not any(s.startswith('--host') for s in configure_args) else []), *configure_args, f"--prefix={prefix}"], cwd=cwd)
+    run(
+        [
+            *wasm,
+            "/bin/sh",
+            "../configure",
+            *(["--host=wasm32"] if "wasm" in flags and not any(s.startswith("--host") for s in configure_args) else []),
+            *configure_args,
+            f"--prefix={prefix}",
+        ],
+        cwd=cwd,
+    )
 
 
 def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
@@ -332,12 +363,25 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
         P = ".."
     else:
         P = cmake_dir
-        
+
     wasm = []
     if "wasm" in flags:
         wasm.append("emcmake")
-        
-    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}", f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}", f"-DCMAKE_CXX_FLAGS='{os.environ['CXXFLAGS']}'", f"-DCMAKE_C_FLAGS='{os.environ['CFLAGS']}'", f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}"], cwd=cwd)
+
+    run(
+        [
+            *wasm,
+            "cmake",
+            P,
+            *cmake_args,
+            f"-DCMAKE_BUILD_TYPE={BUILD_CFG}",
+            f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
+            f"-DCMAKE_CXX_FLAGS='{os.environ['CXXFLAGS']}'",
+            f"-DCMAKE_C_FLAGS='{os.environ['CFLAGS']}'",
+            f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}",
+        ],
+        cwd=cwd,
+    )
 
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
@@ -363,7 +407,21 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "checkout", revision], cwd=target_dir)
 
 
-def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, shell=None, pre_compile_subs=[], additional_files={}, no_append_name=False, **kwargs):
+def build_dependency(
+    name,
+    mode,
+    build_tool_args,
+    download_url,
+    download_name,
+    download_tool=download_tool_default,
+    revision=None,
+    patch=None,
+    shell=None,
+    pre_compile_subs=[],
+    additional_files={},
+    no_append_name=False,
+    **kwargs,
+):
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
     a list which is necessary in order to not mess up quoting of compiler and
@@ -375,15 +433,15 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     build_dir = os.path.join(DEPS_DIR, "build")
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
-        
+
     logger.info(f"\rFetching {name}...   ")
-    
+
     if download_tool == download_tool_py:
         if no_append_name:
             url = download_url
         else:
             url = os.path.join(download_url, download_name)
-            
+
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
             for _ in range(3):
@@ -392,17 +450,19 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
                     break
                 except ConnectionError as e:
                     print(e, "... retrying...")
-                    time.sleep(30.)
+                    time.sleep(30.0)
                     continue
         else:
-            logger.info(f"Download '{download_path}' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping")
+            logger.info(
+                f"Download '{download_path}' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping"
+            )
     elif download_tool == download_tool_git:
         logger.info(f"\rChecking {name}...   ")
         git_clone_or_pull_repository(download_url, target_dir=os.path.join(build_dir, download_name), revision=revision)
     else:
         raise ValueError(f"download tool '{download_tool}' is not supported")
     download_dir = os.path.join(build_dir, download_name)
-    
+
     if os.path.isdir(download_dir):
         extract_dir_name = download_name
         extract_dir = os.path.join(build_dir, extract_dir_name)
@@ -419,37 +479,43 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         download_tarfile = tarfile.open(name=download_tarfile_path, mode=f"r:{compr}")
         # tarfile seriously doesn't have a function to retrieve the root directory more easily
         extract_dir_name = os.path.commonprefix([x for x in download_tarfile.getnames() if x != "."])
-        #run([tar, "--exclude=\"*/*\"", "-tf", download_name], cwd=build_dir).strip() no longer works
+        # run([tar, "--exclude=\"*/*\"", "-tf", download_name], cwd=build_dir).strip() no longer works
         if extract_dir_name is None:
-            extract_dir_name = run([bash, "-c", f"tar -tf {download_name} 2> /dev/null | head -n 1 | cut -f1 -d /"], cwd=build_dir)
+            extract_dir_name = run(
+                [bash, "-c", f"tar -tf {download_name} 2> /dev/null | head -n 1 | cut -f1 -d /"], cwd=build_dir
+            )
         extract_dir = os.path.join(build_dir, extract_dir_name)
         if not os.path.exists(extract_dir):
             run([tar, "-xf", download_name], cwd=build_dir)
-    
+
     for path, url in additional_files.items():
         if not os.path.exists(path):
             urlretrieve(url, os.path.join(extract_dir, path))
-            
+
     if patch is not None:
         if isinstance(patch, str):
             patch = [patch]
         for p in patch:
             patch_abs = os.path.abspath(os.path.join(os.path.dirname(__file__), p))
             if os.path.exists(patch_abs):
-                try: run(["patch", "-p1", "--batch", "--forward", "-i", patch_abs], cwd=extract_dir)
+                try:
+                    run(["patch", "-p1", "--batch", "--forward", "-i", patch_abs], cwd=extract_dir)
                 except Exception as e:
                     # Assert that the patch has already been applied
                     run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
 
     if shell is not None:
         sp.run(shell, shell=True, check=True, cwd=extract_dir)
-    
+
     if mode == "ctest":
-        run(["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"], cwd=extract_dir)
-        run([tar, "-xf", kwargs["ctest_result"] + ".tar.gz"], cwd=os.path.join(extract_dir, 'build'))
+        run(
+            ["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"],
+            cwd=extract_dir,
+        )
+        run([tar, "-xf", kwargs["ctest_result"] + ".tar.gz"], cwd=os.path.join(extract_dir, "build"))
         shutil.copytree(
             os.path.join(extract_dir, "build", kwargs["ctest_result"], kwargs["ctest_result_path"]),
-            os.path.join(DEPS_DIR, "install", name)
+            os.path.join(DEPS_DIR, "install", name),
         )
     elif mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, "build")
@@ -465,10 +531,10 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         else:
             raise ValueError()
         for fn, before, after in pre_compile_subs:
-            with open(os.path.join(extract_dir, fn), 'r') as f:
+            with open(os.path.join(extract_dir, fn), "r") as f:
                 s = f.read()
             s = s.replace(before, after)
-            with open(os.path.join(extract_dir, fn), 'w') as f:
+            with open(os.path.join(extract_dir, fn), "w") as f:
                 f.write(s)
         logger.info(f"\rBuilding {name}...   ")
         run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=extract_build_dir)
@@ -481,11 +547,14 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         logger.info(f"\rBuilding {name}...   ")
         run(["./b2", f"-j{IFCOS_NUM_BUILD_PROCS}"] + build_tool_args, cwd=extract_dir, can_fail="wasm" in flags)
         logger.info(f"\rInstalling {name}... ")
-        shutil.copytree(os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost"))
+        shutil.copytree(
+            os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost")
+        )
         logger.info(f"\rInstalled {name}     \n")
 
     if "diskcleanup" in flags:
         shutil.rmtree(build_dir, ignore_errors=True)
+
 
 cecho("Collecting dependencies:", GREEN)
 
@@ -509,8 +578,8 @@ LDFLAGS = os.environ.get("LDFLAGS", "")
 ADDITIONAL_ARGS_STR = " ".join(ADDITIONAL_ARGS)
 
 if "wasm" in flags:
-    CFLAGS_MINIMAL = CXXFLAGS_MINIMAL = CFLAGS = CXXFLAGS = os.environ['SIDE_MODULE_CFLAGS']
-    LDFLAGS = os.environ['SIDE_MODULE_LDFLAGS']
+    CFLAGS_MINIMAL = CXXFLAGS_MINIMAL = CFLAGS = CXXFLAGS = os.environ["SIDE_MODULE_CFLAGS"]
+    LDFLAGS = os.environ["SIDE_MODULE_LDFLAGS"]
 elif sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
     CXXFLAGS_MINIMAL = f"{CXXFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
     CFLAGS_MINIMAL = f"{CFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
@@ -528,8 +597,8 @@ else:
         CXXFLAGS = f"{CXXFLAGS} {PIC} -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
         CFLAGS = f"{CFLAGS}   {PIC} -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
     else:
-        CXXFLAGS=CXXFLAGS_MINIMAL
-        CFLAGS=CFLAGS_MINIMAL
+        CXXFLAGS = CXXFLAGS_MINIMAL
+        CFLAGS = CFLAGS_MINIMAL
     LDFLAGS = f"{LDFLAGS} {ADDITIONAL_ARGS_STR}"
 
 if "lto" in flags:
@@ -545,7 +614,7 @@ os.environ["LDFLAGS"] = LDFLAGS
 # @tfk: this is no longer needed
 # build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
 
-if 'hdf5' in targets:
+if "hdf5" in targets:
     # not supported
     orig = [os.environ[f] for f in compiler_flags]
     for f in compiler_flags:
@@ -559,12 +628,12 @@ if 'hdf5' in targets:
         download_url=f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{HDF5_MAJOR}/hdf5-{HDF5_VERSION}/src/",
         download_name=f"CMake-hdf5-{HDF5_VERSION}.tar.gz",
         ctest_result=f"HDF5-{HDF5_VERSION}-{platform.system()}",
-        ctest_result_path=f"HDF_Group/HDF5/{HDF5_VERSION}"
+        ctest_result_path=f"HDF_Group/HDF5/{HDF5_VERSION}",
     )
-    
+
     for f, o in zip(compiler_flags, orig):
         os.environ[f] = o
-    
+
 
 if "json" in targets:
     json_url = f"https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp"
@@ -573,9 +642,11 @@ if "json" in targets:
         os.makedirs(os.path.dirname(json_install_path))
     if not os.path.exists(json_install_path):
         urlretrieve(json_url, json_install_path)
-        
+
 if "eigen" in targets:
-    git_clone_or_pull_repository("https://gitlab.com/libeigen/eigen.git", f"{DEPS_DIR}/install/eigen-3.3.9", revision="3.3.9")
+    git_clone_or_pull_repository(
+        "https://gitlab.com/libeigen/eigen.git", f"{DEPS_DIR}/install/eigen-3.3.9", revision="3.3.9"
+    )
 
 if "pcre" in targets:
     build_dependency(
@@ -583,7 +654,7 @@ if "pcre" in targets:
         mode="autoconf",
         build_tool_args=[DISABLE_FLAG],
         download_url=f"https://downloads.sourceforge.net/project/pcre/pcre/{PCRE_VERSION}/",
-        download_name=f"pcre-{PCRE_VERSION}.tar.bz2"
+        download_name=f"pcre-{PCRE_VERSION}.tar.bz2",
     )
 
 # An issue exists with swig-1.3 and python >= 3.2
@@ -596,36 +667,34 @@ if "swig" in targets:
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
         download_tool=download_tool_git,
-        revision=f"rel-{SWIG_VERSION}"
+        revision=f"rel-{SWIG_VERSION}",
     )
-    
+
 if "freetype" in targets:
     build_dependency(
         name=f"freetype",
         mode="cmake",
-        build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/freetype"
-        ],
-        download_url = "https://github.com/freetype/freetype",
-        download_name = "freetype2",
+        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/freetype"],
+        download_url="https://github.com/freetype/freetype",
+        download_name="freetype2",
         download_tool=download_tool_git,
-        revision="VER-2-11-1"
+        revision="VER-2-11-1",
     )
 
 if USE_OCCT and "occ" in targets:
     patches = []
     if OCCT_VERSION < "7.4":
         patches.append("./patches/occt/enable-exception-handling.patch")
-        
+
     if OCCT_VERSION == "7.7.1":
         patches.append("./patches/occt/no_ExpToCasExe.patch")
-    
+
     if OCCT_VERSION == "7.7.2":
         patches.append("./patches/occt/no_ExpToCasExe_7_7_2.patch")
 
     if OCCT_VERSION == "7.8.1":
         patches.append("./patches/occt/no_ExpToCasExe_7_8_1.patch")
-    
+
     if "wasm" in flags:
         patches.append("./patches/occt/no_em_js.patch")
 
@@ -637,13 +706,13 @@ if USE_OCCT and "occ" in targets:
             f"-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}",
             "-DBUILD_MODULE_Draw=0",
             "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
-            f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype"
+            f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
         ],
-        download_url = "https://github.com/Open-Cascade-SAS/OCCT",
-        download_name = "occt",
+        download_url="https://github.com/Open-Cascade-SAS/OCCT",
+        download_name="occt",
         download_tool=download_tool_git,
         patch=patches,
-        revision="V" + OCCT_VERSION.replace('.', '_')
+        revision="V" + OCCT_VERSION.replace(".", "_"),
     )
 elif "occ" in targets:
     build_dependency(
@@ -656,12 +725,12 @@ elif "occ" in targets:
             "-DOCE_DISABLE_X11=ON",
             "-DOCE_VISUALISATION=OFF",
             "-DOCE_OCAF=OFF",
-            f"-DOCE_INSTALL_PREFIX={DEPS_DIR}/install/oce-{OCE_VERSION}"
+            f"-DOCE_INSTALL_PREFIX={DEPS_DIR}/install/oce-{OCE_VERSION}",
         ],
         download_url="https://github.com/tpaviot/oce/archive/",
-        download_name=f"OCE-{OCE_VERSION}.tar.gz"
+        download_name=f"OCE-{OCE_VERSION}.tar.gz",
     )
-        
+
 if "libxml2" in targets:
     build_dependency(
         f"libxml2-{LIBXML2_VERSION}",
@@ -672,12 +741,12 @@ if "libxml2" in targets:
             DISABLE_FLAG,
             "--without-zlib",
             "--without-iconv",
-            "--without-lzma"
+            "--without-lzma",
         ],
         download_url=f"https://download.gnome.org/sources/libxml2/{'.'.join(LIBXML2_VERSION.split('.')[0:2])}/",
-        download_name=f"libxml2-{LIBXML2_VERSION}.tar.xz"
+        download_name=f"libxml2-{LIBXML2_VERSION}.tar.xz",
     )
-    
+
 if "OpenCOLLADA" in targets:
     patches = ["./patches/opencollada/pr622_and_disable_subdirs.patch"]
 
@@ -697,13 +766,13 @@ if "OpenCOLLADA" in targets:
             f"-DPCRE_INCLUDE_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/include",
             f"-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}",
             f"-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}",
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/"
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/",
         ],
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
         download_tool=download_tool_git,
         patch=patches,
-        revision=OPENCOLLADA_VERSION
+        revision=OPENCOLLADA_VERSION,
     )
 
 if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flags:
@@ -728,7 +797,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
                 "autoconf",
                 PYTHON_CONFIGURE_ARGS,
                 f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
-                f"Python-{PYTHON_VERSION}.tgz"
+                f"Python-{PYTHON_VERSION}.tgz",
             )
         except RuntimeError as e:
             # Sometimes setting up modules such as pip/lzma can cause
@@ -737,9 +806,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
             # are installed correctly. This is all we need so we catch
             # the exception and only reraise if a partially successful
             # install is not detected.
-            if not os.path.exists(
-                os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}")
-            ):
+            if not os.path.exists(os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}")):
                 raise e
 
     os.environ["CPPFLAGS"] = OLD_CPP_FLAGS
@@ -765,18 +832,24 @@ if "boost" in targets:
             "--with-filesystem",
             f"link={LINK_TYPE}",
             *toolset,
-            *map(str_concat("cxxflags"), CXXFLAGS.strip().split(' ')),
-            *map(str_concat("linkflags"), LDFLAGS.strip().split(' ')),
-            "stage", "-s", "NO_BZIP2=1"],
+            *map(str_concat("cxxflags"), CXXFLAGS.strip().split(" ")),
+            *map(str_concat("linkflags"), LDFLAGS.strip().split(" ")),
+            "stage",
+            "-s",
+            "NO_BZIP2=1",
+        ],
         download_url=BOOST_LOCATION,
         # don't remember what this is, but fail on 1.86
         # patch="./patches/boost/boostorg_regex_62.patch",
-        download_name=f"boost-{BOOST_VERSION}-b2-nodocs.tar.gz"
+        download_name=f"boost-{BOOST_VERSION}-b2-nodocs.tar.gz",
     )
     if "wasm" in flags:
         # only supported on nix for now
-        run(("find", ".", "-name", "*.bc", "-exec", "bash", "-c", "emar q ${1%.bc}.a $1", "bash", "{}", ";"), cwd=f"{DEPS_DIR}/install/boost-{BOOST_VERSION}/lib")
-    
+        run(
+            ("find", ".", "-name", "*.bc", "-exec", "bash", "-c", "emar q ${1%.bc}.a $1", "bash", "{}", ";"),
+            cwd=f"{DEPS_DIR}/install/boost-{BOOST_VERSION}/lib",
+        )
+
 if "cgal" in targets:
     gmp_args = []
     mpfr_args = []
@@ -788,50 +861,49 @@ if "cgal" in targets:
         name=f"gmp-{GMP_VERSION}",
         mode="autoconf",
         build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, "--with-pic", *gmp_args],
-        pre_compile_subs=([("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if "wasm" in flags else []),
+        pre_compile_subs=(
+            [("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if "wasm" in flags else []
+        ),
         download_url="https://ftp.gnu.org/gnu/gmp/",
-        download_name=f"gmp-{GMP_VERSION}.tar.bz2"
+        download_name=f"gmp-{GMP_VERSION}.tar.bz2",
     )
-    
+
     build_dependency(
         name=f"mpfr-{MPFR_VERSION}",
         mode="autoconf",
         build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, *mpfr_args, f"--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}"],
         download_url=f"http://www.mpfr.org/mpfr-{MPFR_VERSION}/",
-        download_name=f"mpfr-{MPFR_VERSION}.tar.bz2"
+        download_name=f"mpfr-{MPFR_VERSION}.tar.bz2",
     )
-    
+
     build_dependency(
         name=f"cgal-{CGAL_VERSION}",
         mode="cmake",
         build_tool_args=[
             f"-DGMP_LIBRARIES={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib/libgmp.{LIBRARY_EXT}",
             f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-            f"-DMPFR_LIBRARIES={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib/libmpfr.{LIBRARY_EXT}" ,
+            f"-DMPFR_LIBRARIES={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib/libmpfr.{LIBRARY_EXT}",
             f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
             f"-DBoost_INCLUDE_DIR={DEPS_DIR}/install/boost-{BOOST_VERSION}",
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/cgal-{CGAL_VERSION}/",
-            "-DCGAL_HEADER_ONLY=On",            
-            "-DBUILD_SHARED_LIBS=Off"
+            "-DCGAL_HEADER_ONLY=On",
+            "-DBUILD_SHARED_LIBS=Off",
         ],
         download_url="https://github.com/CGAL/cgal.git",
         download_name="cgal",
         download_tool=download_tool_git,
-        revision=CGAL_VERSION
+        revision=CGAL_VERSION,
     )
 
 if "usd" in targets:
     build_dependency(
         name=f"oneTBB-{TBB_VERSION}",
         mode="cmake",
-        build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/tbb-{TBB_VERSION}",
-            f"-DTBB_TEST=OFF"
-        ],
+        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/tbb-{TBB_VERSION}", f"-DTBB_TEST=OFF"],
         download_url="https://github.com/oneapi-src/oneTBB",
         download_name="oneTBB",
         download_tool=download_tool_git,
-        revision=f"v{TBB_VERSION}"
+        revision=f"v{TBB_VERSION}",
     )
 
     build_dependency(
@@ -847,12 +919,12 @@ if "usd" in targets:
             f"-DPXR_BUILD_TUTORIALS=FALSE",
             f"-DPXR_BUILD_EXAMPLES=FALSE",
             f"-DPXR_BUILD_USD_TOOLS=FALSE",
-            f"-DPXR_BUILD_TESTS=FALSE"
+            f"-DPXR_BUILD_TESTS=FALSE",
         ],
         download_url="https://github.com/PixarAnimationStudios/USD",
         download_name="USD",
         download_tool=download_tool_git,
-        revision=f"v{USD_VERSION}"
+        revision=f"v{USD_VERSION}",
     )
 
 cecho("Building IfcOpenShell:", GREEN)
@@ -867,17 +939,17 @@ os.makedirs(executables_dir, exist_ok=True)
 
 
 cmake_args = [
-    "-DCMAKE_CXX_STANDARD="            "17",
-    "-DUSE_MMAP="                      "OFF",
-    "-DBUILD_EXAMPLES="                "OFF",
-    "-DBUILD_SHARED_LIBS="             +OFF_ON[not BUILD_STATIC],
-    "-DBOOST_ROOT="                    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
-    "-DGLTF_SUPPORT="                  "ON",
-    "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
-    "-DEIGEN_DIR="                     f"{DEPS_DIR}/install/eigen-3.3.9",
-    "-DBoost_NO_BOOST_CMAKE="          "On",
-    "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off"),
-    "-DVERSION_OVERRIDE="            +("On" if ADD_COMMIT_SHA else "Off")
+    "-DCMAKE_CXX_STANDARD=" "17",
+    "-DUSE_MMAP=" "OFF",
+    "-DBUILD_EXAMPLES=" "OFF",
+    "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
+    "-DBOOST_ROOT=" f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
+    "-DGLTF_SUPPORT=" "ON",
+    "-DJSON_INCLUDE_DIR=" f"{DEPS_DIR}/install/json",
+    "-DEIGEN_DIR=" f"{DEPS_DIR}/install/eigen-3.3.9",
+    "-DBoost_NO_BOOST_CMAKE=" "On",
+    "-DADD_COMMIT_SHA=" + ("On" if ADD_COMMIT_SHA else "Off"),
+    "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
 ]
 
 if "wasm" in flags:
@@ -886,77 +958,81 @@ if "wasm" in flags:
     cmake_args.append("-DWASM_BUILD=On")
 
 if "cgal" in targets:
-    cmake_args.extend([
-        "-DCGAL_INCLUDE_DIR="          f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
-        "-DGMP_INCLUDE_DIR="           f"{DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-        "-DGMP_LIBRARY_DIR="           f"{DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
-        "-DMPFR_INCLUDE_DIR="          f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
-        "-DMPFR_LIBRARY_DIR="          f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
-    ])
-
-if "occ" in targets and USE_OCCT:
-    occ_include_dir =                  f"{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade"
-    occ_library_dir =                  f"{DEPS_DIR}/install/occt-{OCCT_VERSION}/lib"
-    cmake_args.extend([
-        "-DOCC_INCLUDE_DIR="           +occ_include_dir,
-        "-DOCC_LIBRARY_DIR="           +occ_library_dir
-    ])
-
-elif "occ" in targets:
-    occ_include_dir =                  f"{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce"
-    occ_library_dir =                  f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
-    cmake_args.extend([
-        "-DOCC_INCLUDE_DIR="           +occ_include_dir,
-        "-DOCC_LIBRARY_DIR="           +occ_library_dir
-    ])
-
-if "OpenCOLLADA" in targets:
-    cmake_args.extend([
-        "-DOPENCOLLADA_INCLUDE_DIR="   f"{DEPS_DIR}/install/OpenCOLLADA/include/opencollada",
-        "-DOPENCOLLADA_LIBRARY_DIR="   f"{DEPS_DIR}/install/OpenCOLLADA/lib/opencollada"
-    ])
-else:
-    cmake_args.extend([
-        "-DCOLLADA_SUPPORT="           "Off",
-    ])
-
-if "pcre" in targets:
-    cmake_args.append(
-        "-DPCRE_LIBRARY_DIR="          f"{DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib"
+    cmake_args.extend(
+        [
+            "-DCGAL_INCLUDE_DIR=" f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
+            "-DGMP_INCLUDE_DIR=" f"{DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
+            "-DGMP_LIBRARY_DIR=" f"{DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
+            "-DMPFR_INCLUDE_DIR=" f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
+            "-DMPFR_LIBRARY_DIR=" f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
+        ]
     )
 
+if "occ" in targets and USE_OCCT:
+    occ_include_dir = f"{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade"
+    occ_library_dir = f"{DEPS_DIR}/install/occt-{OCCT_VERSION}/lib"
+    cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
+
+elif "occ" in targets:
+    occ_include_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce"
+    occ_library_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
+    cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
+
+if "OpenCOLLADA" in targets:
+    cmake_args.extend(
+        [
+            "-DOPENCOLLADA_INCLUDE_DIR=" f"{DEPS_DIR}/install/OpenCOLLADA/include/opencollada",
+            "-DOPENCOLLADA_LIBRARY_DIR=" f"{DEPS_DIR}/install/OpenCOLLADA/lib/opencollada",
+        ]
+    )
+else:
+    cmake_args.extend(
+        [
+            "-DCOLLADA_SUPPORT=" "Off",
+        ]
+    )
+
+if "pcre" in targets:
+    cmake_args.append("-DPCRE_LIBRARY_DIR=" f"{DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib")
+
 if "libxml2" in targets:
-    cmake_args.extend([
-        "-DLIBXML2_INCLUDE_DIR="       f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
-        "-DLIBXML2_LIBRARIES="         f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}"
-    ])
+    cmake_args.extend(
+        [
+            "-DLIBXML2_INCLUDE_DIR=" f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
+            "-DLIBXML2_LIBRARIES=" f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
+        ]
+    )
 
 if "hdf5" in targets:
-    cmake_args.extend([
-        "-DHDF5_INCLUDE_DIR="          f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/include",
-        "-DHDF5_LIBRARY_DIR="          f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/lib"
-    ])
+    cmake_args.extend(
+        [
+            "-DHDF5_INCLUDE_DIR=" f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/include",
+            "-DHDF5_LIBRARY_DIR=" f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/lib",
+        ]
+    )
 else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
 
 if "usd" in targets:
-    cmake_args.extend([
-        "-DUSD_SUPPORT="               "On",
-        "-DUSD_INCLUDE_DIR="           f"{DEPS_DIR}/install/usd-{USD_VERSION}/include",
-        "-DUSD_LIBRARY_DIR="           f"{DEPS_DIR}/install/usd-{USD_VERSION}/lib"
-    ])
+    cmake_args.extend(
+        [
+            "-DUSD_SUPPORT=" "On",
+            "-DUSD_INCLUDE_DIR=" f"{DEPS_DIR}/install/usd-{USD_VERSION}/include",
+            "-DUSD_LIBRARY_DIR=" f"{DEPS_DIR}/install/usd-{USD_VERSION}/lib",
+        ]
+    )
 
 if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets):
     logger.info("\rConfiguring executables...")
 
     exec_args = [
-        "-DBUILD_IFCGEOM="                 +OFF_ON["IfcGeom" in targets],
-        "-DBUILD_GEOMSERVER="              +OFF_ON["IfcGeomServer" in targets],
-        "-DBUILD_CONVERT="                 +OFF_ON["IfcConvert" in targets],
-        "-DBUILD_IFCPYTHON="               "OFF",
-        "-DCMAKE_INSTALL_PREFIX="          f"{DEPS_DIR}/install/ifcopenshell",
+        "-DBUILD_IFCGEOM=" + OFF_ON["IfcGeom" in targets],
+        "-DBUILD_GEOMSERVER=" + OFF_ON["IfcGeomServer" in targets],
+        "-DBUILD_CONVERT=" + OFF_ON["IfcConvert" in targets],
+        "-DBUILD_IFCPYTHON=" "OFF",
+        "-DCMAKE_INSTALL_PREFIX=" f"{DEPS_DIR}/install/ifcopenshell",
     ]
-    
+
     run_cmake("", exec_args + cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
 
     logger.info("\rBuilding executables...   ")
@@ -969,10 +1045,10 @@ if "IfcOpenShell-Python" in targets:
     ADDITIONAL_ARGS = ""
     if platform.system() == "Darwin":
         ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
-        
+
     if "wasm" in flags:
         ADDITIONAL_ARGS = f"-Wl,-undefined,suppress -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper"
-        
+
     os.environ["CPPFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CXXFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CFLAGS"] = f"{CFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
@@ -994,17 +1070,30 @@ if "IfcOpenShell-Python" in targets:
         if "swig" in targets:
             swig_when_built.append(f"-DSWIG_EXECUTABLE={DEPS_DIR}/install/swig/bin/swig")
 
-        run_cmake("",
-            cmake_args + [
-                "-DPYTHON_LIBRARY="          +python_library,
+        run_cmake(
+            "",
+            cmake_args
+            + [
+                "-DPYTHON_LIBRARY=" + python_library,
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
                 # *([f"-DPYTHON_MODULE_INSTALL_DIR={os.environ['PYTHONPATH']}/ifcopenshell"] if "wasm" in flags else []),
-                *(["-DPYTHON_MODULE_INSTALL_DIR="+os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "package"))] if "wasm" in flags else []),
-                "-DPYTHON_INCLUDE_DIR="      +python_include,
-                "-DCMAKE_INSTALL_PREFIX="    f"{DEPS_DIR}/install/ifcopenshell/tmp",
-                "-DUSERSPACE_PYTHON_PREFIX=" +["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
-                *swig_when_built],
-            cmake_dir=CMAKE_DIR, cwd=python_dir)
+                *(
+                    [
+                        "-DPYTHON_MODULE_INSTALL_DIR="
+                        + os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "package"))
+                    ]
+                    if "wasm" in flags
+                    else []
+                ),
+                "-DPYTHON_INCLUDE_DIR=" + python_include,
+                "-DCMAKE_INSTALL_PREFIX=" f"{DEPS_DIR}/install/ifcopenshell/tmp",
+                "-DUSERSPACE_PYTHON_PREFIX="
+                + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
+                *swig_when_built,
+            ],
+            cmake_dir=CMAKE_DIR,
+            cwd=python_dir,
+        )
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
@@ -1012,14 +1101,16 @@ if "IfcOpenShell-Python" in targets:
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
         if python_executable:
-            module_dir = os.path.dirname(run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
+            module_dir = os.path.dirname(
+                run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"])
+            )
 
             if platform.system() != "Darwin":
                 if BUILD_CFG == "Release":
                     # TODO: This symbol name depends on the Python version?
                     so = glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]
                     if "wasm" in flags:
-                        run(['wasm-strip', so, '-k', "dylink.0"])
+                        run(["wasm-strip", so, "-k", "dylink.0"])
                     else:
                         run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
 
@@ -1029,20 +1120,17 @@ if "IfcOpenShell-Python" in targets:
         compile_python_wrapper(
             f"{os.environ['PYMAJOR']}.{os.environ['PYMINOR']}.{os.environ['PYMICRO']}",
             f"{os.environ['TARGETINSTALLDIR']}/lib/libpython{os.environ['PYMAJOR']}.{os.environ['PYMINOR']}.a",
-            os.environ['PYTHONINCLUDE'],
-            None
+            os.environ["PYTHONINCLUDE"],
+            None,
         )
-    
+
     elif USE_CURRENT_PYTHON_VERSION:
         python_info = sysconfig.get_paths()
 
-        py_path_components = [
-            sysconfig.get_config_var('LIBDIR'),
-            sysconfig.get_config_var("INSTSONAME")
-        ]
+        py_path_components = [sysconfig.get_config_var("LIBDIR"), sysconfig.get_config_var("INSTSONAME")]
 
-        if sysconfig.get_config_var('multiarchsubdir'):
-            py_path_components.insert(1, sysconfig.get_config_var('multiarchsubdir').replace("/", ""))
+        if sysconfig.get_config_var("multiarchsubdir"):
+            py_path_components.insert(1, sysconfig.get_config_var("multiarchsubdir").replace("/", ""))
 
         python_lib = os.path.join(*py_path_components)
 
@@ -1051,7 +1139,9 @@ if "IfcOpenShell-Python" in targets:
         for python_version in PYTHON_VERSIONS:
             python_library = run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{python_version}/lib/libpython*.*"])
             python_include = run([bash, "-c", f"ls -d {DEPS_DIR}/install/python-{python_version}/include/python*"])
-            python_executable = os.path.join(DEPS_DIR, "install", f"python-{python_version}", "bin", f"python{python_version[0]}")
+            python_executable = os.path.join(
+                DEPS_DIR, "install", f"python-{python_version}", "bin", f"python{python_version[0]}"
+            )
 
             module_dir = compile_python_wrapper(python_version, python_library, python_include, python_executable)
             run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")])
