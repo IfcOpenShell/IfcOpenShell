@@ -43,5 +43,9 @@ class TestCopyWorkSchedule(test.bootstrap.IFC4):
         assert len(new_tasks.intersection(old_cost_items)) == 0
 
 
+class TestCopyWorkScheduleIFC2X3(test.bootstrap.IFC2X3, TestCopyWorkSchedule):
+    pass
+
+
 class TestCopyWorkScheduleIFC4X3(test.bootstrap.IFC4X3, TestCopyWorkSchedule):
     pass

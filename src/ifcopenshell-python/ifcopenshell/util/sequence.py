@@ -18,6 +18,7 @@
 
 import datetime
 import ifcopenshell.util.date
+import ifcopenshell.util.element
 from math import floor
 from functools import cache
 from typing import Union, Literal, Optional
@@ -280,7 +281,7 @@ def get_task_work_schedule(task: ifcopenshell.entity_instance) -> Union[ifcopens
 
 
 def get_nested_tasks(task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-    return [object for rel in task.IsNestedBy or [] for object in rel.RelatedObjects if object.is_a("IfcTask")]
+    return [obj for obj in ifcopenshell.util.element.get_components(task) if obj.is_a("IfcTask")]
 
 
 def get_parent_task(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
