@@ -71,10 +71,11 @@ def add_work_plan(
         work_plan.Creators = [user.ThePerson]
     work_plan.StartTime = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
 
-    context = file.by_type("IfcContext")[0]
-    ifcopenshell.api.project.assign_declaration(
-        file,
-        definitions=[work_plan],
-        relating_context=context,
-    )
+    if file.schema != "IFC2X3":
+        context = file.by_type("IfcContext")[0]
+        ifcopenshell.api.project.assign_declaration(
+            file,
+            definitions=[work_plan],
+            relating_context=context,
+        )
     return work_plan
