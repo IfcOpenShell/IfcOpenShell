@@ -40,6 +40,11 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
     :param include_referent: If True, an IfcReferent representing the ending point of the layout is included for IfcLinearElement layouts (i.e. business logic)
     :return: True if segment is added
     """
+    
+    # These are valid curve types for alignment, but don't have the zero-length segment
+    if layout.is_a("IfcOffsetCurveByDistances") or layout.is_a("IfcPolyline") or layout.is_a("IfcIndexedPolyCurve"):
+        return
+    
     expected_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant","IfcCompositeCurve","IfcGradientCurve","IfcSegmentedReferenceCurve"]
     if not layout.is_a() in expected_types:
         raise TypeError(
@@ -202,7 +207,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
         if include_referent:
             alignment = ifcopenshell.api.alignment.get_alignment(layout)
             station = ifcopenshell.api.alignment.get_alignment_station(file,alignment)
-            name = f"{_get_segment_start_point_label(zero_length_curve_segment,None)} {ifcopenshell.util.alignment.station_as_string(file,station)}"
+            name = f"{_get_segment_start_point_label(zero_length_curve_segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
             ifcopenshell.api.alignment.add_stationing_referent(file, zero_length_curve_segment, 0.0, station, name=name)
     
     return True
