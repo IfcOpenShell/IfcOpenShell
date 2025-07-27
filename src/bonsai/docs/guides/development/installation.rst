@@ -151,19 +151,14 @@ to restart Blender to see changes).
 
 For Linux or Mac:
 
-.. literalinclude:: ../../../scripts/installation/dev_environment.sh
-   :language: bash
-   :caption: dev_environment.sh
+.. code-block:: bash
 
-For Windows, run this batch script as an administrator. Make sure to 
+    cd src/bonsai/scripts
+    python dev_environment.py
+
+For Windows, you may need to run the script as an administrator. Make sure to 
 run the script with blender closed. By default the script assumes its 
-in the root directory of the IFCOpenShell repository. If you want to run
-it from another directory, set the environment variables described in the
-`rem` tags.
-
-.. literalinclude:: ../../../scripts/installation/dev_environment.bat
-   :language: bat
-   :caption: dev_environment.bat
+in the root directory of the IfcOpenShell repository.
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect.
