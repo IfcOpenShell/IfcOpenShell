@@ -108,12 +108,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
         dp *= length_unit_;
         dn *= length_unit_;
 
-        if ((dp < 0.0 || basis_curve_length < dp)  // previous is out of range
-             || 
-            (dn < 0.0 || basis_curve_length < dn) // next is out of range
-           ||
-            (dn < dp) // next is before previous
-           )
+        if (dn < dp) // next is before previous
         {
             Logger::Warning("IfcOffsetCurveByDistance offset value is out of bounds.");
             continue;
@@ -124,6 +119,33 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
         double yp = (*prev)->OffsetLateral().get_value_or(0.0) * length_unit_;
         double zn = (*next)->OffsetVertical().get_value_or(0.0) * length_unit_;
         double zp = (*prev)->OffsetVertical().get_value_or(0.0) * length_unit_;
+
+        if ( (dp < 0.0 && dn < 0.0) || (basis_curve_length < dp && basis_curve_length < dn) ) {
+            // both points are either before the start of the curve or after the end of the curve. ignore them.
+            continue;
+        }
+
+        if (dp < 0.0) {
+            // previous is before the start of the curve
+            // compute y and z offsets at the start of the curve
+            auto yp_at_start = yp - (yn - yp) * dp / l;
+            auto zp_at_start = zp - (zn - zp) * dp / l;
+
+            dp = 0.0;
+            yp = yp_at_start;
+            zp = zp_at_start;
+        }
+
+        if (basis_curve_length < dn) {
+            // next is after the end of the curve
+            // compute y and z offsets at the end of the curve
+            auto yn_at_end = yn - (yn - yp) * (dn - basis_curve_length) / l;
+            auto zn_at_end = zn - (zn - zp) * (dn - basis_curve_length) / l;
+            dn = basis_curve_length;
+            yn = yn_at_end;
+            zn = zn_at_end;
+        }
+
        
         auto fn = [yp, yn, zp, zn, l](double u) -> Eigen::Matrix4d {
             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
@@ -140,10 +162,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
     #else
     double last_distance = *(*prev)->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>() * length_unit_;
     #endif
-    
-    if (basis_curve_length < last_distance) {
-          Logger::Warning("IfcOffsetCurveByDistance last offset value is after the end of the curve.");
-    }
 
     if (last_distance < basis_curve_length) {
          // Last offset is defined before the end of the curve so the lateral and vertical offsets
