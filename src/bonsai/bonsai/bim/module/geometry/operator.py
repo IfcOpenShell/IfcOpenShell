@@ -1272,7 +1272,11 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 if pset:
                     new_pset = ifcopenshell.api.pset.add_pset(ifc_file, product=new[0], name=self.pset_name)
                     if pset["Index"] == 0:
-                        properties = {"Index": pset["Index"], "Name": pset["Name"], "Aggregate_Index": len(group_elements) - 1}
+                        properties = {
+                            "Index": pset["Index"],
+                            "Name": pset["Name"],
+                            "Aggregate_Index": len(group_elements) - 1,
+                        }
                     else:
                         properties = {"Index": pset["Index"]}
 
@@ -1281,7 +1285,6 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         pset=new_pset,
                         properties=properties,
                     )
-
 
         def get_location_from_3d_cursor(old_to_new, aggregate):
             base_obj = tool.Ifc.get_object(aggregate)
@@ -1400,11 +1403,13 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     existing_product = tool.Drawing.get_assigned_product(assignment)
                     if existing_product != product:
                         if existing_product:
-                            tool.Ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=assignment)
+                            tool.Ifc.run(
+                                "drawing.unassign_product", relating_product=existing_product, related_object=assignment
+                            )
                         if product:
                             tool.Ifc.run("drawing.assign_product", relating_product=product, related_object=assignment)
                 tool.Blender.update_viewport()
-            
+
         def get_original_data(element: ifcopenshell.entity_instance) -> dict[int, dict[int, str]]:
             group = next(
                 r.RelatingGroup
@@ -1432,7 +1437,10 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                         if pset:
                             index = pset["Index"]
                             annotations = get_assignments(part)
-                            original_data[group][index] = {"Name": tool.Ifc.get_object(part).name, "Assignment": annotations}
+                            original_data[group][index] = {
+                                "Name": tool.Ifc.get_object(part).name,
+                                "Assignment": annotations,
+                            }
 
             return original_data
 
