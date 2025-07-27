@@ -21,9 +21,9 @@ import urllib.request
 from pathlib import Path
 from typing import Union
 
-available_platforms = ("win32", "darwin")
+available_platforms = ("win32", "darwin", "linux")
 if sys.platform not in available_platforms:
-    print(f"Currently only available on {','.join(available_platforms)}. Not available on {sys.platform}.")
+    print(f"Currently only available on {', '.join(available_platforms)}. Not available on {sys.platform}.")
     exit(1)
 
 # ---------------------------
@@ -39,9 +39,11 @@ REPO_PATH = r""
 # BLENDER_PATH: Path to Blender's configuration folder.
 # Usually don't need to change, just ensure Blender version matches.
 if sys.platform == "win32":
-    BLENDER_PATH = Path.home() / r"AppData/Roaming/Blender Foundation/Blender/4.5"
+    BLENDER_PATH = Path.home() / "AppData/Roaming/Blender Foundation/Blender/4.5"
 elif sys.platform == "darwin":
-    BLENDER_PATH = Path.home() / r"Library/Application Support/Blender/4.5"
+    BLENDER_PATH = Path.home() / "Library/Application Support/Blender/4.5"
+elif sys.platform == "linux":
+    BLENDER_PATH = Path.home() / ".config/blender/4.5"
 else:
     assert False
 
@@ -62,7 +64,6 @@ def find_bonsai_path() -> Union[Path, None]:
         if path.exists():
             return path
 
-
 # BONSAI_PATH: Path to 'bonsai' extension folder inside BLENDER_PATH.
 # Typically resolved automatically, paths priority can be found in `find_bonsai_path`.
 #
@@ -75,10 +76,6 @@ BONSAI_PATH = find_bonsai_path()
 
 # Never changed by user.
 PACKAGE_PATH = BLENDER_PATH / r"extensions/.local/lib/python3.11/site-packages"
-
-# Python doesn't allow using escape sequences in f-strings.
-NEW_LINE = chr(10)
-
 
 def main() -> None:
     global REPO_PATH
@@ -103,7 +100,7 @@ def main() -> None:
     assert PACKAGE_PATH.exists(), f"Path '{PACKAGE_PATH=!s}' doesn't exist, ensure variable is set correctly."
     assert BONSAI_PATH is not None, (
         "Couldn't find BONSAI_PATH in any of the paths candidates. "
-        f"Example paths: {NEW_LINE.join(str(p) for p in BONSAI_PATH_CANDIDATES)}."
+        "Example paths: {}".format("\n".join(str(p) for p in BONSAI_PATH_CANDIDATES))
     )
 
     input("Confirm the settings above and press Enter to continue or Ctrl-C to cancel...")
