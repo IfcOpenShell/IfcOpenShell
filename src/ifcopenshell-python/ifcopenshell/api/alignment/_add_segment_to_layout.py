@@ -163,6 +163,12 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
     end_referent.ObjectPlacement.CartesianPosition.Axis.DirectionRatios = (ax, ay, az)
     end_referent.ObjectPlacement.CartesianPosition.RefDirection.DirectionRatios = (rx, ry, rz)
 
+    start_station = ifcopenshell.api.alignment.get_alignment_station(file,alignment)
+    end_referent_station = start_station + start_dist_along
+    pset_stationing = ifcopenshell.api.pset.add_pset(file, product=end_referent, name="Pset_Stationing")
+    ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties={"Station": end_referent_station})
+
+
     # create the start of segment referent
 
     # get the previous segment. Working from the end of the basis curve, -1 is zero length segment
