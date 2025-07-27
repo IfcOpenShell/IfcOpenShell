@@ -1463,5 +1463,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 {"ERROR"},
                 f"Negative height not allowed. Cursor ({cursor_z:.2f}m) must be above object base ({common_base:.2f}m)",
             )
+
+
 custom_icon_previews = None
 display_mode = None
