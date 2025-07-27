@@ -1417,7 +1417,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
             index = pset["Index"]
             annotations = get_assignments(element)
-            original_data[group][index] = {"Name": str(pset["Aggregate_Index"]), "Assignment": annotations} # Get the link index number. The name will come from annotation tag
+            original_data[group][index] = {"Name": str(pset["Aggregate_Index"]), "Assignment": annotations}
 
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
