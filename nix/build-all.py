@@ -32,6 +32,7 @@ Available arguments:
         (building for all supported Python version by default).
     ``-wasm`` - compile for wasm
     ``-shared`` - build shared libraries. By default will build static.
+    ``-diskcleanup`` - clean up build directories after finishing building dependencies
 
 
 Used environment variables:
@@ -586,7 +587,7 @@ def build_dependency(
         logger.info(f"\rInstalling {name}... ")
         run([make, "install"], cwd=extract_build_dir)
         logger.info(f"\rInstalled {name}     \n")
-    else:
+    else:  # bjam
         logger.info(f"\rConfiguring {name}...")
         run([bash, "./bootstrap.sh"], cwd=extract_dir)
         logger.info(f"\rBuilding {name}...   ")
