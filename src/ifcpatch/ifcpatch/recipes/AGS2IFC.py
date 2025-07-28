@@ -81,6 +81,10 @@ class Patcher:
         doc_files = list(os.listdir(self.docs_dir))
         doc_references = {}
 
+        def read_csv_line(line: str) -> list[str]:
+            r = csv.reader([line])
+            return next(iter(r))
+
         ags = {}
         with open(self.ags_file, "r") as f:
             line_type = None
@@ -93,12 +97,12 @@ class Patcher:
                     line_type = "GROUP"
                     r = csv.reader([line])
                     group_line = i
-                    group = list(r)[0][0].strip("**?")
+                    group = read_csv_line(line)[0].strip("**?")
                     # print(group)
                     ags.setdefault(group, {})
                 elif i == group_line + 1:
                     line_type = "HEADER"
-                    r = [x.strip("*?") for x in list(csv.reader([line]))[0] if x]
+                    r = [x.strip("*?") for x in read_csv_line(line) if x]
                     ags[group]["header"] = r
                     header = r
                     # print(r)
@@ -106,16 +110,16 @@ class Patcher:
                     line_type = "UNITS"
                     unit_line = i
                 elif line_type == "HEADER":
-                    r = [x.strip("*?") for x in list(csv.reader([line]))[0] if x]
+                    r = [x.strip("*?") for x in read_csv_line(line) if x]
                     ags[group]["header"].extend(r)
                 elif i == unit_line + 1:
                     line_type = "DATA"
-                    data = list(csv.reader([line]))[0]
+                    data = read_csv_line(line)
                     data = {header[i]: data[i] for i in range(len(data))}
                     if data:
                         ags[group].setdefault("data", []).append(data)
                 elif line_type == "DATA":
-                    data = list(csv.reader([line]))[0]
+                    data = read_csv_line(line)
                     if data:
                         if data[0] == "<CONT>":
                             old_data = ags[group]["data"][-1]
