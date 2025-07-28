@@ -962,7 +962,7 @@ class PolylineOperator:
             data = get_generic_product_preview_data(context, relating_type)
 
         # Update properties so it can be used by the decorator
-        props = context.scene.BIMProductPreviewProperties
+        props = tool.Model.get_product_preview_props()
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()

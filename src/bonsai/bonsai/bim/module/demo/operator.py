@@ -75,7 +75,8 @@ class DemonstrateRenameProject(bpy.types.Operator, tool.Ifc.Operator):
         # properties. Generally, the inputs to the core function will come from
         # properties (such as an input field) or data from the scene (like the
         # actively selected object).
-        core.demonstrate_rename_project(tool.Ifc, tool.Demo, name=bpy.context.scene.BIMDemoProperties.name)
+        props = tool.Demo.get_demo_props()
+        core.demonstrate_rename_project(tool.Ifc, tool.Demo, name=props.name)
 
 
 class SendWebUiDemoMessage(bpy.types.Operator):
@@ -89,5 +90,6 @@ class SendWebUiDemoMessage(bpy.types.Operator):
         # and calling the operator connect_websocket_server if we aren't connected to a Web UI
         if not context.scene.WebProperties.is_connected:
             bpy.ops.bim.connect_websocket_server(page="demo")
-        core.send_webui_demo_message(tool.Web, message=bpy.context.scene.BIMDemoProperties.webui_message)
+        props = tool.Demo.get_demo_props()
+        core.send_webui_demo_message(tool.Web, message=props.webui_message)
         return {"FINISHED"}

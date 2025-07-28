@@ -893,7 +893,7 @@ class ProductDecorator:
 
     @classmethod
     def uninstall(cls):
-        props = bpy.context.scene.BIMProductPreviewProperties  # updated by model/polyline.py
+        props = tool.Model.get_product_preview_props()  # updated by model/polyline.py
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()
@@ -912,9 +912,9 @@ class ProductDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def get_product_preview_data(self, context):
-        props = context.scene.BIMProductPreviewProperties
-        data = {}
+    def get_product_preview_data(self, context) -> dict[str, Any]:
+        props = tool.Model.get_product_preview_props()
+        data: dict[str, Any] = {}
         data["verts"] = [(*v.value_3d,) for v in props.verts]
         data["edges"] = [(int(e.value_2d[0]), int(e.value_2d[1])) for e in props.edges]
         data["tris"] = [(int(t.value_3d[0]), int(t.value_3d[1]), int(t.value_3d[2])) for t in props.tris]
