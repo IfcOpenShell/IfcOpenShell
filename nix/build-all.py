@@ -98,8 +98,12 @@ import time
 from urllib.request import urlretrieve
 from collections.abc import Generator, Sequence
 from pathlib import Path
-from typing import Union, Literal
-
+try:
+    from typing import Union, Literal
+except:
+    # python 3.6 compatibility for rocky 8
+    from typing import Union
+    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -237,7 +241,7 @@ cecho(
 """
 )
 
-dependency_tree: dict[str, tuple[str, ...]] = {
+dependency_tree: 'dict[str, tuple[str, ...]]' = {
     "IfcParse": ("boost", "libxml2", "hdf5"),
     "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen"),
     "IfcConvert": ("IfcGeom",),
@@ -259,7 +263,7 @@ dependency_tree: dict[str, tuple[str, ...]] = {
 }
 
 
-def gather_dependencies(dep: str) -> Generator[str]:
+def gather_dependencies(dep: str) -> 'Generator[str]':
     yield dep
     for d in dependency_tree[dep]:
         for x in gather_dependencies(d):
