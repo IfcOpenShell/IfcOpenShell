@@ -323,7 +323,7 @@ except:
     pass
 
 
-def run(cmds: Sequence[str], cwd: Union[str, None] = None, can_fail: bool = False) -> str:
+def run(cmds: 'Sequence[str]', cwd: 'Union[str, None]' = None, can_fail: bool = False) -> str:
     """
     Wraps `subprocess.Popen.communicate()` and logs the command being executed,
     sets up logging `stderr` to `LOG_FILE` (in append mode) and returns stdout
@@ -455,7 +455,7 @@ def build_dependency(
     revision: Union[str, None] = None,
     patch: Union[str, list[str], None] = None,
     shell=None,
-    pre_compile_subs: Sequence[tuple[str, str, str]] = (),
+    pre_compile_subs: 'Sequence[tuple[str, str, str]]' = (),
     additional_files: Union[dict[str, str], None] = None,
     no_append_name=False,
     **kwargs,
