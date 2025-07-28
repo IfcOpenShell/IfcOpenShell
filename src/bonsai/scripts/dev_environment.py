@@ -85,8 +85,11 @@ def main() -> None:
     if not REPO_PATH:
         script_path = Path(__file__)
         print(f"REPO_PATH is not set, deducing it from {script_path.name} location...")
-        repo_bonsai_path = script_path.parent.parent.parent
-        assert repo_bonsai_path.name == "bonsai"
+        repo_bonsai_path = script_path.parent.parent
+        assert repo_bonsai_path.name == "bonsai", (
+            "Failed to deduce REPO_PATH from the script's location. "
+            f"'{repo_bonsai_path}' is expected to be 'bonsai' folder."
+        )
         REPO_PATH = repo_bonsai_path.parent.parent
 
     print("-" * 10)
