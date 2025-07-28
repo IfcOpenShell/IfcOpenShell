@@ -830,7 +830,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
 
     # On OSX a dynamic python library is built or it would not be compatible
     # with the system python because of some threading initialization
-    PYTHON_CONFIGURE_ARGS: list[str] = []
+    PYTHON_CONFIGURE_ARGS: 'list[str]' = []
     if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
 
@@ -895,8 +895,8 @@ if "boost" in targets:
         )
 
 if "cgal" in targets:
-    gmp_args: list[str] = []
-    mpfr_args: list[str] = []
+    gmp_args: 'list[str]' = []
+    mpfr_args: 'list[str]' = []
     if "wasm" in flags:
         gmp_args.extend(("--disable-assembly", "--host", "none", "--enable-cxx"))
         mpfr_args.extend(("--host", "none"))
