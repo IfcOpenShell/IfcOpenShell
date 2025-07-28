@@ -136,7 +136,7 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
     start_height = design_parameters.StartHeight
     start_gradient = design_parameters.StartGradient
     end_gradient = design_parameters.EndGradient
-    #radius = design_parameters.RadiusOfCurvature
+    # radius = design_parameters.RadiusOfCurvature
     transition = "DISCONTINUOUS"
 
     start_angle = math.atan(start_gradient)

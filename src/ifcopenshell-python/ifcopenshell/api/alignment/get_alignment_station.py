@@ -36,13 +36,12 @@ def get_alignment_station(file: ifcopenshell.file, alignment: entity_instance) -
 
     parent_alignment = ifcopenshell.api.alignment.get_parent_alignment(alignment)
     if parent_alignment:
-        start_station = ifcopenshell.api.alignment.get_alignment_station(file,parent_alignment)
+        start_station = ifcopenshell.api.alignment.get_alignment_station(file, parent_alignment)
     else:
         components = ifcopenshell.util.element.get_components(alignment)
         for c in components:
             if c.is_a("IfcReferent") and ifcopenshell.util.element.get_predefined_type(c) == "STATION":
                 start_station = ifcopenshell.util.element.get_pset(c, name="Pset_Stationing", prop="Station")
                 break
-
 
     return start_station
