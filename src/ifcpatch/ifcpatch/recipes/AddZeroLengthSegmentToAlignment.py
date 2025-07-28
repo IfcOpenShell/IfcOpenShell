@@ -24,12 +24,9 @@ from logging import Logger
 import typing
 from typing import Union
 
+
 class Patcher(ifcpatch.BasePatcher):
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        logger: Union[Logger, None] = None
-    ):
+    def __init__(self, file: ifcopenshell.file, logger: Union[Logger, None] = None):
         """Adds a zero length segments to alignment layouts
 
         Example:

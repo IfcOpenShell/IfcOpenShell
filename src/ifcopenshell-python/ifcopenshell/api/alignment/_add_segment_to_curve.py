@@ -47,7 +47,11 @@ def _add_curve_segment_to_composite_curve(
         composite_curve.Segments += (curve_segment,)
         assert len(curve_segment.UsingCurves) == 1
     else:
-        zero_length_segment = composite_curve.Segments[-1] if ifcopenshell.api.alignment.has_zero_length_segment(composite_curve) else None
+        zero_length_segment = (
+            composite_curve.Segments[-1]
+            if ifcopenshell.api.alignment.has_zero_length_segment(composite_curve)
+            else None
+        )
         prev_segment = None
 
         if zero_length_segment and 1 < len(composite_curve.Segments):
@@ -59,7 +63,10 @@ def _add_curve_segment_to_composite_curve(
 
         segments = composite_curve.Segments[0:-1]
         if zero_length_segment:
-            segments += (curve_segment,zero_length_segment,)
+            segments += (
+                curve_segment,
+                zero_length_segment,
+            )
             composite_curve.Segments = []
             composite_curve.Segments += segments
         else:

@@ -33,9 +33,7 @@ def update_fallback_position(file: ifcopenshell.file, lp: entity_instance):
     """
 
     if not lp.CartesianPosition:
-        lp.CartesianPosition = file.createIfcAxis2Placement3D(
-            Location = file.createIfcCartesianPoint((0.,0.))
-        )
+        lp.CartesianPosition = file.createIfcAxis2Placement3D(Location=file.createIfcCartesianPoint((0.0, 0.0)))
 
     p = np.array(ifcopenshell.util.placement.get_axis2placement(lp.RelativePlacement))
 
@@ -51,13 +49,13 @@ def update_fallback_position(file: ifcopenshell.file, lp: entity_instance):
     ay = float(p[1, 2])
     az = float(p[2, 2])
 
-    lp.CartesianPosition.Location.Coordinates = ((x,y,z))
+    lp.CartesianPosition.Location.Coordinates = (x, y, z)
 
     if not lp.CartesianPosition.RefDirection:
-        lp.CartesianPosition.RefDirection = file.createIfcDirection((1.,0.,0.))
+        lp.CartesianPosition.RefDirection = file.createIfcDirection((1.0, 0.0, 0.0))
 
     if not lp.CartesianPosition.Axis:
-        lp.CartesianPosition.Axis = file.createIfcDirection((0.,0.,1.))
+        lp.CartesianPosition.Axis = file.createIfcDirection((0.0, 0.0, 1.0))
 
-    lp.CartesianPosition.RefDirection.DirectionRatios = ((rx,ry,rz))
-    lp.CartesianPosition.Axis.DirectionRatios = ((ax,ay,az))
+    lp.CartesianPosition.RefDirection.DirectionRatios = (rx, ry, rz)
+    lp.CartesianPosition.Axis.DirectionRatios = (ax, ay, az)

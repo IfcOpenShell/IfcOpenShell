@@ -37,7 +37,7 @@ def _map_line(file: ifcopenshell.file, design_parameters: entity_instance) -> Se
     start_direction = design_parameters.StartDirection
     length = design_parameters.SegmentLength
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
@@ -80,7 +80,7 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
@@ -114,7 +114,7 @@ def _map_clothoid(file: ifcopenshell.file, design_parameters: entity_instance) -
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
@@ -156,7 +156,7 @@ def _map_cubic(file: ifcopenshell.file, design_parameters: entity_instance) -> S
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
@@ -209,7 +209,7 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
@@ -315,7 +315,7 @@ def _map_bloss_curve(file: ifcopenshell.file, design_parameters: entity_instance
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
@@ -362,7 +362,7 @@ def _map_cosine_curve(file: ifcopenshell.file, design_parameters: entity_instanc
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
@@ -405,7 +405,7 @@ def _map_sine_curve(file: ifcopenshell.file, design_parameters: entity_instance)
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file,'PLANEANGLEUNIT')
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"

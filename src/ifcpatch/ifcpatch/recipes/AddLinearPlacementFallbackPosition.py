@@ -24,12 +24,9 @@ from logging import Logger
 import typing
 from typing import Union
 
+
 class Patcher(ifcpatch.BasePatcher):
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        logger: Union[Logger, None] = None
-    ):
+    def __init__(self, file: ifcopenshell.file, logger: Union[Logger, None] = None):
         """Adds the IfcLinearPlacement.CartesianPosition fallback position to all of the IfcLinearPlacement objects in the file
 
         Example:

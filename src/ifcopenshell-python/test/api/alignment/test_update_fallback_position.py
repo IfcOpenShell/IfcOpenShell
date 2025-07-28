@@ -45,24 +45,25 @@ def test_update_fallback_position():
 
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     pde = file.createIfcPointByDistanceExpression(
-        DistanceAlong = file.createIfcLengthMeasure(4500.),
-        OffsetLateral = 20.0,
-        BasisCurve = basis_curve
+        DistanceAlong=file.createIfcLengthMeasure(4500.0), OffsetLateral=20.0, BasisCurve=basis_curve
     )
 
     placement = file.createIfcAxis2PlacementLinear(
-        Location = pde,
+        Location=pde,
     )
 
-    lp = file.createIfcLinearPlacement(RelativePlacement = placement)
+    lp = file.createIfcLinearPlacement(RelativePlacement=placement)
 
     assert lp.CartesianPosition == None
 
-    ifcopenshell.api.alignment.update_fallback_position(file,lp)
+    ifcopenshell.api.alignment.update_fallback_position(file, lp)
 
     assert lp.CartesianPosition != None
-    assert lp.CartesianPosition.Location.Coordinates == pytest.approx((3781.0625905626425,2663.2859940077856,0.0))
-    assert lp.CartesianPosition.RefDirection.DirectionRatios == pytest.approx((0.22453152656315067, 0.9744668252840736, 0.0))
+    assert lp.CartesianPosition.Location.Coordinates == pytest.approx((3781.0625905626425, 2663.2859940077856, 0.0))
+    assert lp.CartesianPosition.RefDirection.DirectionRatios == pytest.approx(
+        (0.22453152656315067, 0.9744668252840736, 0.0)
+    )
     assert lp.CartesianPosition.Axis.DirectionRatios == pytest.approx((0.0, 0.0, 1.0))
+
 
 test_update_fallback_position()

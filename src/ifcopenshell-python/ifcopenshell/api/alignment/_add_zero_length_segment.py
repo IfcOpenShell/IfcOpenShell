@@ -22,6 +22,7 @@ from ifcopenshell import entity_instance
 
 from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
 
+
 def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -> None:
     """
     Adds a zero length segment to the end of a layout. Also adds a zero length segment to the end of the corresponding geometric curve.
@@ -32,23 +33,23 @@ def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -
     :param layout: An IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
     :return: None
     """
-   
+
     expected_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]
     if not layout.is_a() in expected_types:
         raise TypeError(
             f"Expected layout type to be one of {[_ for _ in expected_types]}, instead received {layout.is_a()}"
         )
-    
-    if (not ifcopenshell.api.alignment.add_zero_length_segment(file,layout,include_referent=False)):
-        return # zero length segment not added, probably because it already exists
+
+    if not ifcopenshell.api.alignment.add_zero_length_segment(file, layout, include_referent=False):
+        return  # zero length segment not added, probably because it already exists
 
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
 
     if curve:
-        ifcopenshell.api.alignment.add_zero_length_segment(file,curve)
+        ifcopenshell.api.alignment.add_zero_length_segment(file, curve)
 
     segment = layout.IsNestedBy[0].RelatedObjects[-1]
     alignment = ifcopenshell.api.alignment.get_alignment(layout)
-    station = ifcopenshell.api.alignment.get_alignment_station(file,alignment)
+    station = ifcopenshell.api.alignment.get_alignment_station(file, alignment)
     name = f"{_get_segment_start_point_label(segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
     ifcopenshell.api.alignment.add_stationing_referent(file, segment, 0.0, station, name=name)

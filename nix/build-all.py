@@ -98,6 +98,7 @@ import time
 from urllib.request import urlretrieve
 from collections.abc import Generator, Sequence
 from pathlib import Path
+
 try:
     from typing import Union, Literal
 except:
@@ -241,7 +242,7 @@ cecho(
 """
 )
 
-dependency_tree: 'dict[str, tuple[str, ...]]' = {
+dependency_tree: "dict[str, tuple[str, ...]]" = {
     "IfcParse": ("boost", "libxml2", "hdf5"),
     "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen"),
     "IfcConvert": ("IfcGeom",),
@@ -263,7 +264,7 @@ dependency_tree: 'dict[str, tuple[str, ...]]' = {
 }
 
 
-def gather_dependencies(dep: str) -> 'Generator[str]':
+def gather_dependencies(dep: str) -> "Generator[str]":
     yield dep
     for d in dependency_tree[dep]:
         for x in gather_dependencies(d):
@@ -323,7 +324,7 @@ except:
     pass
 
 
-def run(cmds: 'Sequence[str]', cwd: 'Union[str, None]' = None, can_fail: bool = False) -> str:
+def run(cmds: "Sequence[str]", cwd: "Union[str, None]" = None, can_fail: bool = False) -> str:
     """
     Wraps `subprocess.Popen.communicate()` and logs the command being executed,
     sets up logging `stderr` to `LOG_FILE` (in append mode) and returns stdout
@@ -448,15 +449,15 @@ def build_dependency(
         "ctest",
         "bjam",
     ],
-    build_tool_args: 'list[str]',
+    build_tool_args: "list[str]",
     download_url: str,
     download_name: str,
     download_tool: Literal["py", "git"] = download_tool_default,
-    revision: 'Union[str, None]' = None,
-    patch: 'Union[str, list[str], None]' = None,
+    revision: "Union[str, None]" = None,
+    patch: "Union[str, list[str], None]" = None,
     shell=None,
-    pre_compile_subs: 'Sequence[tuple[str, str, str]]' = (),
-    additional_files: 'Union[dict[str, str], None]' = None,
+    pre_compile_subs: "Sequence[tuple[str, str, str]]" = (),
+    additional_files: "Union[dict[str, str], None]" = None,
     no_append_name=False,
     **kwargs,
 ) -> None:
@@ -830,7 +831,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
 
     # On OSX a dynamic python library is built or it would not be compatible
     # with the system python because of some threading initialization
-    PYTHON_CONFIGURE_ARGS: 'list[str]' = []
+    PYTHON_CONFIGURE_ARGS: "list[str]" = []
     if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
 
@@ -895,8 +896,8 @@ if "boost" in targets:
         )
 
 if "cgal" in targets:
-    gmp_args: 'list[str]' = []
-    mpfr_args: 'list[str]' = []
+    gmp_args: "list[str]" = []
+    mpfr_args: "list[str]" = []
     if "wasm" in flags:
         gmp_args.extend(("--disable-assembly", "--host", "none", "--enable-cxx"))
         mpfr_args.extend(("--host", "none"))
