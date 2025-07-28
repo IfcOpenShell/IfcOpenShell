@@ -366,7 +366,7 @@ BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BO
 # Helper functions
 
 
-def run_autoconf(arg1, configure_args, cwd):
+def run_autoconf(arg1: str, configure_args: "list[str]", cwd: str) -> None:
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
     if not os.path.exists(configure_path):
         run(
@@ -392,7 +392,7 @@ def run_autoconf(arg1, configure_args, cwd):
     )
 
 
-def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
+def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None, cwd: Union[str, None] = None):
     if cmake_dir is None:
         P = ".."
     else:

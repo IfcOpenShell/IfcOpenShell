@@ -21,6 +21,7 @@ import os
 import csv
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.api.style
@@ -30,6 +31,7 @@ import ifcopenshell.api.project
 import ifcopenshell.api.spatial
 import ifcopenshell.api.geometry
 import ifcopenshell.api.aggregate
+import ifcopenshell.util.shape_builder
 from itertools import cycle
 from ifcopenshell.util.shape_builder import V
 
