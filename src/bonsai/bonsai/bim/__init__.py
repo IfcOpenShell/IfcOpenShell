@@ -110,6 +110,7 @@ classes = [
     operator.ClippingPlaneCutWithCappings,
     operator.CloseBlendWarning,
     operator.CloseError,
+    operator.CreateMacBonsaiApp,
     operator.CopyTextToClipboard,
     operator.EditBlenderCollection,
     operator.FileAssociate,

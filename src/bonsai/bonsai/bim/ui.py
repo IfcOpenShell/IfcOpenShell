@@ -521,9 +521,13 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator("bim.open_upstream", text="Visit Wiki").page = "wiki"
         row.operator("bim.open_upstream", text="Visit Community").page = "community"
+
         row = layout.row()
-        row.operator("bim.file_associate", icon="LOCKVIEW_ON")
-        row.operator("bim.file_unassociate", icon="LOCKVIEW_OFF")
+        if platform.system() == "Darwin":
+            row.operator("bim.create_mac_bonsai_app", icon="LOCKVIEW_ON")
+        else:
+            row.operator("bim.file_associate", icon="LOCKVIEW_ON")
+            row.operator("bim.file_unassociate", icon="LOCKVIEW_OFF")
 
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Interface", self.draw_interface_settings)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Command Paths", self.draw_commands)
