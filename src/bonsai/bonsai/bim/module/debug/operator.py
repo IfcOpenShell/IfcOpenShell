@@ -1042,7 +1042,7 @@ class ChangeLogLevel(bpy.types.Operator):
 
     log_level: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
         name="Log Level",
-        items=((i, i, "") for i in get_args(LogLevelType)),
+        items=[(i, i, "") for i in get_args(LogLevelType)],
         default="WARNING",
     )
 
