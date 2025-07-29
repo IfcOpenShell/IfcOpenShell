@@ -18,10 +18,20 @@
                 <key>ActionParameters</key>
                 <dict>
                     <key>COMMAND_STRING</key>
-                    <string>"{{BLENDER_BINARY}}" --python-expr "import bpy; \
-    import sys; \
-    filepath = sys.argv[sys.argv.index('--') + 1]; \
-    bpy.ops.bim.load_project(filepath=filepath)" -- "$1"</string>
+                    <string>
+BLENDER="{{BLENDER_BINARY}}"
+if [[ $# -eq 1 &amp;&amp; -f "$1" ]]; then
+    "$BLENDER" --python-expr "import bpy; \
+        import sys; \
+        filepath = sys.argv[sys.argv.index('--') + 1]; \
+        bpy.ops.bim.load_project(filepath=filepath) \
+    " -- "$1"
+else
+    "$BLENDER" --python-expr "import bpy; \
+        bpy.ops.bim.create_project()\
+    "
+fi
+                    </string>
                     <key>CheckedForUserDefaultShell</key>
                     <true/>
                     <key>inputMethod</key>
