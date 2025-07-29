@@ -654,7 +654,7 @@ class CreateObjectUI:
         row = box.row(align=True)
         thumbnail: int = AuthoringData.type_thumbnails.get(relating_type_data["id"], 0)
         row.template_icon(icon_value=thumbnail)
-        prop_with_search(
+        row_ = prop_with_search(
             row,
             cls.props,
             "relating_type_id",
@@ -662,6 +662,8 @@ class CreateObjectUI:
             button_kwargs={"emboss": False},
             emboss=True,
         )
+        # Limit width because names can get really long.
+        row_.ui_units_x = 10.0
         row.operator(
             "bim.launch_type_manager",
             icon=tool.Blender.TYPE_MANAGER_ICON,
