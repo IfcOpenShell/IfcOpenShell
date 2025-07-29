@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>AMIsApplet</key>
+    <true/>
+    <key>AMStayOpen</key>
+    <false/>
+    <key>CFBundleExecutable</key>
+    <string>Automator Application Stub</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.apple.automator.Bonsai</string>
+    <key>CFBundleName</key>
+    <string>Bonsai</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>ifc</string>
+            </array>
+            <key>CFBundleTypeName</key>
+            <string>IFC File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+        </dict>
+    </array>
+    <key>LSUIElement</key>
+    <true/>
+</dict>
+</plist>

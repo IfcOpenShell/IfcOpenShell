@@ -272,6 +272,9 @@ class WinRegistryKeys(Enum):
         return cls.__bonsai_key
 
 
+LIBS_DESKTOP = Path(__file__).parent.parent / "libs" / "desktop"
+
+
 class FileAssociate(bpy.types.Operator):
     bl_idname = "bim.file_associate"
     bl_label = "Associate Bonsai with *.ifc files"
@@ -288,11 +291,10 @@ class FileAssociate(bpy.types.Operator):
         return False
 
     def execute(self, context):
-        src_dir = os.path.join(os.path.dirname(__file__), "../libs/desktop")
         binary_path = bpy.app.binary_path
         if platform.system() == "Linux":
             destdir = os.path.join(os.environ["HOME"], ".local")
-            self.install_desktop_linux(src_dir=src_dir, destdir=destdir, binary_path=binary_path)
+            self.install_desktop_linux(src_dir=LIBS_DESKTOP, destdir=destdir, binary_path=binary_path)
         elif platform.system() == "Windows":
             self.install_desktop_windows(binary_path)
         self.report({"INFO"}, "Associations established.")
@@ -404,6 +406,7 @@ class FileUnassociate(bpy.types.Operator):
             self.uninstall_desktop_linux(destdir=destdir)
         elif platform.system() == "Windows":
             self.uninstall_desktop_windows()
+
         return {"FINISHED"}
 
     def uninstall_desktop_windows(self) -> None:
@@ -472,6 +475,97 @@ class FileUnassociate(bpy.types.Operator):
             subprocess.call(["update-desktop-database", os.path.join(destdir, "share/applications")])
         except:
             pass
+
+
+class CreateMacBonsaiApp(bpy.types.Operator):
+    bl_idname = "bim.create_mac_bonsai_app"
+    bl_label = "Create Bonsai App to Open .ifc Files."
+    bl_options = set()
+    bl_description = (
+        "Create 'Bonsai' application on Mac.\n\n"
+        "To make Mac use Bonsai to open IFC files automatically:\n"
+        "- Open context menu on any .ifc file\n"
+        "- Open With\n"
+        "- Other\n"
+        "- Select Bonsai in 'Applications'\n"
+        "- Check 'Always Open With'\n"
+        "- 'Open'\n"
+        "\n"
+        "ALT+click to uninstall Bonsai app if it was installed previously."
+    )
+
+    uninstall: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        uninstall: bool
+
+    @classmethod
+    def poll(cls, context):
+        if platform.system() == "Darwin":
+            return True
+        cls.poll_message_set("Mac Only.")
+        return False
+
+    def invoke(self, context, event):
+        self.uninstall = event.alt
+        return self.execute(context)
+
+    def execute(self, context):
+        # I've tried to create AppleScript that would create this kind of app using Automator,
+        # but using poorly document AppleScript was unbearable :(
+        # So we just try to create automator app ourselves from a template.
+
+        # Couldn't find a way to automatically establish .ifc to app association,
+        # without installing some other app to handle it (e.g. 'duti').
+        # So currently we rely on the final user action to select Bonsai in 'Open With'.
+
+        # NOTE: shell script to execute is part of .wflow file.
+        app_path = Path("/Applications") / "Bonsai.app"
+
+        if self.uninstall:
+            if app_path.exists():
+                shutil.rmtree(app_path)
+                self.report({"INFO"}, "Bonsai app was successfully removed.")
+            else:
+                self.report({"WARNING"}, f"Couldn't remove Bonsai app as it's not found at '{app_path}'.")
+            return {"FINISHED"}
+
+        if app_path.exists():
+            self.report({"WARNING"}, f"Bonsai.app already exists at '{app_path}'.")
+            return {"FINISHED"}
+
+        # 1. Create .app bundle structure
+        contents = app_path / "Contents"
+        macos = contents / "MacOS"
+        resources = contents / "Resources"
+        for p in (macos, resources):
+            p.mkdir(parents=True, exist_ok=True)
+
+        # Copy Automator Application Stub.
+        stub_src = Path(
+            "/System/Library/CoreServices/Automator Application Stub.app/Contents/MacOS/Automator Application Stub"
+        )
+        stub_dest = macos / "Automator Application Stub"
+        shutil.copy(stub_src, stub_dest)
+        stub_dest.chmod(0o755)
+
+        # xml files.
+        shutil.copy2(LIBS_DESKTOP / "Mac" / "Info.plist", contents / "Info.plist")
+        wflow_template = (LIBS_DESKTOP / "Mac" / "document.wflow").read_text()
+        wflow_template = wflow_template.replace("{{BLENDER_BINARY}}", bpy.app.binary_path)
+        (contents / "document.wflow").write_text(wflow_template)
+
+        # Convert PNG icon to ICNS.
+        png_icon = LIBS_DESKTOP / "bonsai.png"
+        icns_icon = app_path / "Contents/Resources/AppIcon.icns"
+        subprocess.run(["sips", "-s", "format", "icns", png_icon, "--out", icns_icon], check=True)
+
+        self.report(
+            {"INFO"},
+            "Bonsai app was successfully created. "
+            f"Follow instructions in '{self.bl_label}' description to use Bonsai for .ifc files automatically.",
+        )
+        return {"FINISHED"}
 
 
 class OpenUpstream(bpy.types.Operator):
