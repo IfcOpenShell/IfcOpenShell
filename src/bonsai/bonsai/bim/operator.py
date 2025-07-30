@@ -1095,7 +1095,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                             predefined_type=predefined_type,
                         )
 
-        if self.prop_name == "relating_type":
+        if self.prop_name in ("relating_type", "relating_type_id"):
             self.add_relating_type_suggestions()
 
     def add_relating_type_suggestions(self) -> None:
