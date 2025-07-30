@@ -33,6 +33,7 @@ Available arguments:
     ``-wasm`` - compile for wasm
     ``-shared`` - build shared libraries. By default will build static.
     ``-diskcleanup`` - clean up build directories after finishing building dependencies
+    ``-v`` - enable verbose logs
 
 
 Used environment variables:
@@ -985,18 +986,19 @@ os.makedirs(executables_dir, exist_ok=True)
 
 
 cmake_args = [
-    "-DCMAKE_CXX_STANDARD=" "17",
-    "-DUSE_MMAP=" "OFF",
-    "-DBUILD_EXAMPLES=" "OFF",
+    "-DCMAKE_CXX_STANDARD=17",
+    "-DUSE_MMAP=OFF",
+    "-DBUILD_EXAMPLES=OFF",
     "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
-    "-DBOOST_ROOT=" f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
-    "-DGLTF_SUPPORT=" "ON",
-    "-DJSON_INCLUDE_DIR=" f"{DEPS_DIR}/install/json",
-    "-DEIGEN_DIR=" f"{DEPS_DIR}/install/eigen-3.3.9",
-    "-DBoost_NO_BOOST_CMAKE=" "On",
+    f"-DBOOST_ROOT={DEPS_DIR}/install/boost-{BOOST_VERSION}",
+    "-DGLTF_SUPPORT=ON",
+    f"-DJSON_INCLUDE_DIR={DEPS_DIR}/install/json",
+    f"-DEIGEN_DIR={DEPS_DIR}/install/eigen-3.3.9",
+    "-DBoost_NO_BOOST_CMAKE=On",
     "-DADD_COMMIT_SHA=" + ("On" if ADD_COMMIT_SHA else "Off"),
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
 ]
+"""Default CMake args to use for all CMake configs."""
 
 if "wasm" in flags:
     # Boost is built by the build script so should not be found
