@@ -1095,6 +1095,39 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                             predefined_type=predefined_type,
                         )
 
+        if self.prop_name == "relating_type":
+            self.add_relating_type_suggestions()
+
+    def add_relating_type_suggestions(self) -> None:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return
+
+        type_elements = []
+        for identifier in self.identifiers:
+            element = ifc_file.by_id(int(identifier))
+            if element and element.is_a().endswith("Type"):
+                type_elements.append(element)
+
+        for element in type_elements:
+            base_name = getattr(element, "Name", "") or "Unnamed"
+            element_step_id = str(element.id())
+
+            attributes = []
+            for attr_name in ["Description", "PredefinedType", "ElementType", "ObjectType"]:
+                value = getattr(element, attr_name, None)
+                if value and value != "NOTDEFINED":
+                    attributes.append(value)
+
+            if attributes:
+                concatenated_name = f"{base_name} > {' > '.join(attributes)}"
+                self.add_item(
+                    identifier=element_step_id,
+                    name=concatenated_name,
+                    predefined_type=next((getattr(element, "PredefinedType", None) for _ in [1]), "NOTDEFINED")
+                    or "NOTDEFINED",
+                )
+
 
 class BIM_OT_select_entity(bpy.types.Operator):
     bl_idname = "bim.select_entity"
