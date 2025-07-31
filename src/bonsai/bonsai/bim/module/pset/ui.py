@@ -661,10 +661,7 @@ class BIM_PT_group_qtos(Panel):
     @classmethod
     def poll(cls, context):
         props = tool.Blender.get_group_props()
-        total_resources = len(props.groups)
-        if total_resources > 0 and props.active_group_index < total_resources:
-            return True
-        return False
+        return bool(props.active_group)
 
     def draw(self, context):
         if not GroupQtosData.is_loaded:
@@ -696,10 +693,7 @@ class BIM_PT_group_psets(Panel):
     @classmethod
     def poll(cls, context):
         props = tool.Blender.get_group_props()
-        total_resources = len(props.groups)
-        if total_resources > 0 and props.active_group_index < total_resources:
-            return True
-        return False
+        return bool(props.active_group)
 
     def draw(self, context):
         if not GroupPsetData.is_loaded:
