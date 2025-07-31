@@ -90,6 +90,8 @@ class Pset(bonsai.core.tool.Pset):
             return bpy.context.scene.WorkSchedulePsetProperties
         elif obj_type == "Group":
             return bpy.context.scene.GroupPsetProperties
+        elif obj_type == "Zone":
+            return bpy.context.scene.ZonePsetProperties
         assert_never(obj_type)
 
     @classmethod

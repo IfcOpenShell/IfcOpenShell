@@ -81,6 +81,8 @@ def get_pset_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Bl
         results = get_profile_pset_names(self, context)
     elif prop_type == "WorkSchedulePsetProperties":
         results = get_work_schedule_pset_names(self, context)
+    elif prop_type == "ZonePsetProperties":
+        results = get_zone_pset_names(self, context)
 
     items: list[tool.Blender.BLENDER_ENUM_ITEM]
     items = [("BBIM_CUSTOM", "Custom Pset", "Create a property set without using a template.")]
@@ -206,6 +208,15 @@ def get_profile_pset_names(self: "PsetProperties", context: object) -> tool.Blen
 def get_work_schedule_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     ifc_class = "IfcWorkSchedule"
+    if ifc_class not in psetnames:
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
+        psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
+    return psetnames[ifc_class]
+
+
+def get_zone_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    global psetnames
+    ifc_class = "IfcZone"
     if ifc_class not in psetnames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)

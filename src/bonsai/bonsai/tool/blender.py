@@ -262,6 +262,10 @@ class Blender(bonsai.core.tool.Blender):
             props = tool.Blender.get_group_props()
             assert (active_group := props.active_group)
             return active_group.ifc_definition_id
+        elif obj_type == "Zone":
+            props = tool.System.get_zone_props()
+            assert (active_zone := props.active_zone)
+            return active_zone.ifc_definition_id
         assert_never(obj_type)
 
     @classmethod
