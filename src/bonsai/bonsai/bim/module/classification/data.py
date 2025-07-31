@@ -27,7 +27,7 @@ from bonsai.bim.ifc import IfcStore
 
 def refresh():
     ClassificationsData.is_loaded = False
-    ClassificationReferencesData.is_loaded = False
+    ObjectClassificationsData.is_loaded = False
     MaterialClassificationsData.is_loaded = False
     CostClassificationsData.is_loaded = False
 
@@ -92,7 +92,7 @@ class ReferencesData:
         return [(str(e.id()), e.Name, "") for e in tool.Ifc.get().by_type("IfcClassification")]
 
 
-class ClassificationReferencesData(ReferencesData):
+class ObjectClassificationsData(ReferencesData):
     data: dict[str, Any] = {}
     is_loaded = False
 
