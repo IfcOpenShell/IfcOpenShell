@@ -70,7 +70,7 @@ def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
 
 
 class Zone(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_zone_name)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
     if TYPE_CHECKING:
