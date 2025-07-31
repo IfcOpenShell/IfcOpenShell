@@ -33,9 +33,10 @@ from bonsai.bim.module.pset.data import (
     GroupPsetData,
     ProfilePsetsData,
     WorkSchedulePsetsData,
+    ZonePsetsData,
 )
 from bonsai.bim.module.material.data import ObjectMaterialData
-from typing import Any, Optional, TYPE_CHECKING, assert_never
+from typing import Any, Optional, TYPE_CHECKING, assert_never, Literal
 
 if TYPE_CHECKING:
     from bonsai.bim.module.pset.prop import IfcProperty, PsetProperties
@@ -789,6 +790,40 @@ class BIM_PT_work_schedule_psets(Panel):
 
         for pset in WorkSchedulePsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "WorkSchedule")
+
+
+class BIM_PT_zone_psets(Panel):
+    bl_label = "Zone Property Sets"
+    bl_idname = "BIM_PT_zone_psets"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_zones"
+
+    obj_type: Literal["Zone"] = "Zone"
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.System.get_zone_props()
+        return bool(props.active_zone)
+
+    def draw(self, context):
+        if not ZonePsetsData.is_loaded:
+            ZonePsetsData.load()
+
+        assert self.layout
+        props = tool.Pset.get_pset_props("", self.obj_type)
+        row = self.layout.row(align=True)
+        prop_with_search(row, props, "pset_name", text="")
+        op = row.operator("bim.add_pset", icon="ADD", text="")
+        op.obj_type = self.obj_type
+
+        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
+            draw_psetqto_ui(context, 0, {}, props, self.layout, self.obj_type)
+
+        for pset in ZonePsetsData.data["psets"]:
+            draw_psetqto_ui(context, pset["id"], pset, props, self.layout, self.obj_type)
 
 
 class BIM_PT_bulk_property_editor(Panel):

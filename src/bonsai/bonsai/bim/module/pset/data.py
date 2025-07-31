@@ -41,6 +41,7 @@ def refresh():
     GroupPsetData.is_loaded = False
     ProfilePsetsData.is_loaded = False
     WorkSchedulePsetsData.is_loaded = False
+    ZonePsetsData.is_loaded = False
     AddEditCustomPropertiesData.is_loaded = False
 
 
@@ -315,6 +316,21 @@ class WorkSchedulePsetsData(Data):
         props = tool.Sequence.get_work_schedule_props()
         ifc_definition_id = props.active_work_schedule_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
+        cls.is_loaded = True
+
+
+class ZonePsetsData(Data):
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        props = tool.System.get_zone_props()
+        assert (active_zone := props.active_zone)
+        ifc_definition_id = active_zone.ifc_definition_id
+        cls.data = {
+            "psets": (cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)),
+        }
         cls.is_loaded = True
 
 
