@@ -27,6 +27,7 @@ from bonsai.bim.module.classification.data import (
     ObjectClassificationsData,
     MaterialClassificationsData,
     CostClassificationsData,
+    ZoneClassificationsData,
 )
 from typing import TYPE_CHECKING, Any, Union
 
@@ -118,6 +119,7 @@ class ReferenceUI:
             ObjectClassificationsData,
             MaterialClassificationsData,
             CostClassificationsData,
+            ZoneClassificationsData,
         ]
     ]
 
@@ -320,6 +322,23 @@ class BIM_PT_cost_classifications(Panel, ReferenceUI):
             return False
         props = tool.Cost.get_cost_props()
         return bool(props.cost_items)
+
+
+class BIM_PT_zone_classifications(Panel, ReferenceUI):
+    bl_label = "Zone Classifications"
+    bl_idname = "BIM_PT_zone_classifications"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_zones"
+
+    data = ZoneClassificationsData
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.System.get_zone_props()
+        return bool(props.active_zone)
 
 
 class BIM_UL_classifications(UIList):

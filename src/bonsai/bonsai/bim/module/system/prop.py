@@ -116,8 +116,10 @@ class BIMSystemProperties(PropertyGroup):
 
 
 def update_active_zone_index(self: "BIMZoneProperties", context: object) -> None:
+    from bonsai.bim.module.classification.data import ZoneClassificationsData
     from bonsai.bim.module.pset.data import ZonePsetsData
 
+    ZoneClassificationsData.is_loaded = False
     ZonePsetsData.is_loaded = False
 
 

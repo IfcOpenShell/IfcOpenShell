@@ -30,6 +30,7 @@ def refresh():
     ObjectClassificationsData.is_loaded = False
     MaterialClassificationsData.is_loaded = False
     CostClassificationsData.is_loaded = False
+    ZoneClassificationsData.is_loaded = False
 
 
 class ClassificationsData:
@@ -80,7 +81,7 @@ class ClassificationsData:
 class ReferencesData:
     data: dict[str, Any]
     is_loaded = False
-    obj_type: Literal["Object", "Material", "Cost"]
+    obj_type: Literal["Object", "Material", "Cost", "Zone"]
 
     @classmethod
     def load(cls):
@@ -149,4 +150,15 @@ class CostClassificationsData(ReferencesData):
         props = tool.Cost.get_cost_props()
         if cost_item := props.active_cost_item:
             return tool.Ifc.get().by_id(cost_item.ifc_definition_id)
+        return None
+
+
+class ZoneClassificationsData(ReferencesData):
+    obj_type = "Zone"
+
+    @classmethod
+    def get_element(cls) -> Union[ifcopenshell.entity_instance, None]:
+        props = tool.System.get_zone_props()
+        if active_zone := props.active_zone:
+            return tool.Ifc.get().by_id(active_zone.ifc_definition_id)
         return None
