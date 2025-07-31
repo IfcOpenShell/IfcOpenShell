@@ -56,6 +56,7 @@ class System(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
     if TYPE_CHECKING:
+        name: str
         ifc_class: str
         ifc_definition_id: int
 
@@ -73,6 +74,7 @@ class Zone(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
     if TYPE_CHECKING:
+        name: str
         ifc_definition_id: int
 
 
