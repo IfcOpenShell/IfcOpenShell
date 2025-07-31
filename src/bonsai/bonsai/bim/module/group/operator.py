@@ -67,11 +67,11 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         ]
         sorted_related_groups = natsorted(related_groups, key=lambda group: group.Name or "Unnamed")
 
-        for related_group in sorted_related_groups:
+        if sorted_related_groups:
             new.has_children = True
-            if not new.is_expanded:
-                return
-            self.load_group(related_group, tree_depth=tree_depth + 1)
+            if new.is_expanded:
+                for related_group in sorted_related_groups:
+                    self.load_group(related_group, tree_depth=tree_depth + 1)
 
 
 class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
