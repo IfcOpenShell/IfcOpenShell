@@ -24,7 +24,7 @@ import bonsai.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
 from bonsai.bim.module.classification.data import (
     ClassificationsData,
-    ClassificationReferencesData,
+    ObjectClassificationsData,
     MaterialClassificationsData,
     CostClassificationsData,
 )
@@ -115,7 +115,7 @@ class ReferenceUI:
     layout: bpy.types.UILayout
     data: type[
         Union[
-            ClassificationReferencesData,
+            ObjectClassificationsData,
             MaterialClassificationsData,
             CostClassificationsData,
         ]
@@ -266,9 +266,9 @@ class BIM_PT_classification_references(Panel, ReferenceUI):
         return bool(tool.Ifc.get_entity(context.active_object))
 
     def draw(self, context):
-        if not ClassificationReferencesData.is_loaded:
-            ClassificationReferencesData.load()
-        self.data = ClassificationReferencesData
+        if not ObjectClassificationsData.is_loaded:
+            ObjectClassificationsData.load()
+        self.data = ObjectClassificationsData
         self.obj = context.active_object.name
         self.obj_type = "Object"
         self.draw_ui(context)
