@@ -667,13 +667,13 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             else:
                 icon = "CLIPUV_HLT"
             if item.is_expanded:
-                row.operator(
-                    "bim.contract_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                ).target_view = item.target_view
+                op = row.operator("bim.toggle_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN")
+                op.target_view = item.target_view
+                op.option = "CONTRACT"
             else:
-                row.operator(
-                    "bim.expand_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                ).target_view = item.target_view
+                op = row.operator("bim.toggle_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
+                op.target_view = item.target_view
+                op.option = "EXPAND"
             row.prop(item, "name", text="", icon=icon, emboss=False)
 
 

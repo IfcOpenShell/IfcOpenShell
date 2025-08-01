@@ -51,7 +51,7 @@ import bonsai.bim.export_ifc
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData
-from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict
+from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict, get_args
 from lxml import etree
 from math import radians
 from mathutils import Vector, Color, Matrix
@@ -3363,50 +3363,51 @@ class DisableEditingDrawings(bpy.types.Operator, tool.Ifc.Operator):
         core.disable_editing_drawings(tool.Drawing)
 
 
-class ExpandTargetView(bpy.types.Operator):
-    bl_idname = "bim.expand_target_view"
-    bl_label = "Expand Target View"
-    bl_description = "\nSHIFT+CLICK to expand all view categories"
+ToggleOption = Literal["EXPAND", "CONTRACT"]
 
+
+class ToggleTargetView(bpy.types.Operator):
+    bl_idname = "bim.toggle_target_view"
+    bl_label = "Toggle Target View"
     bl_options = {"REGISTER", "UNDO"}
-    target_view: bpy.props.StringProperty()
-    expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
+
+    target_view: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    toggle_all: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(i, i, "") for i in get_args(ToggleOption)]
+    )
+
+    if TYPE_CHECKING:
+        target_view: str
+        toggle_all: bool
+        option: ToggleOption
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        option: ToggleOption = properties.option
+        if option == "EXPAND":
+            return "Expand target view.\n\nSHIFT+CLICK to expand all view categories."
+        else:
+            return "Contract target view.\n\nSHIFT+CLICK to contract all view categories."
 
     def invoke(self, context, event):
-        # Expanding all categories on shift+click.
+        # Toggling all categories on shift+click.
         # Make sure to use SKIP_SAVE on property, otherwise it might get stuck (copied from #4771).
         if event.type == "LEFTMOUSE" and event.shift:
-            self.expand_all = True
+            self.toggle_all = True
         return self.execute(context)
 
     def execute(self, context):
         props = tool.Drawing.get_document_props()
-        for drawing in [d for d in props.drawings if self.expand_all or d.target_view == self.target_view]:
-            drawing.is_expanded = True
-        core.load_drawings(tool.Drawing)
-        return {"FINISHED"}
-
-
-class ContractTargetView(bpy.types.Operator):
-    bl_idname = "bim.contract_target_view"
-    bl_label = "Contract Target View"
-    bl_description = "\n\nSHIFT+CLICK to hide all view categories"
-
-    bl_options = {"REGISTER", "UNDO"}
-    target_view: bpy.props.StringProperty()
-    contract_all: bpy.props.BoolProperty(name="Contract All", default=False, options={"SKIP_SAVE"})
-
-    def invoke(self, context, event):
-        # Contracting all categories on shift+click.
-        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck (copied from #4771).
-        if event.type == "LEFTMOUSE" and event.shift:
-            self.contract_all = True
-        return self.execute(context)
-
-    def execute(self, context):
-        props = tool.Drawing.get_document_props()
-        for drawing in [d for d in props.drawings if self.contract_all or d.target_view == self.target_view]:
-            drawing.is_expanded = False
+        expanded = self.option == "EXPAND"
+        for drawing in props.drawings:
+            if drawing.is_drawing:
+                continue
+            if self.toggle_all or drawing.target_view == self.target_view:
+                drawing.is_expanded = expanded
         core.load_drawings(tool.Drawing)
         return {"FINISHED"}
 
