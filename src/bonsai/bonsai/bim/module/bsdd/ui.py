@@ -147,6 +147,7 @@ class BIM_UL_bsdd_properties(UIList):
         active_propname,
     ) -> None:
         if item:
+            layout.context_pointer_set("active_bsdd_property", item)  # used for context menu
             row = layout.row(align=True)
             name = item.name
             if name != item.code:
