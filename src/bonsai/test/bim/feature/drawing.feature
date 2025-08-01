@@ -13,7 +13,7 @@ Scenario: Duplicate drawing
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     When I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     When I press "bim.duplicate_drawing(drawing={drawing})"
@@ -31,7 +31,7 @@ Scenario: Duplicate drawing - without duplicating annotations
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I press "bim.add_annotation"
@@ -54,7 +54,7 @@ Scenario: Duplicate drawing - with duplicating annotations
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I press "bim.add_annotation"
@@ -77,7 +77,7 @@ Scenario: Create drawing
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     When I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I click "OUTPUT"
@@ -97,7 +97,7 @@ Scenario: Create drawing after deleting a duplicated object
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I click "OUTPUT"
@@ -116,7 +116,7 @@ Scenario: Activate drawing preserves visibility for non-ifc objects
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     Then the object "Cube" is visible
@@ -130,7 +130,7 @@ Scenario: Activate drawing preserves selection
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     Then the object "Cube" is selected
@@ -147,7 +147,7 @@ Scenario: Remove drawing
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     Then the collection "IfcAnnotation/PLAN_VIEW" exists
@@ -181,7 +181,7 @@ Scenario: Remove drawing - deleting active drawing
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     When the object "IfcAnnotation/PLAN_VIEW" is selected
@@ -196,7 +196,7 @@ Scenario: Add annotation - text
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     When I press "bim.add_annotation"
@@ -213,7 +213,7 @@ Scenario: Add annotation - auto create context if it doesn't exist
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     When I press "bim.add_annotation"
@@ -232,7 +232,7 @@ Scenario: Create drawing - using shapely fill mode
     And I click "IMPORT"
     And I set the "location_hint" property to "My Storey"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     When I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I look at the "Active Drawing" panel
@@ -273,7 +273,7 @@ Scenario: Add drawing to sheet
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I click "OUTPUT"
@@ -298,7 +298,7 @@ Scenario: Create sheet - with a drawing added to it
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
-    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I click "OUTPUT"

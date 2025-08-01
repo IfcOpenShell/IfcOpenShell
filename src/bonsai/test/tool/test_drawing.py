@@ -887,7 +887,7 @@ class TestDrawingStyles(NewFile):
         bpy.ops.bim.add_drawing()
         ifc = tool.Ifc.get()
         drawing = ifc.by_type("IfcAnnotation")[0]
-        bpy.ops.bim.expand_target_view(target_view="PLAN_VIEW")
+        bpy.ops.bim.toggle_target_view(option="EXPAND", target_view="PLAN_VIEW")
         props = tool.Drawing.get_document_props()
         props.active_drawing_index = 2
         bpy.ops.bim.activate_drawing(drawing=drawing.id())
