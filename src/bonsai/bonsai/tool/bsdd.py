@@ -200,6 +200,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
             if cprops.classification_source == "BSDD"
             else [cprops.classification_source]
         )
+        total_results = 0
         for dictionary_uri in dictionary_uris:
             for related_ifc_entity in related_ifc_entities or [None]:
                 response = cls.client.get_classes(
@@ -220,7 +221,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
                     prop.dictionary_name = dictionary_name
                     prop.dictionary_namespace_uri = dictionary_namespace_uri
 
-        total_results = response.get("count", response.get("classesCount"))
+        total_results = len(bprops.classifications)
         # For now, hard limit at 1000 results because any more and Blender
         # starts getting slow and they really should filter better
         if offset < 1000 and should_paginate and total_results == limit:
