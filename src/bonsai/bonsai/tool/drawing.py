@@ -933,12 +933,12 @@ class Drawing(bonsai.core.tool.Drawing):
 
         camera_props.update_props = update_props
 
+    drawing_selected_states: dict[int, bool] = {}
+
     @classmethod
     def import_drawings(cls) -> None:
         props = tool.Drawing.get_document_props()
         expanded_target_views = {d.target_view for d in props.drawings if not d.is_drawing and d.is_expanded}
-        if not hasattr(cls, "drawing_selected_states"):
-            cls.drawing_selected_states = {}
         cls.drawing_selected_states.update({d.ifc_definition_id: d.is_selected for d in props.drawings if d.is_drawing})
         props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]

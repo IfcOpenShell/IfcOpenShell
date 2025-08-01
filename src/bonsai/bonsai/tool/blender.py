@@ -59,6 +59,7 @@ if TYPE_CHECKING:
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
+    from bonsai.bim.module.covetool.prop import CoveToolProperties
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
     from bonsai.bim.module.fm.prop import BIMFMProperties
@@ -1782,6 +1783,11 @@ class Blender(bonsai.core.tool.Blender):
     def get_fm_props(cls) -> BIMFMProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMFMProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_covetool_props(cls) -> CoveToolProperties:
+        assert (scene := bpy.context.scene)
+        return scene.CoveToolProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:

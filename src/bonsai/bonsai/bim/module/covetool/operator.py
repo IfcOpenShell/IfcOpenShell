@@ -34,13 +34,14 @@ class Login(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        token = api.login(context.scene.CoveToolProperties.username, context.scene.CoveToolProperties.password)
+        props = tool.Blender.get_covetool_props()
+        token = api.login(props.username, props.password)
         if token:
-            context.scene.CoveToolProperties.token = token
+            props.token = token
 
             projects = api.get_request("projects")
             for project in projects:
-                new_project = context.scene.CoveToolProperties.projects.add()
+                new_project = props.projects.add()
                 new_project.name = project["name"]
                 new_project.run_set = project["run_set"][0]
                 new_project.url = project["url"]
@@ -54,11 +55,10 @@ class RunSimpleAnalysis(bpy.types.Operator):
     bl_label = "Run Simple Analysis"
 
     def execute(self, context):
-        simple_analysis = context.scene.CoveToolProperties.simple_analysis
+        props = tool.Blender.get_covetool_props()
+        simple_analysis = props.simple_analysis
         data = {
-            "run": context.scene.CoveToolProperties.projects[
-                context.scene.CoveToolProperties.active_project_index
-            ].run_set,
+            "run": props.projects[props.active_project_index].run_set,
             "si_units": simple_analysis.si_units,
             "building_height": simple_analysis.building_height,
             "roof_area": simple_analysis.roof_area,
@@ -92,6 +92,7 @@ class RunAnalysis(bpy.types.Operator):
     bl_label = "Run Analysis"
 
     def execute(self, context):
+        props = tool.Blender.get_covetool_props()
         self.file = tool.Ifc.get()
         self.inputs = {
             "floors": [],
@@ -104,9 +105,7 @@ class RunAnalysis(bpy.types.Operator):
         }
         self.parse_objects(context)
         data = {
-            "run": context.scene.CoveToolProperties.projects[
-                context.scene.CoveToolProperties.active_project_index
-            ].run_set,
+            "run": props.projects[props.active_project_index].run_set,
             "source": "Bonsai",
             "rotation_angle": self.get_rotation_angle(),
             **self.inputs,
