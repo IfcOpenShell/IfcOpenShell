@@ -1033,6 +1033,11 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
 
     identifiers: list[str]
 
+    if TYPE_CHECKING:
+        collection_names: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        collection_identifiers: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        collection_predefined_types: bpy.types.bpy_prop_collection_idprop[StrProperty]
+
     def invoke(self, context, event):
         self.clear_collections()
         self.data = context.data

@@ -306,7 +306,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
             new.uri = bsdd_prop["uri"]
 
     @classmethod
-    def import_properties(cls, obj, obj_type, keyword) -> None:
+    def import_properties(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE, keyword: str) -> None:
         props = cls.get_bsdd_props()
         props.properties.clear()
         pprops = tool.Pset.get_pset_props(obj, obj_type)

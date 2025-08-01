@@ -16,14 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy.props
-import bpy.types
+import bpy
+from typing import TYPE_CHECKING
 
 
 class CoveToolProject(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty(name="Name")
     run_set: bpy.props.StringProperty(name="Run Set")
     url: bpy.props.StringProperty(name="URL")
+
+    if TYPE_CHECKING:
+        run_set: str
+        url: set
 
 
 class CoveToolSimpleAnalysis(bpy.types.PropertyGroup):
@@ -49,6 +52,29 @@ class CoveToolSimpleAnalysis(bpy.types.PropertyGroup):
     window_area_s: bpy.props.StringProperty(name="Window Area S")
     window_area_se: bpy.props.StringProperty(name="Window Area SE")
 
+    if TYPE_CHECKING:
+        si_units: bool
+        building_height: str
+        roof_area: str
+        floor_area: str
+        skylight_area: str
+        wall_area_e: str
+        wall_area_ne: str
+        wall_area_n: str
+        wall_area_nw: str
+        wall_area_w: str
+        wall_area_sw: str
+        wall_area_s: str
+        wall_area_se: str
+        window_area_e: str
+        window_area_ne: str
+        window_area_n: str
+        window_area_nw: str
+        window_area_w: str
+        window_area_sw: str
+        window_area_s: str
+        window_area_se: str
+
 
 class CoveToolProperties(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(name="Username")
@@ -57,3 +83,11 @@ class CoveToolProperties(bpy.types.PropertyGroup):
     projects: bpy.props.CollectionProperty(name="Projects", type=CoveToolProject)
     active_project_index: bpy.props.IntProperty(name="Active Project Index")
     simple_analysis: bpy.props.PointerProperty(type=CoveToolSimpleAnalysis)
+
+    if TYPE_CHECKING:
+        username: str
+        password: str
+        token: str
+        projects: bpy.types.bpy_prop_collection_idprop[CoveToolProject]
+        active_project_index: int
+        simple_analysis: CoveToolSimpleAnalysis

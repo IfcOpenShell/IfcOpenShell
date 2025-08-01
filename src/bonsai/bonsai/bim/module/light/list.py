@@ -16,17 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-
+from __future__ import annotations
 import bpy
 import json
 import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.light.prop import RadianceExporterProperties, RadianceMaterial
 
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
     spectraldb = json.load(f)
 
 
 class MATERIAL_UL_radiance_materials(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: RadianceExporterProperties,
+        item: RadianceMaterial,
+        icon,
+        active_data,
+        active_propname,
+        index,
+    ) -> None:
         if self.layout_type in {"DEFAULT", "COMPACT"}:
             row = layout.row(align=True)
 

@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel
 from bonsai.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.search.prop import BIMSearchProperties, BIMColour, BIMFilterClasses, BIMFilterBuildingStoreys
 
 
 class BIM_PT_search(Panel):
@@ -141,7 +146,16 @@ class BIM_PT_select_similar(Panel):
 
 
 class BIM_UL_colourscheme(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMSearchProperties,
+        item: BIMColour,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if not item:
             return
         row = layout.row(align=True)
@@ -153,7 +167,17 @@ class BIM_UL_colourscheme(bpy.types.UIList):
 class BIM_UL_ifc_class_filter(bpy.types.UIList):
     use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(), description="Filter")
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMSearchProperties,
+        item: BIMFilterClasses,
+        icon,
+        active_data,
+        active_propname,
+        index,
+    ) -> None:
         split = layout
         split.use_property_split = True
         split.use_property_decorate = False
@@ -169,7 +193,17 @@ class BIM_UL_ifc_class_filter(bpy.types.UIList):
 class BIM_UL_ifc_building_storey_filter(bpy.types.UIList):
     use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(), description="Filter")
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMSearchProperties,
+        item: BIMFilterBuildingStoreys,
+        icon,
+        active_data,
+        active_propname,
+        index,
+    ) -> None:
         split = layout
         split.use_property_split = True
         split.use_property_decorate = False

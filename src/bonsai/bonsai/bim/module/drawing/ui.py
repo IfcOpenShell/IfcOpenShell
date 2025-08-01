@@ -32,7 +32,7 @@ from bonsai.bim.module.drawing.data import (
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.drawing.prop import DocProperties, Drawing
+    from bonsai.bim.module.drawing.prop import DocProperties, Drawing, Sheet
 
 
 class BIM_PT_camera(Panel):
@@ -678,7 +678,16 @@ class BIM_UL_drawinglist(bpy.types.UIList):
 
 
 class BIM_UL_sheets(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: DocProperties,
+        item: Sheet,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if not item:
             layout.label(text="", translate=False)
             return
