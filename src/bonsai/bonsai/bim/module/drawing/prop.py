@@ -308,7 +308,9 @@ class Drawing(PropertyGroup):
     )
     is_selected: BoolProperty(name="Is Selected", default=True)
     is_drawing: BoolProperty(name="Is Drawing", default=False)
+    """``Drawing`` can be either a drawing or a drawing target view header."""
     is_expanded: BoolProperty(name="Is Expanded", default=True)
+    """Whether target view header is expanded in UI. Should be just unset for the actual drawings."""
 
     if TYPE_CHECKING:
         ifc_definition_id: int
