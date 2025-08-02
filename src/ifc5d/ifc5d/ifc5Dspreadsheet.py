@@ -638,7 +638,7 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             if project_monetary_unit:
                 project_currency = project_monetary_unit[0].Currency
             else:
-                project_currency = '""'
+                project_currency = ""
 
             # export csv file
             csv_file_writer = Ifc5DCsvWriter(file=self.file, output=temp_dir, cost_schedule=self.cost_schedule)
@@ -660,7 +660,7 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             typst_main_content += '  schedule_name: "{}",\n'.format(cost_schedule_name)
             typst_main_content += '  schedule_description: "{}",\n'.format(self.cost_schedule.Description or "")
             typst_main_content += '  schedule_type: "{}",\n'.format(schedule_type)
-            typst_main_content += "  project_currency: {},\n".format(project_currency)
+            typst_main_content += '  project_currency: "{}",\n'.format(project_currency)
             for option_name, default_value in DEFAULT_OPTIONS.items():
                 value = self.options.get(option_name, default_value)
                 if isinstance(value, bool):
