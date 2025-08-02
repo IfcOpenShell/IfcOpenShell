@@ -40,7 +40,7 @@ import bonsai.core.geometry
 import bonsai.bim.import_ifc as import_ifc
 from collections import defaultdict
 from math import pi, radians
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Euler
 from bpy.types import Operator
 from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
@@ -92,11 +92,26 @@ class FilledOpeningGenerator:
             layers = tool.Model.get_material_layer_parameters(element)
             if layers["layer_set_direction"] == "AXIS2":
                 opening_thickness_si = layers["thickness"] * 2
-                axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+                axes = tool.Model.get_wall_axis(voided_obj, layers=layers)
+                axis_base = axes["base"]
+                axis_side = axes["side"]
                 new_matrix = voided_obj.matrix_world.copy()
-                point_on_axis = tool.Cad.point_on_edge(target, axis)
-                new_matrix.translation.x = point_on_axis.x
-                new_matrix.translation.y = point_on_axis.y
+                point_on_base_axis = tool.Cad.point_on_edge(target, axis_base)
+                point_on_side_axis = tool.Cad.point_on_edge(target, axis_side)
+                if (point_on_base_axis - target).length <= (point_on_side_axis - target).length:
+                    new_matrix.translation.x = point_on_base_axis.x
+                    new_matrix.translation.y = point_on_base_axis.y
+                else:
+                    filling_min_x = min([p[0] for p in filling_obj.bound_box])
+                    filling_max_x = max([p[0] for p in filling_obj.bound_box])
+
+                    # offset that results in the same x extents when the model is rotated 180 degrees
+                    filling_opposite_x = filling_max_x + filling_min_x
+
+                    offset_dir = voided_obj.matrix_world @ Vector((filling_opposite_x, 0, 0, 0))
+                    new_matrix.translation.x = point_on_side_axis.x + offset_dir.x
+                    new_matrix.translation.y = point_on_side_axis.y + offset_dir.y
+                    new_matrix = new_matrix @ Euler((0, 0, radians(180.0))).to_matrix().to_4x4()
 
                 if should_set_z_level:
                     if filling.is_a("IfcDoor"):
