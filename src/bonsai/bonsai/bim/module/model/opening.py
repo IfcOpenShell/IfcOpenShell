@@ -15,8 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
-#
-# This file was modified with the assistance of an AI coding tool.
 
 from collections.abc import Sequence
 from math import radians
@@ -208,21 +206,6 @@ def _get_cached_world_draw_data(
 # are themselves cached by name (gpu.shader.from_builtin returns the same
 # handle each call), so they stay drawable across frames.
 _batch_cache: dict[tuple[int, str], tuple[int, "gpu.types.GPUBatch"]] = {}
-
-# CAD hidden-line convention for the occluded back-pass: world-space dashes so
-# density stays coherent across zoom. Dash + gap = period; dash_width controls
-# the "on" portion.
-_DASH_PERIOD_METERS: float = 0.20
-_DASH_WIDTH_METERS: float = 0.10
-# Solid front pass is rendered wider than the dashed back pass so its halo
-# overpowers the dashed center on visible edges even when the WIRE-display
-# overlay biases the depth buffer at outline pixels.
-_DASH_LINE_WIDTH: float = 1.5
-_SOLID_LINE_WIDTH: float = 2.5
-# Per-iteration default line width used by every non-occlusion draw call in
-# this decorator's ``__call__``. Restored after each occlusion pair so the
-# next draw isn't silently inheriting the wider solid-pass override.
-_DEFAULT_LINE_WIDTH: float = 2.0
 
 
 def _get_cached_batch_or_none(cache_key: tuple[int, str]) -> "gpu.types.GPUBatch | None":
@@ -800,6 +783,7 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.reload_representation(filled_object)
 
 
+
         return {"FINISHED"}
 
 
@@ -1302,55 +1286,22 @@ class DecorationsHandler:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def _draw_lines_with_occlusion(self, verts, color, edges_indices, cache_key=None):
-        # Two-pass CAD hidden-line convention. Both passes use POLYLINE_UNIFORM_COLOR.
-        #
-        # The solid front pass is rendered WIDER than the dashed back pass so it
-        # produces a halo around the line center, beyond the depth-bias zone that
-        # Blender's overlay engine writes when an opening is set to WIRE display.
-        # Without the width difference, the wire bias makes the center-pixel
-        # ``LESS_EQUAL`` comparison fail (line ends up slightly behind the biased
-        # wire depth) so the solid pass would lose to the dashed back pass even
-        # on visible edges. The halo gives the solid pass enough screen-space to
-        # overpower the dashed pattern visually.
-        #
-        # Dashed renders first at the standard width so the solid overlay's wider
-        # halo cleanly hides it on visible edges; on occluded edges the solid
-        # ``LESS_EQUAL`` pass fails against the wall depth and the dashed remains.
-        front_batch = self._get_or_build_batch(self.line_shader, "LINES", verts, edges_indices, cache_key=cache_key)
-        if front_batch is None:
+    def _draw_lines_with_occlusion(self, verts, color, edges_indices, occluded_alpha: float = 0.25, cache_key=None):
+        # One batch, two draws: front pass at full color, occluded pass at
+        # `occluded_alpha`. Save/restore depth_test matches the pattern in
+        # bim/module/structural/decorator.py so callers' state survives.
+        batch = self._get_or_build_batch(self.line_shader, "LINES", verts, edges_indices, cache_key=cache_key)
+        if batch is None:
             return
-
-        dashed_cache_key = (cache_key[0], cache_key[1] + "_dashed") if cache_key is not None else None
-        dash_batch = None
-        if dashed_cache_key is not None:
-            dash_batch = _get_cached_batch_or_none(dashed_cache_key)
-        if dash_batch is None:
-            dash_verts, dash_edges = tool.Blender.build_dashed_line_segments(
-                verts, edges_indices, _DASH_PERIOD_METERS, _DASH_WIDTH_METERS
-            )
-            dash_batch = self._get_or_build_batch(self.line_shader, "LINES", dash_verts, dash_edges)
-            if dash_batch is not None and dashed_cache_key is not None:
-                _store_batch_in_cache(dashed_cache_key, dash_batch)
-
         original_depth_test = gpu.state.depth_test_get()
-        front_color = list(color)
-        front_color[3] = 1.0
-        self.line_shader.uniform_float("color", front_color)
-
-        if dash_batch is not None:
-            self.line_shader.uniform_float("lineWidth", _DASH_LINE_WIDTH)
-            gpu.state.depth_test_set("ALWAYS")
-            dash_batch.draw(self.line_shader)
-
-        self.line_shader.uniform_float("lineWidth", _SOLID_LINE_WIDTH)
         gpu.state.depth_test_set("LESS_EQUAL")
-        front_batch.draw(self.line_shader)
-
-        # Restore the per-iteration default set at the top of __call__ so
-        # subsequent draws (the HalfSpaceSolid arrow, future call-sites) are
-        # not silently affected by the front-pass width override.
-        self.line_shader.uniform_float("lineWidth", _DEFAULT_LINE_WIDTH)
+        self.line_shader.uniform_float("color", color)
+        batch.draw(self.line_shader)
+        gpu.state.depth_test_set("GREATER")
+        dimmed = list(color)
+        dimmed[3] = occluded_alpha
+        self.line_shader.uniform_float("color", dimmed)
+        batch.draw(self.line_shader)
         gpu.state.depth_test_set(original_depth_test)
 
     def __call__(self, context):
@@ -1386,7 +1337,7 @@ class DecorationsHandler:
             self.line_shader.bind()  # required to be able to change uniforms of the shader
             # POLYLINE_UNIFORM_COLOR specific uniforms
             self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-            self.line_shader.uniform_float("lineWidth", _DEFAULT_LINE_WIDTH)
+            self.line_shader.uniform_float("lineWidth", 2.0)
 
             # general shader
             self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -1424,7 +1375,9 @@ class DecorationsHandler:
                 self.draw_batch("LINES", verts, selected_elements_color, selected_edges)
                 self.draw_batch("POINTS", unselected_vertices, unselected_elements_color)
                 self.draw_batch("POINTS", selected_vertices, selected_elements_color)
-                tool.Blender.draw_bmesh_face_tris(bm, verts, transparent_color(special_elements_color), self.draw_batch)
+                obj.data.calc_loop_triangles()
+                tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
+                self.draw_batch("TRIS", verts, transparent_color(special_elements_color), tris)
             else:
                 line_verts, verts, edges_indices, tris = _get_cached_world_draw_data(obj)
                 color = selected_elements_color if obj in context.selected_objects else special_elements_color
