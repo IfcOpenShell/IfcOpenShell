@@ -342,8 +342,8 @@
   ) = {
   let data = csv(path, delimiter: delimiter, row-type: dictionary)
   let new_rows = data.map(item => arrange_summary_row(item, options))
-  let general_total = data.filter(row => row.at("Index") == "1") 
-   .map(row => float(row.at("TotalPrice")))
+  let general_total = data.filter(row => row.at("ItemIsASum") == "False") 
+   .map(row => float(row.at("RateSubtotal", default: 0.0))*float(row.at("Quantity", default: 0.0)))
    .sum(default: 0.00)
   
   set text(size: 10pt)
