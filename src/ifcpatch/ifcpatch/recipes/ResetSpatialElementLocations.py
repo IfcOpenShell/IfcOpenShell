@@ -63,7 +63,7 @@ class Patcher:
                 queue.extend(parts)
 
     def patch_placement_to_origin(self, element: ifcopenshell.entity_instance) -> None:
-        if not getattr(element, "ObjectPlacement", None):
+        if not getattr(element, "ObjectPlacement", None) or getattr(element, "Representation", None):
             return
         if self.only_xy:
             m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
