@@ -18,52 +18,57 @@
 
 import ifcopenshell
 import logging
+import numpy as np
 
 
 class Patcher:
-    def __init__(self, file: ifcopenshell.file, logger: logging.Logger, ifc_class: str = "IfcSite"):
-        """Resets the location of a spatial element to 0,0,0
+    def __init__(self, file: ifcopenshell.file, logger: logging.Logger, ifc_class: str = "", only_xy: bool = True):
+        """Resets the location of non-geometric spatial elements to 0,0,0
 
-        Another more specialised patch to fix incorrect coordinate usage is to
-        reset the location of spatial elements (sites, buildings, storeys) back
-        to 0,0,0.
+        Often, non-geometric spatial elements are located at arbitrary
+        locations relative to the model. Because they are non-geometric but
+        still contain placements, many users do not realise that their
+        coordinates are actually ver far away and can cause precision issues if
+        "fit all in view" is used.
 
-        :param ifc_class: The class of spatial element to reset coordinates for.
+        This patch lets you selectively reset the location of spatial elements
+        (sites, buildings, storeys) back to 0,0,0. This is typically done after
+        other coordinate operation patches. Alternatively, consider using the
+        SetFalseOrigin patch which can do this operation built-in.
+
+        :param ifc_class: The class of spatial element to reset coordinates
+            for. Leave blank if you want to reset everything.
+        :param only_xy: If True, only the X and Y coordinates will be affected.
 
         Example:
 
         .. code:: python
 
             # All IfcSites will shift back to 0,0,0.
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetSpatialElementLocations", "arguments": ["IfcSite"]})
+            ifcpatch.execute({"file": model, "recipe": "ResetSpatialElementLocations", "arguments": ["IfcSite"]})
         """
         self.file = file
         self.logger = logger
         self.ifc_class = ifc_class
+        self.only_xy = only_xy
 
     def patch(self) -> None:
         project = self.file.by_type("IfcProject")[0]
-        spatial_elements = self.find_decomposed_ifc_class(project, self.ifc_class)
-        for spatial_element in spatial_elements:
-            self.patch_placement_to_origin(spatial_element)
-
-    def find_decomposed_ifc_class(
-        self, element: ifcopenshell.entity_instance, ifc_class: str
-    ) -> list[ifcopenshell.entity_instance]:
-        results = []
-        rel_aggregates = element.IsDecomposedBy
-        if not rel_aggregates:
-            return results
-        for rel_aggregate in rel_aggregates:
-            for part in rel_aggregate.RelatedObjects:
-                if part.is_a(ifc_class):
-                    results.append(part)
-                results.extend(self.find_decomposed_ifc_class(part, ifc_class))
-        return results
+        queue = [project]
+        while queue:
+            element = queue.pop()
+            if not self.ifc_class or element.is_a(self.ifc_class):
+                self.patch_placement_to_origin(element)
+            if parts := ifcopenshell.util.element.get_parts(element):
+                queue.extend(parts)
 
     def patch_placement_to_origin(self, element: ifcopenshell.entity_instance) -> None:
-        element.ObjectPlacement.RelativePlacement.Location.Coordinates = (0.0, 0.0, 0.0)
-        if element.ObjectPlacement.RelativePlacement.Axis:
-            element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0.0, 0.0, 1.0)
-        if element.ObjectPlacement.RelativePlacement.RefDirection:
-            element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1.0, 0.0, 0.0)
+        if not getattr(element, "ObjectPlacement", None):
+            return
+        if self.only_xy:
+            m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            m[0][3] = 0.0
+            m[1][3] = 0.0
+            ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=m, is_si=False)
+            return
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=np.eye(4), is_si=False)
