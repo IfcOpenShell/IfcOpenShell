@@ -711,6 +711,7 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), filled_opening, obj.matrix_world)
             tool.Geometry.reload_representation(filled_object)
 
+
         return {"FINISHED"}
 
 
