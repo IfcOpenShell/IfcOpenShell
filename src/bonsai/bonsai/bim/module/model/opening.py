@@ -448,7 +448,42 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
                 continue
+
+            filled_opening = element.FillsVoids[0].RelatingOpeningElement
+            filled_element = filled_opening.VoidsElements[0].RelatingBuildingElement
+            filled_object = tool.Ifc.get_object(filled_element)
+
+            if filled_element.is_a() in [ "IfcWall", "IfcWallStandardCase" ]:
+                # if the filled element is a wall, move the filling in such a way
+                # that it will have the same relative position, but to the other
+                # side of the wall
+                #
+                # For example, if a door frame protudes 1cm out of the wall,
+                # it will produde 1cm out of the other side of the wall.
+
+                layers = tool.Model.get_material_layer_parameters(filled_element)
+                axes = tool.Model.get_wall_axis(filled_object, layers=layers)
+
+                center_axis = [ (axes["base"][0] + axes["side"][0]) * 0.5, (axes["base"][1] + axes["side"][1]) * 0.5 ]
+
+                original_pos = obj.matrix_world.translation
+                bb = tool.Blender.get_object_bounding_box(obj)
+                min_y = min(bb["min_y"], 0)
+                max_y = max(bb["max_y"], 0)
+
+                point_on_center_axis = tool.Cad.point_on_edge(original_pos, center_axis)
+                offset_to_center_axis = point_on_center_axis - original_pos
+                offset_to_center_axis.z = 0
+                depth_offset = max_y + min_y
+                depth_correction_vec = offset_to_center_axis.normalized() * depth_offset
+
+                mirrored_point = original_pos + offset_to_center_axis * 2.0 - depth_correction_vec
+
+                obj.matrix_world.translation = mirrored_point
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            
             tool.Geometry.flip_object(obj, "XY")
+                
         return {"FINISHED"}
 
 
