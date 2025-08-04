@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from bonsai.bim.prop import ObjProperty
     from bonsai.bim.module.project.prop import BIMProjectProperties
 
+
 class IFCFileSelector:
     layout: bpy.types.UILayout
 
@@ -1442,9 +1443,7 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
             op.text = attr_name
     elif isinstance(prop_struct, BIMBSDDProperties) and hasattr(context, "active_bsdd_property"):
         # Context Menu for bSDD Properties
-        op_description = layout.operator(
-            "bim.show_bsdd_description", text="bSDD Description", icon="INFO"
-        )
+        op_description = layout.operator("bim.show_bsdd_description", text="bSDD Description", icon="INFO")
         op_description.url = context.active_bsdd_property.uri
     else:
         # Basically context menu for any Blender property will end up here,
