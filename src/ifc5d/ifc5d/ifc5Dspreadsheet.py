@@ -626,19 +626,19 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             cost_schedule_name = self.cost_schedule.Name or "Unnamed"
             if self.force_schedule_type in ("PRICEDBILLOFQUANTITIES", "SCHEDULEOFRATES"):
                 schedule_type = self.force_schedule_type
-            elif self.force_schedule_type is None or self.force_schedule_type == "OFF":
+            elif self.force_schedule_type is None or self.force_schedule_type == "AUTO":
                 schedule_type = self.cost_schedule.PredefinedType
                 if schedule_type not in HANDLED_COST_SCHEDULE_TYPES:
                     schedule_type = "PRICEDBILLOFQUANTITIES"
             else:
                 raise ValueError(
-                    "force_schedule_type can be set to OFF, PRICEDBILLOFQUANTITIES, SCHEDULEOFRATES values only."
+                    "force_schedule_type can be set to AUTO, PRICEDBILLOFQUANTITIES, SCHEDULEOFRATES values only."
                 )
             project_monetary_unit = self.file.by_type("IfcMonetaryUnit")
             if project_monetary_unit:
                 project_currency = project_monetary_unit[0].Currency
             else:
-                project_currency = '""'
+                project_currency = ""
 
             # export csv file
             csv_file_writer = Ifc5DCsvWriter(file=self.file, output=temp_dir, cost_schedule=self.cost_schedule)
@@ -660,7 +660,7 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
             typst_main_content += '  schedule_name: "{}",\n'.format(cost_schedule_name)
             typst_main_content += '  schedule_description: "{}",\n'.format(self.cost_schedule.Description or "")
             typst_main_content += '  schedule_type: "{}",\n'.format(schedule_type)
-            typst_main_content += "  project_currency: {},\n".format(project_currency)
+            typst_main_content += '  project_currency: "{}",\n'.format(project_currency)
             for option_name, default_value in DEFAULT_OPTIONS.items():
                 value = self.options.get(option_name, default_value)
                 if isinstance(value, bool):

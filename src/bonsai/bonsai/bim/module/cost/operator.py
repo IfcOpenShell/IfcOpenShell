@@ -940,12 +940,12 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         default=True,
     )
     force_schedule_type: bpy.props.EnumProperty(
-        name="Force output type",
-        description="Force the output to this type\nalso if it is not coincident with the cost schedule Predefined Type",
+        name="Output type",
+        description='Force the output to this type.\n"Auto" defaults to selected cost schedule Predefined Type',
         items=[
             (
-                "OFF",
-                "Off",
+                "AUTO",
+                "By PredefinedType",
                 "Uses Cost Schedule Predefined Type",
             ),
             (
@@ -959,7 +959,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
                 "Forces the output as a schedule of rates",
             ),
         ],
-        default="OFF",
+        default="AUTO",
     )
 
     def draw(self, context):
