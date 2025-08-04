@@ -44,8 +44,6 @@ from natsort import natsorted
 if TYPE_CHECKING:
     from bonsai.bim.prop import ObjProperty
     from bonsai.bim.module.project.prop import BIMProjectProperties
-    from bonsai.bim.module.bsdd.operator import BIM_OT_show_bsdd_description
-
 
 class IFCFileSelector:
     layout: bpy.types.UILayout
@@ -1444,11 +1442,10 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
             op.text = attr_name
     elif isinstance(prop_struct, BIMBSDDProperties) and hasattr(context, "active_bsdd_property"):
         # Context Menu for bSDD Properties
-        bsdd_property = context.active_bsdd_property
-        op_description: BIM_OT_show_bsdd_description = layout.operator(
+        op_description = layout.operator(
             "bim.show_bsdd_description", text="bSDD Description", icon="INFO"
         )
-        op_description.url = bsdd_property.uri
+        op_description.url = context.active_bsdd_property.uri
     else:
         # Basically context menu for any Blender property will end up here,
         # and will check 3 types of docs.
