@@ -102,15 +102,8 @@ class FilledOpeningGenerator:
                     new_matrix.translation.x = point_on_base_axis.x
                     new_matrix.translation.y = point_on_base_axis.y
                 else:
-                    filling_min_x = min([p[0] for p in filling_obj.bound_box])
-                    filling_max_x = max([p[0] for p in filling_obj.bound_box])
-
-                    # offset that results in the same x extents when the model is rotated 180 degrees
-                    filling_opposite_x = filling_max_x + filling_min_x
-
-                    offset_dir = voided_obj.matrix_world @ Vector((filling_opposite_x, 0, 0, 0))
-                    new_matrix.translation.x = point_on_side_axis.x + offset_dir.x
-                    new_matrix.translation.y = point_on_side_axis.y + offset_dir.y
+                    new_matrix.translation.x = point_on_side_axis.x
+                    new_matrix.translation.y = point_on_side_axis.y
                     new_matrix = new_matrix @ Euler((0, 0, radians(180.0))).to_matrix().to_4x4()
 
                 if should_set_z_level:
