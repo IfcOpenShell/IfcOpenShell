@@ -222,7 +222,7 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 		builder.Add(compound, moved_shape);
 	}
 
-	return new ifcopenshell::geometry::OpenCascadeShape(compound);
+	return new ifcopenshell::geometry::OpenCascadeShape(std::move(compound));
 #else
         throw std::runtime_error("Not available without Open Cascade");
 #endif

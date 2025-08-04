@@ -1365,8 +1365,10 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
-				auto shp = elem->geometry().as_compound();
-				auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape();
+                auto shp = (ifcopenshell::geometry::OpenCascadeShape*)elem->geometry().as_compound();
+				TopoDS_Shape compound(std::move((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape()));
+                delete shp;
+
 				const auto& m = elem->transformation().data()->ccomponents();
 				gp_Trsf tr;
 				tr.SetValues(
@@ -1956,8 +1958,9 @@ namespace IfcGeom {
 				return;
 			}
 
-			auto compound_generic = elem->geometry().as_compound();
-			auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)compound_generic)->shape();
+			auto compound_generic = (ifcopenshell::geometry::OpenCascadeShape*)elem->geometry().as_compound();
+			TopoDS_Shape compound(std::move(compound_generic->shape()));
+            delete compound_generic;
 			
 			const auto& m = elem->transformation().data()->ccomponents();
 			gp_Trsf tr;
