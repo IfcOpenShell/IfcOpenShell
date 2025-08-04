@@ -328,6 +328,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
         data_type_map = {
             "String": "string",
             "Real": "float",
+            "Integer": "integer",
             "Boolean": "boolean",
         }
         imported_props = set()
