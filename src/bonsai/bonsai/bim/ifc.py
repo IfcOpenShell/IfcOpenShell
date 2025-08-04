@@ -445,8 +445,11 @@ class IfcStore:
 
         return callback
 
-    @staticmethod
+    modal_in_progress = False
+
+    @classmethod
     def execute_ifc_operator(
+        cls,
         operator: tool.Ifc.Operator,
         context: bpy.types.Context,
         event=None,
@@ -456,16 +459,33 @@ class IfcStore:
         props = tool.Blender.get_bim_props()
         props.is_dirty = True
         # Modals don't nest, and Blender handles the loop that continuously calls modal()
-        is_top_level_operator = not bool(IfcStore.current_transaction) or (method == "MODAL")
+        # So for modal operators we emulate nesting - first modal call is starting transaction
+        # and modal call with FINISHED/CANCELLED result finishes it.
+
+        # Example call chain for modal operators:
+        # Operator1.execute called
+        # -> Operator.execute called nested Operator2
+        #    -> Operator2.execute returned RUNNING_MODAL
+        #    -> Operator2.execute is finished
+        # -> Operator1.execute is finished
+        # -> Operator2.modal is called and returned PASS_THROUGH (going to another modal loop)
+        # -> Operator2.modal is finished
+        # -> Operator2.modal called again and last two steps repeat until FINISHED or CANCELLED
+        is_top_level_operator = not bool(IfcStore.current_transaction) and not cls.modal_in_progress
 
         if is_top_level_operator:
             IfcStore.begin_transaction(operator)
-            if tool.Ifc.get():
-                tool.Ifc.get().begin_transaction()
+            if ifc_file := tool.Ifc.get():
+                assert (
+                    ifc_file.transaction is None
+                ), "Trying to override existing transaction, possible IFC undo data loss."
+                ifc_file.begin_transaction()
             if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
                 BrickStore.begin_transaction()
             # This empty transaction ensures that each operator has at least one transaction
             IfcStore.add_transaction_operation(operator, rollback=lambda data: True, commit=lambda data: True)
+            if method == "MODAL":
+                cls.modal_in_progress = True
         else:
             operator.transaction_key = IfcStore.current_transaction
 
@@ -482,6 +502,9 @@ class IfcStore:
                     BrickStore.end_transaction()
                 IfcStore.end_transaction(operator)
                 bonsai.bim.handler.refresh_ui_data()
+
+                if method == "MODAL":
+                    cls.modal_in_progress = False
 
         try:
             if method == "EXECUTE":
@@ -503,8 +526,10 @@ class IfcStore:
 
         if method == "MODAL":
             if result == {"FINISHED"}:
+                is_top_level_operator = True
                 end_top_level_operator()
             elif result == {"CANCELLED"}:
+                is_top_level_operator = True
                 # Please read the docs: https://docs.blender.org/api/current/bpy.types.Operator.html
                 # > "when an operator returns {'CANCELLED'}, no undo step will be created".
                 # This means that if your modal edits IFC data, then the user
