@@ -103,9 +103,9 @@ def sum_child_root_elements(root_element: ifcopenshell.entity_instance, category
     for rel in root_element.IsNestedBy:
         for child_root_element in rel.RelatedObjects:
             if get_assigned_rate_cost_item(child_root_element):
-                new_child_root_element=get_assigned_rate_cost_item(child_root_element)
+                new_child_root_element = get_assigned_rate_cost_item(child_root_element)
             else:
-                new_child_root_element=child_root_element
+                new_child_root_element = child_root_element
             if root_element.is_a("IfcCostItem"):
                 values = new_child_root_element.CostValues
             elif root_element.is_a("IfcConstructionResource"):
@@ -130,11 +130,12 @@ def serialise_cost_value(cost_value: ifcopenshell.entity_instance) -> str:
         return result[1:-1]
     return result
 
+
 def get_assigned_rate_cost_item(cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-    #same as in tool. Maybe just create one?
+    # same as in tool. Maybe just create one?
     for assignment in cost_item.HasAssignments:
-            if assignment.RelatingControl.is_a() == "IfcCostItem":
-                return assignment.RelatingControl
+        if assignment.RelatingControl.is_a() == "IfcCostItem":
+            return assignment.RelatingControl
 
 
 def _serialise_cost_value(cost_value: ifcopenshell.entity_instance) -> str:
