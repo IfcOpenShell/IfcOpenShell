@@ -43,9 +43,9 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         element = tool.Ifc.get_entity(obj)
         assert element
 
-        bpy.ops.bim.load_bsdd_domains()
+        bpy.ops.bim.load_bsdd_dictionaries()
         uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
-        bpy.ops.bim.set_active_bsdd_domain(name="CCI Construction", uri=uri)
+        tool.Bsdd.set_library_active(uri, True)
         props = tool.Bsdd.get_bsdd_props()
         tool.Classification.get_classification_props().classification_source = "BSDD"
         props.should_filter_ifc_class = True
@@ -67,9 +67,9 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         element = tool.Ifc.get_entity(obj)
         assert element
 
-        bpy.ops.bim.load_bsdd_domains()
+        bpy.ops.bim.load_bsdd_dictionaries()
         uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
-        bpy.ops.bim.set_active_bsdd_domain(name="CCI Construction", uri=uri)
+        tool.Bsdd.set_library_active(uri, True)
         props = tool.Bsdd.get_bsdd_props()
         tool.Classification.get_classification_props().classification_source = "BSDD"
         props.should_filter_ifc_class = True
@@ -77,55 +77,59 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.bim.search_bsdd_classifications()
         # https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AAA
         props.active_classification_index = next(i for i, c in enumerate(props.classifications) if c.name == "Room")
-        bpy.ops.bim.get_bsdd_classification_properties()
-        psets = props.classification_psets
-        assert len(psets) == 1
-        pset = psets[0]
-        assert pset.name == "Pset_SpaceCommon"
-        assert len(pset.properties) == 1
-        pset_prop = pset.properties[0]
-        assert pset_prop.name == "Handicap Accessible"
-        pset_prop.bool_value = True
-
+        tool.Pset.get_pset_props(obj="IfcSpace/Cube", obj_type="Object").pset_name = uri
         bpy.ops.bim.add_classification_reference_from_bsdd(obj="IfcSpace/Cube", obj_type="Object")
+        bpy.ops.bim.import_bsdd_classes(obj="IfcSpace/Cube", obj_type="Object")
+        props.active_class_index = 0
+        assert len(props.properties) == 1
+        bsdd_property = props.properties[0]
+        assert bsdd_property.pset == "Pset_SpaceCommon"
+        assert bsdd_property.name == "Handicap Accessible"
+        bsdd_property.is_selected = True
+        bpy.ops.bim.add_bsdd_properties(obj="IfcSpace/Cube", obj_type="Object")
         pset = ifcopenshell.util.element.get_pset(element, "Pset_SpaceCommon")
-        assert pset and pset["Handicap Accessible"] == True
+        assert pset and pset["HandicapAccessible"] == False
         refs = ifcopenshell.util.classification.get_references(element)
         assert len(refs) == 1
         assert next(iter(refs)).Location.startswith(uri)
 
     def test_add_clasification_reference_with_object_type(self):
+        tool.Project.get_project_props().export_schema = "IFC4X3_ADD2"
         bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
         context = bpy.context
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
-        bpy.ops.bim.assign_class(ifc_class="IfcSpace", predefined_type="SPACE", userdefined_type="")
+        bpy.ops.bim.assign_class(ifc_class="IfcConveyorSegment", predefined_type="BELTCONVEYOR", userdefined_type="")
         element = tool.Ifc.get_entity(obj)
         assert element
 
+        bpy.ops.bim.load_bsdd_dictionaries()
+        uri = "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0"
+        tool.Bsdd.set_library_active(uri, True)
         props = tool.Bsdd.get_bsdd_props()
-        props.load_preview_domains = True
-        bpy.ops.bim.load_bsdd_domains()
-        uri = "https://identifier.buildingsmart.org/uri/ifcairport/ifcairport/0.9"
-        bpy.ops.bim.set_active_bsdd_domain(name="IFC Airport", uri=uri)
         tool.Classification.get_classification_props().classification_source = "BSDD"
-        props.should_filter_ifc_class = False  # Important due to class mismatch.
+        props.should_filter_ifc_class = True
         props.keyword = "check-in conveyor"
         bpy.ops.bim.search_bsdd_classifications()
-        # https://identifier.buildingsmart.org/uri/bs-airport/airport/0.9/class/AD-BHS-006
-        props.active_classification_index = next(
-            i for i, c in enumerate(props.classifications) if c.name == "Check-in conveyor"
-        )
-        bpy.ops.bim.get_bsdd_classification_properties()
-        psets = props.classification_psets
-        assert len(psets) == 1
-        pset = psets[0]
-        assert pset.name == "ISet_AirportDomain"
-        assert len(pset.properties) == 20
-        pset_prop = pset.properties[0]
-        assert pset_prop.name == "Conveying speed"
+        # https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007
 
-        bpy.ops.bim.add_classification_reference_from_bsdd(obj="IfcSpace/Cube", obj_type="Object")
-        # Check this?
-        # assert element.ObjectType == "CHECKINCONVEYOR"
-        assert not ifcopenshell.util.element.get_psets(element)
+        props.active_classification_index = next(
+            i for i, c in enumerate(props.classifications) if c.name.lower() == "check-in conveyor"
+        )
+        tool.Pset.get_pset_props(obj="IfcConveyorSegment/Cube", obj_type="Object").pset_name = uri
+        bpy.ops.bim.add_classification_reference_from_bsdd(obj="IfcConveyorSegment/Cube", obj_type="Object")
+        bpy.ops.bim.import_bsdd_classes(obj="IfcConveyorSegment/Cube", obj_type="Object")
+        props.active_class_index = 0
+        assert len(props.properties) == 20
+        bsdd_property = props.properties[0]
+
+        assert bsdd_property.pset == "ISet_AirportDomain"
+        assert bsdd_property.name == "Conveying speed"
+        bsdd_property.is_selected = True
+        bpy.ops.bim.add_bsdd_properties(obj="IfcConveyorSegment/Cube", obj_type="Object")
+        pset = ifcopenshell.util.element.get_pset(element, "ISet_AirportDomain")
+        assert pset and pset["AD-Prop-001"] == 0
+        refs = ifcopenshell.util.classification.get_references(element)
+        assert len(refs) == 1
+        assert next(iter(refs)).Location.startswith(uri)
