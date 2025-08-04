@@ -541,14 +541,35 @@ def get_generic_product_preview_data(context, relating_type):
     snap_obj = bpy.data.objects.get(snap_prop.snap_object)
     snap_element = tool.Ifc.get_entity(snap_obj)
     rot_mat = Quaternion()
-    if snap_element and snap_element.is_a("IfcWall"):
-        rot_mat = snap_obj.matrix_world.to_quaternion()
+    invert_x = False
+    if relating_type.is_a() in [ "IfcDoorType", "IfcWindowType" ] and snap_element and snap_element.is_a("IfcWall"):
+        layers = tool.Model.get_material_layer_parameters(snap_element)
+        axes = tool.Model.get_wall_axis(snap_obj, layers=layers)
+        axis_base = axes["base"]
+        axis_side = axes["side"]
+        point_on_base_axis = tool.Cad.point_on_edge(mouse_point, axis_base)
+        point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
+        if (point_on_base_axis - mouse_point).length_squared <= (point_on_side_axis - mouse_point).length_squared:
+            # mouse is snapped to the base axis, the preview looks exactly like the placed door / window
+            rot_mat = snap_obj.matrix_world.to_quaternion()
+        else:
+            # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
+            rot_mat = snap_obj.matrix_world.to_quaternion() @ Quaternion(Vector((0, 0, 1)), radians(180))
+            invert_x = True
+
+        mouse_point.z = snap_obj.matrix_world.translation.z
 
     obj_type = tool.Ifc.get_object(relating_type)
     if obj_type.data:
         data = ItemDecorator.get_obj_data(obj_type)
         data["verts"] = [tuple(obj_type.matrix_world.inverted() @ Vector(v)) for v in data["verts"]]
-        data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
+        offset_x = 0
+        if invert_x:
+            # correct the x position so that the inverted object occupies the same x extents
+            min_x = min([p[0] for p in data["verts"]])
+            max_x = max([p[0] for p in data["verts"]])
+            offset_x = max_x + min_x
+        data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point - Vector((offset_x, 0, 0))) for v in data["verts"]]
 
         return data
 
