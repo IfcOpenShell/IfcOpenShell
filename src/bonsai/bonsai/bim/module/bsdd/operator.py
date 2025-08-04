@@ -120,16 +120,19 @@ class BIM_OT_show_bsdd_description(bpy.types.Operator):
         return {"FINISHED"}
 
     def draw(self, context):
+        WIDTH = 80
         layout = self.layout
-        wrapper = textwrap.TextWrapper(width=80)
+        wrapper = textwrap.TextWrapper(width=WIDTH)
         result = tool.Bsdd.get_bsdd_property(self.url)
         description = result.get("description") or ""
         definition = result.get("definition") or ""
         if description != definition:
-            text = f"Description : {description}\n Definition : {definition}"
+            text = wrapper.wrap(f"Description : {description}")
+            text.append("-" * (WIDTH - 15))
+            text += wrapper.wrap(f"Definition : {definition}")
         else:
-            text = f"Description : {description}"
-        for line in wrapper.wrap(text):
+            text = wrapper.wrap(f"Description : {description}")
+        for line in text:
             layout.label(text=line)
         if self.url:
             url_op = layout.operator("bim.open_uri", icon="URL", text="Online bSDD Documentation")
