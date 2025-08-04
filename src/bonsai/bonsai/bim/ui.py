@@ -36,6 +36,7 @@ import bonsai.bim
 import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
 from bonsai.bim.prop import Attribute
+from bonsai.bim.module.bsdd.prop import BIMBSDDProperties
 from typing import Optional, TYPE_CHECKING, Literal
 from natsort import natsorted
 
@@ -1440,6 +1441,10 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
         if attr_name:
             op = layout.operator("bim.copy_text_to_clipboard", text="Copy Attribute Name", icon="COPYDOWN")
             op.text = attr_name
+    elif isinstance(prop_struct, BIMBSDDProperties) and hasattr(context, "active_bsdd_property"):
+        # Context Menu for bSDD Properties
+        op_description = layout.operator("bim.show_bsdd_description", text="bSDD Description", icon="INFO")
+        op_description.url = context.active_bsdd_property.uri
     else:
         # Basically context menu for any Blender property will end up here,
         # and will check 3 types of docs.

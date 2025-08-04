@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
-
+import textwrap
 import bpy
 import bsdd
 import bonsai.tool as tool
@@ -105,3 +105,35 @@ class AddBSDDProperties(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name=pset_name)
             ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties=properties)
+
+
+class BIM_OT_show_bsdd_description(bpy.types.Operator):
+    bl_idname = "bim.show_bsdd_description"
+    bl_label = "bSDD Description"
+    url: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        WIDTH = 80
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=WIDTH)
+        result = tool.Bsdd.get_bsdd_property(self.url)
+        description = result.get("description") or ""
+        definition = result.get("definition") or ""
+        if description != definition:
+            text = wrapper.wrap(f"Description : {description}")
+            text.append("-" * (WIDTH - 15))
+            text += wrapper.wrap(f"Definition : {definition}")
+        else:
+            text = wrapper.wrap(f"Description : {description}")
+        for line in text:
+            layout.label(text=line)
+        if self.url:
+            url_op = layout.operator("bim.open_uri", icon="URL", text="Online bSDD Documentation")
+            url_op.uri = self.url

@@ -25,6 +25,7 @@ classes = (
     operator.LoadBSDDDictionaries,
     operator.SearchBSDDClassifications,
     operator.SearchBSDDProperties,
+    operator.BIM_OT_show_bsdd_description,
     prop.BSDDDictionary,
     prop.BSDDClassification,
     prop.BSDDProperty,
