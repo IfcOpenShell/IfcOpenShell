@@ -28,6 +28,8 @@ if TYPE_CHECKING:
 
 def import_bsdd_classes(bsdd: type[tool.Bsdd], obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> None:
     bsdd.import_classes(obj, obj_type)
+    # Preload properties UIList for newly loaded bsdd class.
+    bsdd.import_class_properties()
 
 
 def search_bsdd_properties(bsdd: type[tool.Bsdd], keyword: str, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> None:
