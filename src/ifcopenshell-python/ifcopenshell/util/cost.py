@@ -102,14 +102,18 @@ def sum_child_root_elements(root_element: ifcopenshell.entity_instance, category
     result = 0.0
     for rel in root_element.IsNestedBy:
         for child_root_element in rel.RelatedObjects:
+            if get_assigned_rate_cost_item(child_root_element):
+                new_child_root_element=get_assigned_rate_cost_item(child_root_element)
+            else:
+                new_child_root_element=child_root_element
             if root_element.is_a("IfcCostItem"):
-                values = child_root_element.CostValues
+                values = new_child_root_element.CostValues
             elif root_element.is_a("IfcConstructionResource"):
                 values = child_root_element.BaseCosts
             for child_cost_value in values or []:
                 if category_filter and child_cost_value.Category != category_filter:
                     continue
-                child_applied_value = calculate_applied_value(child_root_element, child_cost_value)
+                child_applied_value = calculate_applied_value(new_child_root_element, child_cost_value)
                 child_quantity = get_total_quantity(child_root_element)
                 child_quantity = 1.0 if child_quantity is None else child_quantity
                 if child_cost_value.UnitBasis:
@@ -125,6 +129,12 @@ def serialise_cost_value(cost_value: ifcopenshell.entity_instance) -> str:
     if result and result[0] == "(" and result[-1] == ")":
         return result[1:-1]
     return result
+
+def get_assigned_rate_cost_item(cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    #same as in tool. Maybe just create one?
+    for assignment in cost_item.HasAssignments:
+            if assignment.RelatingControl.is_a() == "IfcCostItem":
+                return assignment.RelatingControl
 
 
 def _serialise_cost_value(cost_value: ifcopenshell.entity_instance) -> str:
