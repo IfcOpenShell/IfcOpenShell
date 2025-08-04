@@ -553,13 +553,13 @@ def get_generic_product_preview_data(context, relating_type):
     if obj_type.data:
         data = ItemDecorator.get_obj_data(obj_type)
         data["verts"] = [tuple(obj_type.matrix_world.inverted() @ Vector(v)) for v in data["verts"]]
-        offset_x = 0
         if invert_x:
             # correct the x position so that the inverted object occupies the same x extents
             min_x = min([p[0] for p in data["verts"]])
             max_x = max([p[0] for p in data["verts"]])
             offset_x = max_x + min_x
-        data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point - Vector((offset_x, 0, 0))) for v in data["verts"]]
+            data["verts"] = [tuple(Vector(v) - Vector((offset_x, 0, 0))) for v in data["verts"]]
+        data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
 
         return data
 
