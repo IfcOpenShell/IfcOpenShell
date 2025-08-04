@@ -123,8 +123,6 @@ class BIM_OT_show_bsdd_description(bpy.types.Operator):
         layout = self.layout
         wrapper = textwrap.TextWrapper(width=80)
         result = tool.Bsdd.get_bsdd_property(self.url)
-        self.bl_label = result.get("name") or "undefined"
-        # pset_name = result.get("propertySet") or "undefined"
         description = result.get("description") or ""
         definition = result.get("definition") or ""
         if description != definition:
