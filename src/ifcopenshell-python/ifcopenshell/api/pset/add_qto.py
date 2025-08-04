@@ -123,4 +123,5 @@ class Usecase:
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
             Name=self.settings["name"],
+            MethodOfMeasurement="BaseQuantities" if self.settings["name"].endswith("BaseQuantities") else None,
         )
