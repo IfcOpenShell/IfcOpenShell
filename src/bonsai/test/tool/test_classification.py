@@ -134,4 +134,4 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bsdd_property = props.properties[0]
         assert bsdd_property.pset == "ISet_AirportDomain"
         assert bsdd_property.name == "Conveying speed"
-        bsdd_property.is_selected = True
+        assert not ifcopenshell.util.element.get_psets(element)
