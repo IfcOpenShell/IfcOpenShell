@@ -475,7 +475,8 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
     @classmethod
     def set_library_active(cls, uri: str, state: bool):
-        dictionaries = {d.uri: d for d in cls.get_bsdd_props().dictionaries}
-        if uri not in dictionaries:
-            raise ValueError(f"URI '{uri}' could not be found in dictionaries!")
-        dictionaries[uri].is_active = state
+        for dictionary in cls.get_bsdd_props().dictionaries:
+            if dictionary.uri == uri:
+                dictionary.is_active = state
+                return
+        raise ValueError(f"URI '{uri}' could not be found in dictionaries!")
