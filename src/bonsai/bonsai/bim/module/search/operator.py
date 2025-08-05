@@ -46,6 +46,8 @@ from typing import TYPE_CHECKING, Literal, get_args, assert_never
 class AddFilterGroup(Operator):
     bl_idname = "bim.add_filter_group"
     bl_label = "Add Filter Group"
+    bl_options = {"REGISTER", "UNDO"}
+
     module: StringProperty()
 
     def execute(self, context):
@@ -57,6 +59,8 @@ class AddFilterGroup(Operator):
 class RemoveFilterGroup(Operator):
     bl_idname = "bim.remove_filter_group"
     bl_label = "Remove Filter Group"
+    bl_options = {"REGISTER", "UNDO"}
+
     index: IntProperty()
     module: StringProperty()
 
@@ -69,6 +73,8 @@ class RemoveFilterGroup(Operator):
 class RemoveFilter(Operator):
     bl_idname = "bim.remove_filter"
     bl_label = "Remove Filter Group"
+    bl_options = {"REGISTER", "UNDO"}
+
     group_index: IntProperty()
     index: IntProperty()
     module: StringProperty()
@@ -82,6 +88,8 @@ class RemoveFilter(Operator):
 class AddFilter(Operator):
     bl_idname = "bim.add_filter"
     bl_label = "Add Filter"
+    bl_options = {"REGISTER", "UNDO"}
+
     index: IntProperty()
     type: StringProperty()
     module: StringProperty()
@@ -148,6 +156,7 @@ class Search(Operator):
     bl_idname = "bim.search"
     bl_label = "Search"
     bl_description = "Search IFC elements by the provided query and add them to the current selection."
+    bl_options = {"REGISTER", "UNDO"}
 
     PropertyGroupType = Literal["CsvProperties", "BIMSearchProperties"]
     property_group: bpy.props.EnumProperty(
@@ -617,6 +626,7 @@ class ResetObjectColours(Operator):
 
     bl_idname = "bim.reset_object_colours"
     bl_label = "Reset Colours"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         for obj in context.visible_objects:
@@ -631,6 +641,8 @@ class ToggleFilterSelection(Operator):
 
     bl_idname = "bim.toggle_filter_selection"
     bl_label = "Toggle Filter Selection"
+    bl_options = {"REGISTER", "UNDO"}
+
     action: EnumProperty(items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
 
     def execute(self, context):
@@ -676,6 +688,7 @@ class ActivateIfcClassFilter(ActivateFilter):
 
     bl_idname = "bim.activate_ifc_class_filter"
     bl_label = "Filter by Class"
+    bl_options = {"REGISTER", "UNDO"}
 
     def invoke(self, context, event):
         props = tool.Search.get_search_props()
@@ -702,6 +715,7 @@ class ActivateContainerFilter(ActivateFilter):
 
     bl_idname = "bim.activate_ifc_container_filter"
     bl_label = "Filter by Container"
+    bl_options = {"REGISTER", "UNDO"}
 
     def invoke(self, context, event):
         props = tool.Search.get_search_props()
