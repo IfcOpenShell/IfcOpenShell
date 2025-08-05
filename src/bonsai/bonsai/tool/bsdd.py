@@ -475,7 +475,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
         return results
 
     @classmethod
-    def set_library_active(cls, uri: str, state: bool):
+    def set_library_active(cls, uri: str, state: bool) -> None:
         for dictionary in cls.get_bsdd_props().dictionaries:
             if dictionary.uri == uri:
                 dictionary.is_active = state

@@ -22,6 +22,7 @@ import bmesh
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
+import ifcopenshell.api.drawing
 import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
@@ -51,6 +52,7 @@ from mathutils import Vector, Matrix, Quaternion
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from collections.abc import Sequence
 from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never, NamedTuple
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
@@ -1382,7 +1384,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
 
-        def get_assignments(element: ifcopenshell.entity_instance) -> list:
+        def get_assignments(element: ifcopenshell.entity_instance) -> Sequence[ifcopenshell.entity_instance]:
             annotations = []
             inverse = list(tool.Ifc.get().get_inverse(element))
             assignments = [a for a in inverse if a.is_a("IfcRelAssignsToProduct")]
@@ -1393,7 +1395,8 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     annotations = assignment.RelatedObjects
             return annotations
 
-        def assign_to_annotations(obj, assignments):
+        def assign_to_annotations(obj: bpy.types.Object, assignments: Sequence[ifcopenshell.entity_instance]) -> None:
+            ifc_file = tool.Ifc.get()
             for assignment in assignments:
                 product = tool.Ifc.get_entity(obj)
                 annotation = tool.Ifc.get_object(assignment)
@@ -1403,11 +1406,13 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     existing_product = tool.Drawing.get_assigned_product(assignment)
                     if existing_product != product:
                         if existing_product:
-                            tool.Ifc.run(
-                                "drawing.unassign_product", relating_product=existing_product, related_object=assignment
+                            ifcopenshell.api.drawing.unassign_product(
+                                ifc_file, relating_product=existing_product, related_object=assignment
                             )
                         if product:
-                            tool.Ifc.run("drawing.assign_product", relating_product=product, related_object=assignment)
+                            ifcopenshell.api.drawing.assign_product(
+                                ifc_file, relating_product=product, related_object=assignment
+                            )
                 tool.Blender.update_viewport()
 
         def get_original_data(element: ifcopenshell.entity_instance) -> dict[int, dict[int, str]]:
