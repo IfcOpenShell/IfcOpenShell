@@ -360,6 +360,7 @@ def prop_with_search(
     prop_name: str,
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
+    enable_relating_type_suggestions: bool = True,
     *,
     button_kwargs: Union[dict[str, Any], None] = None,
     **kwargs: Any,
@@ -384,6 +385,7 @@ def prop_with_search(
             op.prop_name = prop_name
             op.should_click_ok = should_click_ok
             op.original_operator_path = original_operator_path or ""
+            op.enable_relating_type_suggestions = enable_relating_type_suggestions
     except TypeError:  # Prop is not iterable
         pass
     return row

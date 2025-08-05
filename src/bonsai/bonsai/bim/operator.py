@@ -1030,6 +1030,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     prop_name: bpy.props.StringProperty()
     should_click_ok: bpy.props.BoolProperty(default=False)
     original_operator_path: bpy.props.StringProperty(name="Original Operator Path", default="", options={"SKIP_SAVE"})
+    enable_relating_type_suggestions: bpy.props.BoolProperty(default=True)
 
     identifiers: list[str]
 
@@ -1095,7 +1096,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                             predefined_type=predefined_type,
                         )
 
-        if self.prop_name in ("relating_type", "relating_type_id"):
+        if self.enable_relating_type_suggestions:
             self.add_relating_type_suggestions()
 
     def add_relating_type_suggestions(self) -> None:
@@ -1124,8 +1125,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                 self.add_item(
                     identifier=element_step_id,
                     name=concatenated_name,
-                    predefined_type=next((getattr(element, "PredefinedType", None) for _ in [1]), "NOTDEFINED")
-                    or "NOTDEFINED",
+                    predefined_type=getattr(element, "PredefinedType", None) or "NOTDEFINED" or "NOTDEFINED",
                 )
 
 
