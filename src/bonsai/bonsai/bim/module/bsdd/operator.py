@@ -85,6 +85,14 @@ class AddBSDDProperties(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        props = tool.Bsdd.get_bsdd_props()
+        if not props.selected_properties:
+            cls.poll_message_set("No properties selected to add.")
+            return False
+        return True
+
     def _execute(self, context):
         self.file = tool.Ifc.get()
         bprops = tool.Bsdd.get_bsdd_props()
