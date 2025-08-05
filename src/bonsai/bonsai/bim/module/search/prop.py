@@ -33,7 +33,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, get_args
 
 
 def get_element_key(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -60,28 +60,26 @@ def get_saved_colourschemes(self: "BIMSearchProperties", context: bpy.types.Cont
     return ColourByPropertyData.data["saved_colourschemes"]
 
 
-def update_is_class_selected(self: "BIMFilterClasses", context: bpy.types.Context) -> None:
+def update_is_filter_item_selected(self: "BIMFilterItem", context: bpy.types.Context) -> None:
     if self.is_selected:
         for obj in self.unselected_objects:
+            assert obj.obj
             obj.obj.select_set(True)
         self.unselected_objects.clear()
-    else:
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
+        return
+
+    props = tool.Search.get_search_props()
+    for obj in context.selected_objects:
+        element = tool.Ifc.get_entity(obj)
+        if props.filter_type == "CLASS":
             if element and element.is_a() == self.name:
                 obj.select_set(False)
                 new = self.unselected_objects.add()
                 new.obj = obj
-
-
-def update_is_container_selected(self: "BIMFilterBuildingStoreys", context: bpy.types.Context) -> None:
-    if self.is_selected:
-        for obj in self.unselected_objects:
-            obj.obj.select_set(True)
-        self.unselected_objects.clear()
-    else:
-        for obj in context.selected_objects:
-            container = tool.Spatial.get_container(tool.Ifc.get_entity(obj))
+        else:
+            if not element:
+                continue
+            container = tool.Spatial.get_container(element)
             if (container and container.Name == self.name) or (not container and self.name == "None"):
                 obj.select_set(False)
                 new = self.unselected_objects.add()
@@ -103,19 +101,8 @@ def update_show_flat_colours(self: "BIMSearchProperties", context: bpy.types.Con
         space.shading.show_cavity = False
 
 
-class BIMFilterClasses(PropertyGroup):
-    is_selected: BoolProperty(name="Is Selected", default=True, update=update_is_class_selected)
-    total: IntProperty(name="Total")
-    unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
-
-    if TYPE_CHECKING:
-        is_selected: bool
-        total: int
-        unselected_objects: bpy.types.bpy_prop_collection_idprop[ObjProperty]
-
-
-class BIMFilterBuildingStoreys(PropertyGroup):
-    is_selected: BoolProperty(name="Is Level Selected", default=True, update=update_is_container_selected)
+class BIMFilterItem(PropertyGroup):
+    is_selected: BoolProperty(name="Is Selected", default=True, update=update_is_filter_item_selected)
     total: IntProperty(name="Total")
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
 
@@ -132,6 +119,9 @@ class BIMColour(PropertyGroup):
     if TYPE_CHECKING:
         total: int
         colour: tuple[float, float, float]
+
+
+FilterType = Literal["CLASS", "CONTAINER"]
 
 
 class BIMSearchProperties(PropertyGroup):
@@ -261,11 +251,13 @@ class BIMSearchProperties(PropertyGroup):
     max_value: FloatProperty(name="Max Value", default=100)
     colourscheme: CollectionProperty(type=BIMColour)
     active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
-    filter_type: StringProperty(name="Filter Type")
-    filter_classes: CollectionProperty(type=BIMFilterClasses, name="Filter Classes")
-    filter_classes_index: IntProperty(name="Filter Classes Index")
-    filter_container: CollectionProperty(type=BIMFilterBuildingStoreys, name="Filter Level")
-    filter_container_index: IntProperty(name="Filter Level Index")
+
+    # Ideally those should be props on operators, but if we move them to operators,
+    # then there's no way for suboperator to select/deselect all displayed items.
+    filter_type: EnumProperty(name="Filter Type", items=[(i, i, "") for i in get_args(FilterType)])
+    filter_items: CollectionProperty(type=BIMFilterItem, name="Filter Classes")
+    filter_items_index: IntProperty(name="Filter Classes Index")
+
     show_flat_colours: BoolProperty(
         name="Flat Colours",
         description="Toggle flat shading in the active viewport.",
@@ -289,9 +281,7 @@ class BIMSearchProperties(PropertyGroup):
         max_value: float
         colourscheme: bpy.types.bpy_prop_collection_idprop[BIMColour]
         active_colourscheme_index: int
-        filter_type: str
-        filter_classes: bpy.types.bpy_prop_collection_idprop[BIMFilterClasses]
-        filter_classes_index: int
-        filter_container: bpy.types.bpy_prop_collection_idprop[BIMFilterBuildingStoreys]
-        filter_container_index: int
+        filter_type: FilterType
+        filter_items: bpy.types.bpy_prop_collection_idprop[BIMFilterItem]
+        filter_items_index: int
         show_flat_colours: bool
