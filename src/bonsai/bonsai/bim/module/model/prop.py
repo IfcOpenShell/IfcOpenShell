@@ -117,36 +117,10 @@ def update_slab_direction_decorator(self: "BIMModelProperties", context: bpy.typ
 
 
 def update_measure_xyz(self: "BIMModelProperties", context: bpy.types.Context) -> None:
-    area_3d = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
-    space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None) if area_3d else None
-    scene = context.scene
-
     if self.show_bounding_box:
         BoundingBoxDecorator.install(context)
-        # Save previous state if not already saved
-        if not self.prev_transform_orientation_slot_type:
-            self.prev_transform_orientation_slot_type = scene.transform_orientation_slots[1].type
-        if not self.prev_show_gizmo_object_translate and space_3d:
-            self.prev_show_gizmo_object_translate = space_3d.show_gizmo_object_translate
-        # Set new state
-        if space_3d:
-            if len(context.selected_objects) == 1:
-                scene.transform_orientation_slots[1].type = "LOCAL"
-            else:
-                scene.transform_orientation_slots[1].type = "GLOBAL"
-            space_3d.show_gizmo_object_translate = True
     else:
         BoundingBoxDecorator.uninstall()
-        # Restore previous state
-        if space_3d:
-            prev_orientation = self.prev_transform_orientation_slot_type
-            if prev_orientation:
-                scene.transform_orientation_slots[1].type = prev_orientation
-                self.prev_transform_orientation_slot_type = ""
-            prev_gizmo = self.prev_show_gizmo_object_translate
-            if prev_gizmo is not None:
-                space_3d.show_gizmo_object_translate = prev_gizmo
-                self.prev_show_gizmo_object_translate = False
 
 
 def update_cut_decorator(self: "BIMModelProperties", context: bpy.types.Context) -> None:
