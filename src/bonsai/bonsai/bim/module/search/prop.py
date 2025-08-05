@@ -295,10 +295,3 @@ class BIMSearchProperties(PropertyGroup):
         filter_container: bpy.types.bpy_prop_collection_idprop[BIMFilterBuildingStoreys]
         filter_container_index: int
         show_flat_colours: bool
-
-
-def get_classes(self, ifc_product):
-    declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
-    declarations = ifcopenshell.util.schema.get_subtypes(declaration)
-    names = [d.name() for d in declarations]
-    return [(c, c, "") for c in sorted(names)]
