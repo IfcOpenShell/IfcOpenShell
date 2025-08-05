@@ -361,7 +361,7 @@ def prop_with_search(
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
     enable_relating_type_suggestions: bool = True,
-    search_threshold: int = 0,
+    search_threshold: int = 10,
     *,
     button_kwargs: Union[dict[str, Any], None] = None,
     **kwargs: Any,
