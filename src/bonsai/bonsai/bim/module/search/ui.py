@@ -25,7 +25,7 @@ from bonsai.bim.module.search.data import SearchData, ColourByPropertyData, Sele
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.search.prop import BIMSearchProperties, BIMColour, BIMFilterClasses, BIMFilterBuildingStoreys
+    from bonsai.bim.module.search.prop import BIMSearchProperties, BIMColour, BIMFilterItem
 
 
 class BIM_PT_search(Panel):
@@ -164,37 +164,13 @@ class BIM_UL_colourscheme(bpy.types.UIList):
         split.prop(item, "colour", text="")
 
 
-class BIM_UL_ifc_class_filter(bpy.types.UIList):
+class BIM_UL_ifc_filter(bpy.types.UIList):
     def draw_item(
         self,
         context,
         layout: bpy.types.UILayout,
         data: BIMSearchProperties,
-        item: BIMFilterClasses,
-        icon,
-        active_data,
-        active_propname,
-        index,
-    ) -> None:
-        split = layout
-        split.use_property_split = True
-        split.use_property_decorate = False
-        split.prop(
-            item, "is_selected", text="", emboss=False, icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
-        )
-        split.prop(item, "name", text="", emboss=False, slider=True)
-        split = split.column()
-        split.scale_x = 0.5
-        split.label(text=str(item.total))
-
-
-class BIM_UL_ifc_building_storey_filter(bpy.types.UIList):
-    def draw_item(
-        self,
-        context,
-        layout: bpy.types.UILayout,
-        data: BIMSearchProperties,
-        item: BIMFilterBuildingStoreys,
+        item: BIMFilterItem,
         icon,
         active_data,
         active_propname,

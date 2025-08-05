@@ -636,21 +636,12 @@ class ToggleFilterSelection(Operator):
     def execute(self, context):
         props = tool.Search.get_search_props()
         self.selecting_actionbool = self.action == "SELECT"
-        if props.filter_type == "CLASSES":
-            for ifc_class in props.filter_classes:
-                ifc_class.is_selected = self.selecting_actionbool
-        elif props.filter_type == "CONTAINER":
-            for building_storey in props.filter_container:
-                building_storey.is_selected = self.selecting_actionbool
+        for item in props.filter_items:
+            item.is_selected = self.selecting_actionbool
         return {"FINISHED"}
 
 
-class ActivateIfcClassFilter(Operator):
-    """Filter the current selection by IFC class"""
-
-    bl_idname = "bim.activate_ifc_class_filter"
-    bl_label = "Filter by Class"
-
+class ActivateFilter(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         if not context.selected_objects:
@@ -658,10 +649,38 @@ class ActivateIfcClassFilter(Operator):
             return False
         return True
 
+    def execute(self, context):
+        props = tool.Search.get_search_props()
+        props.filter_items.clear()
+        return {"FINISHED"}
+
+    def draw(self, context):
+        props = tool.Search.get_search_props()
+        assert self.layout
+        self.layout.template_list(
+            "BIM_UL_ifc_filter",
+            "",
+            props,
+            "filter_items",
+            props,
+            "filter_items_index",
+            rows=min(len(props.filter_items), 20),
+        )
+        row = self.layout.row(align=True)
+        row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
+        row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
+
+
+class ActivateIfcClassFilter(ActivateFilter):
+    """Filter the current selection by IFC class"""
+
+    bl_idname = "bim.activate_ifc_class_filter"
+    bl_label = "Filter by Class"
+
     def invoke(self, context, event):
         props = tool.Search.get_search_props()
-        props.filter_classes.clear()
-        ifc_types = {}
+        props.filter_items.clear()
+        ifc_types: dict[str, int] = {}
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -670,55 +689,29 @@ class ActivateIfcClassFilter(Operator):
             ifc_types[element.is_a()] += 1
 
         for name, total in dict(sorted(ifc_types.items())).items():
-            new = props.filter_classes.add()
+            new = props.filter_items.add()
             new.name = name
             new.total = total
-        props.filter_type = "CLASSES"
+        props.filter_type = "CLASS"
 
         return context.window_manager.invoke_props_dialog(self, width=250)
 
-    def execute(self, context):
-        props = tool.Search.get_search_props()
-        props.filter_classes.clear()
-        return {"FINISHED"}
 
-    def draw(self, context):
-        props = tool.Search.get_search_props()
-        self.layout.template_list(
-            "BIM_UL_ifc_class_filter",
-            "",
-            props,
-            "filter_classes",
-            props,
-            "filter_classes_index",
-            rows=min(len(props.filter_classes), 20),
-        )
-        row = self.layout.row(align=True)
-        row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
-        row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
-
-
-class ActivateContainerFilter(Operator):
+class ActivateContainerFilter(ActivateFilter):
     """Filter the current selection by Building Storey"""
 
     bl_idname = "bim.activate_ifc_container_filter"
     bl_label = "Filter by Container"
 
-    @classmethod
-    def poll(cls, context):
-        if not context.selected_objects:
-            cls.poll_message_set("Select objects to filter.")
-            return False
-        return True
-
     def invoke(self, context, event):
         props = tool.Search.get_search_props()
-        props.filter_container.clear()
+        props.filter_items.clear()
 
-        containers = {}
+        containers: dict[str, int] = {}
         containers.setdefault("None", 0)
         for obj in context.selected_objects:
-            container = tool.Spatial.get_container(tool.Ifc.get_entity(obj))
+            assert (element := tool.Ifc.get_entity(obj))
+            container = tool.Spatial.get_container(element)
             if not container:
                 containers["None"] += 1
                 continue
@@ -726,33 +719,13 @@ class ActivateContainerFilter(Operator):
             containers[container.Name] += 1
 
         for name, total in dict(sorted(containers.items())).items():
-            new = props.filter_container.add()
+            new = props.filter_items.add()
             new.name = name
             new.total = total
 
         props.filter_type = "CONTAINER"
 
         return context.window_manager.invoke_props_dialog(self, width=250)
-
-    def execute(self, context):
-        props = tool.Search.get_search_props()
-        props.filter_container.clear()
-        return {"FINISHED"}
-
-    def draw(self, context):
-        props = tool.Search.get_search_props()
-        self.layout.template_list(
-            "BIM_UL_ifc_building_storey_filter",
-            "",
-            props,
-            "filter_container",
-            props,
-            "filter_container_index",
-            rows=min(len(props.filter_container), 20),
-        )
-        row = self.layout.row(align=True)
-        row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
-        row.operator("bim.toggle_filter_selection", text="Deselect All").action = "DESELECT"
 
 
 class ShowAllElements(Operator):
