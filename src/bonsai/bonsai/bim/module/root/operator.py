@@ -490,6 +490,14 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     ifc_class: bpy.props.StringProperty(options={"SKIP_SAVE"})
     skip_dialog: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
+    @classmethod
+    def poll(cls, context):
+        # Exposed to Shift-A menu.
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        return True
+
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
 
