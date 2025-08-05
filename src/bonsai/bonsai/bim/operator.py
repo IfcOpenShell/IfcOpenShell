@@ -1111,13 +1111,13 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                 type_elements.append(element)
 
         for element in type_elements:
-            base_name = getattr(element, "Name", "") or "Unnamed"
+            base_name = element.Name or "Unnamed"
             element_step_id = str(element.id())
 
             attributes = []
             for attr_name in ["Description", "PredefinedType", "ElementType", "ObjectType"]:
                 value = getattr(element, attr_name, None)
-                if value and value != "NOTDEFINED":
+                if value:
                     attributes.append(value)
 
             if attributes:
@@ -1125,7 +1125,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                 self.add_item(
                     identifier=element_step_id,
                     name=concatenated_name,
-                    predefined_type=getattr(element, "PredefinedType", None) or "NOTDEFINED" or "NOTDEFINED",
+                    predefined_type=element.PredefinedType or "",
                 )
 
 
