@@ -165,8 +165,6 @@ class BIM_UL_colourscheme(bpy.types.UIList):
 
 
 class BIM_UL_ifc_class_filter(bpy.types.UIList):
-    use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(), description="Filter")
-
     def draw_item(
         self,
         context,
@@ -191,8 +189,6 @@ class BIM_UL_ifc_class_filter(bpy.types.UIList):
 
 
 class BIM_UL_ifc_building_storey_filter(bpy.types.UIList):
-    use_filter_linked: bpy.props.BoolProperty(name="Included", default=True, options=set(), description="Filter")
-
     def draw_item(
         self,
         context,
