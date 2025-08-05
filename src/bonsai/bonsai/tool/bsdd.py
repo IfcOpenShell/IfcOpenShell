@@ -473,3 +473,11 @@ class Bsdd(bonsai.core.tool.Bsdd):
             data: Bsdd.BSDDJsonData = json.loads(ref.Name)
             results.append((ref.Location, data["name"], data["description"]))
         return results
+
+    @classmethod
+    def set_library_active(cls, uri: str, state: bool):
+        for dictionary in cls.get_bsdd_props().dictionaries:
+            if dictionary.uri == uri:
+                dictionary.is_active = state
+                return
+        raise ValueError(f"URI '{uri}' could not be found in dictionaries!")
