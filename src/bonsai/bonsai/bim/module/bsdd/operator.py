@@ -94,6 +94,7 @@ class AddBSDDProperties(bpy.types.Operator, tool.Ifc.Operator):
             psets.setdefault(selected_property.metadata, {})[selected_property.name] = selected_property.get_value()
 
         ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
+        assert ifc_definition_id
         element = tool.Ifc.get().by_id(ifc_definition_id)
 
         current_psets = ifcopenshell.util.element.get_psets(element, verbose=True)

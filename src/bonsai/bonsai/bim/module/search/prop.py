@@ -104,7 +104,6 @@ def update_show_flat_colours(self: "BIMSearchProperties", context: bpy.types.Con
 
 
 class BIMFilterClasses(PropertyGroup):
-    name: StringProperty(name="Name")
     is_selected: BoolProperty(name="Is Selected", default=True, update=update_is_class_selected)
     total: IntProperty(name="Total")
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
@@ -116,7 +115,6 @@ class BIMFilterClasses(PropertyGroup):
 
 
 class BIMFilterBuildingStoreys(PropertyGroup):
-    name: StringProperty(name="Name")
     is_selected: BoolProperty(name="Is Level Selected", default=True, update=update_is_container_selected)
     total: IntProperty(name="Total")
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
@@ -128,7 +126,6 @@ class BIMFilterBuildingStoreys(PropertyGroup):
 
 
 class BIMColour(PropertyGroup):
-    name: StringProperty(name="Name")
     total: IntProperty(name="Total")
     colour: FloatVectorProperty(name="Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0)
 
