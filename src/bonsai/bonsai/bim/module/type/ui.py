@@ -79,7 +79,13 @@ class BIM_PT_type(Panel):
 
             row.prop(props, "relating_type_class", text="")
             if type_prop.get_relating_type(None, context):
-                prop_with_search(row, props, "relating_type", text="")
+                prop_with_search(
+                    row,
+                    props,
+                    "relating_type",
+                    text="",
+                    enable_relating_type_suggestions=True,
+                )
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
                 row_object.prop(props, "relating_type_object", icon="COPYDOWN")
             else:
