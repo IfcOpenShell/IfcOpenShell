@@ -236,6 +236,7 @@ class AddQto(bpy.types.Operator, tool.Ifc.Operator):
 class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_property_to_selection"
     bl_label = "Copy Property To Selection"
+    bl_options = {"REGISTER", "UNDO"}
 
     name: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
 
