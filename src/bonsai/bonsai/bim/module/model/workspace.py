@@ -75,6 +75,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "E", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_E")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_F")]}),
+        ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True, "ctrl": True}, {"properties": [("hotkey", "S_C_F")]}),
         ("bim.hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
@@ -1306,6 +1307,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         bpy.ops.bim.mirror_geometry(keep_original=getattr(self, "shift", False))
+
+    def hotkey_S_C_F(self):
+        if not bpy.context.selected_objects:
+            return
+        bpy.ops.bim.change_swing_direction()
 
     def hotkey_S_G(self):
         obj = bpy.context.active_object
