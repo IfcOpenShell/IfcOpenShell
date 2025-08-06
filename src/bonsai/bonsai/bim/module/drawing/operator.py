@@ -2157,6 +2157,8 @@ class ActivateModel(bpy.types.Operator):
     )
 
     def execute(self, context):
+        start_time = time.time()
+
         dprops = tool.Drawing.get_document_props()
         dprops.active_drawing_id = 0
         model_props = tool.Model.get_model_props()
@@ -2210,6 +2212,11 @@ class ActivateModel(bpy.types.Operator):
 
         tool.Blender.update_viewport()
         bonsai.bim.handler.refresh_ui_data()
+
+        operator_time = time.time() - start_time
+        if operator_time > 10:
+            self.report({"INFO"}, f"{self.bl_label} was finished in {operator_time:.2f} seconds.")
+
         return {"FINISHED"}
 
 
