@@ -83,6 +83,7 @@ classes = (
     product.LoadTypeThumbnails,
     product.MirrorElements,
     product.SetActiveType,
+    product.ChangeSwingDirection,
     workspace.Hotkey,
     workspace.BIM_MT_add_representation_item,
     wall.AddPerpendicularWall,
