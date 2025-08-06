@@ -257,6 +257,9 @@ class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
         elif prop.value_type == "IfcPropertyEnumeratedValue":
             value_name = prop.metadata.get_value_name()
             prop_value = [e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected]
+        else:
+            self.report({"ERROR"}, f"Unsupport value type: '{prop.value_type}'.")
+            return {"CANCELLED"}
 
         for obj in tool.Blender.get_selected_objects():
             core.copy_property_to_selection(
