@@ -112,6 +112,7 @@ class IfcStore:
             if IfcStore.path:
                 try:
                     IfcStore.load_file(IfcStore.path)
+                    tool.Ifc.after_file_loaded()
                 except Exception as e:
                     print(f"Failed to load file {IfcStore.path}. Error details: {e}")
         return IfcStore.file
@@ -201,6 +202,7 @@ class IfcStore:
             IfcStore.file = ifcopenshell.open(path, should_stream=True)
         else:
             IfcStore.file = ifcopenshell.open(path)
+        tool.Ifc.after_file_loaded()
 
     @staticmethod
     def get_schema() -> ifcopenshell.ifcopenshell_wrapper.schema_definition:

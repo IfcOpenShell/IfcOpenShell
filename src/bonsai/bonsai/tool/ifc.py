@@ -26,6 +26,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.bim.handler
+import bonsai.bim.schema
 import bonsai.tool as tool
 from pathlib import Path
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
@@ -61,10 +62,16 @@ class Ifc(bonsai.core.tool.Ifc):
     @classmethod
     def set(cls, ifc: ifcopenshell.file) -> None:
         IfcStore.file = ifc
+        cls.after_file_loaded()
 
     @classmethod
     def get(cls) -> ifcopenshell.file:
         return IfcStore.get_file()
+
+    @classmethod
+    def after_file_loaded(cls) -> None:
+        assert IfcStore.file
+        bonsai.bim.schema.reload(IfcStore.file.schema_identifier)
 
     @classmethod
     def set_path(cls, value: str) -> None:
