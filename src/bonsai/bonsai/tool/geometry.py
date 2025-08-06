@@ -104,6 +104,10 @@ class Geometry(bonsai.core.tool.Geometry):
         old_data.user_remap(new_data)
 
     @classmethod
+    def get_cache(cls) -> Union[ifcopenshell.geom.serializers.hdf5, None]:
+        return IfcStore.get_cache()
+
+    @classmethod
     def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
         cache = IfcStore.get_cache()
         if cache and hasattr(element, "GlobalId"):
