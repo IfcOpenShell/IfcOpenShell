@@ -154,7 +154,6 @@ class CreateProject(bpy.types.Operator):
         core.create_project(
             tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
         )
-        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):
@@ -1072,7 +1071,6 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = tool.Project.get_project_props()
         self.file = tool.Ifc.get()
-        bonsai.bim.schema.reload(self.file.schema_identifier)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")
