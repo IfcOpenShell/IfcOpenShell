@@ -33,7 +33,7 @@ class Drawer:
         if len(sys.argv) == 6:
             drawing_elements = set([ifc.by_guid(g) for g in sys.argv[3].split(",")])
         else:
-            drawing_elements = set(ifc.by_type('IfcElement')) - set(ifc.by_type('IfcFeatureElement'))
+            drawing_elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcFeatureElement"))
 
         self.setup_serialiser(ifc, target_view)
 
