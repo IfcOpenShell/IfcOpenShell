@@ -127,6 +127,7 @@ class CoveringToolUI:
                 "relating_type_id",
                 text="",
                 enable_relating_type_suggestions=True,
+                search_threshold=0,
             )
             row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
         else:

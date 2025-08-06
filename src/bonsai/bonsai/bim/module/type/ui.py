@@ -85,6 +85,7 @@ class BIM_PT_type(Panel):
                     "relating_type",
                     text="",
                     enable_relating_type_suggestions=True,
+                    search_threshold=0,
                 )
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
                 row_object.prop(props, "relating_type_object", icon="COPYDOWN")
