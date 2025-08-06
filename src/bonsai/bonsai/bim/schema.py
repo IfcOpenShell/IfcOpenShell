@@ -66,6 +66,6 @@ class IfcSchema:
 ifc = IfcSchema()
 
 
-def reload(schema_identifier):
+def reload(schema_identifier: str) -> None:
     global ifc
     ifc = IfcSchema(schema_identifier)

@@ -128,6 +128,8 @@ class IfcStore:
     def get_cache() -> ifcopenshell.geom.serializers.hdf5 | None:
         if IfcStore.cache is None and IfcStore.path:
             prefs = tool.Blender.get_addon_preferences()
+            assert IfcStore.file
+
             ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
             os.makedirs(prefs.cache_dir, exist_ok=True)
