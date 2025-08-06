@@ -1365,9 +1365,9 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
-                auto shp = (ifcopenshell::geometry::OpenCascadeShape*)elem->geometry().as_compound();
-				TopoDS_Shape compound(std::move((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape()));
-                delete shp;
+				auto shp = (ifcopenshell::geometry::OpenCascadeShape*)elem->geometry().as_compound();
+				TopoDS_Shape compound(std::move(((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape()));
+				delete shp;
 
 				const auto& m = elem->transformation().data()->ccomponents();
 				gp_Trsf tr;
