@@ -360,6 +360,8 @@ def prop_with_search(
     prop_name: str,
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
+    enable_relating_type_suggestions: bool = True,
+    search_threshold: int = 10,
     *,
     button_kwargs: Union[dict[str, Any], None] = None,
     **kwargs: Any,
@@ -367,23 +369,26 @@ def prop_with_search(
     """
     Draw a row with enum prop and enum search operator.
 
-    Search operator appears only in case if there's more than 10 item in enum.
+    Search operator appears only in case if there's more than `search_threshold` items in enum.
 
     :arg button_kwargs: kwargs to pass to ``UILayout.operator()``.
     :arg kwargs: kwargs to pass to ``UILayout.prop()``.
+    :arg enable_relating_type_suggestions: Enable additional suggestions for relating type properties.
+    :arg search_threshold: Minimum number of enum items required to show search button. Default is 10.
     :return: Added row.
     """
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
     try:
-        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > 10:
+        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > search_threshold:
             # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
             row.context_pointer_set(name="data", data=data)
             op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM", **(button_kwargs or {}))
             op.prop_name = prop_name
             op.should_click_ok = should_click_ok
             op.original_operator_path = original_operator_path or ""
+            op.enable_relating_type_suggestions = enable_relating_type_suggestions
     except TypeError:  # Prop is not iterable
         pass
     return row
