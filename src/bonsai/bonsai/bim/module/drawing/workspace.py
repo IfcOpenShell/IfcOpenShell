@@ -238,7 +238,13 @@ class AnnotationToolUI:
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="FILE_3D")
-        prop_with_search(row, cls.props, "relating_type_id", text="")
+        prop_with_search(
+            row,
+            cls.props,
+            "relating_type_id",
+            text="",
+            enable_relating_type_suggestions=True,
+        )
         row.operator("bim.launch_annotation_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
 
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
