@@ -255,13 +255,16 @@ class BIM_PT_object_psets(Panel):
         if not ObjectPsetsData.is_loaded:
             ObjectPsetsData.load()
 
-        props = context.active_object.PsetProperties
+        assert (obj := context.active_object)
+        props = tool.Pset.get_pset_props(obj.name, "Object")
         self.bprops = tool.Bsdd.get_bsdd_props()
+        assert self.layout
+
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         if props.pset_name != "BBIM_BSDD" and not props.pset_name.startswith(tool.Bsdd.identifier_url):
             op = row.operator("bim.add_pset", icon="ADD", text="")
-            op.obj = context.active_object.name
+            op.obj = obj.name
             op.obj_type = "Object"
         else:
             row = self.layout.row(align=True)
@@ -269,7 +272,7 @@ class BIM_PT_object_psets(Panel):
             if self.bprops.property_filter_mode == "CLASS":
                 row.prop(self.bprops, "should_filter_ifc_class", text="", icon="FILTER")
                 op = row.operator("bim.import_bsdd_classes", text="", icon="FILE_REFRESH")
-                op.obj = context.active_object.name
+                op.obj = obj.name
                 op.obj_type = "Object"
 
                 if len(self.bprops.classes):
@@ -299,7 +302,7 @@ class BIM_PT_object_psets(Panel):
             elif self.bprops.property_filter_mode == "KEYWORD":
                 row.prop(self.bprops, "keyword", text="")
                 op = row.operator("bim.search_bsdd_properties", text="", icon="VIEWZOOM")
-                op.obj = context.active_object.name
+                op.obj = obj.name
                 op.obj_type = "Object"
 
                 if len(self.bprops.properties):
@@ -322,7 +325,7 @@ class BIM_PT_object_psets(Panel):
 
             row = self.layout.row()
             op = row.operator("bim.add_bsdd_properties", icon="ADD")
-            op.obj = context.active_object.name
+            op.obj = obj.name
             op.obj_type = "Object"
 
         global_props = tool.Pset.get_global_pset_props()
@@ -398,11 +401,14 @@ class BIM_PT_object_qtos(Panel):
         if not ObjectQtosData.is_loaded:
             ObjectQtosData.load()
 
-        props = context.active_object.PsetProperties
+        assert (obj := context.active_object)
+        props = tool.Pset.get_pset_props(obj.name, "Object")
+        assert self.layout
+
         row = self.layout.row(align=True)
         prop_with_search(row, props, "qto_name", text="")
         op = row.operator("bim.add_qto", icon="ADD", text="")
-        op.obj = context.active_object.name
+        op.obj = obj.name
         op.obj_type = "Object"
 
         global_props = tool.Pset.get_global_pset_props()

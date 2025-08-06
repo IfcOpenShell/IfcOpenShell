@@ -74,9 +74,10 @@ class PsetQto:
         schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
     ) -> list[entity_instance]:
         any_class = not ifc_class
+        entity = None
         if not any_class:
-            entity: W.entity
-            entity = self.schema.declaration_by_name(ifc_class)
+            entity = self.schema.declaration_by_name(ifc_class).as_entity()
+            assert entity
         result = []
         for template in self.templates:
             for prop_set in template.by_type("IfcPropertySetTemplate"):
@@ -86,8 +87,11 @@ class PsetQto:
                 if qto_only:
                     if prop_set.TemplateType and prop_set.TemplateType.startswith("PSET_"):
                         continue
-                if any_class or self.is_applicable(
-                    entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type, prop_set.TemplateType, schema
+                if any_class or (
+                    entity
+                    and self.is_applicable(
+                        entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type, prop_set.TemplateType, schema
+                    )
                 ):
                     result.append(prop_set)
         return result
