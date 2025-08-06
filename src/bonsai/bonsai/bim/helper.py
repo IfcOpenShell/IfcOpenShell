@@ -360,9 +360,9 @@ def prop_with_search(
     prop_name: str,
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
+    *,
     enable_relating_type_suggestions: bool = True,
     search_threshold: int = 10,
-    *,
     button_kwargs: Union[dict[str, Any], None] = None,
     **kwargs: Any,
 ) -> bpy.types.UILayout:
@@ -374,7 +374,7 @@ def prop_with_search(
     :arg button_kwargs: kwargs to pass to ``UILayout.operator()``.
     :arg kwargs: kwargs to pass to ``UILayout.prop()``.
     :arg enable_relating_type_suggestions: Enable additional suggestions for relating type properties.
-    :arg search_threshold: Minimum number of enum items required to show search button. Default is 10.
+    :arg search_threshold: Minimum number of enum items required to show search button.
     :return: Added row.
     """
     # kwargs are layout.prop arguments (text, icon, etc.)
