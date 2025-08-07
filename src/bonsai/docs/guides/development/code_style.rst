@@ -27,6 +27,7 @@ and ensure new Python syntax doesn't break code on older Python versions.
 ``ruff`` can be installed using ``pip install ruff`` and files can be formatted with the following example commands:
 
 .. code-block:: bash
+   
    # Check issues for the entire repository.
    ruff check
    # Apply some automatic fixes, if available.

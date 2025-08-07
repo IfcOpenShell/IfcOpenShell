@@ -55,6 +55,16 @@ This chapter covers the essential aspects of working with Industry Foundation Cl
       :hidden:
       :maxdepth: 2
 
+      creating_walls
+      defining_rooms_spaces
+      door
       georeferencing
       git_support
+      material_assignment
+      modeling_slabs_roofs
+      opening
       other_addons
+      parametric_geometry
+      starting_new_project
+      understanding_ifc
+      window
