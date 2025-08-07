@@ -233,7 +233,9 @@ namespace {
 	}
 }
 
-void HdfSerializer::read_surface_style(surface_style_serialization& s, ifcopenshell::geometry::taxonomy::style& gss) {
+void HdfSerializer::read_surface_style(const surface_style_serialization& s,
+                                       ifcopenshell::geometry::taxonomy::style& gss,
+                                       IfcParse::IfcFile& f) {
 	if (strlen(s.name) || s.id) {
 		if (s.diffuse[0] == s.diffuse[0]) {
 			gss.diffuse = ifcopenshell::geometry::taxonomy::colour(s.diffuse[0], s.diffuse[1], s.diffuse[2]);
@@ -246,6 +248,9 @@ void HdfSerializer::read_surface_style(surface_style_serialization& s, ifcopensh
 		}
 		if (s.specularity == s.specularity) {
 			gss.specularity = s.specularity;
+		}
+		if (s.id != 0) {
+			gss.instance = f.instance_by_id(s.id)->as<IfcUtil::IfcBaseEntity>();
 		}
 	}
 
@@ -355,7 +360,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			matrix->components() << Eigen::Map<Eigen::Matrix4d>(&part.matrix[0][0]);
 
 			auto style_ptr = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::style>();
-			read_surface_style(part.surface_style, *style_ptr);
+			read_surface_style(part.surface_style, *style_ptr, f);
 			
 			shapes.push_back(IfcGeom::ConversionResult(part.id, matrix, new ifcopenshell::geometry::OpenCascadeShape(shp), style_ptr));
 		}
@@ -421,7 +426,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 
 		for (size_t i = 0; i < surface_styles.size(); ++i) {
 			surface_style_ptrs[i] = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::style>();
-			read_surface_style(surface_styles[i], *surface_style_ptrs[i]);
+			read_surface_style(surface_styles[i], *surface_style_ptrs[i], f);
 		}
 
 		triangulation_geometry = boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(
