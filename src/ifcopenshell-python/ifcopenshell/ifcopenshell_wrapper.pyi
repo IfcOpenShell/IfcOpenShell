@@ -135,11 +135,6 @@ class BRepElement(Element):
     @property
     def volume(self): ...
 
-class CgalEmitOriginalEdges:
-    name: Any
-    description: Any
-    defaultvalue: Any
-
 class ColladaSerializer(WriteOnlyGeometrySerializer):
     def finalize(self): ...
     def isTesselated(self): ...
@@ -149,11 +144,6 @@ class ColladaSerializer(WriteOnlyGeometrySerializer):
     def setUnitNameAndMagnitude(self, name, magnitude): ...
     def write(self, *args): ...
     def writeHeader(self): ...
-
-class ComputeCurvature:
-    name: Any
-    description: Any
-    defaultvalue: Any
 
 class ConversionResult:
     def ItemId(self): ...
@@ -272,16 +262,6 @@ class Element:
 
 class FileSchema(HeaderEntity):
     schema_identifiers: Any
-
-class FunctionStepParam:
-    name: Any
-    description: Any
-    defaultvalue: Any
-
-class FunctionStepType:
-    name: Any
-    description: Any
-    defaultvalue: Any
 
 class GeometrySerializer:
     READ_BREP: Any
@@ -565,11 +545,6 @@ class TriangulationElement(Element):
     @property
     def geometry(self) -> Triangulation: ...
     def geometry_pointer(self): ...
-
-class TriangulationType:
-    name: Any
-    description: Any
-    defaultvalue: Any
 
 class TtlWktSerializer(WriteOnlyGeometrySerializer):
     def finalize(self): ...
