@@ -74,7 +74,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_E")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
-        ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True, "ctrl": True}, {"properties": [("hotkey", "S_C_F")]}),
+        ("bim.hotkey", {"type": "F", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_F")]}),
         ("bim.hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
@@ -1094,6 +1094,8 @@ class EditObjectUI:
     def draw_flip(cls, ui_context, layout) -> None:
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else layout
         add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else layout
+        add_layout_hotkey_operator(row, "Mirror Geometry", "C_F", bpy.ops.bim.mirror_geometry.__doc__, ui_context)
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
@@ -1293,7 +1295,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.flip_object(flip_local_axes="XZ")
 
-    def hotkey_S_C_F(self):
+    def hotkey_C_F(self):
         if not bpy.context.selected_objects:
             return
         bpy.ops.bim.mirror_geometry()
