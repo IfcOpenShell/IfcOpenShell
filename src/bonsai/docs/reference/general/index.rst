@@ -8,6 +8,7 @@ General
 
    topbar
    3d_viewport
+   status_bar
    blender
    hotkeys
    interface
@@ -15,4 +16,3 @@ General
    properties
    scene
    switch_tab
-

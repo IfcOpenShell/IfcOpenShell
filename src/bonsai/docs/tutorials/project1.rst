@@ -32,7 +32,7 @@ Tutorial Steps
 3. Save it as `project1.ifc` file (and optionally, `project1.blend` file)
 4. Load custom libraries and templates
 
-.. note:: See :doc:`/users/modeling/starting_new_project` for detailed instructions.
+.. note:: See :doc:`/guides/authoring/starting_new_project` for detailed instructions.
 
 2. Advanced Wall Creation
 -------------------------

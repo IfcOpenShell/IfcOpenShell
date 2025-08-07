@@ -34,7 +34,7 @@ Tutorial Steps
 2. Define project parameters (site conditions, climate zone, etc.)
 3. Create a basic site plan
 
-.. note:: See :doc:`/users/modeling/starting_new_project` for detailed instructions.
+.. note:: See :doc:`/guides/authoring/starting_new_project` for detailed instructions.
 
 
 2. Advanced Foundation Design

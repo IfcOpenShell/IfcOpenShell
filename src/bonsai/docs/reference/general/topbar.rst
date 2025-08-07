@@ -41,9 +41,11 @@ Access new, open, save, and import functionality.
     damage your IFC model. For more information, see
     :ref:`guides/troubleshooting:saving and loading blend files`.
 
+.. _halloa:
+
+
 New IFC Project
 ---------------
-
 .. container:: location-scene
 
    |location| Topbar |>| File |>| New IFC Project (:kbd:`Shift` + :kbd:`N`)
@@ -59,7 +61,7 @@ Provides convenient presets to create new IFC projects.
 - **New Metric (mm) Project**: Creates a new IFC4 project using millimeters as the length unit.
 - **New Imperial (ft) Project**: Creates a new IFC4 project using feet as the length unit.
 - **New Demo Project**: Creates a new IFC4 project with pre-populated demo types and content. Useful for experimenting and learning.
-- **New Project Wizard**: Resets the Blender session and shows the :ref:`viewing/project_overview:new project wizard` panel to customise project creation settings such as schema version.
+- **New Project Wizard**: Resets the Blender session and shows the `new project wizard` panel to customise project creation settings such as schema version.
 
 Open Recent IFC Project
 -----------------------
