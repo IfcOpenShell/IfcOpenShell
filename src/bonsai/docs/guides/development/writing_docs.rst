@@ -158,6 +158,14 @@ Or ordered lists:
 
 Tables can be very annoying to format. You can use a CSV table instead.
 
+.. code-block:: restructuredtext
+
+    .. include:: /_incomplete_message.rst
+
+Will automatically add this banner to the top of the page:
+
+.. include:: /_incomplete_message.rst
+
 .. csv-table::
    :header: "Foo", "Bar", "Baz"
 

@@ -26,7 +26,8 @@ Tutorial Steps
 
 1. Project Setup
 ----------------
-
+.. include:: /_incomplete_message.rst
+    
 1. Open Blender and switch to the Bonsai workspace
 2. Create a new IFC project
 3. Save it as `project1.ifc` file (and optionally, `project1.blend` file)

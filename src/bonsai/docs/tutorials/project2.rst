@@ -2,6 +2,8 @@
 Project 2: Building a Bungalow
 ==============================
 
+.. include:: /_incomplete_message.rst
+
 In this project, we'll take your Bonsai skills to the next level by designing a complete bungalow.
 You'll learn about roof design, advanced foundations, structural elements, and more complex MEP systems.
 We'll also introduce basic costing and scheduling concepts.

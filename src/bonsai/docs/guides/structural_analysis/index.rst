@@ -3,8 +3,7 @@ Structural analysis
 
 This section covers the structural analysis capabilities in Bonsai.
 
-.. note::
-   This page is a stub. More detailed content will be added in future updates.
+.. include:: /_incomplete_message.rst
 
 Overview
 --------

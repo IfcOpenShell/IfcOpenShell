@@ -3,8 +3,7 @@ Costing and scheduling
 
 This section covers the cost estimation and project scheduling features in Bonsai.
 
-.. note::
-   This page is a stub. More detailed content will be added in future updates.
+.. include:: /_incomplete_message.rst
 
 Overview
 --------
