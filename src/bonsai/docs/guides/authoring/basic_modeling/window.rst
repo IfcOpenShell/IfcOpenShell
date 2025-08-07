@@ -141,5 +141,5 @@ This will update the quantity information for the selected elements.
 See Also
 --------
 
-- :doc:`../creating_walls`
-- :doc:`../../advanced_modeling/material_assignment`
+- :doc:`creating_walls`
+- :doc:`../advanced_modeling/material_assignment`

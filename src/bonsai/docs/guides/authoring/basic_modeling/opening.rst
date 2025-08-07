@@ -56,6 +56,6 @@ You can modify openings using various tools:
 See Also
 --------
 
-- :doc:`../creating_walls`
+- :doc:`creating_walls`
 - :doc:`door`
 - :doc:`window`

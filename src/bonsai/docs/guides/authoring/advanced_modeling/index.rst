@@ -21,10 +21,8 @@ This chapter covers the advanced aspects of working with Bonsai. It is divided i
 
       .. container:: card
 
-         :doc:`working_with_representations`
-            Bonsai provides tools to view, edit, and manage representations of IFC elements directly within Blender's interface.
-            This section covers how to work with these representations effectively.
-
+         :doc:`material_assignment`
+            This section covers how to assign and customize materials in your BIM model using the Bonsai.
 .. container:: global-index-toc
 
    .. toctree::
@@ -33,5 +31,4 @@ This chapter covers the advanced aspects of working with Bonsai. It is divided i
 
       georeferencing
       parametric_geometry
-      working_with_representations
-      
+      material_assignment

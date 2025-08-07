@@ -151,4 +151,4 @@ See Also
 --------
 
 - :doc:`creating_walls`
-- :doc:`material_assignment`
+- :doc:`../advanced_modeling/material_assignment`

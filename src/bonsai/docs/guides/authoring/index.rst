@@ -9,7 +9,7 @@ This chapter covers the essential aspects of working with Industry Foundation Cl
 
       .. container:: card
 
-         :doc:`understanding_ifc`
+         :doc:`understanding_ifc/index`
             An introduction to IFC standards, schemas, and concepts.
             This section explains the structure of IFC data, key spatial objects, and the role of organizations
             like buildingSMART in maintaining IFC standards. It also covers IfcOpenShell and the broader ecosystem
@@ -48,7 +48,7 @@ This chapter covers the essential aspects of working with Industry Foundation Cl
       :maxdepth: 2
 
       starting_new_project
-      understanding_ifc
+      understanding_ifc/index
       basic_modeling/index
       advanced_modeling/index
       git_support
