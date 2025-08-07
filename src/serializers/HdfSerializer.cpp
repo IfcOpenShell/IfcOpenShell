@@ -683,6 +683,7 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	write_dataset(meshGroup, DATASET_NAME_UVCOORDS, mesh.uvs(), 2);
 	write_dataset(meshGroup, DATASET_NAME_MATERIAL_IDS, mesh.material_ids(), 1);
 	write_dataset(meshGroup, DATASET_NAME_ITEM_IDS, mesh.item_ids(), 1);
+	write_dataset(meshGroup, DATASET_NAME_EDGES_ITEM_IDS, mesh.edges_item_ids(), 1);
 
 	{
 		auto& ts = mesh.materials();
