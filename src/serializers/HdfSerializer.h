@@ -90,7 +90,7 @@ private:
 	std::map<std::string, std::string> group_cache_;
 
 	H5::Group createRepresentationGroup(const H5::Group& element_group, const std::string& gid);
-	void read_surface_style(surface_style_serialization& sss, const ifcopenshell::geometry::taxonomy::style::ptr& style_ptr);
+	void read_surface_style(surface_style_serialization& serialized_style, ifcopenshell::geometry::taxonomy::style& style);
 	void write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style::ptr& s);
 
 public:
