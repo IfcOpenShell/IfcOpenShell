@@ -644,6 +644,7 @@ class FinishEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
         prev_active = bpy.context.view_layer.objects.active
         bpy.context.view_layer.objects.active = to_obj
         props.set_props_kwargs_from_ifc_data(from_data)
+
         bpy.context.view_layer.objects.active = prev_active
 
         update_door_modifier_representation(to_obj)
