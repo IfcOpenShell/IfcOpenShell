@@ -780,7 +780,7 @@ class ShapeBuilder:
 
     def mirror_2d_point(
         self,
-        point_2d: VectorType,
+        point: VectorType,
         mirror_axes: VectorType = (1.0, 1.0),
         mirror_point: VectorType = (0.0, 0.0),
     ) -> np.ndarray:
@@ -796,9 +796,10 @@ class ShapeBuilder:
         """
         mirror_axes: np.ndarray = np.where(np.array(mirror_axes) > 0, -1, 1)
         mirror_point: np.ndarray = np.array(mirror_point)
-        relative_point = point_2d - mirror_point
+        relative_point = point[0:2] - mirror_point
         relative_point = relative_point * mirror_axes
         point_2d_res = relative_point + mirror_point
+        point_2d_res = np.append(point_2d_res, point[2:])
         return point_2d_res
 
     def create_axis2_placement_3d(
@@ -1007,6 +1008,21 @@ class ShapeBuilder:
                     c.Trim1[0].Coordinates, c.Trim2[0].Coordinates = trim_coords
 
                     self.mirror(c.BasisCurve, mirror_axes, mirror_point)
+                elif c.is_a("IfcPolygonalFaceSet"):
+                    new_coords = []
+                    for coord in c.Coordinates.CoordList:
+                        new_coord_2d = self.mirror_2d_point([coord[0], coord[1]], mirror_axes, mirror_point)
+                        new_coords.append([float(new_coord_2d[0]), float(new_coord_2d[1]), float(coord[2])])
+                    c.Coordinates.CoordList = new_coords
+
+                    for face in c.Faces:
+                        new_indices = []
+                        for index in face.CoordIndex:
+                            new_indices.append(int(index))
+                        new_indices.reverse()
+                        face.CoordIndex = new_indices
+                elif c.is_a("IfcGeometricSet"):
+                    self.mirror(c.Elements, mirror_axes, mirror_point)
                 else:
                     raise Exception(f"{c} is not supported for mirror() method.")
 
