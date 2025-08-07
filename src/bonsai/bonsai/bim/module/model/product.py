@@ -805,6 +805,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             self.invert_representation(inverted_type)
             self.set_inverted_type(inverted_type, type_element)
             self.set_inverted_type(type_element, inverted_type)
+            inverted_type.Name = f"{inverted_type.Name}.Mirror"
 
         bonsai.core.type.assign_type(tool.Ifc, tool.Type, element, inverted_type)
 
