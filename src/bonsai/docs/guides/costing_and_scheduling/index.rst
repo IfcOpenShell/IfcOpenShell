@@ -31,5 +31,5 @@ To begin using the costing and scheduling features in Bonsai:
 4. Link BIM elements to schedule activities
 
 .. seealso::
-   - :doc:`/users/modeling/ifc_modeling`
-   - :doc:`/users/advanced/index`
+   - :doc:`/guides/authoring/index`
+   - :doc:`/guides/authoring/advanced_modeling/index`

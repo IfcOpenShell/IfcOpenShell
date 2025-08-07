@@ -29,5 +29,5 @@ To begin using the structural analysis features in Bonsai:
 3. Define load cases and boundary conditions
 
 .. seealso::
-   - :doc:`/users/modeling/ifc_modeling`
-   - :doc:`/users/advanced/index`
+   - :doc:`/guides/authoring/index`
+   - :doc:`/guides/authoring/advanced_modeling/index`

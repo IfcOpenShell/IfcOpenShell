@@ -63,18 +63,14 @@ and data-rich OpenBIM with Blender :)
       guides/troubleshooting
       guides/alignment
       guides/development/index
+      tutorials/index
    .. toctree::
       :hidden:
       :caption: Reference
       :maxdepth: 2
 
-      reference/interface
-      reference/topbar
-      reference/properties
-      reference/hotkeys
-      reference/blender
-      reference/scene
-      reference/switch_tab
+      reference/general/index
+      reference/toolbar/index
       reference/costing_and_scheduling/index
       reference/drawings_and_documents/index
       reference/facility_management/index
@@ -84,18 +80,6 @@ and data-rich OpenBIM with Blender :)
       reference/quality_and_coordination/index
       reference/services_and_systems/index
       reference/structural_analysis/index
-      reference/toolbar/index
-   .. toctree::
-      :hidden:
-      :caption: Tutorials
-      :maxdepth: 2
-
-      tutorials/project0
-      tutorials/project1
-      tutorials/project2
-      tutorials/project3
-      tutorials/project4
-      tutorials/project5
 
 
 Need more help? Join the `live chat <https://osarch.org/chat/>`__ or `community
