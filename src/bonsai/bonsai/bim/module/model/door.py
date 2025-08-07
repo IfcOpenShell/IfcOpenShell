@@ -100,6 +100,11 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     model_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
     representation_data["part_of_product"] = None
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
+
+    material_target_element = element
+    if (type_elem := ifcopenshell.util.element.get_type(element)) and tool.Blender.Modifier.is_door(type_elem):
+        material_target_element = type_elem
+
     if fallback_material := (int(props.lining_material) or int(props.framing_material) or int(props.glazing_material)):
         materials = {
             "Lining": tool.Ifc.get().by_id(int(props.lining_material) or fallback_material),
@@ -109,12 +114,12 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
             materials["Glazing"] = tool.Ifc.get().by_id(int(props.glazing_material) or fallback_material)
         ifcopenshell.api.material.set_shape_aspect_constituents(
             ifc_file,
-            element=element,
+            element=material_target_element,
             context=body,
             materials=materials,
         )
-    elif material := ifcopenshell.util.element.get_material(element):
-        ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+    elif material := ifcopenshell.util.element.get_material(material_target_element):
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[material_target_element])
         if not material.is_a("IfcMaterial") and not ifc_file.get_total_inverses(material):
             ifcopenshell.api.material.remove_material_set(ifc_file, material=material)
 
@@ -637,9 +642,9 @@ class FinishEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
             inverted_data = json.loads(inverted_pset)
             if "inverted_swing_type" in inverted_data and (inverted_type := tool.Ifc.get_entity_by_id(int(inverted_data["inverted_swing_type"]))):
                 # object has mirrored repr, update it as well
-                self.copy_door_params(door_data, inverted_type)
+                self.copy_door_params(door_data, element, inverted_type)
 
-    def copy_door_params(self, from_data, to_elem):
+    def copy_door_params(self, from_data, from_elem, to_elem):
         if "RIGHT" in from_data["door_type"]:
             from_data["door_type"] = from_data["door_type"].replace("RIGHT", "LEFT")
         else:
@@ -651,7 +656,7 @@ class FinishEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
         # reload door representation
         from_data.update(from_data.pop("lining_properties"))
         from_data.update(from_data.pop("panel_properties"))
-        from_data.update(tool.Model.get_constituents_props_data(to_elem))
+        from_data.update(tool.Model.get_constituents_props_data(from_elem))
 
         to_obj = tool.Ifc.get_object(to_elem)
         props = tool.Model.get_door_props(to_obj)
