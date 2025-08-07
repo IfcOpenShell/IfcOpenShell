@@ -805,7 +805,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 			double translation_amnt = bb.norm();
 			if (translation_amnt > settings_.get<MaxOffset>().get()) {
 				// block has an underlying mutable ref to the matrix
-				bb -= vec;
+				bb += vec;
 			} else {
 				all_applied = false;
 			}
