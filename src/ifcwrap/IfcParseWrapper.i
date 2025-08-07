@@ -205,6 +205,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 
 %extend IfcUtil::IfcBaseClass {
 
+	%pythoncode %{
+		# Will be assigned when `ifcopenshell.entity_instance` is created.
+		file = None
+	%}
+
 	int get_attribute_category(const std::string& name) const {
 		if (!$self->declaration().as_entity()) {
 			return name == "wrappedValue";
