@@ -15,14 +15,6 @@ This chapter covers the essential aspects of working with Industry Foundation Cl
             like buildingSMART in maintaining IFC standards. It also covers IfcOpenShell and the broader ecosystem
             of open standards in the AEC industry.
 
-
-      .. container:: card
-
-         :doc:`importing_viewing_models`
-            A guide on how to import existing IFC models into Bonsai and navigate them effectively.
-            This section includes techniques for inspecting and querying IFC data within the Bonsai environment.
-
-
       .. container:: card
 
          :doc:`starting_new_project`
@@ -55,16 +47,10 @@ This chapter covers the essential aspects of working with Industry Foundation Cl
       :hidden:
       :maxdepth: 2
 
-      creating_walls
-      defining_rooms_spaces
-      door
-      georeferencing
-      git_support
-      material_assignment
-      modeling_slabs_roofs
-      opening
-      other_addons
-      parametric_geometry
       starting_new_project
       understanding_ifc
-      window
+      basic_modeling/index
+      advanced_modeling/index
+      git_support
+      other_addons
+
