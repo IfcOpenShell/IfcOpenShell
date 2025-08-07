@@ -566,6 +566,16 @@ void HdfSerializer::write_style(surface_style_serialization& data, const ifcopen
 
 
 void HdfSerializer::write(const IfcGeom::BRepElement* o) {
+	// Currenly we only support OpenCascade shapes.
+	for (auto it = o->geometry().begin(); it != o->geometry().end(); ++it) {
+		auto shape_ptr = std::dynamic_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape());
+		if (shape_ptr == nullptr) {
+			std::cerr << "WARNING. Only OpenCascade shapes support caching. "
+			          << "Skipping caching for item #" << it->ItemId() << "." << std::endl;
+			return;
+		}
+	}
+
 	static auto nan = std::numeric_limits<double>::quiet_NaN();
 
 	auto element_group = write((const IfcGeom::Element*)o);
@@ -610,6 +620,7 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 		}
 
 		brep_strings.emplace_back();
+		// OpenCascadeShape type ensured by the check at the method start.
 		write_shape(std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape())->shape(), brep_strings.back());
 		
 		parts[i].surface_style = { "", "", 0, {nan,nan,nan}, {nan,nan,nan}, nan, nan };
