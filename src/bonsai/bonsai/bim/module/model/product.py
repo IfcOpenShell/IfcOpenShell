@@ -702,7 +702,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         active_context = tool.Geometry.get_active_representation_context(obj)
 
-        if type_element:
+        if type_element and element.id() != type_element.id():
             # obj has a type, use / create inverted type and assign it
             self.assign_inverted_type(element)
         else:
