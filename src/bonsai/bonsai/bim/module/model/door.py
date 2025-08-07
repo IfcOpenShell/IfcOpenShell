@@ -608,6 +608,46 @@ class FinishEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Apply changes and finish editing door parameters"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def _finish_one(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        super()._finish_one(obj, context)
+        element = tool.Ifc.get_entity(obj)
+        if element is None or not tool.Blender.Modifier.is_door(element):
+            return
+        if inverted_pset := ifcopenshell.util.element.get_pset(element, "BBIM_InvertedSwingType", "Data"):
+            inverted_data = json.loads(inverted_pset)
+            if "inverted_swing_type" in inverted_data and (
+                inverted_type := tool.Ifc.get_entity_by_id(int(inverted_data["inverted_swing_type"]))
+            ):
+                door_data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
+                cls.copy_door_params(door_data, inverted_type)
+
+    @classmethod
+    def copy_door_params(cls, from_data: dict, to_elem) -> None:
+        if "RIGHT" in from_data["door_type"]:
+            from_data["door_type"] = from_data["door_type"].replace("RIGHT", "LEFT")
+        else:
+            from_data["door_type"] = from_data["door_type"].replace("LEFT", "RIGHT")
+
+        to_pset = tool.Pset.get_element_pset(to_elem, "BBIM_Door")
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=to_pset, properties={"Data": json.dumps(from_data)})
+
+        from_data.update(from_data.pop("lining_properties"))
+        from_data.update(from_data.pop("panel_properties"))
+        from_data.update(tool.Model.get_constituents_props_data(to_elem))
+
+        to_obj = tool.Ifc.get_object(to_elem)
+        props = tool.Model.get_door_props(to_obj)
+
+        # workaround: set_props_kwargs_from_ifc_data updates the active object's mesh
+        prev_active = bpy.context.view_layer.objects.active
+        bpy.context.view_layer.objects.active = to_obj
+        props.set_props_kwargs_from_ifc_data(from_data)
+        bpy.context.view_layer.objects.active = prev_active
+
+        update_door_modifier_representation(to_obj)
+        tool.Model.mark_thumbnail_for_update(to_elem)
+
     def _execute(self, context: bpy.types.Context) -> set[str]:
         return self._finish_targets(context)
 
