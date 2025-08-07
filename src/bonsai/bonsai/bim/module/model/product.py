@@ -679,11 +679,11 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
             obj.matrix_world = newmat
 
-class ChangeSwingDirection(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.change_swing_direction"
-    bl_label = "Change door / window swing direction"
+class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.mirror_geometry"
+    bl_label = "Mirror Element Geometry"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Changes the swing direction of the selection door / window"
+    bl_description = "Mirrors the selected objects by mirroring their representation (or their types representation)"
 
     @classmethod
     def poll(cls, context):
@@ -703,14 +703,11 @@ class ChangeSwingDirection(bpy.types.Operator, tool.Ifc.Operator):
         active_context = tool.Geometry.get_active_representation_context(obj)
 
         if type_element:
-            # obj has a type, try to change swing direction of type
-            if (type_pset := ifcopenshell.util.element.get_pset(type_element, "BBIM_Door", "Data")):
-                # get or create inverted type and assign it
-                self.assign_inverted_door_type(element)
+            # obj has a type, use / create inverted type and assign it
+            self.assign_inverted_type(element)
         else:
-            if (obj_pset := ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data", should_inherit=False)):
-                # obj has an own geometric door representation, simply flip the door_type
-                self.invert_door_swing(element)
+            # invert representation of entity directly
+            self.invert_representation(element)
 
         # bonsai does not automatically switch to the representation that should be active in the given context
         # when switching to a type that was previously viewed in another context (e.g. plan view),
@@ -724,6 +721,23 @@ class ChangeSwingDirection(bpy.types.Operator, tool.Ifc.Operator):
             is_global=False,
             should_sync_changes_first=False,
         )
+
+    def invert_general_object(self, element):
+        if element.is_a("IfcProduct"):
+            if not element.Representation:
+                return
+        
+            for representation in element.Representation.Representations:
+                for item in representation.Items:
+                    builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                    builder.mirror(item, (1, 0), create_copy=False)
+        elif element.is_a("IfcTypeProduct"):
+            for representation_map in element.RepresentationMaps:
+                for item in representation_map.MappedRepresentation.Items:
+                    builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                    builder.mirror(item, (1, 0), create_copy=False)
+
+        tool.Geometry.reload_representation(tool.Ifc.get_object(element))
 
     def invert_door_swing(self, element):
         obj = tool.Ifc.get_object(element)
@@ -758,6 +772,12 @@ class ChangeSwingDirection(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Model.mark_thumbnail_for_update(element)
 
+    def invert_representation(self, element):
+        if ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"):
+            self.invert_door_swing(element)
+        else:
+            self.invert_general_object(element)
+
     def get_inverted_type(self, type_element):
         inverted_pset = ifcopenshell.util.element.get_pset(type_element, "BBIM_InvertedSwingType", "Data")
         if not inverted_pset:
@@ -775,17 +795,17 @@ class ChangeSwingDirection(bpy.types.Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), inverted_pset, "BBIM_InvertedSwingType", { "Data": json.dumps({ "inverted_swing_type": inverted_type_element.id() }) })
 
-    def assign_inverted_door_type(self, element):
+    def assign_inverted_type(self, element):
         type_element = ifcopenshell.util.element.get_type(element)
 
         inverted_type = self.get_inverted_type(type_element)
         if not inverted_type:
             old_to_new, _ = tool.Geometry.duplicate_ifc_objects([ tool.Ifc.get_object(type_element) ])
             inverted_type = old_to_new[type_element][0]
-            self.invert_door_swing(inverted_type)
+            self.invert_representation(inverted_type)
             self.set_inverted_type(inverted_type, type_element)
             self.set_inverted_type(type_element, inverted_type)
-        
+
         bonsai.core.type.assign_type(tool.Ifc, tool.Type, element, inverted_type)
 
 

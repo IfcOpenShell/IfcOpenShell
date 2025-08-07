@@ -608,8 +608,70 @@ class FinishEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Apply changes and finish editing door parameters"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context: bpy.types.Context) -> set[str]:
-        return self._finish_targets(context)
+    def finish_editing_door_on_object(self, obj: bpy.types.Object) -> None:
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        if not tool.Blender.Modifier.is_door(element):
+            return
+        props = tool.Model.get_door_props(obj)
+
+        door_data = props.get_general_kwargs(convert_to_project_units=True)
+        lining_props = props.get_lining_kwargs(convert_to_project_units=True)
+        panel_props = props.get_panel_kwargs(convert_to_project_units=True)
+
+        door_data["lining_properties"] = lining_props
+        door_data["panel_properties"] = panel_props
+
+        props.is_editing = False
+
+        update_door_modifier_representation(obj)
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            tool.Model.mark_thumbnail_for_update(element_type)
+
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
+        door_data_str = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": door_data_str})
+
+        if inverted_pset := ifcopenshell.util.element.get_pset(element, "BBIM_InvertedSwingType", "Data"):
+            inverted_data = json.loads(inverted_pset)
+            if "inverted_swing_type" in inverted_data and (inverted_type := tool.Ifc.get_entity_by_id(int(inverted_data["inverted_swing_type"]))):
+                # object has mirrored repr, update it as well
+                self.copy_door_params(door_data, inverted_type)
+
+    def copy_door_params(self, from_data, to_elem):
+        if "RIGHT" in from_data["door_type"]:
+            from_data["door_type"] = from_data["door_type"].replace("RIGHT", "LEFT")
+        else:
+            from_data["door_type"] = from_data["door_type"].replace("LEFT", "RIGHT")
+
+        to_pset = tool.Pset.get_element_pset(to_elem, "BBIM_Door")
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=to_pset, properties={"Data": json.dumps(from_data)})
+
+        # reload door representation
+        from_data.update(from_data.pop("lining_properties"))
+        from_data.update(from_data.pop("panel_properties"))
+        from_data.update(tool.Model.get_constituents_props_data(to_elem))
+
+        to_obj = tool.Ifc.get_object(to_elem)
+        props = tool.Model.get_door_props(to_obj)
+
+        # we need this workaround because set_props_kwargs_from_ifc_data will
+        # "update" the mesh of the active object, which will switch its representation
+        prev_active = bpy.context.view_layer.objects.active
+        bpy.context.view_layer.objects.active = to_obj
+
+        props.set_props_kwargs_from_ifc_data(from_data)
+
+        bpy.context.view_layer.objects.active = prev_active
+
+        update_door_modifier_representation(to_obj)
+        tool.Model.mark_thumbnail_for_update(to_elem)
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
+        for obj in tool.Blender.get_selected_objects():
+            self.finish_editing_door_on_object(obj)
+        return {"FINISHED"}
 
 
 class EnableEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
