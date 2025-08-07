@@ -75,7 +75,6 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "E", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_E")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_F")]}),
-        ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True, "ctrl": True}, {"properties": [("hotkey", "S_C_F")]}),
         ("bim.hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
@@ -968,11 +967,7 @@ class EditObjectUI:
 
     @classmethod
     def draw_regen_operations(cls, row, ui_context):
-        # ``AuthoringData.load`` flips ``is_loaded`` at entry as a recursion
-        # guard, so a partial load (any computation along the way raising)
-        # leaves the tail keys unset. ``.get()`` keeps the header draw alive
-        # until the underlying failure is investigated.
-        if AuthoringData.data.get("is_regenable_element"):
+        if AuthoringData.data["is_regenable_element"]:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Regen", "S_G", "Recalculate Element Geometry", ui_context)
 
@@ -1308,11 +1303,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         bpy.ops.bim.mirror_geometry(keep_original=getattr(self, "shift", False))
 
-    def hotkey_S_C_F(self):
-        if not bpy.context.selected_objects:
-            return
-        bpy.ops.bim.mirror_geometry()
-
     def hotkey_S_G(self):
         obj = bpy.context.active_object
         element = tool.Ifc.get_entity(obj)
@@ -1342,7 +1332,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.recalculate_profile()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.recalculate_fill()
-        elif self.active_class in ("IfcSpace",):
+        elif self.active_class in ("IfcSpace"):
             bpy.ops.bim.generate_space()
 
     def hotkey_S_M(self):
