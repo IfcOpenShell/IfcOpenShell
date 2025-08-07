@@ -16,3 +16,4 @@ This chapter covers how you can help contribute to Bonsai.
       undo_system
       writing_docs
       debugging
+      ide/index
