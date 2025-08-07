@@ -1,11 +1,11 @@
 Topbar
 ======
+.. |location| image:: /images/location-scene.svg
+.. |>| image:: /images/location-breadcrumb.svg
 
 .. container:: location-scene
 
    |location| Topbar
-
-   .. |location| image:: /images/location-scene.svg
 
 .. seealso::
 
@@ -17,9 +17,6 @@ File
 .. container:: location-scene
 
    |location| Topbar |>| File
-
-   .. |location| image:: /images/location-scene.svg
-   .. |>| image:: /images/location-breadcrumb.svg
 
 Access new, open, save, and import functionality.
 
@@ -50,9 +47,6 @@ New IFC Project
 
    |location| Topbar |>| File |>| New IFC Project (:kbd:`Shift` + :kbd:`N`)
 
-   .. |location| image:: /images/location-scene.svg
-   .. |>| image:: /images/location-breadcrumb.svg
-
 Provides convenient presets to create new IFC projects.
 
 .. image:: images/topbar-file-new.png
@@ -70,9 +64,6 @@ Open Recent IFC Project
 
    |location| Topbar |>| File |>| Open Recent IFC Project
 
-   .. |location| image:: /images/location-scene.svg
-   .. |>| image:: /images/location-breadcrumb.svg
-
 Shows a list of recently opened IFC models.
 
 - **Clear Recent IFC Projects List**: Clears the list of recently opened IFC models.
@@ -85,9 +76,6 @@ Import
 .. container:: location-scene
 
    |location| Topbar |>| File |>| Import
-
-   .. |location| image:: /images/location-scene.svg
-   .. |>| image:: /images/location-breadcrumb.svg
 
 Imports data from external sources into the Blender session or IFC model.
 

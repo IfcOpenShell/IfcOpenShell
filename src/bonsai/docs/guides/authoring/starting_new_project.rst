@@ -35,10 +35,6 @@ Using File Menu (Recommended)
 
 3. If you chose one of the first four options, your project will be created immediately.
 4. New Project Wizard is detailed below.
-.. _my_test_label:
-
-The paragraph text
-==================
 
 Using New Project Wizard / Scene Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -188,8 +188,6 @@ Now you can generate the documentation:
 
 .. warning::
 
-.. warning::
-
    Depending on your machine and environment, you might need to use ``.\make`` instead of ``make``.
 
 You will now have a local webserver running hosting the documentation. Your terminal 
@@ -200,7 +198,7 @@ will return something like seen underneath, replace [::] with localhost.
       Serving HTTP on :: port 8000 (http://[::]:8000/) ...
       
 Streamlining your workflow
-^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 Now that you have added or changed some content in the documentation, you may want to see it on the webserver.
 Initially you can:
 

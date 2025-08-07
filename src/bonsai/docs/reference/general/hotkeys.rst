@@ -8,7 +8,7 @@ They can be found in the UI when tool is selected.
 
 
 Blender Hotkeys Overrides
--------
+-------------------------
 
 As IFC objects are special in Blender, there are some IFC operators that repeat Blender functionality,
 but ensure the changes are in sync with IFC.
@@ -33,7 +33,7 @@ For convenience, related hotkeys are overridden using their IFC versions.
 
 
 Bonsai Special Hotkeys
--------
+----------------------
 
 - :kbd:`Ctrl` + :kbd:`Shift` + :kbd:`D` - Duplicate IFC Aggregate
 - :kbd:`Ctrl` + :kbd:`Tab` - Switch Tab (in Bonsai Properties Panel)
