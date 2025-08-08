@@ -27,7 +27,7 @@ import bonsai.tool as tool
 import ifcopenshell.api.sequence
 import ifcopenshell.api.classification
 import ifcopenshell.api.cost
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import time
 import socket
 import sys
@@ -47,6 +47,9 @@ import bonsai.core.cost
 from ifc5d.ifc2json import ifc5D2json
 from bonsai.bim.ifc import IfcStore
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.web.prop import WebProperties
+
 sio = None
 ws_process = None
 ws_thread = None
@@ -62,6 +65,11 @@ IFC_TASK_ATTRIBUTE_MAP = {
 
 
 class Web(bonsai.core.tool.Web):
+    @classmethod
+    def get_web_props(cls) -> WebProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMProperties  # pyright: ignore[reportAttributeAccessIssue]
+
     @classmethod
     def generate_port_number(cls) -> int:
         """
@@ -151,7 +159,7 @@ class Web(bonsai.core.tool.Web):
         """
         global ws_thread, sio
 
-        if bpy.context.scene.WebProperties.is_connected:
+        if tool.Web.get_web_props().is_connected:
             print(f"Already connected to websocket server on port: {port}")
             return
 
@@ -200,7 +208,7 @@ class Web(bonsai.core.tool.Web):
             print("No Websocket server running")
             return
 
-        if bpy.context.scene.WebProperties.is_connected:
+        if tool.Web.get_web_props().is_connected:
             cls.disconnect_websocket_server()
 
         # sleep(0.5)
@@ -282,7 +290,7 @@ class Web(bonsai.core.tool.Web):
         if data is not None:
             payload[data_key] = data
 
-        if ws_thread is not None and bpy.context.scene.WebProperties.is_connected:
+        if ws_thread is not None and tool.Web.get_web_props().is_connected:
             ws_thread.run_coro(cls.sio_send(payload, event, namespace))
 
     @classmethod
@@ -295,7 +303,7 @@ class Web(bonsai.core.tool.Web):
         Returns:
             (Optional[float]): Returns None if the WebProperties.is_connected is False, otherwise returns 1.0 to continue the timer.
         """
-        if not bpy.context.scene.WebProperties.is_connected:
+        if not tool.Web.get_web_props().is_connected:
             with web_operator_queue.mutex:
                 web_operator_queue.queue.clear()
             return None  # unregister timer if not connected
@@ -879,11 +887,13 @@ class Web(bonsai.core.tool.Web):
 
     @classmethod
     def set_is_running(cls, is_running: bool) -> None:
-        bpy.context.scene.WebProperties.is_running = is_running
+        props = tool.Web.get_web_props()
+        props.is_running = is_running
 
     @classmethod
     def set_is_connected(cls, is_connected: bool) -> None:
-        bpy.context.scene.WebProperties.is_connected = is_connected
+        props = tool.Web.get_web_props()
+        props.is_connected = is_connected
 
 
 class AsyncioThread(threading.Thread):

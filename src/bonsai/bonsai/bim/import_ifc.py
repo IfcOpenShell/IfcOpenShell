@@ -884,7 +884,8 @@ class IfcImporter:
         for material in self.material_creator.materials.values():
             bpy.data.materials.remove(material)
 
-    def add_project_to_scene(self):
+    def add_project_to_scene(self) -> None:
+        assert bpy.context.scene
         try:
             bpy.context.scene.collection.children.link(self.project["blender"])
         except:
@@ -909,6 +910,7 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent()
         bpy.ops.object.editmode_toggle()
 
+        assert bpy.context.view_layer
         bpy.context.view_layer.objects.active = last_obj
         IfcStore.edited_objs.clear()
 
@@ -927,6 +929,7 @@ class IfcImporter:
         if not (assignment := self.file.by_type("IfcProject")[0].UnitsInContext):
             return  # Geometry is optional in IFC
         props = tool.Blender.get_bim_props()
+        assert bpy.context.scene
         for unit in assignment.Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
@@ -1065,11 +1068,11 @@ class IfcImporter:
     def create_mesh(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        shape: Union[W.Triangulation, W.TriangulationElement],
         cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
     ) -> Union[bpy.types.Mesh, None]:
         try:
-            if isinstance(shape, ifcopenshell.geom.ShapeElementType):
+            if isinstance(shape, W.TriangulationElement):
                 # shape is ShapeElementType
                 geometry = shape.geometry
             else:

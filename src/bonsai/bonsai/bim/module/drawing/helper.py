@@ -134,6 +134,7 @@ def format_distance(
     custom_unit=None,
 ):
     # Get Blender Scene Unit Settings
+    assert bpy.context.scene
     unit_scale = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit

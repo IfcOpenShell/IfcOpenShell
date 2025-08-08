@@ -37,6 +37,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -883,6 +884,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
+                assert isinstance(shape, W.TriangulationElement)
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
                     # It's possible that there will be multiple shapes for the same context,

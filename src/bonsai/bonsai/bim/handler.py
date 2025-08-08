@@ -224,7 +224,7 @@ def refresh_ui_data():
 
     props = tool.Drawing.get_document_props()
     props.should_draw_decorations = props.should_draw_decorations
-    if bpy.context.scene.WebProperties.is_connected:
+    if tool.Web.get_web_props().is_connected:
         tool.Web.send_webui_data()
 
 
