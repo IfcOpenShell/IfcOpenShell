@@ -36,18 +36,15 @@ def disable_document_editing_ui(document: tool.Document) -> None:
 
 
 def disable_object_document_editing_ui(document: tool.Document) -> None:
-    props = document.get_document_props()
-    props.is_object_editing = False
+    document.disable_object_editing_ui()
 
 
 def enable_editing_document(document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
-    props = document_tool.get_document_props()
     document_tool.set_active_document(document)
     document_tool.import_document_attributes(document)
 
 
 def disable_editing_document(document: tool.Document) -> None:
-    props = document.get_document_props()
     document.clear_active_document()
     document.clear_document_attributes()
 

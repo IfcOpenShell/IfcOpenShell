@@ -1,24 +1,7 @@
-# Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
-#
-# This file is part of Bonsai.
-#
-# Bonsai is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Bonsai is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
-
 import bpy
 import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.module.document.data import refresh
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -50,7 +33,8 @@ def update_document_identification(self: "Document", context: bpy.types.Context)
         tool.Document.set_external_reference_id(document, self.identification)
 
 
-def update_active_document(self, context):
+def update_active_document_index(self, context):
+    refresh()
     if document := self.active_document:
         if document.ifc_definition_id:
             DocumentData.load_document_objects_into_props(document.ifc_definition_id)
@@ -100,7 +84,7 @@ class BIMDocumentProperties(PropertyGroup):
     document_attributes: CollectionProperty(name="Document Attributes", type=Attribute)
     active_document_id: IntProperty(name="Active Document Id")
     documents: CollectionProperty(name="Documents", type=Document)
-    active_document_index: IntProperty(name="Active Document Index", update=update_active_document)
+    active_document_index: IntProperty(name="Active Document Index", update=update_active_document_index)
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_object_editing: BoolProperty(name="Is Object Editing", default=False)
     document_objects: CollectionProperty(name="Document Objects", type=DocumentObject)

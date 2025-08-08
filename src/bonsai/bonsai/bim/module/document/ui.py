@@ -20,8 +20,7 @@ import bpy
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.helper import draw_attributes
-from .data import DocumentData, ObjectDocumentData
-
+from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 
 class BIM_PT_documents(Panel):
     bl_label = "Documents"
@@ -43,18 +42,12 @@ class BIM_PT_documents(Panel):
         self.props = tool.Document.get_document_props()
 
         row = self.layout.row(align=True)
-        split = row.split(factor=0.55)
-
-        left_row = split.row(align=True)
-        left_row.label(text="{} Documents".format(DocumentData.data["total_documents"]), icon="FILE")
-        right_row = split.row(align=True)
-        right_row.label(
-            text="{} Objects Referenced".format(DocumentData.data["total_referenced_objects"]), icon="OBJECT_DATA"
-        )
+        row.label(text="{} Documents found".format(DocumentData.data["total_documents"]), icon="FILE")
+        
         if self.props.is_editing:
-            right_row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
+            row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
         else:
-            right_row.operator("bim.load_project_documents", text="", icon="IMPORT")
+            row.operator("bim.load_project_documents", text="", icon="IMPORT")
 
         if not self.props.is_editing:
             return
