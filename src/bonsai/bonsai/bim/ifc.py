@@ -125,15 +125,25 @@ class IfcStore:
             IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
 
     @staticmethod
-    def get_cache() -> ifcopenshell.geom.serializers.hdf5 | None:
-        if IfcStore.cache is None and IfcStore.path:
-            prefs = tool.Blender.get_addon_preferences()
-            assert IfcStore.file
+    def generate_cache_path() -> str:
+        """Generate cache path based on the active file and it's path."""
+        assert IfcStore.file
+        ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
+        ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
+        prefs = tool.Blender.get_addon_preferences()
+        cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
+        return cache_path
 
-            ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
-            ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-            os.makedirs(prefs.cache_dir, exist_ok=True)
-            IfcStore.cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
+    @staticmethod
+    def get_cache() -> ifcopenshell.geom.serializers.hdf5 | None:
+        """Get existing cache for the current file or create a new one.
+
+        .h5 cache name reflects IFC filepath and it's current header's timestamp.
+        """
+        if IfcStore.cache is None and IfcStore.path:
+            cache_path = IfcStore.generate_cache_path()
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            IfcStore.cache_path = cache_path
             cache_path = Path(IfcStore.cache_path)
             cache_settings = ifcopenshell.geom.settings()
             serializer_settings = ifcopenshell.geom.serializer_settings()
@@ -167,14 +177,11 @@ class IfcStore:
 
     @staticmethod
     def update_cache() -> None:
+        """Update cache filename after timestamp was updated."""
         if not IfcStore.cache:
             return
         assert IfcStore.cache_path
-        assert IfcStore.file
-        ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
-        ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-        prefs = tool.Blender.get_addon_preferences()
-        new_cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
+        new_cache_path = IfcStore.generate_cache_path()
         IfcStore.cache = None
         try:
             shutil.move(IfcStore.cache_path, new_cache_path)
