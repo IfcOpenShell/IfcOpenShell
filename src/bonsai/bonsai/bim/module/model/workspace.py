@@ -1093,13 +1093,6 @@ class EditObjectUI:
     def draw_flip(cls, ui_context, layout) -> None:
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else layout
         add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
-        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else layout
-        add_layout_hotkey_operator(row, "Mirror Geometry", "C_F", bpy.ops.bim.mirror_geometry.__doc__, ui_context)
-
-    @classmethod
-    def draw_mirror_geometry(cls, ui_context, layout) -> None:
-        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else layout
-        add_layout_hotkey_operator(row, "Mirror Geometry", "C_F", bpy.ops.bim.mirror_geometry.__doc__, ui_context)
 
     @classmethod
     def draw_mirror_geometry(cls, ui_context, layout) -> None:
@@ -1308,7 +1301,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_C_F(self):
         if not bpy.context.selected_objects:
             return
-        bpy.ops.bim.mirror_geometry()
+        bpy.ops.bim.mirror_geometry(keep_original=getattr(self, "shift", False))
 
     def hotkey_S_G(self):
         obj = bpy.context.active_object

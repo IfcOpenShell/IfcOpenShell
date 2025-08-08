@@ -783,6 +783,7 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.reload_representation(filled_object)
 
 
+
         return {"FINISHED"}
 
 
