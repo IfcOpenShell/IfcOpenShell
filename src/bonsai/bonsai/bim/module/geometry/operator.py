@@ -2719,24 +2719,22 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         # apply changes to mirrored object, if it exists
         if props.representation_obj and (representation_elem := tool.Ifc.get_entity(props.representation_obj)):
             type_elem = ifcopenshell.util.element.get_type(representation_elem)
-            if type_elem and (mirrored_pset := ifcopenshell.util.element.get_pset(type_elem, "BBIM_InvertedSwingType", "Data")):
-                mirrored_data = json.loads(mirrored_pset)
-                if "inverted_swing_type" in mirrored_data and (inverted_type := tool.Ifc.get_entity_by_id(int(mirrored_data["inverted_swing_type"]))):
-                    # object has mirror, update it as well
-                    for map_index, repr_map in enumerate(type_elem.RepresentationMaps):
-                        new_items = []
-                        for item in repr_map.MappedRepresentation.Items:
-                            new_mirrored_repr = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
-                            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                            builder.mirror(new_mirrored_repr, (1, 0), create_copy=False)
-                            new_items.append(new_mirrored_repr)
-                        
-                        old_items = inverted_type.RepresentationMaps[map_index].MappedRepresentation.Items
-                        inverted_type.RepresentationMaps[map_index].MappedRepresentation.Items = new_items
-                        for old_item in old_items:
-                            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_item)
+            if type_elem and (mirrored_type := tool.Blender.Modifier.has_mirrored_type(type_elem)):
+                # object has mirror, update it as well
+                for map_index, repr_map in enumerate(type_elem.RepresentationMaps):
+                    new_items = []
+                    for item in repr_map.MappedRepresentation.Items:
+                        new_mirrored_repr = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+                        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                        builder.mirror(new_mirrored_repr, (1, 0), create_copy=False)
+                        new_items.append(new_mirrored_repr)
                     
-                    tool.Geometry.reload_representation(tool.Ifc.get_object(inverted_type))
+                    old_items = mirrored_type.RepresentationMaps[map_index].MappedRepresentation.Items
+                    mirrored_type.RepresentationMaps[map_index].MappedRepresentation.Items = new_items
+                    for old_item in old_items:
+                        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_item)
+                
+                tool.Geometry.reload_representation(tool.Ifc.get_object(mirrored_type))
 
 
     def enable_edit_mode(self, context):

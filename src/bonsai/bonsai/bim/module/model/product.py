@@ -691,10 +691,10 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in context.selected_objects:
-            self.change_obj_swing_direction(obj)
+            self.mirror_obj(obj)
         return { "FINISHED" }
 
-    def change_obj_swing_direction(self, obj):
+    def mirror_obj(self, obj):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
@@ -778,33 +778,16 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.invert_general_object(element)
 
-    def get_inverted_type(self, type_element):
-        inverted_pset = ifcopenshell.util.element.get_pset(type_element, "BBIM_InvertedSwingType", "Data")
-        if not inverted_pset:
-            return None
-        
-        data = json.loads(inverted_pset)
-        if "inverted_swing_type" in data:
-            return tool.Ifc.get_entity_by_id(int(data["inverted_swing_type"]))
-        return None
-    
-    def set_inverted_type(self, type_element, inverted_type_element):
-        inverted_pset = tool.Pset.get_element_pset(type_element, "BBIM_InvertedSwingType")
-        if not inverted_pset:
-            inverted_pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), type_element, "BBIM_InvertedSwingType")
-
-        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), inverted_pset, "BBIM_InvertedSwingType", { "Data": json.dumps({ "inverted_swing_type": inverted_type_element.id() }) })
-
     def assign_inverted_type(self, element):
         type_element = ifcopenshell.util.element.get_type(element)
 
-        inverted_type = self.get_inverted_type(type_element)
+        inverted_type = tool.Blender.Modifier.has_mirrored_type(type_element)
         if not inverted_type:
             old_to_new, _ = tool.Geometry.duplicate_ifc_objects([ tool.Ifc.get_object(type_element) ])
             inverted_type = old_to_new[type_element][0]
             self.invert_representation(inverted_type)
-            self.set_inverted_type(inverted_type, type_element)
-            self.set_inverted_type(type_element, inverted_type)
+            tool.Blender.Modifier.set_mirrored_type(inverted_type, type_element)
+            tool.Blender.Modifier.set_mirrored_type(type_element, inverted_type)
             inverted_type.Name = f"{inverted_type.Name}.Mirror"
 
         bonsai.core.type.assign_type(tool.Ifc, tool.Type, element, inverted_type)

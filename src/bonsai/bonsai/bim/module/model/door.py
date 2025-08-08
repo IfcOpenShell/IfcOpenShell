@@ -619,13 +619,9 @@ class FinishEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         if element is None or not tool.Blender.Modifier.is_door(element):
             return
-        if inverted_pset := ifcopenshell.util.element.get_pset(element, "BBIM_InvertedSwingType", "Data"):
-            inverted_data = json.loads(inverted_pset)
-            if "inverted_swing_type" in inverted_data and (
-                inverted_type := tool.Ifc.get_entity_by_id(int(inverted_data["inverted_swing_type"]))
-            ):
-                door_data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
-                cls.copy_door_params(door_data, element, inverted_type)
+        if mirrored_type := tool.Blender.Modifier.has_mirrored_type(element):
+            door_data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
+            cls.copy_door_params(door_data, element, mirrored_type)
 
     @classmethod
     def copy_door_params(cls, from_data: dict, from_elem, to_elem) -> None:
