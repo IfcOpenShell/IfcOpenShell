@@ -33,6 +33,7 @@
 #include <iomanip>
 #include <numeric>
 #include <functional>
+#include <cmath>
 
 #ifdef USE_BINARY
 #define write_shape write_binary
@@ -237,16 +238,16 @@ void HdfSerializer::read_surface_style(const surface_style_serialization& s,
                                        ifcopenshell::geometry::taxonomy::style& gss,
                                        IfcParse::IfcFile& f) {
 	if (strlen(s.name) || s.id) {
-		if (s.diffuse[0] == s.diffuse[0]) {
+		if (!std::isnan(s.diffuse[0])) {
 			gss.diffuse = ifcopenshell::geometry::taxonomy::colour(s.diffuse[0], s.diffuse[1], s.diffuse[2]);
 		}
-		if (s.specular[0] == s.specular[0]) {
+		if (!std::isnan(s.specular[0])) {
 			gss.specular = ifcopenshell::geometry::taxonomy::colour(s.specular[0], s.specular[1], s.specular[2]);
 		}
-		if (s.transparency == s.transparency) {
+		if (!std::isnan(s.transparency)) {
 			gss.transparency = s.transparency;
 		}
-		if (s.specularity == s.specularity) {
+		if (!std::isnan(s.specularity)) {
 			gss.specularity = s.specularity;
 		}
 		if (s.id != 0) {
