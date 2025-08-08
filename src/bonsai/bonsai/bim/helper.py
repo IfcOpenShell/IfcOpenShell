@@ -55,7 +55,6 @@ def draw_attributes(
     layout: bpy.types.UILayout,
     copy_operator: Optional[str] = None,
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
-    filter_attributes: list[str] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
     *,
     enable_search: Union[bool, EllipsisType] = ...,
@@ -76,8 +75,6 @@ def draw_attributes(
 
     """
     for attribute in props:
-        if attribute.name in (filter_attributes or []):
-            continue
         row = layout.row(align=True)
         if attribute == popup_active_attribute:
             row.activate_init = True

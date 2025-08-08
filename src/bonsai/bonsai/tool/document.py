@@ -19,6 +19,7 @@
 from __future__ import annotations
 import bpy
 import ifcopenshell.util.system
+import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 import json
@@ -43,6 +44,11 @@ class Document(bonsai.core.tool.Document):
     def disable_editing_document(cls) -> None:
         props = cls.get_document_props()
         props.active_document_id = 0
+
+    @classmethod
+    def disable_object_editing_ui(cls) -> None:
+        props = cls.get_document_props()
+        props.is_object_editing = False
 
     @classmethod
     def disable_editing_ui(cls) -> None:

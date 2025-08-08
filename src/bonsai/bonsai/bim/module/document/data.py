@@ -24,6 +24,11 @@ import bonsai.tool as tool
 from natsort import natsorted
 
 
+def refresh():
+    DocumentData.is_loaded = False
+    ObjectDocumentData.is_loaded = False
+
+
 class DocumentData:
     data = {}
     is_loaded = False
@@ -32,7 +37,6 @@ class DocumentData:
     def load(cls):
         cls.data = {
             "total_documents": cls.total_documents(),
-            "total_referenced_objects": cls.total_referenced_objects(),
             "document_objects": cls.document_objects(),
         }
         cls.is_loaded = True
@@ -41,19 +45,6 @@ class DocumentData:
     def total_documents(cls):
         file = tool.Ifc.get()
         return len(file.by_type("IfcDocumentInformation")) + len(file.by_type("IfcDocumentReference"))
-
-    @classmethod
-    def total_referenced_objects(cls):
-        file = tool.Ifc.get()
-        document_rels = file.by_type("IfcRelAssociatesDocument")
-        documented_objects = set()
-        for rel in document_rels:
-            for related_object in rel.RelatedObjects:
-                obj = tool.Ifc.get_object(related_object)
-                if obj:
-                    documented_objects.add(related_object.id())
-
-        return len(documented_objects)
 
     @classmethod
     def document_objects(cls):

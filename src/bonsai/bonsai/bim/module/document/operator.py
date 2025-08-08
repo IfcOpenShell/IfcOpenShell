@@ -21,8 +21,7 @@ import json
 import bonsai.bim.handler
 import bonsai.tool as tool
 import bonsai.core.document as core
-from .data import DocumentData, ObjectDocumentData
-
+from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 
 class LoadProjectDocuments(bpy.types.Operator):
     bl_idname = "bim.load_project_documents"
@@ -186,7 +185,6 @@ class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
                 core.assign_document(tool.Ifc, product=element, document=document)
 
         tool.Document.update_document_objects(self.document)
-        ObjectDocumentData.is_loaded = False
         ObjectDocumentData.load()
         return {"FINISHED"}
 
@@ -217,7 +215,6 @@ class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
         else:
             tool.Document.update_document_objects()
 
-        ObjectDocumentData.is_loaded = False
         ObjectDocumentData.load()
         return {"FINISHED"}
 
@@ -255,7 +252,6 @@ class LoadObjectDocuments(bpy.types.Operator):
 
         props = tool.Document.get_document_props()
         props.is_object_editing = True
-        ObjectDocumentData.is_loaded = False
         ObjectDocumentData.load()
         return {"FINISHED"}
 
@@ -276,26 +272,22 @@ class OpenIFCDocument(bpy.types.Operator):
             self.report({"ERROR"}, "Only local file:// URIs are supported")
             return {"CANCELLED"}
 
-        filepath = self.uri[7:]  # Remove file:// prefix
+        filepath = self.uri[7:]
 
         if not os.path.exists(filepath):
             self.report({"ERROR"}, f"File not found: {filepath}")
             return {"CANCELLED"}
 
-        try:
-            blender_path = bpy.app.binary_path
-            args = [
-                blender_path,
-                "--python-expr",
-                "import bpy; bpy.ops.bim.load_project(filepath='{}')".format(filepath),
-            ]
-            subprocess.Popen(args)
-            self.report({"INFO"}, f"Opening {filepath} in a new Blender instance")
-        except Exception as e:
-            self.report({"ERROR"}, f"Failed to open IFC file: {str(e)}")
+        blender_path = bpy.app.binary_path
+        args = [
+            blender_path,
+            "--python-expr",
+            "import bpy; bpy.ops.bim.load_project(filepath='{}')".format(filepath),
+        ]
+        subprocess.Popen(args)
+        self.report({"INFO"}, f"Opening {filepath} in a new Blender instance")
 
         return {"FINISHED"}
-
 
 class ToggleDocument(bpy.types.Operator):
     bl_idname = "bim.toggle_document"
