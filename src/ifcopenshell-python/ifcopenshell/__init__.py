@@ -93,10 +93,10 @@ from .sql import sqlite, sqlite_entity
 # explicitly specify available imported symbols
 # (it's a requirement for a typed library)
 __all__ = [
-    "ifcopenshell_wrapper",
+    "entity_instance",
     "file",
     "guid",
-    "entity_instance",
+    "ifcopenshell_wrapper",
     "sqlite",
     "sqlite_entity",
     "stream",
