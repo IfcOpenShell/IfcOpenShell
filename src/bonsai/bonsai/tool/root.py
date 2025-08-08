@@ -102,6 +102,26 @@ class Root(bonsai.core.tool.Root):
                 exclude_callback=exclude_callback,
                 copied_entities=copied_entities,
             )
+
+            if source.Representation.is_a("IfcProductDefinitionShape"):
+                old_to_new_items = {}
+                for repr_index, representation in enumerate(source.Representation.Representations):
+                    for item_index, item in enumerate(representation.Items):
+                        old_to_new_items[item.id()] = dest.Representation.Representations[repr_index].Items[item_index]
+
+                for aspect in source.Representation.HasShapeAspects:
+                    new_reprs = []
+                    for repr in aspect.ShapeRepresentations:
+                        new_items = []
+                        for old_item in repr.Items:
+                            new_items.append(old_to_new_items[old_item.id()])
+                        new_repr = ifcopenshell.util.element.copy(tool.Ifc.get(), repr)
+                        new_repr.Items = new_items
+                        new_reprs.append(new_repr)
+                    new_aspect = ifcopenshell.util.element.copy(tool.Ifc.get(), aspect)
+                    new_aspect.ShapeRepresentations = new_reprs
+                    new_aspect.PartOfProductDefinitionShape = dest.Representation
+                        
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
                 return copied_entities
