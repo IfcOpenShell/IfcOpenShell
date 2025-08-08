@@ -476,6 +476,8 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             
             tool.Geometry.flip_object(obj, "XY")
+            ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), filled_opening, obj.matrix_world)
+            tool.Geometry.reload_representation(filled_object)
                 
         return {"FINISHED"}
 
