@@ -23,6 +23,7 @@ import bpy
 import bmesh
 import logging
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
@@ -814,7 +815,7 @@ class Loader(bonsai.core.tool.Loader):
         cls,
         element: ifcopenshell.entity_instance,
         representation: ifcopenshell.entity_instance,
-        shape: ifcopenshell.geom.ShapeElementType,
+        shape: W.TriangulationElement,
     ) -> bpy.types.Camera:
         """Create camera data.
 
@@ -968,7 +969,7 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def convert_geometry_to_mesh(
         cls,
-        geometry: ifcopenshell.geom.ShapeType,
+        geometry: W.Triangulation,
         mesh: bpy.types.Mesh,
         verts: Optional[npt.NDArray[np.float64]] = None,
         *,

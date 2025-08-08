@@ -94,6 +94,7 @@ class FileDescription(HeaderEntity):
 
 class FileName(HeaderEntity):
     name: str
+    """Updated automatically only on ``file.write``."""
     time_stamp: str
     author: tuple[str, ...]
     organization: tuple[str, ...]
@@ -358,7 +359,7 @@ class Iterator:
         """
         ...
 
-    def set_cache(self, cache: GeometrySerializer) -> None: ...
+    def set_cache(self, cache: Union[GeometrySerializer, None]) -> None: ...
     def unit_magnitude(self): ...
     def unit_name(self): ...
 
@@ -1351,8 +1352,8 @@ class style(item):
         - IFC style id if style assigned to the representation items directly
         or through material with a style;
         - IFC material id if both true:
-        - element has a material without a style;
-        - there are parts of the geometry that has no other style assigned to them;
+            - element has a material without a style;
+            - there are parts of the geometry that has no other style assigned to them;
         - -1 in case if there is no material;
         - 0 in case if there are default materials used.
         """

@@ -3735,7 +3735,7 @@ class OpenDocumentationWebUi(bpy.types.Operator):
     bl_description = "Open the documentation web UI page"
 
     def execute(self, context):
-        if not context.scene.WebProperties.is_connected:
+        if not tool.Web.get_web_props().is_connected:
             bpy.ops.bim.connect_websocket_server(page="documentation")
         else:
             bpy.ops.bim.open_web_browser(page="documentation")
