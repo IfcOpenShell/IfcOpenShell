@@ -309,7 +309,14 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    should_cache: BoolProperty(name="Cache", default=False)
+    should_cache: BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Cache",
+        description=(
+            "Cache loaded geometry to .h5 file in your cache directory (see in preferences) "
+            "for faster imports and geometry reloads."
+        ),
+        default=False,
+    )
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(
