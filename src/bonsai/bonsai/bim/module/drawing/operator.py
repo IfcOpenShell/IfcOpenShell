@@ -2188,23 +2188,52 @@ class ActivateModel(bpy.types.Operator):
                 bpy.ops.object.hide_view_clear()
                 bpy.ops.bim.activate_status_filters(only_if_enabled=True)
 
-        for obj in context.visible_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            model = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            if model:
+        elements = {e for obj in context.visible_objects if (e := tool.Ifc.get_entity(obj))}
+
+        def refine_elements(
+            elements_mutable: set[ifcopenshell.entity_instance],
+        ) -> dict[ifcopenshell.entity_instance, tuple[ifcopenshell.entity_instance, bpy.types.Object]]:
+            """
+            :return: element -> (representation, obj)
+            """
+            # TODO: in the future reimport_element_representations should have an option
+            # not recalculate elements completely, but get the from cache, to speed up the process further.
+            refined_elements: dict[
+                ifcopenshell.entity_instance, tuple[ifcopenshell.entity_instance, bpy.types.Object]
+            ] = {}
+            elements = elements_mutable
+            while elements:
+                element = elements.pop()
+                model = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                if not model:
+                    continue
+                assert isinstance(obj := tool.Ifc.get_object(element), bpy.types.Object)
                 current_representation = tool.Geometry.get_active_representation(obj)
-                if current_representation != model:
-                    bonsai.core.geometry.switch_representation(
-                        tool.Ifc,
-                        tool.Geometry,
-                        obj=obj,
-                        representation=model,
-                        should_reload=False,
-                        is_global=True,
-                        should_sync_changes_first=True,
-                    )
+                if current_representation == model:
+                    continue
+
+                # reimport_element_representations automatically reloads all elements sharing representation.
+                # So we should avoid reloading same elements twice.
+                resolved_model = ifcopenshell.util.representation.resolve_representation(model)
+                elements_sharing_representation = ifcopenshell.util.element.get_elements_by_representation(
+                    ifc_file, resolved_model
+                )
+
+                refined_elements[element] = (model, obj)
+                elements = elements - elements_sharing_representation
+            return refined_elements
+
+        refined_elements = refine_elements(elements)
+        for _, (model, obj) in refined_elements.items():
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=model,
+                should_reload=False,
+                is_global=True,
+                should_sync_changes_first=True,
+            )
 
         # restore visibility after hide_view_clear()
         for obj, hide_status in visibility_status.items():
