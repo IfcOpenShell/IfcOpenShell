@@ -170,12 +170,15 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	}
 
 	if (brep.begin() != brep.end()) {
+#ifdef IFOPSH_WITH_OPENCASCADE
 		if (std::dynamic_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(brep.begin()->Shape())) {
 			ConversionResultShape* shape = brep.as_compound();
 			ifcopenshell::geometry::taxonomy::matrix4 identity;
 			shape->Serialize(identity, brep_data_);
 			delete shape;
-		} else {
+		} else
+#endif
+		{
 			for (auto it = brep.begin(); it != brep.end(); ++it) {
 				std::string part;
 				it->Shape()->Serialize(*it->Placement(), part);
