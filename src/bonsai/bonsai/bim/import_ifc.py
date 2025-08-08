@@ -1222,6 +1222,7 @@ class IfcImportSettings:
         context=None, input_file: Optional[str] = None, logger: Optional[logging.Logger] = None
     ) -> IfcImportSettings:
         scene_diff = tool.Blender.get_diff_props()
+        prefs = tool.Blender.get_addon_preferences()
         props = tool.Project.get_project_props()
         settings = IfcImportSettings()
         settings.input_file = input_file
@@ -1234,7 +1235,7 @@ class IfcImportSettings:
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_load_geometry = props.should_load_geometry
         settings.should_clean_mesh = props.should_clean_mesh
-        settings.should_cache = props.should_cache
+        settings.should_cache = prefs.should_always_cache or props.should_cache
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.void_limit = props.void_limit
