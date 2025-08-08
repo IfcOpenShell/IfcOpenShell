@@ -370,6 +370,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     tmp_dir: StringProperty(
         name="Temporary Directory",
         description="Path to create and store temporary files. If left blank, a system default will be used.",
+        subtype="DIR_PATH",
     )
     spatial_elements_unselectable: BoolProperty(
         name="Make Spatial Elements Unselectable By Default",
@@ -469,14 +470,19 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=(platformdirs.user_data_path("bonsai", roaming=True, ensure_exists=True) / "data").__str__(),
         name="Data Directory",
         update=update_data_dir,
+        subtype="DIR_PATH",
     )
     cache_dir: StringProperty(
-        default=platformdirs.user_cache_dir("bonsai"), name="Cache Directory", update=update_cache_dir
+        default=platformdirs.user_cache_dir("bonsai"),
+        name="Cache Directory",
+        update=update_cache_dir,
+        subtype="DIR_PATH",
     )
 
     pset_dir: StringProperty(
         default=os.path.join("psets") + os.path.sep,
         name="Default Psets Directory",
+        subtype="DIR_PATH",
     )
     doc: bpy.props.PointerProperty(type=DocPreferences)
 
@@ -561,17 +567,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             layout.prop(self, "occurrence_name_function")
 
     def draw_directories(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
-        row = layout.row(align=True)
-        row.prop(self, "data_dir")
-        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "preferences.data_dir"
-
-        row = layout.row(align=True)
-        row.prop(self, "cache_dir")
-        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "preferences.cache_dir"
-
-        row = layout.row(align=True)
-        row.prop(self, "tmp_dir")
-        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "preferences.tmp_dir"
+        layout.prop(self, "data_dir")
+        layout.prop(self, "cache_dir")
+        layout.prop(self, "tmp_dir")
 
     def draw_drawing_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "pset_dir")

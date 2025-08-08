@@ -236,6 +236,9 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
 
+# TODO: Unused operator.
+# Is there a need for this or 'DIR_PATH' propety subtype does almost the same,
+# but also has alt+click?
 class SelectDir(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_dir"
     bl_label = "Select Directory"
