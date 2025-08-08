@@ -638,11 +638,9 @@ class FinishEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
         door_data_str = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
         ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": door_data_str})
 
-        if inverted_pset := ifcopenshell.util.element.get_pset(element, "BBIM_InvertedSwingType", "Data"):
-            inverted_data = json.loads(inverted_pset)
-            if "inverted_swing_type" in inverted_data and (inverted_type := tool.Ifc.get_entity_by_id(int(inverted_data["inverted_swing_type"]))):
-                # object has mirrored repr, update it as well
-                self.copy_door_params(door_data, element, inverted_type)
+        if mirrored_type := tool.Blender.Modifier.has_mirrored_type(element):
+            # object has mirrored repr, update it as well
+            self.copy_door_params(door_data, element, mirrored_type)
 
     def copy_door_params(self, from_data, from_elem, to_elem):
         if "RIGHT" in from_data["door_type"]:
