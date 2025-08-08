@@ -927,6 +927,8 @@ class ShapeBuilder:
         processed_objects: list[ifcopenshell.entity_instance] = []
         for curve_or_item_el in curve_or_item:
             for mirror_axes in mirror_axes_data:
+                axis_flip_count = sum([a > 0.0 for a in mirror_axes])
+
                 c = (
                     ifcopenshell.util.element.copy_deep(self.file, curve_or_item_el)
                     if create_copy
@@ -1015,12 +1017,23 @@ class ShapeBuilder:
                         new_coords.append([float(new_coord_2d[0]), float(new_coord_2d[1]), float(coord[2])])
                     c.Coordinates.CoordList = new_coords
 
-                    for face in c.Faces:
-                        new_indices = []
-                        for index in face.CoordIndex:
-                            new_indices.append(int(index))
-                        new_indices.reverse()
-                        face.CoordIndex = new_indices
+                    if (axis_flip_count % 2) != 0:
+                        for face in c.Faces:
+                            new_indices = []
+                            for index in face.CoordIndex:
+                                new_indices.append(int(index))
+                            new_indices.reverse()
+                            face.CoordIndex = new_indices
+
+                            if face.is_a("IfcIndexedPolygonalFaceWithVoids"):
+                                new_inner_indices = []
+                                for inner_loop in face.InnerCoordIndices:
+                                    new_indices = []
+                                    for index in inner_loop:
+                                        new_indices.append(index)
+                                    new_indices.reverse()
+                                    new_inner_indices.append(new_indices)
+                                face.InnerCoordIndices = new_inner_indices
                 elif c.is_a("IfcGeometricSet"):
                     self.mirror(c.Elements, mirror_axes, mirror_point)
                 else:
