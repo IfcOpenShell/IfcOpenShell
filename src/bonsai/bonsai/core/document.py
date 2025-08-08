@@ -39,9 +39,9 @@ def disable_object_document_editing_ui(document: tool.Document) -> None:
     document.disable_object_editing_ui()
 
 
-def enable_editing_document(document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
-    document_tool.set_active_document(document)
-    document_tool.import_document_attributes(document)
+def enable_editing_document(document: tool.Document, ifc_document: ifcopenshell.entity_instance) -> None:
+    document.set_active_document(ifc_document)
+    document.import_document_attributes(ifc_document)
 
 
 def disable_editing_document(document: tool.Document) -> None:
@@ -49,19 +49,19 @@ def disable_editing_document(document: tool.Document) -> None:
     document.clear_document_attributes()
 
 
-def add_information(ifc: tool.Ifc, document_tool: tool.Document, parent=None) -> ifcopenshell.entity_instance:
-    document_tool.clear_document_tree()
+def add_information(ifc: tool.Ifc, document: tool.Document, parent=None) -> ifcopenshell.entity_instance:
+    document.clear_document_tree()
 
     if parent is None:
-        parent = document_tool.get_default_parent_for_information(ifc)
+        parent = document.get_default_parent_for_information(ifc)
 
     information = ifc.run("document.add_information", parent=parent)
     ifc.run("document.add_reference", information=information)
 
-    if document_tool.is_document_information(parent):
-        document_tool.expand_document(parent)
+    if document.is_document_information(parent):
+        document.expand_document(parent)
 
-    document_tool.import_project_documents()
+    document.import_project_documents()
     return information
 
 
@@ -76,33 +76,33 @@ def add_reference(ifc: tool.Ifc, document: tool.Document) -> None:
     document.import_project_documents()
 
 
-def edit_document(ifc: tool.Ifc, document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
-    attributes = document_tool.export_document_attributes()
-    if document_tool.is_document_information(document):
-        ifc.run("document.edit_information", information=document, attributes=attributes)
+def edit_document(ifc: tool.Ifc, document: tool.Document, ifc_document: ifcopenshell.entity_instance) -> None:
+    attributes = document.export_document_attributes()
+    if document.is_document_information(ifc_document):
+        ifc.run("document.edit_information", information=ifc_document, attributes=attributes)
     else:
-        ifc.run("document.edit_reference", reference=document, attributes=attributes)
-    document_tool.disable_editing_document()
-    document_tool.clear_document_tree()
-    document_tool.import_project_documents()
+        ifc.run("document.edit_reference", reference=ifc_document, attributes=attributes)
+    document.disable_editing_document()
+    document.clear_document_tree()
+    document.import_project_documents()
 
 
-def remove_document(ifc: tool.Ifc, document_tool: tool.Document, document: ifcopenshell.entity_instance) -> None:
-    document_tool.clear_document_tree()
-    if document_tool.is_document_information(document):
-        ifc.run("document.remove_information", information=document)
+def remove_document(ifc: tool.Ifc, document: tool.Document, ifc_document: ifcopenshell.entity_instance) -> None:
+    document.clear_document_tree()
+    if document.is_document_information(ifc_document):
+        ifc.run("document.remove_information", information=ifc_document)
     else:
-        ifc.run("document.remove_reference", reference=document)
-    document_tool.import_project_documents()
+        ifc.run("document.remove_reference", reference=ifc_document)
+    document.import_project_documents()
 
 
 def assign_document(
-    ifc: tool.Ifc, product: ifcopenshell.entity_instance, document: ifcopenshell.entity_instance
+    ifc: tool.Ifc, product: ifcopenshell.entity_instance, ifc_document: ifcopenshell.entity_instance
 ) -> None:
-    ifc.run("document.assign_document", products=[product], document=document)
+    ifc.run("document.assign_document", products=[product], document=ifc_document)
 
 
 def unassign_document(
-    ifc: tool.Ifc, product: ifcopenshell.entity_instance, document: ifcopenshell.entity_instance
+    ifc: tool.Ifc, product: ifcopenshell.entity_instance, ifc_document: ifcopenshell.entity_instance
 ) -> None:
-    ifc.run("document.unassign_document", products=[product], document=document)
+    ifc.run("document.unassign_document", products=[product], document=ifc_document)

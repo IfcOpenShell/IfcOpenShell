@@ -125,7 +125,6 @@ class ObjectDocumentData:
 
                 location = None
                 identification = None
-                description = None
 
                 if is_information:
                     if tool.Ifc.get_schema() == "IFC2X3":
@@ -134,7 +133,7 @@ class ObjectDocumentData:
                         identification = relating_document.Identification
 
                     location = getattr(relating_document, "Location", None)
-
+                    description = getattr(relating_document, "Description", "No description")
                 else:
                     description = relating_document.Description
                     if tool.Ifc.get_schema() == "IFC2X3":

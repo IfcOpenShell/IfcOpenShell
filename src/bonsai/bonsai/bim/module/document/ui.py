@@ -234,10 +234,10 @@ class BIM_UL_documents(UIList):
 
             if item.document_type == "INFORMATION":
                 row.label(text="", icon="FILE")
-                text = " - ".join([x for x in [item.name, item.location] if x])
+                text = " - ".join([x for x in [item.location, item.description, item.name] if x])
             else:
                 row.label(text="", icon="FILE_HIDDEN")
-                text = " - ".join([x for x in [item.description, item.location] if x])
+                text = " - ".join([x for x in [item.location, item.description] if x])
             split1 = row.split(factor=0.1)
             split1.prop(item, "identification", text="", emboss=False)
             split2 = split1.split(factor=0.8)
