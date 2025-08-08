@@ -60,7 +60,7 @@ class EnableEditingDocument(bpy.types.Operator):
     document: bpy.props.IntProperty()
 
     def execute(self, context):
-        core.enable_editing_document(tool.Document, document=tool.Ifc.get().by_id(self.document))
+        core.enable_editing_document(tool.Document, ifc_document=tool.Ifc.get().by_id(self.document))
         return {"FINISHED"}
 
 
@@ -154,7 +154,7 @@ class EditDocument(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = tool.Document.get_document_props()
         if props.active_document_id:
-            core.edit_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(props.active_document_id))
+            core.edit_document(tool.Ifc, tool.Document, ifc_document=tool.Ifc.get().by_id(props.active_document_id))
             props.active_document_id = 0
 
 
@@ -165,7 +165,7 @@ class RemoveDocument(bpy.types.Operator, tool.Ifc.Operator):
     document: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(self.document))
+        core.remove_document(tool.Ifc, tool.Document, ifc_document=tool.Ifc.get().by_id(self.document))
 
 
 class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
@@ -177,12 +177,11 @@ class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
     document: bpy.props.IntProperty()
 
     def _execute(self, context):
-        document = tool.Ifc.get().by_id(self.document)
         objs = [bpy.data.objects[self.obj]] if self.obj else tool.Blender.get_selected_objects()
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if element:
-                core.assign_document(tool.Ifc, product=element, document=document)
+                core.assign_document(tool.Ifc, product=element, ifc_document=tool.Ifc.get().by_id(self.document))
 
         tool.Document.update_document_objects(self.document)
         ObjectDocumentData.load()
@@ -197,13 +196,12 @@ class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
     document: bpy.props.IntProperty()
 
     def _execute(self, context):
-        document = tool.Ifc.get().by_id(self.document)
         objs = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
         for obj in objs:
             if obj:
                 element = tool.Ifc.get_entity(obj)
                 if element:
-                    core.unassign_document(tool.Ifc, product=element, document=document)
+                    core.unassign_document(tool.Ifc, product=element, ifc_document=tool.Ifc.get().by_id(self.document))
 
         props = tool.Document.get_document_props()
         active_document_id = None

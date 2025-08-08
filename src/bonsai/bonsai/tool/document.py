@@ -172,30 +172,23 @@ class Document(bonsai.core.tool.Document):
         new.document_type = "INFORMATION" if document.is_a("IfcDocumentInformation") else "REFERENCE"
         new.tree_depth = depth
 
-        file = document.file
+        new.name = document.Name or ""
+        new.identification = cls.get_document_information_id(document) if new.document_type == "INFORMATION" else cls.get_external_reference_id(document)
+        new.identification = new.identification or ""
+        new.description = document.Description or ""
+        new.location = document.Location or ""
+        
         if new.document_type == "INFORMATION":
             new.name = document.Name or "Unnamed"
-            new.identification = cls.get_document_information_id(document) or ""
-            new.location = document.Location or ""
-        else:
-            new.name = document.Name or ""
-            new.identification = cls.get_external_reference_id(document) or ""
-            new.description = document.Description or ""
-            new.location = document.Location or ""
-
-            if new.document_type == "REFERENCE":
-                if file.schema == "IFC2X3":
-                    if document.ReferenceToDocument:
-                        doc_info = document.ReferenceToDocument[0]
-                        if not new.name:
-                            new.name = doc_info.Name or ""
-                        new.location = new.location or ""
-                else:
-                    if document.ReferencedDocument:
-                        doc_info = document.ReferencedDocument
-                        if not new.name:
-                            new.name = doc_info.Name or ""
-                        new.location = new.location or ""
+        
+        elif new.document_type == "REFERENCE":
+            file = document.file
+            if file.schema == "IFC2X3":
+                if document.ReferenceToDocument and not new.name:
+                    new.name = document.ReferenceToDocument[0].Name or ""
+            else:
+                if document.ReferencedDocument and not new.name:
+                    new.name = document.ReferencedDocument.Name or ""
 
         doc_id = document.id()
         has_children = doc_id in document_children and bool(document_children[doc_id])
@@ -205,16 +198,14 @@ class Document(bonsai.core.tool.Document):
         if has_children and new.is_expanded:
             children = document_children[doc_id]
 
-            info_children = [d for d in children if d.is_a("IfcDocumentInformation")]
-            ref_children = [d for d in children if not d.is_a("IfcDocumentInformation")]
-
             info_children = natsorted(
-                info_children, key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
+                [d for d in children if d.is_a("IfcDocumentInformation")],
+                key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
             )
 
             ref_children = natsorted(
-                ref_children,
-                key=lambda doc: (cls.get_external_reference_id(doc) or "", doc.Description or doc.Name or ""),
+                [d for d in children if not d.is_a("IfcDocumentInformation")],
+                key=lambda doc: (cls.get_external_reference_id(doc) or "", doc.Description or doc.Name or "")
             )
 
             for child in info_children + ref_children:
