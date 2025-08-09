@@ -117,16 +117,23 @@ class RepresentationsData:
 
         for representation in tool.Geometry.get_representations_iter(element):
             representation_type = representation.RepresentationType
+            mapped_rep_id = None
+            
             if representation_type == "MappedRepresentation":
-                representation_type = representation.Items[0].MappingSource.MappedRepresentation.RepresentationType
-                representation_type += "*"
+                mapped_rep = representation.Items[0].MappingSource.MappedRepresentation
+                mapped_rep_id = mapped_rep.id()
+                representation_type = mapped_rep.RepresentationType + "*"
+            
+            is_active = (representation.id() == active_representation_id or 
+                        mapped_rep_id == active_representation_id)
+
             data = {
                 "id": representation.id(),
                 "ContextType": representation.ContextOfItems.ContextType or "",
                 "ContextIdentifier": "",
                 "TargetView": "",
                 "RepresentationType": representation_type or "",
-                "is_active": representation.id() == active_representation_id,
+                "is_active": is_active,
             }
             if representation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
                 data["ContextIdentifier"] = representation.ContextOfItems.ContextIdentifier or ""
