@@ -46,6 +46,9 @@ def create(
 
     Use get_horizontal_layout(alignment) to get the IfcAlignmentHorizontal layout.
 
+    If the alignment has Viennese Bend transition curves, create the cant layout before the horizontal layout. This is because the horizontal layout
+    in the Viennese Bend transition curves depends on the Viennese Bend cant parameters.
+
     :param file:
     :param name: name assigned to IfcAlignment.Name
     :param include_vertical: If True, IfcAlignmentVertical and IfcGradientCurve are created
