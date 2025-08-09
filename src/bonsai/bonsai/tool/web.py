@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from ifcopenshell.util.classification import get_classification_data, get_references
 from ifcopenshell.util.selector import filter_elements
 import ifcopenshell.util.cost
@@ -68,7 +69,7 @@ class Web(bonsai.core.tool.Web):
     @classmethod
     def get_web_props(cls) -> WebProperties:
         assert (scene := bpy.context.scene)
-        return scene.BIMProperties  # pyright: ignore[reportAttributeAccessIssue]
+        return scene.WebProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def generate_port_number(cls) -> int:
