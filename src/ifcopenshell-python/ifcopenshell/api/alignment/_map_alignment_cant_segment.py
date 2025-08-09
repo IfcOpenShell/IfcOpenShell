@@ -377,7 +377,66 @@ def _map_sine_curve(
 def _map_viennese_bend(
     file: ifcopenshell.file, design_parameters: entity_instance, rail_head_distance: float
 ) -> Sequence[entity_instance]:
-    raise NotImplementedError("VIENNESEBEND not implemented")
+    dist_along = design_parameters.StartDistAlong
+    length = design_parameters.HorizontalLength
+    Dsl = design_parameters.StartCantLeft
+    Del = design_parameters.EndCantLeft
+    Dsr = design_parameters.StartCantRight
+    Der = design_parameters.EndCantRight
+
+    Ds = 0.5 * (Dsl + Dsr)
+    De = 0.5 * (Del + Der)
+    f = De - Ds
+
+    a0 = Ds  # constant term
+    a1 = 0.0  # linear term
+    a2 = 0.0 * f  # quadratic term
+    a3 = 0.0 * f  # cubic term
+    a4 = 35. * f # quartic term
+    a5 = -84.*f # quintic term
+    a6 = 70.*f # sextic term
+    a7 = -20.*f # septic term
+
+    transition = "DISCONTINUOUS"
+
+    A0 = math.pow(length, 2.0 / 1.0) * math.pow(math.fabs(a0), -1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
+    A1 = math.pow(length, 3.0 / 2.0) * math.pow(math.fabs(a1), -1.0 / 2.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
+    A2 = math.pow(length, 4.0 / 3.0) * math.pow(math.fabs(a2), -1.0 / 3.0) * (a2 / math.fabs(a2)) if a2 != 0.0 else 0.0
+    A3 = math.pow(length, 5.0 / 4.0) * math.pow(math.fabs(a3), -1.0 / 4.0) * (a3 / math.fabs(a3)) if a3 != 0.0 else 0.0
+    A4 = math.pow(length, 6.0 / 5.0) * math.pow(math.fabs(a4), -1.0 / 5.0) * (a4 / math.fabs(a4)) if a4 != 0.0 else 0.0
+    A5 = math.pow(length, 7.0 / 6.0) * math.pow(math.fabs(a5), -1.0 / 6.0) * (a5 / math.fabs(a5)) if a5 != 0.0 else 0.0
+    A6 = math.pow(length, 8.0 / 7.0) * math.pow(math.fabs(a6), -1.0 / 7.0) * (a6 / math.fabs(a6)) if a6 != 0.0 else 0.0
+    A7 = math.pow(length, 9.0 / 8.0) * math.pow(math.fabs(a7), -1.0 / 8.0) * (a7 / math.fabs(a7)) if a7 != 0.0 else 0.0
+
+    parent_curve = file.createIfcSeventhOrderPolynomialSpiral(
+        Position=file.createIfcAxis2Placement2D(
+            Location=file.createIfcCartesianPoint((0.0, 0.0)), RefDirection=file.createIfcDirection((1.0, 0.0))
+        ),
+        SepticTerm=A7,
+        SexticTerm=A6 if A6 != 0.0 else None,
+        QuinticTerm=A5 if A5 != 0.0 else None,
+        QuarticTerm=A4 if A4 != 0.0 else None,
+        CubicTerm=A3 if A3 != 0.0 else None,
+        QuadraticTerm=A2 if A2 != 0.0 else None,
+        LinearTerm=A1 if A1 != 0.0 else None,
+        ConstantTerm=A0 if A0 != 0.0 else None,
+    )
+
+    start_point = file.createIfcCartesianPoint((dist_along, Ds, 0.0))
+    start_direction = 0.0
+
+    curve_segment = file.createIfcCurveSegment(
+        Transition=transition,
+        Placement=file.createIfcAxis2Placement3D(
+            Location=start_point,
+            Axis=_get_axis(file, Ds, rail_head_distance),
+            RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction), 0.0)),
+        ),
+        SegmentStart=file.createIfcLengthMeasure(0.0),
+        SegmentLength=file.createIfcLengthMeasure(length),
+        ParentCurve=parent_curve,
+    )
+    return (curve_segment, None)
 
 
 def _map_alignment_cant_segment(
