@@ -59,9 +59,15 @@ class BIM_PT_class(Panel):
                 row = self.layout.row(align=True)
                 row.operator("bim.reassign_class", icon="CHECKMARK")
                 row.operator("bim.disable_reassign_class", icon="CANCEL", text="")
+                
+                #Don't show PredefinedType  / ObjectType if Entity is Typed (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
+                predefined_types = root_prop.get_ifc_predefined_types(rprops, context)
+                if tool.Type.is_element_typed(tool.Ifc.get_entity(obj)):
+                    predefined_types= []
+                    
                 self.draw_class_dropdowns(
                     context,
-                    root_prop.get_ifc_predefined_types(rprops, context),
+                    predefined_types,
                     is_reassigning_class=True,
                 )
                 self.layout.prop(rprops, "relating_class_object", icon="COPYDOWN")
@@ -81,7 +87,11 @@ class BIM_PT_class(Panel):
             if AuthoringData.data["is_representation_item_active"]:
                 return
 
+            #Don't show PredefinedType  / ObjectType if Entity is Typed (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
             ifc_predefined_types = root_prop.get_ifc_predefined_types(rprops, context)
+            if tool.Type.is_element_typed(tool.Ifc.get_entity(obj)):
+                predefined_types= []
+                
             self.draw_class_dropdowns(context, ifc_predefined_types)
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")

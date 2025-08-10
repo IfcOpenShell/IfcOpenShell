@@ -143,3 +143,10 @@ class Type(bonsai.core.tool.Type):
             is_global=is_global,
             should_sync_changes_first=False,
         )
+
+    @classmethod
+    def is_element_typed(cls,element:ifcopenshell.entity_instance|None) -> bool:            
+        if not hasattr(element,"IsTypedBy"):
+            return False
+        return len(element.IsTypedBy) >0
+        
