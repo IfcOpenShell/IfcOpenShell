@@ -257,12 +257,12 @@ class Usecase:
                         relating_type=relating_type,
                     )
             self.map_material_usages(objects_to_change, relating_type)
-        
-        #Remove PredefinedType  / ObjectType if existing (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
+
+        # Remove PredefinedType  / ObjectType if existing (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
         for obj in related_objects_set:
-            if hasattr(obj,"ObjectType"):
+            if hasattr(obj, "ObjectType"):
                 obj.ObjectType = None
-            if hasattr(obj,"PredefinedType"):
+            if hasattr(obj, "PredefinedType"):
                 obj.PredefinedType = None
         return types
 

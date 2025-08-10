@@ -148,5 +148,4 @@ class Type(bonsai.core.tool.Type):
     def is_entity_typed(cls, element: ifcopenshell.entity_instance | None) -> bool:
         if not hasattr(element, "IsTypedBy"):
             return False
-        return len(element.IsTypedBy) >0
-        
+        return len(element.IsTypedBy) > 0
