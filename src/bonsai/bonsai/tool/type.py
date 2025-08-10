@@ -145,8 +145,8 @@ class Type(bonsai.core.tool.Type):
         )
 
     @classmethod
-    def is_element_typed(cls,element:ifcopenshell.entity_instance|None) -> bool:            
-        if not hasattr(element,"IsTypedBy"):
+    def is_entity_typed(cls, element: ifcopenshell.entity_instance | None) -> bool:
+        if not hasattr(element, "IsTypedBy"):
             return False
         return len(element.IsTypedBy) >0
         

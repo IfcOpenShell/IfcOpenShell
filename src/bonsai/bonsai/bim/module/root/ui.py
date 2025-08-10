@@ -62,9 +62,9 @@ class BIM_PT_class(Panel):
                 
                 #Don't show PredefinedType  / ObjectType if Entity is Typed (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
                 predefined_types = root_prop.get_ifc_predefined_types(rprops, context)
-                if tool.Type.is_element_typed(tool.Ifc.get_entity(obj)):
-                    predefined_types= []
-                    
+                if tool.Type.is_entity_typed(tool.Ifc.get_entity(obj)):
+                    predefined_types = []
+
                 self.draw_class_dropdowns(
                     context,
                     predefined_types,
@@ -89,9 +89,9 @@ class BIM_PT_class(Panel):
 
             #Don't show PredefinedType  / ObjectType if Entity is Typed (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
             ifc_predefined_types = root_prop.get_ifc_predefined_types(rprops, context)
-            if tool.Type.is_element_typed(tool.Ifc.get_entity(obj)):
-                predefined_types= []
-                
+            if tool.Type.is_entity_typed(tool.Ifc.get_entity(obj)):
+                predefined_types = []
+
             self.draw_class_dropdowns(context, ifc_predefined_types)
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")
