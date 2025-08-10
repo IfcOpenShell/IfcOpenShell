@@ -629,22 +629,19 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                     local_x = wall_matrix.to_3x3() @ Vector((1, 0, 0))
                     local_y = wall_matrix.to_3x3() @ Vector((0, 1, 0))  
                     local_z = wall_matrix.to_3x3() @ Vector((0, 0, 1))                   
-                    
-                    if usage.LayerSetDirection == "AXIS2":
-                        item = builder.extrude(
-                            profile,
-                            magnitude=0.5 / unit_scale,
-                            position_x_axis=tuple(local_x),
-                            position_z_axis=tuple(local_y),
-                        )
-                    elif usage.LayerSetDirection == "AXIS3":
-                        item = builder.extrude(
-                            profile,
-                            magnitude=0.5 / unit_scale,
-                            position_x_axis=tuple(local_x),
-                            position_z_axis=tuple(local_z), 
-                        )
+                    direction_sense = getattr(usage, 'DirectionSense', 'POSITIVE')
 
+                    if usage.LayerSetDirection == "AXIS2":
+                        z_axis = tuple(local_y) if direction_sense == 'POSITIVE' else tuple(-local_y)
+                    elif usage.LayerSetDirection == "AXIS3":
+                        z_axis = tuple(local_z) if direction_sense == 'POSITIVE' else tuple(-local_z)
+
+                    item = builder.extrude(
+                        profile,
+                        magnitude=0.5 / unit_scale,
+                        position_x_axis=tuple(local_x),
+                        position_z_axis=z_axis,
+                    )
 
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
