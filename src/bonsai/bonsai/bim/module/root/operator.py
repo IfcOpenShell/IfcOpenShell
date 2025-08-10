@@ -613,7 +613,36 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
-            item = builder.extrude(curve, magnitude=0.5 / unit_scale)
+            
+            if not (props.ifc_product == "IfcFeatureElement" and 
+                    props.ifc_class == "IfcOpeningElement" and 
+                    props.featured_obj):
+                item = builder.extrude(curve, magnitude=0.5 / unit_scale)
+            else:
+                featured_element = tool.Ifc.get_entity(props.featured_obj)
+                usage = ifcopenshell.util.element.get_material(featured_element) if featured_element else None
+                
+                if usage and usage.is_a("IfcMaterialLayerSetUsage"):
+                    wall_matrix = props.featured_obj.matrix_world
+                    
+                    profile = builder.profile(curve)
+                    local_x = wall_matrix.to_3x3() @ Vector((1, 0, 0))
+                    local_y = wall_matrix.to_3x3() @ Vector((0, 1, 0))  
+                    local_z = wall_matrix.to_3x3() @ Vector((0, 0, 1))                   
+                    direction_sense = getattr(usage, 'DirectionSense', 'POSITIVE')
+
+                    if usage.LayerSetDirection == "AXIS2":
+                        z_axis = tuple(local_y) if direction_sense == 'POSITIVE' else tuple(-local_y)
+                    elif usage.LayerSetDirection == "AXIS3":
+                        z_axis = tuple(local_z) if direction_sense == 'POSITIVE' else tuple(-local_z)
+
+                    item = builder.extrude(
+                        profile,
+                        magnitude=0.5 / unit_scale,
+                        position_x_axis=tuple(local_x),
+                        position_z_axis=z_axis,
+                    )
+
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
             bonsai.core.geometry.switch_representation(
