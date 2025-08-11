@@ -96,3 +96,7 @@ class TestAssignRepresentation(test.bootstrap.IFC4):
 
 class TestAssignRepresentationIFC2X3(test.bootstrap.IFC2X3, TestAssignRepresentation):
     pass
+
+
+class TestAssignRepresentationIFC4X3(test.bootstrap.IFC4X3, TestAssignRepresentation):
+    pass
