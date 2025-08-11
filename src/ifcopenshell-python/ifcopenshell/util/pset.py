@@ -26,14 +26,15 @@ from ifcopenshell.entity_instance import entity_instance
 from functools import lru_cache
 from typing import Optional, Literal, NamedTuple, Union
 
-templates: dict[str, "PsetQto"] = {}
+templates: dict[ifcopenshell.util.schema.IFC_SCHEMA, "PsetQto"] = {}
 
 
-def get_template(schema: str) -> "PsetQto":
+def get_template(schema_identiier: str) -> "PsetQto":
     """
-    :param schema: As in ``file.schema_identifier``, not ``file.schema``.
+    :param schema_identiier: As in ``file.schema_identifier``, not ``file.schema``.
     """
     global templates
+    schema = ifcopenshell.util.schema.get_fallback_schema(schema_identiier)
     if schema not in templates:
         templates[schema] = PsetQto(schema)
     return templates[schema]
@@ -41,24 +42,28 @@ def get_template(schema: str) -> "PsetQto":
 
 class PsetQto:
     # fmt: off
-    templates_path = {
+    templates_path: dict[ifcopenshell.util.schema.IFC_SCHEMA, str] = {
         "IFC2X3": "Pset_IFC2X3.ifc",
         "IFC4": "Pset_IFC4_ADD2.ifc",
-        "IFC4X3_ADD2": "Pset_IFC4X3.ifc"
+        "IFC4X3": "Pset_IFC4X3.ifc"
     }
     # fmt: on
     templates: list[ifcopenshell.file]
 
-    def __init__(self, schema_identifier: str, templates: Optional[list[ifcopenshell.file]] = None) -> None:
-        self.schema = ifcopenshell.schema_by_name(schema_identifier)
+    def __init__(
+        self,
+        schema: ifcopenshell.util.schema.IFC_SCHEMA,
+        templates: Optional[list[ifcopenshell.file]] = None,
+    ) -> None:
+        self.schema = ifcopenshell.schema_by_name(schema)
         if not templates:
             folder_path = pathlib.Path(__file__).parent.absolute()
-            path = str(folder_path.joinpath("schema", self.templates_path[schema_identifier]))
+            path = str(folder_path.joinpath("schema", self.templates_path[schema]))
             ifc_file: ifcopenshell.file = ifcopenshell.open(path)
             templates = [ifc_file]
             # See bug 3583. We backport this change from IFC4X3 because it just makes sense.
             # Users aren't forced to use it.
-            if schema_identifier == "IFC4":
+            if schema == "IFC4":
                 for element in templates[0].by_type("IfcPropertySetTemplate"):
                     if element.TemplateType == "QTO_OCCURRENCEDRIVEN":
                         element.TemplateType = "QTO_TYPEDRIVENOVERRIDE"
