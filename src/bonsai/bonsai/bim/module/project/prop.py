@@ -505,7 +505,10 @@ class BIMProjectProperties(PropertyGroup):
             return self.library_breadcrumb[-1]
         return None
 
-    def get_loaded_links(self) -> Generator[Link, None, None]:
+    def get_loaded_links_for_drawings(self) -> Generator[Link]:
+        props = tool.Drawing.get_document_props()
+        if not props.should_draw_linked_projects:
+            return
         for link in self.links:
             if not link.is_loaded:
                 continue
