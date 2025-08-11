@@ -409,6 +409,11 @@ class DocProperties(PropertyGroup):
     should_use_annotation_cache: BoolProperty(
         name="Use Annotation Cache", description="Global option for all drawings.", default=False
     )
+    should_draw_linked_projects: BoolProperty(
+        name="Draw Linked Projects",
+        description=("Whether to draw all currently loaded linked projects.\n\nGlobal option for all drawings."),
+        default=True,
+    )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
@@ -438,6 +443,7 @@ class DocProperties(PropertyGroup):
         should_use_underlay_cache: bool
         should_use_linework_cache: bool
         should_use_annotation_cache: bool
+        should_draw_linked_projects: bool
         is_editing_drawings: bool
         is_editing_schedules: bool
         is_editing_references: bool
