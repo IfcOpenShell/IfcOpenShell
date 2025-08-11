@@ -60,15 +60,14 @@ class BIM_PT_class(Panel):
                 row.operator("bim.reassign_class", icon="CHECKMARK")
                 row.operator("bim.disable_reassign_class", icon="CANCEL", text="")
 
-                # Don't show PredefinedType  / ObjectType if Entity is Typed (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
                 predefined_types = root_prop.get_ifc_predefined_types(rprops, context)
-                if tool.Type.is_entity_typed(tool.Ifc.get_entity(obj)):
-                    predefined_types = []
-
+                # If Entity has inherited Predefined Type, disable PredefinedType / ObjectType dropdown to forbid double typing. See #7006)
+                enable_predef_types = not IfcClassData.data["has_inherited_predefined_type"]
                 self.draw_class_dropdowns(
                     context,
                     predefined_types,
                     is_reassigning_class=True,
+                    set_predefined_types_enabled=enable_predef_types,
                 )
                 self.layout.prop(rprops, "relating_class_object", icon="COPYDOWN")
             else:
@@ -87,27 +86,30 @@ class BIM_PT_class(Panel):
             if AuthoringData.data["is_representation_item_active"]:
                 return
 
-            # Don't show PredefinedType  / ObjectType if Entity is Typed (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
             ifc_predefined_types = root_prop.get_ifc_predefined_types(rprops, context)
-            if tool.Type.is_entity_typed(tool.Ifc.get_entity(obj)):
-                predefined_types = []
+            # If Entity has inherited Predefined Type, disable PredefinedType / ObjectType dropdown to forbid double typing. See #7006)
+            enable_predef_types = not IfcClassData.data["has_inherited_predefined_type"]
 
-            self.draw_class_dropdowns(context, ifc_predefined_types)
+            self.draw_class_dropdowns(context, ifc_predefined_types, set_predefined_types_enabled=enable_predef_types)
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")
             op.ifc_class = rprops.ifc_class
             op.predefined_type = rprops.ifc_predefined_type if ifc_predefined_types else ""
             op.userdefined_type = rprops.ifc_userdefined_type
 
-    def draw_class_dropdowns(self, context, ifc_predefined_types, is_reassigning_class=False):
+    def draw_class_dropdowns(
+        self, context, ifc_predefined_types, is_reassigning_class=False, set_predefined_types_enabled=True
+    ):
         props = tool.Root.get_root_props()
         layout = self.layout
         prop_with_search(layout, props, "ifc_product")
         prop_with_search(layout, props, "ifc_class")
         if ifc_predefined_types:
-            prop_with_search(layout, props, "ifc_predefined_type")
+            row = prop_with_search(layout, props, "ifc_predefined_type")
+            row.enabled = set_predefined_types_enabled
             if props.ifc_predefined_type == "USERDEFINED":
                 row = layout.row()
                 row.prop(props, "ifc_userdefined_type")
+                row.enabled = set_predefined_types_enabled
         if not is_reassigning_class:
             prop_with_search(layout, props, "contexts")
