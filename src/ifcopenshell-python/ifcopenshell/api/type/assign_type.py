@@ -258,12 +258,14 @@ class Usecase:
                     )
             self.map_material_usages(objects_to_change, relating_type)
 
-        # Remove PredefinedType  / ObjectType if existing (See https://github.com/IfcOpenShell/IfcOpenShell/issues/7006)
-        for obj in related_objects_set:
-            if hasattr(obj, "ObjectType"):
-                obj.ObjectType = None
-            if hasattr(obj, "PredefinedType"):
-                obj.PredefinedType = None
+        # Remove PredefinedType  / ObjectType if existing to forbid double typing(See #7006)
+        predefined_type = ifcopenshell.util.element.get_predefined_type(relating_type)
+        if predefined_type != "NOTDEFINED":
+            for obj in related_objects_set:
+                if hasattr(obj, "ObjectType"):
+                    obj.ObjectType = None
+                if hasattr(obj, "PredefinedType"):
+                    obj.PredefinedType = None
         return types
 
     def map_material_usages(
