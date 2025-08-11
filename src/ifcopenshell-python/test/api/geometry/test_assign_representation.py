@@ -18,6 +18,7 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.api.material
 import ifcopenshell.api.type
 import ifcopenshell.api.root
 import ifcopenshell.api.geometry
@@ -92,6 +93,33 @@ class TestAssignRepresentation(test.bootstrap.IFC4):
         assert wall.Representation.Representations[0].RepresentationType != "MappedRepresentation"
         assert wall.Representation.Representations[0] == rep
         assert not walltype.RepresentationMaps
+
+    def test_assigning_to_an_instance_with_a_geometric_profile_layer_based_type_only_adds_it_to_the_instance(self):
+        material_set_types = (
+            "IfcMaterialLayerSet",
+            *(("IfcMaterialProfileSet",) * (self.file.schema != "IFC2X3")),
+        )
+        for material_set_type in material_set_types:
+            context = self.file.createIfcGeometricRepresentationContext()
+            rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+            rep2 = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+
+            walltype = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+            ifcopenshell.api.geometry.assign_representation(self.file, product=walltype, representation=rep)
+            material = ifcopenshell.api.material.add_material_set(self.file, set_type=material_set_type)
+            ifcopenshell.api.material.assign_material(self.file, products=[walltype], material=material)
+
+            wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+            ifcopenshell.api.type.assign_type(
+                self.file, related_objects=[wall], relating_type=walltype, should_map_representations=False
+            )
+
+            ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep2)
+            assert len(wall.Representation.Representations) == 1
+            assert wall.Representation.Representations[0].RepresentationType != "MappedRepresentation"
+            assert wall.Representation.Representations[0] == rep2
+            assert len(walltype.RepresentationMaps) == 1
+            assert walltype.RepresentationMaps[0].MappedRepresentation == rep
 
 
 class TestAssignRepresentationIFC2X3(test.bootstrap.IFC2X3, TestAssignRepresentation):
