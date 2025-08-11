@@ -437,7 +437,9 @@ def _map_viennese_bend(file: ifcopenshell.file, segment: entity_instance) -> Seq
     start_direction = design_parameters.StartDirection
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
-    gravity_centerline_height = design_parameters.GravityCenterLineHeight if design_parameters.GravityCenterLineHeight != None else 0.0
+    gravity_centerline_height = (
+        design_parameters.GravityCenterLineHeight if design_parameters.GravityCenterLineHeight != None else 0.0
+    )
 
     angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
@@ -449,40 +451,42 @@ def _map_viennese_bend(file: ifcopenshell.file, segment: entity_instance) -> Seq
         start_cant_left = cant_segment.DesignParameters.StartCantLeft
         end_cant_left = cant_segment.DesignParameters.EndCantLeft if cant_segment.DesignParameters.EndCantLeft else 0.0
         start_cant_right = cant_segment.DesignParameters.StartCantRight
-        end_cant_right = cant_segment.DesignParameters.EndCantRight if cant_segment.DesignParameters.EndCantRight else 0.0
+        end_cant_right = (
+            cant_segment.DesignParameters.EndCantRight if cant_segment.DesignParameters.EndCantRight else 0.0
+        )
         cant_layout = cant_segment.Nests[0].RelatingObject
         rail_head_distance = cant_layout.RailHeadDistance
     else:
-        start_cant_left = 0.
-        end_cant_left = 0.
-        start_cant_right = 0.
-        end_cant_right = 0.
-        rail_head_distance = 1.
+        start_cant_left = 0.0
+        end_cant_left = 0.0
+        start_cant_right = 0.0
+        end_cant_right = 0.0
+        rail_head_distance = 1.0
 
-    cant_angle_start = (start_cant_right - start_cant_left)/rail_head_distance if rail_head_distance else 0.
-    cant_angle_end = (end_cant_right - end_cant_left)/rail_head_distance if rail_head_distance else 0.
+    cant_angle_start = (start_cant_right - start_cant_left) / rail_head_distance if rail_head_distance else 0.0
+    cant_angle_end = (end_cant_right - end_cant_left) / rail_head_distance if rail_head_distance else 0.0
 
-    cant_factor = -420.*(gravity_centerline_height/length)*(cant_angle_end - cant_angle_start)
+    cant_factor = -420.0 * (gravity_centerline_height / length) * (cant_angle_end - cant_angle_start)
 
     f = _get_curve_factor(design_parameters)
 
-    a0 = length / start_radius if start_radius != 0.0 else 0.0 # constant term
-    a1 = 0. # linear term
-    a2 = 1.*cant_factor # quadratic term
-    a3 = -4.*cant_factor # cubic term
-    a4 = 5.*cant_factor + 35.*f # quartic term
-    a5 = -2.*cant_factor - 84.*f # quintic term
-    a6 = 70.*f # sextic term
-    a7 = -20.0*f # septic term
+    a0 = length / start_radius if start_radius != 0.0 else 0.0  # constant term
+    a1 = 0.0  # linear term
+    a2 = 1.0 * cant_factor  # quadratic term
+    a3 = -4.0 * cant_factor  # cubic term
+    a4 = 5.0 * cant_factor + 35.0 * f  # quartic term
+    a5 = -2.0 * cant_factor - 84.0 * f  # quintic term
+    a6 = 70.0 * f  # sextic term
+    a7 = -20.0 * f  # septic term
 
-    A0 = length*math.pow(math.fabs(a0),-1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
-    A1 = length*math.pow(math.fabs(a1),-1.0 / 2.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
-    A2 = length*math.pow(math.fabs(a2),-1.0 / 3.0) * (a2 / math.fabs(a2)) if a2 != 0.0 else 0.0
-    A3 = length*math.pow(math.fabs(a3),-1.0 / 4.0) * (a3 / math.fabs(a3)) if a3 != 0.0 else 0.0
-    A4 = length*math.pow(math.fabs(a4),-1.0 / 5.0) * (a4 / math.fabs(a4)) if a4 != 0.0 else 0.0
-    A5 = length*math.pow(math.fabs(a5),-1.0 / 6.0) * (a5 / math.fabs(a5)) if a5 != 0.0 else 0.0
-    A6 = length*math.pow(math.fabs(a6),-1.0 / 7.0) * (a6 / math.fabs(a6)) if a6 != 0.0 else 0.0
-    A7 = length*math.pow(math.fabs(a7),-1.0 / 8.0) * (a7 / math.fabs(a7)) if a7 != 0.0 else 0.0
+    A0 = length * math.pow(math.fabs(a0), -1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
+    A1 = length * math.pow(math.fabs(a1), -1.0 / 2.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
+    A2 = length * math.pow(math.fabs(a2), -1.0 / 3.0) * (a2 / math.fabs(a2)) if a2 != 0.0 else 0.0
+    A3 = length * math.pow(math.fabs(a3), -1.0 / 4.0) * (a3 / math.fabs(a3)) if a3 != 0.0 else 0.0
+    A4 = length * math.pow(math.fabs(a4), -1.0 / 5.0) * (a4 / math.fabs(a4)) if a4 != 0.0 else 0.0
+    A5 = length * math.pow(math.fabs(a5), -1.0 / 6.0) * (a5 / math.fabs(a5)) if a5 != 0.0 else 0.0
+    A6 = length * math.pow(math.fabs(a6), -1.0 / 7.0) * (a6 / math.fabs(a6)) if a6 != 0.0 else 0.0
+    A7 = length * math.pow(math.fabs(a7), -1.0 / 8.0) * (a7 / math.fabs(a7)) if a7 != 0.0 else 0.0
 
     parent_curve = file.createIfcSeventhOrderPolynomialSpiral(
         Position=file.createIfcAxis2Placement2D(

@@ -34,10 +34,12 @@ def _get_cant_segment(horizontal_segment: entity_instance) -> entity_instance:
     expected_type = "IfcAlignmentSegment"
     if not horizontal_segment.is_a(expected_type):
         raise TypeError(f"Expected {expected_type} but got {horizontal_segment.is_a()}")
-    
+
     if not horizontal_segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
-        raise TypeError(f"Expect DesignParameter to be IfcAlignmentHorizontal but got {horizontal_segment.DesignParameters.is_a()}")
-    
+        raise TypeError(
+            f"Expect DesignParameter to be IfcAlignmentHorizontal but got {horizontal_segment.DesignParameters.is_a()}"
+        )
+
     # get the index of horizontal_segment in the horizontal_layout
     horizontal_layout = horizontal_segment.Nests[0].RelatingObject
     index = 0
@@ -71,7 +73,5 @@ def _get_cant_segment(horizontal_segment: entity_instance) -> entity_instance:
                     break
             if cant_segment:
                 break
-        
 
     return cant_segment
-

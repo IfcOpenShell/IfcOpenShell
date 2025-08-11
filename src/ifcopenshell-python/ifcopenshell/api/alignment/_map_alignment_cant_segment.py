@@ -392,10 +392,10 @@ def _map_viennese_bend(
     a1 = 0.0  # linear term
     a2 = 0.0 * f  # quadratic term
     a3 = 0.0 * f  # cubic term
-    a4 = 35. * f # quartic term
-    a5 = -84.*f # quintic term
-    a6 = 70.*f # sextic term
-    a7 = -20.*f # septic term
+    a4 = 35.0 * f  # quartic term
+    a5 = -84.0 * f  # quintic term
+    a6 = 70.0 * f  # sextic term
+    a7 = -20.0 * f  # septic term
 
     transition = "DISCONTINUOUS"
 
