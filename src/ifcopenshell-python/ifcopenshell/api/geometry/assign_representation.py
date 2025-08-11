@@ -32,7 +32,6 @@ def assign_representation(
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
     def execute(self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance) -> None:
         if product.is_a("IfcProduct"):
