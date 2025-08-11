@@ -131,6 +131,7 @@ class CostSchedulesData:
             cls._load_cost_values(cost_item, data)
             cls._load_nesting_index(cost_item, data)
             cls._load_assigned_cost_rate(cost_item, data)
+            cls._load_parent_cost_schedule(cost_item, data)
             results[cost_item.id()] = data
         return results
 
@@ -181,6 +182,10 @@ class CostSchedulesData:
     @classmethod
     def _load_assigned_cost_rate(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
         data["AssignedCostRate"] = tool.Cost.get_assigned_rate_cost_item(cost_item)
+
+    @classmethod
+    def _load_parent_cost_schedule(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
+        data["ParentCostSchedule"] = tool.Cost.get_cost_schedule(cost_item)
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:

@@ -701,6 +701,7 @@ class ShowAssignedCostRate(bpy.types.Operator):
     bl_idname = "bim.show_assigned_cost_rate"
     bl_label = "Info about the assigned cost item rate"
     bl_options = {"REGISTER"}
+    parent_cost_schedule_name: bpy.props.StringProperty()
     assigned_rate_identification: bpy.props.StringProperty()
     assigned_rate_name: bpy.props.StringProperty()
     assigned_rate_description: bpy.props.StringProperty()
@@ -717,6 +718,7 @@ class ShowAssignedCostRate(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         wrapper = textwrap.TextWrapper(width=80)
+        layout.label(text=f"COST SCHEDULE: {self.parent_cost_schedule_name}")
         layout.label(text=f"ID: {self.assigned_rate_identification}")
         layout.label(text=f"Name: {self.assigned_rate_name}")
         layout.label(text="Description:")
