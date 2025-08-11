@@ -130,13 +130,16 @@ class Facet:
             is_prohibited = False
             if specification and specification.maxOccurs == 0:
                 is_prohibited = not is_prohibited
-            if requirement and requirement.cardinality == "prohibited":
-                is_prohibited = not is_prohibited
-            templates = self.prohibited_templates if is_prohibited else self.requirement_templates
-            if requirement and requirement.cardinality == "optional":
-                templates = [
-                    t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
-                ]
+            templates = self.requirement_templates
+            if not isinstance(requirement, ids.Entity):
+                if requirement and requirement.cardinality == "prohibited":
+                    is_prohibited = not is_prohibited
+                if is_prohibited:
+                    templates = self.prohibited_templates
+                if requirement and requirement.cardinality == "optional":
+                    templates = [
+                        t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
+                    ]
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
