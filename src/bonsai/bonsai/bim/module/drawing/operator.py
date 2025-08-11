@@ -2185,7 +2185,7 @@ class ActivateModel(bpy.types.Operator):
 
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
-                bpy.ops.object.hide_view_clear()
+                bpy.ops.object.hide_view_clear(select=False)
                 bpy.ops.bim.activate_status_filters(only_if_enabled=True)
 
         elements = {e for obj in context.visible_objects if (e := tool.Ifc.get_entity(obj))}
