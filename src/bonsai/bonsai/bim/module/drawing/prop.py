@@ -398,9 +398,17 @@ RASTER_STYLE_PROPERTIES_EXCLUDE = ("scene.render.filepath",)
 
 
 class DocProperties(PropertyGroup):
-    should_use_underlay_cache: BoolProperty(name="Use Underlay Cache", default=False)
-    should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
-    should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
+    # Note that options are global in descriptions to prevent confusion,
+    # as options are available through Active Drawing UI, but they're actually global.
+    should_use_underlay_cache: BoolProperty(
+        name="Use Underlay Cache", description="Global option for all drawings.", default=False
+    )
+    should_use_linework_cache: BoolProperty(
+        name="Use Linework Cache", description="Global option for all drawings.", default=False
+    )
+    should_use_annotation_cache: BoolProperty(
+        name="Use Annotation Cache", description="Global option for all drawings.", default=False
+    )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
