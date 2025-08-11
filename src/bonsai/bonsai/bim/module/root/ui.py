@@ -60,12 +60,11 @@ class BIM_PT_class(Panel):
                 row.operator("bim.reassign_class", icon="CHECKMARK")
                 row.operator("bim.disable_reassign_class", icon="CANCEL", text="")
 
-                predefined_types = root_prop.get_ifc_predefined_types(rprops, context)
                 # If Entity has inherited Predefined Type, disable PredefinedType / ObjectType dropdown to forbid double typing. See #7006)
                 enable_predef_types = not IfcClassData.data["has_inherited_predefined_type"]
                 self.draw_class_dropdowns(
                     context,
-                    predefined_types,
+                    root_prop.get_ifc_predefined_types(rprops, context),
                     is_reassigning_class=True,
                     set_predefined_types_enabled=enable_predef_types,
                 )

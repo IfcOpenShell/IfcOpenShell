@@ -188,10 +188,7 @@ class Usecase:
         if not related_objects:
             return
 
-        related_objects_set = set(related_objects)
-
         ifc2x3 = self.file.schema == "IFC2X3"
-
         related_objects_set = set(related_objects)
         if ifc2x3:
             types = next(iter(relating_type.ObjectTypeOf), None)
@@ -260,10 +257,9 @@ class Usecase:
 
         # Remove PredefinedType  / ObjectType if existing to forbid double typing(See #7006)
         predefined_type = ifcopenshell.util.element.get_predefined_type(relating_type)
-        if predefined_type != "NOTDEFINED":
+        if predefined_type != "NOTDEFINED" and predefined_type is not None:
             for obj in related_objects_set:
-                if hasattr(obj, "ObjectType"):
-                    obj.ObjectType = None
+                obj.ObjectType = None
                 if hasattr(obj, "PredefinedType"):
                     obj.PredefinedType = None
         return types
