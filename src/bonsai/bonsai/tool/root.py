@@ -103,62 +103,41 @@ class Root(bonsai.core.tool.Root):
                 copied_entities=copied_entities,
             )
 
-            cls.copy_shape_aspects(source.Representation, dest.Representation)
-                        
-        elif dest.is_a("IfcTypeProduct"):
-            if not source.RepresentationMaps:
-                return copied_entities
-            new_maps = []
-            for m in source.RepresentationMaps:
-                new_map = ifcopenshell.util.element.copy_deep(
+            for aspect in source.Representation.HasShapeAspects:
+                ifcopenshell.util.element.copy_deep(
                     tool.Ifc.get(),
-                    m,
+                    aspect,
                     exclude=["IfcGeometricRepresentationContext"],
                     exclude_callback=exclude_callback,
                     copied_entities=copied_entities,
                 )
-                cls.copy_shape_aspects(m, new_map)
-                new_maps.append(new_map)
-            dest.RepresentationMaps = new_maps
+                        
+        elif dest.is_a("IfcTypeProduct"):
+            if not source.RepresentationMaps:
+                return copied_entities
+
+            new_representation_maps = []
+            for map in source.RepresentationMaps:
+                new_map = ifcopenshell.util.element.copy_deep(
+                    tool.Ifc.get(),
+                    map,
+                    exclude=["IfcGeometricRepresentationContext"],
+                    exclude_callback=exclude_callback,
+                    copied_entities=copied_entities,
+                )
+
+                for aspect in map.HasShapeAspects:
+                    ifcopenshell.util.element.copy_deep(
+                        tool.Ifc.get(),
+                        aspect,
+                        exclude=["IfcGeometricRepresentationContext"],
+                        exclude_callback=exclude_callback,
+                        copied_entities=copied_entities,
+                    )
+
+                new_representation_maps.append(new_map)
+            dest.RepresentationMaps = new_representation_maps
         return copied_entities
-    
-    @classmethod
-    def copy_shape_aspects(cls, source_repr: ifcopenshell.entity_instance, dest_repr: ifcopenshell.entity_instance):
-        if source_repr.is_a("IfcProductDefinitionShape"):
-            old_to_new_items = {}
-            for repr_index, representation in enumerate(source_repr.Representations):
-                for item_index, item in enumerate(representation.Items):
-                    old_to_new_items[item.id()] = dest_repr.Representations[repr_index].Items[item_index]
-
-            for aspect in source_repr.HasShapeAspects:
-                new_reprs = []
-                for repr in aspect.ShapeRepresentations:
-                    new_items = []
-                    for old_item in repr.Items:
-                        new_items.append(old_to_new_items[old_item.id()])
-                    new_repr = ifcopenshell.util.element.copy(tool.Ifc.get(), repr)
-                    new_repr.Items = new_items
-                    new_reprs.append(new_repr)
-                new_aspect = ifcopenshell.util.element.copy(tool.Ifc.get(), aspect)
-                new_aspect.ShapeRepresentations = new_reprs
-                new_aspect.PartOfProductDefinitionShape = dest_repr
-        elif source_repr.is_a("IfcRepresentationMap"):
-            old_to_new_items = {}
-            for item_index, item in enumerate(source_repr.MappedRepresentation.Items):
-                old_to_new_items[item.id()] = dest_repr.MappedRepresentation.Items[item_index]
-
-            for aspect in source_repr.HasShapeAspects:
-                new_reprs = []
-                for repr in aspect.ShapeRepresentations:
-                    new_items = []
-                    for old_item in repr.Items:
-                        new_items.append(old_to_new_items[old_item.id()])
-                    new_repr = ifcopenshell.util.element.copy(tool.Ifc.get(), repr)
-                    new_repr.Items = new_items
-                    new_reprs.append(new_repr)
-                new_aspect = ifcopenshell.util.element.copy(tool.Ifc.get(), aspect)
-                new_aspect.ShapeRepresentations = new_reprs
-                new_aspect.PartOfProductDefinitionShape = dest_repr
 
     @classmethod
     def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
