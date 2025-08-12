@@ -654,14 +654,18 @@ if(HDF5_SUPPORT)
     endif()
 
     if(NOT HDF5_LIBRARIES)
-        # debian default
-        set(HDF5_LIBRARIES
-            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
-            /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
-            /usr/lib/x86_64-linux-gnu/libsz.so
-            /usr/lib/x86_64-linux-gnu/libaec.so
-            z dl
-        )
+        if(NOT WIN32 AND NOT APPLE)
+            # debian default
+            set(HDF5_LIBRARIES
+                /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
+                /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
+                /usr/lib/x86_64-linux-gnu/libsz.so
+                /usr/lib/x86_64-linux-gnu/libaec.so
+                z dl
+            )
+        else()
+            message(FATAL_ERROR "HDF5_LIBRARIES is not provided.")
+        endif()
     endif()
 
     add_definitions(-DWITH_HDF5)
