@@ -327,9 +327,17 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
             props.relating_type_id = str(self.relating_type_id)
 
+        building_obj = None
+        if len(context.selected_objects) == 1 and context.active_object:
+            building_obj = context.active_object
+            building_element = tool.Ifc.get_entity(building_obj)
+
         self.container = None
         self.container_obj = None
-        if container := tool.Root.get_default_container():
+        if building_obj and building_element and (container := ifcopenshell.util.element.get_container(building_element)):
+            self.container = container
+            self.container_obj = tool.Ifc.get_object(container)
+        elif container := tool.Root.get_default_container():
             self.container = container
             self.container_obj = tool.Ifc.get_object(container)
 
@@ -416,11 +424,6 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 )
             return
 
-        building_obj = None
-        if len(context.selected_objects) == 1 and context.active_object:
-            building_obj = context.active_object
-            building_element = tool.Ifc.get_entity(building_obj)
-
         mesh = bpy.data.meshes.new(name="Instance")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
 
@@ -487,12 +490,15 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             building_obj
             and building_element
             and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly"]
+            and instance_class in ["IfcWindow", "IfcDoor"]
         ):
-            if instance_class in ["IfcWindow", "IfcDoor"]:
-                # TODO For now we are hardcoding windows and doors as a prototype
-                tool.Model.add_filled_opening(building_obj, obj)
+            # TODO For now we are hardcoding windows and doors as a prototype
+            tool.Model.add_filled_opening(building_obj, obj)
         else:
             if self.container_obj:
+                bonsai.core.spatial.assign_container(
+                    tool.Ifc, tool.Collector, tool.Spatial, container=self.container, element_obj=obj
+                )
                 if props.rl_mode == "BOTTOM":
                     obj.location.z = self.container_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
                 elif props.rl_mode == "CONTAINER":

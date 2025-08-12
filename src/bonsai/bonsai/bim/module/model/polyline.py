@@ -544,6 +544,10 @@ def get_generic_product_preview_data(context, relating_type):
     if snap_element and snap_element.is_a("IfcWall"):
         rot_mat = snap_obj.matrix_world.to_quaternion()
 
+    if snap_element and (container := ifcopenshell.util.element.get_container(snap_element)):
+        container_obj = tool.Ifc.get_object(container)
+        mouse_point.z = container_obj.location.z
+
     obj_type = tool.Ifc.get_object(relating_type)
     if obj_type.data:
         data = ItemDecorator.get_obj_data(obj_type)
