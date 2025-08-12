@@ -479,7 +479,9 @@ class Usecase:
                 # IfcRelAssociatesClassification to openings! We only ever want
                 # to consider IfcFeatureElements in IfcRelVoidsElements and
                 # IfcRelProjectsElements.
-                if element.is_a() in ("IfcRelVoidsElement", "IfcRelProjectsElement") or not self.is_another_asset(attribute):
+                if element.is_a() in ("IfcRelVoidsElement", "IfcRelProjectsElement") or not self.is_another_asset(
+                    attribute
+                ):
                     new_attribute = self.add_element(attribute)
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
                 new_attribute = []
