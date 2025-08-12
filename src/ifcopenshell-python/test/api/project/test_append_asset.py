@@ -415,10 +415,15 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(library, ifc_class="IfcOpeningElement")
         classification = ifcopenshell.api.classification.add_classification(
-            library, classification="MyCustomClassification")
-        ifcopenshell.api.classification.add_reference(library,
-            products=[element, opening], classification=classification,
-            identification="W_01", name="Interior Walls")
+            library, classification="MyCustomClassification"
+        )
+        ifcopenshell.api.classification.add_reference(
+            library,
+            products=[element, opening],
+            classification=classification,
+            identification="W_01",
+            name="Interior Walls",
+        )
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         wall = self.file.by_type("IfcWall")[0]
         assert wall
