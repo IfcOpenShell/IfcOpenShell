@@ -472,7 +472,14 @@ class Usecase:
         for i, attribute in enumerate(element):
             new_attribute = None
             if isinstance(attribute, ifcopenshell.entity_instance):
-                if not self.is_another_asset(attribute):
+                # Void and projection relationships are special because they
+                # are "dependent" relationships, so we always consider them.
+                # We do _not_ whitelist (i.e. in is_another_asset)
+                # IfcFeatureElement because you can have things like
+                # IfcRelAssociatesClassification to openings! We only ever want
+                # to consider IfcFeatureElements in IfcRelVoidsElements and
+                # IfcRelProjectsElements.
+                if element.is_a() in ("IfcRelVoidsElement", "IfcRelProjectsElement") or not self.is_another_asset(attribute):
                     new_attribute = self.add_element(attribute)
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
                 new_attribute = []
@@ -499,9 +506,6 @@ class Usecase:
     def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
         """Is IFC entity from inverse attribute is another asset to append that should be skipped."""
         if element == self.settings["element"]:
-            return False
-        elif element.is_a("IfcFeatureElement"):
-            # Feature elements match the target class but aren't considered "assets"
             return False
         elif element.is_a("IfcRoot") and self.by_guid(element.GlobalId) is not None:
             return False
