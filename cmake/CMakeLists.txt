@@ -69,7 +69,7 @@ option(BUILD_IFCPYTHON "Build IfcPython." ON)
 option(BUILD_CONVERT "Build IfcConvert executable." ON)
 option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
 option(BUILD_EXAMPLES "Build example applications." ON)
-option(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
+option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
 option(BUILD_PACKAGE "" OFF)
@@ -1133,6 +1133,11 @@ endif(BUILD_CONVERT)
 
 # IfcGeomServer
 if(BUILD_GEOMSERVER)
+
+    if(NOT WITH_OPENCASCADE)
+        message(FATAL_ERROR "Open CASCADE is required to build IfcGeomServer.")
+    endif()
+
     file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
     file(GLOB H_FILES ../src/ifcgeomserver/*.h)
     set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
