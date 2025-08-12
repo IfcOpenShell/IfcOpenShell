@@ -644,6 +644,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         position_x_axis=tuple(local_x),
                         position_z_axis=z_axis,
                     )
+                else:
+                    item = builder.extrude(curve, magnitude=0.5 / unit_scale)
 
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
