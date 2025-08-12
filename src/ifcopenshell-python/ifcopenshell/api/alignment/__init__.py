@@ -61,6 +61,7 @@ from .create_representation import create_representation
 from .distance_along_from_station import distance_along_from_station
 from .get_alignment import get_alignment
 from .get_alignment_station import get_alignment_station
+from .get_curve_segment_transition_code import get_curve_segment_transition_code
 from .get_layout_segments import get_layout_segments
 from .get_horizontal_layout import get_horizontal_layout
 from .get_vertical_layout import get_vertical_layout
@@ -103,6 +104,7 @@ __all__ = [
     "get_cant_layout",
     "get_child_alignments",
     "get_curve",
+    "get_curve_segment_transition_code",
     "get_horizontal_layout",
     "get_layout_curve",
     "get_layout_segments",
