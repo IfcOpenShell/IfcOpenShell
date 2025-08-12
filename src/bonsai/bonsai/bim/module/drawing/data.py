@@ -240,6 +240,7 @@ class DecoratorData:
         cls.is_loaded = True
         cls.cut_cache = {}
         cls.layerset_cache = {}
+        cls.fill_cache = {}
 
         text = {}
         dimension = {}
