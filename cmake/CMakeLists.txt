@@ -778,6 +778,13 @@ else()
     endif()
 endif(MSVC)
 
+
+# Ensure other dependencies are provided.
+if(NOT EIGEN_DIR OR NOT EXISTS "${EIGEN_DIR}")
+  message(FATAL_ERROR "EIGEN_DIR is not provided or provided folder doesn't exist (current value: '${EIGEN_DIR}').")
+endif()
+
+
 include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
