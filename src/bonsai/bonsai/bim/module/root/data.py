@@ -255,6 +255,8 @@ class IfcClassData:
         if not element:
             return False
         if element_type := ifcopenshell.util.element.get_type(element):
+            if element_type == element:
+                return False
             # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
             return ifcopenshell.util.element.get_predefined_type(element_type) not in ("NOTDEFINED", None)
         return False
