@@ -691,10 +691,10 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in context.selected_objects:
-            self.mirror_obj(obj)
+            self.mirror_obj(context, obj)
         return { "FINISHED" }
 
-    def mirror_obj(self, obj):
+    def mirror_obj(self, context: bpy.types.Context, obj: bpy.types.Object):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
@@ -702,12 +702,25 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         active_context = tool.Geometry.get_active_representation_context(obj)
 
+        bb_data = tool.Blender.get_object_bounding_box(obj)
+
         if type_element and element.id() != type_element.id():
             # obj has a type, use / create inverted type and assign it
             self.assign_inverted_type(element)
         else:
             # invert representation of entity directly
             self.invert_representation(element)
+
+        context.view_layer.update()
+
+        mirrored_bb_data = tool.Blender.get_object_bounding_box(obj)
+
+        x_correction_factor = mirrored_bb_data["min_x"] - bb_data["min_x"]
+        x_correction_vec = (obj.matrix_world @ Vector((x_correction_factor, 0, 0, 0))).xyz
+        obj.location -= x_correction_vec
+
+        if element.is_a("IfcElement") and element.FillsVoids:
+            tool.Model.update_simple_openings(element)
 
         # bonsai does not automatically switch to the representation that should be active in the given context
         # when switching to a type that was previously viewed in another context (e.g. plan view),

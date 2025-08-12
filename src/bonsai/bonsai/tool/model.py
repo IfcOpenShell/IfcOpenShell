@@ -1696,6 +1696,38 @@ class Model(bonsai.core.tool.Model):
             )
 
     @classmethod
+    def reload_active_representation(cls, obj_or_objects: Union[bpy.types.Object, Iterable[bpy.types.Object]]) -> None:
+        """Update active representation including all decomposed objects"""
+        if isinstance(obj_or_objects, collections.abc.Iterable):
+            objects = set(obj_or_objects)
+        else:
+            objects = {obj_or_objects}
+
+        # decompose objects
+        decomposed_objs = objects.copy()
+        for obj in objects:
+            for subelement in ifcopenshell.util.element.get_decomposition(tool.Ifc.get_entity(obj)):
+                subobj = tool.Ifc.get_object(subelement)
+                if subobj:
+                    decomposed_objs.add(subobj)
+
+        # update representation
+        for obj in decomposed_objs:
+            if not obj.data:
+                continue
+            element = tool.Ifc.get_entity(obj)
+            active_repr = tool.Geometry.get_active_representation(obj)
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=active_repr,
+                should_reload=True,
+                is_global=False,
+                should_sync_changes_first=False,
+            )
+
+    @classmethod
     def is_parametric_roof_active(cls) -> bool:
         from bonsai.bim.module.model.data import RoofData
 
@@ -2097,7 +2129,8 @@ class Model(bonsai.core.tool.Model):
 
             has_replaced_opening_representation = True
 
-        tool.Model.reload_body_representation(voided_objs)
+        tool.Geometry.reload_representation(voided_objs)
+        tool.Model.reload_active_representation(voided_objs)
         if fillings:
             with bpy.context.temp_override(selected_objects=list(fillings.values())):
                 bpy.ops.bim.recalculate_fill()
