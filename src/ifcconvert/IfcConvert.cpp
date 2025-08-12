@@ -587,7 +587,7 @@ int main(int argc, char** argv) {
 
     if (file_exists(IfcUtil::path::to_utf8(output_filename)) && !vmap.count("yes")) {
         std::string answer;
-        cout_ << "A file '" << output_filename << "' already exists. Overwrite the existing file?" << std::endl;
+        cout_ << "A file '" << output_filename << "' already exists. Overwrite the existing file? y/n" << std::endl;
         std::cin >> answer;
         if (!boost::iequals(answer, "yes") && !boost::iequals(answer, "y")) {
             return EXIT_SUCCESS;
