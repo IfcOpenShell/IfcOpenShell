@@ -1284,11 +1284,13 @@ if(BUILD_CONVERT)
 endif(BUILD_CONVERT)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-    install(TARGETS geometry_serializer ${geometry_serializer_libraries}
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
+    if(WITH_OPENCASCADE)
+        install(TARGETS geometry_serializer ${geometry_serializer_libraries}
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+            RUNTIME DESTINATION ${BINDIR}
+        )
+    endif()
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 # Cmake uninstall target
