@@ -89,6 +89,12 @@ option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only ins
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
 option(VERSION_OVERRIDE "Override the version defined in IfcParse.h with the file VERSION in the repository root" OFF)
 
+set(
+    PYTHON_MODULE_INSTALL_DIR
+    "" CACHE PATH
+    "Directory to install IfcPython package to. By default package is installed in found Python's site-packages."
+)
+
 if (VERSION_OVERRIDE)
     file(READ "../VERSION" "RELEASE_VERSION_")
     string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
