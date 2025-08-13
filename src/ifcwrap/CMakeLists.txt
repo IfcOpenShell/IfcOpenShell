@@ -17,7 +17,7 @@
 #                                                                              #
 ################################################################################
 
-cmake_policy(SET CMP0177 NEW)
+cmake_policy(SET CMP0177 OLD)
 
 FIND_PACKAGE(SWIG)
 IF(NOT SWIG_FOUND)
