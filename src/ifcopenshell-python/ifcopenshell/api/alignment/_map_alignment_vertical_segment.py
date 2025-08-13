@@ -158,7 +158,7 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
 
     parent_curve = file.createIfcCircle(
         Position=file.createIfcAxis2Placement2D(
-            Location=file.createIfcCartesianPoint((0.0,0.0)),
+            Location=file.createIfcCartesianPoint((0.0, 0.0)),
             RefDirection=file.createIfcDirection((1.0, 0.0)),
         ),
         Radius=radius,

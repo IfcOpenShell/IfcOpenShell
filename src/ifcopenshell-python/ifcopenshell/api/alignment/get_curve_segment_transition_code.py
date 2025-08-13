@@ -25,7 +25,9 @@ import numpy as np
 import math
 
 
-def get_curve_segment_transition_code(prev_segment: entity_instance, segment: entity_instance, tolerance:float = 5.0e-4) -> str:
+def get_curve_segment_transition_code(
+    prev_segment: entity_instance, segment: entity_instance, tolerance: float = 5.0e-4
+) -> str:
     """
     Returns the  IfcCurveSegment.Transition of prev_segment based on a comparison of
     the position, ref. direction, and curvature at the end of the prev_segment and the start of segment.

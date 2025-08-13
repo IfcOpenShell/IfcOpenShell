@@ -30,4 +30,4 @@ def _update_curve_segment_transition_code(prev_segment: entity_instance, segment
     Updates IfcCurveSegment.Transition of prev_segment based on a comparison of
     the position, ref. direction, and curvature at the end of the prev_segment and the start of segment.
     """
-    prev_segment.Transition = ifcopenshell.api.alignment.get_curve_segment_transition_code(prev_segment,segment)
+    prev_segment.Transition = ifcopenshell.api.alignment.get_curve_segment_transition_code(prev_segment, segment)
