@@ -41,6 +41,7 @@ cmake_policy(SET CMP0086 NEW)
 if (POLICY CMP0144)
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
 endif()
+cmake_policy(SET CMP0167 OLD)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
