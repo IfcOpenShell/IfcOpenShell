@@ -549,6 +549,31 @@ def get_generic_product_preview_data(context, relating_type):
         mouse_point.z = container_obj.location.z
 
     obj_type = tool.Ifc.get_object(relating_type)
+
+    subcontexts = tool.Drawing.get_active_drawing_subcontexts()
+    if not subcontexts:
+        subcontexts = [("Model", "Body", "MODEL_VIEW")]
+
+    active_context = tool.Geometry.get_active_representation_context(obj_type)
+    active_context_params = tool.Geometry.get_subcontext_parameters(active_context)
+    for subcontext in subcontexts:
+        if subcontext == active_context_params:
+            break
+
+        representation = ifcopenshell.util.representation.get_representation(relating_type, *subcontext)
+        if representation:
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj_type,
+                representation,
+                should_reload=True,
+                is_global=False,
+                should_sync_changes_first=False,
+            )
+            context.view_layer.update()
+            break
+
     if obj_type.data:
         data = ItemDecorator.get_obj_data(obj_type)
         data["verts"] = [tuple(obj_type.matrix_world.inverted() @ Vector(v)) for v in data["verts"]]

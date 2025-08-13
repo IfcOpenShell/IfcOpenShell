@@ -469,6 +469,14 @@ class DocProperties(PropertyGroup):
         if drawing_id == 0:
             return None
         return tool.Ifc.get().by_id(drawing_id)
+    
+    def get_active_target_view(self) -> Union[str, None]:
+        active_drawing = self.get_active_drawing()
+        if not active_drawing:
+            return None
+        return tool.Drawing.get_drawing_target_view(active_drawing)
+        
+        
 
 
 def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context) -> None:

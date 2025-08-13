@@ -2114,22 +2114,9 @@ class Drawing(bonsai.core.tool.Drawing):
                         layer_collection2.hide_viewport = False
 
     @classmethod
-    def activate_drawing(cls, camera: bpy.types.Object) -> None:
-        selected_objects_before = bpy.context.selected_objects
-        non_ifc_objects_hide = {o: o.hide_get() for o in bpy.context.view_layer.objects if not tool.Ifc.get_entity(o)}
-
-        # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
-        drawing = tool.Ifc.get_entity(camera)
-        assert drawing and isinstance(camera.data, bpy.types.Camera)
-
-        filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
-        filtered_elements.add(drawing)
-
-        subcontexts: list[ifcopenshell.entity_instance] = []
-        target_view = cls.get_drawing_target_view(drawing)
-
+    def get_drawing_context_filters(cls, target_view: str) -> list[tuple[str, str, str]]:
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
-            context_filters = [
+            return [
                 ("Plan", "Body", target_view),
                 ("Plan", "Body", "MODEL_VIEW"),
                 ("Plan", "Facetation", target_view),
@@ -2144,7 +2131,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 ("Model", "Annotation", "MODEL_VIEW"),
             ]
         else:
-            context_filters = [
+            return [
                 ("Model", "Body", target_view),
                 ("Model", "Body", "MODEL_VIEW"),
                 ("Model", "Facetation", target_view),
@@ -2152,11 +2139,42 @@ class Drawing(bonsai.core.tool.Drawing):
                 ("Model", "Annotation", target_view),
                 ("Model", "Annotation", "MODEL_VIEW"),
             ]
+        
+    @classmethod
+    def get_drawing_subcontexts(cls, target_view: str) -> list[tuple[str, str, str]]:
+        context_filters = cls.get_drawing_context_filters(target_view)
+        subcontexts = []
 
         for context_filter in context_filters:
             subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), *context_filter)
             if subcontext:
                 subcontexts.append(context_filter)
+
+        return subcontexts
+    
+    @classmethod
+    def get_active_drawing_subcontexts(cls) -> list[tuple[str, str, str]] | None:
+        props = cls.get_document_props()
+        target_view = props.get_active_target_view()
+        if not target_view:
+            return None
+        
+        return cls.get_drawing_subcontexts(target_view)
+
+    @classmethod
+    def activate_drawing(cls, camera: bpy.types.Object) -> None:
+        selected_objects_before = bpy.context.selected_objects
+        non_ifc_objects_hide = {o: o.hide_get() for o in bpy.context.view_layer.objects if not tool.Ifc.get_entity(o)}
+
+        # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
+        drawing = tool.Ifc.get_entity(camera)
+        assert drawing and isinstance(camera.data, bpy.types.Camera)
+
+        filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
+        filtered_elements.add(drawing)
+
+        target_view = cls.get_drawing_target_view(drawing)
+        subcontexts = cls.get_drawing_subcontexts(target_view)
 
         # Hide everything first, then selectively show. This is significantly faster.
         with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
