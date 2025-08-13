@@ -225,7 +225,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 endmacro()
 
 if(WITH_CGAL)
-    if(NOT EXISTS "${CGAL_INCLUDE_DIR}")
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT EXISTS "${CGAL_INCLUDE_DIR}")
         message(FATAL_ERROR "CGAL_INCLUDE_DIR ('${CGAL_INCLUDE_DIR}') is not provided or doesn't exist.")
     endif()
 
