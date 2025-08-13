@@ -87,6 +87,11 @@ IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
+set PYTHON_VERSION=3.11
+py -%PYTHON_VERSION% --version 2>&1>NUL
+IF %ERRORLEVEL%==0 set IFCOS_INSTALL_PYTHON=EXISTS
+set PYTHON_VERSION=%PYTHON_VERSION%.7
+
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
@@ -143,6 +148,8 @@ echo     Defaults to Build if not specified. Rebuild/Clean also uninstalls Pytho
 call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
 echo   - Download and install Python.
 echo     Set to something other than TRUE if you wish to use an already installed version of Python.
+echo     EXISTS value is set automatically if same Python version is already found on the system
+echo     and we won't be able to install it again.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -171,7 +178,7 @@ set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
 set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-set PYTHON_VERSION=3.11.7
+set PYTHON_VERSION=%PYTHON_VERSION%
 
 :: VERSION DERIVATIONS
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
@@ -501,8 +508,9 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
         call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
         start /w  %PYTHON_INSTALLER% /quiet TargetDir="%PYTHONHOME%"
         if errorlevel 1 (
-            :: Standard installer doesn't support installing same Python version twice.
-            call cecho.cmd 0 12 "Failed to install Python. Error code: !ERRORLEVEL!. Possibly same Python version is already installed on the system and `IFCOS_INSTALL_PYTHON=FALSE` should be used."
+            :: Standard installer doesn't support installing same Python version twice,
+            :: but we skip installation during IFCOS_INSTALL_PYTHON initialization.
+            call cecho.cmd 0 12 "Failed to install Python. Error code: !ERRORLEVEL!."
             GOTO :Error
         )
     ) ELSE (
