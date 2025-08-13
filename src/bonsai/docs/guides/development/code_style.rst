@@ -2,7 +2,7 @@ Code style
 ============
 
 
-Code formatters
+Python code formatters
 -------------------------------
 For Python code formatting, we use `Black code formatter <https://pypi.org/project/black/>`__, 
 black settings are stored in the repository's pyproject.toml.
@@ -33,3 +33,49 @@ and ensure new Python syntax doesn't break code on older Python versions.
    ruff check --fix
    # Check only some specific file.
    ruff src/bonsai/bonsai/bim/module/qto/operator.py
+
+
+Python code style
+-------------------------------
+Naming should be `PEP8 <https://www.python.org/dev/peps/pep-0008>`__ compliant.
+Also prefer using long descriptive variable names.
+
+
+C++ code style
+-------------------------------
+
+* prefer British English instead of American
+* strictly use C++17
+* use similar style for all languages
+* spaces (4) instead of tabs
+* `CONSTANTS_AND_MACROS`
+* prefix macros that leak into client code (code using the IfcOpenShell libraries) with `IFC_`
+* `filenames_namespaces_classes_functions_and_variables`
+* `private_or_protected_member_variable_`
+* postfix typedefs with `_t`, e.g. `typedef float real_t`
+* (outdated? codebase is mainly using same line brace)
+  K&R style braces for control flow, but braces on their own line for non-control flow
+  (classes, enums, functions, etc.)
+
+.. code-block:: c++
+
+   #ifndef FOO_H
+   #define FOO_H
+
+   class foo
+   {
+   public:
+      void bar(bool foo_or_bar)
+      {
+         if (foo_or_bar) {
+               // ...
+         } else {
+               // ...
+         }
+      }
+
+   private:
+      bool i_am_foo_;
+   }
+
+   #endif
