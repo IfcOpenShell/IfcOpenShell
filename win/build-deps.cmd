@@ -500,6 +500,11 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     IF NOT EXIST "%PYTHONHOME%". (
         call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
         start /w  %PYTHON_INSTALLER% /quiet TargetDir="%PYTHONHOME%"
+        if errorlevel 1 (
+            :: Standard installer doesn't support installing same Python version twice.
+            call cecho.cmd 0 12 "Failed to install Python. Error code: !ERRORLEVEL!. Possibly same Python version is already installed on the system and `IFCOS_INSTALL_PYTHON=FALSE` should be used."
+            GOTO :Error
+        )
     ) ELSE (
         call cecho.cmd 0 13 "%DEPENDENCY_NAME% already installed. Skipping."
     )
