@@ -34,10 +34,12 @@ endif()
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
-if (POLICY CMP0144)
+if(POLICY CMP0144) # 3.27
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
 endif()
-cmake_policy(SET CMP0167 OLD)
+if(POLICY CMP0167) # 3.30
+    cmake_policy(SET CMP0167 OLD)
+endif()
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
