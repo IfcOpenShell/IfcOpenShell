@@ -118,14 +118,13 @@ class RepresentationsData:
         for representation in tool.Geometry.get_representations_iter(element):
             representation_type = representation.RepresentationType
             mapped_rep_id = None
-            
+
             if representation_type == "MappedRepresentation":
                 mapped_rep = representation.Items[0].MappingSource.MappedRepresentation
                 mapped_rep_id = mapped_rep.id()
                 representation_type = mapped_rep.RepresentationType + "*"
-            
-            is_active = (representation.id() == active_representation_id or 
-                        mapped_rep_id == active_representation_id)
+
+            is_active = representation.id() == active_representation_id or mapped_rep_id == active_representation_id
 
             data = {
                 "id": representation.id(),
