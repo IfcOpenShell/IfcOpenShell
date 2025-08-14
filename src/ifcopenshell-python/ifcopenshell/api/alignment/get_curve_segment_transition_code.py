@@ -26,47 +26,52 @@ import math
 
 
 def get_curve_segment_transition_code(
-    prev_segment: entity_instance, segment: entity_instance, tolerance: float = 5.0e-4
+    segment: entity_instance, next_segment: entity_instance, position_tolerance: float = 0.001
 ) -> str:
     """
-    Returns the  IfcCurveSegment.Transition of prev_segment based on a comparison of
-    the position, ref. direction, and curvature at the end of the prev_segment and the start of segment.
+    Returns the IfcCurveSegment.Transition of segment based on a comparison of
+    the position, ref. direction, and curvature at the end of the segment and the start of next_segment.
+
+    :param segment: segment for which the position curve is being being determined
+    :param next_segment: next segment
+    :param position_tolerance: tolerance used for evaluation positions. The default is 1mm
+    :return: the transition code
     """
     expected_type = "IfcCurveSegment"
-    if not prev_segment.is_a(expected_type):
-        raise TypeError(f"Expected to see '{expected_type}', instead received '{prev_segment.is_a()}'.")
-
     if not segment.is_a(expected_type):
         raise TypeError(f"Expected to see '{expected_type}', instead received '{segment.is_a()}'.")
 
-    if len(prev_segment.UsingCurves) != 1:
-        raise TypeError("prev_segment must belong to exactly one curve")
+    if not next_segment.is_a(expected_type):
+        raise TypeError(f"Expected to see '{expected_type}', instead received '{next_segment.is_a()}'.")
 
     if len(segment.UsingCurves) != 1:
         raise TypeError("segment must belong to exactly one curve")
 
-    if prev_segment.UsingCurves[0] != segment.UsingCurves[0]:
+    if len(next_segment.UsingCurves) != 1:
+        raise TypeError("next_segment must belong to exactly one curve")
+
+    if segment.UsingCurves[0] != next_segment.UsingCurves[0]:
         raise TypeError("Both segments must belong to the same curve")
 
     settings = ifcopenshell.geom.settings()
     settings.set("COMPUTE_CURVATURE", True)
 
-    prev_segment_fn = ifcopenshell_wrapper.map_shape(settings, prev_segment.wrapped_data)
-    prev_segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, prev_segment_fn)
-    e = prev_segment_evaluator.evaluate(prev_segment_fn.end())
+    segment_fn = ifcopenshell_wrapper.map_shape(settings, segment.wrapped_data)
+    segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
+    e = segment_evaluator.evaluate(segment_fn.end())
     end = np.array(e)
 
     # must add the new segment to the container before mapping it, otherwise the segment doesn't
     # have enough context to know if it is for horizontal, vertical, cant
 
-    segment_fn = ifcopenshell_wrapper.map_shape(settings, segment.wrapped_data)
-    segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
-    s = segment_evaluator.evaluate(segment_fn.start())
+    next_segment_fn = ifcopenshell_wrapper.map_shape(settings, next_segment.wrapped_data)
+    next_segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, next_segment_fn)
+    s = next_segment_evaluator.evaluate(next_segment_fn.start())
     start = np.array(s)
 
-    same_position = True if np.allclose(end[:3, 3], start[:3, 3], atol=tolerance) else False
-    same_gradient = True if np.allclose(end[:3, 0], start[:3, 0], atol=tolerance) else False
-    same_curvature = True if np.allclose(end[3:, :3], start[3:, :3], atol=tolerance) else False
+    same_position = True if np.allclose(end[:3, 3], start[:3, 3], atol=position_tolerance) else False
+    same_gradient = True if np.allclose(end[:3, 0], start[:3, 0]) else False
+    same_curvature = True if np.allclose(end[3:, :3], start[3:, :3]) else False
 
     transition_code = ""
     if same_position:

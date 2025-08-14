@@ -27,6 +27,7 @@ import math
 
 from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
 from ifcopenshell.api.alignment._map_alignment_horizontal_segment import _map_alignment_horizontal_segment
+from ifcopenshell.api.alignment._map_alignment_vertical_segment import _map_alignment_vertical_segment
 from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
 
 
@@ -157,20 +158,35 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
             )
         elif layout.is_a("IfcAlignmentVertical"):
             last_segment_dist_along = 0.0
+            last_segment_height = 0.0
             last_segment_end_gradient = 0.0
+            last_segment = None
             for rel in layout.IsNestedBy:
                 if 0 < len(rel.RelatedObjects):
                     last_segment = rel.RelatedObjects[-1]
-                    last_segment_dist_along = (
-                        last_segment.DesignParameters.StartDistAlong + last_segment.DesignParameters.HorizontalLength
-                    )
-                    last_segment_end_gradient = last_segment.DesignParameters.EndGradient
                     break
+
+            if last_segment:
+                file.begin_transaction()
+                last_segment_dist_along = (
+                    last_segment.DesignParameters.StartDistAlong + last_segment.DesignParameters.HorizontalLength
+                )
+                last_segment_end_gradient = last_segment.DesignParameters.EndGradient
+                settings = ifcopenshell.geom.settings()
+                mapped_segments = _map_alignment_vertical_segment(file, last_segment)
+                geometry_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
+                fn = wrapper.map_shape(settings, geometry_segment.wrapped_data)
+                eval = wrapper.function_item_evaluator(settings, fn)
+                e = np.array(eval.evaluate(fn.end()))
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+                last_segment_height = float(e[1, 3]) / unit_scale
+
+                file.discard_transaction()
 
             design_parameters = file.createIfcAlignmentVerticalSegment(
                 StartDistAlong=last_segment_dist_along,
                 HorizontalLength=0.0,
-                StartHeight=0.0,
+                StartHeight=last_segment_height,
                 StartGradient=last_segment_end_gradient,
                 EndGradient=last_segment_end_gradient,
                 PredefinedType="CONSTANTGRADIENT",
