@@ -17,8 +17,12 @@
 #                                                                              #
 ################################################################################
 
-cmake_policy(SET CMP0148 OLD)
-cmake_policy(SET CMP0177 OLD)
+if(POLICY CMP0148) # 3.27
+    cmake_policy(SET CMP0148 OLD)
+endif()
+if(POLICY CMP0177) # 3.31
+    cmake_policy(SET CMP0177 OLD)
+endif()
 
 FIND_PACKAGE(SWIG)
 IF(NOT SWIG_FOUND)
