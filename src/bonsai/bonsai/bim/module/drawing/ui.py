@@ -70,8 +70,25 @@ class BIM_PT_camera(Panel):
         row = col.row(align=True)
         row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
+
+        # Drawing linked projects.
         row = col.row(align=True)
         row.prop(dprops, "should_draw_linked_projects")
+        if dprops.should_draw_linked_projects:
+            header, panel = self.layout.panel("links_to_draw")
+            header.label(text="Linked Projects to Draw", icon="OUTPUT")
+
+            pprops = tool.Project.get_project_props()
+            links = list(pprops.get_loaded_links())
+            if panel:
+                if links:
+                    for link in links:
+                        row = panel.row(align=True)
+                        split = row.split(factor=0.9)
+                        split.label(text=link.name, icon="FILE")
+                        split.prop(link, "include_in_drawings", text="")
+                else:
+                    panel.label(text="No IFC projects linked and loaded.")
 
         row = self.layout.row(align=True)
         row.prop(props, "target_view")

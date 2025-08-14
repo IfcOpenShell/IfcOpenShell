@@ -225,6 +225,7 @@ class Link(PropertyGroup):
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
+    include_in_drawings: BoolProperty(name="Include in Drawings", default=True, options=set())
     empty_handle: PointerProperty(
         name="Empty Object Handle",
         description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
@@ -237,6 +238,7 @@ class Link(PropertyGroup):
         is_selectable: bool
         is_wireframe: bool
         is_hidden: bool
+        include_in_drawings: bool
         empty_handle: Union[bpy.types.Object, None]
 
 
@@ -505,12 +507,18 @@ class BIMProjectProperties(PropertyGroup):
             return self.library_breadcrumb[-1]
         return None
 
+    def get_loaded_links(self) -> Generator[Link]:
+        for link in self.links:
+            if not link.is_loaded:
+                continue
+            yield link
+
     def get_loaded_links_for_drawings(self) -> Generator[Link]:
         props = tool.Drawing.get_document_props()
         if not props.should_draw_linked_projects:
             return
-        for link in self.links:
-            if not link.is_loaded:
+        for link in self.get_loaded_links():
+            if not link.include_in_drawings:
                 continue
             yield link
 

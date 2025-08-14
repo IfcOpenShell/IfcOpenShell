@@ -413,6 +413,7 @@ class DocProperties(PropertyGroup):
         name="Draw Linked Projects",
         description=("Whether to draw all currently loaded linked projects.\n\nGlobal option for all drawings."),
         default=True,
+        options=set(),
     )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
