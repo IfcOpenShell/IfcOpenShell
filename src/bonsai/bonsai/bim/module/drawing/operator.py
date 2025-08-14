@@ -3173,7 +3173,6 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Drawing.get_text_props(obj)
         core.edit_text(tool.Drawing, obj=obj)
 
-        # Apply changes to all selected objects if toggles are enabled
         self.apply_to_selected_objects(context, obj, props)
 
         tool.Blender.update_viewport()
@@ -3204,21 +3203,25 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
                 if i >= len(obj_props.literals):
                     continue
 
+                obj_props.ensure_literal_apply_settings(len(obj_props.literals))
                 obj_literal = obj_props.literals[i]
 
-                if getattr(active_props, f"apply_literal_{i}_text_to_all", False):
-                    if len(active_literal.attributes) > 0 and len(obj_literal.attributes) > 0:
-                        obj_literal.attributes[0].string_value = active_literal.attributes[0].string_value
-                        needs_update = True
+                if i < len(active_props.literal_apply_settings):
+                    active_settings = active_props.literal_apply_settings[i]
 
-                if getattr(active_props, f"apply_literal_{i}_path_to_all", False):
-                    if len(active_literal.attributes) > 1 and len(obj_literal.attributes) > 1:
-                        obj_literal.attributes[1].enum_value = active_literal.attributes[1].enum_value
-                        needs_update = True
+                    if active_settings.apply_text_to_all:
+                        if len(active_literal.attributes) > 0 and len(obj_literal.attributes) > 0:
+                            obj_literal.attributes[0].string_value = active_literal.attributes[0].string_value
+                            needs_update = True
 
-                if getattr(active_props, f"apply_literal_{i}_box_alignment_to_all", False):
-                    obj_literal.box_alignment = active_literal.box_alignment[:]
-                    needs_update = True
+                    if active_settings.apply_path_to_all:
+                        if len(active_literal.attributes) > 1 and len(obj_literal.attributes) > 1:
+                            obj_literal.attributes[1].enum_value = active_literal.attributes[1].enum_value
+                            needs_update = True
+
+                    if active_settings.apply_box_alignment_to_all:
+                        obj_literal.box_alignment = active_literal.box_alignment[:]
+                        needs_update = True
 
             if needs_update:
                 core.edit_text(tool.Drawing, obj=obj)
@@ -3227,12 +3230,16 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_text"
     bl_label = "Enable Editing Text"
-    bl_description = "Enable the text editing options for this\ntext annotation"
-
-    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Enable text editing options"
 
     def _execute(self, context):
-        core.enable_editing_text(tool.Drawing, obj=context.active_object)
+        obj = context.active_object
+        props = tool.Drawing.get_text_props(obj)
+        core.enable_editing_text(tool.Drawing, obj=obj)
+
+        props.ensure_literal_apply_settings(len(props.literals))
+
+        return {"FINISHED"}
 
 
 class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
@@ -3287,6 +3294,9 @@ class AddTextLiteral(bpy.types.Operator):
         box_alignment_mask = [False] * 9
         box_alignment_mask[6] = True  # bottom_left box_alignment
         literal_props.box_alignment = box_alignment_mask
+
+        props.ensure_literal_apply_settings(len(props.literals))
+
         return {"FINISHED"}
 
 
@@ -3305,6 +3315,9 @@ class RemoveTextLiteral(bpy.types.Operator):
         props = tool.Drawing.get_text_props(obj)
         props.literals.remove(self.literal_prop_id)
         tool.Blender.update_viewport()
+
+        props.ensure_literal_apply_settings(len(props.literals))
+
         return {"FINISHED"}
 
 

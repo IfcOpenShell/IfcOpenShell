@@ -732,6 +732,19 @@ class LiteralProps(PropertyGroup):
         ifc_definition_id: int
 
 
+class LiteralApplySettings(PropertyGroup):
+    literal_index: IntProperty(name="Literal Index")
+    apply_text_to_all: BoolProperty(name="Apply Text to All", default=False)
+    apply_path_to_all: BoolProperty(name="Apply Path to All", default=False)
+    apply_box_alignment_to_all: BoolProperty(name="Apply Box Alignment to All", default=False)
+
+    if TYPE_CHECKING:
+        literal_index: int
+        apply_text_to_all: bool
+        apply_path_to_all: bool
+        apply_box_alignment_to_all: bool
+
+
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     literals: CollectionProperty(name="Literals", type=LiteralProps)
@@ -763,7 +776,7 @@ class BIMTextProperties(PropertyGroup):
         description="Non-default symbol to use for this text.",
     )
     
-    # Font size toggle
+    # Simple toggle properties
     apply_font_size_to_all: BoolProperty(
         name="Apply Font Size to All", description="Apply font size changes to all selected text objects", default=False
     )
@@ -771,28 +784,32 @@ class BIMTextProperties(PropertyGroup):
         name="Apply Newline to All", description="Apply newline changes to all selected text objects", default=False
     )
 
-    # Literal-specific toggles (text, path, box_alignment for each literal index)
-    apply_literal_0_text_to_all: BoolProperty(default=False)
-    apply_literal_0_path_to_all: BoolProperty(default=False)
-    apply_literal_0_box_alignment_to_all: BoolProperty(default=False)
+    # Dynamic collection that grows with literals
+    literal_apply_settings: CollectionProperty(name="Literal Apply Settings", type=LiteralApplySettings)
 
-    apply_literal_1_text_to_all: BoolProperty(default=False)
-    apply_literal_1_path_to_all: BoolProperty(default=False)
-    apply_literal_1_box_alignment_to_all: BoolProperty(default=False)
+    def ensure_literal_apply_settings(self, literal_count: int):
+        """Ensure we have apply settings for all literals"""
+        # Remove excess settings if we have fewer literals now
+        while len(self.literal_apply_settings) > literal_count:
+            self.literal_apply_settings.remove(len(self.literal_apply_settings) - 1)
 
-    apply_literal_2_text_to_all: BoolProperty(default=False)
-    apply_literal_2_path_to_all: BoolProperty(default=False)
-    apply_literal_2_box_alignment_to_all: BoolProperty(default=False)
+        # Add missing settings if we have more literals now
+        while len(self.literal_apply_settings) < literal_count:
+            setting = self.literal_apply_settings.add()
+            setting.literal_index = len(self.literal_apply_settings) - 1
 
-    apply_literal_3_text_to_all: BoolProperty(default=False)
-    apply_literal_3_path_to_all: BoolProperty(default=False)
-    apply_literal_3_box_alignment_to_all: BoolProperty(default=False)
+    def get_literal_apply_setting(self, literal_index: int, setting_type: str) -> bool:
+        """Get apply-to-all setting for a specific literal and setting type"""
+        if literal_index >= len(self.literal_apply_settings):
+            return False
+        setting = self.literal_apply_settings[literal_index]
+        return getattr(setting, f"apply_{setting_type}_to_all", False)
 
-    apply_literal_4_text_to_all: BoolProperty(default=False)
-    apply_literal_4_path_to_all: BoolProperty(default=False)
-    apply_literal_4_box_alignment_to_all: BoolProperty(default=False)
-
-    # Add more as needed for additional literals
+    def set_literal_apply_setting(self, literal_index: int, setting_type: str, value: bool) -> None:
+        """Set apply-to-all setting for a specific literal and setting type"""
+        self.ensure_literal_apply_settings(literal_index + 1)
+        setting = self.literal_apply_settings[literal_index]
+        setattr(setting, f"apply_{setting_type}_to_all", value)
 
     if TYPE_CHECKING:
         is_editing: bool

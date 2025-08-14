@@ -581,6 +581,9 @@ class BIM_PT_text(Panel):
         assert obj
         props = tool.Drawing.get_text_props(obj)
 
+        if props.is_editing:
+            props.ensure_literal_apply_settings(len(props.literals))
+
         row = self.layout.row(align=True)
 
         if popup_mode:
@@ -623,12 +626,12 @@ class BIM_PT_text(Panel):
                 if len(literal_props.attributes) > 0:
                     row = box.row(align=True)
                     row.prop(literal_props.attributes[0], "string_value", text="Text")
-                    row.prop(props, f"apply_literal_{i}_text_to_all", text="", icon="COPYDOWN")
+                    row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
 
                 if len(literal_props.attributes) > 1:
                     row = box.row(align=True)
                     row.prop(literal_props.attributes[1], "enum_value", text="Path")
-                    row.prop(props, f"apply_literal_{i}_path_to_all", text="", icon="COPYDOWN")
+                    row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
 
                 row = box.row(align=True)
                 cols = [row.column(align=True) for j in range(3)]
@@ -659,7 +662,9 @@ class BIM_PT_text(Panel):
             col = row.column(align=True)
             alignment_label_row = col.row(align=True)
                 alignment_label_row.label(text="    Text box alignment:")
-                alignment_label_row.prop(props, f"apply_literal_{i}_box_alignment_to_all", text="", icon="COPYDOWN")
+                alignment_label_row.prop(
+                    props.literal_apply_settings[i], "apply_box_alignment_to_all", text="", icon="COPYDOWN"
+                )
             col.label(
                     text=f'    {literal_props.attributes[next((idx for idx, attr in enumerate(literal_props.attributes) if attr.name == "BoxAlignment"), -1)].string_value if any(attr.name == "BoxAlignment" for attr in literal_props.attributes) else "N/A"}'
                 )
