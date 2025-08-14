@@ -3192,41 +3192,34 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
             obj_props = tool.Drawing.get_text_props(obj)
             needs_update = False
 
-            # Apply font size if toggle is enabled
             if active_props.apply_font_size_to_all:
                 obj_props.font_size = active_props.font_size
                 needs_update = True
 
-            # Apply newline setting if toggle is enabled
             if active_props.apply_newline_to_all:
                 obj_props.newline_at = active_props.newline_at
                 needs_update = True
 
-            # Apply literal-specific changes
             for i, active_literal in enumerate(active_props.literals):
                 if i >= len(obj_props.literals):
                     continue
 
                 obj_literal = obj_props.literals[i]
 
-                # Apply text content if toggle is enabled
                 if getattr(active_props, f"apply_literal_{i}_text_to_all", False):
                     if len(active_literal.attributes) > 0 and len(obj_literal.attributes) > 0:
                         obj_literal.attributes[0].string_value = active_literal.attributes[0].string_value
                         needs_update = True
 
-                # Apply path if toggle is enabled
                 if getattr(active_props, f"apply_literal_{i}_path_to_all", False):
                     if len(active_literal.attributes) > 1 and len(obj_literal.attributes) > 1:
                         obj_literal.attributes[1].enum_value = active_literal.attributes[1].enum_value
                         needs_update = True
 
-                # Apply box alignment if toggle is enabled
                 if getattr(active_props, f"apply_literal_{i}_box_alignment_to_all", False):
                     obj_literal.box_alignment = active_literal.box_alignment[:]
                     needs_update = True
 
-            # Update the object if any changes were made
             if needs_update:
                 core.edit_text(tool.Drawing, obj=obj)
 
