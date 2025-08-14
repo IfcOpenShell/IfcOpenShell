@@ -3149,6 +3149,8 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
         # Apply changes to all selected objects if toggles are enabled
         self.apply_to_selected_objects(context, obj, props)
 
+        tool.Blender.update_viewport()
+
         return {"FINISHED"}
 
     def apply_to_selected_objects(self, context, active_obj, active_props):
