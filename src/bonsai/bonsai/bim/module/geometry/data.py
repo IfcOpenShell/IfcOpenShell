@@ -118,12 +118,14 @@ class RepresentationsData:
         for representation in tool.Geometry.get_representations_iter(element):
             representation_type = representation.RepresentationType
             resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
-            
+
             if resolved_representation != representation:
                 representation_type = resolved_representation.RepresentationType + "*"
 
-            is_active = (representation.id() == active_representation_id or 
-                        resolved_representation.id() == active_representation_id)
+            is_active = (
+                representation.id() == active_representation_id
+                or resolved_representation.id() == active_representation_id
+            )
 
             data = {
                 "id": representation.id(),
