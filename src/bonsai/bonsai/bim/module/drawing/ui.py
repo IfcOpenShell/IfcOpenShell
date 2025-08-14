@@ -592,6 +592,8 @@ class BIM_PT_text(Panel):
 
         row = self.layout.row(align=True)
         row.prop(props, "font_size")
+            row.prop(props, "apply_font_size_to_all", text="", icon="COPYDOWN")
+            
         row = self.layout.row(align=True)
         row.prop(props, "newline_at")
         row = self.layout.row(align=True)
@@ -604,6 +606,7 @@ class BIM_PT_text(Panel):
         if props.symbol == "CUSTOM SYMBOL":
             row = self.layout.row(align=True)
             row.prop(props, "custom_symbol", text="")
+            row.prop(props, "apply_newline_to_all", text="", icon="COPYDOWN")
 
         for i, literal_props in enumerate(props.literals):
             box = self.layout.box()
@@ -617,6 +620,29 @@ class BIM_PT_text(Panel):
                 row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
             row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
 
+                # Text content (attribute[0])
+                if len(literal_props.attributes) > 0:
+                    row = box.row(align=True)
+                    row.prop(literal_props.attributes[0], "string_value", text="Text")
+                    row.prop(props, f"apply_literal_{i}_text_to_all", text="", icon="COPYDOWN")
+
+                # Path (attribute[1])
+                if len(literal_props.attributes) > 1:
+                    row = box.row(align=True)
+                    row.prop(literal_props.attributes[1], "enum_value", text="Path")
+                    row.prop(props, f"apply_literal_{i}_path_to_all", text="", icon="COPYDOWN")
+
+                # Box alignment
+                row = box.row(align=True)
+                cols = [row.column(align=True) for j in range(3)]
+                for j in range(9):
+                    cols[j % 3].prop(
+                        literal_props,
+                        "box_alignment",
+                        text="",
+                        index=j,
+                        icon="RADIOBUT_ON" if literal_props.box_alignment[j] else "RADIOBUT_OFF",
+                    )
             # skip BoxAlignment since we're going to format it ourselves
             attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
             popup_active_attribute = attributes[0] if popup_mode else None
@@ -634,8 +660,10 @@ class BIM_PT_text(Panel):
                 )
 
             col = row.column(align=True)
-            col.label(text="    Text box alignment:")
-            col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
+            alignment_label_row = col.row(align=True)
+                alignment_label_row.label(text="    Text box alignment:")
+                alignment_label_row.prop(props, f"apply_literal_{i}_box_alignment_to_all", text="", icon="COPYDOWN")
+            col.label(text=f'    {literal_props.attributes[next((idx for idx, attr in enumerate(literal_props.attributes) if attr.name == "BoxAlignment"), -1)].string_value if any(attr.name == "BoxAlignment" for attr in literal_props.attributes) else "N/A"}')
 
     def draw(self, context):
         obj = context.active_object
@@ -653,6 +681,7 @@ class BIM_PT_text(Panel):
             row = self.layout.row(align=True)
             row.label(text="FontSize")
             row.label(text=str(text_data["FontSize"]))
+            
             row = self.layout.row(align=True)
             row.label(text="Newline_At")
             row.label(text=str(text_data["Newline_At"]))

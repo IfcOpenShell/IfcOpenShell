@@ -762,6 +762,41 @@ class BIMTextProperties(PropertyGroup):
         name="Custom Symbol",
         description="Non-default symbol to use for this text.",
     )
+    
+    # Font size toggle
+    apply_font_size_to_all: BoolProperty(
+        name="Apply Font Size to All",
+        description="Apply font size changes to all selected text objects",
+        default=False
+    )
+    apply_newline_to_all: BoolProperty(
+        name="Apply Newline to All", 
+        description="Apply newline changes to all selected text objects",
+        default=False
+    )
+    
+    # Literal-specific toggles (text, path, box_alignment for each literal index)
+    apply_literal_0_text_to_all: BoolProperty(default=False)
+    apply_literal_0_path_to_all: BoolProperty(default=False)
+    apply_literal_0_box_alignment_to_all: BoolProperty(default=False)
+    
+    apply_literal_1_text_to_all: BoolProperty(default=False)
+    apply_literal_1_path_to_all: BoolProperty(default=False)
+    apply_literal_1_box_alignment_to_all: BoolProperty(default=False)
+    
+    apply_literal_2_text_to_all: BoolProperty(default=False)
+    apply_literal_2_path_to_all: BoolProperty(default=False)
+    apply_literal_2_box_alignment_to_all: BoolProperty(default=False)
+    
+    apply_literal_3_text_to_all: BoolProperty(default=False)
+    apply_literal_3_path_to_all: BoolProperty(default=False)
+    apply_literal_3_box_alignment_to_all: BoolProperty(default=False)
+    
+    apply_literal_4_text_to_all: BoolProperty(default=False)
+    apply_literal_4_path_to_all: BoolProperty(default=False)
+    apply_literal_4_box_alignment_to_all: BoolProperty(default=False)
+
+    # Add more as needed for additional literals
 
     if TYPE_CHECKING:
         is_editing: bool
@@ -772,6 +807,9 @@ class BIMTextProperties(PropertyGroup):
         list_separator: str
         symbol: Union[str, Literal["NO SYMBOL", "CUSTOM SYMBOL"]]
         custom_symbol: str
+        apply_font_size_to_all: bool
+        apply_newline_to_all: bool
+        # Add type hints for literal-specific properties as needed
 
     def get_symbol(self) -> Union[str, None]:
         if self.symbol == "NO SYMBOL":
@@ -791,6 +829,7 @@ class BIMTextProperties(PropertyGroup):
         else:
             self.symbol = "CUSTOM SYMBOL"
             self.custom_symbol = symbol
+
 
     def get_text_edited_data(self) -> dict[str, Any]:
         """should be called only if `is_editing`
