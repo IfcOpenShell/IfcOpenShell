@@ -800,19 +800,6 @@ class BIMTextProperties(PropertyGroup):
             setting = self.literal_apply_settings.add()
             setting.literal_index = len(self.literal_apply_settings) - 1
 
-    def get_literal_apply_setting(self, literal_index: int, setting_type: str) -> bool:
-        """Get apply-to-all setting for a specific literal and setting type"""
-        if literal_index >= len(self.literal_apply_settings):
-            return False
-        setting = self.literal_apply_settings[literal_index]
-        return getattr(setting, f"apply_{setting_type}_to_all", False)
-
-    def set_literal_apply_setting(self, literal_index: int, setting_type: str, value: bool) -> None:
-        """Set apply-to-all setting for a specific literal and setting type"""
-        self.ensure_literal_apply_settings(literal_index + 1)
-        setting = self.literal_apply_settings[literal_index]
-        setattr(setting, f"apply_{setting_type}_to_all", value)
-
     if TYPE_CHECKING:
         is_editing: bool
         literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
