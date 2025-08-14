@@ -794,3 +794,5 @@ def test_map_alignment_vertical_segment():
     _ParabolicArc_100_0_10_0__1_0__0_5_1_Meter(file)
 
     # VERTICAL CLOTHOID NOT IMPLEMENTED
+
+test_map_alignment_vertical_segment()
