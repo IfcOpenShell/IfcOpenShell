@@ -97,6 +97,7 @@ classes = (
     prop.DocProperties,
     prop.BIMCameraProperties,
     prop.LiteralProps,
+    prop.LiteralApplySettings,
     prop.BIMTextProperties,
     prop.BIMAssignedProductProperties,
     prop.BIMAnnotationProperties,
