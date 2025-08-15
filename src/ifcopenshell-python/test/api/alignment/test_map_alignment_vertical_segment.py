@@ -795,4 +795,5 @@ def test_map_alignment_vertical_segment():
 
     # VERTICAL CLOTHOID NOT IMPLEMENTED
 
+
 test_map_alignment_vertical_segment()
