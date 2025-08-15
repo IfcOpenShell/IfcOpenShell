@@ -38,6 +38,7 @@ classes = (
     operator.AssignProduct,
     operator.AssignRecurrencePattern,
     operator.AssignSuccessor,
+    operator.AssignStatus,
     operator.AssignWorkSchedule,
     operator.Bonsai_DatePicker,
     operator.CalculateTaskDuration,
