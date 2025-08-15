@@ -87,6 +87,7 @@ classes = (
     operator.SelectAllDrawings,
     operator.SelectAllSheets,
     operator.SelectAssignedProduct,
+    operator.SelectSimilarTextLiteral,
     operator.ToggleTargetView,
     operator.OpenDocumentationWebUi,
     prop.Variable,
