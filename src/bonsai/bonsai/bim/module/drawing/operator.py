@@ -4128,7 +4128,6 @@ class OpenDocumentationWebUi(bpy.types.Operator):
             bpy.ops.bim.open_web_browser(page="documentation")
         return {"FINISHED"}
 
-
 class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.exclude_annotation"
     bl_label = "Exclude Annotation"
