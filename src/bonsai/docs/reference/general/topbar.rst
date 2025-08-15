@@ -38,9 +38,6 @@ Access new, open, save, and import functionality.
     damage your IFC model. For more information, see
     :ref:`guides/troubleshooting:saving and loading blend files`.
 
-.. _halloa:
-
-
 New IFC Project
 ---------------
 .. container:: location-scene
