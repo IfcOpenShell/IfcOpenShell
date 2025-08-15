@@ -41,7 +41,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING, Literal, get_args
+from typing import TYPE_CHECKING, Literal, Union, get_args
 
 
 def getTaskColumns(self, context):
@@ -429,13 +429,13 @@ class BIMWorkPlanProperties(PropertyGroup):
 
 
 class IFCStatus(PropertyGroup):
-    name: StringProperty(name="Name")
-    is_visible: BoolProperty(
+    name: StringProperty()  # pyright: ignore[reportRedeclaration]
+    is_visible: BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Is Visible", default=True, update=lambda x, y: (None, bpy.ops.bim.activate_status_filters())[0]
     )
 
     if TYPE_CHECKING:
-        name: str
+        name: tool.Sequence.ElementStatusUI
         is_visible: bool
 
 

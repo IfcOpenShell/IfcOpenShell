@@ -78,6 +78,7 @@ class PsetQto:
         qto_only=False,
         schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
     ) -> list[entity_instance]:
+        """Get applicable property set templates."""
         any_class = not ifc_class
         entity = None
         if not any_class:

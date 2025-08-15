@@ -32,6 +32,7 @@ def refresh():
     TaskICOMData.is_loaded = False
     WorkScheduleData.is_loaded = False
     AnimationColorSchemeData.is_loaded = False
+    StatusData.is_loaded = False
 
 
 class SequenceData:
@@ -421,3 +422,25 @@ class AnimationColorSchemeData:
             except:
                 pass
         return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
+
+
+class StatusData:
+    data: dict[str, Any] = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls) -> None:
+        cls.is_loaded = True
+        cls.data = {
+            "statuses_with_elements": cls.statuses_with_elements(),
+        }
+
+    @classmethod
+    def statuses_with_elements(cls) -> set[str]:
+        statuses = ["No Status"]
+        statuses.extend(tool.Sequence.ELEMENT_STATUSES)
+        statuses_used: set[str] = set()
+        for status in statuses:
+            if tool.Sequence.get_elements_by_status(status):
+                statuses_used.add(status)
+        return statuses_used

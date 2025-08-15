@@ -29,6 +29,7 @@ from bonsai.bim.module.sequence.data import (
     SequenceData,
     TaskICOMData,
     AnimationColorSchemeData,
+    StatusData,
 )
 from typing import Any, Optional, TYPE_CHECKING
 
@@ -59,16 +60,25 @@ class BIM_PT_status(Panel):
             row.operator("bim.enable_status_filters", icon="GREASEPENCIL")
             return
 
+        if not StatusData.is_loaded:
+            StatusData.load()
+
         row = self.layout.row(align=True)
-        row.label(text="Statuses found in the project:")
+        row.label(text="Elements Statuses:")
         row.operator("bim.activate_status_filters", icon="FILE_REFRESH", text="")
         row.operator("bim.disable_status_filters", icon="CANCEL", text="")
 
+        box = self.layout.box()
         for status in self.props.statuses:
-            row = self.layout.row(align=True)
+            row = box.row(align=True)
             row.label(text=status.name)
+            if status.name in StatusData.data["statuses_with_elements"]:
+                row.label(text="", icon="ASSET_MANAGER")
             row.prop(status, "is_visible", text="", emboss=False, icon="HIDE_OFF" if status.is_visible else "HIDE_ON")
-            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").name = status.name
+            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").status = status.name
+            row.operator("bim.assign_status", icon="BRUSH_DATA", text="").status = status.name
+
+        # TODO: also add a prop to add custom userdefined status.
 
 
 class BIM_PT_work_plans(Panel):
