@@ -26,7 +26,7 @@ import functools
 import ifcopenshell
 import weakref
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict, Tuple
+from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict
 from collections.abc import Callable, Generator
 
 # py39 compat: re-enable when support is dropped
@@ -361,13 +361,13 @@ class file:
         file_dict[self.wrapped_data.file_pointer()] = (weakref.ref(self), time.monotonic_ns())
 
     @property
-    def identifier(self) -> Tuple[int, int]:
+    def identifier(self) -> tuple[int, int]:
         """Pair of C++ file pointer address and creation time stamp to uniquely identify a file
         over the life time of ifcopenshell module that should be mostly safe except in pathological
         cases
 
         Returns:
-            Tuple[int, int]: Pair of C++ file pointer address and creation time stamp
+            tuple[int, int]: Pair of C++ file pointer address and creation time stamp
         """
         return (self.wrapped_data.file_pointer(), file_dict[self.wrapped_data.file_pointer()][1])
 
