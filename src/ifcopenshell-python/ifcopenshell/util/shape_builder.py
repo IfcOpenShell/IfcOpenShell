@@ -1404,7 +1404,7 @@ class ShapeBuilder:
         return self.file.createIfcTriangulatedFaceSet(Coordinates=ifc_points, CoordIndex=ifc_faces)
 
     def polygonal_face_set(
-        self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]
+        self, points: SequenceOfVectors, faces: Sequence[Union[Sequence[int], Sequence[Sequence[int]]]]
     ) -> ifcopenshell.entity_instance:
         """
         Generate an IfcPolygonalFaceSet
@@ -1413,10 +1413,33 @@ class ShapeBuilder:
 
         :param points: list of 3d coordinates
         :param faces: list of faces consisted of point indices (points indices starting from 0)
+                      in case of multiple sequences per face, the subsequent ones are inner voids
         :return: IfcPolygonalFaceSet
         """
+
+        def is_sequence_of_ints(x):
+            return isinstance(x, Sequence) and not isinstance(x, (str, bytes)) and all(isinstance(el, int) for el in x)
+
+        def is_sequence_of_sequence_of_ints(x):
+            return (
+                isinstance(x, Sequence) and not isinstance(x, (str, bytes)) and all(is_sequence_of_ints(el) for el in x)
+            )
+
+        def incr(face):
+            return [i + 1 for i in face]
+
+        if not all(is_sequence_of_ints(f) or is_sequence_of_sequence_of_ints(f) for f in faces):
+            raise ValueError("Expected a sequence of int or sequence of sequence of int for each face")
+
         ifc_points = self.file.createIfcCartesianPointList3D(ifc_safe_vector_type(points))
-        ifc_faces = [self.file.createIfcIndexedPolygonalFace([i + 1 for i in face]) for face in faces]
+        ifc_faces = [
+            (
+                self.file.createIfcIndexedPolygonalFace(incr(face))
+                if is_sequence_of_ints(face)
+                else self.file.createIfcIndexedPolygonalFaceWithVoids(incr(face[0]), list(map(incr, face[1:])))
+            )
+            for face in faces
+        ]
         return self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
 
     def extrude_face_set(

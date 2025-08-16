@@ -373,3 +373,55 @@ class TestCalculateTransitions(test.bootstrap.IFC4):
         # method C
         params["offset"][0] = 10.0
         self.calculate_and_test(params, None)
+
+
+class TestFaceset(test.bootstrap.IFC4):
+    @pytest.mark.parametrize("with_inner", [False, True])
+    def test_polygonal_face_set_simple_and_with_voids(self, with_inner):
+        self.builder = ShapeBuilder(self.file)
+
+        v0 = (0.0, 0.0, 0.0)
+        v1 = (4.0, 0.0, 0.0)
+        v2 = (4.0, 4.0, 0.0)
+        v3 = (0.0, 4.0, 0.0)
+
+        v4 = (1.0, 1.0, 0.0)
+        v5 = (3.0, 1.0, 0.0)
+        v6 = (3.0, 3.0, 0.0)
+        v7 = (1.0, 3.0, 0.0)
+
+        if with_inner:
+            points = [v0, v1, v2, v3, v4, v5, v6, v7]
+
+            faces = [
+                [[0, 1, 2, 3], [4, 5, 6, 7]],  # outer loop with inner hole
+            ]
+        else:
+            points = [v0, v1, v2, v3]
+
+            faces = [[0, 1, 2, 3]]  # only outer loop
+
+        result = self.builder.polygonal_face_set(points, faces)
+
+        assert result.is_a("IfcPolygonalFaceSet")
+        assert result.Coordinates.is_a("IfcCartesianPointList3D")
+        assert len(result.Faces) == 1
+        if with_inner:
+            assert result.Faces[0].is_a("IfcIndexedPolygonalFaceWithVoids")
+        else:
+            assert result.Faces[0].is_a("IfcIndexedPolygonalFace")
+
+        shp = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), result)
+        if with_inner:
+            assert ifcopenshell.util.shape.get_area(shp) == pytest.approx(12.0)
+        else:
+            assert ifcopenshell.util.shape.get_area(shp) == pytest.approx(16.0)
+
+    def test_polygonal_face_set_invalid_face_types(self):
+        self.builder = ShapeBuilder(self.file)
+        with pytest.raises(ValueError, match="Expected a sequence of int or sequence of sequence of int"):
+            self.builder.polygonal_face_set([], ["123"])
+        with pytest.raises(ValueError, match="Expected a sequence of int or sequence of sequence of int"):
+            self.builder.polygonal_face_set([], [[1.0, 2.0, 3.0]])
+        with pytest.raises(ValueError, match="Expected a sequence of int or sequence of sequence of int"):
+            self.builder.polygonal_face_set([], [[[[1, 2], 3], [4, 5, 6]]])
