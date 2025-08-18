@@ -679,6 +679,7 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
             obj.matrix_world = newmat
 
+
 class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.mirror_geometry"
     bl_label = "Mirror Element Geometry"
@@ -692,7 +693,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         for obj in context.selected_objects:
             self.mirror_obj(context, obj)
-        return { "FINISHED" }
+        return {"FINISHED"}
 
     def mirror_obj(self, context: bpy.types.Context, obj: bpy.types.Object):
         element = tool.Ifc.get_entity(obj)
@@ -739,7 +740,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         if element.is_a("IfcProduct"):
             if not element.Representation:
                 return
-        
+
             for representation in element.Representation.Representations:
                 for item in representation.Items:
                     builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -796,7 +797,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         inverted_type = tool.Blender.Modifier.has_mirrored_type(type_element)
         if not inverted_type:
-            old_to_new, _ = tool.Geometry.duplicate_ifc_objects([ tool.Ifc.get_object(type_element) ])
+            old_to_new, _ = tool.Geometry.duplicate_ifc_objects([tool.Ifc.get_object(type_element)])
             inverted_type = old_to_new[type_element][0]
             self.invert_representation(inverted_type)
             tool.Blender.Modifier.set_mirrored_type(inverted_type, type_element)

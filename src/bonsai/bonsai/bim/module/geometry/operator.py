@@ -2728,14 +2728,13 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
                         builder.mirror(new_mirrored_repr, (1, 0), create_copy=False)
                         new_items.append(new_mirrored_repr)
-                    
+
                     old_items = mirrored_type.RepresentationMaps[map_index].MappedRepresentation.Items
                     mirrored_type.RepresentationMaps[map_index].MappedRepresentation.Items = new_items
                     for old_item in old_items:
                         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_item)
-                
-                tool.Geometry.reload_representation(tool.Ifc.get_object(mirrored_type))
 
+                tool.Geometry.reload_representation(tool.Ifc.get_object(mirrored_type))
 
     def enable_edit_mode(self, context):
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:

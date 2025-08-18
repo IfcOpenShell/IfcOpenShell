@@ -119,7 +119,7 @@ class Root(bonsai.core.tool.Root):
                             new_styled_by = ifcopenshell.util.element.copy(tool.Ifc.get(), styled_by)
                             new_styled_by.Item = copied_entities[styled_by.Item.id()]
                             copied_entities[styled_by.id()] = new_styled_by
-                        
+
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
                 return copied_entities
@@ -142,7 +142,7 @@ class Root(bonsai.core.tool.Root):
                         exclude_callback=exclude_callback,
                         copied_entities=copied_entities,
                     )
-                
+
                 for item in map.MappedRepresentation.Items:
                     if item.StyledByItem:
                         for styled_by in item.StyledByItem:

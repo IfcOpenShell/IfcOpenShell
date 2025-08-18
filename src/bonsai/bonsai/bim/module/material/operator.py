@@ -666,9 +666,9 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
         mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
         if not mirrored_type:
             return
-        
-        ifcopenshell.api.material.assign_material(tool.Ifc.get(), [ mirrored_type ], material.is_a(), material)
-        tool.Material.ensure_material_assigned([ mirrored_type ], material.is_a(), material)
+
+        ifcopenshell.api.material.assign_material(tool.Ifc.get(), [mirrored_type], material.is_a(), material)
+        tool.Material.ensure_material_assigned([mirrored_type], material.is_a(), material)
 
 
 class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
