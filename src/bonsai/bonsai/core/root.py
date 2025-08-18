@@ -55,9 +55,9 @@ def copy_class(
             geometry.copy_data_links(data, copied_entities)
             geometry.change_object_data(obj, data, is_global=True)
             geometry.rename_object(data, geometry.get_representation_name(ifc.get_entity(data)))
-        # Only assign styles if element doesn't get them from material
-        if not root.has_material_styles(new):
-            root.assign_body_styles(new, obj)
+        # not sure what the purpose of this is, but removing it fixes wrong IfcStyledItems being assigned to
+        # a duplicated object. Instead, copy_representation now properly copies IfcStyledItems directly.
+        # root.assign_body_styles(new, obj)
     collector.assign(obj)
     return new
 
