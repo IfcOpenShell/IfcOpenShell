@@ -64,7 +64,11 @@ class TransactionStep(TypedDict):
 
 class IfcStore:
     path: str = ""
+    """Should be set only using ``tool.Ifc.set_path``."""
+
     file: Optional[ifcopenshell.file] = None
+    """Should be set only using ``tool.Ifc.set``."""
+
     schema: Optional[ifcopenshell.ifcopenshell_wrapper.schema_definition] = None
     cache: Optional[ifcopenshell.ifcopenshell_wrapper.HdfSerializer] = None
     cache_path: Optional[str] = None

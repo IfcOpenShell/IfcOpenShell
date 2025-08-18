@@ -73,7 +73,7 @@ class Project(bonsai.core.tool.Project):
             bpy.ops.bim.load_type_thumbnails()
 
     @classmethod
-    def load_pset_templates(cls) -> None:
+    def load_project_pset_templates(cls) -> None:
         props = tool.Blender.get_addon_preferences()
         pset_dir = tool.Ifc.resolve_uri(props.pset_dir)
         if os.path.isdir(pset_dir):

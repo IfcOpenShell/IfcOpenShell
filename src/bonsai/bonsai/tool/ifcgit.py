@@ -284,7 +284,7 @@ class IfcGit:
         settings.should_setup_viewport_camera = False
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
-        tool.Project.load_pset_templates()
+        tool.Project.load_project_pset_templates()
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
