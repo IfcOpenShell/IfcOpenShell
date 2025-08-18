@@ -243,8 +243,9 @@ class Transaction:
                 pass
 
 
-file_dict: dict[int, weakref.ReferenceType[file]] = {}
-"""Mapping of internal IfcFile pointer addressed to existing ``ifcopenshell.file``.
+file_dict: dict[int, tuple[weakref.ReferenceType[file], int]] = {}
+"""Mapping of internal IfcFile pointer address to existing ``ifcopenshell.file``
+and the timestamp when it was created.
 
 Needed only to quickly access related from ``entity_instance`` it's ``file``.
 """
