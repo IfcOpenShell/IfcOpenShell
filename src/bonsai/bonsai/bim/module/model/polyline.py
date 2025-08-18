@@ -541,7 +541,7 @@ def get_generic_product_preview_data(context, relating_type):
     snap_obj = bpy.data.objects.get(snap_prop.snap_object)
     snap_element = tool.Ifc.get_entity(snap_obj)
     rot_mat = Quaternion()
-    if relating_type.is_a() in [ "IfcDoorType", "IfcWindowType" ] and snap_element and snap_element.is_a("IfcWall"):
+    if relating_type.is_a() in ["IfcDoorType", "IfcWindowType"] and snap_element and snap_element.is_a("IfcWall"):
         layers = tool.Model.get_material_layer_parameters(snap_element)
         axes = tool.Model.get_wall_axis(snap_obj, layers=layers)
         axis_base = axes["base"]
