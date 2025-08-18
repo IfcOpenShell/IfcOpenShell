@@ -4142,66 +4142,6 @@ class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     
         
         return None
-class SelectSimilarTextLiteral(bpy.types.Operator):
-    bl_idname = "bim.select_similar_text_literal"
-    bl_label = "Select Similar Text Literal"
-    bl_description = "Select all text annotations with the same literal value\n\nSHIFT+CLICK to remove from selection"
-    bl_options = {"REGISTER", "UNDO"}
-    
-    literal_value: bpy.props.StringProperty()
-    literal_index: bpy.props.IntProperty(default=0)
-    attribute_type: bpy.props.StringProperty(default="text")  # "text", "path", "font_size", "newline", "box_alignment"
-    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-    
-    def invoke(self, context, event):
-        self.remove_from_selection = event.shift
-        return self.execute(context)
-    
-    def execute(self, context):
-        if not self.literal_value and self.attribute_type in ["text", "path", "box_alignment"]:
-            self.report({"WARNING"}, "No value to search for.")
-            return {"CANCELLED"}
-        
-        count = 0
-        for obj in context.visible_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                continue
-                
-            obj_props = tool.Drawing.get_text_props(obj)
-            should_select = False
-            
-            if self.attribute_type == "font_size":
-                should_select = obj_props.font_size == self.literal_value
-            elif self.attribute_type == "newline":
-                should_select = str(obj_props.newline_at) == self.literal_value
-            elif self.attribute_type in ["text", "path", "box_alignment"]:
-                if self.literal_index < len(obj_props.literals):
-                    literal = obj_props.literals[self.literal_index]
-                    if self.attribute_type == "text" and len(literal.attributes) > 0:
-                        should_select = literal.attributes[0].string_value == self.literal_value
-                    elif self.attribute_type == "path" and len(literal.attributes) > 1:
-                        should_select = literal.attributes[1].enum_value == self.literal_value
-                    elif self.attribute_type == "box_alignment":
-                        box_alignment_attr = next((attr for attr in literal.attributes if attr.name == "BoxAlignment"), None)
-                        if box_alignment_attr:
-                            should_select = box_alignment_attr.string_value == self.literal_value
-            
-            if should_select:
-                obj.select_set(not self.remove_from_selection)
-                count += 1
-        
-        if self.attribute_type in ["text", "path", "box_alignment"]:
-            result = f'literal[{self.literal_index}].{self.attribute_type} = "{self.literal_value}"'
-        else:
-            result = f'{self.attribute_type} = "{self.literal_value}"'
-        bpy.context.window_manager.clipboard = result
-        
-        verb = "Deselected" if self.remove_from_selection else "Selected"
-        self.report({"INFO"}, f"{verb} {count} objects with {self.attribute_type} '{self.literal_value}'. ({result}) was copied to the clipboard.")
-        
-        return {"FINISHED"}
-    
 class SelectSimilarTextLiteralValue(bpy.types.Operator):
     bl_idname = "bim.select_similar_text_literal_value"
     bl_label = ""
@@ -4211,14 +4151,16 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
     literal_value: bpy.props.StringProperty()
     literal_index: bpy.props.IntProperty(default=0)
     attribute_type: bpy.props.StringProperty(default="text")
-    display_text: bpy.props.StringProperty()
+    display_text: bpy.props.StringProperty()  # What to show in the UI (for non-editing mode)
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE":
+        if hasattr(event, 'type') and event.type == "LEFTMOUSE":
             self.remove_from_selection = event.shift
-            return self.execute(context)
-        return {"CANCELLED"}
+        elif hasattr(event, 'shift'):
+            self.remove_from_selection = event.shift
+        
+        return self.execute(context)
     
     def execute(self, context):
         if not self.literal_value and self.attribute_type in ["text", "path", "box_alignment"]:
@@ -4263,6 +4205,3 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
         self.report({"INFO"}, f"{verb} {count} objects with {self.attribute_type} '{self.literal_value}'. ({result}) was copied to the clipboard.")
         
         return {"FINISHED"}
-    
-    def draw(self, context):
-        self.layout.label(text=self.display_text)
