@@ -55,26 +55,6 @@ class BIM_PT_spatial(Panel):
                 row.prop(osprops, "container_obj", text="", icon="OUTLINER_COLLECTION")
                 row.operator("bim.assign_container", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_container", icon="CANCEL", text="")
-
-            # TODO: deprecate as it's very hard to discover
-            # containers are not even selectable by default.
-            if SpatialData.data["selected_containers"]:
-                row = self.layout.row()
-                row.label(text=f"{len(SpatialData.data['selected_containers'])} Selected Containers")
-                for name in SpatialData.data["selected_containers"][:3]:
-                    row = self.layout.row()
-                    row.label(text=name, icon="OUTLINER_COLLECTION")
-                if len(SpatialData.data["selected_containers"]) > 3:
-                    row = self.layout.row()
-                    row.label(text=f"... {len(SpatialData.data['selected_containers']) - 3} More")
-                row = self.layout.row(align=True)
-                row.operator("bim.reference_structure", icon="LINKED", text="Reference Selected")
-                row.operator("bim.dereference_structure", icon="UNLINKED", text="")
-                row = self.layout.row()
-                row.operator("bim.copy_to_container", icon="COPYDOWN", text="Copy Object To Selected")
-            else:
-                row = self.layout.row()
-                row.label(text="No Selected Containers")
         else:
             row = self.layout.row(align=True)
             if SpatialData.data["label"]:
@@ -211,6 +191,7 @@ class BIM_PT_spatial_decomposition(Panel):
         row_ = col.row(align=True)
         row_.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
         row_.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
+        row_.operator("bim.copy_to_container", icon="MOD_DISPLACE", text="").container = ifc_definition_id
 
         col = row.column()
         row_ = col.row(align=True)
