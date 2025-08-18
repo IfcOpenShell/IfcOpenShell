@@ -1105,7 +1105,6 @@ class LoadProjectElements(bpy.types.Operator):
         props = tool.Project.get_project_props()
         props.is_loading = False
 
-        tool.Project.load_pset_templates()
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
