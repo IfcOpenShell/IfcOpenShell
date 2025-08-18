@@ -782,7 +782,9 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
-    def get_wall_axis(cls, obj: bpy.types.Object, layers: Optional[dict[str, Any]] = None) -> dict[str, list[Vector]]:
+    def get_wall_axis(
+        cls, obj: bpy.types.Object, layers: Optional[MaterialLayerParameters] = None
+    ) -> dict[str, list[Vector]]:
         """Each item of a resulting dictionary is a list of 2 2D vectors."""
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
