@@ -150,5 +150,5 @@ To create multiple doors of the same type:
 See Also
 --------
 
-- :doc:`../creating_walls`
-- :doc:`../../advanced_modeling/material_assignment`
+- :doc:`creating_walls`
+- :doc:`../advanced_modeling/material_assignment`

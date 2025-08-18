@@ -3,8 +3,7 @@ Costing and scheduling
 
 This section covers the cost estimation and project scheduling features in Bonsai.
 
-.. note::
-   This page is a stub. More detailed content will be added in future updates.
+.. include:: /_incomplete_message.rst
 
 Overview
 --------
@@ -31,5 +30,5 @@ To begin using the costing and scheduling features in Bonsai:
 4. Link BIM elements to schedule activities
 
 .. seealso::
-   - :doc:`/users/modeling/ifc_modeling`
-   - :doc:`/users/advanced/index`
+   - :doc:`/guides/authoring/index`
+   - :doc:`/guides/authoring/advanced_modeling/index`

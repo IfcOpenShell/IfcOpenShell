@@ -1,6 +1,6 @@
 Viewing models
 ==============
-
+.. include:: /_incomplete_message.rst
 This chapter covers how to navigate and explore models.
 
 .. container:: global-index-toc

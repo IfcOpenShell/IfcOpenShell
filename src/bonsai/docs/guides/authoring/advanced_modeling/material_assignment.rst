@@ -1,5 +1,6 @@
 Material Assignment
 ===================
+.. include:: /_incomplete_message.rst
 
 This section covers how to assign and customize materials in your BIM model using the Bonsai.
 

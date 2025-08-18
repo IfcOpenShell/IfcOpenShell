@@ -3,8 +3,7 @@ Structural analysis
 
 This section covers the structural analysis capabilities in Bonsai.
 
-.. note::
-   This page is a stub. More detailed content will be added in future updates.
+.. include:: /_incomplete_message.rst
 
 Overview
 --------
@@ -29,5 +28,5 @@ To begin using the structural analysis features in Bonsai:
 3. Define load cases and boundary conditions
 
 .. seealso::
-   - :doc:`/users/modeling/ifc_modeling`
-   - :doc:`/users/advanced/index`
+   - :doc:`/guides/authoring/index`
+   - :doc:`/guides/authoring/advanced_modeling/index`

@@ -1,6 +1,6 @@
 Blender Properties
 ==================
-
+.. include:: /_incomplete_message.rst
 The default Blender scene properties moved under its own dedicated panel.
 
 For general informations about the Blender Scene Properties see the respective 
