@@ -594,7 +594,7 @@ class BIM_PT_text(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "font_size")
             row.prop(props, "apply_font_size_to_all", text="", icon="COPYDOWN")
-            select_op = row.operator("bim.select_similar_text_literal", text="", icon="RESTRICT_SELECT_OFF")
+            select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
             select_op.literal_value = props.font_size
             select_op.attribute_type = "font_size"
 
@@ -611,7 +611,7 @@ class BIM_PT_text(Panel):
             row = self.layout.row(align=True)
             row.prop(props, "custom_symbol", text="")
             row.prop(props, "apply_newline_to_all", text="", icon="COPYDOWN")
-            select_op = row.operator("bim.select_similar_text_literal", text="", icon="RESTRICT_SELECT_OFF")
+            select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
             select_op.literal_value = str(props.newline_at)
             select_op.attribute_type = "newline"
 
@@ -631,7 +631,7 @@ class BIM_PT_text(Panel):
                     row = box.row(align=True)
                     row.prop(literal_props.attributes[0], "string_value", text="Text")
                     row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
-                    select_op = row.operator("bim.select_similar_text_literal", text="", icon="RESTRICT_SELECT_OFF")
+                    select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
                     select_op.literal_value = literal_props.attributes[0].string_value
                     select_op.literal_index = i
                     select_op.attribute_type = "text"
@@ -640,10 +640,14 @@ class BIM_PT_text(Panel):
                     row = box.row(align=True)
                     row.prop(literal_props.attributes[1], "enum_value", text="Path")
                     row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
-                    select_op = row.operator("bim.select_similar_text_literal", text="", icon="RESTRICT_SELECT_OFF")
+                    select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
                     select_op.literal_value = literal_props.attributes[1].enum_value
                     select_op.literal_index = i
                     select_op.attribute_type = "path"
+
+                other_attributes = [a for a in literal_props.attributes[2:] if a.name != "BoxAlignment"]
+                if other_attributes:
+                    bonsai.bim.helper.draw_attributes(other_attributes, box)
 
                 row = box.row(align=True)
                 cols = [row.column(align=True) for j in range(3)]
@@ -679,7 +683,7 @@ class BIM_PT_text(Panel):
                 )
                 
                 box_alignment_value = literal_props.attributes[next((idx for idx, attr in enumerate(literal_props.attributes) if attr.name == "BoxAlignment"), -1)].string_value if any(attr.name == "BoxAlignment" for attr in literal_props.attributes) else "N/A"
-                select_op = alignment_label_row.operator("bim.select_similar_text_literal", text="", icon="RESTRICT_SELECT_OFF")
+                select_op = alignment_label_row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
                 select_op.literal_value = box_alignment_value
                 select_op.literal_index = i
                 select_op.attribute_type = "box_alignment"
@@ -749,7 +753,6 @@ class BIM_PT_text(Panel):
                 click_op.literal_index = i
                 click_op.attribute_type = "box_alignment"
                 click_op.display_text = box_alignment_value
-
 
 class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(
