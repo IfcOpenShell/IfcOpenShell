@@ -2139,7 +2139,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 ("Model", "Annotation", target_view),
                 ("Model", "Annotation", "MODEL_VIEW"),
             ]
-        
+
     @classmethod
     def get_drawing_subcontexts(cls, target_view: str) -> list[tuple[str, str, str]]:
         context_filters = cls.get_drawing_context_filters(target_view)
@@ -2151,14 +2151,14 @@ class Drawing(bonsai.core.tool.Drawing):
                 subcontexts.append(context_filter)
 
         return subcontexts
-    
+
     @classmethod
     def get_active_drawing_subcontexts(cls) -> list[tuple[str, str, str]] | None:
         props = cls.get_document_props()
         target_view = props.get_active_target_view()
         if not target_view:
             return None
-        
+
         return cls.get_drawing_subcontexts(target_view)
 
     @classmethod

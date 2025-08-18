@@ -334,7 +334,11 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
 
         self.container = None
         self.container_obj = None
-        if building_obj and building_element and (container := ifcopenshell.util.element.get_container(building_element)):
+        if (
+            building_obj
+            and building_element
+            and (container := ifcopenshell.util.element.get_container(building_element))
+        ):
             self.container = container
             self.container_obj = tool.Ifc.get_object(container)
         elif container := tool.Root.get_default_container():
