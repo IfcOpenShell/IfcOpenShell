@@ -1,6 +1,9 @@
 Quality and Coordination
 ========================
 
+.. include:: /_incomplete_message.rst
+
+
 .. figure:: images/interface_property-editor_quality-coordination.png
    :alt: property editor quality and coordination sub-tab
 

@@ -1,7 +1,6 @@
 Defining Rooms and Spaces
 =========================
 
-.. note::
-   This page is a stub. More detailed content will be added in future updates.
+.. include:: /_incomplete_message.rst
 
 [Content about defining rooms and spaces]

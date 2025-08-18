@@ -1,11 +1,11 @@
 Topbar
 ======
+.. |location| image:: /images/location-scene.svg
+.. |>| image:: /images/location-breadcrumb.svg
 
 .. container:: location-scene
 
    |location| Topbar
-
-   .. |location| image:: /images/location-scene.svg
 
 .. seealso::
 
@@ -18,20 +18,17 @@ File
 
    |location| Topbar |>| File
 
-   .. |location| image:: /images/location-scene.svg
-   .. |>| image:: /images/location-breadcrumb.svg
-
 Access new, open, save, and import functionality.
 
 .. image:: images/topbar-file.png
 
-- :ref:`reference/topbar:new ifc project` (:kbd:`Ctrl` + :kbd:`N`): Provides convenient presets to create new IFC projects.
+- :ref:`reference/general/topbar:new ifc project` (:kbd:`Ctrl` + :kbd:`N`): Provides convenient presets to create new IFC projects.
 - **Open IFC Project**: Launches a file browser to open an IFC model for viewing and authoring.
-- :ref:`reference/topbar:open recent ifc project`: See recently opened IFC models.
+- :ref:`reference/general/topbar:open recent ifc project`: See recently opened IFC models.
 - **Save IFC Project** (:kbd:`Shift` + :kbd:`S`): saves the ``.ifc`` file, optionally launching a file browse dialog if the file has not yet been saved.
 - **Save IFC Project As**: launches a file browse dialog to save the ``.ifc``. This location is remembered for future saves.
 - **Revert IFC Project**: Discards all unsaved changes and reloads the currently loaded IFC model.
-- :ref:`reference/topbar:import`: Imports data from external sources into the Blender session or IFC model.
+- :ref:`reference/general/topbar:import`: Imports data from external sources into the Blender session or IFC model.
 
 .. warning::
 
@@ -43,13 +40,9 @@ Access new, open, save, and import functionality.
 
 New IFC Project
 ---------------
-
 .. container:: location-scene
 
    |location| Topbar |>| File |>| New IFC Project (:kbd:`Shift` + :kbd:`N`)
-
-   .. |location| image:: /images/location-scene.svg
-   .. |>| image:: /images/location-breadcrumb.svg
 
 Provides convenient presets to create new IFC projects.
 
@@ -59,7 +52,7 @@ Provides convenient presets to create new IFC projects.
 - **New Metric (mm) Project**: Creates a new IFC4 project using millimeters as the length unit.
 - **New Imperial (ft) Project**: Creates a new IFC4 project using feet as the length unit.
 - **New Demo Project**: Creates a new IFC4 project with pre-populated demo types and content. Useful for experimenting and learning.
-- **New Project Wizard**: Resets the Blender session and shows the :ref:`viewing/project_overview:new project wizard` panel to customise project creation settings such as schema version.
+- **New Project Wizard**: Resets the Blender session and shows the `new project wizard` panel to customise project creation settings such as schema version.
 
 Open Recent IFC Project
 -----------------------
@@ -67,9 +60,6 @@ Open Recent IFC Project
 .. container:: location-scene
 
    |location| Topbar |>| File |>| Open Recent IFC Project
-
-   .. |location| image:: /images/location-scene.svg
-   .. |>| image:: /images/location-breadcrumb.svg
 
 Shows a list of recently opened IFC models.
 
@@ -83,9 +73,6 @@ Import
 .. container:: location-scene
 
    |location| Topbar |>| File |>| Import
-
-   .. |location| image:: /images/location-scene.svg
-   .. |>| image:: /images/location-breadcrumb.svg
 
 Imports data from external sources into the Blender session or IFC model.
 

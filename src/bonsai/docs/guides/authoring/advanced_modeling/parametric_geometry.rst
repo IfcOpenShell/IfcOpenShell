@@ -1,6 +1,7 @@
 Parametric Geometry
 ===================
-
+.. include:: /_incomplete_message.rst
+    
 Bonsai provides tools for creating and editing parametric geometry for IFC elements.
 Parametric geometry allows you to define building elements using parameters that can be easily adjusted, rather than modeling fixed geometry.
 

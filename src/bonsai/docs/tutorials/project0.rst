@@ -37,7 +37,7 @@ Tutorial Steps
 3. Save it as `project0.ifc` file.
 4. (optional) Save the `project0.blend` file.
 
-.. note:: See :doc:`/users/modeling/starting_new_project` for detailed instructions.
+.. note:: See :doc:`/guides/authoring/starting_new_project` for detailed instructions.
 
 2. Creating Walls
 -----------------
@@ -56,7 +56,7 @@ Tutorial Steps
 6. Use a Measure tool to ensure proper dimensions.
    The interior lenghts of the walls should be 2.8m, 2.7m and 2.6m.
 
-.. note:: Refer to :doc:`/users/modeling/basic_modeling/creating_walls` for step-by-step guidance on wall creation.
+.. note:: Refer to :doc:`/guides/authoring/basic_modeling/creating_walls` for step-by-step guidance on wall creation.
 
 If you still struggling, here's what you should get:
 
@@ -105,7 +105,7 @@ If you still struggling, here's what you should get:
 
 6. Ensure that the openings do not intersect with corners or other openings.
 
-.. note:: Refer to :doc:`/users/modeling/basic_modeling/openings/index` for detailed instructions
+.. note:: Refer to :doc:`/guides/authoring/basic_modeling/opening` for detailed instructions
    on creating and modifying openings, including how to create openings without fillings.
 
 If you're having difficulties, you can download the sample file:

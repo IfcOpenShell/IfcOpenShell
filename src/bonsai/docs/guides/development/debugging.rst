@@ -10,7 +10,7 @@ this can be expanded by others.
    the debugger overhead.
 
 VSCode Extension
---------------
+----------------
 
 1. **Install VSCode/VSCodium**: This will be system specific. I used the
    available snap package.
@@ -135,7 +135,7 @@ when troubleshooting issues, and able to make many more contributions, fixes
 and patches.
 
 Blender Addon + VS Code Debugger
-------------------------------
+---------------------------------
 
 Setting up debugging with Blender Addon is a bit simpler as it doesn't require Blender to be started in a special way
 and debugger can be always attached later when it's needed.
