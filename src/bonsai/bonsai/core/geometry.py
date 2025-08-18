@@ -136,6 +136,9 @@ def switch_representation(
     if not geometry.get_object_data(obj) and geometry.is_text_literal(representation):
         return
 
+    element = ifc.get_entity(obj)
+    assert element
+    geometry.clear_cache(element)
     geometry.reimport_element_representations(obj, representation, apply_openings=apply_openings)
 
 
