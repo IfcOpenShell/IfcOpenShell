@@ -795,8 +795,16 @@ endif(MSVC)
 
 
 # Ensure other dependencies are provided.
-if(NOT EIGEN_DIR OR NOT EXISTS "${EIGEN_DIR}")
-  message(FATAL_ERROR "EIGEN_DIR is not provided or provided folder doesn't exist (current value: '${EIGEN_DIR}').")
+if(NOT EXISTS "${EIGEN_DIR}")
+    find_package(Eigen3 CONFIG)
+    if(NOT Eigen3_DIR)
+        message(
+            FATAL_ERROR
+            "EIGEN_DIR is not provided or provided folder doesn't exist (current value: '${EIGEN_DIR}'). "
+            "Also couldn't find Eigen3 as a package."
+        )
+    endif()
+    link_libraries(Eigen3::Eigen)
 endif()
 
 
