@@ -1631,7 +1631,9 @@ class Blender(bonsai.core.tool.Blender):
             pset = tool.Pset.get_element_pset(element, "BBIM_MirroredType")
             if not pset:
                 pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), element, "BBIM_MirroredType")
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset, properties={"Data": json.dumps({"mirrored_type": mirrored_type.id()})})
+            ifcopenshell.api.pset.edit_pset(
+                tool.Ifc.get(), pset, properties={"Data": json.dumps({"mirrored_type": mirrored_type.id()})}
+            )
 
         @classmethod
         def is_slab(cls, element: entity_instance) -> bool:
