@@ -385,7 +385,7 @@ if(BUILD_IFCGEOM)
 
     # Open CASCADE
     if(WITH_OPENCASCADE)
-    if("${OCC_INCLUDE_DIR}" STREQUAL "")
+    if(NOT OCC_INCLUDE_DIR)
 	clear_wasm_sysroot()
         find_path(OCC_INCLUDE_DIR Standard_Version.hxx
             PATHS
