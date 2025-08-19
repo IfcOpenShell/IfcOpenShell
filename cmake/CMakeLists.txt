@@ -385,6 +385,8 @@ if(BUILD_IFCGEOM)
 
     # Open CASCADE
     if(WITH_OPENCASCADE)
+
+    # Fallback for missing OCC_INCLUDE_DIR.
     if(NOT OCC_INCLUDE_DIR)
 	clear_wasm_sysroot()
         find_path(OCC_INCLUDE_DIR Standard_Version.hxx
@@ -392,37 +394,76 @@ if(BUILD_IFCGEOM)
                 /usr/include/occt
                 /usr/include/oce
                 /usr/include/opencascade
-            REQUIRED
         )
 	restore_wasm_sysroot()
 
         if(OCC_INCLUDE_DIR)
             message(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-        else()
-            message(FATAL_ERROR "Unable to find Open CASCADE include directory, specify OCC_INCLUDE_DIR manually.")
         endif()
     else()
         set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
         message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
     endif()
 
-    if(OCC_INCLUDE_DIR)
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
-            REGEX "#define OCC_VERSION_MAJOR.*"
+    if("${OCC_LIBRARY_DIR}" STREQUAL "")
+        find_library(OCC_LIBRARY TKernel
+            PATHS
+                /usr/lib
         )
-        string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
-          REGEX "#define OCC_VERSION_MINOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
-          REGEX "#define OCC_VERSION_MAINTENANCE.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
-        set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
-    endif(OCC_INCLUDE_DIR)
 
-    set(OPENCASCADE_LIBRARY_NAMES
+        if(OCC_LIBRARY)
+            GET_FILENAME_COMPONENT(OCC_LIBRARY_DIR ${OCC_LIBRARY} PATH)
+            message(STATUS "Found Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+        endif()
+    else()
+        set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
+        message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+    endif()
+
+    # No specific paths specified, try to find package.
+    if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
+        message(
+            STATUS
+            "Using provided OCCT_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
+            "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
+        )
+    elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
+        find_package(OpenCASCADE CONFIG REQUIRED)
+        get_target_property(OCC_INCLUDE_DIR TKernel INTERFACE_INCLUDE_DIRECTORIES)
+        get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
+        get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
+        message(
+            STATUS
+            "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
+            "deducing from it OCC_INCLUDE_DIR: '${OCC_INCLUDE_DIR}' "
+            "and OCC_LIBRARY_DIR: '${OCC_LIBRARY_DIR}'."
+        )
+    else()
+        message(
+            FATAL_ERROR
+            "Couldn't find Open CASCADE installation. "
+            "Either both OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}') "
+            "must be specified or OpenCASCADE package should be discoverable."
+        )
+    endif()
+
+    # Parse OCC_VERSION_STRING.
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
+        REGEX "#define OCC_VERSION_MAJOR.*"
+    )
+    string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
+        REGEX "#define OCC_VERSION_MINOR.*"
+    )
+    string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
+        REGEX "#define OCC_VERSION_MAINTENANCE.*"
+    )
+    string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
+    set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
+
+    set(
+        OPENCASCADE_LIBRARY_NAMES
         TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
         TKFillet TKXSBase TKOffset TKHLR
 
@@ -435,24 +476,6 @@ if(BUILD_IFCGEOM)
     else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
         list(APPEND OPENCASCADE_LIBRARY_NAMES TKDESTEP TKDEIGES)
     endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-
-    if("${OCC_LIBRARY_DIR}" STREQUAL "")
-        find_library(OCC_LIBRARY TKernel
-            PATHS
-                /usr/lib
-            REQUIRED
-        )
-
-        if(OCC_LIBRARY)
-            GET_FILENAME_COMPONENT(OCC_LIBRARY_DIR ${OCC_LIBRARY} PATH)
-            message(STATUS "Found Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
-        else()
-            message(FATAL_ERROR "Unable find Open CASCADE library directory, specify OCC_LIBRARY_DIR manually.")
-        endif()
-    else()
-        set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
-        message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
-    endif()
 
     clear_wasm_sysroot()
     find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
