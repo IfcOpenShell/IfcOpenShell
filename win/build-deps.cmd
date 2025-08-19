@@ -174,8 +174,8 @@ echo.
 cd "%DEPS_DIR%"
 
 :: VERSIONS
-set HDF5_VERSION=1.8.22
-set HDF5_VERSION_MAJOR=1.8
+set HDF5_VERSION=1.12.1
+set HDF5_VERSION_MAJOR=1.12
 set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 set PYTHON_VERSION=%PYTHON_VERSION%
@@ -308,26 +308,33 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :HDF5
 
 set DEPENDENCY_NAME=hdf5
-set DEPENDENCY_DIR=%DEPS_DIR%
+set DEPENDENCY_DIR=%DEPS_DIR%\hdf5-%HDF5_VERSION%
 cd "%DEPENDENCY_DIR%"
-set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
-set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+set HDF5_CMAKE_ZIP=hdf5-%HDF5_VERSION%.zip
+set HDF5_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
 
-IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%" (
-    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%", skipping
+IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_NAME%", skipping
     goto :Boost
 )
 
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
-call :DownloadFile http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/CMake-hdf5-%HDF5_VERSION%.zip "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
+call :DownloadFile ^
+    http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/%HDF5_CMAKE_ZIP% ^
+    "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
+call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\hdf5-%HDF5_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-pushd "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
-git apply %~dp0patches\hdf5vs2022.patch --ignore-whitespace
-rem It is not checked whether this patch is applied successfully!
-ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG% -V -O hdf5.log
-call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
+pushd "%DEPS_DIR%\hdf5-%HDF5_VERSION%"
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%HDF5_INSTALL_NAME%" ^
+               -DHDF5_ENABLE_Z_LIB_SUPPORT=OFF -DBUILD_TESTING=OFF ^
+               -DHDF5_BUILD_TOOLS=OFF -DHDF5_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=OFF -DHDF5_BUILD_UTILS=OFF ^
+               -DHDF5_BUILD_CPP_LIB=ON
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\HDF5.sln" %DEBUG_OR_RELEASE%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
 popd
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
