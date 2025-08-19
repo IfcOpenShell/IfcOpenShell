@@ -675,7 +675,16 @@ if(HDF5_SUPPORT)
                 z dl
             )
         else()
-            message(FATAL_ERROR "HDF5_LIBRARIES is not provided.")
+            find_package(HDF5 CONFIG)
+            if(NOT HDF5_DIR)
+                message(
+                    FATAL_ERROR
+                    "HDF5_LIBRARY_DIR is not provided (current value: '${HDF5_LIBRARY_DIR}'). "
+                    "Also could not find HDF5 package."
+                )
+            endif()
+            message(STATUS "Found HDF5 package: '${HDF5_DIR}'.")
+            set(HDF5_LIBRARIES hdf5_cpp-static)
         endif()
     endif()
 
