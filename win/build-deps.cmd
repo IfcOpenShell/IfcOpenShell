@@ -581,6 +581,11 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :Eigen
 set DEPENDENCY_NAME=Eigen
 set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
+
+IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
+    goto :Successful
+)
 call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
 
 :: :tbb
