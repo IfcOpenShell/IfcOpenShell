@@ -40,7 +40,7 @@ import bonsai.core.geometry
 import bonsai.bim.import_ifc as import_ifc
 from collections import defaultdict
 from math import pi, radians
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Euler
 from bpy.types import Operator
 from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
@@ -92,11 +92,19 @@ class FilledOpeningGenerator:
             layers = tool.Model.get_material_layer_parameters(element)
             if layers["layer_set_direction"] == "AXIS2":
                 opening_thickness_si = layers["thickness"] * 2
-                axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+                axes = tool.Model.get_wall_axis(voided_obj, layers=layers)
+                axis_base = axes["base"]
+                axis_side = axes["side"]
                 new_matrix = voided_obj.matrix_world.copy()
-                point_on_axis = tool.Cad.point_on_edge(target, axis)
-                new_matrix.translation.x = point_on_axis.x
-                new_matrix.translation.y = point_on_axis.y
+                point_on_base_axis = tool.Cad.point_on_edge(target, axis_base)
+                point_on_side_axis = tool.Cad.point_on_edge(target, axis_side)
+                if (point_on_base_axis - target).length <= (point_on_side_axis - target).length:
+                    new_matrix.translation.x = point_on_base_axis.x
+                    new_matrix.translation.y = point_on_base_axis.y
+                else:
+                    new_matrix.translation.x = point_on_side_axis.x
+                    new_matrix.translation.y = point_on_side_axis.y
+                    new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
 
                 if should_set_z_level:
                     if filling.is_a("IfcDoor"):
@@ -433,7 +441,44 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
                 continue
+
+            filled_opening = element.FillsVoids[0].RelatingOpeningElement
+            filled_element = filled_opening.VoidsElements[0].RelatingBuildingElement
+            filled_object = tool.Ifc.get_object(filled_element)
+
+            if filled_element.is_a() in ["IfcWall", "IfcWallStandardCase"]:
+                # if the filled element is a wall, move the filling in such a way
+                # that it will have the same relative position, but to the other
+                # side of the wall
+                #
+                # For example, if a door frame protudes 1cm out of the wall,
+                # it will produde 1cm out of the other side of the wall.
+
+                layers = tool.Model.get_material_layer_parameters(filled_element)
+                axes = tool.Model.get_wall_axis(filled_object, layers=layers)
+
+                center_axis = [(axes["base"][0] + axes["side"][0]) * 0.5, (axes["base"][1] + axes["side"][1]) * 0.5]
+
+                original_pos = obj.matrix_world.translation
+                bb = tool.Blender.get_object_bounding_box(obj)
+                min_y = min(bb["min_y"], 0)
+                max_y = max(bb["max_y"], 0)
+
+                point_on_center_axis = tool.Cad.point_on_edge(original_pos, center_axis)
+                offset_to_center_axis = point_on_center_axis - original_pos
+                offset_to_center_axis.z = 0
+                depth_offset = max_y + min_y
+                depth_correction_vec = offset_to_center_axis.normalized() * depth_offset
+
+                mirrored_point = original_pos + offset_to_center_axis * 2.0 - depth_correction_vec
+
+                obj.matrix_world.translation = mirrored_point
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
             tool.Geometry.flip_object(obj, "XY")
+            ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), filled_opening, obj.matrix_world)
+            tool.Geometry.reload_representation(filled_object)
+
         return {"FINISHED"}
 
 
