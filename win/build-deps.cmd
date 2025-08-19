@@ -183,7 +183,7 @@ set PYTHON_VERSION=%PYTHON_VERSION%
 :: VERSION DERIVATIONS
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do ( 
+for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do (
     set PY_VER_MAJOR_MINOR=%%a%%b
 )
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
@@ -260,7 +260,7 @@ git clean -fdx
 REM There probably need to be quotes here around the filename
 powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace 
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -367,7 +367,7 @@ call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, 
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
 
 call .\b2 toolset=%BOOST_TOOLSET% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
-    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND% 
+    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -434,7 +434,7 @@ if not %ERRORLEVEL%==0 goto :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\freetype.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-if not %ERRORLEVEL%==0 goto :Error 
+if not %ERRORLEVEL%==0 goto :Error
 
 set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
@@ -589,7 +589,7 @@ call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPEND
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
-:: 
+::
 :: :usd
 :: set DEPENDENCY_NAME=usd
 :: set DEPENDENCY_DIR=%DEPS_DIR%\usd
@@ -722,7 +722,7 @@ call git checkout %3
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
- 
+
 :: RunCMake - Runs CMake for a CMake-based project
 :: Params: %* cmakeOptions
 :: NOTE cd to root CMakeLists.txt folder before calling this if the CMakeLists.txt is not in the repo root.
@@ -731,7 +731,7 @@ call cecho.cmd 0 13 "Running CMake for %DEPENDENCY_NAME%."
 IF NOT EXIST %BUILD_DIR%. mkdir %BUILD_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd %BUILD_DIR%
-:: TODO make deleting cache a parameter for this subroutine? We probably want to delete the 
+:: TODO make deleting cache a parameter for this subroutine? We probably want to delete the
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
 
