@@ -46,6 +46,7 @@ class SheetBuilder:
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
         root.attrib["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
+        root.attrib["xmlns:sodipodi"] = "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
         root.attrib["id"] = "root"
         root.attrib["version"] = "1.1"
 
@@ -65,6 +66,7 @@ class SheetBuilder:
         view_height = self.convert_to_mm(view_root.attrib["height"])
         view = ET.SubElement(root, "g")
         view.attrib["data-type"] = "titleblock"
+        view.attrib["sodipodi:insensitive"] = "true"
         titleblock = ET.SubElement(view, "image")
         titleblock.attrib["xlink:href"] = Path(os.path.relpath(titleblock_path, sheet_dir)).as_posix()
         titleblock.attrib["x"] = "0"
