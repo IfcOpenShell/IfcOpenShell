@@ -1146,7 +1146,7 @@ class ShapeBuilder:
         if polyline.is_a("IfcIndexedPolyCurve"):
             coords = np.array(polyline.Points.CoordList)
         elif polyline.is_a("IfcPolyline"):
-            coords = np.array(p.Coordinates for p in polyline.Points)
+            coords = np.array(tuple(p.Coordinates for p in polyline.Points))
         else:
             raise Exception(f"Unsupported polyline type: {polyline.is_a()}")
         return coords
