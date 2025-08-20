@@ -39,28 +39,29 @@ class HelmertTransformation(NamedTuple):
     factor_z: float
 
 
-def dms2dd(degrees: int, minutes: int, seconds: int, ms: int = 0) -> float:
+def dms2dd(degrees: int, minutes: int, seconds: int, us: int = 0) -> float:
     """Convert degrees, minutes, and (micro)seconds to decimal degrees
 
     :param degrees: The degrees component
     :param minutes: The minutes component
     :param seconds: The seconds component
-    :param ms: The microseconds component
+    :param us: The microseconds component
     :return: The angle in decimal degrees.
     """
     sign = -1 if degrees < 0 else 1
-    dd = abs(float(degrees)) + float(minutes) / 60.0 + float(seconds) / 3600.0 + float(ms) / 3600000000.0
+    dd = abs(float(degrees)) + float(minutes) / 60.0 + float(seconds) / 3600.0 + float(us) / 3600000000.0
     return sign * dd
 
 
-def dd2dms(dd: float, use_ms: bool = False) -> Union[tuple[float, float, float, float], tuple[float, float, float]]:
+def dd2dms(dd: float, use_us: bool = False) -> Union[tuple[float, float, float, float], tuple[float, float, float]]:
     """Convert decimal degrees to degrees, minutes, and (micro)seconds format
 
     :param dd: The decimal degrees
-    :param use_ms: True if to include microseconds and false otherwise. Defaults to false.
+    :param use_us: True if to include microseconds and false otherwise. Defaults to false.
     :return: The angle in a tuple of either 3 or 4 values,
         4 values: integer number of degrees, integer number of minutes, integer number of seconds and integer number of microseconds
         3 values: integer number of degrees, integer number of minutes, and a float number for seconds
+    :note: the tuple follows the format of IfcCompoundPlaneAngleMeasure. Namely all of its are either positive or negative.
     """
     sign = -1 if dd < 0 else 1
     dd = abs(dd)
@@ -70,12 +71,12 @@ def dd2dms(dd: float, use_ms: bool = False) -> Union[tuple[float, float, float, 
     minutes = int(minutes_float)
     seconds_float = (minutes_float - minutes) * 60
 
-    if use_ms:
+    if use_us:
         seconds = int(seconds_float)
         microseconds = int(round((seconds_float - seconds) * 1_000_000))
-        result = (sign * degrees, minutes, seconds, microseconds)
+        result = sign * (degrees, minutes, seconds, microseconds)
     else:
-        result = (sign * degrees, minutes, seconds_float)
+        result = sign * (degrees, minutes, seconds_float)
 
     return result
 
