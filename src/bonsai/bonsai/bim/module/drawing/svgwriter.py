@@ -827,6 +827,10 @@ class SvgWriter:
         text_literals = tool.Drawing.get_text_literal(text_obj, return_list=True)
         product = tool.Drawing.get_assigned_product(element)
 
+        text_data = DecoratorData.get_text_data(text_obj)
+        hyperlink_url = text_data.get("HyperlinkURL", "")
+        hyperlink_target = text_data.get("HyperlinkTarget", "_blank")
+
         text_position = self.project_point_onto_camera(position)
         text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
         text_position_svg = text_position * self.svg_scale
@@ -894,9 +898,19 @@ class SvgWriter:
                 line_number_start=line_number,
                 newline_at=newline_at,
             )
-            for tag in text_tags:
-                self.svg.add(tag)
-            line_number += len(tag.elements)
+
+            if hyperlink_url:
+                for tag in text_tags:
+                    link_element = self.svg.a(href=hyperlink_url, target=hyperlink_target)
+                    if hasattr(tag, "xml") and tag.xml in self.svg.elements:
+                        self.svg.elements.remove(tag.xml)
+                    link_element.add(tag)
+                    self.svg.add(link_element)
+            else:
+                for tag in text_tags:
+                    self.svg.add(tag)
+
+            line_number += len(text_tags)
 
     def draw_empty_annotation(self, obj: bpy.types.Object, classes: list[str]) -> None:
         x_offset = self.raw_width / 2
