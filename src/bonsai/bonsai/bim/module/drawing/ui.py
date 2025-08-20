@@ -645,6 +645,10 @@ class BIM_PT_text(Panel):
             select_op.literal_value = str(props.newline_at)
             select_op.attribute_type = "newline"
 
+        row = self.layout.row()
+        row.prop(props, "hyperlink_url")
+        row = self.layout.row()
+        row.prop(props, "hyperlink_target")
 
         for i, literal_props in enumerate(props.literals):
             box = self.layout.box()
@@ -878,6 +882,16 @@ class BIM_PT_text(Panel):
             row = self.layout.row(align=True)
             row.label(text="List_Separator")
             row.label(text=str(text_data["List_Separator"]))
+
+            row = self.layout.row(align=True)
+            row.label(text="HyperlinkURL")
+            hyperlink_url = text_data.get("HyperlinkURL", "")
+            row.label(text=hyperlink_url if hyperlink_url else "None")
+
+            row = self.layout.row(align=True)
+            row.label(text="HyperlinkTarget")
+            hyperlink_target = text_data.get("HyperlinkTarget", "_blank")
+            row.label(text=hyperlink_target)
 
             for i, literal_data in enumerate(text_data["Literals"]):
                 box = self.layout.box()

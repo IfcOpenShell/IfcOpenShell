@@ -3144,6 +3144,7 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
         props = tool.Drawing.get_text_props(obj)
 
         captured_apply_settings = {
@@ -3180,6 +3181,19 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
         self.apply_to_selected_objects_with_captured_data(context, obj, captured_apply_settings)
 
         tool.Blender.update_viewport()
+        props = tool.Drawing.get_text_props(obj)
+        if props.hyperlink_url:
+            pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
+            pset_data["HyperlinkURL"] = props.hyperlink_url
+            pset_data["HyperlinkTarget"] = props.hyperlink_target
+
+            pset = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", should_inherit=False)
+            if pset:
+                pset = tool.Ifc.get().by_id(pset["id"])
+            else:
+                pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Annotation")
+
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=pset_data)
 
         return {"FINISHED"}
 
