@@ -38,14 +38,17 @@ REPO_PATH = r""
 
 # BLENDER_PATH: Path to Blender's configuration folder.
 # Usually don't need to change, just ensure Blender version matches.
+BLENDER_VERSION = "4.5"
+
 if sys.platform == "win32":
-    BLENDER_PATH = Path.home() / "AppData/Roaming/Blender Foundation/Blender/4.5"
+    BLENDER_PATH = Path.home() / f"AppData/Roaming/Blender Foundation/Blender/{BLENDER_VERSION}"
 elif sys.platform == "darwin":
-    BLENDER_PATH = Path.home() / "Library/Application Support/Blender/4.5"
+    BLENDER_PATH = Path.home() / f"Library/Application Support/Blender/{BLENDER_VERSION}"
 elif sys.platform == "linux":
-    BLENDER_PATH = Path.home() / ".config/blender/4.5"
+    BLENDER_PATH = Path.home() / f".config/blender/{BLENDER_VERSION}"
 else:
-    assert False
+    raise RuntimeError("Unsupported platform")
+
 
 
 BONSAI_PATH_CANDIDATES = (
