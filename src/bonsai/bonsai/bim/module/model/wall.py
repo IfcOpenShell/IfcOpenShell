@@ -441,6 +441,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
         x_angle = 0 if tool.Cad.is_x(self.x_angle, pi, tolerance=0.001) else self.x_angle
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
         for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
@@ -466,16 +467,11 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     existing_x_angle = obj.rotation_euler.x
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
-                    # Reset the transformation and returns to the original points with 0 degrees
-                    extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * abs(cos(existing_x_angle)))
-                        for p in extrusion.SweptArea.OuterCurve.Points.CoordList
-                    ]
 
-                    # Apply the transformation for the new x_angle
-                    extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * abs(1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
-                    ]
+                    coord_list = shape_builder.get_polyline_coords(extrusion.SweptArea.OuterCurve)
+                    coord_list = [(p[0], p[1] * abs(cos(existing_x_angle))) for p in coord_list] # Reset the transformation and returns to the original points with 0 degrees
+                    coord_list = [(p[0], p[1] * abs(1 / cos(x_angle))) for p in coord_list] # Apply the transformation for the new x_angle
+                    shape_builder.set_polyline_coords(extrusion.SweptArea.OuterCurve, coord_list)
 
                     # The extrusion direction calculated previously default to the positive direction
                     # Here we set the extrusion direction to negative if that's the case
