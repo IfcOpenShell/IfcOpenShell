@@ -891,7 +891,8 @@ class DumbWallGenerator:
         elevation = self.container_obj.location.z
         representation = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
         extrusion = tool.Model.get_extrusion(representation)
-        polyline_points = extrusion.SweptArea.OuterCurve.Points.CoordList
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        polyline_points = builder.get_polyline_coords(extrusion.SweptArea.OuterCurve)
         polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
         polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
         if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):
