@@ -178,7 +178,7 @@ IfcSpfStream::IfcSpfStream(const std::string& path)
 IfcSpfStream::IfcSpfStream(std::istream& stream, int length)
     : stream_(0),
       buffer_(0) {
-    eof = false;
+    eof = length == 0;
     size = length;
     char* buffer_rw = new char[size];
     stream.read(buffer_rw, size);
@@ -191,7 +191,7 @@ IfcSpfStream::IfcSpfStream(std::istream& stream, int length)
 IfcSpfStream::IfcSpfStream(void* data, int length)
     : stream_(0),
       buffer_(0) {
-    eof = false;
+    eof = length == 0;
     size = length;
     buffer_ = (char*)data;
     valid = true;
