@@ -1226,7 +1226,7 @@ class BoundingBoxDecorator:
     def find_closest_trihedron(corners, edges, region, rv3d):
 
         min_y = float("inf")
-        best_origin = None
+        best_origin = 0
         for idx, corner in enumerate(corners):
             screen_co = location_3d_to_region_2d(region, rv3d, corner)
             if screen_co is not None and screen_co.y < min_y:
