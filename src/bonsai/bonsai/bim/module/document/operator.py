@@ -23,6 +23,7 @@ import bonsai.tool as tool
 import bonsai.core.document as core
 from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 
+
 class LoadProjectDocuments(bpy.types.Operator):
     bl_idname = "bim.load_project_documents"
     bl_label = "Load Project Documents"
@@ -286,6 +287,7 @@ class OpenIFCDocument(bpy.types.Operator):
         self.report({"INFO"}, f"Opening {filepath} in a new Blender instance")
 
         return {"FINISHED"}
+
 
 class ToggleDocument(bpy.types.Operator):
     bl_idname = "bim.toggle_document"

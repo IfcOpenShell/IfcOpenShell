@@ -53,7 +53,7 @@ def add_information(ifc: tool.Ifc, document: tool.Document, parent=None) -> ifco
     document.clear_document_tree()
 
     if parent is None:
-        parent = document.get_default_parent_for_information(ifc)
+        parent = document.get_default_parent_for_information()
 
     information = ifc.run("document.add_information", parent=parent)
     ifc.run("document.add_reference", information=information)
@@ -66,7 +66,7 @@ def add_information(ifc: tool.Ifc, document: tool.Document, parent=None) -> ifco
 
 
 def add_reference(ifc: tool.Ifc, document: tool.Document) -> None:
-    parent = document.get_selected_document_information(ifc)
+    parent = document.get_selected_document_information()
 
     if parent:
         reference = ifc.run("document.add_reference", information=parent)

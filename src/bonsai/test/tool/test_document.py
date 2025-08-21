@@ -148,24 +148,23 @@ class TestImportProjectDocumentsExpanded(NewFile):
         document = ifcopenshell.api.document.add_information(ifc)
         reference = ifcopenshell.api.document.add_reference(ifc, information=document)
 
-
         props = tool.Document.get_document_props()
         expanded_docs = [document.id()]  # Mark document as expanded
         props.json_string = json.dumps(expanded_docs)
-        
+
         subject.import_project_documents()
         props = tool.Document.get_document_props()
 
         # Should have project root + document + reference = 3 total
         assert len(props.documents) == 3
-        
+
         assert props.documents[0].ifc_definition_id == -project.id()
         assert props.documents[0].document_type == "PROJECT"
-        
+
         doc_info = next((d for d in props.documents if d.ifc_definition_id == document.id()), None)
         assert doc_info is not None
         assert doc_info.document_type == "INFORMATION"
-        
+
         doc_ref = next((d for d in props.documents if d.ifc_definition_id == reference.id()), None)
         assert doc_ref is not None
         assert doc_ref.location == ""
@@ -180,24 +179,23 @@ class TestImportProjectDocumentsCollapsed(NewFile):
         project = ifc.createIfcProject()
         document = ifcopenshell.api.document.add_information(ifc)
         reference = ifcopenshell.api.document.add_reference(ifc, information=document)
-        
 
         props = tool.Document.get_document_props()
         props.json_string = json.dumps([])  # Empty expanded list
-        
+
         subject.import_project_documents()
         props = tool.Document.get_document_props()
 
         # Should have project root + document = 2 total (reference not imported because parent is collapsed)
         assert len(props.documents) == 2
-        
+
         assert props.documents[0].ifc_definition_id == -project.id()
         assert props.documents[0].document_type == "PROJECT"
-        
+
         doc_info = next((d for d in props.documents if d.ifc_definition_id == document.id()), None)
         assert doc_info is not None
         assert doc_info.document_type == "INFORMATION"
-        
+
         doc_ref = next((d for d in props.documents if d.ifc_definition_id == reference.id()), None)
         assert doc_ref is None
 

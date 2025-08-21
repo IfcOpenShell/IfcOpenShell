@@ -173,14 +173,18 @@ class Document(bonsai.core.tool.Document):
         new.tree_depth = depth
 
         new.name = document.Name or ""
-        new.identification = cls.get_document_information_id(document) if new.document_type == "INFORMATION" else cls.get_external_reference_id(document)
+        new.identification = (
+            cls.get_document_information_id(document)
+            if new.document_type == "INFORMATION"
+            else cls.get_external_reference_id(document)
+        )
         new.identification = new.identification or ""
         new.description = document.Description or ""
         new.location = document.Location or ""
-        
+
         if new.document_type == "INFORMATION":
             new.name = document.Name or "Unnamed"
-        
+
         elif new.document_type == "REFERENCE":
             file = document.file
             if file.schema == "IFC2X3":
@@ -200,12 +204,12 @@ class Document(bonsai.core.tool.Document):
 
             info_children = natsorted(
                 [d for d in children if d.is_a("IfcDocumentInformation")],
-                key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or "")
+                key=lambda doc: (cls.get_document_information_id(doc) or "", doc.Name or ""),
             )
 
             ref_children = natsorted(
                 [d for d in children if not d.is_a("IfcDocumentInformation")],
-                key=lambda doc: (cls.get_external_reference_id(doc) or "", doc.Description or doc.Name or "")
+                key=lambda doc: (cls.get_external_reference_id(doc) or "", doc.Description or doc.Name or ""),
             )
 
             for child in info_children + ref_children:
@@ -272,16 +276,18 @@ class Document(bonsai.core.tool.Document):
             props.json_string = json.dumps(expanded_docs)
 
     @classmethod
-    def get_default_parent_for_information(cls, ifc) -> Union[ifcopenshell.entity_instance, None]:
-        projects = ifc.get().by_type("IfcProject")
+    def get_default_parent_for_information(cls) -> Union[ifcopenshell.entity_instance, None]:
+        file = tool.Ifc.get()
+        projects = file.by_type("IfcProject")
         return projects[0] if projects else None
 
     @classmethod
-    def get_selected_document_information(cls, ifc) -> Union[ifcopenshell.entity_instance, None]:
+    def get_selected_document_information(cls) -> Union[ifcopenshell.entity_instance, None]:
         props = cls.get_document_props()
 
         if props.active_document and props.active_document.document_type == "INFORMATION":
-            return ifc.get().by_id(props.active_document.ifc_definition_id)
+            file = tool.Ifc.get()
+            return file.by_id(props.active_document.ifc_definition_id)
         return None
 
     @classmethod
