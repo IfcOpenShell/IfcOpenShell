@@ -473,8 +473,8 @@ class TestAngle2YAxis(test.bootstrap.IFC4):
 class TestDMS2DDandDD2DMS(test.bootstrap.IFC4):
     def test_dms2dd_and_dd2dms(self):
         test_cases_3tuple = [
-            (35.41, (35, 24, 36)),
-            (-116.89, (-116, -53, -24)),
+            (35.41, (35, 24, 36.0)),
+            (-116.89, (-116, -53, -24.0)),
         ]
         test_cases_4tuple = [
             (40.431389, (40, 25, 53, 400)),
@@ -485,12 +485,12 @@ class TestDMS2DDandDD2DMS(test.bootstrap.IFC4):
 
         for dd, dms in test_cases_3tuple:
             d, m, s = subject.dd2dms(dd)
-            assert (int(d), int(m), float(s)) == dms
+            assert (d, m, s) == dms
             dd_converted = subject.dms2dd(dms[0], dms[1], dms[2])
-            assert abs(dd_converted - dd) < 1e-9
+            assert dd_converted == dd
 
         for dd, dms in test_cases_4tuple:
             d, m, s, us = subject.dd2dms(dd, use_us=True)
-            assert (int(d), int(m), int(s), int(us)) == dms
+            assert (d, m, s, us) == dms
             dd_converted = subject.dms2dd(dms[0], dms[1], dms[2], dms[3])
-            assert abs(dd_converted - dd) < 1e-9
+            assert dd_converted == dd

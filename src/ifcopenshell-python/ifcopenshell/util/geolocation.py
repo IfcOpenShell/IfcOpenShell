@@ -23,6 +23,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 from typing import NamedTuple, Optional, Union
+from decimal import Decimal, ROUND_HALF_UP
 
 MatrixType = ifcopenshell.util.placement.MatrixType
 
@@ -48,12 +49,25 @@ def dms2dd(degrees: int, minutes: int, seconds: int, us: int = 0) -> float:
     :param us: The microseconds component
     :return: The angle in decimal degrees.
     """
-    sign = -1 if degrees < 0 else 1
-    dd = abs(float(degrees)) + float(minutes) / 60.0 + float(seconds) / 3600.0 + float(us) / 3600000000.0
-    return sign * dd
+    sign = -1 if degrees < 0 or minutes < 0 or seconds < 0 or us < 0 else 1
+    
+    degrees_decimal = Decimal(str(abs(degrees)))
+    minutes_decimal = Decimal(str(abs(minutes)))
+    seconds_decimal = Decimal(str(abs(seconds)))
+    us_decimal = Decimal(str(abs(us)))
+    
+    dd_decimal = (
+        degrees_decimal + 
+        minutes_decimal / Decimal('60') + 
+        seconds_decimal / Decimal('3600') + 
+        us_decimal / Decimal('3600000000')
+    )
+    
+    result = sign * dd_decimal
+    return float(result)
 
 
-def dd2dms(dd: float, use_us: bool = False) -> Union[tuple[float, float, float, float], tuple[float, float, float]]:
+def dd2dms(dd: float, use_us: bool = False) -> Union[tuple[int, int, int, int], tuple[int, int, float]]:
     """Convert decimal degrees to degrees, minutes, and (micro)seconds format
 
     :param dd: The decimal degrees
@@ -64,22 +78,29 @@ def dd2dms(dd: float, use_us: bool = False) -> Union[tuple[float, float, float, 
     :note: the tuple follows the format of IfcCompoundPlaneAngleMeasure. Namely all of its are either positive or negative.
     """
     sign = -1 if dd < 0 else 1
-    dd = abs(dd)
-
-    degrees = int(dd)
-    minutes_float = (dd - degrees) * 60
-    minutes = int(minutes_float)
-    seconds_float = (minutes_float - minutes) * 60
+    
+    dd_decimal = Decimal(str(abs(dd)))
+    
+    degrees = int(dd_decimal)
+    degrees_decimal = Decimal(str(degrees))
+    
+    fractional_part = dd_decimal - degrees_decimal
+    
+    minutes_decimal = fractional_part * Decimal('60')
+    minutes = int(minutes_decimal)
+    minutes_decimal_int = Decimal(str(minutes))
+    
+    seconds_decimal = (minutes_decimal - minutes_decimal_int) * Decimal('60')
 
     if use_us:
-        seconds = int(seconds_float)
-        microseconds = int(round((seconds_float - seconds) * 1_000_000))
-        result = sign * (degrees, minutes, seconds, microseconds)
+        seconds = int(seconds_decimal)
+        seconds_decimal_int = Decimal(str(seconds))
+        microseconds_decimal = (seconds_decimal - seconds_decimal_int) * Decimal('1000000')
+        microseconds = int(microseconds_decimal.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+        return (sign * degrees, sign * minutes, sign * seconds, sign * microseconds)
     else:
-        result = sign * (degrees, minutes, seconds_float)
-
-    return result
-
+        seconds_float = float(seconds_decimal)
+        return (sign * degrees, sign * minutes, sign * seconds_float)
 
 def xyz2enh(
     x: float,
