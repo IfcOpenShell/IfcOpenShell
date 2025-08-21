@@ -367,7 +367,7 @@ namespace ifcopenshell {
 			struct CgalSmoothAngleDegrees : public SettingBase<CgalSmoothAngleDegrees, double> {
 				static constexpr const char* const name = "cgal-smooth-angle-degrees";
 				static constexpr const char* const description = "Angle in degrees under which adjacent facets will have averaged vertex normals in CGAL output. NB irrespective of original IFC geometry types. Defaults to -1 to disable smoothing.";
-				static constexpr int defaultvalue = -1;
+				static constexpr double defaultvalue = -1.;
 			};
 
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
