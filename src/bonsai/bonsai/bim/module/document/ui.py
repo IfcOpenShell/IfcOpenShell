@@ -22,6 +22,7 @@ from bpy.types import Panel, UIList
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 
+
 class BIM_PT_documents(Panel):
     bl_label = "Documents"
     bl_idname = "BIM_PT_documents"
@@ -43,7 +44,7 @@ class BIM_PT_documents(Panel):
 
         row = self.layout.row(align=True)
         row.label(text="{} Documents found".format(DocumentData.data["total_documents"]), icon="FILE")
-        
+
         if self.props.is_editing:
             row.operator("bim.disable_document_editing_ui", text="", icon="CANCEL")
         else:
