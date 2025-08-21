@@ -336,35 +336,51 @@ class Drawing(bonsai.core.tool.Drawing):
     ) -> None:
         """Apply rotation to annotation based on the selected rotation mode"""
         import mathutils
+        import math
 
-        camera = bpy.context.scene.camera
+        if rotation_mode in ("NONE", "CAMERA_Horizontal"):
+            return
 
-        if rotation_mode == "LOCAL_X":
+        elif rotation_mode == "CAMERA_Vertical":
+            location = tag_obj.location.copy()
+            rotation_matrix = tag_obj.matrix_world.to_3x3()
+            rotation_90z = mathutils.Matrix.Rotation(math.pi / 2, 3, "Z")
+            new_rotation = rotation_matrix @ rotation_90z
+            tag_obj.matrix_world = mathutils.Matrix.Translation(location) @ new_rotation.to_4x4()
+            tag_obj.rotation_euler = tag_obj.matrix_world.to_euler()
+
+        elif rotation_mode == "LOCAL_X":
             local_x = related_object.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
             local_x = local_x.normalized()
+            camera = bpy.context.scene.camera
+            if camera:
+                camera_right = camera.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
+                if local_x.dot(camera_right) < 0:
+                    local_x = -local_x
+
             tag_obj.rotation_euler = local_x.to_track_quat("X", "Z").to_euler()
 
         elif rotation_mode == "LOCAL_Y":
             local_y = related_object.matrix_world.to_3x3() @ mathutils.Vector((0, 1, 0))
             local_y = local_y.normalized()
+            camera = bpy.context.scene.camera
+            if camera:
+                camera_right = camera.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
+                if local_y.dot(camera_right) < 0:
+                    local_y = -local_y
+
             tag_obj.rotation_euler = local_y.to_track_quat("X", "Z").to_euler()
 
         elif rotation_mode == "LOCAL_Z":
             local_z = related_object.matrix_world.to_3x3() @ mathutils.Vector((0, 0, 1))
             local_z = local_z.normalized()
-            tag_obj.rotation_euler = local_z.to_track_quat("X", "Y").to_euler()
+            camera = bpy.context.scene.camera
+            if camera:
+                camera_right = camera.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
+                if local_z.dot(camera_right) < 0:
+                    local_z = -local_z
 
-        elif rotation_mode == "CAMERA_Horizontal":
-            cam_matrix = camera.matrix_world
-            camera_x = cam_matrix.to_3x3() @ mathutils.Vector((1, 0, 0))
-            camera_x = camera_x.normalized()
-            tag_obj.rotation_euler = camera_x.to_track_quat("X", "Z").to_euler()
-
-        elif rotation_mode == "CAMERA_Vertical":
-            cam_matrix = camera.matrix_world
-            camera_y = cam_matrix.to_3x3() @ mathutils.Vector((0, 1, 0))
-            camera_y = camera_y.normalized()
-            tag_obj.rotation_euler = camera_y.to_track_quat("X", "Z").to_euler()
+            tag_obj.rotation_euler = local_z.to_track_quat("X", "Z").to_euler()
 
     @classmethod
     def is_annotation_object_type(
