@@ -6,14 +6,6 @@ Scenario: Load project documents
     When I press "bim.load_project_documents"
     Then nothing happens
 
-Scenario: Load document
-    Given an empty IFC project
-    And I press "bim.load_project_documents"
-    And I press "bim.add_information"
-    And the variable "information" is "{ifc}.by_type('IfcDocumentInformation')[-1].id()"
-    When I press "bim.load_document(document={information})"
-    Then nothing happens
-
 Scenario: Disable document editing UI
     Given an empty IFC project
     And I press "bim.load_project_documents"
@@ -48,7 +40,8 @@ Scenario: Add document reference
     And I press "bim.load_project_documents"
     And I press "bim.add_information"
     And the variable "information" is "{ifc}.by_type('IfcDocumentInformation')[-1].id()"
-    And I press "bim.load_document(document={information})"
+    And I press "bim.load_project_documents"
+    And I set "scene.BIMDocumentProperties.active_document_index" to "1"
     When I press "bim.add_document_reference"
     Then nothing happens
 
@@ -74,16 +67,12 @@ Scenario: Assign document
     And I press "bim.load_project_documents"
     And I press "bim.add_information"
     And the variable "information" is "{ifc}.by_type('IfcDocumentInformation')[-1].id()"
-    And I press "bim.load_document(document={information})"
-    And I press "bim.add_document_reference"
-    And the variable "reference" is "{ifc}.by_type('IfcDocumentReference')[-1].id()"
     And I add a cube
     And the object "Cube" is selected
-    And I look at the "Class" panel
-    And I set the "Products" property to "IfcElement"
-    And I set the "Class" property to "IfcWall"
-    And I click "Assign IFC Class"
-    When I press "bim.assign_document(document={reference})"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    When I press "bim.assign_document(document={information})"
     Then nothing happens
 
 Scenario: Unassign document
@@ -91,15 +80,11 @@ Scenario: Unassign document
     And I press "bim.load_project_documents"
     And I press "bim.add_information"
     And the variable "information" is "{ifc}.by_type('IfcDocumentInformation')[-1].id()"
-    And I press "bim.load_document(document={information})"
-    And I press "bim.add_document_reference"
-    And the variable "reference" is "{ifc}.by_type('IfcDocumentReference')[-1].id()"
     And I add a cube
     And the object "Cube" is selected
-    And I look at the "Class" panel
-    And I set the "Products" property to "IfcElement"
-    And I set the "Class" property to "IfcWall"
-    And I click "Assign IFC Class"
-    And I press "bim.assign_document(document={reference})"
-    When I press "bim.unassign_document(document={reference})"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I press "bim.assign_document(document={information})"
+    When I press "bim.unassign_document(document={information})"
     Then nothing happens
