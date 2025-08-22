@@ -568,10 +568,10 @@ class FilledOpeningGenerator:
         # making sure if min_x or min_z != 0 to shift the opening accordingly
         # to prevent something like #2784
         if not has_width_attribute:
-            opening_position.x = min(v[0] for v in filling_obj.bound_box)
+            opening_position.x = min(v[0] for v in filling_obj.bound_box) / unit_scale
 
         if not has_height_attribute:
-            opening_position.z = min(v[2] for v in filling_obj.bound_box)
+            opening_position.z = min(v[2] for v in filling_obj.bound_box) / unit_scale
 
         extrusion = shape_builder.extrude(
             shape_builder.rectangle(size=opening_size),
