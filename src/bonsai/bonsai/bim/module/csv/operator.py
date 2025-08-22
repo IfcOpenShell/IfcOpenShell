@@ -177,6 +177,7 @@ class ExportCsvAttributes(bpy.types.Operator, ExportHelper):
 class AddOutputFilterGroup(bpy.types.Operator):
     bl_idname = "bim.add_output_filter_group"
     bl_label = "Add Output Filter Group"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         props = context.scene.CsvProperties
@@ -187,6 +188,7 @@ class AddOutputFilterGroup(bpy.types.Operator):
 class RemoveOutputFilterGroup(bpy.types.Operator):
     bl_idname = "bim.remove_output_filter_group"
     bl_label = "Remove Output Filter Group"
+    bl_options = {"REGISTER", "UNDO"}
     group_index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -198,6 +200,7 @@ class RemoveOutputFilterGroup(bpy.types.Operator):
 class AddOutputFilter(bpy.types.Operator):
     bl_idname = "bim.add_output_filter"
     bl_label = "Add Output Filter"
+    bl_options = {"REGISTER", "UNDO"}
     group_index: bpy.props.IntProperty()
 
     def execute(self, context):
