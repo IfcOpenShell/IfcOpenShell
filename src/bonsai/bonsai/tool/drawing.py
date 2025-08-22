@@ -335,10 +335,8 @@ class Drawing(bonsai.core.tool.Drawing):
         cls, tag_obj: bpy.types.Object, related_object: bpy.types.Object, rotation_mode: str
     ) -> None:
         """Apply rotation to annotation based on the selected rotation mode"""
-        import mathutils
-        import math
-
         camera = bpy.context.scene.camera
+        camera_right = camera.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
 
         if rotation_mode == "CAMERA_Horizontal":
             location = tag_obj.location.copy()
@@ -350,17 +348,13 @@ class Drawing(bonsai.core.tool.Drawing):
             location = tag_obj.location.copy()
             camera_matrix = camera.matrix_world.copy()
             camera_matrix.translation = location
-
             rotation_90z = mathutils.Matrix.Rotation(math.pi / 2, 4, "Z")
             camera_matrix = camera_matrix @ rotation_90z
-
             tag_obj.matrix_world = camera_matrix
 
         elif rotation_mode == "LOCAL_X":
             local_x = related_object.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
             local_x = local_x.normalized()
-
-            camera_right = camera.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
             if local_x.dot(camera_right) < 0:
                 local_x = -local_x
 
@@ -369,8 +363,6 @@ class Drawing(bonsai.core.tool.Drawing):
         elif rotation_mode == "LOCAL_Y":
             local_y = related_object.matrix_world.to_3x3() @ mathutils.Vector((0, 1, 0))
             local_y = local_y.normalized()
-
-            camera_right = camera.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
             if local_y.dot(camera_right) < 0:
                 local_y = -local_y
 
@@ -379,8 +371,6 @@ class Drawing(bonsai.core.tool.Drawing):
         elif rotation_mode == "LOCAL_Z":
             local_z = related_object.matrix_world.to_3x3() @ mathutils.Vector((0, 0, 1))
             local_z = local_z.normalized()
-
-            camera_right = camera.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
             if local_z.dot(camera_right) < 0:
                 local_z = -local_z
 
