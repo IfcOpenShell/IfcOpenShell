@@ -1011,6 +1011,11 @@ class ShapeBuilder:
 
                     self.mirror(c.BasisCurve, mirror_axes, mirror_point)
                 elif c.is_a("IfcPolygonalFaceSet"):
+                    if c.file.get_total_inverses(c.Coordinates) > 1:
+                        # if Coordinates is used more than once, this probably means that another representation item
+                        # is referencing the same coordinate list. To not disturb this other item, clone the coordinates
+                        new_coords_elem = ifcopenshell.util.element.copy(c.file, c.Coordinates)
+                        c.Coordinates = new_coords_elem
                     new_coords = []
                     for coord in c.Coordinates.CoordList:
                         new_coord_2d = self.mirror_2d_point([coord[0], coord[1]], mirror_axes, mirror_point)
