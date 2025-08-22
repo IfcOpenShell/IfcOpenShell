@@ -249,7 +249,7 @@ class AnnotationToolUI:
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
             add_layout_hotkey_operator(
-                row,
+                cls.layout,
                 "Bulk Tag",
                 "S_T",
                 "Create new annotations and automatically adjust them to the selected objects",
@@ -315,9 +315,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Ifc.get().by_id(int(props.relating_type_id)) if props.relating_type_id != "0" else None
                 ),
                 enable_editing=False,
-                rotation_mode=props.tag_rotation_mode,
-                related_object=related_object,
             )
+            tool.Drawing.setup_annotation_object(obj, object_type, related_object, props.tag_rotation_mode)
             created_objects.append(obj)
         
         # Select the created annotation objects
@@ -326,6 +325,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             obj.select_set(True)
         if created_objects:
             bpy.context.view_layer.objects.active = created_objects[-1]
+
 
     def hotkey_S_A(self):
         if bpy.ops.bim.add_annotation.poll():
@@ -353,3 +353,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             if not related_product:
                 self.report({"ERROR"}, "Selected annotation has no product assigned.")
                 continue
+            related_object = tool.Ifc.get_object(related_product)
+
+            rotation_mode = tool.Drawing.get_annotation_props().tag_rotation_mode
+            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object, rotation_mode)

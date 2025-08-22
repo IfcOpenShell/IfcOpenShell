@@ -427,8 +427,6 @@ def add_annotation(
     object_type: str,
     relating_type: ifcopenshell.entity_instance,
     enable_editing: bool = False,
-    rotation_mode: str = "NONE",
-    related_object: Optional[bpy.types.Object] = None,
 ) -> bpy.types.Object:
     target_view = drawing_tool.get_drawing_target_view(drawing)
     context = drawing_tool.get_annotation_context(target_view, object_type)
@@ -454,10 +452,6 @@ def add_annotation(
     if representation := drawing_tool.get_representation(element, context):
         drawing_tool.reload_representation(obj=obj, representation=representation)
     collector.assign(obj, should_clean_users_collection=True)
-
-    if related_object:
-        drawing_tool.setup_annotation_object(obj, object_type, related_object, rotation_mode)
-
     if not relating_type_rep and object_type != "IMAGE" and enable_editing:
         drawing_tool.enable_editing(obj)
     return obj
