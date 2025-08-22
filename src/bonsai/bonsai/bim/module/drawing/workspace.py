@@ -248,15 +248,14 @@ class AnnotationToolUI:
 
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
+            row.label(text="", icon="DRIVER_ROTATIONAL_DIFFERENCE")
+            row.prop(cls.props, "tag_rotation_mode", text="")
             add_layout_hotkey_operator(
                 cls.layout,
                 "Bulk Tag",
                 "S_T",
                 "Create new annotations and automatically adjust them to the selected objects",
             )
-            row.label(text="", icon="DRIVER_ROTATIONAL_DIFFERENCE")
-            row.prop(cls.props, "tag_rotation_mode", text="")
-
             add_layout_hotkey_operator(
                 cls.layout, "Readjust", "S_G", "Readjust tags based on the products they are assigned to"
             )
