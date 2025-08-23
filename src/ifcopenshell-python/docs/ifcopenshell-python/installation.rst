@@ -197,7 +197,7 @@ the IfcOpenShell utilities.
 Bonsai is available either as a stable build or a daily build.
 
 1. Install Bonsai by following the `Bonsai installation documentation
-   <https://docs.bonsaibim.org/guides/installation.html>`_.
+   <https://docs.bonsaibim.org/quickstart/installation.html>`_.
 
 2. Launch Blender. On the top left of the Viewport panel, click the **Editor
    Type** icon to change the viewport into a **Python Console**.
