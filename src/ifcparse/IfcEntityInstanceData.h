@@ -414,17 +414,23 @@ class IFC_PARSE_API IfcEntityInstanceData {
       {}
 
       IfcEntityInstanceData(IfcEntityInstanceData&& other) noexcept
-          : storage_(other.storage_)
+          : storage_(std::exchange(other.storage_, nullptr))
       {}
 
-      // No copy-constructor anymore because we need the instance for storage model context
+      // No copy-constructor/-assignment anymore because we need the instance for storage model context
       IfcEntityInstanceData(const IfcEntityInstanceData&) = delete;
+      IfcEntityInstanceData& operator=(const IfcEntityInstanceData&) = delete;
 
-      IfcEntityInstanceData& operator=(IfcEntityInstanceData&& other) {
+      IfcEntityInstanceData& operator=(IfcEntityInstanceData&& other) noexcept {
           if (this != &other) {
-              storage_ = other.storage_;
+              delete storage_;
+              storage_ = std::exchange(other.storage_, nullptr);
           }
           return *this;
+      }
+
+      ~IfcEntityInstanceData() {
+          delete storage_;
       }
 
     AttributeValue get_attribute_value(void* storage, const IfcParse::declaration*, std::size_t identity, size_t index) const;

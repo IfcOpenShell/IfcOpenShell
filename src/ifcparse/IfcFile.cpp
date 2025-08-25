@@ -3,7 +3,7 @@
 
 IfcParse::parse_context::~parse_context() {
     for (auto& t : tokens_) {
-        boost::apply_visitor([](auto& v) {
+        std::visit([](auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, parse_context*>) {
                 delete v;
             }
@@ -31,14 +31,14 @@ namespace {
 
     // Specialization when there are multiple types in the variant
     template<typename T, typename First, typename... Rest>
-    struct is_type_in_variant<boost::variant<First, Rest...>, T>
+    struct is_type_in_variant<std::variant<First, Rest...>, T>
     {
-        static constexpr bool value = std::is_same<T, First>::value || is_type_in_variant<boost::variant<Rest...>, T>::value;
+        static constexpr bool value = std::is_same<T, First>::value || is_type_in_variant<std::variant<Rest...>, T>::value;
     };
 
     // Specialization when there is only one type left in the variant
     template<typename T, typename Last>
-    struct is_type_in_variant<boost::variant<Last>, T>
+    struct is_type_in_variant<std::variant<Last>, T>
     {
         static constexpr bool value = std::is_same<T, Last>::value;
     };
@@ -107,7 +107,7 @@ namespace {
             return;
         }
 
-        typedef boost::variant<
+        typedef std::variant<
             Blank,
 
             std::vector<int>,
@@ -125,21 +125,21 @@ namespace {
 
         auto append_to_aggregate_storage = [&aggregate_storage](const auto& v) {
             if constexpr (is_type_in_variant_v<possible_aggregation_types_t, std::vector<std::decay_t<decltype(v)>>>) {
-                if (aggregate_storage.which() == 0) {
+                if (aggregate_storage.index() == 0) {
                     aggregate_storage = std::vector<std::decay_t<decltype(v)>>{ v };
                 } else {
-                    if (auto* vec_ptr = boost::get<std::vector<std::decay_t<decltype(v)>>>(&aggregate_storage)) {
+                    if (auto* vec_ptr = std::get_if<std::vector<std::decay_t<decltype(v)>>>(&aggregate_storage)) {
                         vec_ptr->push_back(v);
                     } else {
                         if constexpr (std::is_same_v<std::decay_t<decltype(v)>, int>) {
-                            auto* vec_ptr2 = boost::get<std::vector<double>>(&aggregate_storage);
+                            auto* vec_ptr2 = std::get_if<std::vector<double>>(&aggregate_storage);
                             if (vec_ptr2) {
                                 // double[] + int
                                 vec_ptr2->push_back((double) v);
                             }
                         }
                         if constexpr (std::is_same_v<std::decay_t<decltype(v)>, double>) {
-                            auto* vec_ptr2 = boost::get<std::vector<int>>(&aggregate_storage);
+                            auto* vec_ptr2 = std::get_if<std::vector<int>>(&aggregate_storage);
                             if (vec_ptr2) {
                                 // int[] -> double[] + double
                                 std::vector<double> ps(vec_ptr2->begin(), vec_ptr2->end());
@@ -149,7 +149,7 @@ namespace {
                         }
 
                         if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<int>>) {
-                            auto* vec_ptr2 = boost::get<std::vector<std::vector<double>>>(&aggregate_storage);
+                            auto* vec_ptr2 = std::get_if<std::vector<std::vector<double>>>(&aggregate_storage);
                             if (vec_ptr2) {
                                 // double[][] + int[]
                                 std::vector<double> vd(v.begin(), v.end());
@@ -157,7 +157,7 @@ namespace {
                             }
                         }
                         if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<double>>) {
-                            auto* vec_ptr2 = boost::get<std::vector<std::vector<int>>>(&aggregate_storage);
+                            auto* vec_ptr2 = std::get_if<std::vector<std::vector<int>>>(&aggregate_storage);
                             if (vec_ptr2) {
                                 // int[][] -> double[][] + double[]
                                 std::vector<std::vector<double>> vvd;
@@ -171,7 +171,7 @@ namespace {
                         }
 
                         // @todo would be cool if we can trace this back to file offset
-                        auto current = boost::apply_visitor([](auto v) { 
+                        auto current = std::visit([](auto v) { 
                             if constexpr (!std::is_same_v<decltype(v), Blank>) {
                                 return std::string(typeid(typename decltype(v)::value_type).name());
                             } else {
@@ -206,7 +206,7 @@ namespace {
         };
 
         for (auto& t : p.tokens_) {
-            boost::apply_visitor([&aggregate_storage, &append_to_aggregate_storage, aggr, instance_id, attribute_id](const auto& v) {
+            std::visit([&aggregate_storage, &append_to_aggregate_storage, aggr, instance_id, attribute_id](const auto& v) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                     // @todo get aggregate of enumeration
                     dispatch_token(instance_id, attribute_id, v, aggr && aggr->type_of_element()->as_named_type() ? aggr->type_of_element()->as_named_type()->declared_type() : nullptr, append_to_aggregate_storage);
@@ -221,7 +221,7 @@ namespace {
             }, t);
         }
 
-        boost::apply_visitor(fn, aggregate_storage);
+        std::visit(fn, aggregate_storage);
     }
 }
 
@@ -274,7 +274,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
 
         auto index = (uint8_t) std::distance(tokens_.begin(), it);
 
-        boost::apply_visitor([this, &storage, name, &references_to_resolve, index, param_type](const auto& v) {
+        std::visit([this, &storage, name, &references_to_resolve, index, param_type](const auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                 dispatch_token(name, index, v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index](auto v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::reference_or_simple_type>) {
@@ -552,8 +552,104 @@ IfcParse::filetype IfcParse::guess_file_type(const std::string& fn) {
         if (line.find("MANIFEST-") == 0) {
             return FT_ROCKSDB;
         }
+
+        return FT_UNKNOWN;
     } else {
         // @todo just return SPF for now, but ideally this will be augmented with all other options
         return FT_IFCSPF;
     }
+}
+
+std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> IfcParse::InstanceStreamer::read_instance() {
+    std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> return_value;
+
+    if (header_ && yielded_header_instances_ < 3) {
+        if (yielded_header_instances_ == 0) {
+            return_value.emplace(
+                0,
+                &header_->file_description()->declaration(),
+                std::move(header_->file_description()->data())
+             );
+        } else if (yielded_header_instances_ == 1) {
+            return_value.emplace(
+                0,
+                &header_->file_name()->declaration(),
+                std::move(header_->file_name()->data())
+            );
+        } else if (yielded_header_instances_ == 2) {
+            return_value.emplace(
+                0,
+                &header_->file_schema()->declaration(),
+                std::move(header_->file_schema()->data())
+            );
+        }
+        yielded_header_instances_ += 1;
+        return return_value;
+    }
+
+    unsigned current_id = 0;
+    while (good_ && !lexer_->stream->eof && !current_id) {
+        if (token_stream_[0].type == IfcParse::Token_IDENTIFIER &&
+            token_stream_[1].type == IfcParse::Token_OPERATOR &&
+            token_stream_[1].value_char == '=' &&
+            token_stream_[2].type == IfcParse::Token_KEYWORD) {
+            current_id = (unsigned)TokenFunc::asIdentifier(token_stream_[0]);
+            const IfcParse::declaration* entity_type;
+            try {
+                entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream_[2]));
+            } catch (const IfcException& ex) {
+                Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].startPos));
+                goto advance;
+            }
+
+            if (entity_type->as_entity() == nullptr) {
+                Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].startPos));
+                goto advance;
+            }
+
+            parse_context ps;
+            lexer_->Next();
+            try {
+                storage_.load(current_id, entity_type->as_entity(), ps, -1);
+            } catch (const IfcInvalidTokenException& e) {
+                good_ = file_open_status::INVALID_SYNTAX;
+                Logger::Error(e);
+                break;
+            }
+
+            /// @todo Printing to stdout in a library class feels weird. Maybe move the progress prints to the client code?
+            // Update the status after every 1000 instances parsed
+            if (((++progress_) % 1000) == 0) {
+                std::stringstream ss;
+                ss << "\r#" << current_id;
+                Logger::Status(ss.str(), false);
+            }
+
+            auto data = ps.construct(current_id, references_to_resolve_, entity_type, boost::none);
+
+            return_value.emplace(
+                (size_t)current_id,
+                entity_type,
+                std::move(data)
+            );
+        }
+    advance:
+        Token next_token;
+        try {
+            next_token = lexer_->Next();
+        } catch (const IfcException& e) {
+            Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + ". Parsing terminated");
+        } catch (...) {
+            Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
+        }
+
+        if (!lexer_->stream->eof && next_token.type == Token_NONE) {
+            good_ = file_open_status::INVALID_SYNTAX;
+            break;
+        }
+
+        token_stream_.push_back(next_token);
+    }
+
+    return return_value;
 }

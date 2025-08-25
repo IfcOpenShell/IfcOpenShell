@@ -266,6 +266,7 @@ int main(int argc, char** argv) {
 #ifdef WITH_HDF5
 		("cache-file", new po::typed_value<path_t, char_t>(&cache_file), "geometry cache file")
 #endif
+		("stream", "Use streaming conversion (currently supported with conversion to RocksDB)")
 		;
 
 	po::options_description ifc_options("IFC options");
@@ -712,16 +713,27 @@ int main(int argc, char** argv) {
 	else if (output_extension == RDB) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+			if (vmap.count("stream")) {
 				time_t start, end;
 				time(&start);
-				RocksDbSerializer s(ifc_file, IfcUtil::path::to_utf8(output_filename));
+				RocksDbSerializer s(IfcUtil::path::to_utf8(input_filename), IfcUtil::path::to_utf8(output_filename), true);
 				Logger::Status("Populating RocksDB Key-Value store...");
 				s.finalize();
 				time(&end);
 				Logger::Status("Done! Conversion took " + format_duration(start, end));
 				exit_code = EXIT_SUCCESS;
-			}
+			} else {
+				if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+					time_t start, end;
+					time(&start);
+					RocksDbSerializer s(ifc_file, IfcUtil::path::to_utf8(output_filename));
+					Logger::Status("Populating RocksDB Key-Value store...");
+					s.finalize();
+					time(&end);
+					Logger::Status("Done! Conversion took " + format_duration(start, end));
+					exit_code = EXIT_SUCCESS;
+				}
+			}			
 		} catch (const std::exception& e) {
 			Logger::Error(e);
 		}

@@ -292,6 +292,13 @@ def guess_format(path: Path) -> Union[str, None]:
     return None
 
 
+def stream2(path: Union[Path, str]):
+    streamer = ifcopenshell_wrapper.InstanceStreamer(str(path))
+    while streamer:
+        if inst := streamer.read_instance_py():
+            yield inst
+
+
 version_core = ifcopenshell_wrapper.version()
 __version__ = version = "0.0.0"
 get_log = ifcopenshell_wrapper.get_log
