@@ -450,7 +450,9 @@ class Snap(bonsai.core.tool.Snap):
                         for verts, tris in verts_and_tris:
                             bverts = [bm.verts.new(pos) for pos in verts]
                             for tri in tris:
-                                bm.faces.new([bverts[vi] for vi in tri])
+                                verts = [bverts[vi] for vi in tri]
+                                if not bm.faces.get(verts):
+                                    bm.faces.new(verts)
 
                     snap_points = tool.Raycast.ray_cast_by_proximity(context, event, None, None, bm)
                     if snap_points:
