@@ -446,14 +446,14 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 
         // Create an attribute value from an instance. Potentially NULL in case it is a
         // forward reference to an instance not yet encountered.
-        auto instance_to_attribute = [&state](const boost::variant<std::string, IfcUtil::IfcBaseClass*>& inst_or_ref, size_t attribute_index, IfcUtil::IfcBaseClass*& inst) {
-            if (inst_or_ref.which() == 0) {
+        auto instance_to_attribute = [&state](const std::variant<std::string, IfcUtil::IfcBaseClass*>& inst_or_ref, size_t attribute_index, IfcUtil::IfcBaseClass*& inst) {
+            if (inst_or_ref.index() == 0) {
                 inst = nullptr;
                 // This attribute is NULL initially and after parsing the complete
                 // file populated in a subsequent step.
-                state->forward_references.push_back(std::make_tuple(inst->as<IfcUtil::IfcBaseEntity>(), attribute_index, boost::get<std::string>(inst_or_ref)));
+                state->forward_references.push_back(std::make_tuple(inst->as<IfcUtil::IfcBaseEntity>(), attribute_index, std::get<std::string>(inst_or_ref)));
             } else {
-                inst = boost::get<IfcUtil::IfcBaseClass*>(inst_or_ref);
+                inst = std::get<IfcUtil::IfcBaseClass*>(inst_or_ref);
                 inst->set_attribute_value(attribute_index, inst);
             }
         };
@@ -461,7 +461,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
         // Create or reference an instance from the file and set attributes based on XML attributes.
         auto create_instance = [&state, &attributes](const IfcParse::declaration* decl) {
             boost::optional<std::string> id;
-            boost::variant<std::string, IfcUtil::IfcBaseClass*> rv;
+            std::variant<std::string, IfcUtil::IfcBaseClass*> rv;
 
             for (auto& pair : attributes) {
                 if (pair.first == "id" || pair.first == "href" || pair.first == "ref") {
@@ -619,7 +619,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                                 instance_to_attribute(inst_or_reference, idx, inst);
                                 // @todo
                                 state->stack.back().inst();
-                                state->stack.push_back(stack_node::instance(id, boost::get<IfcUtil::IfcBaseClass*>(inst_or_reference)));
+                                state->stack.push_back(stack_node::instance(id, std::get<IfcUtil::IfcBaseClass*>(inst_or_reference)));
                             } else if (attribute_type->as_named_type()->declared_type()->as_select_type() != nullptr) {
                                 // Select types cause an additional indirection, so the current stack node is simply repeated
                                 state->stack.push_back(stack_node::select(state->stack.back().inst(), idx));

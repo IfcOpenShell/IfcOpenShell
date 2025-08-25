@@ -30,46 +30,40 @@ static const char* const DATA = "DATA";
 using namespace IfcParse;
 
 namespace {
-    IfcEntityInstanceData read_from_spf_file(IfcFile* f, size_t s) {
-        return std::visit([f, s](auto& m) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
-                parse_context pc;
-                m.tokens->Next();
-                m.load(-1, nullptr, pc, -1);
-                return pc.construct(-1, m.references_to_resolve, nullptr, s);
-            } else {
-                // std::unreachable();
-                return IfcEntityInstanceData(in_memory_attribute_storage(10));
-            }
-        }, f->storage_);
+    IfcEntityInstanceData read_from_spf_file(IfcParse::impl::in_memory_file_storage* storage, size_t s) {
+        if (storage != nullptr) {
+            parse_context pc;
+            storage->tokens->Next();
+            storage->load(-1, nullptr, pc, -1);
+            return pc.construct(-1, *storage->references_to_resolve, nullptr, s);
+        } else {
+            // std::unreachable();
+            return IfcEntityInstanceData(in_memory_attribute_storage(10));
+        }
+    }
+} // namespace
+
+void IfcSpfHeader::readSemicolon() {
+    if (storage_ != nullptr) {
+        if (!TokenFunc::isOperator(storage_->tokens->Next(), ';')) {
+            throw IfcException(std::string("Expected ;"));
+        }
+    } else {
+        // std::unreachable();
     }
 }
 
-void IfcSpfHeader::readSemicolon() {
-    std::visit([](auto& m) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
-            if (!TokenFunc::isOperator(m.tokens->Next(), ';')) {
-                throw IfcException(std::string("Expected ;"));
-            }
-        } else {
-            // std::unreachable();
-        }
-    }, file_->storage_);
-}
-
 void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
-    std::visit([this, term, trail](auto& m) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
-            if (TokenFunc::asStringRef(m.tokens->Next()) != term) {
-                throw IfcException(std::string("Expected " + term));
-            }
-            if (trail == TRAILING_SEMICOLON) {
-                readSemicolon();
-            }
-        } else {
-            // std::unreachable();
+    if (storage_ != nullptr) {
+        if (TokenFunc::asStringRef(storage_->tokens->Next()) != term) {
+            throw IfcException(std::string("Expected " + term));
         }
-    }, file_->storage_);    
+        if (trail == TRAILING_SEMICOLON) {
+            readSemicolon();
+        }
+    } else {
+        // std::unreachable();
+    }
 }
 
 IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file)
@@ -86,13 +80,48 @@ IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file)
         file_name_->file_ = file_;
         file_schema_ = new Header_section_schema::file_schema({});
         file_schema_->file_ = file_;
+    } else {
+        storage_ = std::visit([this](auto& m) -> decltype(storage_) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
+                return &m;
+            }
+            return nullptr;
+        }, file_->storage_);
     }
+}
+
+IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcSpfLexer* lexer)
+{
+	storage_ = new impl::in_memory_file_storage;
+	storage_->tokens = lexer;
+    file_ = nullptr;
+
+    // overwritten later in IfcFile::setDefaultHeaderValues() when we know the schema identifier
+    file_description_ = new Header_section_schema::file_description({}, "");
+    file_description_->file_ = file_;
+    file_name_ = new Header_section_schema::file_name("", "", {}, {}, "", "", "");
+    file_name_->file_ = file_;
+    file_schema_ = new Header_section_schema::file_schema({});
+    file_schema_->file_ = file_;
 }
 
 IfcParse::IfcSpfHeader::~IfcSpfHeader() {
     delete file_schema_;
     delete file_name_;
     delete file_description_;
+}
+
+void IfcParse::IfcSpfHeader::file(IfcParse::IfcFile* file)
+{
+    this->file_ = file;
+    if (file != nullptr) {
+        storage_ = std::visit([this](auto& m) -> decltype(storage_) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
+                return &m;
+            }
+            return nullptr;
+        }, file_->storage_);
+    }
 }
 
 void IfcSpfHeader::read() {
@@ -111,19 +140,19 @@ void IfcSpfHeader::read() {
 
     readTerminal(Header_section_schema::file_description::Class().name_uc(), NONE);
     delete file_description_;
-    file_description_ = new Header_section_schema::file_description(read_from_spf_file(file_, Header_section_schema::file_description::Class().attribute_count()));
+    file_description_ = new Header_section_schema::file_description(read_from_spf_file(storage_, Header_section_schema::file_description::Class().attribute_count()));
     file_description_->file_ = file_;
     readSemicolon();
 
     readTerminal(Header_section_schema::file_name::Class().name_uc(), NONE);
     delete file_name_;
-    file_name_ = new Header_section_schema::file_name(read_from_spf_file(file_, Header_section_schema::file_name::Class().attribute_count()));
+    file_name_ = new Header_section_schema::file_name(read_from_spf_file(storage_, Header_section_schema::file_name::Class().attribute_count()));
     file_name_->file_ = file_;
     readSemicolon();
 
     readTerminal(Header_section_schema::file_schema::Class().name_uc(), NONE);
     delete file_schema_;
-    file_schema_ = new Header_section_schema::file_schema(read_from_spf_file(file_, Header_section_schema::file_schema::Class().attribute_count()));
+    file_schema_ = new Header_section_schema::file_schema(read_from_spf_file(storage_, Header_section_schema::file_schema::Class().attribute_count()));
     file_schema_->file_ = file_;
     readSemicolon();
 }

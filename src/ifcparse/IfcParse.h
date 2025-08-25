@@ -34,6 +34,7 @@
 #include "IfcCharacterDecoder.h"
 #include "IfcSpfStream.h"
 #include "macros.h"
+#include "storage.h"
 
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
@@ -49,41 +50,6 @@
 #endif
 
 namespace IfcParse {
-
-class IfcFile;
-class IfcSpfLexer;
-
-enum TokenType {
-    Token_NONE,
-    Token_STRING,
-    Token_IDENTIFIER,
-    Token_OPERATOR,
-    Token_ENUMERATION,
-    Token_KEYWORD,
-    Token_INT,
-    Token_BOOL,
-    Token_FLOAT,
-    Token_BINARY
-};
-
-struct Token {
-    IfcSpfLexer* lexer; //TODO: remove it from here
-    unsigned startPos;
-    TokenType type;
-    union {
-        char value_char;     //types: OPERATOR
-        int value_int;       //types: INT, IDENTIFIER
-        double value_double; //types: FLOAT
-    };
-
-    Token() : lexer(0),
-              startPos(0),
-              type(Token_NONE) {}
-    Token(IfcSpfLexer* _lexer, unsigned _startPos, unsigned /*_endPos*/, TokenType _type)
-        : lexer(_lexer),
-          startPos(_startPos),
-          type(_type) {}
-};
 
 /// Provides functions to convert Tokens to binary data
 /// Tokens are merely offsets to where they can be read in the file
@@ -142,7 +108,6 @@ class IFC_PARSE_API TokenFunc {
 //
 Token OperatorTokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end);
 Token GeneralTokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end);
-Token NoneTokenPtr();
 
 /// A stream of tokens to be read from a IfcSpfStream.
 class IFC_PARSE_API IfcSpfLexer {
@@ -157,8 +122,8 @@ class IFC_PARSE_API IfcSpfLexer {
         return string;
     }
     IfcSpfStream* stream;
-    IfcFile* file;
-    IfcSpfLexer(IfcSpfStream* stream, IfcFile* file);
+    // IfcFile* file;
+    IfcSpfLexer(IfcSpfStream* stream);
     Token Next();
     ~IfcSpfLexer();
     void TokenString(unsigned int offset, std::string& result);

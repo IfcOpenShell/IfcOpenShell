@@ -34,6 +34,10 @@ private:
 %ignore IfcParse::IfcFile::internal_guid_map;
 %ignore IfcParse::IfcFile::storage_;
 
+%ignore IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
+
+%ignore IfcParse::InstanceStreamer::read_instance;
+
 %ignore in_memory_file_storage;
 %ignore rocks_db_file_storage;
 
@@ -571,6 +575,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %include "../ifcparse/ifc_parse_api.h"
 %include "../ifcparse/IfcSpfHeader.h"
 %include "../ifcparse/IfcFile.h"
+%include "../ifcparse/file_open_status.h"
 %include "../ifcparse/IfcBaseClass.h"
 %include "../ifcparse/IfcSchema.h"
 
@@ -866,3 +871,203 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 %}
 
+%extend IfcParse::InstanceStreamer {
+	PyObject* read_instance_py() {
+		auto simply_type_to_dictionary = [&](IfcUtil::IfcBaseClass* t) -> PyObject* {
+			const auto& nm = t->declaration().name();
+			auto ifc_val = t->get_attribute_value(0);
+			auto attribute_val_py = ifc_val.apply_visitor([&](const auto& t) {
+                using U = std::decay_t<decltype(t)>;
+
+                if constexpr (is_std_vector_v<U>) {
+                    return pythonize_vector(t);
+                } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+                    return pythonize(std::string(t.value()));
+                } else if constexpr (std::is_same_v<U, Derived>) {
+                    if (feature_use_attribute_value_derived) {
+                        return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
+                    } else {
+                        Py_INCREF(Py_None);
+                        return static_cast<PyObject*>(Py_None);
+                    }
+                } else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+                    // cannot occur in streaming mode
+                    Py_INCREF(Py_None);
+                    return static_cast<PyObject*>(Py_None);
+                } else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+                    // cannot occur in streaming mode
+                    Py_INCREF(Py_None);
+                    return static_cast<PyObject*>(Py_None);
+                } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+                    Py_INCREF(Py_None);
+                    return static_cast<PyObject*>(Py_None);
+                } else {
+                    return pythonize(t);
+                }
+			});
+
+			PyObject* val = PyDict_New();
+			{
+				const std::string& key_cpp = "type";
+				auto name_py = pythonize(key_cpp);
+				auto value_py = pythonize(nm);
+				PyDict_SetItem(val, name_py, value_py);
+				Py_DECREF(name_py);
+				Py_DECREF(value_py);
+			}
+			{
+				const std::string& key_cpp = "value";
+				auto name_py = pythonize(key_cpp);
+				PyDict_SetItem(val, name_py, attribute_val_py);
+				Py_DECREF(name_py);
+				Py_DECREF(attribute_val_py);
+			}
+			return val;
+		};
+
+		auto instance_reference_to_dict = [&](int i) -> PyObject* {
+			PyObject* val = PyDict_New();
+			const std::string& key_cpp = "ref";
+			auto name_py = pythonize(key_cpp);
+			auto value_py = pythonize(i);
+			PyDict_SetItem(val, name_py, value_py);
+			Py_DECREF(name_py);
+			Py_DECREF(value_py);
+			return val;
+		};
+
+		if (!*self) {
+			Py_INCREF(Py_None);
+			return Py_None;
+		}
+		auto inst = self->read_instance();
+		if (!inst) {
+			Py_INCREF(Py_None);
+			return Py_None;
+		}
+		PyObject* d = PyDict_New();
+
+		{
+			const std::string& key_cpp = "id";
+			auto name_py = pythonize(key_cpp);
+			auto value_py = pythonize((int) std::get<0>(*inst));
+			PyDict_SetItem(d, name_py, value_py);
+			Py_DECREF(name_py);
+			Py_DECREF(value_py);
+		}
+		{
+			const std::string& key_cpp = "type";
+			auto name_py = pythonize(key_cpp);
+			auto value_py = pythonize(std::get<1>(*inst)->name());
+			PyDict_SetItem(d, name_py, value_py);
+			Py_DECREF(name_py);
+			Py_DECREF(value_py);
+		}
+		{
+			const auto* decl = std::get<1>(*inst);
+			const auto& data = std::get<2>(*inst);
+
+			for (size_t i = 0; i < decl->as_entity()->attribute_count(); i++) {
+				auto val = data.get_attribute_value(nullptr, decl, 0, i);
+
+                // sets dict member, returns void
+				val.apply_visitor([&](const auto& t) -> void {
+					using T = std::decay_t<decltype(t)>;
+					PyObject* attribute_val_py;
+					if constexpr (std::is_same_v<T, IfcUtil::IfcBaseClass*>) {
+						attribute_val_py = simply_type_to_dictionary(t);
+					} else {
+                        using U = std::decay_t<decltype(t)>;
+
+                        if constexpr (is_std_vector_v<U>) {
+                            attribute_val_py = pythonize_vector(t);
+                        } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+                            attribute_val_py = pythonize(std::string(t.value()));
+                        } else if constexpr (std::is_same_v<U, Derived>) {
+                            if (feature_use_attribute_value_derived) {
+                                attribute_val_py = SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
+                            } else {
+                                Py_INCREF(Py_None);
+                                attribute_val_py = static_cast<PyObject*>(Py_None);
+                            }
+                        } else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+                            // cannot occur in streaming mode
+                            Py_INCREF(Py_None);
+                            attribute_val_py = static_cast<PyObject*>(Py_None);
+                        } else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+                            // cannot occur in streaming mode
+                            Py_INCREF(Py_None);
+                            attribute_val_py = static_cast<PyObject*>(Py_None);
+                        } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+                            Py_INCREF(Py_None);
+                            attribute_val_py = static_cast<PyObject*>(Py_None);
+                        } else {
+                            attribute_val_py = pythonize(t);
+                        }
+					}
+
+					{
+						auto name_py = pythonize(decl->as_entity()->attribute_by_index(i)->name());
+						PyDict_SetItem(d, name_py, attribute_val_py);
+						Py_DECREF(name_py);
+						Py_DECREF(attribute_val_py);
+					}
+				});
+			}
+
+			for (auto& p : $self->references()) {
+				int index = p.first.index_;
+				auto name_py = pythonize(decl->as_entity()->attribute_by_index(index)->name());
+
+				std::visit([&](const auto& v) -> void {
+					PyObject* attribute_val_py;
+					using T = std::decay_t<decltype(v)>;
+					
+					if constexpr (std::is_same_v<T, IfcParse::reference_or_simple_type>) {
+						if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(&v)) {
+							// So this never happens?
+						} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&v)) {
+							attribute_val_py = instance_reference_to_dict(*name);
+						}
+					} else if constexpr (std::is_same_v<T, std::vector<IfcParse::reference_or_simple_type>>) {
+						attribute_val_py = PyTuple_New(v.size());
+						size_t idx = 0;
+						for (auto const& inner : v) {
+							if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(&inner)) {
+								PyTuple_SetItem(attribute_val_py, idx++, simply_type_to_dictionary(*inst));
+							} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&inner)) {
+								PyTuple_SetItem(attribute_val_py, idx++, instance_reference_to_dict(*name));
+							}
+						}
+					} else if constexpr (std::is_same_v<T, std::vector<std::vector<IfcParse::reference_or_simple_type>>>) {
+						attribute_val_py = PyTuple_New(v.size());
+						size_t outer_idx = 0;
+						for (auto const& inner : v) {
+							PyObject* inner_py = PyTuple_New(inner.size());
+							size_t idx = 0;
+							for (auto const& innermost : inner) {
+								if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(&innermost)) {
+									PyTuple_SetItem(inner_py, idx++, simply_type_to_dictionary(*inst));
+								} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&innermost)) {
+									PyTuple_SetItem(inner_py, idx++, instance_reference_to_dict(*name));
+								}
+							}
+							PyTuple_SetItem(attribute_val_py, outer_idx++, inner_py);
+						}
+					}
+
+					PyDict_SetItem(d, name_py, attribute_val_py);
+					Py_DECREF(name_py);
+					Py_DECREF(attribute_val_py);
+
+				}, p.second);
+			}
+		}
+
+		$self->references().clear();
+		$self->inverses().clear();
+
+		return d;
+	}
+}
+	
