@@ -48,8 +48,8 @@ def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -
     if curve:
         ifcopenshell.api.alignment.add_zero_length_segment(file, curve)
 
-    segment = layout.IsNestedBy[0].RelatedObjects[-1]
-    alignment = ifcopenshell.api.alignment.get_alignment(layout)
-    station = ifcopenshell.api.alignment.get_alignment_station(file, alignment)
-    name = f"{_get_segment_start_point_label(segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
-    ifcopenshell.api.alignment.add_stationing_referent(file, segment, 0.0, station, name=name)
+        segment = layout.IsNestedBy[0].RelatedObjects[-1]
+        alignment = ifcopenshell.api.alignment.get_alignment(layout)
+        station = ifcopenshell.api.alignment.get_alignment_station(file, alignment)
+        name = f"{_get_segment_start_point_label(segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
+        ifcopenshell.api.alignment.add_stationing_referent(file, segment, 0.0, station, name=name)
