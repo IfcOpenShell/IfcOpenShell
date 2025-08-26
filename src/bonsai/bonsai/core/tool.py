@@ -607,6 +607,9 @@ class Nest:
     def enable_editing(cls, obj): pass
     def get_container(cls, element): pass
 
+@interface
+class Numbering:
+    def get_numbering_props(cls): pass
 
 @interface
 class Patch:
