@@ -625,7 +625,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
                 Logger::Status(ss.str(), false);
             }
 
-            auto data = ps.construct(current_id, references_to_resolve_, entity_type, boost::none);
+            auto data = ps.construct(current_id, references_to_resolve_, entity_type, boost::none, -1);
 
             return_value.emplace(
                 (size_t)current_id,

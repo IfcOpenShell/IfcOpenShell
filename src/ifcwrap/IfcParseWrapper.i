@@ -43,7 +43,7 @@ private:
 // Available as get_inverse().
 %ignore IfcParse::IfcFile::instances_by_reference;
 
-%ignore parse_context;
+%ignore IfcParse::parse_context;
 
 %ignore operator<<;
 

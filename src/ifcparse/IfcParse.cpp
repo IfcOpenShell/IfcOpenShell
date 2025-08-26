@@ -724,7 +724,7 @@ void IfcParse::impl::in_memory_file_storage::load(unsigned entity_instance_name,
                     // type) and to be able to actually register the references in
                     // the 2nd pass.
                     load(entity_instance_name, entity, ps, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index);
-                    auto* simple_type_instance = (schema ? schema : file->schema())->instantiate(decl, ps.construct(entity_instance_name, references_to_resolve, decl, boost::none, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index));
+                    auto* simple_type_instance = (schema ? schema : file->schema())->instantiate(decl, ps.construct(entity_instance_name, *references_to_resolve, decl, boost::none, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index));
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
                     simple_type_instance->file_ = file;
@@ -753,7 +753,7 @@ IfcEntityInstanceData IfcParse::impl::in_memory_file_storage::read(unsigned int 
     parse_context pc;
     tokens->Next();
     load(i, ty->as_entity(), pc, -1);
-    return IfcEntityInstanceData(pc.construct(i, *references_to_resolve, ty, boost::none));
+    return IfcEntityInstanceData(pc.construct(i, *references_to_resolve, ty, boost::none, -1));
 }
 
 void IfcParse::impl::in_memory_file_storage::try_read_semicolon() const {
@@ -1543,7 +1543,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
                     auto attr_index = p.first.index_;
                     
                     if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
-                        auto inst = storage->get_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index);
+                        IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
                         if (!inst->declaration().as_entity()) {
                             // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                             storage = &inst->data();
@@ -1552,7 +1552,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
                     }
 
                     if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
-                        storage->set(nullptr, nullptr, 0, attr_index, it->second);
+                        storage->set_attribute_value(nullptr, nullptr, 0, attr_index, it->second);
                     } else {
                         Logger::Error("Duplicate definition for instance reference");
                     }
@@ -1580,7 +1580,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
             auto attr_index = p.first.index_;
             
             if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
-                auto inst = storage->get_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index);
+                IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
                 if (!inst->declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                     storage = &inst->data();
@@ -1589,7 +1589,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
             }
 
             if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
-                storage->set(nullptr, nullptr, 0, attr_index, instances);
+                storage->set_attribute_value(nullptr, nullptr, 0, attr_index, instances);
             } else {
                 Logger::Error("Duplicate definition for instance reference");
             }
@@ -1616,7 +1616,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
             auto attr_index = p.first.index_;
             
             if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
-                auto inst = storage->get_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index);
+                IfcUtil::IfcBaseClass* inst = storage->get_attribute_value(nullptr, nullptr, 0, attr_index);
                 if (!inst->declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
                     storage = &inst->data();
@@ -1625,7 +1625,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
             }
 
             if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
-                storage->set(nullptr, nullptr, 0, attr_index, instances);
+                storage->set_attribute_value(nullptr, nullptr, 0, attr_index, instances);
             } else {
                 Logger::Error("Duplicate definition for instance reference");
             }
