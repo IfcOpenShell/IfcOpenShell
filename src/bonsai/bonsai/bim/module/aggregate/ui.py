@@ -49,11 +49,14 @@ class BIM_PT_aggregate(Panel):
         layout = self.layout
         row = layout.row()
         row.label(text="Aggregate Decorator")
-        row.prop(context.scene.BIMAggregateProperties, "aggregate_decorator", icon="HIDE_OFF", text="")
+        props = tool.Aggregate.get_aggregate_props()
+        icon = "HIDE_OFF" if props.aggregate_decorator else "HIDE_ON"
+        row.prop(props, "aggregate_decorator", icon=icon, text="")
         if not AggregateData.is_loaded:
             AggregateData.load()
 
-        props = context.active_object.BIMObjectAggregateProperties
+        assert (obj := context.active_object)
+        props = tool.Aggregate.get_object_aggregate_props(obj)
 
         if props.is_editing:
             row = layout.row()
@@ -76,10 +79,8 @@ class BIM_PT_aggregate(Panel):
             if AggregateData.data["has_relating_object"]:
                 row.label(text=AggregateData.data["relating_object_label"], icon="TRIA_UP")
                 op = row.operator("bim.select_aggregate", icon="OBJECT_DATA", text="")
-                op.obj = context.active_object.name
                 op.select_parts = False
                 op = row.operator("bim.select_aggregate", icon="RESTRICT_SELECT_OFF", text="")
-                op.obj = context.active_object.name
                 op.select_parts = True
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
@@ -131,12 +132,11 @@ class BIM_PT_linked_aggregate(Panel):
         if not AggregateData.is_loaded:
             AggregateData.load()
 
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        props = obj.BIMObjectAggregateProperties
+        assert (obj := context.active_object)
+        assert (element := tool.Ifc.get_entity(obj))
         row = layout.row(align=True)
 
-        if element.Decomposes:
+        if element.Decomposes or element.IsDecomposedBy:
             Number_Linked_Aggregates = AggregateData.data["total_linked_aggregate"]
             if not Number_Linked_Aggregates:
                 row.label(text="Not a Linked Aggregate")

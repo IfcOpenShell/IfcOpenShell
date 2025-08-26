@@ -55,7 +55,7 @@ class COMMANDFILE:
             conn["relatedElements"] = []
         for el in elements:
             for rel in el["connections"]:
-                conn = [c for c in connections if c["referenceName"] == rel["relatedConnection"]][0]
+                conn = next(c for c in connections if c["referenceName"] == rel["relatedConnection"])
                 conn["relatedElements"].append(rel)
         # End <--
 

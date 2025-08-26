@@ -19,6 +19,11 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.cost
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.pset
 import test.bim.bootstrap
 import bonsai.core.tool
@@ -58,7 +63,7 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
 
         self.ifc = ifcopenshell.file()
         tool.Ifc.set(self.ifc)
-        ifcopenshell.api.run("root.create_entity", self.ifc, ifc_class="IfcProject", name="My Project")
+        ifcopenshell.api.root.create_entity(self.ifc, ifc_class="IfcProject", name="My Project")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(
             bpy.context, tool.Ifc.get_path(), logging.getLogger("ImportIFC")
         )
@@ -67,12 +72,12 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         ifc_importer.create_project()
 
     def setup_units(self, units):
-        ifcopenshell.api.run("unit.assign_unit", self.ifc, **units)
+        ifcopenshell.api.unit.assign_unit(self.ifc, **units)
 
     def calculate_quantities(self, obj):
         import ifc5d.qto
 
-        context = ifcopenshell.api.run("context.add_context", self.ifc, context_type="Model")
+        context = ifcopenshell.api.context.add_context(self.ifc, context_type="Model")
         bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 0.0), size=2)
         obj = bpy.context.active_object
         element = bonsai.core.root.assign_class(
@@ -183,7 +188,7 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         tool.Ifc.link(wall, wall_obj)
         product = tool.Ifc.get_entity(wall_obj)
-        pset_qto = ifcopenshell.api.run("pset.add_qto", ifc, product=wall, name="Qto_Basefoo")
+        pset_qto = ifcopenshell.api.pset.add_qto(ifc, product=wall, name="Qto_Basefoo")
         assert subject.get_base_qto(product).id() == pset_qto.get_info()["id"]
         assert subject.get_base_qto(product).Name == pset_qto.Name
 
@@ -202,14 +207,12 @@ class TestGetRelatedCostItemQuantities(test.bim.bootstrap.NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", ifc)
-        item = ifcopenshell.api.run("cost.add_cost_item", ifc, cost_schedule=schedule)
-        ifcopenshell.api.run("cost.edit_cost_item", ifc, cost_item=item, attributes={"Name": "Foo"})
-        qto = ifcopenshell.api.run("pset.add_qto", ifc, product=wall, name="Qto_WallBaseQuantities")
-        ifcopenshell.api.run("pset.edit_qto", ifc, qto=qto, properties={"NetVolume": 42.0})
-        ifcopenshell.api.run(
-            "cost.assign_cost_item_quantity", ifc, cost_item=item, products=[wall], prop_name="NetVolume"
-        )
+        schedule = ifcopenshell.api.cost.add_cost_schedule(ifc)
+        item = ifcopenshell.api.cost.add_cost_item(ifc, cost_schedule=schedule)
+        ifcopenshell.api.cost.edit_cost_item(ifc, cost_item=item, attributes={"Name": "Foo"})
+        qto = ifcopenshell.api.pset.add_qto(ifc, product=wall, name="Qto_WallBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(ifc, qto=qto, properties={"NetVolume": 42.0})
+        ifcopenshell.api.cost.assign_cost_item_quantity(ifc, cost_item=item, products=[wall], prop_name="NetVolume")
         assert subject.get_related_cost_item_quantities(wall)[0]["cost_item_name"] == "Foo"
         assert subject.get_related_cost_item_quantities(wall)[0]["quantity_name"] == "NetVolume"
         assert subject.get_related_cost_item_quantities(wall)[0]["quantity_value"] == 42

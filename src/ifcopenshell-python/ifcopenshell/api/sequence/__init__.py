@@ -23,6 +23,7 @@ managing recurring facility maintenance schedules.
 """
 
 from .. import wrap_usecases
+from .add_date_time import add_date_time
 from .add_task import add_task
 from .add_task_time import add_task_time
 from .add_time_period import add_time_period
@@ -38,6 +39,7 @@ from .assign_sequence import assign_sequence
 from .assign_work_plan import assign_work_plan
 from .calculate_task_duration import calculate_task_duration
 from .cascade_schedule import cascade_schedule
+from .copy_work_schedule import copy_work_schedule
 from .create_baseline import create_baseline
 from .duplicate_task import duplicate_task
 from .edit_lag_time import edit_lag_time
@@ -69,6 +71,7 @@ from .unassign_sequence import unassign_sequence
 wrap_usecases(__path__, __name__)
 
 __all__ = [
+    "add_date_time",
     "add_task",
     "add_task_time",
     "add_time_period",
@@ -84,6 +87,7 @@ __all__ = [
     "assign_work_plan",
     "calculate_task_duration",
     "cascade_schedule",
+    "copy_work_schedule",
     "create_baseline",
     "duplicate_task",
     "edit_lag_time",

@@ -6,6 +6,16 @@
 	}
 }
 
+%typemap(out) aggregate_of_aggregate_of_instance::ptr {
+	const unsigned size = $1 ? $1->size() : 0;
+	$result = PyTuple_New(size);
+	for (unsigned i = 0; i < size; ++i) {
+		const auto& r_i = *(result->begin() + i);
+		PyTuple_SetItem($result, i, pythonize_vector(r_i));
+	}
+}
+
+
 %typemap(out) IfcUtil::ArgumentType {
 	$result = SWIG_Python_str_FromChar(IfcUtil::ArgumentTypeToString($1));
 }
@@ -119,6 +129,14 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
 	$result = PyTuple_New((*$1).size());
 	for (int i = 0; i < (*$1).size(); ++i) {
 		PyTuple_SetItem($result, i, item_to_pyobject((*$1).at(i)));
+	}
+};
+
+%typemap(out) std::vector<item_name::ptr> {
+	const auto& v = (std::vector<item_name::ptr>) $1;
+	$result = PyTuple_New(v.size());
+	for (int i = 0; i < v.size(); ++i) {
+		PyTuple_SetItem($result, i, item_to_pyobject(v[i]));
 	}
 };
 

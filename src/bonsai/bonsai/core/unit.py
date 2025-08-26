@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def assign_scene_units(ifc: tool.Ifc, unit: tool.Unit) -> None:
+def assign_scene_units(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> None:
     if unit.is_scene_unit_metric():
         prefix = unit.get_scene_unit_si_prefix("LENGTHUNIT")
         lengthunit = ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix=prefix)
@@ -44,66 +44,66 @@ def assign_scene_units(ifc: tool.Ifc, unit: tool.Unit) -> None:
     ifc.run("unit.assign_unit", units=[lengthunit, areaunit, volumeunit, planeangleunit])
 
 
-def assign_unit(ifc: tool.Ifc, unit_tool: tool.Unit, unit: ifcopenshell.entity_instance) -> None:
+def assign_unit(ifc: type[tool.Ifc], unit_tool: type[tool.Unit], unit: ifcopenshell.entity_instance) -> None:
     ifc.run("unit.assign_unit", units=[unit])
     unit_tool.import_units()
 
 
-def unassign_unit(ifc: tool.Ifc, unit_tool: tool.Unit, unit: ifcopenshell.entity_instance) -> None:
+def unassign_unit(ifc: type[tool.Ifc], unit_tool: type[tool.Unit], unit: ifcopenshell.entity_instance) -> None:
     ifc.run("unit.unassign_unit", units=[unit])
     unit_tool.import_units()
 
 
-def load_units(unit: tool.Unit) -> None:
+def load_units(unit: type[tool.Unit]) -> None:
     unit.import_units()
     unit.enable_editing_units()
 
 
-def disable_unit_editing_ui(unit: tool.Unit) -> None:
+def disable_unit_editing_ui(unit: type[tool.Unit]) -> None:
     unit.disable_editing_units()
 
 
-def remove_unit(ifc: tool.Ifc, unit_tool: tool.Unit, unit: ifcopenshell.entity_instance) -> None:
+def remove_unit(ifc: type[tool.Ifc], unit_tool: type[tool.Unit], unit: ifcopenshell.entity_instance) -> None:
     ifc.run("unit.remove_unit", unit=unit)
     unit_tool.import_units()
 
 
-def add_monetary_unit(ifc: tool.Ifc, unit: tool.Unit) -> ifcopenshell.entity_instance:
+def add_monetary_unit(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_monetary_unit")
     unit.import_units()
     return result
 
 
-def add_si_unit(ifc: tool.Ifc, unit: tool.Unit, unit_type: str) -> ifcopenshell.entity_instance:
+def add_si_unit(ifc: type[tool.Ifc], unit: type[tool.Unit], unit_type: str) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_si_unit", unit_type=unit_type)
     unit.import_units()
     return result
 
 
 def add_context_dependent_unit(
-    ifc: tool.Ifc, unit: tool.Unit, unit_type: str, name: str
+    ifc: type[tool.Ifc], unit: type[tool.Unit], unit_type: str, name: str
 ) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_context_dependent_unit", unit_type=unit_type, name=name)
     unit.import_units()
     return result
 
 
-def add_conversion_based_unit(ifc: tool.Ifc, unit: tool.Unit, name: str) -> ifcopenshell.entity_instance:
+def add_conversion_based_unit(ifc: type[tool.Ifc], unit: type[tool.Unit], name: str) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_conversion_based_unit", name=name)
     unit.import_units()
     return result
 
 
-def enable_editing_unit(unit_tool: tool.Unit, unit: ifcopenshell.entity_instance) -> None:
+def enable_editing_unit(unit_tool: type[tool.Unit], unit: ifcopenshell.entity_instance) -> None:
     unit_tool.set_active_unit(unit)
     unit_tool.import_unit_attributes(unit)
 
 
-def disable_editing_unit(unit: tool.Unit) -> None:
+def disable_editing_unit(unit: type[tool.Unit]) -> None:
     unit.clear_active_unit()
 
 
-def edit_unit(ifc: tool.Ifc, unit_tool: tool.Unit, unit: ifcopenshell.entity_instance) -> None:
+def edit_unit(ifc: type[tool.Ifc], unit_tool: type[tool.Unit], unit: ifcopenshell.entity_instance) -> None:
     attributes = unit_tool.export_unit_attributes()
     if unit_tool.is_unit_class(unit, "IfcMonetaryUnit"):
         ifc.run("unit.edit_monetary_unit", unit=unit, attributes=attributes)

@@ -28,9 +28,7 @@ def add_resource_time(file: ifcopenshell.file, resource: ifcopenshell.entity_ins
     be used to calculate other parameters like resource utilisation.
 
     :param resource: The IfcConstructionResource to record time for.
-    :type resource: ifcopenshell.entity_instance
     :return: The newly created IfcResourceTime
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

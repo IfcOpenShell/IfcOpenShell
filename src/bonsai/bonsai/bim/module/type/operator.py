@@ -24,54 +24,74 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
+import ifcopenshell.api.type
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.type as core
 import bonsai.core.root
+from typing import TYPE_CHECKING
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_type"
     bl_label = "Assign Type"
+    bl_description = "Assign a type to the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     relating_type: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        relating_type: int
+        related_object: str
+
     def _execute(self, context):
-        relating_type = tool.Ifc.get().by_id(
-            self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
-        )
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)]
-            if self.related_object
-            else context.selected_objects or [context.active_object]
-        )
-        model_props = tool.Model.get_model_props()
+        if self.relating_type:
+            relating_type = self.relating_type
+        else:
+            assert (obj := context.active_object)
+            props = tool.Type.get_object_type_props(obj)
+            relating_type = int(props.relating_type)
+        relating_type = tool.Ifc.get().by_id(relating_type)
+        if self.related_object:
+            related_objects = [bpy.data.objects[self.related_object]]
+        else:
+            related_objects = tool.Blender.get_selected_objects()
+        prefs = tool.Blender.get_addon_preferences()
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcObject"):
+                continue
             core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
-            if model_props.occurrence_name_style == "TYPE":
+            if prefs.occurrence_name_style == "TYPE":
                 obj.name = tool.Model.generate_occurrence_name(relating_type, element.is_a())
 
 
 class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_type"
     bl_label = "Unassign Type"
+    bl_description = "Unassign a type from the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
+
+    if TYPE_CHECKING:
+        related_object: str
 
     def _execute(self, context):
         def exclude_callback(attribute):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
         self.file = tool.Ifc.get()
-        objs = [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        for obj in objs:
+        if self.related_object:
+            related_objects = [bpy.data.objects[self.related_object]]
+        else:
+            related_objects = tool.Blender.get_selected_objects()
+
+        for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
-            if not element or element.is_a("IfcElementType"):
+            if not element or not element.is_a("IfcObject"):
                 continue
-            ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
+            ifcopenshell.api.type.unassign_type(self.file, related_objects=[element])
 
             if element.Representation:
                 new_active_representation = None
@@ -114,8 +134,10 @@ class EnableEditingType(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.active_object.BIMTypeProperties.is_editing_type = True
-        context.active_object.BIMTypeProperties.relating_type_object = None
+        assert (obj := context.active_object)
+        props = tool.Type.get_object_type_props(obj)
+        props.is_editing_type = True
+        props.relating_type_object = None
         return {"FINISHED"}
 
 
@@ -126,8 +148,10 @@ class DisableEditingType(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        obj.BIMTypeProperties.is_editing_type = False
+        obj = bpy.data.objects[self.obj] if self.obj else context.active_object
+        assert obj
+        props = tool.Type.get_object_type_props(obj)
+        props.is_editing_type = False
         return {"FINISHED"}
 
 

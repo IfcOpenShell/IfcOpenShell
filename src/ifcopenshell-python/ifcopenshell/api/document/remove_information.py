@@ -28,9 +28,7 @@ def remove_information(file: ifcopenshell.file, information: ifcopenshell.entity
     All references and associations are also removed.
 
     :param information: The IfcDocumentInformation to remove
-    :type information: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

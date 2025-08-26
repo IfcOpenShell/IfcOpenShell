@@ -35,9 +35,7 @@ def update_owner_history(
 
     :param element: The IfcRoot element to update the ownership details on
         when a change is made.
-    :type element: ifcopenshell.entity_instance
     :return: The updated IfcOwnerHistory element.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

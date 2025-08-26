@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.api.style
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -64,9 +65,9 @@ class TestGetElementsByMaterial(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        material = ifcopenshell.api.run("material.add_material", ifc)
-        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material)
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        material = ifcopenshell.api.material.add_material(ifc)
+        ifcopenshell.api.material.assign_material(ifc, products=[element], material=material)
         assert subject.get_elements_by_material(material) == {element}
 
 

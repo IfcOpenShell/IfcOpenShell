@@ -18,9 +18,14 @@
 
 import os
 from pathlib import Path
+import numpy as np
 import bpy
 import mathutils
 import ifcopenshell
+import ifcopenshell.api.drawing
+import ifcopenshell.api.group
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import bonsai.core.tool
@@ -55,9 +60,10 @@ class TestCreateAnnotationObject(NewFile):
 
 class TestCreateCamera(NewFile):
     def test_run(self):
-        obj = subject.create_camera("Name", mathutils.Matrix(), "PERSPECTIVE")
+        obj = subject.create_camera("Name", mathutils.Matrix(), "PERSPECTIVE", "PLAN_VIEW")
         assert obj.name == "Name"
         assert obj.matrix_world == mathutils.Matrix()
+        assert isinstance(obj.data, bpy.types.Camera)
         assert obj.data.type == "PERSP"
         assert obj.data.ortho_scale == 50
         assert obj.data.clip_end == 10
@@ -67,7 +73,7 @@ class TestCreateCamera(NewFile):
 class TestCreateSvgSheet(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
         ifc_path = Path("test/files/temp/test.ifc").absolute()
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
@@ -91,6 +97,7 @@ class TestDeleteCollection(NewFile):
 
 class TestDeleteDrawingElements(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
@@ -154,13 +161,15 @@ class TestDisableEditingText(NewFile):
 class TestDisableEditingAssignedProduct(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMAssignedProductProperties.is_editing_product = True
+        props = subject.get_object_assigned_product_props(obj)
+        props.is_editing_product = True
         subject.disable_editing_assigned_product(obj)
-        assert obj.BIMAssignedProductProperties.is_editing_product == False
+        assert props.is_editing_product == False
 
 
 class TestEnableEditing(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         obj = bpy.data.objects.new("Object", None)
         bpy.context.scene.collection.objects.link(obj)
         subject.enable_editing(obj)
@@ -210,8 +219,9 @@ class TestEnableEditingText(NewFile):
 class TestEnableEditingAssignedProduct(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
+        props = subject.get_object_assigned_product_props(obj)
         subject.enable_editing_assigned_product(obj)
-        assert obj.BIMAssignedProductProperties.is_editing_product == True
+        assert props.is_editing_product == True
 
 
 class TestEnsureUniqueDrawingName(NewFile):
@@ -313,6 +323,7 @@ class TestGetDocumentUri(NewFile):
 
 class TestGetDrawingCollection(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -333,9 +344,9 @@ class TestGetDrawingGroup(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
-        group = ifcopenshell.api.run("group.add_group", ifc)
+        group = ifcopenshell.api.group.add_group(ifc)
         group.ObjectType = "DRAWING"
-        ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
+        ifcopenshell.api.group.assign_group(ifc, products=[element], group=group)
         assert subject.get_drawing_group(element) == group
 
 
@@ -344,8 +355,8 @@ class TestGetDrawingTargetView(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="EPset_Drawing")
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
         assert subject.get_drawing_target_view(element) == "PLAN_VIEW"
 
 
@@ -354,8 +365,8 @@ class TestGetGroupElements(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
-        group = ifcopenshell.api.run("group.add_group", ifc)
-        ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
+        group = ifcopenshell.api.group.add_group(ifc)
+        ifcopenshell.api.group.assign_group(ifc, products=[element], group=group)
         assert subject.get_group_elements(group) == (element,)
 
 
@@ -374,9 +385,10 @@ class TestGetName(NewFile):
 
 class TestGenerateDrawingMatrix(NewFile):
     def test_returning_the_origin_as_a_fallback(self):
-        assert subject.generate_drawing_matrix("PLAN_VIEW", None) == mathutils.Matrix()
+        assert subject.generate_drawing_matrix("PLAN_VIEW", 0) == mathutils.Matrix()
 
     def test_creating_a_plan_view_at_the_cursor_at_a_storey(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -391,11 +403,12 @@ class TestGenerateDrawingMatrix(NewFile):
         assert round(m[2][3], 3) == 4.6
 
     def test_creating_an_rcp_at_the_origin(self):
-        assert subject.generate_drawing_matrix("REFLECTED_PLAN_VIEW", None) == mathutils.Matrix(
+        assert subject.generate_drawing_matrix("REFLECTED_PLAN_VIEW", 0) == mathutils.Matrix(
             ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1))
         )
 
     def test_creating_an_rcp_at_the_cursor_at_a_storey(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -409,61 +422,78 @@ class TestGenerateDrawingMatrix(NewFile):
         )
 
     def test_creating_a_north_elevation_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("ELEVATION_VIEW", "NORTH") == mathutils.Matrix(
             ((-1, 0, 0, 1), (0, 0, 1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_south_elevation_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("ELEVATION_VIEW", "SOUTH") == mathutils.Matrix(
             ((1, 0, 0, 1), (0, 0, -1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_an_east_elevation_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("ELEVATION_VIEW", "EAST") == mathutils.Matrix(
             ((0, 0, 1, 1), (1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_west_elevation_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("ELEVATION_VIEW", "WEST") == mathutils.Matrix(
             ((0, 0, -1, 1), (-1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_north_section_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("SECTION_VIEW", "NORTH") == mathutils.Matrix(
             ((1, 0, 0, 1), (0, 0, -1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_south_section_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("SECTION_VIEW", "SOUTH") == mathutils.Matrix(
             ((-1, 0, 0, 1), (0, 0, 1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_an_east_section_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("SECTION_VIEW", "EAST") == mathutils.Matrix(
             ((0, 0, -1, 1), (-1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_west_section_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("SECTION_VIEW", "WEST") == mathutils.Matrix(
             ((0, 0, 1, 1), (1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
+
+    def test_aligning_model_view_camera_to_viewport(self):
+        assert (space := tool.Blender.get_view3d_space())
+        assert (r3d := space.region_3d)
+        viewport = r3d.view_matrix.inverted()
+        generated = subject.generate_drawing_matrix("MODEL_VIEW", "PERSPECTIVE")
+        assert np.allclose(generated, viewport)
+        generated = subject.generate_drawing_matrix("MODEL_VIEW", "ORTHOGRAPHIC")
+        assert np.allclose(generated, viewport)
 
 
 class TestGenerateSheetIdentification(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        subject.generate_sheet_identification() == "A01"
-        document = ifc.createIfcDocumentInformation()
-        subject.generate_sheet_identification() == "A02"
+        assert subject.generate_sheet_identification() == "A01"
+        document = ifc.createIfcDocumentInformation(Scope="SHEET")
+        assert subject.generate_sheet_identification() == "A02"
 
 
 class TestGetTextLiteral(NewFile):
@@ -488,7 +518,7 @@ class TestGetAssignedProduct(NewFile):
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()
         label = ifc.createIfcAnnotation()
-        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
         assert subject.get_assigned_product(label) == wall
 
 
@@ -497,8 +527,8 @@ class TestImportDrawings(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         drawing = ifc.createIfcAnnotation(Name="FOOBAR", ObjectType="DRAWING")
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=drawing, name="EPset_Drawing")
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
         subject.import_drawings()
         props = tool.Drawing.get_document_props()
         for d in props.drawings:
@@ -597,9 +627,9 @@ class TestImportTextAttributes(NewFile):
         subject.import_text_attributes(obj)
         props = tool.Drawing.get_text_props(obj)
         literal_props = props.literals[0]
-        assert literal_props.attributes.get("Literal").string_value == "Literal"
-        assert literal_props.attributes.get("Path").enum_value == "RIGHT"
-        assert literal_props.attributes.get("BoxAlignment").string_value == "bottom-left"
+        assert literal_props.attributes["Literal"].string_value == "Literal"
+        assert literal_props.attributes["Path"].enum_value == "RIGHT"
+        assert literal_props.attributes["BoxAlignment"].string_value == "bottom-left"
 
 
 class TestImportAssignedProduct(NewFile):
@@ -608,13 +638,14 @@ class TestImportAssignedProduct(NewFile):
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()
         label = ifc.createIfcAnnotation()
-        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
         wall_obj = bpy.data.objects.new("Object", None)
         label_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(wall, wall_obj)
         tool.Ifc.link(label, label_obj)
         subject.import_assigned_product(label_obj)
-        assert label_obj.BIMAssignedProductProperties.relating_product == wall_obj
+        props = subject.get_object_assigned_product_props(label_obj)
+        assert props.relating_product == wall_obj
 
     def test_doing_nothing_if_no_product_to_import(self):
         ifc = ifcopenshell.file()
@@ -623,7 +654,8 @@ class TestImportAssignedProduct(NewFile):
         label_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(label, label_obj)
         subject.import_assigned_product(label_obj)
-        assert label_obj.BIMAssignedProductProperties.relating_product is None
+        props = subject.get_object_assigned_product_props(label_obj)
+        assert props.relating_product is None
 
 
 class TestOpenSchedule(NewFile):
@@ -692,7 +724,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         props = tool.Drawing.get_document_props()
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
-        sheet_path = Path.cwd() / "layouts" / "A00 - UNTITLED.svg"
+        sheet_path = Path.cwd() / "layouts" / "A01 - UNTITLED.svg"
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -726,8 +758,10 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         assert drawing_data["foreground"] == (30.0, 30.0, 500.0, 500.0)
         assert drawing_data["view-title"] == (30.0, 535.0, 50.22, 10.0)
 
-        bpy.context.scene.camera.data.BIMCameraProperties.width = 25
-        bpy.context.scene.camera.data.BIMCameraProperties.height = 25
+        assert (scene := bpy.context.scene) and (camera := scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
+        props.width = 25
+        props.height = 25
         tool.Blender.force_depsgraph_update()
 
         bpy.ops.bim.create_drawing()
@@ -763,7 +797,7 @@ class TestUpdateTextValue(NewFile):
         ifc = tool.Ifc.get()
         wall = ifc.createIfcWall(Name="Baz")
         label = ifc.by_type("IfcAnnotation")[0]
-        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
 
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Name}} Bar"
 
@@ -777,10 +811,10 @@ class TestUpdateTextValue(NewFile):
         obj = bpy.data.objects["Object"]
         ifc = tool.Ifc.get()
         wall = ifc.createIfcWall()
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, name="Custom_Pset", product=wall)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Key": "Baz"})
+        pset = ifcopenshell.api.pset.add_pset(ifc, name="Custom_Pset", product=wall)
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Key": "Baz"})
         label = ifc.by_type("IfcAnnotation")[0]
-        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
 
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Custom_Pset.Key}} Bar"
 
@@ -798,7 +832,7 @@ class TestUpdateTextValue(NewFile):
             bpy.ops.bim.edit_text()
         annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
         assert "title" in annotation_classes
-        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
 
     def test_add_second_literal(self, setup=True):
         if setup:
@@ -835,7 +869,7 @@ class TestUpdateTextValue(NewFile):
         annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
         assert props.font_size == "7.0"
         assert "title" in annotation_classes
-        assert DecoratorData.get_ifc_text_data(obj)["FontSize"] == 7.0
+        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
 
         # test second literal is present
         assert props.literals[1].attributes["Literal"].string_value == "test_value"
@@ -853,7 +887,7 @@ class TestDrawingStyles(NewFile):
         bpy.ops.bim.add_drawing()
         ifc = tool.Ifc.get()
         drawing = ifc.by_type("IfcAnnotation")[0]
-        bpy.ops.bim.expand_target_view(target_view="PLAN_VIEW")
+        bpy.ops.bim.toggle_target_view(option="EXPAND", target_view="PLAN_VIEW")
         props = tool.Drawing.get_document_props()
         props.active_drawing_index = 2
         bpy.ops.bim.activate_drawing(drawing=drawing.id())
@@ -866,7 +900,9 @@ class TestDrawingStyles(NewFile):
 
     def test_drawing_styles_loaded_on_underlay_enabled(self):
         self.setup_project_with_drawing()
-        bpy.context.scene.camera.data.BIMCameraProperties.has_underlay = True
+        assert (scene := bpy.context.scene) and (camera := scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
+        props.has_underlay = True
         assert len(self.drawing_styles) == 3
 
     def test_drawing_styles_reload(self):

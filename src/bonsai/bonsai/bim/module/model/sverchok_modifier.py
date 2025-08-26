@@ -20,6 +20,8 @@ import bpy
 import bmesh
 
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import bonsai.tool as tool
 
 import json
@@ -80,7 +82,7 @@ class CreateNewSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
         sverchok.ui.sv_temporal_viewers.add_temporal_viewer_draw(
             node_group.nodes, node_group.links, plane, cut_links=True
         )
-        viewer = [n for n in node_group.nodes if n.bl_idname == "SvViewerDrawMk4"][0]
+        viewer = next(n for n in node_group.nodes if n.bl_idname == "SvViewerDrawMk4")
         viewer.label = f"IFCOutput {viewer.label}"
 
         props.node_group = node_group
@@ -165,10 +167,9 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
         if pset:
             pset = tool.Ifc.get().by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Sverchok")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Sverchok")
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             tool.Ifc.get(),
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(sverchok_data))},

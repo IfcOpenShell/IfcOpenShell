@@ -556,6 +556,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
         }
     }
 
+    // When material does not have a representation we don't create a style from it
+    return nullptr;
+
+    /*
     taxonomy::style::ptr material_style = taxonomy::make<taxonomy::style>();
     material_style->instance = material;
     if (settings_.get<settings::UseMaterialNames>().get()) {
@@ -566,6 +570,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
         material_style->name = oss.str();
     }
     return material_style;
+    */
 
     // @todo
     // IfcGeom::SurfaceStyle material_style = IfcGeom::SurfaceStyle(material->data().id(), material->Name());
@@ -874,7 +879,8 @@ void mapping::initialize_units_() {
     if (settings_.get<ModelRotation>().has()) {
         auto vs = settings_.get<ModelRotation>().get();
         if (vs.size() == 4) {
-            auto m3 = Eigen::Quaterniond(vs[0], vs[1], vs[2], vs[3]).normalized().matrix();
+            // @nb W, X, Y, Z
+            auto m3 = Eigen::Quaterniond(vs[3], vs[0], vs[1], vs[2]).normalized().matrix();
             Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
             m4 << m3;
             offset_and_rotation_ *= m4;

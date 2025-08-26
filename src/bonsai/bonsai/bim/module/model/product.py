@@ -25,6 +25,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
+import ifcopenshell.api.system
 import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -37,6 +38,7 @@ import bonsai.core.aggregate
 import bonsai.core.type
 import bonsai.core.root
 import bonsai.core.geometry
+import bonsai.core.model as core
 import bonsai.core.spatial
 from . import wall, slab, profile, mep
 from bonsai.bim.ifc import IfcStore
@@ -178,7 +180,8 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         # TODO: when this workflow matures a bit, recode it so it doesn't rely on selection and cursor
         # Select snapped object so we can insert doors and windows
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
         snap_obj = bpy.data.objects.get(snap_prop.snap_object)
         if snap_obj:
             try:
@@ -191,7 +194,7 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             except:
                 pass
 
-        point = context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points[0]
+        point = polyline_props.insertion_polyline[0].polyline_points[0]
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
         tool.Polyline.clear_polyline()
 
@@ -311,6 +314,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         row.prop(self, "representation_template", text="")
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
         props = tool.Model.get_model_props()
         relating_type_id = self.relating_type_id or props.relating_type_id
 
@@ -503,10 +507,10 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             mat = Matrix(ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement))
             mat.translation *= unit_scale
             mat = obj.matrix_world @ mat
-            new_port = tool.Ifc.run("system.add_port", element=element)
+            new_port = ifcopenshell.api.system.add_port(ifc_file, element=element)
             new_port.PredefinedType = port.PredefinedType
             new_port.SystemType = port.SystemType
-            tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
+            ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=new_port, matrix=mat, is_si=True)
 
         if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:
             pass
@@ -542,7 +546,10 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_type_page"
     bl_label = "Change Type Page"
     bl_options = {"REGISTER"}
-    page: bpy.props.IntProperty()
+    page: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        page: int
 
     def _execute(self, context):
         props = tool.Model.get_model_props()
@@ -562,6 +569,7 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
         props.relating_type_id = str(self.relating_type)
 
 
+# TODO: not exposed to UI.
 class AlignProduct(bpy.types.Operator):
     bl_idname = "bim.align_product"
     bl_label = "Align Product"
@@ -569,7 +577,7 @@ class AlignProduct(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     AlignType = Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]
-    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+    align_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
         items=[(i, i, "") for i in get_args(AlignType)]
     )
 
@@ -577,48 +585,11 @@ class AlignProduct(bpy.types.Operator):
         align_type: AlignType
 
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) < 2 or not context.active_object:
-            self.report({"ERROR"}, "Please select atleast 2 objects.")
-            return {"FINISHED"}
-        if self.align_type == "CENTERLINE":
-            point = context.active_object.matrix_world @ (
-                Vector(context.active_object.bound_box[0]) + (context.active_object.dimensions / 2)
-            )
-        elif self.align_type == "POSITIVE":
-            point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[6])
-        elif self.align_type == "NEGATIVE":
-            point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[0])
-        else:
-            assert_never(self.align_type)
-
-        active_x_axis = context.active_object.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        active_y_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 1, 0))
-        active_z_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-
-        x_distances = self.get_axis_distances(point, active_x_axis, context)
-        y_distances = self.get_axis_distances(point, active_y_axis, context)
-        if abs(sum(x_distances)) < abs(sum(y_distances)):
-            for i, obj in enumerate(selected_objs):
-                obj.matrix_world = Matrix.Translation(active_x_axis * -x_distances[i]) @ obj.matrix_world
-        else:
-            for i, obj in enumerate(selected_objs):
-                obj.matrix_world = Matrix.Translation(active_y_axis * -y_distances[i]) @ obj.matrix_world
+        try:
+            core.align_objects(tool.Blender, tool.Model, self.align_type)
+        except core.RequireAtLeastTwoElements as e:
+            self.report({"ERROR"}, str(e))
         return {"FINISHED"}
-
-    def get_axis_distances(self, point: Vector, axis: Vector, context: bpy.types.Context) -> list[float]:
-        results = []
-        for obj in context.selected_objects:
-            if self.align_type == "CENTERLINE":
-                obj_point = obj.matrix_world @ (Vector(obj.bound_box[0]) + (obj.dimensions / 2))
-            elif self.align_type == "POSITIVE":
-                obj_point = obj.matrix_world @ Vector(obj.bound_box[6])
-            elif self.align_type == "NEGATIVE":
-                obj_point = obj.matrix_world @ Vector(obj.bound_box[0])
-            else:
-                assert_never(self.align_type)
-            results.append(mathutils.geometry.distance_point_to_plane(obj_point, point, axis))
-        return results
 
 
 class LoadTypeThumbnails(bpy.types.Operator):
@@ -645,8 +616,7 @@ class LoadTypeThumbnails(bpy.types.Operator):
         while queue:
             # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation
             element = queue.pop()
-            if tool.Model.update_thumbnail_for_element(element):
-                queue.append(element)
+            tool.Model.update_thumbnail_for_element(element)
         return {"FINISHED"}
 
 
@@ -725,14 +695,12 @@ def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[
 
         new_settings = settings.copy()
         new_settings["context"] = box_context
-        new_box = ifcopenshell.api.run(
-            "geometry.add_representation", ifc_file, should_run_listeners=False, **new_settings
-        )
-        ifcopenshell.api.run(
-            "geometry.assign_representation",
+        new_box = ifcopenshell.api.geometry.add_representation(ifc_file, should_run_listeners=False, **new_settings)
+        ifcopenshell.api.geometry.assign_representation(
             ifc_file,
             should_run_listeners=False,
-            **{"product": product, "representation": new_box},
+            product=product,
+            representation=new_box,
         )
 
 

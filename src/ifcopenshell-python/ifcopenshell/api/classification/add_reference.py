@@ -231,7 +231,7 @@ class Usecase:
             if root_rel:
                 related_objects = set(root_rel.RelatedObjects) | self.rooted_products
                 root_rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": root_rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, element=root_rel)
             else:
                 self.file.create_entity(
                     "IfcRelAssociatesClassification",

@@ -31,7 +31,9 @@ class BIM_PT_debug(Panel):
     bl_parent_id = "BIM_PT_tab_quality_control"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
+        assert (wm := bpy.context.window_manager)
 
         props = tool.Debug.get_debug_props()
         bim_props = tool.Blender.get_bim_props()
@@ -49,6 +51,8 @@ class BIM_PT_debug(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "package_name", text="")
         row.operator("bim.pip_install", icon="EVENT_PAGEDOWN").name = props.package_name
+
+        layout.operator("bim.validate_ifc_assets", icon="CHECKMARK")
 
         row = layout.row()
         row.operator("bim.reload_ifc_file", text="Incrementally Reload Changes")
@@ -80,12 +84,15 @@ class BIM_PT_debug(Panel):
         row = layout.row()
         row.operator("bim.toggle_detailed_ios_logs")
 
+        row = layout.row(align=True)
+        row.prop(wm.operator_properties_last(bpy.ops.bim.change_log_level.idname()), "log_level", text="")
+        row.operator("bim.change_log_level")
+
         row = layout.row()
         row.operator("bim.restart_blender")
 
         row = layout.split(factor=0.5, align=True)
-        row.operator("bim.create_shape_from_step_id").should_include_curves = False
-        row.operator("bim.create_shape_from_step_id", text="", icon="IPO_ELASTIC").should_include_curves = True
+        row.operator("bim.create_shape_from_step_id")
         row.prop(props, "step_id", text="")
 
         row = layout.split(factor=0.7, align=True)

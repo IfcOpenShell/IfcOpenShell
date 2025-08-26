@@ -132,7 +132,7 @@ void print_usage(bool suggest_help = true)
 #ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
 #endif
-#ifdef IFOPSH_WITH_CGAL
+#ifdef IFOPSH_WITH_CITYJSON
 		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
 		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
@@ -293,7 +293,7 @@ int main(int argc, char** argv) {
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("kernel", po::value<std::string>(&geometry_kernel)->default_value(default_kernel),
-			"Geometry kernel to use (opencascade, cgal, cgal-simple).")
+			"Geometry kernel to use (opencascade, cgal, cgal-simple, hybrid-cgal-simple-opencascade).")
 		("threads,j", po::value<int>(&num_threads)->default_value(1),
 			"Number of parallel processing threads for geometry interpretation.")
 		("center-model",
@@ -592,7 +592,7 @@ int main(int argc, char** argv) {
 
     if (file_exists(IfcUtil::path::to_utf8(output_filename)) && !vmap.count("yes")) {
         std::string answer;
-        cout_ << "A file '" << output_filename << "' already exists. Overwrite the existing file?" << std::endl;
+        cout_ << "A file '" << output_filename << "' already exists. Overwrite the existing file? y/n" << std::endl;
         std::cin >> answer;
         if (!boost::iequals(answer, "yes") && !boost::iequals(answer, "y")) {
             return EXIT_SUCCESS;
@@ -857,6 +857,13 @@ int main(int argc, char** argv) {
 			std::string v = ".tmp";
 			output_temp_filename += path_t(v.begin(), v.end());
 		}
+	}
+
+	// The OS will clean up for us if there is a leak
+	geometry_settings.get<ifcopenshell::geometry::settings::OcctNoCleanTriangulation>().value = true;
+
+	if (geometry_settings.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get()) {
+		geometry_settings.get<ifcopenshell::geometry::settings::NoParallelMapping>().value = true;
 	}
 
 	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, constr
-from typing import List, Optional
+from typing import Optional
 from enum import Enum
 
 from models.documents_common import CallbackLink
@@ -32,7 +32,7 @@ class UploadDocuments(BaseModel):
         "and folder the user was on. If the client provides the `server_context` in subsequent calls then "
         "the CDE will attemp to load the UI at the same place."
     )
-    files: List[FileToUpload]
+    files: list[FileToUpload]
 
 
 class UploadFileDetail(BaseModel):
@@ -44,7 +44,7 @@ class UploadFileDetail(BaseModel):
 
 
 class UploadFileDetails(BaseModel):
-    files: List[UploadFileDetail]
+    files: list[UploadFileDetail]
 
 
 # ---- DOWNLOAD MODELS ----
@@ -57,7 +57,7 @@ class SelectDocuments(BaseModel):
         "and folder the user was on. If the client provides the `server_context` in subsequent calls then "
         "the CDE will attemp to load the UI at the same place."
     )
-    supported_file_extensions: Optional[List[str]] = Field(
+    supported_file_extensions: Optional[list[str]] = Field(
         description="The client may optionally provide an array of accepted file extensions that should be opened "
         "during this flow. The CDE server UI should make an attempt to only show files matching these "
         "extensions to the user for the download selection or help the user in selecting the desired "
@@ -80,5 +80,5 @@ class DataType(Enum):
 
 class DocumentMetadataEntry(BaseModel):
     name: constr(min_length=1) = Field(description="The name of the metadata property")
-    value: List[constr(min_length=1)] = Field(description="The value of the metadata property, can be a list")
+    value: list[constr(min_length=1)] = Field(description="The value of the metadata property, can be a list")
     data_type: DataType = Field(description="The data type of the items in the value array")

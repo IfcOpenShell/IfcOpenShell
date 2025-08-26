@@ -85,7 +85,7 @@ def assign_actor(
         related_objects = list(rel.RelatedObjects)
         related_objects.append(related_object)
         rel.RelatedObjects = related_objects
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(file, element=rel)
     else:
         rel = file.create_entity(
             "IfcRelAssignsToActor",

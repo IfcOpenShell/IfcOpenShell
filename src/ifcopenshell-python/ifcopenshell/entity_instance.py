@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import functools
 import importlib
 import numbers
@@ -25,10 +26,14 @@ import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, Callable, TypeVar, overload, Iterable, Sequence
+from typing import Union, Any, TypeVar, overload, TYPE_CHECKING, cast, NoReturn
+from collections.abc import Callable, Sequence
 
 from . import ifcopenshell_wrapper
 from . import settings
+
+if TYPE_CHECKING:
+    import ifcopenshell
 
 try:
     import logging
@@ -59,17 +64,20 @@ def set_unsupported_attribute(*args):
 # done for each invocation of __setitem__. Now this
 # mapping is built once during initialization of the
 # module.
-_method_dict = {}
+MethodList = list[Callable[[ifcopenshell_wrapper.entity_instance, int, Any], Union[None, NoReturn]]]
+"""List of setter methods for class attributes."""
+_method_dict: dict[str, MethodList] = {}
+"""Mapping of entity classes (e.g. 'IFC4.IfcWall') to MethodLists."""
 
 
 def register_schema_attributes(schema: ifcopenshell_wrapper.schema_definition) -> None:
     for decl in schema.declarations():
-        decl: ifcopenshell_wrapper.declaration
         if hasattr(decl, "argument_types"):
             fq_name = ".".join((schema.name(), decl.name()))
 
             # get type strings as reported by IfcOpenShell C++
             type_strs = decl.argument_types()
+            type_strs = cast(Sequence[str], type_strs)
 
             # convert case for setter function
             type_strs = [x.title().replace(" ", "") for x in type_strs]
@@ -148,15 +156,25 @@ class entity_instance:
     """
 
     wrapped_data: ifcopenshell_wrapper.entity_instance
+    method_list: Union[MethodList, None] = None
 
-    def __init__(self, e, file=None):
+    def __init__(
+        self,
+        e: Union[ifcopenshell_wrapper.entity_instance, tuple[str, str]],
+        file: Union[ifcopenshell.file, None] = None,
+    ):
+        """
+        :param e: Wrapper's ``entity_instance`` or a tuple ``(schema_identifier, ifc_class)``.
+        """
+        # Instances of this class will be created and removed very often,
+        # so it's important to keep it very optimized.
+
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
-        super(entity_instance, self).__setattr__("wrapped_data", e)
-        super(entity_instance, self).__setattr__("method_list", None)
+        object.__setattr__(self, "wrapped_data", e)
 
         # Make sure the file is not gc'ed while we have live instances
-        self.wrapped_data.file = file
+        e.file = file
 
     def __del__(self):
         """
@@ -168,7 +186,7 @@ class entity_instance:
         # and wrapped_data is unset. Hacky since we override
         # both __dict__ and __dir__.
         try:
-            wrapped_data = super().__getattribute__("wrapped_data")
+            wrapped_data = object.__getattribute__(self, "wrapped_data")
             wrapped_data.file = None
         except AttributeError:
             return
@@ -181,6 +199,12 @@ class entity_instance:
         return file.from_pointer(self.wrapped_data.file_pointer())
 
     def __getattr__(self, name: str) -> Any:
+        """
+        Any aggregate attributes (e.g. `SET`) are returns as Python tuples.
+
+        Inverse attributes are always returned as tuples, even it's not a set origially in IFC
+        (e.g. IfcFeatureElementSubtraction.VoidsElements)
+        """
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
@@ -192,8 +216,9 @@ class entity_instance:
             vs = entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
             if settings.unpack_non_aggregate_inverses:
                 schema_name = self.wrapped_data.is_a(True).split(".")[0]
+                ent: ifcopenshell_wrapper.entity
                 ent = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
-                inv = [i for i in ent.all_inverse_attributes() if i.name() == name][0]
+                inv = next(i for i in ent.all_inverse_attributes() if i.name() == name)
                 if (inv.bound1(), inv.bound2()) == (-1, -1):
                     if vs:
                         vs = vs[0]
@@ -277,11 +302,11 @@ class entity_instance:
             return value
 
     @staticmethod
-    def wrap_value(v, file):
-        def wrap(e):
+    def wrap_value(v, file: ifcopenshell.file):
+        def wrap(e: ifcopenshell_wrapper.entity_instance) -> entity_instance:
             return entity_instance(e, file)
 
-        def is_instance(e):
+        def is_instance(e: Any) -> bool:
             return isinstance(e, ifcopenshell_wrapper.entity_instance)
 
         return entity_instance.walk(is_instance, wrap, v)
@@ -333,7 +358,7 @@ class entity_instance:
             self.wrapped_data.file.transaction.store_edit(self, idx, value)
 
         if self.method_list is None:
-            super(entity_instance, self).__setattr__("method_list", _method_dict[self.is_a(True)])
+            super().__setattr__("method_list", _method_dict[self.is_a(True)])
 
         method = self.method_list[idx]
 
@@ -416,7 +441,7 @@ class entity_instance:
         """Return the STEP numerical identifier"""
         return self.wrapped_data.id()
 
-    def __eq__(self, other: "entity_instance") -> bool:
+    def __eq__(self, other: entity_instance) -> bool:
         if not isinstance(self, type(other)):
             return False
         elif None in (self.wrapped_data.file, other.wrapped_data.file):
@@ -517,8 +542,8 @@ class entity_instance:
         # Proper entity instances have a stable identity by means of the numeric
         # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
         # always have id=0, so we hash <type, value, file pointer>
-        if self.id():
-            return hash((self.id(), self.wrapped_data.file_pointer()))
+        if id_ := self.id():
+            return hash((id_, self.wrapped_data.file_pointer()))
         else:
             return hash((self.is_a(), self[0], self.wrapped_data.file_pointer()))
 
@@ -542,6 +567,8 @@ class entity_instance:
         scalar_only: bool = False,
     ) -> dict[str, Any]:
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
+
+        Resulting dictionary keys: 'id', 'type', all entity attribute names.
 
         :param include_identifier: Whether or not to include the STEP numerical identifier
         :param recursive: Whether or not to convert referenced IFC elements into dictionaries too. All attributes also apply recursively

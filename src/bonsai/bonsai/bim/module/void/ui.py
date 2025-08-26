@@ -24,7 +24,7 @@ from bonsai.bim.module.void.data import BooleansData, VoidsData
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import bpy._typing.rna_enums as rna_enums
+    import bpy.stub_internal.rna_enums as rna_enums
 
 
 OPENING_ICON = "SELECT_SUBTRACT"
@@ -52,9 +52,8 @@ class BIM_PT_voids(Panel):
         if not VoidsData.is_loaded:
             VoidsData.load()
 
-        if len(context.selected_objects) >= 2:
-            row = self.layout.row(align=True)
-            op = row.operator("bim.add_opening", icon="ADD", text="Add Opening")
+        row = self.layout.row(align=True)
+        op = row.operator("bim.add_opening", icon="ADD", text="Add Opening")
 
         if VoidsData.data["active_opening"]:
             row = self.layout.row()

@@ -178,7 +178,14 @@ class BIM_PT_brickschema_viewport(Panel):
 
         row = grid_left.row()
         BIM_UL_bricks.split_screen = False
-        row.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
+        row.template_list(
+            BIM_UL_bricks.__name__,
+            BIM_UL_bricks.__name__ + "_bricks",
+            self.props,
+            "bricks",
+            self.props,
+            "active_brick_index",
+        )
 
         if self.props.split_screen_toggled:
             grid_right = grid.column(align=True)
@@ -195,7 +202,12 @@ class BIM_PT_brickschema_viewport(Panel):
             row = grid_right.row()
             BIM_UL_bricks.split_screen = True
             row.template_list(
-                "BIM_UL_bricks", "", self.props, "split_screen_bricks", self.props, "split_screen_active_brick_index"
+                BIM_UL_bricks.__name__,
+                BIM_UL_bricks.__name__ + "_split_screen_bricks",
+                self.props,
+                "split_screen_bricks",
+                self.props,
+                "split_screen_active_brick_index",
             )
 
         if BrickschemaData.data["active_relations"]:

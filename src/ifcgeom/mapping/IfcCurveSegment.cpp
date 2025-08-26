@@ -55,8 +55,10 @@ double translate_to_length_measure(const IfcSchema::IfcCurve* crv, double param_
         return fabs(clothoid->ClothoidConstant()*sqrt(PI))*param_value;
     } else if (auto circ = crv->as<IfcSchema::IfcCircle>()) {
         return circ->Radius() * param_value;
+#ifdef SCHEMA_HAS_IfcPolynomialCurve
     } else if (auto poly = crv->as<IfcSchema::IfcPolynomialCurve>()) {
         return param_value;
+#endif
     } else {
         throw std::runtime_error("Unsupported curve measure type");
     }
@@ -75,7 +77,9 @@ double translate_if_param_value(const IfcSchema::IfcCurve* crv, IfcSchema::IfcCu
 typedef boost::mpl::vector<
       IfcSchema::IfcLine
     , IfcSchema::IfcCircle
+#ifdef SCHEMA_HAS_IfcPolynomialCurve
     , IfcSchema::IfcPolynomialCurve
+#endif
 #ifdef SCHEMA_HAS_IfcClothoid
     , IfcSchema::IfcClothoid
 #endif
@@ -198,8 +202,12 @@ class curve_segment_evaluator {
           inst_(inst),
           length_unit_(length_unit),
           parent_curve_(inst->ParentCurve()) {
-
+#ifdef SCHEMA_IfcSegment_HAS_UsingCurves
            auto composite_curves = inst->UsingCurves();
+#else
+        aggregate_of<IfcSchema::IfcCompositeCurve>::ptr composite_curves;
+        throw std::runtime_error("Schema not supported");
+#endif
 
         // Find the next segment after inst
         const IfcSchema::IfcCurveSegment* next_inst = nullptr;
@@ -245,17 +253,23 @@ class curve_segment_evaluator {
 
         segment_type_ = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : is_cant  ? ST_CANT : ST_HORIZONTAL;
 
-
+#ifdef SCHEMA_IfcCurveSegment_HAS_SegmentStart
         start_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentStart()) * length_unit;
+#else
+        throw std::runtime_error("Schema not supported");
+#endif
         length_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentLength()) * length_unit;
         projected_length_ = length_; // initialize with something reasonable
 
         if (inst) {
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
             curve_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst->Placement()))->ccomponents();
+#endif
         }
-
         if (next_inst) {
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
             next_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(next_inst->Placement()))->ccomponents();
+#endif
         } else {
            // there is not a next segment, however IfcGradientCurve and IfcSegmentReferenceCurve have an
            // optional EndPoint which services the same purpose as the zero-length last segment.
@@ -264,7 +278,9 @@ class curve_segment_evaluator {
                 auto& cc = *(composite_curves)->begin();
                 if (segment_type_ == ST_VERTICAL) {
                     auto gradient_curve = cc->as<IfcSchema::IfcGradientCurve>();
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
                     end_point = gradient_curve->EndPoint();
+#endif
                 } else if (segment_type_ == ST_CANT) {
                     auto segmented_reference_curve = cc->as<IfcSchema::IfcSegmentedReferenceCurve>();
                     end_point = segmented_reference_curve->EndPoint();
@@ -448,14 +464,17 @@ class curve_segment_evaluator {
 
     // defines the parent_curve_fn_ functor for cant segments.
     void set_cant_spiral_function(std::function<double(double)> Superelevation, std::function<double(double)> SuperelevationSlope, std::function<double(double)> Cant) {
-        auto dy = (*curve_segment_placement_)(1, 2); // placement dy
-        auto dz = (*curve_segment_placement_)(2, 2); // placement dz
+        // compute start cross slope angle, measured relative to (0,0,1)
+        auto dy = (*curve_segment_placement_)(1, 2); // Axis.dy
+        auto dz = (*curve_segment_placement_)(2, 2); // Axis.dz
         auto start_angle = atan2(dz, dy);
 
+        // compute end cross slope angle, measured relative to (0,0,1)
         dy = (next_segment_placement_.has_value() ? (*next_segment_placement_)(1, 2) : 0.0);
         dz = (next_segment_placement_.has_value() ? (*next_segment_placement_)(2, 2) : 1.0);
         auto end_angle = atan2(dz, dy);
 
+        // angular change of railhead cross slope over the length of the segment
         auto delta_angle = end_angle - start_angle;
         auto start_cant = Cant(0.0 /*start_*/);
         auto end_cant = Cant(/* start_ + */ length_);
@@ -529,7 +548,7 @@ class curve_segment_evaluator {
         if (segment_type_ == ST_CANT) {
             boost::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
-            auto cant = [A, L](double t) -> double { return A ? L * A * t / fabs(pow(A, 3)) : 0.0; };
+            auto cant = [A, L](double t) -> double { return A ? L * L * A * t / fabs(pow(A, 3)) : 0.0; };
 
             if (!super.has_value()) {
                 super = cant;
@@ -579,9 +598,9 @@ class curve_segment_evaluator {
             std::tie(super, slope) = get_superelevation_functions();
             
             auto cant = [constant_term, cosine_term, L](double t) -> double {
-                auto a0 = constant_term.has_value() ? L / constant_term.value() : 0.0;
-                auto a1 = (L / cosine_term) * cos(PI * t / L);
-                return a0 + a1;
+                auto a0 = constant_term.has_value() ? 1 / constant_term.value() : 0.0;
+                auto a1 = (1 / cosine_term) * cos(PI * t / L);
+                return L*L*(a0 + a1);
             };
 
             if (!super.has_value()) {
@@ -627,7 +646,7 @@ class curve_segment_evaluator {
         if (segment_type_ == ST_HORIZONTAL) {
             auto theta = [constant_term, linear_term, sine_term, L](double t) -> double {
                 auto a0 = constant_term.has_value() ? t / constant_term.value() : 0.0;
-                auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(t / linear_term.value(), 2.0) / 2.0 : 0.0;
+                auto a1 = linear_term.has_value() ? (linear_term.value() / fabs(linear_term.value())) * pow(t / linear_term.value(), 2.0) / 2.0 : 0.0;
                 auto a2 = -1.0 * (L / (2 * PI * sine_term)) * (cos(2 * PI * t / L) - 1.0);
                 return a0 + a1 + a2;
             };
@@ -635,7 +654,7 @@ class curve_segment_evaluator {
             auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
             auto curvature = [constant_term, linear_term, sine_term, L](double t) -> double {
                 auto a0 = constant_term.has_value() ? L / constant_term.value() : 0.0;
-                auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0)*(t/L) : 0.0;
+                auto a1 = linear_term.has_value() ? (linear_term.value() / fabs(linear_term.value())) * pow(L / linear_term.value(), 2.0) * (t / L) : 0.0;
                 auto a2 = (L / sine_term) * sin(2 * PI * t / L);
                 return a0 + a1 + a2;
             };
@@ -646,10 +665,10 @@ class curve_segment_evaluator {
             std::tie(super, slope) = get_superelevation_functions();
             
             auto cant = [constant_term, linear_term, sine_term, L](double t) -> double {
-               auto a0 = constant_term.has_value() ? L / constant_term.value() : 0.0;
-               auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0) * (t / L) : 0.0;
-               auto a2 = (L / sine_term) * sin(2 * PI * t / L);
-               return a0 + a1 + a2;
+               auto a0 = constant_term.has_value() ? 1 / constant_term.value() : 0.0;
+               auto a1 = linear_term.has_value() ? (linear_term.value()/fabs(linear_term.value())) * pow(1 / linear_term.value(), 2.0) * t : 0.0;
+               auto a2 = (1 / sine_term) * sin(2 * PI * t / L);
+               return L*L*(a0 + a1 + a2);
             };
 
             if (!super.has_value()) {
@@ -681,14 +700,14 @@ class curve_segment_evaluator {
 
     void polynomial_spiral(boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
         auto theta = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, lu = length_unit_](double t) -> double {
-            auto a0 = A0.has_value() ? t / (A0.value() * lu) : 0.0;
-            auto a1 = A1.has_value() ? A1.value() * lu * std::pow(t, 2) / (2 * fabs(std::pow(A1.value() * lu, 3))) : 0.0;
-            auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value() * lu, 3)) : 0.0;
-            auto a3 = A3.has_value() ? A3.value() * lu * std::pow(t, 4) / (4 * fabs(std::pow(A3.value() * lu, 5))) : 0.0;
-            auto a4 = A4.has_value() ? std::pow(t, 5) / (5 * std::pow(A4.value() * lu, 5)) : 0.0;
-            auto a5 = A5.has_value() ? A5.value() * lu * std::pow(t, 6) / (6 * fabs(std::pow(A5.value() * lu, 7))) : 0.0;
-            auto a6 = A6.has_value() ? std::pow(t, 7) / (7 * std::pow(A6.value() * lu, 7)) : 0.0;
-            auto a7 = A7.has_value() ? A7.value() * lu * std::pow(t, 8) / (8 * fabs(std::pow(A7.value() * lu, 9))) : 0.0;
+            auto a0 = A0.get_value_or(0.0) != 0.0 ? t / (A0.value() * lu) : 0.0;
+            auto a1 = A1.get_value_or(0.0) != 0.0 ? A1.value() * lu * std::pow(t, 2) / (2 * fabs(std::pow(A1.value() * lu, 3))) : 0.0;
+            auto a2 = A2.get_value_or(0.0) != 0.0 ? std::pow(t, 3) / (3 * std::pow(A2.value() * lu, 3)) : 0.0;
+            auto a3 = A3.get_value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 4) / (4 * fabs(std::pow(A3.value() * lu, 5))) : 0.0;
+            auto a4 = A4.get_value_or(0.0) != 0.0 ? std::pow(t, 5) / (5 * std::pow(A4.value() * lu, 5)) : 0.0;
+            auto a5 = A5.get_value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 6) / (6 * fabs(std::pow(A5.value() * lu, 7))) : 0.0;
+            auto a6 = A6.get_value_or(0.0) != 0.0 ? std::pow(t, 7) / (7 * std::pow(A6.value() * lu, 7)) : 0.0;
+            auto a7 = A7.get_value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 8) / (8 * fabs(std::pow(A7.value() * lu, 9))) : 0.0;
             return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
         };
 
@@ -699,14 +718,14 @@ class curve_segment_evaluator {
         // this is same as cant function in polynomial_cant_spiral
         auto curvature = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
             t += start;
-            auto a0 = A0.has_value() ? 1 / (A0.value() * lu) : 0.0;
-            auto a1 = A1.has_value() ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
-            auto a2 = A2.has_value() ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
-            auto a3 = A3.has_value() ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
-            auto a4 = A4.has_value() ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
-            auto a5 = A5.has_value() ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
-            auto a6 = A6.has_value() ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
-            auto a7 = A7.has_value() ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
+            auto a0 = A0.get_value_or(0.0) != 0.0 ? 1 / (A0.value() * lu) : 0.0;
+            auto a1 = A1.get_value_or(0.0) != 0.0 ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
+            auto a2 = A2.get_value_or(0.0) != 0.0 ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
+            auto a3 = A3.get_value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
+            auto a4 = A4.get_value_or(0.0) != 0.0 ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
+            auto a5 = A5.get_value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
+            auto a6 = A6.get_value_or(0.0) != 0.0 ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
+            auto a7 = A7.get_value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
             return L * (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7);
         };
 
@@ -721,15 +740,15 @@ class curve_segment_evaluator {
 
         auto cant = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
             t += start;
-            auto a0 = A0.has_value() ? 1 / (A0.value() * lu) : 0.0;
-            auto a1 = A1.has_value() ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
-            auto a2 = A2.has_value() ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
-            auto a3 = A3.has_value() ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
-            auto a4 = A4.has_value() ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
-            auto a5 = A5.has_value() ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
-            auto a6 = A6.has_value() ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
-            auto a7 = A7.has_value() ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
-            return L * (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7);
+            auto a0 = A0.get_value_or(0.0) != 0.0 ? 1 / (A0.value() * lu) : 0.0;
+            auto a1 = A1.get_value_or(0.0) != 0.0 ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
+            auto a2 = A2.get_value_or(0.0) != 0.0 ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
+            auto a3 = A3.get_value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
+            auto a4 = A4.get_value_or(0.0) != 0.0 ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
+            auto a5 = A5.get_value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
+            auto a6 = A6.get_value_or(0.0) != 0.0 ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
+            auto a7 = A7.get_value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
+            return L * L * (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7);
         };
 
         if (!super.has_value()) {
@@ -739,14 +758,14 @@ class curve_segment_evaluator {
         if (!slope.has_value()) {
             slope = [A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
                 t += start;
-                auto a1 = A1.has_value() ? A1.value() * lu / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
-                auto a2 = A2.has_value() ? 2 * t / std::pow(A2.value() * lu, 3) : 0.0;
-                auto a3 = A3.has_value() ? 3 * A3.value() * lu * std::pow(t, 2) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
-                auto a4 = A4.has_value() ? 4 * std::pow(t, 3) / std::pow(A4.value() * lu, 5) : 0.0;
-                auto a5 = A5.has_value() ? 5 * A5.value() * lu * std::pow(t, 4) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
-                auto a6 = A6.has_value() ? 6 * std::pow(t, 5) / std::pow(A6.value() * lu, 7) : 0.0;
-                auto a7 = A7.has_value() ? 7 * A7.value() * lu * std::pow(t, 6) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
-                return L * (a1 + a2 + a3 + a4 + a5 + a6 + a7);
+                auto a1 = A1.get_value_or(0.0) != 0.0 ? A1.value() * lu / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
+                auto a2 = A2.get_value_or(0.0) != 0.0 ? 2 * t / std::pow(A2.value() * lu, 3) : 0.0;
+                auto a3 = A3.get_value_or(0.0) != 0.0 ? 3 * A3.value() * lu * std::pow(t, 2) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
+                auto a4 = A4.get_value_or(0.0) != 0.0 ? 4 * std::pow(t, 3) / std::pow(A4.value() * lu, 5) : 0.0;
+                auto a5 = A5.get_value_or(0.0) != 0.0 ? 5 * A5.value() * lu * std::pow(t, 4) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
+                auto a6 = A6.get_value_or(0.0) != 0.0 ? 6 * std::pow(t, 5) / std::pow(A6.value() * lu, 7) : 0.0;
+                auto a7 = A7.get_value_or(0.0) != 0.0 ? 7 * A7.value() * lu * std::pow(t, 6) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
+                return L * L * (a1 + a2 + a3 + a4 + a5 + a6 + a7);
             };
         }
 
@@ -773,9 +792,13 @@ class curve_segment_evaluator {
         auto A0 = c->ConstantTerm();
         auto A1 = c->LinearTerm();
         auto A2 = c->QuadraticTerm();
-        auto A3 = c->CubicTerm();
-        boost::optional<double> A4, A5, A6, A7;
-
+        boost::optional<double> A3, A4, A5, A6, A7;
+#ifdef SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_CubicTerm
+        A3 = c->CubicTerm();
+#else
+        A3 = c->QubicTerm();
+#endif
+        
         if (segment_type_ == ST_CANT) {
             polynomial_cant_spiral(A0, A1, A2, A3, A4, A5, A6, A7);
         } else {
@@ -829,7 +852,10 @@ class curve_segment_evaluator {
             if (segment_type_ == ST_HORIZONTAL) {
                 convert_u = [](double u) { return u; };
             } else {
-                auto curve_segment_placement = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_->Placement()))->ccomponents();
+                Eigen::Matrix4d curve_segment_placement;
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
+                curve_segment_placement = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_->Placement()))->ccomponents();
+#endif
                 auto csStartX = curve_segment_placement(0, 3);
                 auto csStartY = curve_segment_placement(1, 3);
                 auto csStartDx = curve_segment_placement(0, 0);
@@ -1012,6 +1038,7 @@ class curve_segment_evaluator {
        }
     }
 
+#ifdef SCHEMA_HAS_IfcPolynomialCurve
     void operator()(const IfcSchema::IfcPolynomialCurve* pc) {
         // see https://forums.buildingsmart.org/t/ifcpolynomialcurve-clarification/4716 for discussion on IfcPolynomialCurve
         auto coeffX = pc->CoefficientsX().get_value_or(std::vector<double>());
@@ -1156,6 +1183,7 @@ class curve_segment_evaluator {
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         }
     }
+#endif
 };
 } // namespace
 

@@ -51,7 +51,7 @@ def copy_cost_item_values(
         ifcopenshell.api.cost.copy_cost_item_values(model, source=item1, destination=item2)
     """
     for cost_value in destination.CostValues or []:
-        ifcopenshell.api.cost.remove_cost_item_value(file, cost_value=cost_value)
+        ifcopenshell.api.cost.remove_cost_value(file, source, cost_value=cost_value)
     copied_cost_values = []
     for cost_value in source.CostValues or []:
         copied_cost_values.append(ifcopenshell.util.element.copy_deep(file, cost_value))

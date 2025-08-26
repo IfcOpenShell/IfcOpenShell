@@ -30,7 +30,8 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Generator, Any, Union, TYPE_CHECKING
+from typing import Any, Union, TYPE_CHECKING
+from collections.abc import Generator
 
 try:
     import brickschema
@@ -456,7 +457,7 @@ class Brick(bonsai.core.tool.Brick):
 
     @classmethod
     def add_namespace(cls, alias: str, uri: str) -> None:
-        assert BrickStore.graph
+        assert BrickStore.graph is not None
         BrickStore.graph.bind(alias, Namespace(uri))
         BrickStore.load_namespaces()
 

@@ -61,13 +61,13 @@ class Library(bonsai.core.tool.Library):
     def import_library_attributes(cls, library: ifcopenshell.entity_instance) -> None:
         props = cls.get_library_props()
         props.library_attributes.clear()
-        bonsai.bim.helper.import_attributes2(library, props.library_attributes)
+        bonsai.bim.helper.import_attributes(library, props.library_attributes)
 
     @classmethod
     def import_reference_attributes(cls, reference: ifcopenshell.entity_instance) -> None:
         props = cls.get_library_props()
         props.reference_attributes.clear()
-        bonsai.bim.helper.import_attributes2(reference, props.reference_attributes)
+        bonsai.bim.helper.import_attributes(reference, props.reference_attributes)
 
     @classmethod
     def import_references(cls, library: ifcopenshell.entity_instance) -> None:

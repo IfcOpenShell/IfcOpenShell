@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.ChangeLogLevel,
     operator.ConvertToBlender,
     operator.CopyDebugInformation,
     operator.CreateAllShapes,
@@ -44,6 +45,7 @@ classes = (
     operator.SelectHighPolygonMeshes,
     operator.SelectHighestPolygonMeshes,
     operator.ToggleDetailedIOSLogs,
+    operator.ValidateIfcAssets,
     operator.ValidateIfcFile,
     prop.BIMDebugProperties,
     ui.BIM_PT_debug,

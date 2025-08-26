@@ -21,7 +21,7 @@ import bpy
 from bpy.types import Panel, UIList
 from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 import bonsai.tool as tool
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast, Any
 
 if TYPE_CHECKING:
     from bonsai.bim.module.spatial.prop import BIMSpatialDecompositionProperties, BIMContainer, Element
@@ -55,24 +55,6 @@ class BIM_PT_spatial(Panel):
                 row.prop(osprops, "container_obj", text="", icon="OUTLINER_COLLECTION")
                 row.operator("bim.assign_container", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_container", icon="CANCEL", text="")
-
-            if SpatialData.data["selected_containers"]:
-                row = self.layout.row()
-                row.label(text=f"{len(SpatialData.data['selected_containers'])} Selected Containers")
-                for name in SpatialData.data["selected_containers"][:3]:
-                    row = self.layout.row()
-                    row.label(text=name, icon="OUTLINER_COLLECTION")
-                if len(SpatialData.data["selected_containers"]) > 3:
-                    row = self.layout.row()
-                    row.label(text=f"... {len(SpatialData.data['selected_containers']) - 3} More")
-                row = self.layout.row(align=True)
-                row.operator("bim.reference_structure", icon="LINKED", text="Reference Selected")
-                row.operator("bim.dereference_structure", icon="UNLINKED", text="")
-                row = self.layout.row()
-                row.operator("bim.copy_to_container", icon="COPYDOWN", text="Copy Object To Selected")
-            else:
-                row = self.layout.row()
-                row.label(text="No Selected Containers")
         else:
             row = self.layout.row(align=True)
             if SpatialData.data["label"]:
@@ -86,14 +68,16 @@ class BIM_PT_spatial(Panel):
                 row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
 
-            if references := SpatialData.data["references"]:
+            if references := cast(list[dict[str, Any]], SpatialData.data["references"]):
                 self.layout.label(text=f"{len(references)} References:")
             else:
                 self.layout.label(text="No References Found")
 
             for reference in references:
                 row = self.layout.row()
-                row.label(text=reference, icon="LINKED")
+                row.label(text=reference["name"], icon="LINKED")
+                op = row.operator("bim.dereference_from_provided_structure", icon="X", text="")
+                op.structure = reference["id"]
 
 
 class BIM_PT_spatial_decomposition(Panel):
@@ -143,10 +127,8 @@ class BIM_PT_spatial_decomposition(Panel):
             op.part_class = self.props.subelement_class
 
             row = self.layout.row(align=True)
-            non_ifc_project_active = self.props.active_container.ifc_class != "IfcProject"
 
             col = row.column(align=True)
-            col.enabled = non_ifc_project_active
             op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
 
@@ -155,7 +137,6 @@ class BIM_PT_spatial_decomposition(Panel):
             col.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
 
             col = row.column(align=True)
-            col.enabled = non_ifc_project_active
             op = col.operator("bim.delete_container", icon="X", text="")
             op.container = ifc_definition_id
 
@@ -172,7 +153,14 @@ class BIM_PT_spatial_decomposition(Panel):
         if not self.props.active_container:
             return
 
-        if not self.props.total_elements:
+        container_has_elements = bool(self.props.total_elements)
+        if container_has_elements:
+            row = self.layout.row()
+            row.label(
+                text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
+                icon="FILE_3D",
+            )
+        else:
             row = self.layout.row(align=True)
             row.label(text=f"{self.props.active_container.ifc_class} > No Elements", icon="FILE_3D")
             row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
@@ -180,36 +168,44 @@ class BIM_PT_spatial_decomposition(Panel):
             row = self.layout.row(align=True)
             row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
             row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
-            return
-
-        row = self.layout.row()
-        row.label(
-            text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
-            icon="FILE_3D",
-        )
 
         row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
 
-        op = row.operator("bim.set_element_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.enabled = container_has_elements
+        op = row_.operator("bim.set_element_visibility", icon="FULLSCREEN_EXIT", text="")
         op.mode = "ISOLATE"
         op.container = ifc_definition_id
 
-        op = row.operator("bim.set_element_visibility", icon="HIDE_OFF", text="")
+        op = row_.operator("bim.set_element_visibility", icon="HIDE_OFF", text="")
         op.mode = "SHOW"
         op.container = ifc_definition_id
 
-        op = row.operator("bim.set_element_visibility", icon="HIDE_ON", text="")
+        op = row_.operator("bim.set_element_visibility", icon="HIDE_ON", text="")
         op.mode = "HIDE"
         op.container = ifc_definition_id
 
-        row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
-        op = row.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+        row_.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
+        row_.operator("bim.copy_to_container", icon="MOD_DISPLACE", text="").container = ifc_definition_id
+
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.enabled = container_has_elements
+        op = row_.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
         if active_element := self.props.active_element:
             op.element = active_element.ifc_definition_id
         else:
             op.element = 0
-        op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+        op = row_.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
         op.container = ifc_definition_id
+
+        if not container_has_elements:
+            return
 
         row = self.layout.row(align=True)
         row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")

@@ -16,18 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import ifcopenshell.api.alignment
-import ifcopenshell.api.alignment.has_zero_length_segment
-import ifcopenshell.api.alignment.remove_zero_length_segment
 import ifcopenshell.api.context
-import ifcopenshell.guid
-import ifcopenshell.api.nest
+import ifcopenshell.api.unit
 
 
-def _test_business_definition():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(Name="Test")
+def _test_horizontal():
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -37,41 +35,16 @@ def _test_business_definition():
         parent=geometric_representation_context,
     )
 
-    horizontal = file.createIfcAlignmentHorizontal("Horizontal Alignment")
-    design_parameters = file.createIfcAlignmentHorizontalSegment(
-        StartPoint=file.createIfcCartesianPoint((0.0, 0.0)),
-        StartDirection=0.0,
-        SegmentLength=100.0,
-        PredefinedType="LINE",
-    )
-    segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
-    ifcopenshell.api.nest.assign_object(
-        file,
-        related_objects=[
-            segment,
-        ],
-        relating_object=horizontal,
-    )
-
-    assert False == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
-
-    ifcopenshell.api.alignment.add_zero_length_segment(file, horizontal)
-    assert len(horizontal.IsNestedBy[0].RelatedObjects) == 2
-
-    assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
-
-    zero_length_segment = ifcopenshell.api.alignment.remove_zero_length_segment(file, horizontal)
-    assert len(horizontal.IsNestedBy[0].RelatedObjects) == 1
-    assert False == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
-
-    ifcopenshell.api.alignment.add_segment_to_layout(file, horizontal, zero_length_segment)
-    assert len(horizontal.IsNestedBy[0].RelatedObjects) == 2
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment")
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
 
 
-def _test_geometric_definition():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(Name="Test")
+def _test_horizontal_vertical():
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -80,44 +53,41 @@ def _test_geometric_definition():
         target_view="MODEL_VIEW",
         parent=geometric_representation_context,
     )
-    circular_arc = file.createIfcCurveSegment(
-        Placement=file.createIfcAxis2Placement2d(
-            file.createIfcCartesianPoint((4084.115884, 3889.462938)),
-            file.createIfcDirection((0.224530986099614, 0.974466949814685)),
-        ),
-        SegmentStart=file.createIfcLengthMeasure(0.0),
-        SegmentLength=file.createIfcLengthMeasure(-1848.115835),
-        ParentCurve=file.createIfcCircle(
-            Position=file.createIfcAxis2Placement2d(
-                file.createIfcCartesianPoint((0.0, 0.0)), file.createIfcDirection((1.0, 0.0))
-            ),
-            Radius=1250.0,
-        ),
+
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
+    vertical = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+    assert True == ifcopenshell.api.alignment.has_zero_length_segment(vertical)
+
+
+def _test_horizontal_vertical_cant():
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
+    geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
+    axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
+        file,
+        context_type="Model",
+        context_identifier="Axis",
+        target_view="MODEL_VIEW",
+        parent=geometric_representation_context,
     )
 
-    composite_curve = file.createIfcCompositeCurve(Segments=(circular_arc,), SelfIntersect=False)
-
-    assert False == ifcopenshell.api.alignment.has_zero_length_segment(composite_curve)
-
-    ifcopenshell.api.alignment.add_zero_length_segment(file, composite_curve)
-
-    assert True == ifcopenshell.api.alignment.has_zero_length_segment(composite_curve)
-
-    assert len(composite_curve.Segments) == 2
-
-    zero_length_segment = ifcopenshell.api.alignment.remove_zero_length_segment(file, composite_curve)
-    assert len(composite_curve.Segments) == 1
-    assert False == ifcopenshell.api.alignment.has_zero_length_segment(composite_curve)
-
-    ifcopenshell.api.alignment.add_segment_to_curve(file, zero_length_segment, composite_curve)
-    assert len(composite_curve.Segments) == 2
-    assert True == ifcopenshell.api.alignment.has_zero_length_segment(composite_curve)
-
-    segment = composite_curve.Segments[-1]
-    assert segment.Placement.Location.Coordinates == (5469.394535876198, 4847.567078630914)
-    assert segment.Placement.RefDirection.DirectionRatios == (0.9910142986043448, -0.13375597168627318)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", include_vertical=True, include_cant=True)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
+    vertical = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+    assert True == ifcopenshell.api.alignment.has_zero_length_segment(vertical)
+    cant = ifcopenshell.api.alignment.get_cant_layout(alignment)
+    assert True == ifcopenshell.api.alignment.has_zero_length_segment(cant)
 
 
 def test_has_zero_length_segment():
-    _test_business_definition()
-    _test_geometric_definition()
+    _test_horizontal()
+    _test_horizontal_vertical()
+    _test_horizontal_vertical_cant()
+
+
+test_has_zero_length_segment()

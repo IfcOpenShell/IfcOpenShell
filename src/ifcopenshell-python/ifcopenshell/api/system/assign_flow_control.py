@@ -64,7 +64,7 @@ def assign_flow_control(
         related_flow_controls = set(assignment.RelatedControlElements)
         related_flow_controls.add(related_flow_control)
         assignment.RelatedControlElements = list(related_flow_controls)
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": assignment})
+        ifcopenshell.api.owner.update_owner_history(file, element=assignment)
         return assignment
 
     assignment = file.create_entity(

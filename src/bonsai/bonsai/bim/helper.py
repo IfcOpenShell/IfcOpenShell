@@ -27,7 +27,9 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 import bonsai.tool as tool
-from typing import Optional, Callable, Any, Union, Iterable, TYPE_CHECKING
+from types import EllipsisType
+from typing import Optional, Any, Union, TYPE_CHECKING
+from collections.abc import Callable, Iterable
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
@@ -38,6 +40,9 @@ if TYPE_CHECKING:
     # - None  - property should be imported by default workflow
     # - True  - setting value for imported attribute should be skipped
     # - False - property should be skipped entirely from import
+    # Second argument is optional,
+    # because ImportCallback might be called for attributes that are not created by default
+    # (e.g. IFC entity attributes).
     ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any]], Union[bool, None]]
     # ExportCallback return values:
     # - True  - property should be skipped entirely from export
@@ -51,33 +56,64 @@ def draw_attributes(
     copy_operator: Optional[str] = None,
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
+    *,
+    enable_search: Union[bool, EllipsisType] = ...,
 ) -> None:
     """Draw editable UI for prop.Attributes.
 
     You can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
     on it first
+
+    :param enable_search: Add search button to string, integer, and float attributes
+        Possible values:
+
+        - ``...`` (default value) -
+            add search if possible. If it's not possible, there will be no warnings or errors.
+        - ``True`` - always add search, if it's not possible it will result in errors.
+        - ``False`` - never add search.
+
     """
     for attribute in props:
         row = layout.row(align=True)
         if attribute == popup_active_attribute:
             row.activate_init = True
-        draw_attribute(attribute, row, copy_operator)
+        draw_attribute(attribute, row, copy_operator, enable_search=enable_search)
         if callback:
             callback(attribute, row)
 
 
 def draw_attribute(
-    attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+    attribute: bonsai.bim.prop.Attribute,
+    layout: bpy.types.UILayout,
+    copy_operator: Optional[str] = None,
+    enable_search: Union[bool, EllipsisType] = ...,
 ) -> None:
     value_name = attribute.get_value_name(display_only=True)
+
     if value_name == "enum_value":
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
     elif value_name == "filepath_value":
         attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
-    elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
-        propis = bpy.context.scene.BIMWorkScheduleProperties
-        for item in propis.durations_attributes:
+
+    elif value_name == "subitems_values":
+        col = layout.column()
+        layout = col.row(align=True)
+        layout.label(text=f"{attribute.name}:")
+        data_path = tool.Blender.get_full_data_path(attribute, value_name)
+        for i, item in enumerate(attribute.subitems_values, 1):
+            row = col.row(align=True)
+            row.alignment = "EXPAND"
+            row.prop(item, "name", text=f"# {i}")
+            op = row.operator("bim.attribute_remove_subitem", text="", icon="X")
+            op.data_path = data_path
+            op.index = i - 1
+        op = layout.operator("bim.attribute_add_subitem", icon="ADD", text="")
+        op.data_path = data_path
+
+    elif attribute.special_type == "DURATION":
+        props = tool.Sequence.get_work_schedule_props()
+        for item in props.durations_attributes:
             if item.name == attribute.name:
                 duration_props = item
                 layout.label(text=attribute.name)
@@ -95,16 +131,33 @@ def draw_attribute(
             text=attribute.display_name,
         )
 
-    if attribute.is_uri:
+    if attribute.special_type == "URI":
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-        op.data_path = attribute.path_from_id("string_value")
+        op.attribute_data_path = tool.Blender.get_full_data_path(attribute)
     elif attribute.special_type in ("DATE", "DATETIME"):
         op = layout.operator("bim.datepicker", text="", icon="TIME")
         op.target_prop = attribute.path_from_id("string_value")
         op.include_time = attribute.special_type == "DATETIME"
 
+    if attribute.data_type in ("string", "integer", "float") and (
+        enable_search is True or (enable_search is ... and attribute.ifc_class)
+    ):
+        op = layout.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
+        op.attribute_name = attribute.name
+        op.attribute_ifc_class = attribute.ifc_class
+        op.data_path = tool.Blender.get_full_data_path(attribute, value_name)
+        op.data_type = attribute.data_type
+
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    if attribute.use_explorer_ui:
+        op = layout.operator("bim.explorer_show_ui_popup", text="", icon="ZOOM_SELECTED")
+        op.ifc_class = attribute.ifc_class
+        op.attribute_name = attribute.name
+        op.data_path = tool.Blender.get_full_data_path(attribute, value_name)
+        if ifc_id := attribute.get_value():
+            op.preselect_ifc_id = int(ifc_id)
 
     if attribute.name == "GlobalId":
         layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
@@ -114,28 +167,22 @@ def draw_attribute(
 
 
 def import_attributes(
-    ifc_class: str,
-    props: bpy.types.bpy_prop_collection_idprop[Attribute],
-    data: dict[str, Any],
-    callback: Optional[ImportCallback] = None,
-) -> None:
-    schema = tool.Ifc.schema()
-    for attribute in schema.declaration_by_name(ifc_class).all_attributes():
-        import_attribute(attribute, props, data, callback=callback)
-
-
-# A more elegant attribute importer signature, intended to supersede import_attributes
-def import_attributes2(
     element: Union[str, ifcopenshell.entity_instance],
     props: bpy.types.bpy_prop_collection_idprop[Attribute],
     callback: Optional[ImportCallback] = None,
 ) -> None:
+    """
+    :param element: Entity or IFC class string.
+    """
+    info: dict[str, Any]
     if isinstance(element, str):
-        attributes = tool.Ifc.schema().declaration_by_name(element).as_entity().all_attributes()
+        assert (entity := tool.Ifc.schema().declaration_by_name(element).as_entity())
+        attributes = entity.all_attributes()
         info = {a.name(): None for a in attributes}
         info["type"] = element
     else:
-        attributes = element.wrapped_data.declaration().as_entity().all_attributes()
+        assert (entity := element.wrapped_data.declaration().as_entity())
+        attributes = entity.all_attributes()
         info = element.get_info()
     for attribute in attributes:
         import_attribute(attribute, props, info, callback=callback)
@@ -149,15 +196,19 @@ def import_attribute(
 ) -> None:
     data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
     # Complex data types (aggregates and entities) are handled only by callback.
+    if data_type == ("list", "string"):
+        data_type = "list[string]"
     if isinstance(data_type, tuple) or data_type == "entity":
         callback(attribute.name(), None, data) if callback else None
         return
-    new: bonsai.bim.prop.Attribute = props.add()
+
+    new = props.add()
     new.name = attribute.name()
     new.is_null = data[attribute.name()] is None
     new.is_optional = attribute.optional()
     new.data_type = data_type if isinstance(data_type, str) else ""
     new.ifc_class = data["type"]
+
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
     data_type = new.data_type  # Allow callback to override data type.
 
@@ -167,8 +218,9 @@ def import_attribute(
         props.remove(len(props) - 1)
     elif data_type == "string":
         new.string_value = "" if new.is_null else str(data[attribute.name()]).replace("\n", "\\n")
-        if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
-            new.is_uri = True
+        attribute_type = attribute.type_of_attribute()
+        if attribute_type._is("IfcURIReference"):
+            new.special_type = "URI"
         elif attribute.type_of_attribute()._is("IfcDate"):
             new.special_type = "DATE"
         elif attribute.type_of_attribute()._is("IfcDateTime"):
@@ -202,6 +254,12 @@ def import_attribute(
 
         if enum_value is not None:
             new.enum_value = enum_value
+    elif data_type == "list[string]":
+        value: Union[list[str], None] = data[attribute.name()]
+        if value:
+            for item in value:
+                new.subitems_values.add().name = str(item).replace("\n", "\\n")
+
     add_attribute_description(new, data)
     add_attribute_min_max(attribute, new)
 
@@ -269,6 +327,16 @@ def export_attributes(
     return attributes
 
 
+def process_exported_entity_attribute(attributes: dict[str, Any], attribute_names: list[str]) -> None:
+    for attribute_name in attribute_names:
+        entity_id = attributes[attribute_name]
+        if entity_id is None:
+            # Maybe it was removed by now and enum is invalid.
+            del attributes[attribute_name]
+        else:
+            attributes[attribute_name] = tool.Ifc.get().by_id(int(entity_id))
+
+
 ENUM_ITEMS_DATA = Union[bpy.types.PropertyGroup, bpy.types.ID, bpy.types.Operator, bpy.types.OperatorProperties]
 
 
@@ -292,22 +360,35 @@ def prop_with_search(
     prop_name: str,
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
+    *,
+    enable_relating_type_suggestions: bool = False,
+    search_threshold: int = 10,
+    button_kwargs: Union[dict[str, Any], None] = None,
     **kwargs: Any,
 ) -> bpy.types.UILayout:
     """
+    Draw a row with enum prop and enum search operator.
+
+    Search operator appears only in case if there's more than `search_threshold` items in enum.
+
+    :arg button_kwargs: kwargs to pass to ``UILayout.operator()``.
+    :arg kwargs: kwargs to pass to ``UILayout.prop()``.
+    :arg enable_relating_type_suggestions: Enable additional suggestions for relating type properties.
+    :arg search_threshold: Minimum number of enum items required to show search button.
     :return: Added row.
     """
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
     try:
-        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > 10:
+        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > search_threshold:
             # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
             row.context_pointer_set(name="data", data=data)
-            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM", **(button_kwargs or {}))
             op.prop_name = prop_name
             op.should_click_ok = should_click_ok
             op.original_operator_path = original_operator_path or ""
+            op.enable_relating_type_suggestions = enable_relating_type_suggestions
     except TypeError:  # Prop is not iterable
         pass
     return row
@@ -351,8 +432,23 @@ def get_enum_items(
     return items
 
 
-def draw_expandable_panel(layout, context, label: str, ui_func, default_closed: bool = True):
-    header, panel = layout.panel(label, default_closed=default_closed)
+def draw_expandable_panel(
+    layout: bpy.types.UILayout,
+    context: bpy.types.Context,
+    label: str,
+    ui_func: Callable[[bpy.types.UILayout, bpy.types.Context], None],
+    default_closed: bool = True,
+    *,
+    panel_id: str = "",
+) -> None:
+    """
+    :param panel_id: Optional unique identifier for the panel.
+        By default is matching ``label``, but if more than one panel with the same name is used,
+        then ``panel_id`` can be provided explicitly to ensure panels can be expanded/collapsed separately.
+    """
+    if not panel_id:
+        panel_id = label
+    header, panel = layout.panel(panel_id, default_closed=default_closed)
     header.label(text=label)
     if panel:
         ui_func(panel, context)
@@ -392,10 +488,16 @@ def draw_filter(
         row = layout.row(align=True)
         row.label(text=f"{len(data.data['saved_searches'])} Saved Searches")
 
+        row.operator("bim.select_entity_by_guid", text="", icon="CON_OBJECTSOLVER")
         if data.data["saved_searches"]:
             row.operator("bim.load_search", text="", icon="IMPORT").module = module
         row.operator("bim.save_search", text="", icon="EXPORT").module = module
-
+        if module != "search":
+            if module == "drawing_include":
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "INCLUDE"
+            if module == "drawing_exclude":
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "EXCLUDE"
+            row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
     row = layout.row(align=True)
     row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
     row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module

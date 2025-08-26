@@ -20,6 +20,12 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.style
+import ifcopenshell.api.unit
 import bonsai.tool as tool
 from pathlib import Path
 
@@ -36,46 +42,40 @@ class LibraryGenerator:
 
         self.materials = {}
 
-        self.file = ifcopenshell.api.run("project.create_file")
-        self.project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject", name=library_name)
-        self.library = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name=library_name
+        self.file = ifcopenshell.api.project.create_file()
+        self.project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name=library_name)
+        self.library = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProjectLibrary", name=library_name)
+        ifcopenshell.api.project.assign_declaration(
+            self.file, definitions=[self.library], relating_context=self.project
         )
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.project
-        )
-        unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
 
-        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
-        plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        plan = ifcopenshell.api.context.add_context(self.file, context_type="Plan")
         self.representations = {
-            "Model/Body/MODEL_VIEW": ifcopenshell.api.run(
-                "context.add_context",
+            "Model/Body/MODEL_VIEW": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Model",
                 context_identifier="Body",
                 target_view="MODEL_VIEW",
                 parent=model,
             ),
-            "Plan/Body/PLAN_VIEW": ifcopenshell.api.run(
-                "context.add_context",
+            "Plan/Body/PLAN_VIEW": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Plan",
                 context_identifier="Body",
                 target_view="PLAN_VIEW",
                 parent=plan,
             ),
-            "Model/Body/PLAN_VIEW": ifcopenshell.api.run(
-                "context.add_context",
+            "Model/Body/PLAN_VIEW": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Model",
                 context_identifier="Body",
                 target_view="PLAN_VIEW",
                 parent=model,
             ),
-            "Model/Body/SECTION_VIEW": ifcopenshell.api.run(
-                "context.add_context",
+            "Model/Body/SECTION_VIEW": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Model",
                 context_identifier="Body",
@@ -100,13 +100,12 @@ class LibraryGenerator:
         self.file.write(output_filename)
 
     def create_type(self, ifc_class, name, representations):
-        element = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class=ifc_class, predefined_type="ENTOURAGE", name=name
+        element = ifcopenshell.api.root.create_entity(
+            self.file, ifc_class=ifc_class, predefined_type="ENTOURAGE", name=name
         )
         for rep_name, obj_name in representations.items():
             obj = bpy.data.objects.get(obj_name)
-            representation = ifcopenshell.api.run(
-                "geometry.add_representation",
+            representation = ifcopenshell.api.geometry.add_representation(
                 self.file,
                 context=self.representations[rep_name],
                 blender_object=obj,
@@ -115,9 +114,8 @@ class LibraryGenerator:
             )
             styles = []
             for slot in obj.material_slots:
-                style = ifcopenshell.api.run("style.add_style", self.file, name=slot.material.name)
-                ifcopenshell.api.run(
-                    "style.add_surface_style",
+                style = ifcopenshell.api.style.add_style(self.file, name=slot.material.name)
+                ifcopenshell.api.style.add_surface_style(
                     self.file,
                     style=style,
                     ifc_class="IfcSurfaceStyleShading",
@@ -125,15 +123,11 @@ class LibraryGenerator:
                 )
                 styles.append(style)
             if styles:
-                ifcopenshell.api.run(
-                    "style.assign_representation_styles", self.file, shape_representation=representation, styles=styles
+                ifcopenshell.api.style.assign_representation_styles(
+                    self.file, shape_representation=representation, styles=styles
                 )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", self.file, product=element, representation=representation
-            )
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+            ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation)
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
 
 
 if __name__ == "__main__":

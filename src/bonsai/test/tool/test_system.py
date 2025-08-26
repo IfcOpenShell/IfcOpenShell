@@ -19,6 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.system
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import numpy as np
@@ -43,6 +46,7 @@ class TestAddPorts(NewFile):
         element = tool.Ifc.get_entity(obj)
         obj.matrix_world = Euler((pi / 2, 0, pi / 2)).to_matrix().to_4x4() @ obj.matrix_world
         # move origin
+        assert isinstance(obj.data, bpy.types.Mesh)
         for v in obj.data.vertices:
             v.co += Vector((0, 0, 2.5))
         return obj, element
@@ -90,6 +94,7 @@ class TestAddPorts(NewFile):
 
 class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -147,9 +152,9 @@ class TestExportSystemAttributes(NewFile):
 class TestGetConnectedPort(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        port1 = ifcopenshell.api.run("system.add_port", ifc)
-        port2 = ifcopenshell.api.run("system.add_port", ifc)
-        ifcopenshell.api.run("system.connect_port", ifc, port1=port1, port2=port2)
+        port1 = ifcopenshell.api.system.add_port(ifc)
+        port2 = ifcopenshell.api.system.add_port(ifc)
+        ifcopenshell.api.system.connect_port(ifc, port1=port1, port2=port2)
         assert subject.get_connected_port(port1) == port2
         assert subject.get_connected_port(port2) == port1
 
@@ -160,8 +165,8 @@ class TestGetPorts(NewFile):
         tool.Ifc().set(ifc)
         element = ifc.createIfcDuctSegment()
         port = ifc.createIfcDistributionPort()
-        ifcopenshell.api.run("system.assign_port", ifc, element=element, port=port)
-        subject.get_ports(element) == [port]
+        ifcopenshell.api.system.assign_port(ifc, element=element, port=port)
+        assert subject.get_ports(element) == [port]
 
 
 class TestImportSystemAttributes(NewFile):
@@ -175,10 +180,10 @@ class TestImportSystemAttributes(NewFile):
         system.ObjectType = "ObjectType"
         subject().import_system_attributes(system)
         props = tool.System.get_system_props()
-        assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
-        assert props.system_attributes.get("Name").string_value == "Name"
-        assert props.system_attributes.get("Description").string_value == "Description"
-        assert props.system_attributes.get("ObjectType").string_value == "ObjectType"
+        assert props.system_attributes["GlobalId"].string_value == "GlobalId"
+        assert props.system_attributes["Name"].string_value == "Name"
+        assert props.system_attributes["Description"].string_value == "Description"
+        assert props.system_attributes["ObjectType"].string_value == "ObjectType"
 
     def test_importing_a_building_system(self):
         ifc = ifcopenshell.file()
@@ -192,12 +197,12 @@ class TestImportSystemAttributes(NewFile):
         system.LongName = "LongName"
         subject().import_system_attributes(system)
         props = tool.System.get_system_props()
-        assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
-        assert props.system_attributes.get("Name").string_value == "Name"
-        assert props.system_attributes.get("Description").string_value == "Description"
-        assert props.system_attributes.get("ObjectType").string_value == "ObjectType"
-        assert props.system_attributes.get("PredefinedType").enum_value == "SHADING"
-        assert props.system_attributes.get("LongName").string_value == "LongName"
+        assert props.system_attributes["GlobalId"].string_value == "GlobalId"
+        assert props.system_attributes["Name"].string_value == "Name"
+        assert props.system_attributes["Description"].string_value == "Description"
+        assert props.system_attributes["ObjectType"].string_value == "ObjectType"
+        assert props.system_attributes["PredefinedType"].enum_value == "SHADING"
+        assert props.system_attributes["LongName"].string_value == "LongName"
 
     def test_importing_a_distribution_system(self):
         ifc = ifcopenshell.file()
@@ -211,12 +216,12 @@ class TestImportSystemAttributes(NewFile):
         system.LongName = "LongName"
         subject().import_system_attributes(system)
         props = tool.System.get_system_props()
-        assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
-        assert props.system_attributes.get("Name").string_value == "Name"
-        assert props.system_attributes.get("Description").string_value == "Description"
-        assert props.system_attributes.get("ObjectType").string_value == "ObjectType"
-        assert props.system_attributes.get("PredefinedType").enum_value == "ELECTRICAL"
-        assert props.system_attributes.get("LongName").string_value == "LongName"
+        assert props.system_attributes["GlobalId"].string_value == "GlobalId"
+        assert props.system_attributes["Name"].string_value == "Name"
+        assert props.system_attributes["Description"].string_value == "Description"
+        assert props.system_attributes["ObjectType"].string_value == "ObjectType"
+        assert props.system_attributes["PredefinedType"].enum_value == "ELECTRICAL"
+        assert props.system_attributes["LongName"].string_value == "LongName"
 
 
 class TestImportSystems(NewFile):
@@ -245,7 +250,7 @@ class TestLoadPorts(NewFile):
         port = ifc.create_entity("IfcDistributionPort")
         subject.load_ports(element, [port])
         obj = tool.Ifc.get_object(port)
-        assert obj
+        assert isinstance(obj, bpy.types.Object)
         assert obj.users_collection
         assert list(obj.location) == [0, 0, 0]
 
@@ -262,11 +267,12 @@ class TestRunRootAssignClass(NewFile):
 
 class TestSelectSystemProducts(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")
-        system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcSystem")
-        ifcopenshell.api.run("system.assign_system", ifc, products=[element], system=system)
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcPump")
+        system = ifcopenshell.api.system.add_system(ifc, ifc_class="IfcSystem")
+        ifcopenshell.api.system.assign_system(ifc, products=[element], system=system)
         obj = bpy.data.objects.new("Object", None)
         bpy.context.scene.collection.objects.link(obj)
         tool.Ifc.link(element, obj)
@@ -278,7 +284,7 @@ class TestSetActiveSystem(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
-        system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcSystem")
+        system = ifcopenshell.api.system.add_system(ifc, ifc_class="IfcSystem")
         subject.set_active_edited_system(system)
         props = tool.System.get_system_props()
         assert props.edited_system_id == system.id()
@@ -294,14 +300,12 @@ class TestFlowElementAndControls(NewFile):
         assert len(subject.get_flow_element_controls(flow_element)) == 0
         assert subject.get_flow_control_flow_element(flow_control) == None
 
-        ifcopenshell.api.run(
-            "system.assign_flow_control",
+        ifcopenshell.api.system.assign_flow_control(
             ifc,
             related_flow_control=flow_control,
             relating_flow_element=flow_element,
         )
-        ifcopenshell.api.run(
-            "system.assign_flow_control",
+        ifcopenshell.api.system.assign_flow_control(
             ifc,
             related_flow_control=flow_control1,
             relating_flow_element=flow_element,

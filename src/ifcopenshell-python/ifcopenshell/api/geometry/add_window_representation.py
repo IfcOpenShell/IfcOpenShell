@@ -17,13 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import sys
 import numpy as np
 import dataclasses
+import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
 from itertools import chain
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from typing import Any, Optional, Literal, Union, overload
 
+DATACLASS_SLOTS = {} if sys.version_info < (3, 10) else {"slots": True}
+ZIP_STRICT = {} if sys.version_info < (3, 10) else {"strict": True}
 
 # SCHEMAS describe panels setup
 # where:
@@ -165,7 +169,7 @@ def window_l_shape_check(
     """`lining_thickness` and `lining_to_panel_offset_x` expected to be defined as a list,
     similarly to `create_ifc_window_frame_simple` `thickness` argument"""
     l_shape_check = lining_to_panel_offset_y_full < lining_depth and any(
-        x_offset < th for th, x_offset in zip(lining_thickness, lining_to_panel_offset_x, strict=True)
+        x_offset < th for th, x_offset in zip(lining_thickness, lining_to_panel_offset_x, **ZIP_STRICT)
     )
     return l_shape_check
 
@@ -207,7 +211,7 @@ def create_ifc_window(
         second_lining_size = lining_size.copy()
         second_lining_size[np_Y] = lining_size[np_Y] - lining_to_panel_offset_y_full
         second_lining_position = V(0, lining_to_panel_offset_y_full, 0)
-        second_lining_thickness = [min(th, x_offset) for th, x_offset in zip(lining_thickness, x_offsets, strict=True)]
+        second_lining_thickness = [min(th, x_offset) for th, x_offset in zip(lining_thickness, x_offsets, **ZIP_STRICT)]
 
         second_lining_items = create_ifc_window_frame_simple(
             builder, second_lining_size, second_lining_thickness, second_lining_position
@@ -237,7 +241,7 @@ def create_ifc_window(
 
 # we use dataclass as we need default values for arguments
 # it's okay to use slots since we don't need dynamic attributes
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass(**DATACLASS_SLOTS)
 class WindowLiningProperties:
     LiningDepth: Optional[float] = None
     """Optional, defaults to 50mm."""
@@ -320,7 +324,7 @@ class WindowLiningProperties:
             setattr(self, attr, default_value * si_conversion)
 
 
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass(**DATACLASS_SLOTS)
 class WindowPanelProperties:
     FrameDepth: Optional[float] = None
     """Frame thickness by Y axis. Optional, defaults to 35 mm."""

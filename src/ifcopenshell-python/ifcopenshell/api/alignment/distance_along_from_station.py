@@ -18,8 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.api.alignment
-import ifcopenshell.api.nest
-import ifcopenshell.guid
 from ifcopenshell import entity_instance
 
 
@@ -45,12 +43,6 @@ def distance_along_from_station(file: ifcopenshell.file, alignment: entity_insta
         print(dist_along) # 100.00
     """
 
-    start_station = 0.0
-    components = ifcopenshell.util.element.get_components(alignment)
-    for c in components:
-        if c.is_a("IfcReferent") and ifcopenshell.util.element.get_predefined_type(c) == "STATION":
-            start_station = ifcopenshell.util.element.get_pset(c, name="Pset_Stationing", prop="Station")
-            break
-
+    start_station = ifcopenshell.api.alignment.get_alignment_station(file, alignment)
     dist_along = station - start_station
     return dist_along

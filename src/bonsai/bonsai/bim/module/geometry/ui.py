@@ -64,6 +64,13 @@ def object_menu(self, context):
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
     self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
+    self.layout.menu("BIM_MT_separate", icon="PLUGIN")
+
+    # only show the create instance operator if the current tool is the BIM tool
+    # if context.space_data and hasattr(context.space_data, "show_object_viewport_mesh"):
+    #    current_tool = context.workspace.tools.from_space_view3d_mode(context.mode, create=False)
+    #    if current_tool and current_tool.idname == "bim.bim_tool":
+    self.layout.operator("bim.create_instance", icon="PLUGIN")
 
 
 def edit_mesh_menu(self, context):
@@ -76,25 +83,20 @@ class BIM_MT_separate(Menu):
     bl_label = "IFC Separate"
 
     def draw(self, context):
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC Selection").type = "SELECTED"
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Material").type = "MATERIAL"
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Loose Parts").type = "LOOSE"
+        assert self.layout
+        self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        self.layout.operator_enum("bim.override_mesh_separate", "type")
 
 
+# TODO: remove as it's the same as BIM_MT_separate?
 class BIM_MT_hotkey_separate(Menu):
     bl_idname = "BIM_MT_hotkey_separate"
     bl_label = "Separate"
 
     def draw(self, context):
+        assert self.layout
         self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons["IFC"].icon_id)
-        self.layout.operator("bim.override_mesh_separate", text="Selection").type = "SELECTED"
-        self.layout.operator("bim.override_mesh_separate", text="By Material").type = "MATERIAL"
-        self.layout.operator("bim.override_mesh_separate", text="By Loose Parts").type = "LOOSE"
-        self.layout.separator()
-        self.layout.label(text="Blender Separate", icon="BLENDER")
-        self.layout.operator("mesh.separate", text="Selection").type = "SELECTED"
-        self.layout.operator("mesh.separate", text="By Material").type = "MATERIAL"
-        self.layout.operator("mesh.separate", text="By Loose Parts").type = "LOOSE"
+        self.layout.operator_enum("bim.override_mesh_separate", "type")
 
 
 class BIM_MT_object_set_origin(Menu):
@@ -102,21 +104,9 @@ class BIM_MT_object_set_origin(Menu):
     bl_label = "IFC Set Origin"
 
     def draw(self, context):
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Geometry to Origin").origin_type = (
-            "GEOMETRY_ORIGIN"
-        )
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Geometry").origin_type = (
-            "ORIGIN_GEOMETRY"
-        )
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Origin to 3D Cursor").origin_type = (
-            "ORIGIN_CURSOR"
-        )
-        self.layout.operator(
-            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Surface)"
-        ).origin_type = "ORIGIN_CENTER_OF_MASS"
-        self.layout.operator(
-            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Volume)"
-        ).origin_type = "ORIGIN_CENTER_OF_VOLUME"
+        assert self.layout
+        self.layout.label(text="IFC Set Origin", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        self.layout.operator_enum("bim.override_origin_set", property="origin_type")
 
 
 def outliner_menu(self, context):
@@ -225,7 +215,7 @@ class BIM_PT_representation_items(Panel):
             RepresentationItemsData.load()
 
         props = tool.Geometry.get_geometry_props()
-        obj = props.representation_obj or tool.Blender.get_active_object()
+        obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
         props = tool.Geometry.get_object_geometry_props(obj)
 
@@ -535,14 +525,22 @@ class BIM_PT_derived_coordinates(Panel):
             text += "*"
         row.operator("bim.edit_object_placement", text=text, icon="EXPORT")
 
-        row = self.layout.row()
+        row = self.layout.row(align=True)
         row.label(text="XYZ Dimensions")
 
         row = self.layout.row(align=True)
         row.enabled = False
-        row.prop(context.active_object, "dimensions", text="X", index=0, slider=True)
-        row.prop(context.active_object, "dimensions", text="Y", index=1, slider=True)
-        row.prop(context.active_object, "dimensions", text="Z", index=2, slider=True)
+        area_3d = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
+        space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None)
+
+        if bpy.context.scene.BIMModelProperties.show_bounding_box:
+            for axis, icon, idx in [("X", "STRIP_COLOR_01", 0), ("Y", "STRIP_COLOR_04", 1), ("Z", "STRIP_COLOR_05", 2)]:
+                row.label(text="", icon=icon)
+                row.prop(context.active_object, "dimensions", text=axis, index=idx)
+        else:
+            row.prop(context.active_object, "dimensions", text="X", index=0)
+            row.prop(context.active_object, "dimensions", text="Y", index=1)
+            row.prop(context.active_object, "dimensions", text="Z", index=2)
 
         row = self.layout.row(align=True)
         row.label(text="Min Global Z")

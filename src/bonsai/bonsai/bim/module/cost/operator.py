@@ -19,12 +19,15 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import bpy
-import ifcopenshell.api
+import textwrap
+import ifcopenshell.api.nest
 import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
-from typing import get_args, TYPE_CHECKING
+from pathlib import Path
+
+from typing import get_args, TYPE_CHECKING, Literal
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -36,16 +39,19 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     object_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        predefined_type = context.scene.BIMCostProperties.cost_schedule_predefined_types
+        props = tool.Cost.get_cost_props()
+        predefined_type = props.cost_schedule_predefined_types
         if predefined_type == "USERDEFINED":
             predefined_type = self.object_type
         core.add_cost_schedule(tool.Ifc, name=self.name, predefined_type=predefined_type)
 
     def draw(self, context):
         layout = self.layout
+        assert layout
+        props = tool.Cost.get_cost_props()
         layout.prop(self, "name", text="Name")
-        layout.prop(context.scene.BIMCostProperties, "cost_schedule_predefined_types", text="Type")
-        if context.scene.BIMCostProperties.cost_schedule_predefined_types == "USERDEFINED":
+        layout.prop(props, "cost_schedule_predefined_types", text="Type")
+        if props.cost_schedule_predefined_types == "USERDEFINED":
             layout.prop(self, "object_type", text="Object type")
 
     def invoke(self, context, event):
@@ -58,10 +64,11 @@ class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Cost.get_cost_props()
         core.edit_cost_schedule(
             tool.Ifc,
             tool.Cost,
-            cost_schedule=tool.Ifc.get().by_id(context.scene.BIMCostProperties.active_cost_schedule_id),
+            cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id),
         )
 
 
@@ -73,6 +80,20 @@ class RemoveCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.remove_cost_schedule(tool.Ifc, tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+
+
+class CopyCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_cost_schedule"
+    bl_label = "Copy Cost Schedule"
+    bl_description = "Create a duplicate of the provided cost schedule."
+    bl_options = {"REGISTER", "UNDO"}
+    cost_schedule: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        cost_schedule: int
+
+    def _execute(self, context):
+        core.copy_cost_schedule(tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
 class EnableEditingCostSchedule(bpy.types.Operator):
@@ -144,8 +165,11 @@ class ExpandCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Expand this cost item"
     cost_item: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        cost_item: int
+
     def _execute(self, context):
-        core.expand_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.expand_cost_item(tool.Cost, cost_item_id=self.cost_item)
 
 
 class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -153,7 +177,6 @@ class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Expand Cost Items"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Expand all cost items"
-    cost_items: bpy.props.StringProperty()
 
     def _execute(self, context):
         core.expand_cost_items(tool.Cost)
@@ -166,8 +189,11 @@ class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Contract a cost item"
     cost_item: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        cost_item: int
+
     def _execute(self, context):
-        core.contract_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.contract_cost_item(tool.Cost, cost_item_id=self.cost_item)
 
 
 class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -175,7 +201,6 @@ class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Contract Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Collapse cost item tree"
-    cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.contract_cost_items(tool.Cost)
@@ -186,6 +211,9 @@ class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        cost_item: int
 
     def _execute(self, context):
         core.remove_cost_item(tool.Ifc, tool.Cost, cost_item_id=self.cost_item)
@@ -264,7 +292,7 @@ class AssignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+    related_object_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
         items=[(i, i, "") for i in get_args(tool.Cost.RELATED_OBJECT_TYPE)],
     )
     prop_name: bpy.props.StringProperty()
@@ -533,10 +561,16 @@ class SelectCostScheduleProducts(bpy.types.Operator):
 class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     bl_idname = "bim.import_cost_schedule_csv"
     bl_label = "Import Cost Schedule CSV"
+    bl_description = "Import cost schedule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
     is_schedule_of_rates: bpy.props.BoolProperty(name="Is Schedule Of Rates", default=False)
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path",
+        description="Store the CSV filepath relative to the currently opened IFC file",
+        default=False,
+    )
 
     @classmethod
     def poll(cls, context):
@@ -547,8 +581,80 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
         return True
 
     def _execute(self, context):
-        core.import_cost_schedule_csv(tool.Cost, self.filepath, self.is_schedule_of_rates)
+
+        store_path = self.filepath
+        if self.use_relative_path:
+            store_path = tool.Ifc.get_uri(self.filepath, use_relative_path=True)
+
+        resolved_path = Path(tool.Ifc.resolve_uri(self.filepath))
+        if not resolved_path.exists():
+            self.report({"ERROR"}, f"File does not exist: '{store_path}' (resolved to '{resolved_path}')")
+            return {"CANCELLED"}
+
+        cost_schedule = core.import_cost_schedule_csv(tool.Cost, str(resolved_path), self.is_schedule_of_rates)
+        if cost_schedule:
+            core.add_csv_filepath(tool.Cost, store_path, self.is_schedule_of_rates, cost_schedule)
+            return {"FINISHED"}
+        return {"CANCELLED"}
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "is_schedule_of_rates")
+        row = self.layout.row()
+        row.prop(self, "use_relative_path")
+
+
+class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.refresh_cost_schedule_csv"
+    bl_label = "Refresh Cost Schedule CSV"
+    bl_description = "Refresh cost schedule data from the associated CSV file"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Cost.get_cost_props()
+        if not props.active_cost_schedule_id:
+            cls.poll_message_set("No active cost schedule")
+            return False
+
+        file_path = tool.Cost.get_cost_schedule_csv_filepath(props.active_cost_schedule_id)
+        if not file_path:
+            cls.poll_message_set("No CSV file associated with this cost schedule")
+            return False
+
+        return True
+
+    def _execute(self, context):
+        core.refresh_cost_schedule_csv(tool.Cost)
         return {"FINISHED"}
+
+
+class RemoveCostScheduleCsvLink(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_cost_schedule_csv_link"
+    bl_label = "Remove CSV Link"
+    bl_description = "Remove the link to the CSV file and delete the related document reference"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Cost.get_cost_props()
+        if not props.active_cost_schedule_id:
+            cls.poll_message_set("No active cost schedule")
+            return False
+
+        file_path = tool.Cost.get_cost_schedule_csv_filepath(props.active_cost_schedule_id)
+        if not file_path:
+            cls.poll_message_set("No CSV file associated with this cost schedule")
+            return False
+
+        return True
+
+    def _execute(self, context):
+        core.remove_cost_schedule_csv_link(tool.Cost)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
 
 
 class AddCostColumn(bpy.types.Operator):
@@ -559,7 +665,8 @@ class AddCostColumn(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.scene.BIMCostProperties.cost_column:
+        props = tool.Cost.get_cost_props()
+        if not props.cost_column:
             cls.poll_message_set("Cost column name is empty")
             return False
         return True
@@ -588,6 +695,36 @@ class LoadCostItemQuantities(bpy.types.Operator):
     def execute(self, context):
         core.load_cost_item_quantities(tool.Cost)
         return {"FINISHED"}
+
+
+class ShowAssignedCostRate(bpy.types.Operator):
+    bl_idname = "bim.show_assigned_cost_rate"
+    bl_label = "Info about the assigned cost item rate"
+    bl_options = {"REGISTER"}
+    parent_cost_schedule_name: bpy.props.StringProperty()
+    assigned_rate_identification: bpy.props.StringProperty()
+    assigned_rate_name: bpy.props.StringProperty()
+    assigned_rate_description: bpy.props.StringProperty()
+    assigned_rate_total_value: bpy.props.FloatProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
+
+    def execute(self, context):
+        # core.load_cost_item_quantities(tool.Cost) IS IT NECESSARY?
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=80)
+        layout.label(text=f"COST SCHEDULE: {self.parent_cost_schedule_name}")
+        layout.label(text=f"ID: {self.assigned_rate_identification}")
+        layout.label(text=f"Name: {self.assigned_rate_name}")
+        layout.label(text="Description:")
+        for line in wrapper.wrap(str(self.assigned_rate_description)):
+            layout.label(text=line)
+        layout.label(text=f"Value: {self.assigned_rate_total_value}")
 
 
 class LoadCostItemElementQuantities(bpy.types.Operator):
@@ -640,7 +777,10 @@ class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.assign_cost_value(
-            tool.Ifc, cost_item=tool.Ifc.get().by_id(self.cost_item), cost_rate=tool.Ifc.get().by_id(self.cost_rate)
+            tool.Ifc,
+            tool.Cost,
+            cost_item=tool.Ifc.get().by_id(self.cost_item),
+            cost_rate=tool.Ifc.get().by_id(self.cost_rate),
         )
 
 
@@ -649,6 +789,9 @@ class ExpandCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Expand Cost Item Rate"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        cost_item: int
 
     def _execute(self, context):
         core.expand_cost_item_rate(tool.Cost, self.cost_item)
@@ -660,6 +803,9 @@ class ContractCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Contract Cost Item Rate"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        cost_item: int
 
     def _execute(self, context):
         core.contract_cost_item_rate(tool.Cost, self.cost_item)
@@ -682,8 +828,9 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules"
     bl_label = "Export Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
-    cost_schedule: bpy.props.IntProperty()
+    bl_description = "Export current/all cost schedules as CSV, XSLX or ODS files to the provided directory."
+
+    cost_schedule: bpy.props.IntProperty(options={"SKIP_SAVE"})
     format: bpy.props.EnumProperty(name="Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
     directory: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_folder: bpy.props.BoolProperty(
@@ -691,17 +838,29 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
         default=True,
     )
 
+    if TYPE_CHECKING:
+        cost_schedule: int
+        format: Literal["CSV", "XLSX", "ODS"]
+        directory: str
+
+    def check(self, context):
+        if self.filepath != self.directory:
+            self.filepath = self.directory
+            return True
+        return False
+
+    @property
+    def filename_ext(self) -> str:
+        return f".{self.format.lower()}"
+
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
         r = core.export_cost_schedules(
-            tool.Cost, filepath=self.directory, format=self.format, cost_schedule=cost_schedule
+            tool.Cost, dirpath=self.directory, format=self.format, cost_schedule=cost_schedule
         )
         if isinstance(r, str):
             self.report({"ERROR"}, r)
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return ExportHelper.invoke(self, context, event)
 
     def draw(self, context):
         self.layout.label(text="Choose a format")
@@ -709,12 +868,184 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
         self.layout.label(text="Select a directory.")
 
 
+class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
+    bl_idname = "bim.export_cost_schedules_to_pdf"
+    bl_label = "Export Cost Schedule to PDF"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Print chosen cost schedule to pdf."
+    filename_ext = ".pdf"
+    filter_glob: bpy.props.StringProperty(default="*.pdf", options={"HIDDEN"}, maxlen=255)
+
+    cost_schedules_items = []
+
+    def get_cost_schedules_enum_items(self, context):
+        return ExportCostSchedulesToPDF.cost_schedules_items
+
+    cost_schedules_enum: bpy.props.EnumProperty(
+        name="",
+        description="Choose IfcCostSchedule to print",
+        items=get_cost_schedules_enum_items,
+    )
+
+    nested_structure_depth: bpy.props.IntProperty(
+        name="Nested structure depth: ",
+        description="Define till which level of the structure the parent cost items are displayed.\n0: display the full structure.",
+        default=0,
+        min=0,
+        max=9,
+    )
+    parent_to_new_page_up_to_depth: bpy.props.IntProperty(
+        name="Parents to new page up to depth: ",
+        description="Define till which level of the structure the parent is printed to a new page.\n0: no parent is split to a new page.",
+        default=0,
+        min=0,
+        max=9,
+    )
+    show_only_parents: bpy.props.BoolProperty(
+        name="Show only parent cost items",
+        description="Hide cost items and show only container costs",
+        default=False,
+    )
+    should_print_cover: bpy.props.BoolProperty(
+        name="Cover page",
+        description="Create a cover page with project data",
+        default=False,
+    )
+    should_print_description: bpy.props.BoolProperty(
+        name="Full Cost Items Description",
+        description="Export the full description if present",
+        default=True,
+    )
+    should_print_cost_ids: bpy.props.BoolProperty(
+        name="Print Cost Identification",
+        description="Print Cost Identification under Cost Name if present",
+        default=True,
+    )
+    should_print_each_quantity: bpy.props.BoolProperty(
+        name="Show each quantity",
+        description="Export the full list of quantities",
+        default=False,
+    )
+    should_print_each_cost_value: bpy.props.BoolProperty(
+        name="Show each cost value",
+        description="Export the full list of cost values\nassociated with each cost item\nin the schedule of rates",
+        default=False,
+    )
+    should_print_rates: bpy.props.BoolProperty(
+        name="Rates and totals",
+        description="Print rates and totals for each voice",
+        default=True,
+    )
+    should_print_summary: bpy.props.BoolProperty(
+        name="Final Summary",
+        description="Print summary at the end of the document",
+        default=True,
+    )
+    force_schedule_type: bpy.props.EnumProperty(
+        name="Output type",
+        description='Force the output to this type.\n"Auto" defaults to selected cost schedule Predefined Type',
+        items=[
+            (
+                "AUTO",
+                "By PredefinedType",
+                "Uses Cost Schedule Predefined Type",
+            ),
+            (
+                "PRICEDBILLOFQUANTITIES",
+                "Priced Bill of Quantities",
+                "Forces the output as a priced bill of quantities",
+            ),
+            (
+                "SCHEDULEOFRATES",
+                "Schedule of Rates",
+                "Forces the output as a schedule of rates",
+            ),
+        ],
+        default="AUTO",
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        box = layout.box()
+        box.label(text="Select Ifc Cost Schedule:")
+        box.prop(self, "cost_schedules_enum", text="")
+        layout.separator()
+        box = layout.box()
+        box.label(text="Nested cost structure:")
+        box.prop(self, "nested_structure_depth")
+        layout.separator()
+        box = layout.box()
+        box.label(text="PDF Document properties:")
+        box.prop(self, "should_print_cover")
+        box.prop(self, "should_print_cost_ids")
+        box.prop(self, "should_print_description")
+        box.prop(self, "should_print_each_quantity")
+        box.prop(self, "should_print_rates")
+        box.prop(self, "should_print_summary")
+        box.prop(self, "force_schedule_type")
+
+    @classmethod
+    def poll(cls, context):
+        try:
+            import typst
+
+            return True
+        except:
+            cls.poll_message_set(
+                "Typst not available.\nIt can be installed from Quality and\nControl -> Debug and using 'typst' with Pip Install.\n(Run Blender as Administrator)"
+            )
+            return False
+
+    def invoke(self, context, event):
+        ExportCostSchedulesToPDF.cost_schedules_items.clear()
+        file = tool.Ifc.get()
+        schedules = file.by_type("IfcCostSchedule")
+        for schedule in schedules:
+            ExportCostSchedulesToPDF.cost_schedules_items.append(
+                (
+                    str(schedule.id()),
+                    "{} ({})".format(
+                        schedule.Name if schedule.Name is not None else "Unnamed",
+                        schedule.PredefinedType if schedule.PredefinedType is not None else "UNTYPED",
+                    ),
+                    "",
+                )
+            )
+        return ExportHelper.invoke(self, context, event)
+
+    def execute(self, context):
+        file = tool.Ifc.get()
+        self.props = tool.Cost.get_cost_props()
+        cost_schedule = file.by_id(int(self.cost_schedules_enum))
+        options = {
+            "nested_structure_depth": self.nested_structure_depth,
+            "parent_to_new_page_up_to_depth": self.parent_to_new_page_up_to_depth,
+            "show_only_parents": self.show_only_parents,
+            "should_print_cover": self.should_print_cover,
+            "should_print_cost_ids": self.should_print_cost_ids,
+            "should_print_description": self.should_print_description,
+            "should_print_each_quantity": self.should_print_each_quantity,
+            "should_print_each_cost_value": self.should_print_each_cost_value,
+            "should_print_rates": self.should_print_rates,
+            "should_print_summary": self.should_print_summary,
+        }
+
+        core.export_cost_schedules_to_pdf(
+            tool.Cost,
+            filepath=self.filepath,
+            cost_schedule=cost_schedule,
+            options=options,
+            force_schedule_type=self.force_schedule_type,
+        )
+        return {"FINISHED"}
+
+
 class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.clear_cost_item_assignments"
     bl_label = "Clear Cost Item Product Assignments"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+    related_object_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
         items=[(i, i, "") for i in get_args(tool.Cost.RELATED_OBJECT_TYPE)],
     )
 
@@ -770,13 +1101,10 @@ class ReorderCostItem(bpy.types.Operator, tool.Ifc.Operator):
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifcopenshell.api.run(
-            "nest.reorder_nesting",
+        ifcopenshell.api.nest.reorder_nesting(
             tool.Ifc.get(),
-            **{
-                "item": tool.Ifc.get().by_id(self.cost_item),
-                "new_index": self.new_index,
-            },
+            item=tool.Ifc.get().by_id(self.cost_item),
+            new_index=self.new_index,
         )
         tool.Cost.load_cost_schedule_tree()
 

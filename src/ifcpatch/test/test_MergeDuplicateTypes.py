@@ -21,6 +21,10 @@ import pytest
 import ifcpatch
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.root
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import test.bootstrap
@@ -30,26 +34,24 @@ class TestMergeDuplicateTypes(test.bootstrap.IFC4):
     def test_run(self):
         context = self.file.createIfcGeometricRepresentationContext()
 
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall_type1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType", name="WallType")
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="WallType")
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall_type1, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, products=[wall_type1], type="IfcMaterialLayerSet")
-        ifcopenshell.api.run(
-            "type.assign_type",
+        ifcopenshell.api.geometry.assign_representation(self.file, product=wall_type1, representation=rep)
+        ifcopenshell.api.material.assign_material(self.file, products=[wall_type1], type="IfcMaterialLayerSet")
+        ifcopenshell.api.type.assign_type(
             self.file,
             related_objects=[wall1],
             relating_type=wall_type1,
             should_map_representations=False,
         )
 
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType", name="WallType")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="WallType")
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall_type2, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, products=[wall_type2], type="IfcMaterialLayerSet")
-        ifcopenshell.api.run(
-            "type.assign_type",
+        ifcopenshell.api.geometry.assign_representation(self.file, product=wall_type2, representation=rep)
+        ifcopenshell.api.material.assign_material(self.file, products=[wall_type2], type="IfcMaterialLayerSet")
+        ifcopenshell.api.type.assign_type(
             self.file,
             related_objects=[wall2],
             relating_type=wall_type2,

@@ -28,7 +28,9 @@ from typing import Optional
 class Interface(abc.ABC): pass
 def interface(cls):
     attrs = {n: classmethod(abc.abstractmethod(f)) for n, f in inspect.getmembers(cls, predicate=inspect.isfunction)}
-    return type(cls.__name__, (Interface, cls), attrs)
+    new_cls = type(cls.__name__, (Interface, cls), attrs)
+    new_cls.__original_qualname__ = cls.__module__ + "." + cls.__qualname__
+    return new_cls
 
 
 # ############################################################################ #
@@ -74,6 +76,11 @@ class Aggregate:
 
 
 @interface
+class Attribute:
+    pass
+
+
+@interface
 class Bcf:
     pass
 
@@ -94,6 +101,7 @@ class Blender:
     def get_viewport_context(cls): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def is_ifc_object(cls, obj): pass
+    def remove_object(cls, obj): pass
     def set_active_object(cls, obj): pass
     def update_viewport(cls): pass
 
@@ -200,7 +208,7 @@ class Cost:
     def change_parent_cost_item(cls, cost_item, new_parent): pass
     def clean_up_cost_item_tree(cls, cost_item): pass
     def contract_cost_item_rate(cls, cost_item): pass
-    def contract_cost_item(cls, cost_item): pass
+    def contract_cost_item(cls, cost_item_id): pass
     def contract_cost_items(cls): pass
     def create_new_cost_item_li(props_collection, cost_item, level_index, type): pass
     def disable_editing_cost_item_parent(cls): pass
@@ -217,14 +225,16 @@ class Cost:
     def enable_editing_cost_items(cls, cost_schedule): pass
     def enable_editing_cost_schedule_attributes(cls, cost_schedule): pass
     def expand_cost_item_rate(cls, cost_item): pass
-    def expand_cost_item(cls, cost_item): pass
+    def expand_cost_item(cls, cost_item_id): pass
     def expand_cost_items(cls): pass
     def export_cost_schedules(cls, filepath, format, cost_schedule): pass
+    def export_cost_schedules_to_pdf(cls, filepath, cost_schedule, options): pass
     def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
     def get_active_cost_schedule(cls): pass
     def get_active_cost_schedule(cls): pass
     def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
+    def get_assigned_rate_cost_item(cls, cost_item): pass
     def get_cost_item_attributes(cls, cost_item): pass
     def get_cost_item_products(cls): pass
     def get_cost_item_quantity_attributes(cls): pass
@@ -246,6 +256,10 @@ class Cost:
     def has_schedules(cls): pass
     def highlight_cost_item(cls, cost_item): pass
     def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
+    def add_csv_filepath(cls, file_path, is_schedule_of_rates, cost_schedule): pass
+    def remove_csv_filepath(cls, cost_schedule): pass
+    def delete_all_cost_items(cls): pass
+    def refresh_cost_schedule_csv(cls): pass
     def is_active_schedule_of_rates(cls): pass
     def is_cost_schedule_active(cls, cost_schedule): pass
     def is_root_cost_item(cls, cost_item): pass
@@ -297,7 +311,7 @@ class Drawing:
     def copy_representation(cls, source, dest): pass
     def create_annotation_context(cls, target_view, object_type=None): pass
     def create_annotation_object(cls, drawing, object_type): pass
-    def create_camera(cls, name, matrix, location_hint): pass
+    def create_camera(cls, name, matrix, location_hint, target_view): pass
     def create_svg_schedule(cls, schedule): pass
     def create_svg_sheet(cls, document, titleblock): pass
     def delete_collection(cls, collection): pass
@@ -401,6 +415,7 @@ class Geometry:
     def delete_ifc_object(cls, obj): pass
     def delete_opening_object_placement(cls, opening): pass
     def does_representation_id_exist(cls, representation_id): pass
+    def duplicate_ifc_objects(cls, objects_to_duplicate, active_object=None, duplicate_ifc_objects=None): pass
     def duplicate_object_data(cls, obj): pass
     def get_blender_offset_type(cls, obj): pass
     def get_cartesian_point_offset(cls, obj): pass
@@ -528,7 +543,6 @@ class Material:
     def ensure_material_assigned(cls, elements, material_type, material): pass
     def ensure_material_unassigned(cls, elements): pass
     def ensure_new_material_set_is_valid(cls, material): pass
-    def get_active_material_item(cls): pass
     def get_active_material_type(cls): pass
     def get_default_material(cls): pass
     def get_elements_by_material(cls, material): pass
@@ -558,7 +572,7 @@ class Misc:
     def run_root_copy_class(cls, obj=None): pass
     def scale_object_to_height(cls, obj, height): pass
     def set_object_origin_to_bottom(cls, obj): pass
-    def split_objects_with_cutter(cls, objs, cutter): pass
+    def boolean_objects_with_cutter(cls, objs, cutter): pass
 
 
 @interface
@@ -643,6 +657,11 @@ class Owner:
     def set_person(cls, person): pass
     def set_role(cls, role): pass
     def set_user(cls, user): pass
+    def get_application(cls): pass
+    def set_application(cls, application): pass
+    def clear_application(cls): pass
+    def import_application_attributes(cls): pass
+    def export_application_attributes(cls): pass
 
 
 @interface
@@ -913,7 +932,7 @@ class Spatial:
     def filter_products(cls, products, action): pass
     def get_active_container(cls): pass
     def get_container(cls, element): pass
-    def get_decomposed_elements(cls, container): pass
+    def get_decomposed_elements(cls, container, recursive): pass
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
     def get_selected_product_types(cls): pass

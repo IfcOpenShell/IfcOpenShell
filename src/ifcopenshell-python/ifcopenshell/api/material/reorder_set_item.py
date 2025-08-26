@@ -28,15 +28,11 @@ def reorder_set_item(
 
     :param material_set: The IfcMaterialSet which you want to reorder an
         item in.
-    :type material_set: ifcopenshell.entity_instance
     :param old_index: The index of the item you want to move. This starts
         counting from 0.
-    :type old_index: int
     :param new_index: The index of the new position the item will move to.
         This starts counting from 0.
-    :type new_index: int
     :return: None
-    :rtype: None
 
     Example:
 

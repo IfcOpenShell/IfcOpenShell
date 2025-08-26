@@ -20,6 +20,8 @@ import os
 import pytest
 import xmlschema
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.material
 from ifctester import ids
 from typing import Optional
 
@@ -116,7 +118,7 @@ class TestIds:
 
     def test_authoring_an_ids_with_no_specifications_is_invalid(self):
         specs = ids.Ids()
-        with pytest.raises(xmlschema.validators.exceptions.XMLSchemaChildrenValidationError):
+        with pytest.raises(xmlschema.validators.exceptions.XMLSchemaValidationError):
             specs.to_string()
 
     def test_saving_to_xml(self):

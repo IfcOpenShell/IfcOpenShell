@@ -32,7 +32,6 @@ classes = (
     operator.SetGroupVisibility,
     operator.ToggleGroup,
     operator.UnassignGroup,
-    prop.ExpandedGroups,
     prop.Group,
     prop.BIMGroupProperties,
     ui.BIM_PT_groups,
@@ -43,9 +42,7 @@ classes = (
 
 def register():
     bpy.types.Scene.BIMGroupProperties = bpy.props.PointerProperty(type=prop.BIMGroupProperties)
-    bpy.types.Scene.ExpandedGroups = bpy.props.PointerProperty(type=prop.ExpandedGroups)
 
 
 def unregister():
     del bpy.types.Scene.BIMGroupProperties
-    del bpy.types.Scene.ExpandedGroups

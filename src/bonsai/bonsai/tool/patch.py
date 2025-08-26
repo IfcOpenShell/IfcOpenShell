@@ -42,7 +42,7 @@ class Patch(bonsai.core.tool.Patch):
     @classmethod
     def is_filepath_argument(cls, arg_info: ifcpatch.InputDoc) -> bool:
         # There is probably a more explicit way to do this
-        return "filepath" in arg_info["name"] or "filter_glob" in arg_info
+        return "filepath" in arg_info["name"] or arg_info["name"].endswith("_dir") or "filter_glob" in arg_info
 
     @classmethod
     def does_patch_has_output(cls, recipe: str) -> bool:

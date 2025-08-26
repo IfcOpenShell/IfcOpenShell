@@ -31,9 +31,7 @@ def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.
 
     :param related_objects: The list of children of the nesting relationship,
         typically IfcElements.
-    :type related_objects: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 
@@ -66,7 +64,7 @@ def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.
         cur_related_objects = [o for o in rel.RelatedObjects if o not in related_objects_set]
         if cur_related_objects:
             rel.RelatedObjects = cur_related_objects
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
         else:
             history = rel.OwnerHistory
             file.remove(rel)

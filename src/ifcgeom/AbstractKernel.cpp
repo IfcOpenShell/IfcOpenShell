@@ -22,6 +22,16 @@
 using namespace ifcopenshell::geometry;
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::ptr item, IfcGeom::ConversionResults& results) {
+	if (settings_.get<settings::CacheShapes>().get()) {
+		auto it = cache_.find(item);
+		if (it != cache_.end()) {
+			results = it->second;
+			Logger::Notice("Cache hit #" + std::to_string(item->instance->as<IfcUtil::IfcBaseEntity>()->id()) +
+				" -> #" + std::to_string(it->first->instance->as<IfcUtil::IfcBaseEntity>()->id()));
+			return true;
+		}
+	}
+
 	auto with_exception_handling = [&](auto fn) {
 		try {
 			return fn();
@@ -44,11 +54,18 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 		}
 	};
 
+	bool res;
 	if (propagate_exceptions) {
-		return without_exception_handling(process_with_upgrade);
+		res = without_exception_handling(process_with_upgrade);
 	} else {
-		return with_exception_handling(process_with_upgrade);
+		res = with_exception_handling(process_with_upgrade);
 	}
+
+	if (settings_.get<settings::CacheShapes>().get() && res) {
+		cache_.insert({ item, results });
+	}
+
+	return res;
 }
 
 const Settings& ifcopenshell::geometry::kernels::AbstractKernel::settings() const
@@ -212,6 +229,7 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 
 		for (auto it = kernels.begin(); it != kernels.end(); ++it) {
 			(**it).propagate_exceptions = it == kernels.begin();
+			(**it).partial_success_is_success = it == kernels.end() - 1;
 		}
 
 		if (!kernels.empty()) {
@@ -225,7 +243,9 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::collection::ptr collection, IfcGeom::ConversionResults& r) {
 	auto s = r.size();
 	for (auto& c : collection->children) {
-		convert(c, r);
+		if (!convert(c, r) && !partial_success_is_success) {
+			return false;
+		}
 	}
 	for (auto i = s; i < r.size(); ++i) {
 		if (collection->matrix) {

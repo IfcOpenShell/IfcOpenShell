@@ -1,4 +1,9 @@
 import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Vector
 
@@ -76,30 +81,28 @@ def generate_desk_test():
 
 
 def mirror_placement_test():
-    ifc_file = ifcopenshell.api.run("project.create_file")
-    project = ifcopenshell.api.run(
-        "root.create_entity", ifc_file, ifc_class="IfcProject", name=f"Non-structural assets library"
+    ifc_file = ifcopenshell.api.project.create_file()
+    project = ifcopenshell.api.root.create_entity(
+        ifc_file, ifc_class="IfcProject", name=f"Non-structural assets library"
     )
-    library = ifcopenshell.api.run(
-        "root.create_entity", ifc_file, ifc_class="IfcProjectLibrary", name=f"Non-structural assets library"
+    library = ifcopenshell.api.root.create_entity(
+        ifc_file, ifc_class="IfcProjectLibrary", name=f"Non-structural assets library"
     )
-    ifcopenshell.api.run("project.assign_declaration", ifc_file, definitions=[library], relating_context=project)
-    unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
-    ifcopenshell.api.run("unit.assign_unit", ifc_file, units=[unit])
-    model = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Model")
-    plan = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Plan")
+    ifcopenshell.api.project.assign_declaration(ifc_file, definitions=[library], relating_context=project)
+    unit = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
+    ifcopenshell.api.unit.assign_unit(ifc_file, units=[unit])
+    model = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+    plan = ifcopenshell.api.context.add_context(ifc_file, context_type="Plan")
 
     representations = {
-        "body": ifcopenshell.api.run(
-            "context.add_context",
+        "body": ifcopenshell.api.context.add_context(
             ifc_file,
             context_type="Model",
             context_identifier="Body",
             target_view="MODEL_VIEW",
             parent=model,
         ),
-        "annotation": ifcopenshell.api.run(
-            "context.add_context",
+        "annotation": ifcopenshell.api.context.add_context(
             ifc_file,
             context_type="Plan",
             context_identifier="Annotation",
@@ -136,38 +139,36 @@ def mirror_placement_test():
 
     representation_3d = builder.get_representation(context=representations["body"], items=items_3d)
 
-    element = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcFurnitureType", name="test")
-    ifcopenshell.api.run("geometry.assign_representation", ifc_file, product=element, representation=representation_3d)
-    ifcopenshell.api.run("project.assign_declaration", ifc_file, definitions=[element], relating_context=library)
+    element = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcFurnitureType", name="test")
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=representation_3d)
+    ifcopenshell.api.project.assign_declaration(ifc_file, definitions=[element], relating_context=library)
 
     ifc_file.write("tmp.ifc")
 
 
 def curve_between_two_points_test():
-    ifc_file = ifcopenshell.api.run("project.create_file")
-    project = ifcopenshell.api.run(
-        "root.create_entity", ifc_file, ifc_class="IfcProject", name=f"Non-structural assets library"
+    ifc_file = ifcopenshell.api.project.create_file()
+    project = ifcopenshell.api.root.create_entity(
+        ifc_file, ifc_class="IfcProject", name=f"Non-structural assets library"
     )
-    library = ifcopenshell.api.run(
-        "root.create_entity", ifc_file, ifc_class="IfcProjectLibrary", name=f"Non-structural assets library"
+    library = ifcopenshell.api.root.create_entity(
+        ifc_file, ifc_class="IfcProjectLibrary", name=f"Non-structural assets library"
     )
-    ifcopenshell.api.run("project.assign_declaration", ifc_file, definitions=[library], relating_context=project)
-    unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
-    ifcopenshell.api.run("unit.assign_unit", ifc_file, units=[unit])
-    model = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Model")
-    plan = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Plan")
+    ifcopenshell.api.project.assign_declaration(ifc_file, definitions=[library], relating_context=project)
+    unit = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
+    ifcopenshell.api.unit.assign_unit(ifc_file, units=[unit])
+    model = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+    plan = ifcopenshell.api.context.add_context(ifc_file, context_type="Plan")
 
     representations = {
-        "body": ifcopenshell.api.run(
-            "context.add_context",
+        "body": ifcopenshell.api.context.add_context(
             ifc_file,
             context_type="Model",
             context_identifier="Body",
             target_view="MODEL_VIEW",
             parent=model,
         ),
-        "annotation": ifcopenshell.api.run(
-            "context.add_context",
+        "annotation": ifcopenshell.api.context.add_context(
             ifc_file,
             context_type="Plan",
             context_identifier="Annotation",
@@ -199,9 +200,9 @@ def curve_between_two_points_test():
     representation_2d = builder.get_representation(context=representations["annotation"], items=items_2d)
 
     print(representation_2d)
-    element = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcFurnitureType", name="test")
-    ifcopenshell.api.run("geometry.assign_representation", ifc_file, product=element, representation=representation_2d)
-    ifcopenshell.api.run("project.assign_declaration", ifc_file, definitions=[element], relating_context=library)
+    element = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcFurnitureType", name="test")
+    ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=representation_2d)
+    ifcopenshell.api.project.assign_declaration(ifc_file, definitions=[element], relating_context=library)
 
     ifc_file.write("tmp.ifc")
 

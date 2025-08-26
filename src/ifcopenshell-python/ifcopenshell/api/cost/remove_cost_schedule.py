@@ -28,9 +28,7 @@ def remove_cost_schedule(file: ifcopenshell.file, cost_schedule: ifcopenshell.en
     including all cost items.
 
     :param cost_schedule: The IfcCostSchedule entity you want to remove
-    :type cost_schedule: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

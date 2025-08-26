@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -23,10 +24,15 @@ import bonsai.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
 from bonsai.bim.module.classification.data import (
     ClassificationsData,
-    ClassificationReferencesData,
+    ObjectClassificationsData,
     MaterialClassificationsData,
     CostClassificationsData,
+    ZoneClassificationsData,
 )
+from typing import TYPE_CHECKING, Any, Union
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.classification.prop import BIMClassificationProperties, ClassificationReference
 
 
 class BIM_PT_classifications(Panel):
@@ -46,7 +52,8 @@ class BIM_PT_classifications(Panel):
         if not ClassificationsData.is_loaded:
             ClassificationsData.load()
 
-        self.props = context.scene.BIMClassificationProperties
+        self.props = tool.Classification.get_classification_props()
+        assert self.layout
 
         row = self.layout.row(align=True)
         row.label(text="Source", icon="OUTLINER")
@@ -54,10 +61,10 @@ class BIM_PT_classifications(Panel):
 
         if self.props.classification_source == "FILE":
             self.draw_add_file_ui(context)
-        elif self.props.classification_source == "BSDD":
-            self.draw_add_bsdd_ui(context)
         elif self.props.classification_source == "MANUAL":
             self.draw_add_manual_ui(context)
+        else:
+            self.draw_add_bsdd_ui(context)
 
         for classification in ClassificationsData.data["classifications"]:
             if self.props.active_classification_id == classification["id"]:
@@ -76,16 +83,6 @@ class BIM_PT_classifications(Panel):
             row.operator("bim.enable_adding_manual_classification", text="Add Classification", icon="ADD")
 
     def draw_add_bsdd_ui(self, context):
-        self.bprops = context.scene.BIMBSDDProperties
-
-        if not self.bprops.active_domain:
-            row = self.layout.row()
-            row.label(text="No Active bSDD Domain", icon="ERROR")
-            return
-
-        row = self.layout.row()
-        row.label(text="Active: " + self.bprops.active_domain, icon="URL")
-
         row = self.layout.row()
         row.operator("bim.add_classification_from_bsdd", icon="ADD")
 
@@ -116,13 +113,32 @@ class BIM_PT_classifications(Panel):
 
 
 class ReferenceUI:
-    layout: bpy.types.UILayout
+    layout: Union[bpy.types.UILayout, None]
+    data: type[
+        Union[
+            ObjectClassificationsData,
+            MaterialClassificationsData,
+            CostClassificationsData,
+            ZoneClassificationsData,
+        ]
+    ]
 
-    def draw_ui(self, context):
-        obj = context.active_object
-        self.sprops = context.scene.BIMClassificationProperties
-        self.bprops = context.scene.BIMBSDDProperties
-        self.props = context.scene.BIMClassificationReferenceProperties
+    obj: str
+    """Object name."""
+
+    def get_object_name(self, context: bpy.types.Context) -> str:
+        return ""
+
+    def draw(self, context: bpy.types.Context) -> None:
+        if not self.data.is_loaded:
+            self.data.load()
+        self.obj = self.get_object_name(context)
+        self.draw_ui(context)
+
+    def draw_ui(self, context: bpy.types.Context) -> None:
+        self.sprops = tool.Classification.get_classification_props()
+        self.bprops = tool.Bsdd.get_bsdd_props()
+        self.props = tool.Classification.get_classification_reference_props()
         self.file = tool.Ifc.get()
 
         self.draw_add_ui(context)
@@ -137,47 +153,36 @@ class ReferenceUI:
             else:
                 self.draw_reference_ui(reference)
 
-    def draw_add_ui(self, context):
+    def draw_add_ui(self, context: bpy.types.Context) -> None:
         row = self.layout.row(align=True)
         row.label(text="Source", icon="OUTLINER")
         row.prop(self.sprops, "classification_source", text="")
 
         if self.sprops.classification_source == "FILE":
             self.draw_add_file_ui(context)
-        elif self.sprops.classification_source == "BSDD":
-            self.draw_add_bsdd_ui(context)
         elif self.sprops.classification_source == "MANUAL":
             self.draw_add_manual_ui(context)
+        else:
+            self.draw_add_bsdd_ui(context)
 
-    def draw_add_manual_ui(self, context):
+    def draw_add_manual_ui(self, context: object) -> None:
         row = self.layout.row()
         row.prop(self.props, "classifications", text="")
         if self.props.is_adding:
             bonsai.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
             row = self.layout.row(align=True)
             op = row.operator("bim.add_manual_classification_reference", text="Save", icon="CHECKMARK")
-            op.obj_type = self.data.data["object_type"]
+            op.obj_type = self.data.obj_type
             row.operator("bim.disable_adding_manual_classification_reference", text="", icon="CANCEL")
         else:
             row = self.layout.row()
             row.operator("bim.enable_adding_manual_classification_reference", text="Add Reference", icon="ADD")
 
-    def draw_add_bsdd_ui(self, context):
-        if not self.bprops.active_domain:
-            row = self.layout.row()
-            row.label(text="No Active bSDD Domain", icon="ERROR")
-            return
-
-        row = self.layout.row()
-        row.label(text="Active: " + self.bprops.active_domain, icon="URL")
-
+    def draw_add_bsdd_ui(self, context: object) -> None:
         row = self.layout.row(align=True)
         row.prop(self.bprops, "keyword", text="")
+        row.prop(self.bprops, "should_filter_ifc_class", text="", icon="FILTER")
         row.operator("bim.search_bsdd_classifications", text="", icon="VIEWZOOM")
-
-        row = self.layout.row()
-        row.prop(self.bprops, "should_filter_ifc_class")
-        row.prop(self.bprops, "use_only_ifc_properties")
 
         if len(self.bprops.classifications):
             self.layout.template_list(
@@ -198,24 +203,9 @@ class ReferenceUI:
                 "bim.add_classification_reference_from_bsdd", text="Add Classification Reference", icon="ADD"
             )
             op.obj = self.obj
-            op.obj_type = self.obj_type
-            row.operator("bim.get_bsdd_classification_properties", text="", icon="COPY_ID")
+            op.obj_type = self.data.obj_type
 
-            if len(self.bprops.classification_psets):
-                use_only_ifc_properties = self.bprops.use_only_ifc_properties
-                for pset in self.bprops.classification_psets:
-                    properties = pset.properties
-                    if use_only_ifc_properties:
-                        properties = [p for p in properties if p.metadata == "IFC"]
-                    if not properties:
-                        continue
-
-                    box = self.layout.box()
-                    row = box.row()
-                    row.label(text=pset.name, icon="COPY_ID")
-                    bonsai.bim.helper.draw_attributes(properties, box)
-
-    def draw_add_file_ui(self, context):
+    def draw_add_file_ui(self, context: object) -> None:
         if not self.data.data["active_classification_library"]:
             row = self.layout.row(align=True)
             row.label(text="No Active Classification Library", icon="ERROR")
@@ -235,7 +225,7 @@ class ReferenceUI:
         if self.sprops.active_library_reference_index < len(self.sprops.available_library_references):
             op = row.operator("bim.add_classification_reference", text="", icon="ADD")
             op.obj = self.obj
-            op.obj_type = self.obj_type
+            op.obj_type = self.data.obj_type
             op.reference = self.sprops.available_library_references[
                 self.sprops.active_library_reference_index
             ].ifc_definition_id
@@ -249,13 +239,13 @@ class ReferenceUI:
             "active_library_reference_index",
         )
 
-    def draw_editable_ui(self):
+    def draw_editable_ui(self) -> None:
         row = self.layout.row(align=True)
         row.operator("bim.edit_classification_reference", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
         bonsai.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
 
-    def draw_reference_ui(self, reference):
+    def draw_reference_ui(self, reference: dict[str, Any]) -> None:
         row = self.layout.row(align=True)
         if self.file.schema == "IFC2X3":
             name = reference["ItemReference"] or "No Identification"
@@ -271,7 +261,7 @@ class ReferenceUI:
         op = row.operator("bim.remove_classification_reference", text="", icon="X")
         op.reference = reference["id"]
         op.obj = self.obj
-        op.obj_type = self.obj_type
+        op.obj_type = self.data.obj_type
 
 
 class BIM_PT_classification_references(Panel, ReferenceUI):
@@ -283,19 +273,15 @@ class BIM_PT_classification_references(Panel, ReferenceUI):
     bl_context = "object"
     bl_parent_id = "BIM_PT_tab_object_metadata"
 
+    data = ObjectClassificationsData
+
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        return bool(tool.Ifc.get_entity(context.active_object))
+        return bool((obj := context.active_object) and tool.Ifc.get_entity(obj))
 
-    def draw(self, context):
-        if not ClassificationReferencesData.is_loaded:
-            ClassificationReferencesData.load()
-        self.data = ClassificationReferencesData
-        self.obj = context.active_object.name
-        self.obj_type = "Object"
-        self.draw_ui(context)
+    def get_object_name(self, context: bpy.types.Context) -> str:
+        assert (obj := context.active_object)
+        return obj.name
 
 
 class BIM_PT_material_classifications(Panel, ReferenceUI):
@@ -307,6 +293,8 @@ class BIM_PT_material_classifications(Panel, ReferenceUI):
     bl_context = "scene"
     bl_parent_id = "BIM_PT_materials"
 
+    data = MaterialClassificationsData
+
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get():
@@ -315,14 +303,6 @@ class BIM_PT_material_classifications(Panel, ReferenceUI):
         if props.is_editing and (material := props.active_material) and material.ifc_definition_id:
             return True
         return False
-
-    def draw(self, context):
-        if not MaterialClassificationsData.is_loaded:
-            MaterialClassificationsData.load()
-        self.data = MaterialClassificationsData
-        self.obj = ""
-        self.obj_type = "Material"
-        self.draw_ui(context)
 
 
 class BIM_PT_cost_classifications(Panel, ReferenceUI):
@@ -334,23 +314,44 @@ class BIM_PT_cost_classifications(Panel, ReferenceUI):
     bl_context = "scene"
     bl_parent_id = "BIM_PT_cost_schedules"
 
+    data = CostClassificationsData
+
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get():
             return False
-        return bool(context.scene.BIMCostProperties.cost_items)
+        props = tool.Cost.get_cost_props()
+        return bool(props.cost_items)
 
-    def draw(self, context):
-        if not CostClassificationsData.is_loaded:
-            CostClassificationsData.load()
-        self.data = CostClassificationsData
-        self.obj = ""
-        self.obj_type = "Cost"
-        self.draw_ui(context)
+
+class BIM_PT_zone_classifications(Panel, ReferenceUI):
+    bl_label = "Zone Classifications"
+    bl_idname = "BIM_PT_zone_classifications"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_zones"
+
+    data = ZoneClassificationsData
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.System.get_zone_props()
+        return bool(props.active_zone)
 
 
 class BIM_UL_classifications(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMClassificationProperties,
+        item: ClassificationReference,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             if item.has_references:
                 op = layout.operator("bim.change_classification_level", text="", icon="DISCLOSURE_TRI_RIGHT")

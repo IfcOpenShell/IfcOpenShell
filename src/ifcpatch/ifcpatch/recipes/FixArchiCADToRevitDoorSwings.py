@@ -17,17 +17,21 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
+import logging
 import math
+import os
+from typing import Union
+
+import ifcpatch
 import ifcopenshell
 import ifcopenshell.geom
-import ifcopenshell.util.unit
-import ifcopenshell.util.schema
 import ifcopenshell.util.element
+import ifcopenshell.util.schema
+import ifcopenshell.util.unit
 
 
-class Patcher:
-    def __init__(self, file, logger):
+class Patcher(ifcpatch.BasePatcher):
+    def __init__(self, file: ifcopenshell.file, logger: Union[logging.Logger, None] = None):
         """Fix missing door swings in Revit when viewing ArchiCAD IFCs
 
         ArchiCAD has the ability to store 2D data with objects like doors for
@@ -56,10 +60,9 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
         """
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
 
-    def patch(self):
+    def patch(self) -> None:
         # Revit has the ability to switch between 3D representations and 2D
         # representations (e.g. in plan view). It does this by detecting IFC
         # representations that belong to either the Model Body representation
@@ -166,9 +169,9 @@ class Patcher:
             related_elements.append(door_copy)
             door.ContainedInStructure[0].RelatedElements = related_elements
 
-            body_context = [
+            body_context = next(
                 c for c in self.file.by_type("IfcGeometricRepresentationSubContext") if c.ContextIdentifier == "Body"
-            ][0]
+            )
             for subelement in self.file.traverse(footprint_reps[0]):
                 if not subelement.is_a("IfcShapeRepresentation"):
                     continue
@@ -200,6 +203,5 @@ class Patcher:
                         [v[i] / unit_scale, v[i + 1] / unit_scale, v[i + 2] / unit_scale] for i in range(0, len(v), 3)
                     ]
                 edges = [[e[i] + 1, e[i + 1] + 1] for i in range(0, len(e), 2)]
-                points = []
-                curve.Points = f.create_entity(curve.Points.is_a(), vertices)
-                curve.Segments = [f.createIfcLineIndex(e) for e in edges]
+                curve.Points = self.file.create_entity(curve.Points.is_a(), vertices)
+                curve.Segments = [self.file.create("IfcLineIndex", e) for e in edges]

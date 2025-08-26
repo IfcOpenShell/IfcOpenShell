@@ -24,8 +24,7 @@ import ifcopenshell
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Union, Literal, Any, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.unit.prop import BIMUnitProperties
@@ -70,6 +69,7 @@ class Unit(bonsai.core.tool.Unit):
     def get_scene_unit_name(cls, unit_type: UNIT_TYPE) -> str:
         bim_props = tool.Blender.get_bim_props()
         if unit_type == "LENGTHUNIT":
+            assert bpy.context.scene
             props = bpy.context.scene.unit_settings
             if props.length_unit == "MILES":
                 return "mile"
@@ -85,12 +85,13 @@ class Unit(bonsai.core.tool.Unit):
         elif unit_type == "VOLUMEUNIT":
             return bim_props.volume_unit
         else:
-            assert_never()
+            assert_never(unit_type)
 
     @classmethod
     def get_scene_unit_si_prefix(cls, unit_type: UNIT_TYPE) -> Union[str, None]:
         bim_props = tool.Blender.get_bim_props()
         if unit_type == "LENGTHUNIT":
+            assert bpy.context.scene
             props = bpy.context.scene.unit_settings
             if props.length_unit == "ADAPTIVE" or props.length_unit == "METERS":
                 return
@@ -119,14 +120,14 @@ class Unit(bonsai.core.tool.Unit):
                 return True
 
         props.unit_attributes.clear()
-        bonsai.bim.helper.import_attributes2(unit, props.unit_attributes, callback=callback)
+        bonsai.bim.helper.import_attributes(unit, props.unit_attributes, callback=callback)
 
     @classmethod
     def import_units(cls) -> None:
         props = tool.Unit.get_unit_props()
         props.units.clear()
 
-        units = []
+        units: list[ifcopenshell.entity_instance] = []
         for unit_class in ["IfcDerivedUnit", "IfcMonetaryUnit", "IfcNamedUnit"]:
             units += tool.Ifc.get().by_type(unit_class)
 
@@ -164,6 +165,7 @@ class Unit(bonsai.core.tool.Unit):
 
     @classmethod
     def is_scene_unit_metric(cls) -> bool:
+        assert bpy.context.scene
         return bpy.context.scene.unit_settings.system in ["METRIC", "NONE"]
 
     @classmethod
@@ -190,6 +192,7 @@ class Unit(bonsai.core.tool.Unit):
 
     @classmethod
     def blender_format_unit(cls, value: float) -> str:
+        assert bpy.context.scene
         return bpy.utils.units.to_string(
             bpy.context.scene.unit_settings.system,
             "LENGTH",
@@ -207,3 +210,11 @@ class Unit(bonsai.core.tool.Unit):
             precision = 1e-5
             decimal_places = 5
         return str(round(precision * round(value / precision), decimal_places))
+
+    @classmethod
+    def get_icon_for_unit_class(cls, ifc_class: str) -> str:
+        if ifc_class == "IfcSIUnit":
+            return "SNAP_GRID"
+        elif ifc_class == "IfcMonetaryUnit":
+            return "COPY_ID"
+        return "MOD_MESHDEFORM"

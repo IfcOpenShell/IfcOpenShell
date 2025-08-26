@@ -28,7 +28,8 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
-from typing import Union, Optional, Literal, Any, Sequence, TYPE_CHECKING
+from typing import Union, Optional, Literal, Any, TYPE_CHECKING
+from collections.abc import Sequence
 from itertools import chain
 
 PRECISION = 1.0e-5
@@ -129,6 +130,16 @@ def np_to_4x4(matrix_3x3: np.ndarray) -> np.ndarray:
     return matrix_4x4
 
 
+def np_apply_matrix(vectors: SequenceOfVectors, matrix: npt.NDArray) -> npt.NDArray:
+    """
+    :param vectors: Nx3 array of vectors.
+    :param matrix: 4x4 transformation matrix.
+    """
+    m3x3 = matrix[:3, :3]
+    translation = matrix[:3, 3]
+    return vectors @ m3x3.T + translation
+
+
 def np_angle(a: VectorType, b: VectorType) -> float:
     """Get angle between vectors in radians.
     Designed to work similar to `Vector.angle`.
@@ -144,6 +155,20 @@ def np_angle_signed(a: VectorType, b: VectorType) -> float:
     det = a[1] * b[0] - a[0] * b[1]
     dot = np.dot(a, b)
     return np.arctan2(det, dot)
+
+
+def np_translation_matrix(vector: VectorType) -> npt.NDArray[np.float64]:
+    """Get translation matrix.
+
+    Designed to be similar to mathutils Matrix.Rotation but to use numpy.
+
+    :param vector: 3D translation vector.
+    :return: An 4x4 identity matrix with a translation
+    """
+    eye = np.eye(4, dtype=np.float64)
+    M_TRANSLATION = (slice(0, 3), 3)
+    eye[M_TRANSLATION] = vector
+    return eye
 
 
 def np_rotation_matrix(
@@ -625,6 +650,9 @@ class ShapeBuilder:
                 base_position = np.array(c.Position.Location.Coordinates)
                 c.Position.Location.Coordinates = ifc_safe_vector_type(base_position + translation)
 
+            elif c.is_a("IfcTessellatedFaceSet"):
+                c.Coordinates.CoordList = ifc_safe_vector_type(np.array(c.Coordinates.CoordList) + translation)
+
             elif c.is_a("IfcShapeRepresentation"):
                 for item in c.Items:
                     self.translate(item, translation)
@@ -774,6 +802,41 @@ class ShapeBuilder:
             Location=self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(position)),
             RefDirection=ref_direction,
         )
+
+    def vertex(self, position: VectorType = (0.0, 0.0, 0.0)) -> ifcopenshell.entity_instance:
+        """Create a topological vertex
+
+        Commonly used in structural point elements.
+
+        :param position: The 3D coordinate of the vertex
+        :return: IfcVertexPoint
+        """
+        return self.file.create_entity(
+            "IfcVertexPoint", self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(position))
+        )
+
+    def edge(
+        self, start: VectorType = (0.0, 0.0, 0.0), end: VectorType = (1.0, 0.0, 0.0)
+    ) -> ifcopenshell.entity_instance:
+        """Create a topological edge
+
+        :param start: The start coordinates of the vertex.
+        :param end: The end coordinates of the vertex.
+        :return: IfcEdge
+        """
+        return self.file.create_entity("IfcEdge", self.vertex(start), self.vertex(end))
+
+    def face(self, points: SequenceOfVectors) -> ifcopenshell.entity_instance:
+        """Create a single topological face
+
+        There are many types of faces, but for now we only support planar
+        polyloop defined faces with an outer boundary.
+
+        :param points: ordered list of 3d coordinates representing the outer boundary
+        :return: IfcFace
+        """
+        verts = [self.file.createIfcCartesianPoint(p) for p in ifc_safe_vector_type(points)]
+        return self.file.createIfcFace([self.file.createIfcFaceOuterBound(self.file.createIfcPolyLoop(verts), True)])
 
     def mirror(
         self,
@@ -1015,13 +1078,17 @@ class ShapeBuilder:
         if not representation_type:
             representation_type = ifcopenshell.util.representation.guess_type(items)
 
-        representation = self.file.createIfcShapeRepresentation(
+        return self.file.create_entity(
+            (
+                "IfcTopologyRepresentation"
+                if representation_type in ("Vertex", "Edge", "Path", "Face", "Shell")
+                else "IfcShapeRepresentation"
+            ),
             ContextOfItems=context,
             RepresentationIdentifier=context.ContextIdentifier,
             RepresentationType=representation_type,
             Items=items,
         )
-        return representation
 
     def deep_copy(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return ifcopenshell.util.element.copy_deep(self.file, element)
@@ -1337,7 +1404,7 @@ class ShapeBuilder:
         return self.file.createIfcTriangulatedFaceSet(Coordinates=ifc_points, CoordIndex=ifc_faces)
 
     def polygonal_face_set(
-        self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]
+        self, points: SequenceOfVectors, faces: Sequence[Union[Sequence[int], Sequence[Sequence[int]]]]
     ) -> ifcopenshell.entity_instance:
         """
         Generate an IfcPolygonalFaceSet
@@ -1346,10 +1413,33 @@ class ShapeBuilder:
 
         :param points: list of 3d coordinates
         :param faces: list of faces consisted of point indices (points indices starting from 0)
+                      in case of multiple sequences per face, the subsequent ones are inner voids
         :return: IfcPolygonalFaceSet
         """
+
+        def is_sequence_of_ints(x):
+            return isinstance(x, Sequence) and not isinstance(x, (str, bytes)) and all(isinstance(el, int) for el in x)
+
+        def is_sequence_of_sequence_of_ints(x):
+            return (
+                isinstance(x, Sequence) and not isinstance(x, (str, bytes)) and all(is_sequence_of_ints(el) for el in x)
+            )
+
+        def incr(face):
+            return [i + 1 for i in face]
+
+        if not all(is_sequence_of_ints(f) or is_sequence_of_sequence_of_ints(f) for f in faces):
+            raise ValueError("Expected a sequence of int or sequence of sequence of int for each face")
+
         ifc_points = self.file.createIfcCartesianPointList3D(ifc_safe_vector_type(points))
-        ifc_faces = [self.file.createIfcIndexedPolygonalFace([i + 1 for i in face]) for face in faces]
+        ifc_faces = [
+            (
+                self.file.createIfcIndexedPolygonalFace(incr(face))
+                if is_sequence_of_ints(face)
+                else self.file.createIfcIndexedPolygonalFaceWithVoids(incr(face[0]), list(map(incr, face[1:])))
+            )
+            for face in faces
+        ]
         return self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
 
     def extrude_face_set(

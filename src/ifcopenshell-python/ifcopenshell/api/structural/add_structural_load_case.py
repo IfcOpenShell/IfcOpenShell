@@ -25,16 +25,12 @@ def add_structural_load_case(
     """Adds a new load case, which is a collection of related load groups
 
     :param name: The name of the load case
-    :type name: str
     :param action_type: Choose from EXTRAORDINARY_A, PERMANENT_G,
         or VARIABLE_Q, taken from the Eurocode standard.
-    :type action_type: str
     :param action_source: The source of the load case, such as DEAD_LOAD_G,
         LIVE_LOAD_Q, TRANSPORT, ICE, etc. For the full list consult
         IfcActionSourceTypeEnum in the IFC documentation.
-    :type action_source: str
     :return: The new IfcStructuralLoadCase
-    :rtype: ifcopenshell.entity_instance
     """
 
     load_case = ifcopenshell.api.root.create_entity(

@@ -23,6 +23,8 @@ import stat
 from pathlib import Path
 
 import importlib
+import importlib.util
+import traceback
 import pyradiance
 
 
@@ -37,6 +39,8 @@ classes = (
     operator.MoveSunPathTo3DCursor,
     operator.RadianceRender,
     operator.ViewFromSun,
+    operator.LightPickCoordinates,
+    operator.LightSetTimeToNow,
     operator.RefreshIFCMaterials,
     operator.UnmapMaterial,
     operator.RADIANCE_OT_select_camera,
@@ -53,16 +57,18 @@ classes = (
 
 
 def register():
-    bpy.types.Scene.radiance_exporter_properties = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
+    bpy.types.Scene.BIMRadianceExporeterProperies = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
-    pyradiance_path = Path(get_pyradiance_path())
-    bin_path = pyradiance_path / "bin"
-    if bin_path.exists():
-        for file in bin_path.iterdir():
-            if file.is_file():
-                file.chmod(file.stat().st_mode | stat.S_IEXEC)
+
+    if pyradiance:
+        pyradiance_path = Path(get_pyradiance_path())
+        bin_path = pyradiance_path / "bin"
+        if bin_path.exists():
+            for file in bin_path.iterdir():
+                if file.is_file():
+                    file.chmod(file.stat().st_mode | stat.S_IEXEC)
 
 
 def unregister():
-    del bpy.types.Scene.radiance_exporter_properties
+    del bpy.types.Scene.BIMRadianceExporeterProperies
     del bpy.types.Scene.BIMSolarProperties

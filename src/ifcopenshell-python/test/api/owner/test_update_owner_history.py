@@ -19,6 +19,7 @@
 import time
 import test.bootstrap
 import ifcopenshell.api.owner
+import ifcopenshell.api.owner.settings
 
 
 class TestUpdateOwnerHistory(test.bootstrap.IFC4):
@@ -33,6 +34,7 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
 
         element = self.file.createIfcWall()
         history = ifcopenshell.api.owner.update_owner_history(self.file, element=element)
+        assert history
         assert history.is_a("IfcOwnerHistory")
         assert element.OwnerHistory == history
         assert history.ChangeAction == "ADDED"
@@ -57,6 +59,7 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
         element.OwnerHistory = old_history
 
         new_history = ifcopenshell.api.owner.update_owner_history(self.file, element=element)
+        assert new_history
         assert new_history == old_history
         assert element.OwnerHistory == new_history
         assert new_history.ChangeAction == "MODIFIED"
@@ -83,6 +86,7 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
         element2.OwnerHistory = old_history
 
         new_history = ifcopenshell.api.owner.update_owner_history(self.file, element=element)
+        assert new_history
         assert new_history != old_history
         assert element.OwnerHistory == new_history
         assert new_history.ChangeAction == "MODIFIED"

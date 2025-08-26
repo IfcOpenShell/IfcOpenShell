@@ -24,6 +24,7 @@ import bmesh
 import shapely
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.helper as helper
@@ -37,8 +38,9 @@ from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from bonsai.bim.module.drawing.shaders import add_verts_sequence, add_offsets
 from bonsai.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
-from functools import lru_cache
-from typing import Optional, Iterator, Type, Union
+from functools import cache
+from typing import Optional, Union
+from collections.abc import Iterator
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 
@@ -318,6 +320,8 @@ class BaseDecorator:
         color: tuple[float, float, float, float],
         indices: Optional[list[tuple[int, int]]] = None,
     ) -> None:
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.base_shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -422,8 +426,8 @@ class BaseDecorator:
         # font_size = 16 <-- this is a good default
         # TODO: need to synchronize it better with svg
 
-        props = tool.Drawing.get_document_props()
-        magic_font_scale = props.magic_font_scale
+        prefs = tool.Blender.get_addon_preferences()
+        magic_font_scale = prefs.doc.magic_font_scale
         font_size_px = int(magic_font_scale * mm_to_px) * font_size_mm / 2.5
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
@@ -493,7 +497,7 @@ class BaseDecorator:
 
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
-    @lru_cache(maxsize=None)
+    @cache
     def format_value(self, context, value, custom_unit=None):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         precision = drawing_pset_data.get("MetricPrecision", None)
@@ -560,8 +564,7 @@ class BaseDecorator:
                 MiscDecorator.decorate(self, context, obj)
                 return
 
-            symbol = DecoratorData.get_symbol(obj)
-            if not symbol:
+            if not (symbol := DecoratorData.data["symbol"].get(obj.name, None)):
                 return
 
             for vert in mesh.vertices:
@@ -570,8 +573,7 @@ class BaseDecorator:
             return
 
         # EMPTY objects
-        symbol = DecoratorData.get_symbol(obj)
-        if not symbol:
+        if not (symbol := DecoratorData.data["symbol"].get(obj.name, None)):
             return
 
         rotation = -Vector((1, 0)).angle_signed(annotation_dir)
@@ -588,7 +590,7 @@ class BaseDecorator:
         """if `text_world_position` is not provided, the object's location will be used"""
 
         if not text_world_position:
-            text_world_position = obj.location
+            text_world_position = obj.matrix_world.translation
 
         region = context.region
         region3d = context.region_data
@@ -597,7 +599,7 @@ class BaseDecorator:
         if not (pos := location_3d_to_region_2d(region, region3d, text_world_position)):
             return
         props = tool.Drawing.get_text_props(obj)
-        text_data = DecoratorData.get_ifc_text_data(obj)
+        text_data = DecoratorData.data["text"].get(obj.name, None)
         if props.is_editing:
             text_data = text_data | props.get_text_edited_data()
         literals_data = text_data["Literals"]
@@ -654,7 +656,10 @@ class DimensionDecorator(BaseDecorator):
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
 
         # setup geometry parameters
-        dimension_style = DecoratorData.get_dimension_data(obj)["dimension_style"]
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
+        dimension_style = dimension_data["dimension_style"]
         if dimension_style == "oblique":
             size = viewportDrawingScale * 10  # OLBIQUE_SYMBOL_SIZE
             angle = radians(45)
@@ -716,7 +721,9 @@ class DimensionDecorator(BaseDecorator):
 
         element = tool.Ifc.get_entity(obj)
         description = element.Description
-        dimension_data = DecoratorData.get_dimension_data(obj)
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
         show_description_only = dimension_data["show_description_only"]
         text_prefix = dimension_data["text_prefix"]
         text_suffix = dimension_data["text_suffix"]
@@ -950,7 +957,9 @@ class RadiusDecorator(BaseDecorator):
             return
         element = tool.Ifc.get_entity(obj)
         description = element.Description
-        dimension_data = DecoratorData.get_dimension_data(obj)
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         text_offset = 20 * viewportDrawingScale
 
@@ -989,8 +998,6 @@ class FallDecorator(BaseDecorator):
         # generate label text
         # same function as in svgwriter.py
         def get_label_text():
-            element = tool.Ifc.get_entity(obj)
-            assert element
             B, A = [v.co.xyz for v in spline_points[:2]]
             rise = abs(A.z - B.z)
             O = A.copy()
@@ -1002,8 +1009,8 @@ class FallDecorator(BaseDecorator):
             else:
                 angle = 90
 
-            # ues SLOPE_ANGLE as default
-            object_type = ifcopenshell.util.element.get_predefined_type(element)
+            # uses SLOPE_ANGLE as default
+            object_type = DecoratorData.data["fall"].get(obj, {}).get("object_type", None)
             if object_type in ("FALL", "SLOPE_ANGLE"):
                 return f"{angle}°"
             elif object_type == "SLOPE_FRACTION":
@@ -1014,6 +1021,7 @@ class FallDecorator(BaseDecorator):
                 if angle == 90:
                     return "-"
                 return f"{round(angle_tg * 100)} %"
+            return "NO DATA"
 
         if spline_points:
             text = get_label_text()
@@ -1177,7 +1185,9 @@ class PlanLevelDecorator(BaseDecorator):
 
         element = tool.Ifc.get_entity(obj)
         description = element.Description
-        dimension_data = DecoratorData.get_dimension_data(obj)
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
 
         for verts in splines:
             p0, p1 = [location_3d_to_region_2d(region, region3d, v) for v in verts[:2]]
@@ -1194,7 +1204,19 @@ class PlanLevelDecorator(BaseDecorator):
                 text_dir *= -1
 
             def get_text():
-                z = verts[0].z
+                abs_z = verts[0].z
+                z = abs_z
+
+                if element:
+                    spatial_container = ifcopenshell.util.element.get_container(element)
+
+                    if spatial_container:
+                        container_obj = tool.Ifc.get_object(spatial_container)
+
+                        if container_obj:
+                            spatial_container_z = container_obj.matrix_world.translation.z
+                            z = abs_z - spatial_container_z
+
                 rl = self.format_value(context, z)
                 text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
@@ -1260,7 +1282,9 @@ class SectionLevelDecorator(BaseDecorator):
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
 
-        dimension_data = DecoratorData.get_dimension_data(obj)
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
 
         for verts in splines:
 
@@ -1637,8 +1661,14 @@ class CutDecorator:
         all_vertex_i_offset = 0
         selected_vertex_i_offset = 0
 
+        classes_no_cut_str = self.addon_prefs.doc.classes_no_cut
+        classes_no_cut = [word.strip() for word in classes_no_cut_str.split(",")]
+
         for obj in [o for o in bpy.context.visible_objects if o.type == "MESH"]:
             if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            # Skip the elements in the following classes
+            if element.is_a() in classes_no_cut:
                 continue
             self.decorate(context, obj, element)
 
@@ -1682,11 +1712,12 @@ class CutDecorator:
         self.shader.bind()
 
         black = (0, 0, 0, 1)
-
-        for colour, element_fills in fills.items():
-            for verts_tris in element_fills:
-                for verts, tris in verts_tris:
-                    self.draw_batch("TRIS", verts, colour, tris)
+        model_props = tool.Model.get_model_props()
+        if model_props.show_cut_decorator_fill:
+            for colour, element_fills in fills.items():
+                for verts_tris in element_fills:
+                    for verts, tris in verts_tris:
+                        self.draw_batch("TRIS", verts, colour, tris)
 
         gpu.state.point_size_set(2)
         self.line_shader.uniform_float("lineWidth", 3.0)
@@ -1699,6 +1730,8 @@ class CutDecorator:
             self.draw_batch("POINTS", selected_vertices, selected_elements_color)
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -1717,11 +1750,11 @@ class CutDecorator:
             self.recalculate_fill(context, obj, element)
 
     def recalculate_cut(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
-        if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
-            DecoratorData.cut_cache[element.id()] = (False, False)
-        else:
+        if tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
             verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
             DecoratorData.cut_cache[element.id()] = (verts, edges)
+        else:
+            DecoratorData.cut_cache[element.id()] = (False, False)
 
     def recalculate_fill(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         element_id = element.id()
@@ -1877,7 +1910,7 @@ class CutDecorator:
 
 
 class DecorationsHandler:
-    decorators_classes: list[Type[BaseDecorator]] = [
+    decorators_classes: list[type[BaseDecorator]] = [
         DimensionDecorator,
         AngleDecorator,
         GridDecorator,
@@ -1900,6 +1933,7 @@ class DecorationsHandler:
     ]
 
     installed = None
+    handler = None
 
     @classmethod
     def install(cls, context):
@@ -1909,6 +1943,8 @@ class DecorationsHandler:
         # NOTE: we USE POST_PIXEL here so that we can use both POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
+        if not DecoratorData.is_loaded:
+            DecoratorData.load(handler)
 
     @classmethod
     def uninstall(cls):
@@ -1923,55 +1959,17 @@ class DecorationsHandler:
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
         self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
-        props = tool.Drawing.get_document_props()
-        if drawing_font := props.drawing_font:
+        prefs = tool.Blender.get_addon_preferences()
+        if drawing_font := prefs.doc.drawing_font:
             drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
             if drawing_font_path.is_file():
                 font_id = blf.load(drawing_font_path.__str__())
                 for decorator in self.decorators.values():
                     decorator.font_id = font_id
 
-    def get_objects_and_decorators(self, collection):
-        # TODO: do it in data instead of the handler for performance?
-        results = []
-        viewport = bpy.context.space_data
-
-        for obj in collection.all_objects:
-            if not obj.visible_get(viewport=viewport):
-                continue
-
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-
-            if not element.is_a("IfcAnnotation"):
-                continue
-
-            object_type: Union[str, None] = ifcopenshell.util.element.get_predefined_type(element)
-            if object_type == "DRAWING":
-                continue
-
-            if dec := self.decorators.get(object_type, None):
-                results.append((obj, dec))
-
-            elif isinstance(obj.data, bpy.types.Mesh):
-                if object_type == "LINEWORK" and "dashed" in str(
-                    ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
-                ).split(" "):
-                    results.append((obj, self.decorators["HIDDEN_LINE"]))
-                else:
-                    results.append((obj, self.decorators["MISC"]))
-
-        return results
-
     def __call__(self, context):
-        collection, _ = helper.get_active_drawing(context.scene)
-        if collection is None:
-            return
-
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
-        object_decorators = self.get_objects_and_decorators(collection)
-        for obj, decorator in object_decorators:
+        for obj, decorator in DecoratorData.data["object_decorators"]:
             decorator.decorate(context, obj)

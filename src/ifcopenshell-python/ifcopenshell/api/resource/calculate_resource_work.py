@@ -51,9 +51,7 @@ def calculate_resource_work(file: ifcopenshell.file, resource: ifcopenshell.enti
 
     :param resource: The IfcConstructionResource that you want to calculate
         the work performed.
-    :type resource: ifcopenshell.entity_instance
     :return None:
-    :rtype: None:
     """
     if ifcopenshell.util.constraint.is_attribute_locked(resource, "Usage.ScheduleWork"):
         return

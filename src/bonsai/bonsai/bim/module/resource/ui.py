@@ -16,12 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
 from bonsai.bim.module.resource.data import ResourceData
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import ISODuration
+    from bonsai.bim.module.resource.prop import Resource, BIMResourceTreeProperties
 
 
 class BIM_PT_resources(Panel):
@@ -38,9 +43,10 @@ class BIM_PT_resources(Panel):
         file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
+    layout: bpy.types.UILayout
+
     def draw(self, context):
-        self.props = context.scene.BIMResourceProperties
-        self.tprops = context.scene.BIMResourceTreeProperties
+        self.props = tool.Resource.get_resource_props()
         if not ResourceData.is_loaded:
             ResourceData.load()
 
@@ -64,7 +70,7 @@ class BIM_PT_resources(Panel):
         self.layout.template_list(
             "BIM_UL_resources",
             "",
-            self.tprops,
+            self.props.tree,
             "resources",
             self.props,
             "active_resource_index",
@@ -79,18 +85,18 @@ class BIM_PT_resources(Panel):
                 self.draw_editable_resource_costs_ui()
             elif self.props.active_resource_id and self.props.editing_resource_type == "USAGE":
                 self.draw_editable_resource_time_attributes_ui()
-        self.draw_productivity_ui(context)
+        self.draw_productivity_ui()
 
-    def draw_productivity_ui(self, context):
+    def draw_productivity_ui(self) -> None:
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.prop(self.props, "should_show_resource_tools", text="Resource Tools", icon="RECOVER_LAST")
         if self.props.should_show_resource_tools:
-            total_resources = len(self.tprops.resources)
-            if not total_resources or self.props.active_resource_index >= total_resources:
+            active_resource = self.props.active_resource
+            if not active_resource:
                 return
 
-            ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
+            ifc_definition_id = active_resource.ifc_definition_id
             resource = ResourceData.data["resources"][ifc_definition_id]
 
             if not resource["type"] in ["IfcConstructionEquipmentResource", "IfcLaborResource"]:
@@ -145,7 +151,7 @@ class BIM_PT_resources(Panel):
                 row2_col1 = col1.row()
                 row2_col1.label(text="Schedule Usage")
                 row2col2 = col2.row()
-                row2col2.prop(self.tprops.resources[self.props.active_resource_index], "schedule_usage", text="")
+                row2col2.prop(active_resource, "schedule_usage", text="")
                 row2col3 = col3.row()
                 row2col3.operator("bim.calculate_resource_usage", text="", icon="TEMP")
                 op = row2col3.operator(
@@ -189,7 +195,7 @@ class BIM_PT_resources(Panel):
                     row.label(text="{}".format(produtivitiy_rate_message), icon="ARMATURE_DATA")
                     row.operator("bim.add_productivity_data", text="", icon="ADD")
 
-    def draw_resource_operators(self):
+    def draw_resource_operators(self) -> None:
         row = self.layout.row(align=True)
         op = row.operator("bim.add_resource", text="Add SubContract", icon="TEXT")
         op.ifc_class = "IfcSubContractResource"
@@ -198,11 +204,11 @@ class BIM_PT_resources(Panel):
         op.ifc_class = "IfcCrewResource"
         op.parent_resource = 0
 
-        total_resources = len(self.tprops.resources)
-        if not total_resources or self.props.active_resource_index >= total_resources:
+        active_resource = self.props.active_resource
+        if not active_resource:
             return
 
-        ifc_definition_id = self.tprops.resources[self.props.active_resource_index].ifc_definition_id
+        ifc_definition_id = active_resource.ifc_definition_id
         resource = ResourceData.data["resources"][ifc_definition_id]
 
         if resource["type"] != "IfcSubContractResource":
@@ -239,18 +245,19 @@ class BIM_PT_resources(Panel):
                 row.operator("bim.edit_resource_time", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
 
-    def draw_editable_resource_attributes_ui(self):
+    def draw_editable_resource_attributes_ui(self) -> None:
         bonsai.bim.helper.draw_attributes(self.props.resource_attributes, self.layout)
 
-    def draw_editable_resource_time_attributes_ui(self):
+    def draw_editable_resource_time_attributes_ui(self) -> None:
         bonsai.bim.helper.draw_attributes(self.props.resource_time_attributes, self.layout)
 
-    def draw_editable_resource_quantity_ui(self):
+    def draw_editable_resource_quantity_ui(self) -> None:
         resource = ResourceData.data["resources"][self.props.active_resource_id]
 
         if resource["BaseQuantity"]:
             quantity = resource["BaseQuantity"]
-            value = quantity[[k for k in quantity.keys() if "Value" in k][0]]
+            key = next(k for k in quantity.keys() if "Value" in k)
+            value = quantity[key]
             row = self.layout.row(align=True)
             row.label(text=quantity["Name"])
             row.label(text="{0:.2f}".format(value))
@@ -277,7 +284,7 @@ class BIM_PT_resources(Panel):
             op.resource = self.props.active_resource_id
             op.ifc_class = self.props.quantity_types
 
-    def draw_editable_resource_costs_ui(self):
+    def draw_editable_resource_costs_ui(self) -> None:
         row = self.layout.row(align=True)
         row.prop(self.props, "cost_types", text="")
         if self.props.cost_types == "CATEGORY":
@@ -325,16 +332,6 @@ class BIM_PT_resources(Panel):
             op.parent = parent_id
             op.cost_value = cost_value_id
 
-    def draw_duration_property(self, duration_props, layout):
-        for duration_prop in duration_props:
-            if duration_prop.name == "BaseQuantityConsumed":
-                layout.prop(duration_prop, "years", text="Y")
-                layout.prop(duration_prop, "months", text="M")
-                layout.prop(duration_prop, "days", text="D")
-                layout.prop(duration_prop, "hours", text="H")
-                layout.prop(duration_prop, "minutes", text="Min")
-                layout.prop(duration_prop, "seconds", text="S")
-
 
 class BIM_UL_resources(UIList):
     @classmethod
@@ -357,7 +354,16 @@ class BIM_UL_resources(UIList):
         col = row.column()
         col.label(text="")
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: BIMResourceTreeProperties,
+        item: Resource,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         icon_map = {
             "IfcSubContractResource": "TEXT",
             "IfcCrewResource": "COMMUNITY",
@@ -368,7 +374,7 @@ class BIM_UL_resources(UIList):
         }
         if item:
             resource = ResourceData.data["resources"][item.ifc_definition_id]
-            props = context.scene.BIMResourceProperties
+            props = tool.Resource.get_resource_props()
             row = layout.row(align=True)
             for i in range(0, item.level_index):
                 row.label(text="", icon="BLANK1")
@@ -402,8 +408,12 @@ class BIM_UL_resources(UIList):
                 row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
 
 
-def draw_productivity_ui(self, context):
-    def draw_duration_property(duration_props, layout):
+def draw_productivity_ui(self: bpy.types.Operator, context: object) -> None:
+    assert self.layout
+
+    def draw_duration_property(
+        duration_props: bpy.types.bpy_prop_collection_idprop[ISODuration], layout: bpy.types.UILayout
+    ) -> None:
         for duration_prop in duration_props:
             if duration_prop.name == "BaseQuantityConsumed":
                 layout.prop(duration_prop, "years", text="Y")
@@ -413,7 +423,7 @@ def draw_productivity_ui(self, context):
                 layout.prop(duration_prop, "minutes", text="Min")
                 layout.prop(duration_prop, "seconds", text="S")
 
-    productivity_props = context.scene.BIMResourceProductivity
+    productivity_props = tool.Resource.get_resource_props().productivity
     grid = self.layout.grid_flow(columns=2, even_columns=False, even_rows=False, align=False)
     col1 = grid.column(align=False)
     col2 = grid.column(align=False)

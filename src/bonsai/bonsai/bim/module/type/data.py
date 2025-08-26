@@ -67,7 +67,8 @@ class TypeData:
         if not relating_type_classes:
             return []
         results = []
-        relating_type_class = bpy.context.active_object.BIMTypeProperties.relating_type_class
+        assert (obj := bpy.context.active_object)
+        relating_type_class = tool.Type.get_object_type_props(obj).relating_type_class
         if not relating_type_class and relating_type_classes:
             relating_type_class = relating_type_classes[0][0]
         elements = tool.Ifc.get().by_type(relating_type_class)

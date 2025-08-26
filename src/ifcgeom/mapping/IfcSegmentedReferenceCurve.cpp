@@ -53,8 +53,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 	 // Get starting position of cant curve, relative to the gradient curve.
     // The cant curve can start before or after the start of the gradient curve
     auto first_segment = *(segments->begin());
-    auto p = taxonomy::cast<taxonomy::matrix4>(map(first_segment->as<IfcSchema::IfcCurveSegment>()->Placement()));
-    const Eigen::Matrix4d& m = p->ccomponents();
+	taxonomy::matrix4::ptr p;
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
+	p = taxonomy::cast<taxonomy::matrix4>(map(first_segment->as<IfcSchema::IfcCurveSegment>()->Placement()));
+#else
+	throw std::runtime_error("Unsupported schema");
+#endif
+	const Eigen::Matrix4d& m = p->ccomponents();
     double cant_start = m(0, 3); // start of cant curve
 
    auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,spans);

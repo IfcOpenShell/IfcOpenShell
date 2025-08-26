@@ -19,7 +19,6 @@
 import os
 import bpy
 import json
-import platformdirs
 import ifcopenshell
 import ifcopenshell.util.pset
 import ifcopenshell.util.unit
@@ -45,8 +44,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -85,9 +83,15 @@ def cache_string(s: Any) -> str:
 cache_string.data: dict[str, str] = {}
 
 
-def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    if "EnumData" not in globals() or TYPE_CHECKING:
+        from bonsai.bim.ui import EnumData
+
+    if dynamic_identifier := prop.enum_items_dynamic:
+        return EnumData.get_data(dynamic_identifier)
+
     # Support weird buildingSMART dictionary mappings which behave like enums
-    items = []
+    items: list[tuple[str, str, str]] = []
     data = json.loads(prop.enum_items)
 
     if isinstance(data, dict):
@@ -121,20 +125,6 @@ def update_schema_dir(self: "BIMProperties", context: bpy.types.Context) -> None
 
     bim_props = tool.Blender.get_bim_props()
     bonsai.bim.schema.ifc.schema_dir = bim_props.schema_dir
-
-
-def update_data_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
-    import bonsai.bim.schema
-
-    bim_props = tool.Blender.get_bim_props()
-    bonsai.bim.schema.ifc.data_dir = bim_props.data_dir
-
-
-def update_cache_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
-    import bonsai.bim.schema
-
-    bim_props = tool.Blender.get_bim_props()
-    bonsai.bim.schema.ifc.cache_dir = bim_props.cache_dir
 
 
 def update_section_color(self: "BIMProperties", context: bpy.types.Context) -> None:
@@ -229,7 +219,9 @@ def update_attribute_value(self: "Attribute", context: bpy.types.Context) -> Non
 
 def update_is_null(self: "Attribute", context: bpy.types.Context) -> None:
     if self.is_null:
-        if self.data_type != "enum" and self.get_value() != (default := self.get_value_default()):
+        if self.data_type == "list[string]":
+            self.subitems_values.clear()
+        elif self.data_type != "enum" and self.get_value() != (default := self.get_value_default()):
             self.set_value(default)
         if self.is_null is not True:
             self.is_null = True
@@ -281,20 +273,33 @@ def get_display_name(self: "Attribute") -> str:
     return f"{name}, {unit_symbol}"
 
 
-AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file"]
-AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE", "LOGICAL"]
+AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file", "list[string]"]
+AttributeSpecialType = Literal[
+    "",
+    "DATE",
+    "DATETIME",
+    "LENGTH",
+    "AREA",
+    "VOLUME",
+    "FORCE",
+    "LOGICAL",
+    "URI",
+    "DURATION",
+]
 
 
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
-    name: StringProperty(name="Name")  # type: ignore [reportRedeclaration]
+    name: StringProperty(name="Name")  # pyright: ignore [reportRedeclaration]
     display_name: StringProperty(name="Display Name", get=get_display_name)
-    description: StringProperty(name="Description")  # type: ignore [reportRedeclaration]
-    ifc_class: StringProperty(name="Ifc Class")  # type: ignore [reportRedeclaration]
-    data_type: EnumProperty(  # type: ignore [reportRedeclaration]
+    description: StringProperty(name="Description")  # pyright: ignore [reportRedeclaration]
+    ifc_class: StringProperty(name="Ifc Class")  # pyright: ignore [reportRedeclaration]
+    data_type: EnumProperty(  # pyright: ignore [reportRedeclaration]
         name="Data Type",
         items=[(i, i, "") for i in get_args(AttributeDataType)],
     )
+
+    # Value containers.
     string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
     bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
     int_value: IntProperty(
@@ -315,19 +320,27 @@ class Attribute(PropertyGroup):
         name="Value", description=tooltip, get=get_length_value, set=set_length_value, unit="LENGTH"
     )
     enum_items: StringProperty(name="Value")
+    """Json serialized mapping of enum items:
+        Typically a dictionary of string identifiers to item names.
+    """
+    enum_items_dynamic: StringProperty()
+    """Dynamic enum items identifier."""
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
     filepath_value: PointerProperty(type=MultipleFileSelect)
     filter_glob: StringProperty()
     is_null: BoolProperty(name="Is Null", update=update_is_null)
-    is_optional: BoolProperty(name="Is Optional")
-    is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
+    subitems_values: CollectionProperty(type=StrProperty)  # pyright: ignore[reportRedeclaration]
+
+    # Attribute parameters.
+    is_optional: BoolProperty(name="Is Optional")
     value_min: FloatProperty(description="This is used to validate int_value and float_value")
     value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
+    use_explorer_ui: BoolProperty()  # pyright: ignore[reportRedeclaration]
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
     update: StringProperty(name="Update", description="Custom update function to be executed")
 
@@ -344,35 +357,45 @@ class Attribute(PropertyGroup):
         float_value: float
         length_value: float
         enum_items: str
+        enum_items_dynamic: str
         enum_descriptions: bpy.types.bpy_prop_collection_idprop[StrProperty]
         enum_value: str
         filepath_value: MultipleFileSelect
         filter_glob: str
         is_null: bool
-        is_optional: bool
-        is_uri: bool
         is_selected: bool
+        subitems_values: bpy.types.bpy_prop_collection_idprop[StrProperty]
+
+        is_optional: bool
         value_min: float
         value_min_constraint: bool
         value_max: float
         value_max_constraint: bool
+        use_explorer_ui: bool
         metadata: str
         update: str
 
-    def get_value(self) -> Union[str, float, int, bool, None]:
+    def get_value(self) -> Union[str, float, int, bool, list[str], None]:
         if self.is_optional and self.is_null:
             return None
         if self.data_type == "string":
             return self.string_value.replace("\\n", "\n")
         if self.data_type == "file":
             return [f.name for f in self.filepath_value.file_list]
-        value = getattr(self, str(self.get_value_name()), None)
+        elif self.data_type == "list[string]":
+            return [s.name for s in self.subitems_values]
+
+        value_name = self.get_value_name()
+        if value_name == "enum_value":
+            value = tool.Blender.get_enum_safe(self, "enum_value")
+        else:
+            value = getattr(self, value_name, None)
         if self.special_type == "LOGICAL" and value != "UNKNOWN":
             # IfcOpenShell expects bool if IfcLogical is True/False.
             value = value == "TRUE"
         return value
 
-    def get_value_default(self) -> Union[str, float, int, bool]:
+    def get_value_default(self) -> Union[str, float, int, bool, list[str]]:
         data_type = self.data_type
         if data_type == "string":
             return ""
@@ -386,10 +409,12 @@ class Attribute(PropertyGroup):
             return "0"
         elif data_type == "file":
             return ""
+        elif data_type == "list[string]":
+            return []
         else:
             assert_never(data_type)
 
-    def get_value_name(self, display_only: bool = False) -> str:
+    def get_value_name(self, display_only: bool = False):
         """Get name of the value attribute.
 
         :param display_only: Should be `True` if the value won't be accessed directly
@@ -410,6 +435,8 @@ class Attribute(PropertyGroup):
             return "enum_value"
         elif data_type == "file":
             return "filepath_value"
+        elif data_type == "list[string]":
+            return "subitems_values"
         else:
             assert_never(data_type)
 
@@ -426,6 +453,23 @@ class Attribute(PropertyGroup):
             self.data_type = "string"
             value = str(value)
         setattr(self, self.get_value_name(), value)
+
+
+class ISODuration(PropertyGroup):
+    years: IntProperty(name="Years", default=0)
+    months: IntProperty(name="Months", default=0)
+    days: IntProperty(name="Days", default=0)
+    hours: IntProperty(name="Hours", default=0)
+    minutes: IntProperty(name="Minutes", default=0)
+    seconds: IntProperty(name="Seconds", default=0)
+
+    if TYPE_CHECKING:
+        years: int
+        months: int
+        days: int
+        hours: int
+        minutes: int
+        seconds: int
 
 
 def get_tab(
@@ -490,16 +534,7 @@ class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
     )
-    data_dir: StringProperty(
-        default=(platformdirs.user_data_path("bonsai", roaming=True, ensure_exists=True) / "data").__str__(),
-        name="Data Directory",
-        update=update_data_dir,
-    )
-    cache_dir: StringProperty(
-        default=platformdirs.user_cache_dir("bonsai"), name="Cache Directory", update=update_cache_dir
-    )
     has_blend_warning: BoolProperty(name="Has Blend Warning", default=False)
-    pset_dir: StringProperty(default=os.path.join("psets") + os.path.sep, name="Default Psets Directory")
     ifc_file: StringProperty(name="IFC File")
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
@@ -555,8 +590,6 @@ class BIMProperties(PropertyGroup):
     if TYPE_CHECKING:
         is_dirty: bool
         schema_dir: str
-        data_dir: str
-        cache_dir: str
         has_blend_warning: bool
         pset_dir: str
         ifc_file: str
@@ -590,14 +623,10 @@ class PsetQto(PropertyGroup):
     is_editable: BoolProperty(name="Is Editable")
 
     if TYPE_CHECKING:
+        name: str
         properties: bpy.types.bpy_prop_collection_idprop[Attribute]
         is_expanded: bool
         is_editable: bool
-
-
-class GlobalId(PropertyGroup):
-    name: StringProperty(name="Name")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
 class BIMCollectionProperties(PropertyGroup):
@@ -620,7 +649,14 @@ class BIMObjectProperties(PropertyGroup):
     )
     cartesian_point_offset: StringProperty(name="Cartesian Point Offset")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
-    is_renaming: BoolProperty(name="Is Renaming", default=False)
+    is_renaming: BoolProperty(
+        name="Is Renaming",
+        description=(
+            "Flag to ensure object name callback wouldn't write new name to IFC. "
+            "Automatically reset to `False` after the next callback."
+        ),
+        default=False,
+    )
     location_checksum: StringProperty(name="Location Checksum")
     rotation_checksum: StringProperty(name="Rotation Checksum")
 

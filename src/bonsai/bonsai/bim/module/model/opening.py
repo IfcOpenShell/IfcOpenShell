@@ -27,6 +27,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.feature
+import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import ifcopenshell.util.element
@@ -39,13 +40,14 @@ import bonsai.core.geometry
 import bonsai.bim.import_ifc as import_ifc
 from collections import defaultdict
 from math import pi, radians
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Euler
 from bpy.types import Operator
 from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu_extras.batch import batch_for_shader
-from typing import Union, Optional, Any, cast, Sequence
+from typing import Union, Optional, Any, cast
+from collections.abc import Sequence
 
 
 class FilledOpeningGenerator:
@@ -67,8 +69,8 @@ class FilledOpeningGenerator:
 
         assert filling and element
         if filling.FillsVoids:
-            ifcopenshell.api.run(
-                "feature.remove_feature", tool.Ifc.get(), feature=filling.FillsVoids[0].RelatingOpeningElement
+            ifcopenshell.api.feature.remove_feature(
+                tool.Ifc.get(), feature=filling.FillsVoids[0].RelatingOpeningElement
             )
 
         if target is None:
@@ -90,11 +92,19 @@ class FilledOpeningGenerator:
             layers = tool.Model.get_material_layer_parameters(element)
             if layers["layer_set_direction"] == "AXIS2":
                 opening_thickness_si = layers["thickness"] * 2
-                axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+                axes = tool.Model.get_wall_axis(voided_obj, layers=layers)
+                axis_base = axes["base"]
+                axis_side = axes["side"]
                 new_matrix = voided_obj.matrix_world.copy()
-                point_on_axis = tool.Cad.point_on_edge(target, axis)
-                new_matrix.translation.x = point_on_axis.x
-                new_matrix.translation.y = point_on_axis.y
+                point_on_base_axis = tool.Cad.point_on_edge(target, axis_base)
+                point_on_side_axis = tool.Cad.point_on_edge(target, axis_side)
+                if (point_on_base_axis - target).length <= (point_on_side_axis - target).length:
+                    new_matrix.translation.x = point_on_base_axis.x
+                    new_matrix.translation.y = point_on_base_axis.y
+                else:
+                    new_matrix.translation.x = point_on_side_axis.x
+                    new_matrix.translation.y = point_on_side_axis.y
+                    new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
 
                 if should_set_z_level:
                     if filling.is_a("IfcDoor"):
@@ -122,15 +132,13 @@ class FilledOpeningGenerator:
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
-        opening = ifcopenshell.api.run(
-            "root.create_entity",
+        opening = ifcopenshell.api.root.create_entity(
             tool.Ifc.get(),
             ifc_class="IfcOpeningElement",
             predefined_type="OPENING",
             name="Opening",
         )
-        ifcopenshell.api.run(
-            "geometry.edit_object_placement",
+        ifcopenshell.api.geometry.edit_object_placement(
             tool.Ifc.get(),
             product=opening,
             matrix=np.array(filling_obj.matrix_world),
@@ -148,15 +156,15 @@ class FilledOpeningGenerator:
                 filling, filling_obj, opening_thickness_si=opening_thickness_si
             )
 
-        mapped_representation = ifcopenshell.api.run(
-            "geometry.map_representation", tool.Ifc.get(), representation=representation
+        mapped_representation = ifcopenshell.api.geometry.map_representation(
+            tool.Ifc.get(), representation=representation
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+        ifcopenshell.api.geometry.assign_representation(
+            tool.Ifc.get(), product=opening, representation=mapped_representation
         )
 
-        ifcopenshell.api.run("feature.add_feature", tool.Ifc.get(), feature=opening, element=element)
-        ifcopenshell.api.run("feature.add_filling", tool.Ifc.get(), opening=opening, element=filling)
+        ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=opening, element=element)
+        ifcopenshell.api.feature.add_filling(tool.Ifc.get(), opening=opening, element=filling)
 
         voided_objs = [voided_obj]
         # Openings affect all subelements of an aggregate
@@ -198,10 +206,8 @@ class FilledOpeningGenerator:
         voided_element = opening.VoidsElements[0].RelatingBuildingElement
 
         opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
-        ifcopenshell.api.run(
-            "geometry.unassign_representation", tool.Ifc.get(), product=opening, representation=opening_rep
-        )
-        ifcopenshell.api.run("geometry.remove_representation", tool.Ifc.get(), representation=opening_rep)
+        ifcopenshell.api.geometry.unassign_representation(tool.Ifc.get(), product=opening, representation=opening_rep)
+        ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=opening_rep)
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
@@ -210,11 +216,11 @@ class FilledOpeningGenerator:
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
             representation = ifcopenshell.util.representation.resolve_representation(representation)
-            mapped_representation = ifcopenshell.api.run(
-                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                tool.Ifc.get(), representation=representation
             )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=opening, representation=mapped_representation
             )
         else:
             opening_obj = tool.Ifc.get_object(opening)
@@ -224,11 +230,11 @@ class FilledOpeningGenerator:
 
             filling_obj = tool.Ifc.get_object(filling)
             representation = self.generate_opening_from_filling(filling, filling_obj)
-            mapped_representation = ifcopenshell.api.run(
-                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                tool.Ifc.get(), representation=representation
             )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=opening, representation=mapped_representation
             )
 
         # update voided object representation or all it's parts if it's an aggregate
@@ -395,8 +401,8 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                     bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj)
             for opening in openings:
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                ifcopenshell.api.run(
-                    "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
+                ifcopenshell.api.geometry.edit_object_placement(
+                    tool.Ifc.get(), product=opening, matrix=obj.matrix_world
                 )
 
             decomposed_building_elements = set()
@@ -435,7 +441,44 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
                 continue
+
+            filled_opening = element.FillsVoids[0].RelatingOpeningElement
+            filled_element = filled_opening.VoidsElements[0].RelatingBuildingElement
+            filled_object = tool.Ifc.get_object(filled_element)
+
+            if filled_element.is_a() in ["IfcWall", "IfcWallStandardCase"]:
+                # if the filled element is a wall, move the filling in such a way
+                # that it will have the same relative position, but to the other
+                # side of the wall
+                #
+                # For example, if a door frame protudes 1cm out of the wall,
+                # it will produde 1cm out of the other side of the wall.
+
+                layers = tool.Model.get_material_layer_parameters(filled_element)
+                axes = tool.Model.get_wall_axis(filled_object, layers=layers)
+
+                center_axis = [(axes["base"][0] + axes["side"][0]) * 0.5, (axes["base"][1] + axes["side"][1]) * 0.5]
+
+                original_pos = obj.matrix_world.translation
+                bb = tool.Blender.get_object_bounding_box(obj)
+                min_y = min(bb["min_y"], 0)
+                max_y = max(bb["max_y"], 0)
+
+                point_on_center_axis = tool.Cad.point_on_edge(original_pos, center_axis)
+                offset_to_center_axis = point_on_center_axis - original_pos
+                offset_to_center_axis.z = 0
+                depth_offset = max_y + min_y
+                depth_correction_vec = offset_to_center_axis.normalized() * depth_offset
+
+                mirrored_point = original_pos + offset_to_center_axis * 2.0 - depth_correction_vec
+
+                obj.matrix_world.translation = mirrored_point
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
             tool.Geometry.flip_object(obj, "XY")
+            ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), filled_opening, obj.matrix_world)
+            tool.Geometry.reload_representation(filled_object)
+
         return {"FINISHED"}
 
 
@@ -484,32 +527,21 @@ class AddBoolean(Operator, tool.Ifc.Operator):
 
 class ShowOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_openings"
-    bl_label = "Show"
-    bl_description = "Show Openings"
+    bl_label = "Show Openings"
+    bl_description = "Show openings for selected objects"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        objs = list(context.selected_objects)
-        # If several parts of an aggregation are selected, the aggregate openings may be queried more than once
-        objects_element_map = set()
-        while objs:
-            obj = objs.pop(0)
+        for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
-            if element:
-                if getattr(element, "Decomposes", None):
-                    # Select aggregate recursively
-                    if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
-                        aggregate_obj = tool.Ifc.get_object(aggregate)
-                        objs.append(aggregate_obj)
-                objects_element_map.add((obj, element))
-
-        for obj, element in objects_element_map:
+            if element is None:
+                continue
             self.show_object_openings(obj, element)
         DecorationsHandler.install(bpy.context)
         bpy.ops.bim.update_openings_focus()
         return {"FINISHED"}
 
-    def show_object_openings(self, obj, element):
+    def show_object_openings(self, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         openings_elements = [rel.RelatedOpeningElement for rel in tool.Geometry.get_openings(element)]
         if not openings_elements:
             return
@@ -531,15 +563,18 @@ class UpdateOpeningsFocus(Operator):
         preferences = tool.Blender.get_addon_preferences()
         if preferences.opening_focus_opacity == 100:
             return {"FINISHED"}
-        openings = set()
-        building_objects = set()
+        openings: set[bpy.types.Object] = set()
+        building_objects: set[bpy.types.Object] = set()
         props = tool.Model.get_model_props()
         for opening in props.openings:
             if opening.obj:
                 openings.add(opening.obj)
                 opening_element = tool.Ifc.get_entity(opening.obj)
+                assert opening_element
                 building_element = opening_element.VoidsElements[0].RelatingBuildingElement
-                building_objects.add(tool.Ifc.get_object(building_element))
+                building_obj = tool.Ifc.get_object(building_element)
+                assert isinstance(building_obj, bpy.types.Object)
+                building_objects.add(building_obj)
 
         for obj in context.scene.objects:
             obj.color = [
@@ -744,7 +779,7 @@ class CloneOpening(Operator, tool.Ifc.Operator):
         opening_placement = opening.ObjectPlacement
         opening_representation = opening.Representation
 
-        new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
+        new_opening = ifcopenshell.api.root.create_entity(tool.Ifc.get(), ifc_class="IfcOpeningElement")
         new_opening.Representation = opening_representation
 
         ifcopenshell.api.feature.add_feature(ifc_file, feature=new_opening, element=voided_element)
@@ -896,6 +931,8 @@ class DecorationsHandler:
         cls.installed = None
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)

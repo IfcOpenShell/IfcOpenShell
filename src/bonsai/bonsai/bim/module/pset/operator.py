@@ -20,15 +20,17 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.api.pset
-import ifcopenshell.util.attribute
 import ifcopenshell.util.element
-import ifcopenshell.util.pset
-import ifcopenshell.util.unit
 import bonsai.bim.schema
 import bonsai.tool as tool
 import bonsai.core.pset as core
 import bonsai.bim.module.pset.data
 from bonsai.bim.ifc import IfcStore
+from collections import defaultdict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.pset.prop import RenamePropertyEntry, AddEditPropertyEntry
 
 
 class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):
@@ -76,8 +78,8 @@ class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
             pset = tool.Ifc.get().by_id(props.active_pset_id)
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
             if tool.Pset.is_pset_empty(pset):
-                ifcopenshell.api.run(
-                    "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
+                ifcopenshell.api.pset.remove_pset(
+                    tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
                 )
         props.active_pset_id = 0
         props.active_pset_name = ""
@@ -104,10 +106,10 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
         if pset_id:
             pset = self.file.by_id(pset_id)
         elif props.active_pset_type == "PSET":
-            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=props.active_pset_name)
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name=props.active_pset_name)
             props.active_pset_id = pset.id()
         elif props.active_pset_type == "QTO":
-            pset = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name=props.active_pset_name)
+            pset = ifcopenshell.api.pset.add_qto(self.file, product=element, name=props.active_pset_name)
             props.active_pset_id = pset.id()
 
         if self.properties:
@@ -123,8 +125,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                     ]
 
         if pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=pset,
                 name=props.active_pset_name,
@@ -139,8 +140,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                     properties[key] = round(value, 4)
                 elif not isinstance(value, int):
                     properties[key] = 0
-            ifcopenshell.api.run(
-                "pset.edit_qto",
+            ifcopenshell.api.pset.edit_qto(
                 self.file,
                 qto=pset,
                 name=props.active_pset_name,
@@ -175,8 +175,8 @@ class RemovePset(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get().by_id(ifc_definition_id)
             pset = ifcopenshell.util.element.get_psets(element, should_inherit=False).get(pset_name, None)
             if pset:
-                ifcopenshell.api.run(
-                    "pset.remove_pset", tool.Ifc.get(), product=element, pset=tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.pset.remove_pset(
+                    tool.Ifc.get(), product=element, pset=tool.Ifc.get().by_id(pset["id"])
                 )
 
 
@@ -236,21 +236,31 @@ class AddQto(bpy.types.Operator, tool.Ifc.Operator):
 class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_property_to_selection"
     bl_label = "Copy Property To Selection"
-    name: bpy.props.StringProperty()
+    bl_options = {"REGISTER", "UNDO"}
+
+    name: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        name: str
 
     def _execute(self, context):
-        pset_id = context.active_object.PsetProperties.active_pset_id
+        assert (obj := context.active_object)
+        props = tool.Pset.get_pset_props(obj.name, "Object")
+        pset_id = props.active_pset_id
         if pset_id:
             is_pset = tool.Ifc.get().by_id(pset_id).is_a("IfcPropertySet")
         else:
-            is_pset = context.active_object.PsetProperties.active_pset_type == "PSET"
-        pset_name = context.active_object.PsetProperties.active_pset_name
-        prop = context.active_object.PsetProperties.properties.get(self.name)
+            is_pset = props.active_pset_type == "PSET"
+        pset_name = props.active_pset_name
+        prop = props.properties[self.name]
         if prop.value_type == "IfcPropertySingleValue":
             prop_value = prop.metadata.get_value()
         elif prop.value_type == "IfcPropertyEnumeratedValue":
             value_name = prop.metadata.get_value_name()
             prop_value = [e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected]
+        else:
+            self.report({"ERROR"}, f"Unsupport value type: '{prop.value_type}'.")
+            return {"CANCELLED"}
 
         for obj in tool.Blender.get_selected_objects():
             core.copy_property_to_selection(
@@ -265,124 +275,179 @@ class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class BIM_OT_add_property_to_edit(bpy.types.Operator):
-    bl_label = "Add Edit Rule"
+    bl_label = "Add Property to Edit"
     bl_idname = "bim.add_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
-    option: bpy.props.StringProperty()
-    index: bpy.props.IntProperty(default=-1)
+    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
+    )
+    index: bpy.props.IntProperty(default=-1)  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        option: tool.Pset.BulkOperationType
+        index: int
+
+    @classmethod
+    def description(cls, context: bpy.types.Context, properties: bpy.types.OperatorProperties) -> str:
+        return f"Add property entry to for bulk operation '{properties.option}'."
 
     def execute(self, context):
         if self.index == -1:
-            getattr(context.scene, self.option).add()
+            tool.Pset.get_bulk_operation_collection(self.option).add()
         else:
-            getattr(context.scene, self.option)[self.index].enum_values.add()
+            assert self.option == "ADD_EDIT"
+            props = tool.Pset.get_global_pset_props()
+            props.psets_to_add_edit[self.index].enum_values.add()
         return {"FINISHED"}
 
 
 class BIM_OT_remove_property_to_edit(bpy.types.Operator):
-    bl_label = "Remove Property to Be Renamed"
+    bl_label = "Remove Property from Editing"
     bl_idname = "bim.remove_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
-    index2: bpy.props.IntProperty(default=-1)
-    option: bpy.props.StringProperty()
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    index2: bpy.props.IntProperty(default=-1)  # pyright: ignore[reportRedeclaration]
+    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
+    )
+
+    if TYPE_CHECKING:
+        index: int
+        index2: int
+        option: tool.Pset.BulkOperationType
+
+    @classmethod
+    def description(cls, context: bpy.types.Context, properties: bpy.types.OperatorProperties) -> str:
+        return f"Remove property entry from bulk operation '{properties.option}'."
 
     def execute(self, context):
         if self.index2 == -1:
-            getattr(context.scene, self.option).remove(self.index)
+            tool.Pset.get_bulk_operation_collection(self.option).remove(self.index)
         else:
-            getattr(context.scene, self.option)[self.index].enum_values.remove(self.index2)
+            assert self.option == "ADD_EDIT"
+            props = tool.Pset.get_global_pset_props()
+            props.psets_to_add_edit[self.index].enum_values.remove(self.index2)
         return {"FINISHED"}
 
 
-class BIM_OT_clear_list(bpy.types.Operator):
+class BIM_OT_bulk_edit_clear_list(bpy.types.Operator):
     bl_label = "Clear List of Properties"
-    bl_idname = "bim.clear_list"
+    bl_idname = "bim.pset_bulk_edit_clear_list"
     bl_options = {"REGISTER", "UNDO"}
-    option: bpy.props.StringProperty()
+    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
+    )
+
+    if TYPE_CHECKING:
+        option: tool.Pset.BulkOperationType
 
     def execute(self, context):
-        getattr(context.scene, self.option).clear()
+        tool.Pset.get_bulk_operation_collection(self.option).clear()
         return {"FINISHED"}
 
 
-class BIM_OT_rename_parameters(bpy.types.Operator, tool.Ifc.Operator):
+class BIM_OT_pset_bulk_rename_parameters(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Rename Parameters"
-    bl_idname = "bim.rename_parameters"
+    bl_idname = "bim.pset_bulk_rename_parameters"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Rename parameters that are subclasses of IfcElement"
+    bl_description = "Rename pset properties for all IfcElements"
 
     def _execute(self, context):
-        props_to_map = context.scene.RenameProperties
+        props_to_map = tool.Pset.get_global_pset_props().psets_to_rename
         ifc_file = tool.Ifc.get()
         all_ifc_elements = ifc_file.by_type("IfcElement")
 
+        properties_map: defaultdict[str, dict[str, str]] = defaultdict(dict)
+        """pset_name -> {old_name -> new_name}"""
+        for p in props_to_map:
+            properties_map[p.name][p.existing_property_name] = p.new_property_name
+
+        props_renamed = 0
         for ifc_element in all_ifc_elements:
             for definition in ifc_element.IsDefinedBy:
                 if definition.is_a("IfcRelDefinesByProperties"):
                     prop_set = definition.RelatingPropertyDefinition
-                    self.rename_property(prop_set, props_to_map, ifc_element)
+                    props_renamed += self.rename_property(prop_set, properties_map)
 
-        self.report({"INFO"}, "Finished applying changes")
+        self.report({"INFO"}, f"Finished applying changes, {props_renamed} properties renamed.")
         return {"FINISHED"}
 
-    def rename_property(self, property_set, properties_to_map, ifc_element):
+    def rename_property(
+        self,
+        property_set: ifcopenshell.entity_instance,
+        pset_remap: dict[str, dict[str, str]],
+    ) -> int:
+        props_renamed = 0
+        pset_name = property_set.Name
+        if pset_name not in pset_remap:
+            return props_renamed
+
+        properties_remap = pset_remap[pset_name]
+        property_container: tuple[ifcopenshell.entity_instance, ...]
         if property_set.is_a() == "IfcPropertySet":
             property_container = property_set.HasProperties
         elif property_set.is_a() == "IfcElementQuantity":
             property_container = property_set.Quantities
+        else:
+            assert False
 
         for obj_prop in property_container:
-            for prop2map in properties_to_map:
-                if prop2map.pset_name != property_set.Name:
-                    continue
-                if prop2map.existing_property_name == obj_prop.Name:
-                    obj_prop.Name = prop2map.new_property_name
+            prop_name = obj_prop.Name
+            if prop_name not in properties_remap:
+                continue
+            obj_prop.Name = properties_remap[prop_name]
+            props_renamed += 1
+        return props_renamed
 
 
 class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add or Edit a Custom Property"
     bl_idname = "bim.add_edit_custom_property"
+    bl_description = "Edit pset properties for selected objects."
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        props = context.scene.AddEditProperties
+        entries = tool.Pset.get_global_pset_props().psets_to_add_edit
 
+        elements_changed = 0
         for obj in tool.Blender.get_selected_objects():
             ifc_element = tool.Ifc.get_entity(obj)
             if not ifc_element:
                 continue
 
-            for prop in props:
+            for prop in entries:
                 value = getattr(prop, prop.get_value_name())
                 primary_measure_type = prop.primary_measure_type
 
                 if prop.template_type == "IfcPropertyEnumeratedValue":
                     value_ifc_entity = self.generate_enum_entity(prop)
                 elif prop.template_type == "IfcPropertySingleValue":
-                    value_ifc_entity = getattr(self.file, f"create{primary_measure_type}")(value)
+                    value_ifc_entity = self.file.create_entity(primary_measure_type, value)
+                else:
+                    assert False
 
-                new_pset = ifcopenshell.api.run("pset.add_pset", self.file, product=ifc_element, name=prop.pset_name)
-                ifcopenshell.api.run(
-                    "pset.edit_pset", self.file, pset=new_pset, properties={prop.property_name: value_ifc_entity}
-                )
-        self.report({"INFO"}, "Finished applying changes")
+                new_pset = ifcopenshell.api.pset.add_pset(self.file, product=ifc_element, name=prop.pset_name)
+                ifcopenshell.api.pset.edit_pset(self.file, pset=new_pset, properties={prop.name: value_ifc_entity})
+
+            if entries:
+                elements_changed += 1
+        self.report({"INFO"}, f"Finished applying changes, {elements_changed} elements changed.")
         return {"FINISHED"}
 
-    def generate_enum_entity(self, prop):
+    def generate_enum_entity(self, prop: "AddEditPropertyEntry") -> ifcopenshell.entity_instance:
         prop_type = prop.get_value_name()
         prop_enum = self.file.create_entity(
             "IFCPROPERTYENUMERATION",
-            Name=prop.property_name,
+            Name=prop.name,
             EnumerationValues=tuple(
                 self.file.create_entity(prop.primary_measure_type, ev[prop_type]) for ev in prop.enum_values
             ),
         )
         prop_enum_value = self.file.create_entity(
             "IFCPROPERTYENUMERATEDVALUE",
-            Name=prop.property_name,
+            Name=prop.name,
             EnumerationValues=tuple(
                 self.file.create_entity(prop.primary_measure_type, ev[prop_type])
                 for ev in prop.enum_values
@@ -402,7 +467,10 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        props = context.scene.DeletePsets
+        props = tool.Pset.get_global_pset_props()
+
+        pset_names_to_delete = {p.name for p in props.psets_to_delete}
+        psets_removed = 0
 
         for obj in tool.Blender.get_selected_objects():
             ifc_element = tool.Ifc.get_entity(obj)
@@ -410,19 +478,18 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             psets = ifcopenshell.util.element.get_psets(ifc_element)
 
-            for prop in props:
-                pset = prop.pset_name
-                if pset in psets:
-                    try:
-                        ifcopenshell.api.pset.remove_pset(
-                            self.file,
-                            product=ifc_element,
-                            pset=self.file.by_id(psets[pset]["id"]),
-                        )
-                    except KeyError:
-                        pass  # Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej
+            for pset_name, pset_data in psets.items():
+                if pset_name not in pset_names_to_delete:
+                    continue
 
-        self.report({"INFO"}, "Finished applying changes")
+                ifcopenshell.api.pset.remove_pset(
+                    self.file,
+                    product=ifc_element,
+                    pset=self.file.by_id(pset_data["id"]),
+                )
+                psets_removed += 1
+
+        self.report({"INFO"}, f"Finished applying changes, {psets_removed} psets removed.")
         return {"FINISHED"}
 
 

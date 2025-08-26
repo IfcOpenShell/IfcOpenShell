@@ -41,6 +41,28 @@ import ifcopenshell.util.element as subject
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
+class TestIFC2X3MaterialProfilePsts(test.bootstrap.IFC2X3):
+    def test_get_profile_pset(self):
+        profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, "IfcRectangleProfileDef")
+        pset = ifcopenshell.api.pset.add_pset(self.file, profile, "")
+        pset.Perimeter = 25.0
+        # We don't support them, just making sure there are no errors.
+        assert subject.get_pset(profile, "Test") is None
+        assert subject.get_psets(profile) == {}
+
+    def get_material_pset_extended_params(self):
+        material_with_extended_params = ifcopenshell.api.material.add_material(self.file)
+        pset = ifcopenshell.api.pset.add_pset(self.file, material_with_extended_params, "Test")
+        ifcopenshell.api.pset.edit_pset(self.file, pset, "Test", {"GassPressure": 25.0})
+        pset_data = subject.get_pset(material_with_extended_params, "Test")
+        del pset_data["id"]
+        assert pset_data == {"GassPressure": 25.0}
+        psets_data = subject.get_psets(material_with_extended_params)
+        for value in psets_data.values():
+            del value["id"]
+        assert psets_data == {"Test": {"GassPressure": 25.0}}
+
+
 class TestGetPsetIFC4(test.bootstrap.IFC4):
     def test_getting_the_psets_of_a_product_as_a_dictionary(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

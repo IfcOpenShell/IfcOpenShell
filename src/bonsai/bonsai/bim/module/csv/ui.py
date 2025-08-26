@@ -32,6 +32,7 @@ class BIM_PT_ifccsv(Panel):
     bl_parent_id = "BIM_PT_tab_collaboration"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         props = tool.Blender.get_csv_props()
 

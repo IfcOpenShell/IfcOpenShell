@@ -50,15 +50,12 @@ def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name
     metadata, rather than quantification data.
 
     :param product: The IfcObject that you want to assign a quantity set to.
-    :type product: ifcopenshell.entity_instance
     :param name: The name of the quantity set. Quantity sets that are
         standardised by buildingSMART typically have a prefix of "Qto_",
         like "Qto_WallBaseQuantities". If you create your own, you must not
         use that prefix. It is recommended to use your own prefix tailored
         to your project, company, or local government requirement.
-    :type name: str
     :return: The newly created IfcElementQuantity
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -126,4 +123,5 @@ class Usecase:
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
             Name=self.settings["name"],
+            MethodOfMeasurement="BaseQuantities" if self.settings["name"].endswith("BaseQuantities") else None,
         )

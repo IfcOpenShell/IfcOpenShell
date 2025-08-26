@@ -1,5 +1,3 @@
-# coding=utf-8
-
 """This script converts Graphisoft XML into an IFC file"""
 
 import xml.etree.ElementTree as ET

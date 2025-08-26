@@ -19,6 +19,7 @@
 import bpy
 import bonsai.tool as tool
 import ifcopenshell.util.element
+from typing import Any
 
 
 def refresh():
@@ -79,9 +80,20 @@ class SpatialData:
             return label
 
     @classmethod
-    def references(cls):
-        results = ifcopenshell.util.element.get_referenced_structures(tool.Ifc.get_entity(bpy.context.active_object))
-        return sorted([f"{r.is_a()}/{r.Name or ''}" for r in results])
+    def references(cls) -> list[dict[str, Any]]:
+        assert (obj := bpy.context.active_object) and (element := tool.Ifc.get_entity(obj))
+        results: list[dict[str, Any]] = []
+        for structure in ifcopenshell.util.element.get_referenced_structures(element):
+            ifc_class = structure.is_a()
+            results.append(
+                {
+                    "id": structure.id(),
+                    "name": f"{ifc_class}/{structure.Name or ''}",
+                    "type": ifc_class,
+                }
+            )
+        results.sort(key=lambda x: x["name"])
+        return results
 
     @classmethod
     def is_directly_contained(cls):

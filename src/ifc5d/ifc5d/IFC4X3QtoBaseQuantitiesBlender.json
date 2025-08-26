@@ -194,12 +194,12 @@
             },
             "IfcCourse + IfcCourseType": {
                 "Qto_CourseBaseQuantities": {
-                    "GrossVolume": null,
-                    "Length": null,
-                    "Thickness": null,
-                    "Volume": null,
+                    "GrossVolume": "get_gross_volume",
+                    "Length": "get_length",
+                    "Thickness": "get_height",
+                    "Volume": "get_net_volume",
                     "Weight": null,
-                    "Width": null
+                    "Width": "get_width"
                 }
             },
             "IfcCovering + IfcCoveringType": {
@@ -265,21 +265,21 @@
             },
             "IfcEarthworksCut": {
                 "Qto_EarthworksCutBaseQuantities": {
-                    "Depth": null,
-                    "Length": null,
+                    "Depth": "get_height",
+                    "Length": "get_length",
                     "LooseVolume": null,
-                    "UndisturbedVolume": null,
+                    "UndisturbedVolume": "get_net_volume",
                     "Weight": null,
-                    "Width": null
+                    "Width": "get_width"
                 }
             },
             "IfcEarthworksFill": {
                 "Qto_EarthworksFillBaseQuantities": {
-                    "CompactedVolume": null,
-                    "Depth": null,
-                    "Length": null,
+                    "CompactedVolume": "get_net_volume",
+                    "Depth": "get_height",
+                    "Length": "get_length",
                     "LooseVolume": null,
-                    "Width": null
+                    "Width": "get_width"
                 }
             },
             "IfcElectricAppliance + IfcElectricApplianceType": {
@@ -538,16 +538,6 @@
                     "NetWeight": "get_net_weight",
                     "Perimeter": "get_gross_perimeter",
                     "Width": "get_height"
-                }
-            },
-            "IfcProduct": {
-                "Qto_BodyGeometryValidation": {
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
-                    "NetSurfaceArea": null,
-                    "NetVolume": null,
-                    "SurfaceGenusAfterFeatures": null,
-                    "SurfaceGenusBeforeFeatures": null
                 }
             },
             "IfcProjectionElement": {

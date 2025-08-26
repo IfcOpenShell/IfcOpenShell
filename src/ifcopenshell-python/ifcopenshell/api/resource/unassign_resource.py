@@ -69,4 +69,4 @@ def unassign_resource(
         related_objects = list(rel.RelatedObjects)
         related_objects.remove(related_object)
         rel.RelatedObjects = related_objects
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(file, element=rel)

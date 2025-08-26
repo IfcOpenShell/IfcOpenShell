@@ -33,6 +33,7 @@
 #include <iomanip>
 #include <numeric>
 #include <functional>
+#include <cmath>
 
 #ifdef USE_BINARY
 #define write_shape write_binary
@@ -233,20 +234,24 @@ namespace {
 	}
 }
 
-void HdfSerializer::read_surface_style(surface_style_serialization& s, const ifcopenshell::geometry::taxonomy::style::ptr& gss_) {
-	auto& gss = *gss_;
+void HdfSerializer::read_surface_style(const surface_style_serialization& s,
+                                       ifcopenshell::geometry::taxonomy::style& gss,
+                                       IfcParse::IfcFile& f) {
 	if (strlen(s.name) || s.id) {
-		if (s.diffuse[0] == s.diffuse[0]) {
+		if (!std::isnan(s.diffuse[0])) {
 			gss.diffuse = ifcopenshell::geometry::taxonomy::colour(s.diffuse[0], s.diffuse[1], s.diffuse[2]);
 		}
-		if (s.specular[0] == s.specular[0]) {
+		if (!std::isnan(s.specular[0])) {
 			gss.specular = ifcopenshell::geometry::taxonomy::colour(s.specular[0], s.specular[1], s.specular[2]);
 		}
-		if (s.transparency == s.transparency) {
+		if (!std::isnan(s.transparency)) {
 			gss.transparency = s.transparency;
 		}
-		if (s.specularity == s.specularity) {
+		if (!std::isnan(s.specularity)) {
 			gss.specularity = s.specularity;
+		}
+		if (s.id != 0) {
+			gss.instance = f.instance_by_id(s.id)->as<IfcUtil::IfcBaseEntity>();
 		}
 	}
 
@@ -356,7 +361,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			matrix->components() << Eigen::Map<Eigen::Matrix4d>(&part.matrix[0][0]);
 
 			auto style_ptr = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::style>();
-			read_surface_style(part.surface_style, style_ptr);
+			read_surface_style(part.surface_style, *style_ptr, f);
 			
 			shapes.push_back(IfcGeom::ConversionResult(part.id, matrix, new ifcopenshell::geometry::OpenCascadeShape(shp), style_ptr));
 		}
@@ -421,7 +426,8 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 		std::vector<ifcopenshell::geometry::taxonomy::style::ptr> surface_style_ptrs(surface_styles.size());
 
 		for (size_t i = 0; i < surface_styles.size(); ++i) {
-			read_surface_style(surface_styles[i], surface_style_ptrs[i]);
+			surface_style_ptrs[i] = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::style>();
+			read_surface_style(surface_styles[i], *surface_style_ptrs[i], f);
 		}
 
 		triangulation_geometry = boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(
@@ -544,7 +550,8 @@ void HdfSerializer::write_style(surface_style_serialization& data, const ifcopen
 	data.name = s.name.c_str();
 	// @todo
 	data.original_name = s.name.c_str();
-	data.id = s.instance->as<IfcUtil::IfcBaseClass>()->id();
+	auto instance = s.instance->as<IfcUtil::IfcBaseClass>();
+	data.id = instance ? instance->id() : 0;
 	if (s.diffuse) {
 		data.diffuse[0] = s.diffuse.ccomponents()(0);
 		data.diffuse[1] = s.diffuse.ccomponents()(1);
@@ -565,6 +572,16 @@ void HdfSerializer::write_style(surface_style_serialization& data, const ifcopen
 
 
 void HdfSerializer::write(const IfcGeom::BRepElement* o) {
+	// Currenly we only support OpenCascade shapes.
+	for (auto it = o->geometry().begin(); it != o->geometry().end(); ++it) {
+		auto shape_ptr = std::dynamic_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape());
+		if (shape_ptr == nullptr) {
+			std::cerr << "WARNING. Only OpenCascade shapes support caching. "
+			          << "Skipping caching for item #" << it->ItemId() << "." << std::endl;
+			return;
+		}
+	}
+
 	static auto nan = std::numeric_limits<double>::quiet_NaN();
 
 	auto element_group = write((const IfcGeom::Element*)o);
@@ -609,6 +626,7 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 		}
 
 		brep_strings.emplace_back();
+		// OpenCascadeShape type ensured by the check at the method start.
 		write_shape(std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape())->shape(), brep_strings.back());
 		
 		parts[i].surface_style = { "", "", 0, {nan,nan,nan}, {nan,nan,nan}, nan, nan };
@@ -671,6 +689,7 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	write_dataset(meshGroup, DATASET_NAME_UVCOORDS, mesh.uvs(), 2);
 	write_dataset(meshGroup, DATASET_NAME_MATERIAL_IDS, mesh.material_ids(), 1);
 	write_dataset(meshGroup, DATASET_NAME_ITEM_IDS, mesh.item_ids(), 1);
+	write_dataset(meshGroup, DATASET_NAME_EDGES_ITEM_IDS, mesh.edges_item_ids(), 1);
 
 	{
 		auto& ts = mesh.materials();

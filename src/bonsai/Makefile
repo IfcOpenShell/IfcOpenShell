@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+SHELL := sh
 PYTHON:=python3.11
 PIP:=pip3.11
 PATCH:=patch
@@ -86,7 +87,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=c49ca69
+OLD:=358395c
 .PHONY: bump
 bump:
 ifndef NEW
@@ -137,7 +138,7 @@ endif
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
 	# Required by IFCCityJSON
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download cjio --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "cjio >=0.8, <0.10" --dest=./wheels
 	# Required in general for sorting all sorts of stuff in a nice way
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download natsort --dest=./wheels
 	# Provides express rule validation for ifcopenshell.validate
@@ -192,13 +193,15 @@ else
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 endif
 
+	# jQuery is required for web UI functionality
+	cd build/bonsai/bim/data/webui/static/js/ && wget https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
+
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
 	# Provides IFCJSON functionality
-	# TODO: replace with main repo if https://github.com/IFCJSON-Team/IFC2JSON_python/pull/3 is merged.
-	cd build && wget -O ifc2json.zip https://github.com/Moult/IFC2JSON_python/archive/refs/heads/feature-ios-v0.8.0.zip
+	cd build && wget -O ifc2json.zip https://github.com/IFCJSON-Team/IFC2JSON_python/archive/refs/heads/master.zip
 	cd build && unzip ifc2json.zip && rm ifc2json.zip
 	# IFCJSON doesn't have pyproject.toml, so we use python command.
 	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-*/file_converters && \

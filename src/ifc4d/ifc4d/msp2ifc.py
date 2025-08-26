@@ -18,15 +18,18 @@
 
 import datetime
 from datetime import timedelta, date
-from typing import List
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.control
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import xml.etree.ElementTree as ET
 
 
 class MSP2Ifc:
-    def __init__(self, optionalColumns: List[str] = []):
+    def __init__(self, optionalColumns: list[str] = []):
         self.xml = None
         self.file = None
         self.ns = None
@@ -209,7 +212,7 @@ class MSP2Ifc:
         if not self.file:
             self.create_boilerplate_ifc()
         if not self.work_plan:
-            self.work_plan = ifcopenshell.api.run("sequence.add_work_plan", self.file)
+            self.work_plan = ifcopenshell.api.sequence.add_work_plan(self.file)
         work_schedule = self.create_work_schedule()
         self.create_calendars()
         self.create_tasks(work_schedule)
@@ -217,7 +220,7 @@ class MSP2Ifc:
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
 
     def create_tasks(self, work_schedule):
@@ -228,8 +231,8 @@ class MSP2Ifc:
                 self.create_task(task, work_schedule=work_schedule)
 
     def create_work_schedule(self):
-        return ifcopenshell.api.run(
-            "sequence.add_work_schedule", self.file, name=self.project["Name"], work_plan=self.work_plan
+        return ifcopenshell.api.sequence.add_work_schedule(
+            self.file, name=self.project["Name"], work_plan=self.work_plan
         )
 
     def create_calendars(self):
@@ -239,13 +242,12 @@ class MSP2Ifc:
         for calendar in self.calendars.values():
             if not has_work_or_exceptions(calendar):
                 continue
-            calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
+            calendar["ifc"] = ifcopenshell.api.sequence.add_work_calendar(self.file, name=calendar["Name"])
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
 
     def create_task(self, task, work_schedule=None, parent_task=None):
-        task["ifc"] = ifcopenshell.api.run(
-            "sequence.add_task",
+        task["ifc"] = ifcopenshell.api.sequence.add_task(
             self.file,
             work_schedule=work_schedule if work_schedule else None,
             parent_task=parent_task["ifc"] if parent_task else None,
@@ -258,17 +260,13 @@ class MSP2Ifc:
             calendar = self.calendars[self.project["CalendarUID"]]["ifc"]
 
         if calendar:
-            ifcopenshell.api.run(
-                "control.assign_control",
+            ifcopenshell.api.control.assign_control(
                 self.file,
-                **{
-                    "relating_control": calendar,
-                    "related_object": task["ifc"],
-                },
+                relating_control=calendar,
+                related_object=task["ifc"],
             )
 
-        ifcopenshell.api.run(
-            "sequence.edit_task",
+        ifcopenshell.api.sequence.edit_task(
             self.file,
             task=task["ifc"],
             attributes={
@@ -277,9 +275,8 @@ class MSP2Ifc:
                 "IsMilestone": task["Start"] == task["Finish"],
             },
         )
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task["ifc"])
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task["ifc"])
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -294,10 +291,9 @@ class MSP2Ifc:
 
         # create pset for optional columns
         if len(self.optionalColumns):
-            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=task["ifc"], name="Pset_MSP_Task")
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=task["ifc"], name="Pset_MSP_Task")
 
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=pset,
                 properties={name: str(task[name]) for name in self.optionalColumns if task[name]},
@@ -318,8 +314,8 @@ class MSP2Ifc:
             if day["ifc"]:
                 continue
 
-            day["ifc"] = ifcopenshell.api.run(
-                "sequence.add_work_time", self.file, work_calendar=calendar, time_type="WorkingTimes"
+            day["ifc"] = ifcopenshell.api.sequence.add_work_time(
+                self.file, work_calendar=calendar, time_type="WorkingTimes"
             )
 
             weekday_component = [day_map[day["DayType"]]]
@@ -332,25 +328,22 @@ class MSP2Ifc:
                     day2["ifc"] = day["ifc"]
 
             work_time_name = "Weekdays: {}".format(", ".join([str(c) for c in sorted(weekday_component)]))
-            ifcopenshell.api.run(
-                "sequence.edit_work_time",
+            ifcopenshell.api.sequence.edit_work_time(
                 self.file,
                 work_time=day["ifc"],
                 attributes={"Name": work_time_name},
             )
 
-            recurrence = ifcopenshell.api.run(
-                "sequence.assign_recurrence_pattern", self.file, parent=day["ifc"], recurrence_type="WEEKLY"
+            recurrence = ifcopenshell.api.sequence.assign_recurrence_pattern(
+                self.file, parent=day["ifc"], recurrence_type="WEEKLY"
             )
-            ifcopenshell.api.run(
-                "sequence.edit_recurrence_pattern",
+            ifcopenshell.api.sequence.edit_recurrence_pattern(
                 self.file,
                 recurrence_pattern=recurrence,
                 attributes={"WeekdayComponent": weekday_component},
             )
             for work_time in day["WorkingTimes"]:
-                ifcopenshell.api.run(
-                    "sequence.add_time_period",
+                ifcopenshell.api.sequence.add_time_period(
                     self.file,
                     recurrence_pattern=recurrence,
                     start_time=work_time["Start"],
@@ -368,15 +361,13 @@ class MSP2Ifc:
             if not task["PredecessorTasks"]:
                 continue
             for predecessor in task["PredecessorTasks"].values():
-                rel_sequence = ifcopenshell.api.run(
-                    "sequence.assign_sequence",
+                rel_sequence = ifcopenshell.api.sequence.assign_sequence(
                     self.file,
                     related_process=task["ifc"],
                     relating_process=self.tasks[predecessor["PredecessorTask"]]["ifc"],
                 )
                 if predecessor["Type"]:
-                    ifcopenshell.api.run(
-                        "sequence.edit_sequence",
+                    ifcopenshell.api.sequence.edit_sequence(
                         self.file,
                         rel_sequence=rel_sequence,
                         attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]},
@@ -408,11 +399,10 @@ class MSP2Ifc:
     def process_exception(self, exception, calendar):
         if exception["ifc"] or not exception["FromDate"]:
             return
-        exception["ifc"] = ifcopenshell.api.run(
-            "sequence.add_work_time", self.file, work_calendar=calendar, time_type="ExceptionTimes"
+        exception["ifc"] = ifcopenshell.api.sequence.add_work_time(
+            self.file, work_calendar=calendar, time_type="ExceptionTimes"
         )
-        ifcopenshell.api.run(
-            "sequence.edit_work_time",
+        ifcopenshell.api.sequence.edit_work_time(
             self.file,
             work_time=exception["ifc"],
             attributes={
@@ -442,18 +432,16 @@ class MSP2Ifc:
             }
         else:
             return
-        recurrence = ifcopenshell.api.run(
-            "sequence.assign_recurrence_pattern",
+        recurrence = ifcopenshell.api.sequence.assign_recurrence_pattern(
             self.file,
             parent=exception["ifc"],
             recurrence_type=recurrence_type,
         )
-        ifcopenshell.api.run(
-            "sequence.edit_recurrence_pattern", self.file, recurrence_pattern=recurrence, attributes=attributes
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file, recurrence_pattern=recurrence, attributes=attributes
         )
         for work_time in exception["WorkingTimes"] or []:
-            ifcopenshell.api.run(
-                "sequence.add_time_period",
+            ifcopenshell.api.sequence.add_time_period(
                 self.file,
                 recurrence_pattern=recurrence,
                 start_time=work_time["Start"],

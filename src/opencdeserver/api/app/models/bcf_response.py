@@ -8,7 +8,7 @@ class ProjectAction(Enum):
 
 
 class ProjectGETAuthorization(BaseModel):
-    project_actions: Optional[List[ProjectAction]] = None
+    project_actions: Optional[list[ProjectAction]] = None
 
 
 class ProjectGET(BaseModel):
@@ -34,22 +34,22 @@ class CommentAction(Enum):
 
 
 class ExtensionsGET(BaseModel):
-    topic_type: List[str]
-    custom_information: List[str]
-    topic_status: List[str]
-    topic_label: List[str]
-    snippet_type: List[str]
-    priority: List[str]
-    users: List[str]
-    stage: List[str]
-    project_actions: Optional[List[str]] = None
-    topic_actions: Optional[List[str]] = None
-    comment_actions: Optional[List[str]] = None
+    topic_type: list[str]
+    custom_information: list[str]
+    topic_status: list[str]
+    topic_label: list[str]
+    snippet_type: list[str]
+    priority: list[str]
+    users: list[str]
+    stage: list[str]
+    project_actions: Optional[list[str]] = None
+    topic_actions: Optional[list[str]] = None
+    comment_actions: Optional[list[str]] = None
 
 
 class TopicGETAuthorization(BaseModel):
-    topic_actions: Optional[List[TopicAction]] = None
-    topic_status: Optional[List[str]] = None
+    topic_actions: Optional[list[TopicAction]] = None
+    topic_status: Optional[list[str]] = None
 
 
 class TopicGET(BaseModel):
@@ -57,11 +57,11 @@ class TopicGET(BaseModel):
     server_assigned_id: str
     topic_type: Optional[str] = None
     topic_status: Optional[str] = None
-    reference_links: Optional[List[str]] = None
+    reference_links: Optional[list[str]] = None
     title: str
     priority: Optional[str] = None
     index: Optional[int] = None
-    labels: Optional[List[str]] = None
+    labels: Optional[list[str]] = None
     creation_date: str
     creation_author: str
     modified_date: Optional[str] = None
@@ -88,12 +88,12 @@ class FileGET(BaseModel):
 
 
 class ProjectFileInformation(BaseModel):
-    display_information: Optional[List[ProjectFileDisplayInformation]] = None
+    display_information: Optional[list[ProjectFileDisplayInformation]] = None
     file: Optional[FileGET] = None
 
 
 class CommentGETAuthorization(BaseModel):
-    comment_actions: Optional[List[CommentAction]] = None
+    comment_actions: Optional[list[CommentAction]] = None
 
 
 class CommentGET(BaseModel):
@@ -127,7 +127,7 @@ class ViewpointAction(Enum):
 
 
 class ViewpointGETAuthorization(BaseModel):
-    viewpoint_actions: Optional[List[ViewpointAction]] = None
+    viewpoint_actions: Optional[list[ViewpointAction]] = None
 
 
 class ViewpointGET(BaseModel):
@@ -135,19 +135,19 @@ class ViewpointGET(BaseModel):
     guid: str
     orthogonal_camera: Optional[OrthogonalCamera] = None
     perspective_camera: Optional[PerspectiveCamera] = None
-    lines: Optional[List[Line]] = None
-    clipping_planes: Optional[List[ClippingPlane]] = None
-    bitmaps: Optional[List[BitmapGET]] = None
+    lines: Optional[list[Line]] = None
+    clipping_planes: Optional[list[ClippingPlane]] = None
+    bitmaps: Optional[list[BitmapGET]] = None
     snapshot: Optional[SnapshotGET] = None
     authorization: Optional[ViewpointGETAuthorization] = None
 
 
 class ColoringGET(BaseModel):
-    coloring: Optional[List[Coloring]] = None
+    coloring: Optional[list[Coloring]] = None
 
 
 class SelectionGET(BaseModel):
-    selection: Optional[List[Component]] = None
+    selection: Optional[list[Component]] = None
 
 
 class VisibilityGET(BaseModel):
@@ -176,7 +176,7 @@ class TopicEventGET(BaseModel):
     author: str
 
 
-#     actions: Optional[List[EventAction]] = Field(None, min_items=1)
+#     actions: Optional[list[EventAction]] = Field(None, min_items=1)
 
 
 class CommentEventGET(BaseModel):
@@ -186,7 +186,7 @@ class CommentEventGET(BaseModel):
     author: str
 
 
-#     actions: Optional[List[EventAction]] = Field(None, min_items=1)
+#     actions: Optional[list[EventAction]] = Field(None, min_items=1)
 
 
 # ---- maybe not necessary now

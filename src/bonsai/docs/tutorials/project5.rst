@@ -9,6 +9,8 @@ complex structural elements, and advanced project management techniques.
 Prerequisites
 =============
 
+.. include:: /_incomplete_message.rst
+
 - Completion of Project 4: Terraced/Town Houses/Duplexes
 - Expert-level understanding of Bonsai and IFC concepts
 - Basic knowledge of structural and MEP engineering principles

@@ -19,7 +19,8 @@
 import bpy
 import ifcopenshell
 import bonsai.tool as tool
-from typing import Any, Generator, Union
+from typing import Any, Union
+from collections.abc import Generator
 
 
 def refresh():
@@ -118,23 +119,24 @@ class BooleansData:
 
     @classmethod
     def load(cls):
+        # Only called when some object is active.
         cls.data = {}
         cls.data["total_booleans"] = cls.booleans()
         cls.data["manual_booleans"] = cls.manual_booleans()
         cls.is_loaded = True
 
     @classmethod
-    def booleans(cls):
-        props = tool.Geometry.get_geometry_props()
-        obj = props.representation_obj or bpy.context.active_object
+    def booleans(cls) -> list[ifcopenshell.entity_instance]:
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
         if not (representation := tool.Geometry.get_active_representation(obj)):
             return []
         return tool.Model.get_booleans(representation=representation)
 
     @classmethod
-    def manual_booleans(cls):
-        props = tool.Geometry.get_geometry_props()
-        obj = props.representation_obj or bpy.context.active_object
+    def manual_booleans(cls) -> list[ifcopenshell.entity_instance]:
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
         if not (representation := tool.Geometry.get_active_representation(obj)):
             return []
         return tool.Model.get_manual_booleans(tool.Ifc.get_entity(obj), representation=representation)

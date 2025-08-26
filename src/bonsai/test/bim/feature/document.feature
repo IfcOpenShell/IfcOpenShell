@@ -88,9 +88,10 @@ Scenario: Assign document
     And the variable "reference" is "{ifc}.by_type('IfcDocumentReference')[-1].id()"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     When I press "bim.assign_document(document={reference})"
     Then nothing happens
 
@@ -104,9 +105,10 @@ Scenario: Unassign document
     And the variable "reference" is "{ifc}.by_type('IfcDocumentReference')[-1].id()"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I press "bim.assign_document(document={reference})"
     When I press "bim.unassign_document(document={reference})"
     Then nothing happens

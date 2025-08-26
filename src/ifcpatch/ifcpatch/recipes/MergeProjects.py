@@ -55,10 +55,8 @@ class Patcher:
     def patch(self):
         if isinstance(self.filepaths, Union[str, ifcopenshell.file]):
             print(
-                (
-                    "WARNING. Passing a single file/filepath will be deprecated soon for MergeProjects ifcpatch, "
-                    "replace it with a list of file/filepaths."
-                )
+                "WARNING. Passing a single file/filepath will be deprecated soon for MergeProjects ifcpatch, "
+                "replace it with a list of file/filepaths."
             )
             self.filepaths = [self.filepaths]
         for filepath in self.filepaths:

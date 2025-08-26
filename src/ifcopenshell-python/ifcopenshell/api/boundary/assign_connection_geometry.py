@@ -63,7 +63,6 @@ def assign_connection_geometry(
     :param unit_scale: The unit scale as calculated by
         ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
         will be automatically calculated for you.
-    :type unit_scale: float, optional
     :return: None
 
     Example:

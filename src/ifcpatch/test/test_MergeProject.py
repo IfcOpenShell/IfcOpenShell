@@ -21,6 +21,8 @@ import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
@@ -40,16 +42,16 @@ class TestMergeProjects(test.bootstrap.IFC4):
         if ifc_file is None:
             ifc_file = ifcopenshell.file(schema=self.file.schema)
 
-        ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcProject")
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", prefix=prefix)
-        ifcopenshell.api.run("unit.assign_unit", ifc_file, units=[unit])
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT", prefix=prefix)
+        ifcopenshell.api.unit.assign_unit(ifc_file, units=[unit])
         model = ifcopenshell.api.context.add_context(ifc_file, "Model")
         ifcopenshell.api.context.add_context(ifc_file, "Model", "Body", "MODEL_VIEW", parent=model)
 
         matrix = np.eye(4)
         matrix[:, 3] = (1, 2, 3, 1)
-        wall = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcWall")
-        ifcopenshell.api.run("geometry.edit_object_placement", ifc_file, product=wall, matrix=matrix, is_si=True)
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
+        ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=wall, matrix=matrix, is_si=True)
         return ifc_file
 
     def test_run(self):

@@ -2,8 +2,8 @@ from bsdd import Client
 
 client = Client()
 
-ifc4x3_uri = [l["uri"] for l in client.get_dictionary()["dictionaries"] if "4.3" in l["uri"]][0]
-nbs_uri = [l["uri"] for l in client.get_dictionary()["dictionaries"] if "Uniclass 2015" == l["name"]][0]
+ifc4x3_uri = next(l["uri"] for l in client.get_dictionary()["dictionaries"] if "4.3" in l["uri"])
+nbs_uri = next(l["uri"] for l in client.get_dictionary()["dictionaries"] if "Uniclass 2015" == l["name"])
 
 
 def get_ifc_classes():
@@ -30,7 +30,7 @@ def test_get_nbs_classes():
 
 
 def test_get_class():
-    uri_light_fixture = [l for l in get_ifc_classes()["classes"] if "IfcLightFixture" == l["code"]][0]["uri"]
+    uri_light_fixture = next(l for l in get_ifc_classes()["classes"] if "IfcLightFixture" == l["code"])["uri"]
     ifc4x3_light_fixture = client.get_class(uri_light_fixture)
     assert "Maintenance Factor" and "Light Fixture Mounting Type" in [
         l["name"] for l in ifc4x3_light_fixture["classProperties"]

@@ -26,6 +26,8 @@ TEST_FILE_DIR = Path("../../test/input/")
 
 
 class TestWrite:
+    model: ifcopenshell.file
+
     def setup_method(self):
         self.model = ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2.ifc")
 

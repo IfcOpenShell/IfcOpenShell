@@ -22,6 +22,8 @@ import bpy
 import string
 import svgwrite
 import openpyxl
+import openpyxl.cell  # Unnecessary, bug in typeshed.
+import openpyxl.utils  # Unnecessary, bug in typeshed.
 import bonsai.tool as tool
 
 from bonsai.bim.module.drawing.svgwriter import SvgWriter
@@ -72,10 +74,11 @@ class Scheduler:
             self.schedule_xlsx(infile, outfile)
 
     def parse_css(self, infile: str) -> None:
-        props = tool.Drawing.get_document_props()
+        prefs = tool.Blender.get_addon_preferences()
+
         stylesheet_path = os.path.splitext(infile)[0] + ".css"
         if not os.path.exists(stylesheet_path):
-            stylesheet_rel_path = props.schedules_stylesheet_path
+            stylesheet_rel_path = prefs.doc.schedules_stylesheet_path
             ifc_file_path = os.path.dirname(tool.Ifc.get_path())
             stylesheet_path = ifc_file_path + "\\" + stylesheet_rel_path
             if not os.path.exists(stylesheet_path):

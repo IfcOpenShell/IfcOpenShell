@@ -33,12 +33,9 @@ def add_role(
 
     :param assigned_object: The IfcPerson or IfcOrganization the role should
         be assigned to.
-    :type assigned_object: ifcopenshell.entity_instance
     :param role: The type of role, taken from the IFC documentation for
         IfcActorRole, or a custom name. Defaults to "ARCHITECT".
-    :type role: str, optional
     :return: The newly created IfcActorRole
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

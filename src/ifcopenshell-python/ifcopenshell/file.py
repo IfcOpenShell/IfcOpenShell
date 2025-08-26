@@ -20,24 +20,50 @@ from __future__ import annotations
 import os
 import re
 import numbers
+import time
 import zipfile
 import functools
 import ifcopenshell
+import weakref
 from pathlib import Path
-from typing import Any
-from typing import Callable
-from typing import Generator
-from typing import Optional
-from typing import TYPE_CHECKING
-from typing import Union
-from typing import overload
-from typing import Literal
+from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict
+from collections.abc import Callable, Generator
+
+# py39 compat: re-enable when support is dropped
+# from typing_extensions import assert_never
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
 
+from ifcopenshell.util.mvd_info import MvdInfo, LARK_AVAILABLE
+
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
+
+    InverseReference = tuple[int, Any]
+    ElementInverses = dict[int, list[InverseReference]]
+
+    class CreateOperation(TypedDict):
+        action: Literal["create"]
+        value: Any
+
+    class EditOperation(TypedDict):
+        action: Literal["edit"]
+        id: int
+        index: int
+        old: Any
+        new: Any
+
+    class DeleteOperation(TypedDict):
+        action: Literal["delete"]
+        inverses: ElementInverses
+        value: Any
+
+    class BatchDeleteOperation(TypedDict):
+        action: Literal["batch_delete"]
+        inverses: ElementInverses
+
+    TransactionOperation = Union[CreateOperation, EditOperation, DeleteOperation, BatchDeleteOperation]
 
 HEADER_FIELDS = {
     "file_description": [
@@ -56,7 +82,17 @@ HEADER_FIELDS = {
 }
 
 
+class UndoSystemError(Exception):
+    def __init__(self, message: str, transaction: Transaction):
+        super().__init__(message)
+        self.transaction = transaction
+
+
 class Transaction:
+    operations: list[TransactionOperation]
+    batch_inverses: list[ElementInverses]
+    batch_delete_ids: set[int]
+
     def __init__(self, ifc_file: file):
         self.file: file = ifc_file
         self.operations = []
@@ -71,14 +107,14 @@ class Transaction:
             info[key] = self.serialise_value(element, value)
         return info
 
-    def serialise_value(self, element, value):
+    def serialise_value(self, element, value) -> Any:
         return element.walk(
             lambda v: isinstance(v, entity_instance),
             lambda v: {"id": v.id()} if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
             value,
         )
 
-    def unserialise_value(self, element, value):
+    def unserialise_value(self, element, value) -> Any:
         return element.walk(
             lambda v: isinstance(v, dict),
             lambda v: self.file.by_id(v["id"]) if v.get("id") else self.file.create_entity(v["type"], v["value"]),
@@ -128,10 +164,10 @@ class Transaction:
             {"action": "delete", "inverses": inverses, "value": self.serialise_entity_instance(element)}
         )
 
-    def get_element_inverses(self, element):
-        inverses = {}
+    def get_element_inverses(self, element: ifcopenshell.entity_instance) -> ElementInverses:
+        inverses: ElementInverses = {}
         for inverse in self.file.get_inverse(element):
-            inverse_references = []
+            inverse_references: list[InverseReference] = []
             for i, attribute in enumerate(inverse):
                 if self.has_element_reference(attribute, element):
                     inverse_references.append((i, self.serialise_value(inverse, attribute)))
@@ -178,6 +214,10 @@ class Transaction:
                     inverse = self.file.by_id(inverse_id)
                     for index, value in data:
                         inverse[index] = self.unserialise_value(inverse, value)
+            else:
+                # py39 compat: re-enable when support is dropped
+                # assert_never(operation["action"])
+                pass
 
     def commit(self) -> None:
         for operation in self.operations:
@@ -197,9 +237,18 @@ class Transaction:
                 self.file.remove(element)
             elif operation["action"] == "batch_delete":
                 pass
+            else:
+                # py39 compat: re-enable when support is dropped
+                # assert_never(operation["action"])
+                pass
 
 
-file_dict = {}
+file_dict: dict[int, tuple[weakref.ReferenceType[file], int]] = {}
+"""Mapping of internal IfcFile pointer address to existing ``ifcopenshell.file``
+and the timestamp when it was created.
+
+Needed only to quickly access related from ``entity_instance`` it's ``file``.
+"""
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
@@ -224,8 +273,13 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
+    header: ifcopenshell_wrapper.IfcSpfHeader
     units: dict[str, entity_instance] = {}
     history_size: int = 64
+    history: list[Transaction]
+    """Chronological order - from oldest to newest."""
+    future: list[Transaction]
+    """Reversed chronological order - from newest to oldest."""
 
     to_delete: Union[set[ifcopenshell.entity_instance], None] = None
     """Entities for batch removal."""
@@ -302,9 +356,21 @@ class file:
         self.future = []
         self.transaction: Optional[Transaction] = None
 
-        import weakref
+        # we store a tuple of C++ file pointer address and creation time stamp so that
+        # when memory addresses get recycled we do not run into collisions when the
+        # address is used as a cache key.
+        file_dict[self.wrapped_data.file_pointer()] = (weakref.ref(self), time.monotonic_ns())
 
-        file_dict[self.file_pointer()] = weakref.ref(self)
+    @property
+    def identifier(self) -> tuple[int, int]:
+        """Pair of C++ file pointer address and creation time stamp to uniquely identify a file
+        over the life time of ifcopenshell module that should be mostly safe except in pathological
+        cases
+
+        Returns:
+            tuple[int, int]: Pair of C++ file pointer address and creation time stamp
+        """
+        return (self.wrapped_data.file_pointer(), file_dict[self.wrapped_data.file_pointer()][1])
 
     def __del__(self) -> None:
         # Avoid infinite recursion if file is failed to initialize
@@ -339,17 +405,23 @@ class file:
         if not self.history:
             return
         transaction = self.history.pop()
-        transaction.rollback()
+        try:
+            transaction.rollback()
+        except Exception as e:
+            raise UndoSystemError("Error during transaction undo.", transaction) from e
         self.future.append(transaction)
 
     def redo(self) -> None:
         if not self.future:
             return
         transaction = self.future.pop()
-        transaction.commit()
+        try:
+            transaction.commit()
+        except Exception as e:
+            raise UndoSystemError("Error during transaction redo.", transaction) from e
         self.history.append(transaction)
 
-    def create_entity(self, type: str, *args, **kwargs) -> ifcopenshell.entity_instance:
+    def create_entity(self, type: str, *args: Any, **kwargs: Any) -> ifcopenshell.entity_instance:
         """Create a new IFC entity in the file.
 
         You can also use dynamic methods similar to `ifc_file.createIfcWall(...)`
@@ -464,6 +536,12 @@ class file:
             number = re.search(prefix + r"(\d)", schema)
             version.append(int(number.group(1)) if number else 0)
         return tuple(version)
+
+    @property
+    def mvd(self):
+        if not LARK_AVAILABLE:
+            return None
+        return MvdInfo(self.header)
 
     def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":
@@ -654,7 +732,7 @@ class file:
                 except:
                     pass  # Header is invalid
 
-    def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
+    def write(self, path: os.PathLike | str, format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
 
         :param format: Force use of a specific format. Guessed from file name
@@ -705,12 +783,13 @@ class file:
         return
 
     @staticmethod
-    def from_string(s: str) -> "file":
+    def from_string(s: str) -> file:
         return file(ifcopenshell_wrapper.read(s))
 
     @staticmethod
-    def from_pointer(v) -> "file":
-        return file_dict.get(v)()
+    def from_pointer(address: int) -> file:
+        assert (f := file_dict[address][0]()) is not None
+        return f
 
     def to_string(self) -> str:
         return self.wrapped_data.to_string()

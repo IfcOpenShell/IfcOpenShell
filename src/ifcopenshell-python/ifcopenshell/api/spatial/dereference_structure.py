@@ -74,7 +74,7 @@ def dereference_structure(
         related_elements = related_elements - products_set
         if related_elements:
             rel.RelatedElements = list(related_elements)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
         else:
             history = rel.OwnerHistory
             file.remove(rel)

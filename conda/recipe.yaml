@@ -1,0 +1,318 @@
+context:
+  version: ${{ env.get("VERSION_OVERRIDE", default="0.8.2.1") }}
+  build: 1
+
+package:
+  name: ifcopenshell
+  version: ${{ version }}
+
+source:
+  - path: ..
+
+
+build:
+  number: ${{ build }}
+  dynamic_linking:
+    binary_relocation: ${{ true if osx }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - cmake <4
+    - ninja
+    - swig >=4.1.1
+    - ${{ stdlib("c") }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - libboost-devel
+    - occt
+    - libxml2
+    - cgal-cpp
+    - hdf5
+    - eigen
+    - mpfr
+    - nlohmann_json
+    - gmp
+    - zlib
+  run:
+    - python
+    - shapely
+    - typing_extensions
+    - ${{ pin_compatible('occt', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('cgal-cpp', upper_bound='x.x') }}
+  run_exports:
+    - ${{ pin_subpackage('ifcopenshell', upper_bound='x.x.x') }}
+
+tests:
+  - python:
+      imports:
+        - ifcopenshell
+      pip_check: false
+  - script:
+      - python -c "import ifcopenshell; assert ifcopenshell.version == '${{ version }}', 'print(ifcopenshell.version)'"
+    requirements:
+      run:
+        - occt * *novtk*  # Ensure that even though compiled against OCCT with VTK, it can still run with OCCT without VTK
+        - pytest
+        - python-dateutil
+        - xmlschema
+        - xsdata
+        - lxml
+        - isodate
+        - lark
+        - networkx
+        - tabulate
+        - shapely
+
+about:
+  license: LGPL-3.0-or-later
+  license_file: COPYING
+  summary: IfcOpenShell is a library to support the IFC file format
+  description: |
+    IfcOpenShell
+    ============
+    
+    IfcOpenShell is an open source ([LGPL]) software library for working with Industry Foundation Classes ([IFC]). Complete
+    parsing support is provided for [IFC2x3 TC1], [IFC4 Add2 TC1], IFC4x1, IFC4x3, and IFC4x3. Extensive geometric support
+    is implemented for the IFC releases [IFC2x3 TC1] and [IFC4 Add2 TC1]. Extending with support for arbitrary IFC schemas
+    is possible at compile-time when using C++ and at run-time when using Python.
+    
+    In addition to a C++ and Python API, IfcOpenShell comes with an ecosystem of tools, notably including IfcConvert (an
+    application to convert IFC models to
+    other formats), the BlenderBIM Add-on (an add-on to Blender providing a graphical IFC authoring platform), and many
+    other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF and IDS.
+    
+    For more information, see:
+    
+    * [IfcOpenShell Website](http://ifcopenshell.org)
+    * [IfcOpenShell Documentation](http://bonsaibim.org/docs-python)
+    * [IfcOpenShell C++ Installation](https://bonsaibim.org/docs-python/ifcopenshell/installation.html)
+    * [IfcOpenShell Python Installation](https://bonsaibim.org/docs-python/ifcopenshell-python/installation.html)
+    * [IfcOpenShell Python Hello World Tutorial](https://bonsaibim.org/docs-python/ifcopenshell-python/hello_world.html)
+    * [Bonsai Website](https://bonsaibim.org)
+    * [Bonsai Documentation](http://bonsaibim.org/docs)
+    * [Add-on Installation](https://bonsaibim.org/docs/users/installation.html)
+    * [Exploring an IFC model](https://bonsaibim.org/docs/users/exploring_an_ifc_model.html)
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Anaconda Daily Build</td>
+          <td><a href="https://anaconda.org/ifcopenshell/ifcopenshell"><img src="https://img.shields.io/conda/vn/ifcopenshell/ifcopenshell" alt="Anaconda-Server Badge"></a></td>
+        </tr>
+        <tr>
+          <td>Anaconda v0.8.0 Stable</td>
+          <td><a href="https://anaconda.org/conda-forge/ifcopenshell"><img src="https://img.shields.io/conda/vn/conda-forge/ifcopenshell" alt="Anaconda-Server Badge"></a></td>
+        </tr>
+        <tr>
+          <td>PyPi Daily Build</td>
+          <td><a href="https://pypi.org/project/ifcopenshell/"><img src="https://img.shields.io/pypi/v/ifcopenshell" alt="PyPi Badge"></a></td>
+        </tr>
+        <tr>
+          <td>ArchLinux AUR Package Stable</td>
+          <td><a href="https://aur.archlinux.org/packages/ifcopenshell"><img src="https://img.shields.io/aur/version/ifcopenshell" alt="AUR Badge"></a></td>
+        </tr>
+        <tr>
+          <td>ArchLinux AUR Package git</td>
+          <td><a href="https://aur.archlinux.org/packages/ifcopenshell-git"><img src="https://img.shields.io/aur/version/ifcopenshell-git" alt="AUR Badge"></a></td>
+        </tr>
+        <tr>
+          <td>BlenderBIM Add-on Chocolatey (under moderation)</td>
+          <td><a href="https://community.chocolatey.org/packages/blenderbim-nightly/"><img src="https://img.shields.io/chocolatey/v/blenderbim-nightly" alt="Chocolatey Badge"></a></td>
+        </tr>
+        <tr>
+          <td>Sponsor development on OpenCollective</td>
+          <td><a href="https://opencollective.com/opensourcebim/"><img src="https://opencollective.com/opensourcebim/tiers/badge.svg" alt="Financial Contributors"></a></td>
+        </tr>
+        <tr>
+          <td>Docker hub</td>
+          <td><a href="https://hub.docker.com/r/aecgeeks/ifcopenshell"><img src="https://img.shields.io/docker/pulls/aecgeeks/ifcopenshell" alt="Docker Pulls"></a></td>
+        </tr>
+    
+      </tbody>
+    </table>
+    Contents
+    --------
+    
+    Those marked with an asterisk are part of IfcOpenShell.
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>License</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>bcf</td>
+          <td>Library to read and write BCF-XML and query OpenCDE BCF-API modules</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>blenderbim</td>
+          <td>Add-on to Blender providing a graphical native IFC authoring platform</td>
+          <td>GPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>bsdd</td>
+          <td>Library to query the bSDD API</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>ifc2ca</td>
+          <td>Utility to convert IFC structural analysis models to Code_Aster</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>ifc4d</td>
+          <td>Convert to and from IFC and project management software</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>ifc5d</td>
+          <td>Report and optimise cost information from IFC</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>ifcbimtester</td>
+          <td>Wrapper for Gherkin based unit testing for IFC models</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>ifcblender</td>
+          <td>Historic Blender IFC import add-on</td>
+          <td>LGPL-3.0-or-later*</td>
+        </tr>
+        <tr>
+          <td>ifccityjson</td>
+          <td>Convert CityJSON to IFC</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>ifcclash</td>
+          <td>Clash detection library and CLI app</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>ifccobie</td>
+          <td>Extract IFC data for COBie handover requirements</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+        <tr>
+          <td>ifcconvert</td>
+          <td>CLI app to convert IFC to many other formats</td>
+          <td>LGPL-3.0-or-later*</td>
+        </tr>
+        <tr>
+          <td>ifccsv</td>
+          <td>Library and CLI app to export and import schedules from IFC</td>
+          <td>LGPL-3.0-or-later</td>
+        </tr>
+    <tr>
+      <td>ifcdiff</td>
+      <td>Compare changes between IFC models</td>
+      <td>LGPL-3.0-or-later</td>
+    </tr>
+    <tr>
+      <td>ifcfm</td>
+      <td>Extract IFC data for FM handover requirements</td>
+      <td>LGPL-3.0-or-later</td>
+    </tr>
+    <tr>
+      <td>ifcgeom</td>
+      <td>Internal library for IfcOpenShell</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>ifcgeom_schema_agnostic</td>
+      <td>Internal library for IfcOpenShell</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>ifcgeomserver</td>
+      <td>Internal library for IfcOpenShell</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>ifcjni</td>
+      <td>Internal library for IfcOpenShell</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>ifcmax</td>
+      <td>Historic extension for IFC support in 3DS Max</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>ifcopenshell-python</td>
+      <td>Python library for IFC manipulation</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>ifcparse</td>
+      <td>Internal library for IfcOpenShell</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>ifcpatch</td>
+      <td>Utility to run pre-packaged scripts to manipulate IFCs</td>
+      <td>LGPL-3.0-or-later</td>
+    </tr>
+    <tr>
+      <td>ifcsverchok</td>
+      <td>Blender Add-on for visual node programming with IFC</td>
+      <td>GPL-3.0-or-later</td>
+    </tr>
+    <tr>
+      <td>ifctester</td>
+      <td>Library, CLI and webapp for IDS model auditing</td>
+      <td>LGPL-3.0-or-later</td>
+    </tr>
+    <tr>
+      <td>ifcwrap</td>
+      <td>Internal library for IfcOpenShell</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>qtviewer</td>
+      <td>Internal library for IfcOpenShell</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    <tr>
+      <td>serializers</td>
+      <td>Internal library for IfcOpenShell</td>
+      <td>LGPL-3.0-or-later*</td>
+    </tr>
+    </tbody>
+    </table>
+    
+    [LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING.LESSER "LGPL-3.0-or-later"
+    [IFC]: https://technical.buildingsmart.org/standards/ifc/ "IFC"
+    [IFC2x3 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ "IFC2x3 TC1"
+    [IFC4 Add2 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/ "IFC4 Add2 TC1"
+    [Visual Studio]: https://www.visualstudio.com/ "Visual Studio"
+    [Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
+    [MSYS2]: https://msys2.github.io/ "MSYS2"
+    [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
+    [nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"
+  homepage: https://ifcopenshell.org
+  repository: https://github.com/IfcOpenShell/IfcOpenShell
+  documentation: https://ifcopenshell.org/
+
+extra:
+  recipe-maintainers:
+    - adrianinsaval
+    - looooo
+    - Krande

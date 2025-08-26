@@ -23,8 +23,9 @@ import sys
 import math
 import datetime
 import ifcopenshell
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 from .ids import Specification, Ids
 from .facet import Facet, FacetFailure
 from typing import TypedDict, Union, Literal, Optional
@@ -766,7 +767,6 @@ class Bcf(Json):
 
     def to_file(self, filepath: str) -> None:
         import numpy as np
-        import ifcopenshell.util.placement
         from bcf.v2.bcfxml import BcfXml
 
         unit_scale = None

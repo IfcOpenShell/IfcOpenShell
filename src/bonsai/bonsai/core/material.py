@@ -26,8 +26,8 @@ if TYPE_CHECKING:
 
 
 def add_material(
-    ifc: tool.Ifc,
-    material: tool.Material,
+    ifc: type[tool.Ifc],
+    material: type[tool.Material],
     name: str,
     category: Optional[str] = None,
     description: Optional[str] = None,
@@ -38,7 +38,7 @@ def add_material(
     return ifc_material
 
 
-def add_material_set(ifc: tool.Ifc, material: tool.Material, set_type: str) -> ifcopenshell.entity_instance:
+def add_material_set(ifc: type[tool.Ifc], material: type[tool.Material], set_type: str) -> ifcopenshell.entity_instance:
     ifc_material = ifc.run("material.add_material_set", name="Unnamed", set_type=set_type)
     material.ensure_new_material_set_is_valid(ifc_material)
     if material.is_editing_materials():
@@ -46,7 +46,9 @@ def add_material_set(ifc: tool.Ifc, material: tool.Material, set_type: str) -> i
     return ifc_material
 
 
-def remove_material(ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance) -> bool:
+def remove_material(
+    ifc: type[tool.Ifc], material_tool: type[tool.Material], material: ifcopenshell.entity_instance
+) -> bool:
     """Remove an IFC material.
 
     Return True if deletion succeeded,\n
@@ -60,33 +62,37 @@ def remove_material(ifc: tool.Ifc, material_tool: tool.Material, material: ifcop
     return True
 
 
-def remove_material_set(ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance) -> None:
+def remove_material_set(
+    ifc: type[tool.Ifc], material_tool: type[tool.Material], material: ifcopenshell.entity_instance
+) -> None:
     ifc.run("material.remove_material_set", material=material)
     if material_tool.is_editing_materials():
         material_tool.import_material_definitions(material_tool.get_active_material_type())
 
 
-def load_materials(material: tool.Material, material_type: str) -> None:
+def load_materials(material: type[tool.Material], material_type: str) -> None:
     material.import_material_definitions(material_type)
     material.enable_editing_materials()
 
 
-def disable_editing_materials(material: tool.Material) -> None:
+def disable_editing_materials(material: type[tool.Material]) -> None:
     material.disable_editing_materials()
 
 
 def select_by_material(
-    material_tool: tool.Material, spatial: tool.Spatial, material: ifcopenshell.entity_instance
+    material_tool: type[tool.Material], spatial: type[tool.Spatial], material: ifcopenshell.entity_instance
 ) -> None:
     spatial.select_products(material_tool.get_elements_by_material(material))
 
 
-def enable_editing_material(material_tool: tool.Material, material: ifcopenshell.entity_instance) -> None:
+def enable_editing_material(material_tool: type[tool.Material], material: ifcopenshell.entity_instance) -> None:
     material_tool.load_material_attributes(material)
     material_tool.enable_editing_material(material)
 
 
-def edit_material(ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance) -> None:
+def edit_material(
+    ifc: type[tool.Ifc], material_tool: type[tool.Material], material: ifcopenshell.entity_instance
+) -> None:
     attributes = material_tool.get_material_attributes()
     ifc.run("material.edit_material", material=material, attributes=attributes)
     material_tool.disable_editing_material()
@@ -95,13 +101,13 @@ def edit_material(ifc: tool.Ifc, material_tool: tool.Material, material: ifcopen
     material_tool.enable_editing_materials()
 
 
-def disable_editing_material(material_tool: tool.Material) -> None:
+def disable_editing_material(material_tool: type[tool.Material]) -> None:
     material_tool.disable_editing_material()
 
 
 def assign_material(
-    ifc: tool.Ifc,
-    material_tool: tool.Material,
+    ifc: type[tool.Ifc],
+    material_tool: type[tool.Material],
     material_type: Union[str, None],
     objects: list[bpy.types.Object],
     material: Optional[ifcopenshell.entity_instance] = None,
@@ -131,7 +137,7 @@ def assign_material(
         material_tool.ensure_material_assigned(elements=[element], material_type=material_type, material=material)
 
 
-def unassign_material(ifc: tool.Ifc, material_tool: tool.Material, objects: list[bpy.types.Object]) -> None:
+def unassign_material(ifc: type[tool.Ifc], material_tool: type[tool.Material], objects: list[bpy.types.Object]) -> None:
     for obj in objects:
         element = ifc.get_entity(obj)
         if not element:
@@ -158,7 +164,7 @@ def unassign_material(ifc: tool.Ifc, material_tool: tool.Material, objects: list
 
 
 def patch_non_parametric_mep_segment(
-    ifc: tool.Ifc, material_tool: tool.Material, profile_tool: tool.Profile, obj: bpy.types.Object
+    ifc: type[tool.Ifc], material_tool: type[tool.Material], profile_tool: type[tool.Profile], obj: bpy.types.Object
 ) -> None:
     element = ifc.get_entity(obj)
     if not element:

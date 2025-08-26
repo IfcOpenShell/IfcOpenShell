@@ -44,7 +44,7 @@ T = TypeVar("T")
 
 class Bcf(bonsai.core.tool.Bcf):
     @classmethod
-    def get_bcf_props(cls) -> "BCFProperties":
+    def get_bcf_props(cls) -> BCFProperties:
         return bpy.context.scene.BCFProperties
 
     @classmethod

@@ -18,6 +18,8 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.unit
 import ifcpatch
 
@@ -25,9 +27,9 @@ import ifcpatch
 class TestConvertLengthUnit(test.bootstrap.IFC4):
     # NOTE: conversion itself is covered by `ifcopenshell.util.unit.convert_file_length_units` tests
     def test_run(self):
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
         output = ifcpatch.execute(
             {"input": "input.ifc", "file": self.file, "recipe": "ConvertLengthUnit", "arguments": ["METER"]}
         )

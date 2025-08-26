@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.helper import draw_attributes
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
 
 
 class BIM_PT_patch(bpy.types.Panel):
@@ -54,8 +59,8 @@ class BIM_PT_patch(bpy.types.Panel):
             row.prop(props, "ifc_patch_output")
             row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
 
-        def draw_callback_(_, row: bpy.types.UILayout) -> None:
-            if props.ifc_patch_recipes == "ExtractElements":
+        def draw_callback_(attribute: Attribute, row: bpy.types.UILayout) -> None:
+            if props.ifc_patch_recipes == "ExtractElements" and attribute.name == "Query":
                 row.operator("bim.patch_query_from_selected", text="", icon="EYEDROPPER")
 
         if props.ifc_patch_args_attr:

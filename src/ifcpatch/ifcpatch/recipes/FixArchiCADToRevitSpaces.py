@@ -86,7 +86,7 @@ class Patcher:
             assert isinstance(wall.data, bpy.types.Mesh)
             wall.data.transform(
                 Matrix.Translation(
-                    (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))
+                    wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin)
                 )
             )
             wall.matrix_world.translation = new_origin

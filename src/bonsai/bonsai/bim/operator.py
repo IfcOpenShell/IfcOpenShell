@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import contextlib
 import bpy
 import bmesh
 import time
@@ -31,6 +32,7 @@ import ifcopenshell
 import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
+from enum import Enum
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -40,10 +42,13 @@ from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
 from collections import namedtuple
-from typing import List, Iterable, Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING, Literal, get_args
+from collections.abc import Iterable
+from natsort import natsorted
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import MultipleFileSelect
+    from bonsai.bim.prop import MultipleFileSelect, Attribute
+    from bpy.stub_internal import rna_enums
 
 
 class SetTab(bpy.types.Operator):
@@ -151,27 +156,28 @@ class SelectURIAttribute(bpy.types.Operator, ImportHelper):
     bl_label = "Select URI Attribute"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a local file"
-    data_path: bpy.props.StringProperty(name="Data Path")
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    attribute_data_path: bpy.props.StringProperty(name="Data Path")  # pyright: ignore[reportRedeclaration]
+    """Full data path to `Attribute`/string property."""
+    use_relative_path: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Use Relative Path",
+        default=False,
+    )
+
+    if TYPE_CHECKING:
+        attribute_data_path: str
+        use_relative_path: bool
 
     def execute(self, context):
-        # data_path contains the latter half of the path to the string_value property
-        # I have no idea how to find out the former half, so let's just use brute force.
-        data_path = self.data_path.replace(".string_value", "")
-        attribute = None
-        try:
-            attribute = eval(f"bpy.context.scene.{data_path}")
-        except:
-            try:
-                attribute = eval(f"bpy.context.active_object.{data_path}")
-            except:
-                try:
-                    attribute = eval(f"bpy.context.active_object.active_material.{data_path}")
-                except:
-                    # Do you know a better way?
-                    pass
-        if attribute:
-            attribute.string_value = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+        from bonsai.bim.prop import Attribute
+
+        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+
+        attribute = eval(self.attribute_data_path)
+        if isinstance(attribute, Attribute):
+            attribute.string_value = filepath
+        else:
+            bpy_struct_path, _, attr_name = self.attribute_data_path.rpartition(".")
+            setattr(eval(bpy_struct_path), attr_name, filepath)
         return {"FINISHED"}
 
 
@@ -230,6 +236,9 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
 
+# TODO: Unused operator.
+# Is there a need for this or 'DIR_PATH' propety subtype does almost the same,
+# but also has alt+click?
 class SelectDir(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_dir"
     bl_label = "Select Directory"
@@ -237,23 +246,36 @@ class SelectDir(bpy.types.Operator, ImportHelper):
     bl_description = "Open a file browser to choose the directory"
     data_path: bpy.props.StringProperty(name="Data Path")
 
+    if TYPE_CHECKING:
+        data_path: str
+
     def execute(self, context):
-        crumbs = self.data_path.split(".")
-        if crumbs[0] == "preferences":
-            crumbs.pop(0)
-            data = tool.Blender.get_addon_preferences()
-        else:
-            data = context
-        while crumbs:
-            crumb = crumbs.pop(0)
-            if crumbs:
-                data = getattr(data, crumb)
-            else:
-                setattr(data, crumb, os.path.dirname(self.filepath))
+        data, attr = tool.Blender.resolve_data_path_to_data_attr(self.data_path)
+        setattr(data, attr, os.path.dirname(self.filepath))
         return {"FINISHED"}
 
     def invoke(self, context, event):
         return ImportHelper.invoke(self, context, event)
+
+
+class WinRegistryKeys(Enum):
+    __bonsai_key = "bonsai.ifc"
+    # Have to list all keys here
+    # because .DeleteKey can't remove key that has subkeys.
+    BONSAI = rf"Software\Classes\{__bonsai_key}"
+    BONSAI_ICON = rf"{BONSAI}\DefaultIcon"
+    BONSAI_SHELL = rf"{BONSAI}\shell"
+    BONSAI_SHELL_OPEN = rf"{BONSAI}\shell\open"
+    BONSAI_COMMAND = rf"{BONSAI}\shell\open\command"
+    IFC_EXTENSION = r"Software\Classes\.ifc"
+    IFC_EXTENSION_OPEN_WITH = rf"{IFC_EXTENSION}\OpenWihProgids"
+
+    @classmethod
+    def get_bonsai_key(cls):
+        return cls.__bonsai_key
+
+
+LIBS_DESKTOP = Path(__file__).parent.parent / "libs" / "desktop"
 
 
 class FileAssociate(bpy.types.Operator):
@@ -271,44 +293,50 @@ class FileAssociate(bpy.types.Operator):
         # https://stackoverflow.com/questions/1082889/how-to-change-filetype-association-in-the-registry
         return False
 
-    def draw(self, context):
-        # NOTE: really weird thing on windows that typing this command in cmd works
-        # when even if you create .bat with the command below and run it as administrator it won't
-        # Haven't found a workaround yet to automate process completely.
-        command = "ASSOC .IFC=BONSAI"
-        self.layout.label(text="On the next step to create file association ")
-        self.layout.label(text="the system console will be opened ")
-        self.layout.label(text=f"and you will be asked to type command")
-        self.layout.label(text=f"{command}")
-        self.layout.label(text="to create an association.")
-
-    def invoke(self, context, event):
-        if platform.system() == "Windows":
-            return context.window_manager.invoke_props_dialog(self)
-        else:
-            return self.execute(context)
-
     def execute(self, context):
-        src_dir = os.path.join(os.path.dirname(__file__), "../libs/desktop")
         binary_path = bpy.app.binary_path
         if platform.system() == "Linux":
             destdir = os.path.join(os.environ["HOME"], ".local")
-            self.install_desktop_linux(src_dir=src_dir, destdir=destdir, binary_path=binary_path)
+            self.install_desktop_linux(src_dir=LIBS_DESKTOP, destdir=destdir, binary_path=binary_path)
         elif platform.system() == "Windows":
-            self.install_desktop_windows(src_dir, binary_path)
+            self.install_desktop_windows(binary_path)
         self.report({"INFO"}, "Associations established.")
         return {"FINISHED"}
 
-    def install_desktop_windows(self, src_dir, binary_path):
-        # very important to clear this regitstry key before creating new association
-        # tried to do the regitsry change from powershell/cmd - but even admin rights are not enough
-        # this is why we're using .reg
-        reg_change_path = os.path.join(src_dir, "windows_bbim_association.reg")
-        subprocess.run(["cmd", "/c", "call", reg_change_path])
+    def install_desktop_windows(self, binary_path: str) -> None:
+        import winreg
 
-        ps_script_path = os.path.join(src_dir, "windows_bbim_association.ps1")
-        # NOTE: call powershell with RunAs to get admin rights from user
-        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", ps_script_path, binary_path], shell=True)
+        filetype_name = "Bonsai IFC Project"
+
+        # File association code from https://github.com/Victor-IX/Blender-Launcher-V2.
+        # Create a ProgID.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, filetype_name)
+
+        python_expression = """import bpy;
+        import sys;
+        filepath = sys.argv[sys.argv.index('--') + 1];
+        bpy.ops.bim.load_project(filepath=filepath)
+        """
+        python_expression = "".join(line.strip() for line in python_expression.splitlines())
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI_COMMAND.value) as key:
+            winreg.SetValueEx(
+                key,
+                "",
+                0,
+                winreg.REG_SZ,
+                # Pass the file path after '--' to avoid issues with special characters.
+                f'"{binary_path}" --python-expr "{python_expression}" -- "%1"',
+            )
+
+        # Finally associate, changes take effect immediately, no need to restart explorer.
+        # Haven't found any use of setting OpenWihProgids - just adding association makes "Open With" work too.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.IFC_EXTENSION.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, WinRegistryKeys.get_bonsai_key())
+
+        # Add an icon.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI_ICON.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, f'"{binary_path}", 0')
 
     def install_desktop_linux(self, src_dir=None, destdir="/tmp", binary_path="/usr/bin/blender"):
         """Creates linux file assocations and launcher icon"""
@@ -381,16 +409,43 @@ class FileUnassociate(bpy.types.Operator):
             self.uninstall_desktop_linux(destdir=destdir)
         elif platform.system() == "Windows":
             self.uninstall_desktop_windows()
+
         return {"FINISHED"}
 
-    def uninstall_desktop_windows(self):
-        # NOTE: call powershell with RunAs to get admin rights from user
-        cmd = [
-            "powershell",
-            "-Command",
-            "Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\\BONSAI /f'",
-        ]
-        subprocess.run(cmd, check=True)
+    def uninstall_desktop_windows(self) -> None:
+        import winreg
+
+        for key in reversed(WinRegistryKeys):
+            key_path = key.value
+            # Ignore IFC extension keys as you may never know what subkeys it might have.
+            # And removing Bonsai keys is good enough for removing association.
+            if key_path.startswith(WinRegistryKeys.IFC_EXTENSION.value):
+                continue
+            with contextlib.suppress(FileNotFoundError):
+                print(f"Removing registry key '{key_path}'.")
+                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, key_path)
+
+        # TODO: Keys are deprecated since 25-05-01, remove the cleanup later.
+        # Clean up legacy keys, trying to be a good citizen.
+        with contextlib.suppress(FileNotFoundError):
+            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r"BLENDERBIM") as key:
+                cmd = (
+                    "powershell",
+                    "-Command",
+                    r"Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\BLENDERBIM /f'",
+                )
+                subprocess.run(cmd, check=True)
+                print("Successfully removed deprecated key 'BLENDERBIM'.")
+        with contextlib.suppress(FileNotFoundError):
+            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r"BONSAI") as key:
+                cmd = (
+                    "powershell",
+                    "-Command",
+                    r"Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\BONSAI /f'",
+                )
+                subprocess.run(cmd, check=True)
+                print("Successfully removed deprecated key 'BONSAI'.")
+
         self.report({"INFO"}, "Association removed.")
 
     def uninstall_desktop_linux(self, destdir="/tmp"):
@@ -423,6 +478,97 @@ class FileUnassociate(bpy.types.Operator):
             subprocess.call(["update-desktop-database", os.path.join(destdir, "share/applications")])
         except:
             pass
+
+
+class CreateMacBonsaiApp(bpy.types.Operator):
+    bl_idname = "bim.create_mac_bonsai_app"
+    bl_label = "Create Bonsai App to Open .ifc Files."
+    bl_options = set()
+    bl_description = (
+        "Create 'Bonsai' application on Mac.\n\n"
+        "To make Mac use Bonsai to open IFC files automatically:\n"
+        "- Open context menu on any .ifc file\n"
+        "- Open With\n"
+        "- Other\n"
+        "- Select Bonsai in 'Applications'\n"
+        "- Check 'Always Open With'\n"
+        "- 'Open'\n"
+        "\n"
+        "ALT+click to uninstall Bonsai app if it was installed previously."
+    )
+
+    uninstall: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        uninstall: bool
+
+    @classmethod
+    def poll(cls, context):
+        if platform.system() == "Darwin":
+            return True
+        cls.poll_message_set("Mac Only.")
+        return False
+
+    def invoke(self, context, event):
+        self.uninstall = event.alt
+        return self.execute(context)
+
+    def execute(self, context):
+        # I've tried to create AppleScript that would create this kind of app using Automator,
+        # but using poorly document AppleScript was unbearable :(
+        # So we just try to create automator app ourselves from a template.
+
+        # Couldn't find a way to automatically establish .ifc to app association,
+        # without installing some other app to handle it (e.g. 'duti').
+        # So currently we rely on the final user action to select Bonsai in 'Open With'.
+
+        # NOTE: shell script to execute is part of .wflow file.
+        app_path = Path("/Applications") / "Bonsai.app"
+
+        if self.uninstall:
+            if app_path.exists():
+                shutil.rmtree(app_path)
+                self.report({"INFO"}, "Bonsai app was successfully removed.")
+            else:
+                self.report({"WARNING"}, f"Couldn't remove Bonsai app as it's not found at '{app_path}'.")
+            return {"FINISHED"}
+
+        if app_path.exists():
+            self.report({"WARNING"}, f"Bonsai.app already exists at '{app_path}'.")
+            return {"FINISHED"}
+
+        # 1. Create .app bundle structure
+        contents = app_path / "Contents"
+        macos = contents / "MacOS"
+        resources = contents / "Resources"
+        for p in (macos, resources):
+            p.mkdir(parents=True, exist_ok=True)
+
+        # Copy Automator Application Stub.
+        stub_src = Path(
+            "/System/Library/CoreServices/Automator Application Stub.app/Contents/MacOS/Automator Application Stub"
+        )
+        stub_dest = macos / "Automator Application Stub"
+        shutil.copy(stub_src, stub_dest)
+        stub_dest.chmod(0o755)
+
+        # xml files.
+        shutil.copy2(LIBS_DESKTOP / "Mac" / "Info.plist", contents / "Info.plist")
+        wflow_template = (LIBS_DESKTOP / "Mac" / "document.wflow").read_text()
+        wflow_template = wflow_template.replace("{{BLENDER_BINARY}}", bpy.app.binary_path)
+        (contents / "document.wflow").write_text(wflow_template)
+
+        # Convert PNG icon to ICNS.
+        png_icon = LIBS_DESKTOP / "bonsai.png"
+        icns_icon = app_path / "Contents/Resources/AppIcon.icns"
+        subprocess.run(["sips", "-s", "format", "icns", png_icon, "--out", icns_icon], check=True)
+
+        self.report(
+            {"INFO"},
+            "Bonsai app was successfully created. "
+            f"Follow instructions in '{self.bl_label}' description to use Bonsai for .ifc files automatically.",
+        )
+        return {"FINISHED"}
 
 
 class OpenUpstream(bpy.types.Operator):
@@ -770,6 +916,7 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         import ifcdiff
 
         old = tool.Ifc.get()
+        new: ifcopenshell.file
         new = ifcopenshell.open(self.filepath)
 
         ifc_diff = ifcdiff.IfcDiff(old, new, relationships=[])
@@ -833,29 +980,6 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class AddIfcFile(bpy.types.Operator):
-    bl_idname = "bim.add_ifc_file"
-    bl_label = "Add IFC File"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        props = tool.Drawing.get_document_props()
-        props.ifc_files.add()
-        return {"FINISHED"}
-
-
-class RemoveIfcFile(bpy.types.Operator):
-    bl_idname = "bim.remove_ifc_file"
-    bl_label = "Remove IFC File"
-    index: bpy.props.IntProperty()
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        props = tool.Drawing.get_document_props()
-        props.ifc_files.remove(self.index)
-        return {"FINISHED"}
-
-
 class FetchObjectPassport(bpy.types.Operator):
     bl_idname = "bim.fetch_object_passport"
     bl_label = "Fetch Object Passport"
@@ -876,7 +1000,7 @@ class FetchObjectPassport(bpy.types.Operator):
         context.active_object.data = bpy.data.meshes[reference.name]
 
 
-def update_enum_property_search_prop(self, context):
+def update_enum_property_search_prop(self: "BIM_OT_enum_property_search", context: bpy.types.Context) -> None:
     for i, prop in enumerate(self.collection_names):
         if prop.name == self.dummy_name:
             setattr(context.data, self.prop_name, self.collection_identifiers[i].name)
@@ -885,6 +1009,7 @@ def update_enum_property_search_prop(self, context):
                 self.first_launch = False
             else:
                 if not self.should_click_ok:
+                    # This closes popup immediately, avoiding the need to click "OK".
                     context.window.screen = context.window.screen
             if predefined_type:
                 try:
@@ -899,6 +1024,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_label = "Search"
     bl_description = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
+
     first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
     collection_names: bpy.props.CollectionProperty(type=StrProperty)
@@ -907,8 +1033,14 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     prop_name: bpy.props.StringProperty()
     should_click_ok: bpy.props.BoolProperty(default=False)
     original_operator_path: bpy.props.StringProperty(name="Original Operator Path", default="", options={"SKIP_SAVE"})
+    enable_relating_type_suggestions: bpy.props.BoolProperty(default=True)
 
     identifiers: list[str]
+
+    if TYPE_CHECKING:
+        collection_names: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        collection_identifiers: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        collection_predefined_types: bpy.types.bpy_prop_collection_idprop[StrProperty]
 
     def invoke(self, context, event):
         self.clear_collections()
@@ -923,6 +1055,8 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     def draw(self, context):
         # Mandatory to access context.data in update :
         self.layout.context_pointer_set(name="data", data=self.data)
+        # NOTE: activate_init don't work with prop_search, so cannot activate field for typing,
+        # though it would fit perfectly.
         self.layout.prop_search(self, "dummy_name", self, "collection_names")
 
     def execute(self, context):
@@ -970,6 +1104,38 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                             predefined_type=predefined_type,
                         )
 
+        if self.enable_relating_type_suggestions:
+            self.add_relating_type_suggestions()
+
+    def add_relating_type_suggestions(self) -> None:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return
+
+        type_elements = []
+        for identifier in self.identifiers:
+            element = ifc_file.by_id(int(identifier))
+            if element and element.is_a().endswith("Type"):
+                type_elements.append(element)
+
+        for element in type_elements:
+            base_name = element.Name or "Unnamed"
+            element_step_id = str(element.id())
+
+            attributes = []
+            for attr_name in ["Description", "PredefinedType", "ElementType", "ObjectType"]:
+                value = getattr(element, attr_name, None)
+                if value:
+                    attributes.append(value)
+
+            if attributes:
+                concatenated_name = f"{base_name} > {' > '.join(attributes)}"
+                self.add_item(
+                    identifier=element_step_id,
+                    name=concatenated_name,
+                    predefined_type=element.PredefinedType or "",
+                )
+
 
 class BIM_OT_select_entity(bpy.types.Operator):
     bl_idname = "bim.select_entity"
@@ -994,6 +1160,38 @@ class BIM_OT_select_entity(bpy.types.Operator):
             return {"CANCELLED"}
 
         tool.Blender.set_objects_selection(context, obj, [obj], clear_previous_selection=True)
+        return {"FINISHED"}
+
+
+class BIM_OT_select_entity_by_guid(bpy.types.Operator):
+    bl_idname = "bim.select_entity_by_guid"
+    bl_label = "Select Entity by Guid"
+    bl_description = "Select entity by guid currently saved to clipboard"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        assert context.window_manager
+        return f"{cls.bl_description}:\n'{context.window_manager.clipboard.strip()}'"
+
+    def execute(self, context):
+        assert context.window_manager
+
+        ifc_file = tool.Ifc.get()
+        guid = context.window_manager.clipboard.strip()
+        try:
+            element = ifc_file.by_guid(guid)
+        except RuntimeError:
+            self.report({"ERROR"}, f"No IFC element found with guid '{guid}'.")
+            return {"CANCELLED"}
+
+        obj = tool.Ifc.get_object(element)
+        if not isinstance(obj, bpy.types.Object):
+            self.report({"ERROR"}, f"The following element is not present in the scene as Blender object: '{element}'.")
+            return {"CANCELLED"}
+
+        tool.Blender.select_and_activate_single_object(context, obj)
+        self.report({"INFO"}, f"Found and selected element: '{obj.name}'.")
         return {"FINISHED"}
 
 
@@ -1135,7 +1333,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def get_cutting_plane_data(self, cutting_planes: List[bpy.types.Object]) -> List[CuttingPlaneData]:
+    def get_cutting_plane_data(self, cutting_planes: list[bpy.types.Object]) -> list[CuttingPlaneData]:
         cutting_planes_data = []
 
         for obj in cutting_planes:
@@ -1146,7 +1344,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
         return cutting_planes_data
 
     # NOTE: unused, will be used later for cutting boxes support
-    def get_box_cutting_plane_data(self, obj: bpy.types.Object) -> List[CuttingPlaneData]:
+    def get_box_cutting_plane_data(self, obj: bpy.types.Object) -> list[CuttingPlaneData]:
         matrix_world = obj.matrix_world
         rotation = matrix_world.to_quaternion()  # avoid scale for normals
         cutting_planes_data = []
@@ -1201,4 +1399,203 @@ class CopyTextToClipboard(bpy.types.Operator):
 
     def execute(self, context):
         context.window_manager.clipboard = self.text
+        return {"FINISHED"}
+
+
+class ShowSystemInfo(bpy.types.Operator):
+    bl_idname = "bim.show_system_info"
+    bl_label = "System Info"
+    bl_description = "Show debug information and copy it to the clipboard."
+    bl_options = set()
+
+    info_text: bpy.props.StringProperty()
+
+    def execute(self, context):
+        # invoke_popup doesn't show a popup, if there's no `execute` method.
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        assert context.window_manager
+        # Invoke the bim.copy_debug_information operator to get the info to the clipboard
+        bpy.ops.bim.copy_debug_information()
+        self.info_text = context.window_manager.clipboard
+
+        return context.window_manager.invoke_popup(self, width=600)
+
+    def draw(self, context):
+        assert self.layout
+        layout = self.layout
+        col = layout.column()
+
+        for line in self.info_text.split("\n"):
+            col.label(text=line)
+
+        col.separator()
+        col.label(text="(The information has been copied to the clipboard.)")
+
+
+def update_attribute_search_value(self: "BIM_OT_attribute_search_values", context: bpy.types.Context) -> None:
+    should_click_ok = False
+    attr_name, attribute_obj = BIM_OT_attribute_search_values.resolve_data_path(self.data_path)
+
+    value = self.search_value
+    if self.data_type == "integer":
+        value = int(value)
+    elif self.data_type == "float":
+        value = float(value)
+
+    setattr(attribute_obj, attr_name, value)
+
+    if self.first_launch:
+        self.first_launch = False
+    else:
+        if not should_click_ok:
+            # This closes popup immediately, avoiding the need to click "OK".
+            context.window.screen = context.window.screen
+
+
+AttributeSearchDataType = Literal["string", "integer", "float"]
+
+
+class BIM_OT_attribute_search_values(bpy.types.Operator):
+    """Search for attribute values. This implementation is based on bim.enum_property_search"""
+
+    bl_idname = "bim.attribute_search_values"
+    bl_label = "Search Attribute Values"
+    bl_description = "Search for attribute values used in the elements of the same IFC class."
+    bl_options = {"REGISTER", "UNDO"}
+
+    # Required properties.
+    attribute_name: bpy.props.StringProperty(name="Attribute Name")
+    attribute_ifc_class: bpy.props.StringProperty(name="Attribute IFC Class")
+    data_path: bpy.props.StringProperty(name="Data Path")
+    data_type: bpy.props.EnumProperty(
+        name="Data Type",
+        items=[(i, i, "") for i in get_args(AttributeSearchDataType)],
+    )
+
+    # Internal properties.
+    first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+    search_value: bpy.props.StringProperty(
+        name="Search",
+        description="Search for attribute values",
+        update=update_attribute_search_value,
+        default="",
+        options={"SKIP_SAVE"},
+    )
+    collection_values: bpy.props.CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
+
+    if TYPE_CHECKING:
+        first_launch: bool
+        attribute_name: str
+        attribute_ifc_class: str
+        data_path: str
+        data_type: AttributeSearchDataType
+        search_value: str
+        collection_values: bpy.types.bpy_prop_collection_idprop[StrProperty]
+
+    @staticmethod
+    def resolve_data_path(data_path: str) -> tuple[str, "Attribute"]:
+        """Resolve the data path of an object's attribute to get the attribute name and the object."""
+        attribute_obj, _, attr_name = data_path.rpartition(".")
+        attribute_obj = eval(attribute_obj)
+        return attr_name, attribute_obj
+
+    def invoke(self, context, event):
+        required_props = (self.attribute_name, self.attribute_ifc_class, self.data_path)
+        assert all(required_props), required_props
+
+        attr_name, attribute_obj = self.resolve_data_path(self.data_path)
+        self.search_value = str(getattr(attribute_obj, attr_name, ""))
+
+        unique_values = self.get_unique_attribute_values()
+        string_values = natsorted(unique_values)
+
+        for value in string_values:
+            self.collection_values.add().name = value
+
+        assert context.window_manager
+        return context.window_manager.invoke_props_dialog(self)
+
+    def get_unique_attribute_values(self) -> list[str]:
+        ifc_file = tool.Ifc.get()
+        unique_values: set[str] = set()
+        ifc_class = self.attribute_ifc_class
+
+        elements = ifc_file.by_type(ifc_class, include_subtypes=True)
+
+        for element in elements:
+            # We check just direct entity attributes and simply check if the attribute exists
+            if hasattr(element, self.attribute_name):
+                value = getattr(element, self.attribute_name)
+                if value is not None:
+                    unique_values.add(str(value))
+
+        return list(unique_values)
+
+    def draw(self, context) -> None:
+        assert self.layout
+        row = self.layout.row()
+        row.label(text=f"Select {self.attribute_name} value:")
+        row = self.layout.row()
+        row.prop_search(
+            self,
+            "search_value",
+            self,
+            "collection_values",
+            text="",
+            results_are_suggestions=True,
+        )
+
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
+        return {"FINISHED"}
+
+
+class BIM_OT_attribute_add_subitem(bpy.types.Operator):
+    bl_idname = "bim.attribute_add_subitem"
+    bl_label = "Add Subitem"
+    bl_description = "Add subitem to the current attribute"
+    bl_options = {"REGISTER", "UNDO"}
+
+    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    """Full data path."""
+
+    if TYPE_CHECKING:
+        data_path: str
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        col: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        col = eval(self.data_path)
+
+        attr: Attribute = col.data
+        if attr.is_optional and not col:
+            attr.is_null = False
+
+        col.add()
+        return {"FINISHED"}
+
+
+class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
+    bl_idname = "bim.attribute_remove_subitem"
+    bl_label = "Add Subitem"
+    bl_description = "Add subitem to the current attribute"
+    bl_options = {"REGISTER", "UNDO"}
+
+    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    """Full data path."""
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        data_path: str
+        index: int
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        col: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        col = eval(self.data_path)
+        col.remove(self.index)
+
+        attr: Attribute = col.data
+        if attr.is_optional and not col:
+            attr.is_null = True
+
         return {"FINISHED"}

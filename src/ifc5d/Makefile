@@ -19,6 +19,10 @@
 PACKAGE_NAME:=ifc5d
 include ../common.mk
 
+.PHONY: test
+test:
+	pytest -p no:pytest-blender test
+
 .PHONY: qa
 qa:
 	black .

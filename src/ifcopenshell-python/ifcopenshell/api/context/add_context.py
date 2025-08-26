@@ -26,6 +26,7 @@ def add_context(
     context_type: Optional[ifcopenshell.util.representation.CONTEXT_TYPE] = None,
     context_identifier: Optional[ifcopenshell.util.representation.REPRESENTATION_IDENTIFIER] = None,
     target_view: Optional[ifcopenshell.util.representation.TARGET_VIEW] = None,
+    target_scale: Optional[float] = None,
     parent: Optional[ifcopenshell.entity_instance] = None,
 ) -> ifcopenshell.entity_instance:
     """Adds a new geometric representation context
@@ -97,23 +98,21 @@ def add_context(
 
     :param context_type: The type of the context, must be one of "Model" or
         "Plan" only.
-    :type context_type: str, optional
     :param context_identifier: The identifier of the context, chosen from
         one of the common identifiers above or consult the IFC documentation
         (under the IfcShapeRepresentation page) for more details. Optional
         for contexts, but mandatory for subcontexts.
-    :type context_identifier: str, optional
     :param target_view: the target view of the context, chosen from one of
         the common target views above or consult the IFC documentation
         (under the IfcShapeRepresentation page) for more details. Optional
         for contexts, but mandatory for subcontexts.
+    :param target_scale: It defines the intended scale at which the representation
+        is designed to be viewed or printed
     :param parent: the parent context. Must be left as None (the default)
         for contexts, and only set for subcontexts. Note that there are only
         contexts and subcontexts, a subcontext cannot have any children.
-    :type parent: ifcopenshell.entity_instance, optional
     :return: the newly created IfcGeometricRepresentationContext or
         IfcGeometricRepresentationSubContext entity
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -186,6 +185,7 @@ def add_context(
         "parent": parent,
         "context_identifier": context_identifier,
         "target_view": target_view,
+        "target_scale": target_scale,
     }
     return usecase.execute()
 
@@ -221,6 +221,7 @@ class Usecase:
                 "ContextType": self.settings["context_type"],
                 "ParentContext": self.settings["parent"],
                 "TargetView": self.settings["target_view"],
+                "TargetScale": self.settings["target_scale"],
             }
         )
 

@@ -46,6 +46,8 @@ namespace ifcopenshell {
 		public:
 			OpenCascadeShape(const TopoDS_Shape& shape)
 				: shape_(shape) {}
+			OpenCascadeShape(TopoDS_Shape&& shape)
+				: shape_(std::move(shape)) {}
 
 			const TopoDS_Shape& shape() const { return shape_; }
 			operator const TopoDS_Shape& () { return shape_; }

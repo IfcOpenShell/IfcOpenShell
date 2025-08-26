@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.root
 import ifcopenshell.util.representation
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -71,7 +72,7 @@ class TestEnableEditing(NewFile):
 
 class TestEnableEditingStyles(NewFile):
     def test_run(self):
-        props = props = tool.Style.get_style_props()
+        props = tool.Style.get_style_props()
         props.is_editing = False
         subject.enable_editing_styles()
         assert props.is_editing is True
@@ -105,7 +106,7 @@ class TestGetElementsByStyle(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         style = ifc.createIfcSurfaceStyle()
         item = ifc.createIfcExtrudedAreaSolid()
         ifc.createIfcStyledItem(Item=item, Styles=[style])
@@ -126,6 +127,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert node
         node.inputs["Alpha"].default_value = 0.8
         node.inputs["Base Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
@@ -154,6 +156,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlossy")
@@ -185,6 +188,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
@@ -216,6 +220,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlass")
@@ -247,6 +252,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeEmission")
@@ -277,6 +283,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeVolumePrincipled")
@@ -385,8 +392,8 @@ class TestImportSurfaceAttributes(NewFile):
         props = tool.Style.get_style_props()
         style = ifc.create_entity("IfcSurfaceStyle", "Name", "BOTH")
         subject.import_surface_attributes(style)
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
 
     def test_importing_surface_attributes_twice(self):
         tool.Ifc.set(ifc := ifcopenshell.file())
@@ -394,12 +401,12 @@ class TestImportSurfaceAttributes(NewFile):
         props = tool.Style.get_style_props()
         subject.import_surface_attributes(style)
         assert len(props.attributes) == 2
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
         subject.import_surface_attributes(style)
         assert len(props.attributes) == 2
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
 
 
 class TestImportPresentationStyles(NewFile):

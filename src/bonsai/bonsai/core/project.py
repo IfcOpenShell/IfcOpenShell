@@ -26,15 +26,18 @@ if TYPE_CHECKING:
 
 
 def create_project(
-    ifc: tool.Ifc,
-    georeference: tool.Georeference,
-    project: tool.Project,
-    spatial: tool.Spatial,
+    ifc: type[tool.Ifc],
+    georeference: type[tool.Georeference],
+    project: type[tool.Project],
+    spatial: type[tool.Spatial],
     schema: str,
     template: Optional[str] = None,
 ) -> None:
     if ifc.get():
         return
+
+    # TODO: simplify by generating IFC file and then just import it using IfcImporter
+    # instead of handling Blender objects logic here?
 
     ifc.set(ifc.run("project.create_file", version=schema))
 

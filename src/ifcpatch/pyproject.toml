@@ -17,6 +17,12 @@ classifiers = [
 ]
 dependencies = ["ifcopenshell", "toposort", "numpy"]
 
+[project.optional-dependencies]
+advanced = [
+  "sqlite3",
+  "mysql-connector-python",
+]
+
 [project.urls]
 Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"

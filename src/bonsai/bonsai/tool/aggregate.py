@@ -16,15 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Union
+from typing import Union, TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.aggregate.prop import BIMAggregateProperties, BIMObjectAggregateProperties
 
 
 class Aggregate(bonsai.core.tool.Aggregate):
+    @classmethod
+    def get_aggregate_props(cls) -> BIMAggregateProperties:
+        return bpy.context.scene.BIMAggregateProperties
+
+    @classmethod
+    def get_object_aggregate_props(cls, obj: bpy.types.Object) -> BIMObjectAggregateProperties:
+        return obj.BIMObjectAggregateProperties
+
     @classmethod
     def can_aggregate(cls, relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:
         relating_object = tool.Ifc.get_entity(relating_obj)
@@ -56,11 +68,13 @@ class Aggregate(bonsai.core.tool.Aggregate):
 
     @classmethod
     def disable_editing(cls, obj: bpy.types.Object) -> None:
-        obj.BIMObjectAggregateProperties.is_editing = False
+        props = cls.get_object_aggregate_props(obj)
+        props.is_editing = False
 
     @classmethod
     def enable_editing(cls, obj: bpy.types.Object) -> None:
-        obj.BIMObjectAggregateProperties.is_editing = True
+        props = cls.get_object_aggregate_props(obj)
+        props.is_editing = True
 
     @classmethod
     def get_container(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -75,6 +89,20 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 return rel.RelatingObject
 
     @classmethod
+    def get_aggregates_recursively(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """Get elements aggregates recursively, resulting set includes `element`."""
+        aggregates: list[ifcopenshell.entity_instance] = list()
+        queue = {element}
+        while queue:
+            element = queue.pop()
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if aggregate:
+                queue.update({aggregate})
+            if ifcopenshell.util.element.get_parts(element):
+                aggregates.append(element)
+        return aggregates
+
+    @classmethod
     def get_parts_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         """Get elements parts recursively, resulting set includes `element`."""
         parts = set()
@@ -86,23 +114,44 @@ class Aggregate(bonsai.core.tool.Aggregate):
         return parts
 
     @classmethod
-    def get_aggregate_mode(cls):
-        return bpy.context.scene.BIMAggregateProperties.in_aggregate_mode
+    def get_higher_aggregate(cls) -> ifcopenshell.entity_instance:
+        props = cls.get_aggregate_props()
+        editing_aggregate = tool.Ifc.get_entity(props.editing_aggregate)
+        higher_aggregate = ifcopenshell.util.element.get_aggregate(editing_aggregate)
+        return tool.Ifc.get_object(higher_aggregate) if higher_aggregate else None
 
     @classmethod
-    def enable_aggregate_mode(cls, active_object: bpy.types.Object):
+    def update_previous_aggregate_mode_state(cls):
+        props = cls.get_aggregate_props()
+        props.previous_state = props.in_aggregate_mode
+        props.previous_editing_aggregate = props.editing_aggregate
+
+    @classmethod
+    def enable_aggregate_mode(cls, active_object: bpy.types.Object) -> set[Literal["FINISHED"]]:
         context = bpy.context
-        props = context.scene.BIMAggregateProperties
+        props = cls.get_aggregate_props()
 
         element = tool.Ifc.get_entity(active_object)
         if not element:
             return {"FINISHED"}
-        aggregate = ifcopenshell.util.element.get_aggregate(element)
-        parts = ifcopenshell.util.element.get_parts(element)
+        # Defines the aggregate based on previous state
+        # Controls whether the user is entering a deeper level or
+        # exiting to a higher level. See core/aggregate.py
+        aggregates = tool.Aggregate.get_aggregates_recursively(element)
+        aggregate = aggregates[-1]
+        if props.previous_state:
+            previous_aggregate = tool.Ifc.get_entity(props.previous_editing_aggregate)
+            if previous_aggregate in aggregates:
+                reference_index = aggregates.index(previous_aggregate)
+                aggregate = aggregates[reference_index - 1]
+            else:
+                aggregate = aggregates[0]
+
+        parts = tool.Aggregate.get_parts_recursively(element)
         if not aggregate and not parts:
             return {"FINISHED"}
         if not parts:
-            parts = ifcopenshell.util.element.get_parts(aggregate)
+            parts = tool.Aggregate.get_parts_recursively(aggregate)
         if parts:
             props.editing_aggregate = tool.Ifc.get_object(aggregate) if aggregate else tool.Ifc.get_object(element)
             parts_objs = [tool.Ifc.get_object(part) for part in parts]
@@ -114,6 +163,9 @@ class Aggregate(bonsai.core.tool.Aggregate):
             for obj in objs:
                 if obj.original not in parts_objs:
                     if obj == props.editing_aggregate:
+                        continue
+                    # Skips adding the object to not_editing_objects if it already exists in the list
+                    if any(obj == existing_obj.obj.original for existing_obj in props.not_editing_objects):
                         continue
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
@@ -131,7 +183,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
     @classmethod
     def disable_aggregate_mode(cls):
         context = bpy.context
-        props = context.scene.BIMAggregateProperties
+        props = cls.get_aggregate_props()
         for obj_prop in props.not_editing_objects:
             obj = obj_prop.obj
             if not obj:
@@ -142,7 +194,6 @@ class Aggregate(bonsai.core.tool.Aggregate):
             if not element:
                 continue
 
-        parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(props.editing_aggregate))
         if context.space_data.local_view:
             bpy.ops.view3d.localview()
 

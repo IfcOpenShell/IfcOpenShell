@@ -32,6 +32,7 @@ def refresh():
     TaskICOMData.is_loaded = False
     WorkScheduleData.is_loaded = False
     AnimationColorSchemeData.is_loaded = False
+    StatusData.is_loaded = False
 
 
 class SequenceData:
@@ -247,7 +248,8 @@ class SequenceData:
     @classmethod
     def schedule_predefined_types_enum(cls) -> list[tuple[str, str, str]]:
         results: list[tuple[str, str, str]] = []
-        declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")
+        declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule").as_entity()
+        assert declaration
         version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
@@ -265,7 +267,8 @@ class SequenceData:
     def task_columns_enum(cls) -> list[tuple[str, str, str]]:
         schema = tool.Ifc.schema()
         taskcolumns_enum = []
-        for a in schema.declaration_by_name("IfcTask").all_attributes():
+        assert (entity := schema.declaration_by_name("IfcTask").as_entity())
+        for a in entity.all_attributes():
             if (primitive_type := ifcopenshell.util.attribute.get_primitive_type(a)) not in (
                 "string",
                 "float",
@@ -281,7 +284,8 @@ class SequenceData:
     def task_time_columns_enum(cls) -> list[tuple[str, str, str]]:
         schema = tool.Ifc.schema()
         tasktimecolumns_enum = []
-        for a in schema.declaration_by_name("IfcTaskTime").all_attributes():
+        assert (entity := schema.declaration_by_name("IfcTaskTime").as_entity())
+        for a in entity.all_attributes():
             if (primitive_type := ifcopenshell.util.attribute.get_primitive_type(a)) not in (
                 "string",
                 "float",
@@ -307,20 +311,19 @@ class WorkScheduleData:
         cls.is_loaded = True
 
     @classmethod
-    def can_have_baselines(cls):
-        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+    def can_have_baselines(cls) -> bool:
+        props = tool.Sequence.get_work_schedule_props()
+        if not props.active_work_schedule_id:
             return False
-        return (
-            tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id).PredefinedType
-            == "PLANNED"
-        )
+        return tool.Ifc.get().by_id(props.active_work_schedule_id).PredefinedType == "PLANNED"
 
     @classmethod
-    def active_work_schedule_baselines(cls):
+    def active_work_schedule_baselines(cls) -> list[dict[str, Any]]:
         results = []
-        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+        props = tool.Sequence.get_work_schedule_props()
+        if not props.active_work_schedule_id:
             return []
-        for rel in tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id).Declares:
+        for rel in tool.Ifc.get().by_id(props.active_work_schedule_id).Declares:
             for work_schedule in rel.RelatedObjects:
                 if work_schedule.PredefinedType == "BASELINE":
                     results.append(
@@ -365,9 +368,10 @@ class WorkPlansData:
     @classmethod
     def active_work_plan_schedules(cls):
         results = []
-        if not bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id:
+        props = tool.Sequence.get_work_plan_props()
+        if not props.active_work_plan_id:
             return []
-        for rel in tool.Ifc.get().by_id(bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id).IsDecomposedBy:
+        for rel in tool.Ifc.get().by_id(props.active_work_plan_id).IsDecomposedBy:
             for work_schedule in rel.RelatedObjects:
                 results.append({"id": work_schedule.id(), "name": work_schedule.Name or "Unnamed"})
         return results
@@ -383,12 +387,11 @@ class TaskICOMData:
         cls.is_loaded = True
 
     @classmethod
-    def can_active_resource_be_assigned(cls):
-        resource_props = bpy.context.scene.BIMResourceProperties
-        resource_tprops = bpy.context.scene.BIMResourceTreeProperties
-        total_resources = len(resource_tprops.resources)
-        if total_resources and resource_props.active_resource_index < total_resources:
-            resource_id = resource_tprops.resources[resource_props.active_resource_index].ifc_definition_id
+    def can_active_resource_be_assigned(cls) -> bool:
+        props = tool.Resource.get_resource_props()
+        active_resource = props.active_resource
+        if active_resource:
+            resource_id = active_resource.ifc_definition_id
             return not tool.Ifc.get().by_id(resource_id).is_a("IfcCrewResource")
         return False
 
@@ -419,3 +422,25 @@ class AnimationColorSchemeData:
             except:
                 pass
         return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
+
+
+class StatusData:
+    data: dict[str, Any] = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls) -> None:
+        cls.is_loaded = True
+        cls.data = {
+            "statuses_with_elements": cls.statuses_with_elements(),
+        }
+
+    @classmethod
+    def statuses_with_elements(cls) -> set[str]:
+        statuses = ["No Status"]
+        statuses.extend(tool.Sequence.ELEMENT_STATUSES)
+        statuses_used: set[str] = set()
+        for status in statuses:
+            if tool.Sequence.get_elements_by_status(status):
+                statuses_used.add(status)
+        return statuses_used

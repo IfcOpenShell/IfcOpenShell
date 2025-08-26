@@ -48,9 +48,7 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
     naturally, the materials, types, containers, etc themselves remain).
 
     :param product: The element to remove.
-    :type product: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

@@ -19,6 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
 from sverchok.node_tree import SverchCustomTreeNode
@@ -59,12 +62,11 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
 
     def process_ifc(self, file: ifcopenshell.file, project_name: str) -> None:
         # create project
-        project = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcProject", name=str(project_name))
-        lengthunit = ifcopenshell.api.run("unit.add_si_unit", file, unit_type="LENGTHUNIT")
-        ifcopenshell.api.run("unit.assign_unit", file, units=[lengthunit])
-        model = ifcopenshell.api.run("context.add_context", file, context_type="Model")
-        context = ifcopenshell.api.run(
-            "context.add_context",
+        project = ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject", name=str(project_name))
+        lengthunit = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(file, units=[lengthunit])
+        model = ifcopenshell.api.context.add_context(file, context_type="Model")
+        context = ifcopenshell.api.context.add_context(
             file,
             context_type="Model",
             context_identifier="Body",

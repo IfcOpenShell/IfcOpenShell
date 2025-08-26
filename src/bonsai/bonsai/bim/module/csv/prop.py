@@ -61,6 +61,7 @@ class CsvAttribute(PropertyGroup):
     formatting: StringProperty(default="{{value}}", name="Formatting")
 
     if TYPE_CHECKING:
+        name: str
         header: str
         sort: Literal["NONE", "ASC", "DESC"]
         group: Literal["NONE", "GROUP", "CONCAT", "VARIES", "SUM", "AVERAGE", "MIN", "MAX"]

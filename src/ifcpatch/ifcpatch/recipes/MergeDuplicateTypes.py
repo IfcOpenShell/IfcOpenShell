@@ -18,8 +18,10 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 from logging import Logger
+from typing import Any
 
 
 class Patcher:
@@ -48,7 +50,6 @@ class Patcher:
         :param attribute: The name of the attribute to merge element types based
             on. Typically this will be "Tag" as it stores the unique ID from the
             proprietary BIM software.
-        :type attribute: str
 
         Example:
 
@@ -66,7 +67,7 @@ class Patcher:
 
     def patch(self):
         key = self.attribute
-        keys = {}
+        keys: dict[Any, ifcopenshell.entity_instance] = {}
         for element_type in self.file.by_type("IfcTypeObject"):
             original_type = keys.get(getattr(element_type, key), None)
             if original_type:
@@ -86,8 +87,7 @@ class Patcher:
         # since that would do other things like
         # map type representations or recalculate material set usages which is
         # risky when we're patching an existing dataset.
-        ifcopenshell.api.run(
-            "type.assign_type",
+        ifcopenshell.api.type.assign_type(
             self.file,
             relating_type=relating_type,
             related_objects=related_objects,
