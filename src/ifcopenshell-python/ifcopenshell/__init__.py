@@ -305,6 +305,7 @@ def stream2(path: Union[Path, str]):
         if inst := streamer.read_instance_py():
             yield inst
 
+
 def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[Path, str]):
     """Converts an IFC-SPF file on disk to the IfcOpenShell-specific
     RocksDB encoding. RocksDB is an embedded key-value store that allows
@@ -316,6 +317,7 @@ def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[P
     """
     ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), True)
     ser.finalize()
+
 
 version_core = ifcopenshell_wrapper.version()
 __version__ = version = "0.0.0"
