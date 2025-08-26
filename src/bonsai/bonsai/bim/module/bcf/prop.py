@@ -31,9 +31,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from functools import partial
-from typing import Literal
-from typing_extensions import assert_never
 from bcf.agnostic.extensions import get_extensions_attributes
 from typing import TYPE_CHECKING, Union
 

@@ -34,11 +34,7 @@ except ImportError:
     USE_OCCT_HANDLE = True
 
 from collections import defaultdict, OrderedDict
-
-try:  # python 3.3+
-    from collections.abc import Iterable
-except ModuleNotFoundError:  # python 2
-    from collections import Iterable
+from collections.abc import Iterable
 
 try:
     QString = unicode

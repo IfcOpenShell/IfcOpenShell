@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
 import ifcopenshell.util.representation
 from ifcopenshell import template
 from typing import Union, Any
@@ -80,8 +81,7 @@ class SvIfcStore:
             # TODO change units to imperial
             pass
         model = ifcopenshell.util.representation.get_context(file, context="Model")
-        context = ifcopenshell.api.run(
-            "context.add_context",
+        context = ifcopenshell.api.context.add_context(
             file,
             context_type="Model",
             context_identifier="Body",

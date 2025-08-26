@@ -26,8 +26,10 @@ import ifcopenshell.util.resource
 class TestAddResourceQuantity(test.bootstrap.IFC4):
     def test_run(self):
         schema = ifcopenshell.schema_by_name(self.file.schema)
-        quantity_types = [t.name() for t in schema.declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()]
-        resource_types = [t.name() for t in schema.declaration_by_name("IfcConstructionResource").subtypes()]
+        assert (quantity_entity := schema.declaration_by_name("IfcPhysicalSimpleQuantity").as_entity())
+        quantity_types = [t.name() for t in quantity_entity.subtypes()]
+        assert (resource_entity := schema.declaration_by_name("IfcConstructionResource").as_entity())
+        resource_types = [t.name() for t in resource_entity.subtypes()]
 
         self.file.create_entity("IfcProject")  # add_resource
 

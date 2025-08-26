@@ -42,16 +42,14 @@ classes = (
     operator.ShowAllElements,
     operator.ToggleFilterSelection,
     prop.BIMColour,
-    prop.BIMFilterClasses,
-    prop.BIMFilterBuildingStoreys,
+    prop.BIMFilterItem,
     prop.BIMSearchProperties,
     ui.BIM_PT_search,
     ui.BIM_PT_filter,
     ui.BIM_PT_colour_by_property,
     ui.BIM_PT_select_similar,
     ui.BIM_UL_colourscheme,
-    ui.BIM_UL_ifc_class_filter,
-    ui.BIM_UL_ifc_building_storey_filter,
+    ui.BIM_UL_ifc_filter,
 )
 
 

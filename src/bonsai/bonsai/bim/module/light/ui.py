@@ -18,6 +18,7 @@
 
 import bpy
 import bonsai.tool as tool
+from typing import TYPE_CHECKING
 from bonsai.bim.module.light.data import SolarData
 
 
@@ -33,10 +34,9 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
     bl_parent_id = "BIM_PT_tab_lighting"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
-        scene = context.scene
-
-        props = scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
 
         if tool.Ifc.get():
             row = self.layout.row()
@@ -145,11 +145,22 @@ class BIM_PT_solar(bpy.types.Panel):
         if not SolarData.is_loaded:
             SolarData.load()
 
-        if (sun_position := SolarData.data["sun_position"]) is None:
+        assert self.layout
+
+        # Props are more reliable as they'll come and go regardless of Data update.
+        if (sun_props := tool.Blender.get_sun_props()) is None:
             self.layout.label(text="Enable 'Sun Position' Add-on To Continue", icon="ERROR")
             return
 
-        props = context.scene.BIMSolarProperties
+        sun_position = SolarData.data["sun_position"]
+        if sun_position is None:
+            # There are props, so there must be an addon.
+            SolarData.data["sun_position"] = SolarData.sun_position()
+
+        if TYPE_CHECKING:
+            import sun_position
+
+        props = tool.Blender.get_solar_props()
 
         if SolarData.data["sites"]:
             row = self.layout.row(align=True)
@@ -159,10 +170,12 @@ class BIM_PT_solar(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="No Sites With Lat/Longs Found", icon="ERROR")
 
-        sun_props = context.scene.sun_pos_properties
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.operator("bim.light_pick_coordinates", icon="URL", text="Pick")
 
-        row = self.layout.row()
-        row.prop(sun_props, "coordinates", icon="URL")
+        row = self.layout.row(align=True)
+        row.prop(props, "coordinates", icon="URL")
         row = self.layout.row(align=True)
         row.prop(props, "latitude")
         row.prop(props, "longitude")
@@ -171,6 +184,10 @@ class BIM_PT_solar(bpy.types.Panel):
         row.prop(props, "true_north")
         if SolarData.data["true_north"] is not None:
             row.operator("bim.import_true_north", icon="IMPORT", text="")
+
+        row = self.layout.row()
+        row.alignment = "RIGHT"
+        row.operator("bim.light_set_time_to_now", icon="TIME", text="Now")
 
         row = self.layout.row()
         row.prop(props, "year")
@@ -243,7 +260,9 @@ class BIM_PT_solar(bpy.types.Panel):
             row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
         elif props.shadow_mode == "RENDERING":
             row = self.layout.row()
-            row.prop(context.scene.sun_pos_properties.sun_object.data, "energy", text="Sun Intensity")
+            sun_props = tool.Blender.get_sun_props()
+            assert sun_props
+            row.prop(sun_props.sun_object.data, "energy", text="Sun Intensity")
 
         row = self.layout.row(align=True)
         row.operator("bim.view_from_sun", icon="LIGHT_HEMI")

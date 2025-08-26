@@ -26,10 +26,10 @@ if TYPE_CHECKING:
 
 
 def create_project(
-    ifc: tool.Ifc,
-    georeference: tool.Georeference,
-    project: tool.Project,
-    spatial: tool.Spatial,
+    ifc: type[tool.Ifc],
+    georeference: type[tool.Georeference],
+    project: type[tool.Project],
+    spatial: type[tool.Spatial],
     schema: str,
     template: Optional[str] = None,
 ) -> None:

@@ -16,6 +16,7 @@ cmake ${CMAKE_ARGS} -G Ninja \
  -DSCHEMA_VERSIONS="2x3;4;4x1;4x3_add2" \
  -DCMAKE_BUILD_TYPE=Release \
  -DCMAKE_INSTALL_PREFIX=$PREFIX \
+ -DCMAKE_CXX_STANDARD=17 \
   ${CMAKE_PLATFORM_FLAGS[@]} \
  -DCMAKE_PREFIX_PATH=$PREFIX \
  -DCMAKE_SYSTEM_PREFIX_PATH=$PREFIX \
@@ -47,3 +48,5 @@ cmake ${CMAKE_ARGS} -G Ninja \
 ninja
 
 ninja install -j 1
+
+python "${RECIPE_DIR}/update_version_init.py" "${PKG_VERSION}" "${SP_DIR}/ifcopenshell/__init__.py"

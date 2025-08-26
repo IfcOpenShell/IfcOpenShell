@@ -11,6 +11,16 @@ namespace ifcopenshell { namespace geometry {
 /// Returns (x,y,theta) at L/2. The results are in a vector so they can be returned to python
 std::vector<double> helmert_curve_point(double A0, double A1, double A2, double s);
 
+/// @brief Converts a loop to a function item.
+/// This is intended to be used from python side. Polylines are mapped to a loop, but when
+/// representing an alignment they need to be a function_item so the can be evaluated by function_item_evaluator.
+/// On the C++ side, the dcast operator take care of this, but dcast is not accessible on the python side.
+/// @param loop 
+/// @return 
+static taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop::ptr loop) {
+    return ifcopenshell::geometry::taxonomy::dcast<taxonomy::function_item>(loop);
+}
+
 /// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
 struct fn_evaluator {
     fn_evaluator(const ifcopenshell::geometry::Settings& settings) : settings_(settings) {

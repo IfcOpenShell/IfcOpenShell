@@ -22,7 +22,8 @@ import mathutils
 import bonsai.core.tool
 import bonsai.tool as tool
 from mathutils import Matrix, Vector
-from typing import Any, Sequence, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
+from collections.abc import Sequence
 
 if TYPE_CHECKING:
     from bonsai.bim.module.boundary.prop import BIMBoundaryProperties, BIMObjectBoundaryProperties

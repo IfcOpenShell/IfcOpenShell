@@ -237,16 +237,14 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
 
     Example: bulk copy a wall to multiple storeys
 
-    1. Select one or more 3D elements in the viewport
-    2. Select one or more spatial containers in the viewport
-    3. Press this button
-    4. The copied elements will have a new position relative to the destination containers
+    The copied elements will have a new position relative to the destination containers
 
     Copying containers to other containers currently is not supported."""
 
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
     bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
 
     def _execute(self, context):
         objs = tool.Spatial.get_selected_objects_without_containers()
@@ -254,7 +252,9 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, "No non-spatial objects are selected.")
             return
 
-        containers = tool.Spatial.get_selected_containers()
+        # TODO: make a multi-select in the spatial decomposition panel to support multiple containers
+        # containers = tool.Spatial.get_selected_containers()
+        containers = [tool.Ifc.get().by_id(self.container)]
         # Track decompositions so they can be recreated after the operation
         relationships = tool.Root.get_decomposition_relationships(objs)
         old_to_new = {}
@@ -305,10 +305,24 @@ class SelectContainer(bpy.types.Operator):
 class SelectSimilarContainer(bpy.types.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
+    bl_description = "Recurvisevly selects all objects in the container.\n\nCtrl+click to select only one level deep"
     bl_options = {"REGISTER", "UNDO"}
 
+    is_recursive: bpy.props.BoolProperty(default=True)
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.ctrl:
+            self.is_recursive = False
+        return self.execute(context)
+
     def execute(self, context):
-        core.select_similar_container(tool.Ifc, tool.Spatial, obj=context.active_object)
+        core.select_similar_container(
+            tool.Ifc,
+            tool.Spatial,
+            obj=context.active_object,
+            is_recursive=self.is_recursive,
+        )
+        self.is_recursive = True  # <-- forcibly reset
         return {"FINISHED"}
 
 
@@ -336,22 +350,40 @@ class ImportSpatialDecomposition(bpy.types.Operator):
 class ContractContainer(bpy.types.Operator):
     bl_idname = "bim.contract_container"
     bl_label = "Contract Container"
+    bl_description = "Contract the hierarchy\nALT+CLICK to recursively contract"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.is_recursive = True
+        return self.execute(context)
 
     def execute(self, context):
-        core.contract_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.contract_container(
+            tool.Spatial, container=tool.Ifc.get().by_id(self.container), is_recursive=self.is_recursive
+        )
         return {"FINISHED"}
 
 
 class ExpandContainer(bpy.types.Operator):
     bl_idname = "bim.expand_container"
     bl_label = "Expand Container"
+    bl_description = "Expand the hierarchy\nALT+CLICK to recursively contract"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.is_recursive = True
+        return self.execute(context)
 
     def execute(self, context):
-        core.expand_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.expand_container(
+            tool.Spatial, container=tool.Ifc.get().by_id(self.container), is_recursive=self.is_recursive
+        )
         return {"FINISHED"}
 
 
@@ -413,18 +445,36 @@ class SelectDecomposedElements(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     container: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, operator):
-        return "Select the active item" + "\nALT+CLICK to select all listed elements"
+        return (
+            "Select the active item"
+            + "\nALT+CLICK to select all listed elements.\nCTRL + CLICK to select only one level deep"
+        )
 
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE" and event.alt:
-            self.should_filter = False
+        if event.type == "LEFTMOUSE":
+            if event.alt:
+                self.should_filter = False
+            if event.ctrl:
+                self.is_recursive = False
         return self.execute(context)
 
     def execute(self, context):
-        tool.Spatial.select_products(tool.Spatial.get_filtered_elements(self.should_filter))
+        tool.Spatial.select_products(tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive))
+
+        # Make selected active element in list, the active object
+        props = tool.Spatial.get_spatial_props()
+        active_element = props.active_element
+        if active_element and active_element.type == "OCCURRENCE":
+            ifc_file = tool.Ifc.get()
+            ifc_entity = ifc_file.by_id(active_element.ifc_definition_id)
+            obj = tool.Ifc.get_object(ifc_entity)
+            if obj:
+                context.view_layer.objects.active = obj
+                obj.select_set(True)
         return {"FINISHED"}
 
 

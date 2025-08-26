@@ -20,7 +20,7 @@ import bpy
 import json
 import bmesh
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
@@ -98,10 +98,9 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
     # update pset with ifc properties
     pset_common = tool.Pset.get_element_pset(element, "Pset_StairFlightCommon")
     if not pset_common:
-        pset_common = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="Pset_StairFlightCommon")
+        pset_common = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="Pset_StairFlightCommon")
 
-    ifcopenshell.api.run(
-        "pset.edit_pset",
+    ifcopenshell.api.pset.edit_pset(
         ifc_file,
         pset=pset_common,
         properties={
@@ -192,10 +191,9 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         stair_data = props.get_props_kwargs(convert_to_project_units=True)
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         if not pset:
-            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="BBIM_Stair")
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_Stair")
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             ifc_file,
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(stair_data))},
@@ -250,7 +248,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         data = tool.Ifc.get().createIfcText(json.dumps(data))
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         # update IfcStairFlight properties
         update_ifc_stair_props(obj)
@@ -288,6 +286,6 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
         return {"FINISHED"}

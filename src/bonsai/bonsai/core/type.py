@@ -27,7 +27,10 @@ if TYPE_CHECKING:
 
 
 def assign_type(
-    ifc: tool.Ifc, type_tool: tool.Type, element: ifcopenshell.entity_instance, type: ifcopenshell.entity_instance
+    ifc: type[tool.Ifc],
+    type_tool: type[tool.Type],
+    element: ifcopenshell.entity_instance,
+    type: ifcopenshell.entity_instance,
 ) -> None:
     ifc.run("type.assign_type", related_objects=[element], relating_type=type)
     obj = ifc.get_object(element)
@@ -40,7 +43,7 @@ def assign_type(
     type_tool.disable_editing(obj)
 
 
-def purge_unused_types(ifc: tool.Ifc, type: tool.Type, geometry: tool.Geometry) -> int:
+def purge_unused_types(ifc: type[tool.Ifc], type: type[tool.Type], geometry: type[tool.Geometry]) -> int:
     """Remove all types without occurrences, return an amount of the removed types."""
     purged_types = 0
     for element_type in type.get_model_types():

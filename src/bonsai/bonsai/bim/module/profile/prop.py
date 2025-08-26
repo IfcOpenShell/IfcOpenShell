@@ -82,7 +82,7 @@ class BIMProfileProperties(PropertyGroup):
         name="Filter Material Profiles",
         default=False,
         description="Check to only show IfcProfileDefs attached to IfcMaterialProfiles",
-        update=lambda self, context: bpy.ops.bim.load_profiles(),
+        update=lambda self, context: (None, bpy.ops.bim.load_profiles())[0],
     )
     object_to_profile: PointerProperty(
         name="Object to profile",

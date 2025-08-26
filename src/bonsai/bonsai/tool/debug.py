@@ -19,9 +19,11 @@
 from __future__ import annotations
 import os
 import json
+import bmesh
 import bpy
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.material
+import ifcopenshell.api.owner
 import ifcopenshell.express
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
@@ -31,7 +33,8 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 from collections import defaultdict
-from typing import Iterable, Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING, assert_never
+from collections.abc import Iterable
 
 if TYPE_CHECKING:
     from bonsai.bim.module.debug.prop import BIMDebugProperties
@@ -54,8 +57,8 @@ class Debug(bonsai.core.tool.Debug):
 
     @classmethod
     def purge_hdf5_cache(cls) -> None:
-        props = tool.Blender.get_bim_props()
-        cache_dir = props.cache_dir
+        prefs = tool.Blender.get_addon_preferences()
+        cache_dir = prefs.cache_dir
         filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
         for f in filelist:
             try:
@@ -68,6 +71,7 @@ class Debug(bonsai.core.tool.Debug):
         mesh = bpy.data.meshes.new("Debug")
         bm.to_mesh(mesh)
         obj = bpy.data.objects.new(name, mesh)
+        assert bpy.context.scene
         bpy.context.scene.collection.objects.link(obj)
         return obj
 
@@ -78,6 +82,7 @@ class Debug(bonsai.core.tool.Debug):
         mesh = bpy.data.meshes.new("Debug")
         mesh.from_pydata(verts, edges, [])
         obj = bpy.data.objects.new(name, mesh)
+        assert bpy.context.scene
         bpy.context.scene.collection.objects.link(obj)
         return obj
 
@@ -121,24 +126,55 @@ class Debug(bonsai.core.tool.Debug):
         return sum(unused.values())
 
     @classmethod
-    def merge_identical_objects(cls, object_type: Literal["STYLE", "MATERIAL"]) -> dict[str, list[str]]:
+    def merge_identical_objects(
+        cls,
+        object_type: Literal[
+            "STYLE",
+            "MATERIAL",
+            "ORGANIZATION",
+            "APPLICATION",
+            "PERSON",
+            "PERSON_AND_ORGANIZATION",
+        ],
+    ) -> dict[str, list[str]]:
         """Merge identical objects.
 
         Note that Styles UI (or other UI) should be updated manually after using this method.
         """
 
         def get_hash(element: ifcopenshell.entity_instance) -> int:
-            return hash(json.dumps(element.get_info_2(include_identifier=False, recursive=True), sort_keys=True))
+            data = element.get_info_2(include_identifier=False, recursive=True)
+            if object_type == "APPLICATION":
+                # To avoid disruption let user merge organizations separately.
+                data["ApplicationDeveloper"] = element.ApplicationDeveloper.id()
+            elif object_type == "PERSON_AND_ORGANIZATION":
+                data["ThePerson"] = element.ThePerson.id()
+                data["TheOrganization"] = element.TheOrganization.id()
+            return hash(json.dumps(data, sort_keys=True))
 
         ifc_file = tool.Ifc.get()
         merged_element_types: dict[str, list[str]] = {}
 
         if object_type == "STYLE":
-            declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+            declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle").as_entity()
+            assert declaration
             element_types = [e.name() for e in ifcopenshell.util.schema.get_subtypes(declaration)]
         elif object_type == "MATERIAL":
             # TODO: support other material types.
             element_types = ["IfcMaterial"]
+        elif object_type == "ORGANIZATION":
+            element_types = ["IfcOrganization"]
+        elif object_type == "APPLICATION":
+            element_types = ["IfcApplication"]
+        elif object_type == "PERSON":
+            element_types = ["IfcPerson"]
+        elif object_type == "PERSON_AND_ORGANIZATION":
+            element_types = ["IfcPersonAndOrganization"]
+        else:
+            assert_never(object_type)
+
+        def get_person_name(person: ifcopenshell.entity_instance) -> str:
+            return f"{person.Identification} / {person.FamilyName} / {person.GivenName}"
 
         for element_type in element_types:
             elements = ifc_file.by_type(element_type, include_subtypes=False)
@@ -147,7 +183,15 @@ class Debug(bonsai.core.tool.Debug):
             hash_to_elements: defaultdict[int, list[ifcopenshell.entity_instance]] = defaultdict(list)
             for element in elements:
                 # Except for styles, ignore unnamed elements as they may be not safe to merge
-                if object_type != "STYLE" and not element.Name:
+                merge_optional_names = ("STYLE", "PERSON")
+                not_optional_name = ("APPLICATION", "ORGANIZATION")
+                has_no_name = ("PERSON_AND_ORGANIZATION",)
+                if (
+                    object_type not in merge_optional_names
+                    and object_type not in not_optional_name
+                    and object_type not in has_no_name
+                    and not element.Name
+                ):
                     continue
                 element_hash = get_hash(element)
                 hash_to_elements[element_hash].append(element)
@@ -177,6 +221,79 @@ class Debug(bonsai.core.tool.Debug):
                         merged_elements_names.append(material.Name)
                         ifcopenshell.api.material.remove_material(ifc_file, material)
 
+                elif object_type == "ORGANIZATION":
+                    for organization in elements[1:]:
+                        ifcopenshell.util.element.replace_element(organization, main_element)
+                        merged_elements_names.append(organization.Name)
+                        ifcopenshell.api.owner.remove_organisation(ifc_file, organization)
+
+                elif object_type == "APPLICATION":
+                    for application in elements[1:]:
+                        ifcopenshell.util.element.replace_element(application, main_element)
+                        merged_elements_names.append(application.ApplicationFullName)
+                        ifcopenshell.api.owner.remove_application(ifc_file, application)
+
+                elif object_type == "PERSON":
+                    for person in elements[1:]:
+                        ifcopenshell.util.element.replace_element(person, main_element)
+                        merged_elements_names.append(get_person_name(person))
+                        ifcopenshell.api.owner.remove_person(ifc_file, person)
+
+                elif object_type == "PERSON_AND_ORGANIZATION":
+                    for pao in elements[1:]:
+                        ifcopenshell.util.element.replace_element(pao, main_element)
+                        merged_elements_names.append(f"{get_person_name(pao.ThePerson)} / {pao.TheOrganization.Name}")
+                        ifcopenshell.api.owner.remove_person_and_organisation(ifc_file, pao)
+
+                else:
+                    assert_never(object_type)
+
             if merged_elements_names:
                 merged_element_types[element_type] = merged_elements_names
         return merged_element_types
+
+    PurgeMergeObjectType = Literal[
+        "TYPE",
+        "PROFILE",
+        "STYLE",
+        "MATERIAL",
+        "ORGANIZATION",
+        "APPLICATION",
+        "PERSON",
+        "PERSON_AND_ORGANIZATION",
+    ]
+
+    @classmethod
+    def refresh_ui_after_purge_merge(cls, object_type: PurgeMergeObjectType) -> None:
+        if object_type == "PROFILE":
+            props = tool.Profile.get_profile_props()
+            if props.is_editing:
+                bpy.ops.bim.load_profiles()
+        elif object_type == "STYLE":
+            props = tool.Style.get_style_props()
+            if props.is_editing:
+                bpy.ops.bim.load_styles()
+        elif object_type == "MATERIAL":
+            props = tool.Material.get_material_props()
+            if props.is_editing:
+                bpy.ops.bim.load_materials()
+        elif object_type == "TYPE":
+            pass
+        elif object_type == "ORGANIZATION":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_organisation_id) is None:
+                props.active_organisation_id = 0
+        elif object_type == "APPLICATION":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_application_id) is None:
+                tool.Owner.clear_application()
+        elif object_type == "PERSON":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_person_id) is None:
+                tool.Owner.clear_person()
+        elif object_type == "PERSON_AND_ORGANIZATION":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_person_id) is None:
+                tool.Owner.clear_user()
+        else:
+            assert_never(object_type)

@@ -27,7 +27,7 @@ from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from typing import Sequence
+from collections.abc import Sequence
 
 
 class ItemDecorator:

@@ -29,8 +29,7 @@ from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from typing import Literal, Union, Optional
-from typing_extensions import assert_never
+from typing import Literal, Union, Optional, assert_never
 
 
 AxisType = Literal["x", "y", "z"]

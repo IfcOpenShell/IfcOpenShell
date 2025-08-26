@@ -30,6 +30,8 @@ def assign_declaration(
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Declares the list of elements to the project
 
+    Feature was added in IFC4.
+
     All data in a model must be directly or indirectly related to the
     project. Most data is indirectly related, existing instead within the
     spatial decomposition tree. Other data, such as types, may be declared
@@ -42,13 +44,10 @@ def assign_declaration(
     a declaration lets you say that an object belongs to a library.
 
     :param definitions: The list of objects you want to declare. Typically a list of assets.
-    :type definitions: list[ifcopenshell.entity_instance]
     :param relating_context: The IfcProject, or more commonly the
         IfcProjectLibrary that you want the object to be part of.
-    :type relating_context: ifcopenshell.entity_instance
     :return: The new IfcRelDeclares relationship or None if all definitions
         were already declared / do not support declaration.
-    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -85,21 +84,16 @@ def assign_declaration(
         # All done, just for fun let's save our asset library to disk for later use.
         library.write("/path/to/my-library.ifc")
     """
-    settings = {
-        "definitions": definitions,
-        "relating_context": relating_context,
-    }
 
-    relating_context = settings["relating_context"]
     all_declares = relating_context.Declares
-    definitions = set(settings["definitions"])
+    definitions_set = set(definitions)
 
     previous_declares_rels: set[ifcopenshell.entity_instance] = set()
     objects_without_contexts: list[ifcopenshell.entity_instance] = []
     objects_with_contexts: list[ifcopenshell.entity_instance] = []
 
     # check if there is anything to change
-    for definition in definitions:
+    for definition in definitions_set:
         has_context = getattr(definition, "HasContext", None)
         if has_context is None:
             continue
@@ -123,7 +117,7 @@ def assign_declaration(
         related_definitions = set(has_context.RelatedDefinitions) - set(objects_with_contexts)
         if related_definitions:
             has_context.RelatedDefinitions = list(related_definitions)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": has_context})
+            ifcopenshell.api.owner.update_owner_history(file, element=has_context)
         else:
             history = has_context.OwnerHistory
             file.remove(has_context)
@@ -133,7 +127,7 @@ def assign_declaration(
     declares = next(iter(all_declares), None)
     if declares:
         declares.RelatedDefinitions = list(set(declares.RelatedDefinitions) | set(objects_to_change))
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": declares})
+        ifcopenshell.api.owner.update_owner_history(file, element=declares)
     else:
         declares = file.create_entity(
             "IfcRelDeclares",

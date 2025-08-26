@@ -29,7 +29,8 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from statistics import mean
-from typing import Optional, Union, Literal, Iterable
+from typing import Optional, Union, Literal
+from collections.abc import Iterable
 
 try:
     from odf.namespaces import OFFICENS
@@ -285,7 +286,7 @@ class IfcCsv:
                 reverse = sort_data["order"] == "DESC"
                 self.results = sorted(self.results, key=lambda x: natural_sort(x[i]), reverse=reverse)
         else:
-            if include_global_id and len(list(self.results)[0]) > 1:
+            if include_global_id and len(next(iter(self.results))) > 1:
                 self.results = sorted(self.results, key=lambda x: x[1])
             elif not include_global_id:
                 self.results = sorted(self.results, key=lambda x: x[0])
@@ -559,6 +560,7 @@ if __name__ == "__main__":
         )
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
+        ifc_file: ifcopenshell.file
         ifc_file = ifcopenshell.open(args.ifc)
         ifc_csv.Import(
             ifc_file,

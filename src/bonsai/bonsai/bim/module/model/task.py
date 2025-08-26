@@ -18,10 +18,11 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.date
 
 
-def calculate_quantities(usecase_path, ifc_file, settings):
+def calculate_quantities(usecase_path, ifc_file: ifcopenshell.file, settings):
     if not set(["ScheduleStart", "ScheduleFinish", "ScheduleDuration"]).intersection(
         set(settings["attributes"].keys())
     ):
@@ -29,12 +30,11 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     element = settings["task_time"]
     if not element.ScheduleDuration:
         return
-    task = [e for e in ifc_file.get_inverse(element) if e.is_a("IfcTask")][0]
-    qto = ifcopenshell.api.run(
-        "pset.add_qto", ifc_file, should_run_listeners=False, product=task, name="Qto_TaskBaseQuantities"
+    task = next(e for e in ifc_file.get_inverse(element) if e.is_a("IfcTask"))
+    qto = ifcopenshell.api.pset.add_qto(
+        ifc_file, should_run_listeners=False, product=task, name="Qto_TaskBaseQuantities"
     )
-    ifcopenshell.api.run(
-        "pset.edit_qto",
+    ifcopenshell.api.pset.edit_qto(
         ifc_file,
         should_run_listeners=False,
         qto=qto,

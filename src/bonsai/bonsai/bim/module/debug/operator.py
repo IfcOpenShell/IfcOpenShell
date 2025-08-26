@@ -26,10 +26,10 @@ import subprocess
 import platform
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.debug as core
@@ -42,7 +42,10 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args, Union
+from typing import get_args, Union, Any, TYPE_CHECKING, Literal, get_args, assert_never
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
 
 
 class CopyDebugInformation(bpy.types.Operator):
@@ -70,6 +73,7 @@ class CopyDebugInformation(bpy.types.Operator):
         print(text_with_backticks)
         print("-" * 80)
 
+        assert context.window_manager
         context.window_manager.clipboard = text_with_backticks
         return {"FINISHED"}
 
@@ -179,6 +183,9 @@ class ValidateIfcAssets(bpy.types.Operator):
 
         ifc_classes = {
             "IfcMaterial": "Name",
+            "IfcMaterialLayerSet": "LayerSetName",
+            "IfcMaterialConstituentSet": "Name",
+            "IfcMaterialProfileSet": "Name",
             "IfcProfileDef": "ProfileName",
             "IfcPresentationStyle": "Name",
         }
@@ -235,7 +242,7 @@ class ProfileImportIFC(bpy.types.Operator):
         import cProfile
         import pstats
 
-        profile_file = Path(profile_filename)
+        profile_file = Path(self.profile_filename)
         cProfile.run("import bpy; bpy.ops.bim.load_project_elements()", str(profile_file))
         p = pstats.Stats(str(profile_file))
         p.sort_stats("cumulative").print_stats(50)
@@ -247,6 +254,21 @@ class CreateAllShapes(bpy.types.Operator):
     bl_idname = "bim.create_all_shapes"
     bl_label = "Test All Shapes"
     bl_description = "Look for errors in all the shapes contained in the file"
+    bl_options = {"REGISTER"}
+
+    geometry_library: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Geometry Library",
+        items=[(i, i, "") for i in get_args(ifcopenshell.geom.GEOMETRY_LIBRARY)],
+        default="opencascade",
+    )
+    custom_geometry_library: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Custom Geometry Library",
+        description="Provide a custom geometry library name, will override the 'geometry library' property.",
+    )
+
+    if TYPE_CHECKING:
+        geometry_library: ifcopenshell.geom.GEOMETRY_LIBRARY
+        custom_geometry_library: str
 
     @classmethod
     def poll(cls, context):
@@ -254,6 +276,7 @@ class CreateAllShapes(bpy.types.Operator):
 
     def execute(self, context):
         self.file = tool.Ifc.get()
+        geometry_library = self.custom_geometry_library or self.geometry_library
         elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
 
         total = len(elements)
@@ -272,10 +295,10 @@ class CreateAllShapes(bpy.types.Operator):
             start = time.time()
             shape = None
             try:
-                shape = ifcopenshell.geom.create_shape(settings, element)
+                shape = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
             except:
                 try:
-                    shape = ifcopenshell.geom.create_shape(settings_2d, element)
+                    shape = ifcopenshell.geom.create_shape(settings_2d, element, geometry_library=geometry_library)
                 except:
                     failures.append(element)
                     print("***** FAILURE *****")
@@ -298,7 +321,8 @@ class CreateShapeFromStepId(bpy.types.Operator):
     bl_label = "Create Shape From STEP ID"
     bl_description = "Recreate a mesh object from a STEP ID"
     bl_options = {"REGISTER", "UNDO"}
-    should_include_curves: bpy.props.BoolProperty()
+
+    should_include_curves: bpy.props.BoolProperty(default=True)
     step_id: bpy.props.IntProperty(default=0)
     geometry_library: bpy.props.EnumProperty(
         name="Geometry Library",
@@ -310,6 +334,12 @@ class CreateShapeFromStepId(bpy.types.Operator):
         description="Provide a custom geometry library name, will override the 'geometry library' property.",
     )
 
+    if TYPE_CHECKING:
+        should_include_curves: bool
+        step_id: int
+        geometry_library: ifcopenshell.geom.GEOMETRY_LIBRARY
+        custom_geometry_library: str
+
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get():
@@ -318,6 +348,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        assert context.scene
         geometry_library = self.custom_geometry_library or self.geometry_library
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
@@ -335,6 +366,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         else:
             mesh = None
         obj = bpy.data.objects.new(f"Debug/{element.is_a()}/{element.id()}", mesh)
+        obj.location = context.scene.cursor.location
         context.scene.collection.objects.link(obj)
         return {"FINISHED"}
 
@@ -347,8 +379,9 @@ class SelectHighPolygonMeshes(bpy.types.Operator):
     threshold: bpy.props.IntProperty()
 
     def execute(self, context):
+        assert context.view_layer
         for obj in context.view_layer.objects:
-            if obj.type == "MESH" and len(obj.data.polygons) > self.threshold:
+            if isinstance(obj.data, bpy.types.Mesh) and len(obj.data.polygons) > self.threshold:
                 obj.select_set(True)
         return {"FINISHED"}
 
@@ -361,6 +394,7 @@ class SelectHighestPolygonMeshes(bpy.types.Operator):
     percentile: bpy.props.IntProperty()
 
     def execute(self, context):
+        assert context.view_layer
         objects = [obj for obj in context.view_layer.objects if obj.type == "MESH"]
         if objects:
             percentile = len(max(objects, key=lambda o: len(o.data.polygons)).data.polygons) * self.percentile / 100
@@ -423,7 +457,7 @@ class InspectFromStepId(bpy.types.Operator):
             new.int_value = inverse.id()
         return {"FINISHED"}
 
-    def add_attribute(self, prop, key, value):
+    def add_attribute(self, prop: "bpy.types.bpy_prop_collection_idprop[Attribute]", key: str, value: Any) -> None:
         if isinstance(value, tuple) and len(value) < 10:
             for i, item in enumerate(value):
                 self.add_attribute(prop, key + f"[{i}]", item)
@@ -459,8 +493,10 @@ class InspectFromObject(bpy.types.Operator):
     def poll(cls, context):
         if not context.active_object:
             cls.poll_message_set("No Active Object")
+            return False
         elif not cls.get_active_object_ifc_definition(context):
             cls.poll_message_set("Active Object doesn't have an IFC definition")
+            return False
         else:
             return True
 
@@ -492,6 +528,7 @@ class PrintObjectPlacement(bpy.types.Operator):
         if self.create_empty_object:
             bpy.ops.object.empty_add(type="ARROWS")
             si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            assert context.active_object
             context.active_object.matrix_world = placement.transpose()
             context.active_object.matrix_world.translation *= si_conversion
             context.active_object.empty_display_size = self.arrow_size
@@ -735,15 +772,13 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Purge Unused Objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(
+    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
         name="Object Type",
-        items=(
-            ("TYPE", "Type", ""),
-            ("PROFILE", "Profile", ""),
-            ("STYLE", "Style", ""),
-            ("MATERIAL", "Material", ""),
-        ),
+        items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
+
+    if TYPE_CHECKING:
+        object_type: tool.Debug.PurgeMergeObjectType
 
     def _execute(self, context):
         object_type = self.object_type
@@ -755,27 +790,21 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
             purged = tool.Style.purge_unused_styles()
         elif object_type == "MATERIAL":
             purged = tool.Material.purge_unused_materials()
+        elif object_type in ("APPLICATION", "ORGANIZATION"):
+            purged = core.purge_unused_elements(tool.Ifc, tool.Debug, "IfcApplication")
+        elif object_type == "PERSON":
+            purged = core.purge_unused_elements(tool.Ifc, tool.Debug, "IfcPerson")
+        elif object_type == "PERSON_AND_ORGANIZATION":
+            purged = core.purge_unused_elements(tool.Ifc, tool.Debug, "IfcPersonAndOrganization")
         else:
-            self.report({"ERROR"}, f"Invalid object type {object_type}.")
-            return {"CANCELLED"}
+            assert_never(object_type)
 
-        self.report({"INFO"}, f"{purged} unused {object_type.lower()}s were purged.")
+        self.report({"INFO"}, f"{purged} unused {object_type.replace('_', ' ').lower()}s were purged.")
 
         if purged == 0:
             return
 
-        if object_type == "PROFILE":
-            props = tool.Profile.get_profile_props()
-            if props.is_editing:
-                bpy.ops.bim.load_profiles()
-        elif object_type == "STYLE":
-            props = tool.Style.get_style_props()
-            if props.is_editing:
-                bpy.ops.bim.load_styles()
-        elif object_type == "MATERIAL":
-            props = tool.Material.get_material_props()
-            if props.is_editing:
-                bpy.ops.bim.load_materials()
+        tool.Debug.refresh_ui_after_purge_merge(object_type)
 
 
 class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
@@ -784,28 +813,28 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "For materials currently only IfcMaterials are supported"
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(
+    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
         name="Object Type",
-        items=(
-            ("TYPE", "Type", ""),
-            ("PROFILE", "Profile", ""),
-            ("STYLE", "Style", ""),
-            ("MATERIAL", "Material", ""),
-        ),
+        items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
+
+    if TYPE_CHECKING:
+        object_type: tool.Debug.PurgeMergeObjectType
 
     def _execute(self, context):
         object_type: str = self.object_type
-        if object_type in ("STYLE", "MATERIAL"):
-            merged_data = tool.Debug.merge_identical_objects(object_type)
-        else:
-            self.report({"ERROR"}, f"Invalid object type {object_type}.")
+        if object_type in ("PROFILE", "TYPE"):
+            self.report({"ERROR"}, f"Unsupported object type {object_type}.")
             return {"CANCELLED"}
-        plural_object_type = f"{object_type.lower()}s"
+
+        merged_data = tool.Debug.merge_identical_objects(object_type)
+        plural_object_type = f"{object_type.lower().replace('_', ' ')}s"
         if merged_data:
             for element_type, element_names in merged_data.items():
-                names = ", ".join([n or "Unnamed" for n in element_names])
-                print(f"- {element_type}: {names}")
+                print(f"- {element_type}:")
+                for name in element_names:
+                    name = name or "Unnamed"
+                    print(f"  - '{name}'")
         merged = sum(len(v) for v in merged_data.values())
 
         msg = " See system console for details." if merged else ""
@@ -814,18 +843,7 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
         if merged == 0:
             return
 
-        if object_type == "PROFILE":
-            props = tool.Profile.get_profile_props()
-            if props.is_editing:
-                bpy.ops.bim.load_profiles()
-        elif object_type == "STYLE":
-            props = tool.Style.get_style_props()
-            if props.is_editing:
-                bpy.ops.bim.load_styles()
-        elif object_type == "MATERIAL":
-            props = tool.Material.get_material_props()
-            if props.is_editing:
-                bpy.ops.bim.load_materials()
+        tool.Debug.refresh_ui_after_purge_merge(object_type)
 
 
 class PipInstall(bpy.types.Operator):
@@ -833,6 +851,10 @@ class PipInstall(bpy.types.Operator):
     bl_label = "Pip Install"
     bl_description = "Installs a package from PyPI"
     name: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Installs a package from PyPI: '{properties.name}'."
 
     def execute(self, context):
         blender_path = Path(bpy.app.binary_path).parent
@@ -880,6 +902,7 @@ class DebugActiveDrawing(bpy.types.Operator):
     )
 
     def execute(self, context: bpy.types.Context):
+        ifc_file = tool.Ifc.get()
         props = tool.Drawing.get_document_props()
         drawing_item = props.drawings[props.active_drawing_index]
         drawing = tool.Ifc.get().by_id(drawing_item.ifc_definition_id)
@@ -905,12 +928,12 @@ class DebugActiveDrawing(bpy.types.Operator):
         original_exclude = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "Exclude")
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
 
-        def drawing_fails_to_load(chunk_to_include: set) -> bool:
+        def drawing_fails_to_load(chunk_to_include: set[ifcopenshell.entity_instance]) -> bool:
             current_elements = all_elements - chunk_to_include
             excluded_guids = ", ".join([e.GlobalId for e in current_elements if hasattr(e, "GlobalId")])
             new_exclude = "" if not original_exclude else f"{original_exclude}, "
             new_exclude += excluded_guids
-            tool.Ifc.run("pset.edit_pset", pset=pset, properties={"Exclude": new_exclude})
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Exclude": new_exclude})
 
             try:
                 bpy.ops.bim.create_drawing(sync=False)
@@ -919,7 +942,7 @@ class DebugActiveDrawing(bpy.types.Operator):
                 # print(e)
                 result = True
 
-            tool.Ifc.run("pset.edit_pset", pset=pset, properties={"Exclude": original_exclude})
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Exclude": original_exclude})
             return result
 
         def test_elements(elements: list[ifcopenshell.entity_instance], attempts: int = ATTEMPS) -> None:
@@ -978,7 +1001,7 @@ class DebugActiveDrawing(bpy.types.Operator):
 class ToggleDetailedIOSLogs(bpy.types.Operator):
     bl_idname = "bim.toggle_detailed_ios_logs"
     bl_label = "Toggle Detailed IfcOpenShell Logs"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = {"REGISTER"}
     bl_description = (
         "Turn on detailed IfcOpenShell logs in the system console.\n"
         + "Could be useful debugging issues "
@@ -1008,6 +1031,31 @@ class ToggleDetailedIOSLogs(bpy.types.Operator):
         return {"FINISHED"}
 
 
+LogLevelType = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+
+class ChangeLogLevel(bpy.types.Operator):
+    bl_idname = "bim.change_log_level"
+    bl_label = "Change Log Level "
+    bl_options = {"REGISTER"}
+    bl_description = "Change general log level across all Python code in Blender"
+
+    log_level: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Log Level",
+        items=[(i, i, "") for i in get_args(LogLevelType)],
+        default="WARNING",
+    )
+
+    if TYPE_CHECKING:
+        log_level: LogLevelType
+
+    def execute(self, context):
+        root = logging.getLogger()
+        root.setLevel(self.log_level)
+        self.report({"INFO"}, f"Log level changed to {self.log_level}.")
+        return {"FINISHED"}
+
+
 class RestartBlender(bpy.types.Operator):
     bl_idname = "bim.restart_blender"
     bl_label = "Restart Blender"
@@ -1017,6 +1065,7 @@ class RestartBlender(bpy.types.Operator):
     def execute(self, context):
         # Save preferences manually since we're restarting Blender using .execv
         # and it doens't have a chance to save them on exit.
+        assert context.preferences
         if context.preferences.use_preferences_save:
             bpy.ops.wm.save_userpref()
 

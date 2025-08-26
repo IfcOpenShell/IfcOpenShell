@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from models.bcf_common import BimSnippet, BitmapType, Location, Direction, SnapshotType, Component
 from models.bcf_common import Coloring, OrthogonalCamera, Visibility, PerspectiveCamera, Line, ClippingPlane
 
@@ -12,11 +12,11 @@ class TopicPOST(BaseModel):
     guid: Optional[str] = None
     topic_type: Optional[str] = None
     topic_status: Optional[str] = None
-    reference_links: Optional[List[str]] = None
+    reference_links: Optional[list[str]] = None
     title: str
     priority: Optional[str] = None
     index: Optional[int] = None
-    labels: Optional[List[str]] = None
+    labels: Optional[list[str]] = None
     assigned_to: Optional[str] = None
     stage: Optional[str] = None
     description: Optional[str] = None
@@ -27,11 +27,11 @@ class TopicPOST(BaseModel):
 class TopicPUT(BaseModel):
     topic_type: Optional[str] = None
     topic_status: Optional[str] = None
-    reference_links: Optional[List[str]] = None
+    reference_links: Optional[list[str]] = None
     title: str
     priority: Optional[str] = None
     index: Optional[int] = None
-    labels: Optional[List[str]] = None
+    labels: Optional[list[str]] = None
     assigned_to: Optional[str] = None
     stage: Optional[str] = None
     description: Optional[str] = None
@@ -74,8 +74,8 @@ class SnapshotPOST(BaseModel):
 
 
 class Components(BaseModel):
-    selection: Optional[List[Component]] = None
-    coloring: Optional[List[Coloring]] = None
+    selection: Optional[list[Component]] = None
+    coloring: Optional[list[Coloring]] = None
     visibility: Optional[Visibility] = None
 
 
@@ -84,9 +84,9 @@ class ViewpointPOST(BaseModel):
     index: Optional[int] = None
     orthogonal_camera: Optional[OrthogonalCamera] = None
     perspective_camera: Optional[PerspectiveCamera] = None
-    lines: Optional[List[Line]] = None
-    clipping_planes: Optional[List[ClippingPlane]] = None
-    bitmaps: Optional[List[BitmapPOST]] = None
+    lines: Optional[list[Line]] = None
+    clipping_planes: Optional[list[ClippingPlane]] = None
+    bitmaps: Optional[list[BitmapPOST]] = None
     snapshot: Optional[SnapshotPOST] = None
     components: Optional[Components] = None
 

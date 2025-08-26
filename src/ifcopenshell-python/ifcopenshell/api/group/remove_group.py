@@ -28,9 +28,7 @@ def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -
     the group will be removed.
 
     :param group: The IfcGroup entity you want to remove
-    :type group: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

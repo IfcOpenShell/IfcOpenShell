@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.root
+import ifcopenshell.api.type
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -52,9 +54,10 @@ class TestChangeObjectData(NewFile):
 class TestDisableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMTypeProperties.is_editing_type = True
+        props = tool.Type.get_object_type_props(obj)
+        props.is_editing_type = True
         subject.disable_editing(obj)
-        assert obj.BIMTypeProperties.is_editing_type is False
+        assert props.is_editing_type is False
 
 
 class TestGetBodyContext(NewFile):
@@ -119,7 +122,7 @@ class TestGetModelTypes(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         type_classes = ("IfcWallType", "IfcDoorStyle", "IfcWindowStyle", "IfcTypeProduct")
-        types = [ifcopenshell.api.run("root.create_entity", ifc, ifc_class=c) for c in type_classes]
+        types = [ifcopenshell.api.root.create_entity(ifc, ifc_class=c) for c in type_classes]
         assert set(subject.get_model_types()) == set(types)
 
 
@@ -152,9 +155,9 @@ class TestGetTypeOccurrences(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType")
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall], relating_type=wall_type)
         assert subject.get_type_occurrences(wall_type) == (wall,)
 
 

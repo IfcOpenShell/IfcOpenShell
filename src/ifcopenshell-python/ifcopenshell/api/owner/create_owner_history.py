@@ -61,7 +61,6 @@ def create_owner_history(file: ifcopenshell.file) -> Union[ifcopenshell.entity_i
 
     :return: The newly created IfcOwnerHistory element or `None` if it's
         not IFC2X3 and user or application is not found in the current project.
-    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 

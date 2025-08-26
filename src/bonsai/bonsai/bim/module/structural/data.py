@@ -290,7 +290,8 @@ class StructuralLoadsData:
 
     @classmethod
     def structural_load_types(cls):
-        declaration = tool.Ifc.schema().declaration_by_name("IfcStructuralLoadStatic")
+        declaration = tool.Ifc.schema().declaration_by_name("IfcStructuralLoadStatic").as_entity()
+        assert declaration
         version = tool.Ifc.get_schema()
         return [
             (d.name(), d.name(), ifcopenshell.util.doc.get_entity_doc(version, d.name()).get("description", ""))
@@ -321,7 +322,8 @@ class BoundaryConditionsData:
 
     @classmethod
     def boundary_condition_types(cls):
-        declaration = tool.Ifc.schema().declaration_by_name("IfcBoundaryCondition")
+        declaration = tool.Ifc.schema().declaration_by_name("IfcBoundaryCondition").as_entity()
+        assert declaration
         version = tool.Ifc.get_schema()
         return [
             (d.name(), d.name(), ifcopenshell.util.doc.get_entity_doc(version, d.name()).get("description", ""))

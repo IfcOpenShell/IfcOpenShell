@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# pyright: reportAttributeAccessIssue=false
+
 import bpy
 from . import ui, prop, operator
 
@@ -36,6 +38,7 @@ classes = (
     operator.AssignProduct,
     operator.AssignRecurrencePattern,
     operator.AssignSuccessor,
+    operator.AssignStatus,
     operator.AssignWorkSchedule,
     operator.Bonsai_DatePicker,
     operator.CalculateTaskDuration,
@@ -44,6 +47,7 @@ classes = (
     operator.ContractTask,
     operator.CopyTask,
     operator.CopyTaskAttribute,
+    operator.CopyWorkSchedule,
     operator.CreateBaseline,
     operator.DisableEditingSequence,
     operator.DisableEditingTask,
@@ -81,7 +85,7 @@ classes = (
     operator.GenerateGanttChart,
     operator.GuessDateRange,
     operator.GoToTask,
-    operator.ImportCSV,
+    operator.ImportWorkScheduleCSV,
     operator.ImportMSP,
     operator.ImportP6,
     operator.ImportP6XER,
@@ -125,7 +129,6 @@ classes = (
     prop.Task,
     prop.TaskResource,
     prop.TaskProduct,
-    prop.ISODuration,
     prop.IFCStatus,
     prop.BIMStatusProperties,
     prop.BIMWorkScheduleProperties,
@@ -162,7 +165,7 @@ def menu_func_export(self, context):
 
 
 def menu_func_import(self, context):
-    self.layout.operator(operator.ImportCSV.bl_idname, text="Work Schedule (.csv)")
+    self.layout.operator(operator.ImportWorkScheduleCSV.bl_idname, text="Work Schedule (.csv)")
     self.layout.operator(operator.ImportP6.bl_idname, text="P6 (.xml)")
     self.layout.operator(operator.ImportP6XER.bl_idname, text="P6 (.xer)")
     self.layout.operator(operator.ImportPP.bl_idname, text="Powerproject (.pp)")

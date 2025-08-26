@@ -33,7 +33,7 @@ def change_nest(
     related_objects.remove(item)
     if related_objects:
         nests.RelatedObjects = related_objects
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": nests})
+        ifcopenshell.api.owner.update_owner_history(file, element=nests)
     else:
         history = nests.OwnerHistory
         file.remove(nests)

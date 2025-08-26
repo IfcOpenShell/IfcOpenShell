@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import tempfile
+import ifcopenshell.api.root
 import ifcpatch
 from pathlib import Path
 
@@ -32,3 +34,26 @@ class Test:
             expected_keys = ("class_", "description", "output", "inputs")
             for key in expected_keys:
                 assert key in docs
+
+    def test_static_ifcpatch_execution(self):
+        from ifcpatch.recipes import ExtractElements
+
+        ifc_file = ifcopenshell.file()
+        project = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
+
+        patcher = ExtractElements.Patcher(ifc_file, query="IfcWall")
+        patcher.patch()
+
+        output = patcher.get_output()
+        assert isinstance(output, ifcopenshell.file)
+        assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
+        assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
+
+        output_path = Path(tempfile.mktemp())
+        try:
+            assert not output_path.exists()
+            ifcpatch.write(patcher.get_output(), output_path)
+            assert output_path.exists()
+        finally:
+            output_path.unlink()

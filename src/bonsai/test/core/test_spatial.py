@@ -115,6 +115,6 @@ class TestSelectSimilarContainer:
     def test_run(self, ifc, spatial):
         ifc.get_entity("obj").should_be_called().will_return("element")
         spatial.get_container("element").should_be_called().will_return("container")
-        spatial.get_decomposed_elements("container").should_be_called().will_return(["contained_element"])
+        spatial.get_decomposed_elements("container", True).should_be_called().will_return(["contained_element"])
         spatial.select_products(["contained_element"]).should_be_called()
         subject.select_similar_container(ifc, spatial, obj="obj")

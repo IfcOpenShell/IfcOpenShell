@@ -17,7 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Union
+from collections.abc import Sequence
 
 if TYPE_CHECKING:
     import bpy
@@ -26,9 +27,9 @@ if TYPE_CHECKING:
 
 
 def edit_object_placement(
-    ifc: tool.Ifc,
-    geometry: tool.Geometry,
-    surveyor: tool.Surveyor,
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
+    surveyor: type[tool.Surveyor],
     obj: Optional[bpy.types.Object] = None,
     apply_scale: bool = True,
 ) -> None:
@@ -50,10 +51,10 @@ def edit_object_placement(
 
 
 def add_representation(
-    ifc: tool.Ifc,
-    geometry: tool.Geometry,
-    style: tool.Style,
-    surveyor: tool.Surveyor,
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
+    style: type[tool.Style],
+    surveyor: type[tool.Surveyor],
     obj: bpy.types.Object,
     context: ifcopenshell.entity_instance,
     ifc_representation_class: Optional[str] = None,
@@ -110,8 +111,8 @@ def add_representation(
 
 
 def switch_representation(
-    ifc: tool.Ifc,
-    geometry: tool.Geometry,
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
     obj: bpy.types.Object,
     representation: ifcopenshell.entity_instance,
     should_reload: bool = True,
@@ -135,17 +136,23 @@ def switch_representation(
     if not geometry.get_object_data(obj) and geometry.is_text_literal(representation):
         return
 
+    element = ifc.get_entity(obj)
+    assert element
+    geometry.clear_cache(element)
     geometry.reimport_element_representations(obj, representation, apply_openings=apply_openings)
 
 
 def get_representation_ifc_parameters(
-    geometry: tool.Geometry, obj: bpy.types.Object, should_sync_changes_first: bool = False
+    geometry: type[tool.Geometry], obj: bpy.types.Object, should_sync_changes_first: bool = False
 ) -> None:
     geometry.import_representation_parameters(geometry.get_object_data(obj))
 
 
 def remove_representation(
-    ifc: tool.Ifc, geometry: tool.Geometry, obj: bpy.types.Object, representation: ifcopenshell.entity_instance
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
+    obj: bpy.types.Object,
+    representation: ifcopenshell.entity_instance,
 ) -> None:
     """Remove IFC representation from an object.
 
@@ -183,7 +190,7 @@ def remove_representation(
         geometry.delete_data(data)
 
 
-def purge_unused_representations(ifc: tool.Ifc, geometry: tool.Geometry) -> int:
+def purge_unused_representations(ifc: type[tool.Ifc], geometry: type[tool.Geometry]) -> int:
     """Purge representations without inverses.
 
     :return: A number of purged representations.
@@ -196,15 +203,17 @@ def purge_unused_representations(ifc: tool.Ifc, geometry: tool.Geometry) -> int:
     return purged_representations
 
 
-def select_connection(geometry: tool.Geometry, connection: ifcopenshell.entity_instance) -> None:
+def select_connection(geometry: type[tool.Geometry], connection: ifcopenshell.entity_instance) -> None:
     geometry.select_connection(connection)
 
 
-def remove_connection(geometry: tool.Geometry, connection: ifcopenshell.entity_instance) -> None:
+def remove_connection(geometry: type[tool.Geometry], connection: ifcopenshell.entity_instance) -> None:
     geometry.remove_connection(connection)
 
 
-def get_similar_openings(ifc: tool.Ifc, opening: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+def get_similar_openings(
+    ifc: type[tool.Ifc], opening: ifcopenshell.entity_instance
+) -> list[ifcopenshell.entity_instance]:
     model = ifc.get()
     all_openings = model.by_type("IfcOpeningElement")
     similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement and o != opening]
@@ -212,7 +221,7 @@ def get_similar_openings(ifc: tool.Ifc, opening: ifcopenshell.entity_instance) -
 
 
 def get_similar_openings_building_objs(
-    ifc: tool.Ifc, similar_openings: list[ifcopenshell.entity_instance]
+    ifc: type[tool.Ifc], similar_openings: list[ifcopenshell.entity_instance]
 ) -> list[bpy.types.Object]:
     building_objs = []
     for similar_opening in similar_openings:
@@ -221,7 +230,7 @@ def get_similar_openings_building_objs(
 
 
 def edit_similar_opening_placement(
-    geometry: tool.Geometry,
+    geometry: type[tool.Geometry],
     opening: Optional[ifcopenshell.entity_instance] = None,
     similar_openings: Sequence[ifcopenshell.entity_instance] = (),
 ) -> None:

@@ -139,7 +139,7 @@ def assign_container(
         related_elements = set(rel.RelatedElements) - products_set
         if related_elements:
             rel.RelatedElements = list(related_elements)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
         else:
             history = rel.OwnerHistory
             file.remove(rel)
@@ -149,7 +149,7 @@ def assign_container(
     # assign elements to a new container
     if structure_rel:
         structure_rel.RelatedElements = list(set(structure_rel.RelatedElements) | products_set)
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": structure_rel})
+        ifcopenshell.api.owner.update_owner_history(file, element=structure_rel)
     else:
         structure_rel = file.create_entity(
             "IfcRelContainedInSpatialStructure",

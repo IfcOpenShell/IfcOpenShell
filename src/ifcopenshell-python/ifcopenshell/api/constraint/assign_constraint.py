@@ -70,7 +70,7 @@ class Usecase:
         if rel:
             related_objects = set(rel.RelatedObjects) | products_to_assign
             rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(self.file, element=rel)
             return rel
 
         return self.file.create_entity(

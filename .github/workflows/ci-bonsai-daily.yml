@@ -96,7 +96,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: IfcOpenShell/bonsai_unstable_repo
-          token: ${{ secrets.IOS_TO_BLENDER_REPO }}
+          token: ${{ secrets.IFCOPENBOT_TOKEN }}
           path: bonsai_unstable_repo
 
       - name: Download Blender and run critical tests
@@ -104,7 +104,7 @@ jobs:
           # Ensure Bonsai and ifcsverchok enable/disable works before uploading to extensions repo.
 
           # Download Blender.
-          wget -q -O blender.tar.xz https://download.blender.org/release/Blender4.4/blender-4.4.0-linux-x64.tar.xz
+          wget -q -O blender.tar.xz https://download.blender.org/release/Blender4.5/blender-4.5.0-linux-x64.tar.xz
           tar -xf blender.tar.xz
 
           # Setup Blender.
@@ -175,6 +175,7 @@ jobs:
 
           cd IfcOpenShell/src/bonsai
           pip install pytest-blender
+          pip install pytest-bdd
           blender --background --python scripts/setup_pytest.py
           blender --python-expr "import bonsai; print(bonsai.bbim_semver); import ifcopenshell; print(ifcopenshell.version)" --background
           make test

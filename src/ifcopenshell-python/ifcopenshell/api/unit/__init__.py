@@ -41,9 +41,9 @@ wrap_usecases(__path__, __name__)
 __all__ = [
     "add_context_dependent_unit",
     "add_conversion_based_unit",
+    "add_derived_unit",
     "add_monetary_unit",
     "add_si_unit",
-    "add_derived_unit",
     "assign_unit",
     "edit_derived_unit",
     "edit_monetary_unit",

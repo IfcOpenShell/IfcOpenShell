@@ -30,6 +30,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.pset
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -48,8 +49,9 @@ from bonsai.bim import import_ifc
 
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
-from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING, Sequence, TypedDict
+from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
+from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict, assert_never
+from collections.abc import Iterable, Sequence
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
@@ -64,6 +66,8 @@ if TYPE_CHECKING:
         BIMStairProperties,
         BIMRailingProperties,
         BIMExternalParametricGeometryProperties,
+        BIMPolylineProperties,
+        BIMProductPreviewProperties,
     )
 
 
@@ -99,6 +103,16 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_epg_props(cls, obj: bpy.types.Object) -> BIMExternalParametricGeometryProperties:
         return obj.BIMExternalParametricGeometryProperties
+
+    @classmethod
+    def get_polyline_props(cls) -> BIMPolylineProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMPolylineProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_product_preview_props(cls) -> BIMProductPreviewProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMProductPreviewProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -274,17 +288,19 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def generate_occurrence_name(cls, element_type: ifcopenshell.entity_instance, ifc_class: str) -> str:
-        props = cls.get_model_props()
-        if props.occurrence_name_style == "CLASS":
+        prefs = tool.Blender.get_addon_preferences()
+        if prefs.occurrence_name_style == "CLASS":
             return ifc_class[3:]
-        elif props.occurrence_name_style == "TYPE":
+        elif prefs.occurrence_name_style == "TYPE":
             return element_type.Name or "Unnamed"
-        elif props.occurrence_name_style == "CUSTOM":
+        elif prefs.occurrence_name_style == "CUSTOM":
             try:
                 # Power users gonna power
-                return eval(props.occurrence_name_function) or "Instance"
+                return eval(prefs.occurrence_name_function) or "Instance"
             except:
                 return "Instance"
+        else:
+            assert_never(prefs.occurrence_name_style)
 
     @classmethod
     def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -587,13 +603,15 @@ class Model(bonsai.core.tool.Model):
     def load_openings(cls, openings: list[ifcopenshell.entity_instance]) -> Iterable[bpy.types.Object]:
         if not openings:
             return []
+        elements = set(openings)
         ifc_import_settings = import_ifc.IfcImportSettings.factory()
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
-        ifc_importer.create_generic_elements(set(openings))
+        ifc_importer.create_generic_elements(elements)
+        ifc_importer.setup_arrays(openings_to_import=elements)
         for opening_obj in ifc_importer.added_data.values():
             tool.Collector.assign(opening_obj, should_clean_users_collection=False)
         return ifc_importer.added_data.values()
@@ -687,10 +705,10 @@ class Model(bonsai.core.tool.Model):
             data.extend(boolean_ids)
             data = list(set(data))
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Boolean")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Boolean")
             data = boolean_ids
         data = tool.Ifc.get().createIfcText(json.dumps(data))
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
 
     @classmethod
     def unmark_manual_booleans(cls, element: ifcopenshell.entity_instance, boolean_ids: list[int]) -> None:
@@ -709,9 +727,9 @@ class Model(bonsai.core.tool.Model):
         pset = tool.Ifc.get().by_id(pset["id"])
         if data:
             data = tool.Ifc.get().createIfcText(json.dumps(data))
-            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
         else:
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
     @classmethod
     def get_flow_segment_axis(cls, obj: bpy.types.Object) -> tuple[Vector, Vector]:
@@ -764,7 +782,9 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
-    def get_wall_axis(cls, obj: bpy.types.Object, layers: Optional[dict[str, Any]] = None) -> dict[str, list[Vector]]:
+    def get_wall_axis(
+        cls, obj: bpy.types.Object, layers: Optional[MaterialLayerParameters] = None
+    ) -> dict[str, list[Vector]]:
         """Each item of a resulting dictionary is a list of 2 2D vectors."""
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
@@ -877,7 +897,7 @@ class Model(bonsai.core.tool.Model):
             # can be reverted later.
             array_pset_data = array_pset.get("Data", None)
             array_pset = tool.Ifc.get().by_id(array_pset["id"])
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=array_pset)
+            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=array_pset)
 
             # remove constraints
             obj = tool.Ifc.get_object(element)
@@ -896,8 +916,7 @@ class Model(bonsai.core.tool.Model):
             obj = tool.Ifc.get_object(element)
             array_pset = tool.Pset.get_element_pset(element, "BBIM_Array")
             default_data = tool.Ifc.get().createIfcText('[{"children": []}]')
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            ifcopenshell.api.pset.edit_pset(
                 tool.Ifc.get(),
                 pset=array_pset,
                 properties={"Parent": element.GlobalId, "Data": default_data},
@@ -906,7 +925,7 @@ class Model(bonsai.core.tool.Model):
             tool.Model.regenerate_array(obj, array_data)
 
             json_data = tool.Ifc.get().createIfcText(json.dumps(array_data))
-            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
 
             for i in range(len(array_data)):
                 tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
@@ -1004,7 +1023,7 @@ class Model(bonsai.core.tool.Model):
             if array_i in array_layers_to_apply:
                 for child_element in children_elements:
                     pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=child_element, pset=pset)
+                    ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=child_element, pset=pset)
 
                 array["children"] = []
                 array["count"] = 1
@@ -1031,10 +1050,10 @@ class Model(bonsai.core.tool.Model):
             old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
             for inverse in ifc_file.get_inverse(old_representation):
                 ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_representation)
         else:
-            ifcopenshell.api.run(
-                "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
+            ifcopenshell.api.geometry.assign_representation(
+                ifc_file, product=ifc_element, representation=new_representation
             )
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -1060,12 +1079,16 @@ class Model(bonsai.core.tool.Model):
         if not refresh and element.id() in AuthoringData.type_thumbnails:
             return  # Already processed
 
-        obj.asset_generate_preview()
-        while not obj.preview:
-            pass
+        assert isinstance(obj, bpy.types.Object)
+        # Since Blender 4.5 have to use `preview_ensure` instead of `asset_generate_preview`, see #6839.
+        obj.preview_ensure()
 
-        # if object has .data we can use default blender .asset_generate_preview()
-        if not obj.data:
+        if obj.data:
+            # If object has .data we can use default Blender preview.
+            # No need to preview to update, Blender will do it in background,
+            # `preview.icon_id` doesn't change after `asset_generate_preview()`.
+            obj.asset_generate_preview()
+        else:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             size = 128
             img = Image.new("RGBA", (size, size))
@@ -1145,6 +1168,17 @@ class Model(bonsai.core.tool.Model):
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
 
     @classmethod
+    def mark_thumbnail_for_update(cls, element: ifcopenshell.entity_instance) -> None:
+        """Mark the thumbnail for the provided element as outdated.
+
+        Allows postponing the thumbnail update until it is actually needed by the user.
+        """
+        element_id = element.id()
+        if element_id not in AuthoringData.type_thumbnails:
+            return
+        del AuthoringData.type_thumbnails[element_id]
+
+    @classmethod
     def get_selected_ifc_objects(cls) -> list[bpy.types.Object]:
         return [obj for obj in tool.Blender.get_selected_objects() if tool.Ifc.get_entity(obj)]
 
@@ -1194,7 +1228,7 @@ class Model(bonsai.core.tool.Model):
         if obj:
             obj.matrix_world = matrix
             return
-        tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
+        ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), product=element, matrix=matrix, is_si=True)
 
     @classmethod
     def sync_object_ifc_position(cls, obj: bpy.types.Object) -> None:
@@ -1544,8 +1578,8 @@ class Model(bonsai.core.tool.Model):
                 opening, "Model", "Body", "MODEL_VIEW"
             )
             old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
-            ifcopenshell.api.run(
-                "geometry.unassign_representation", ifc_file, product=opening, representation=old_representation
+            ifcopenshell.api.geometry.unassign_representation(
+                ifc_file, product=opening, representation=old_representation
             )
 
             new_representation = FilledOpeningGenerator().generate_opening_from_filling(
@@ -1555,7 +1589,7 @@ class Model(bonsai.core.tool.Model):
             for inverse in ifc_file.get_inverse(old_representation):
                 ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
 
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_representation)
 
             has_replaced_opening_representation = True
 
@@ -1666,7 +1700,7 @@ class Model(bonsai.core.tool.Model):
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
         bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
 
         # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
@@ -1833,6 +1867,7 @@ class Model(bonsai.core.tool.Model):
         polygons = {}
         for curve in curves:
             geometry = ifcopenshell.geom.create_shape(settings, curve)
+            assert isinstance(geometry, W.Triangulation)
             v = ifcopenshell.util.shape.get_vertices(geometry, is_2d=True)
             v = np.round(v, 4)  # Round to nearest 0.1mm, otherwise things like circles don't polygonise reliably
             edges = ifcopenshell.util.shape.get_edges(geometry)
@@ -2123,9 +2158,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def create_axis_curve(cls, obj: bpy.types.Object, grid_axis: ifcopenshell.entity_instance) -> None:
         m = tool.Surveyor.get_absolute_matrix(obj)
+        assert isinstance(obj.data, bpy.types.Mesh)
         points = [m @ np.array(v.co.to_4d()) for v in obj.data.vertices[0:2]]
         ifcopenshell.api.grid.create_axis_curve(
-            tool.Ifc.get(), p1=points[0], p2=points[1], is_si=True, grid_axis=grid_axis
+            tool.Ifc.get(), p1=np_to_3d(points[0]), p2=np_to_3d(points[1]), is_si=True, grid_axis=grid_axis
         )
 
     @classmethod

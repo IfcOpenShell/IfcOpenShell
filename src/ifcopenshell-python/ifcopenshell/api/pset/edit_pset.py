@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.pset
@@ -60,10 +61,8 @@ def edit_pset(
     to ensure that data types are always consistent and correct.
 
     :param pset: The IfcPropertySet to edit.
-    :type pset: ifcopenshell.entity_instance
     :param name: A new name for the property set. If no name is specified,
         the property set name is not changed.
-    :type name: str, optional
     :param properties: A dictionary of properties. The keys must be a string
         of the name of the property. The data type of the value will be
         determined by the property set template. If no property set
@@ -73,18 +72,14 @@ def edit_pset(
         become IfcBoolean, and integers will become IfcInteger. If more
         control is desired, you may explicitly specify IFC data objects
         directly. Note that provided `properties` might be mutated in the process.
-    :type properties: dict
     :param pset_template: If a property set template is provided, this will
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
-    :type pset_template: ifcopenshell.entity_instance, optional
     :param should_purge: If set as False, properties set to None will be
         left as None but not removed. If set to true, properties set to None
         will actually be removed. The default of true is the same behaviour as
         :func:`ifcopenshell.api.pset.edit_qto`.
-    :type should_purge: bool, optional
     :return: None
-    :rtype: None
 
     Example:
 
@@ -320,7 +315,7 @@ class Usecase:
         return prop
 
     def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
-        properties = []
+        properties: list[ifcopenshell.entity_instance] = []
         for name, value in self.settings["properties"].items():
             if value is None and self.settings["should_purge"]:
                 continue
@@ -452,6 +447,11 @@ class Usecase:
                 return "IfcBoolean"
             elif isinstance(new_value, int):
                 return "IfcInteger"
+            # @nb datetime is also a date, so needs to be checked first
+            elif isinstance(new_value, datetime.datetime):
+                return "IfcDateTime"
+            elif isinstance(new_value, datetime.date):
+                return "IfcDate"
 
     def cast_value_to_primary_measure_type(self, value, primary_measure_type):
         type_str = self.file.create_entity(primary_measure_type).attribute_type(0)
@@ -470,6 +470,8 @@ class Usecase:
             return [float(i) for i in value]
         elif type_str == "AGGREGATE OF INT":
             return [int(i) for i in value]
+        elif isinstance(value, (datetime.date, datetime.datetime)):
+            return value.isoformat()
         return type_fn(value)
 
     @staticmethod

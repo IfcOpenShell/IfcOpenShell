@@ -1,4 +1,3 @@
 Facility management
 ===================
-
-TODO
+.. include:: /_incomplete_message.rst

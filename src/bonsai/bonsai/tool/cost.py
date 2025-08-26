@@ -21,6 +21,9 @@ import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api
+import ifcopenshell.api.cost
+import ifcopenshell.api.document
+import ifcopenshell.api.nest
 import ifcopenshell.util.element
 import ifcopenshell.util.date
 import ifcopenshell.util.cost
@@ -28,10 +31,11 @@ import ifcopenshell.util.unit
 import bonsai.bim.helper
 import json
 from pathlib import Path
-from typing import Optional, Any, Generator, Union, Literal, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Optional, Any, Union, Literal, TYPE_CHECKING, assert_never
+from collections.abc import Generator
 
 if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity
 
 
@@ -39,8 +43,15 @@ class Cost(bonsai.core.tool.Cost):
 
     RELATED_OBJECT_TYPE = Literal["PRODUCT", "PROCESS", "RESOURCE"]
 
+    # TODO: Do we really need them cached as class attributes?
+    contracted_cost_items: list[int]
+    """List of contracted cost item ids."""
+
+    contracted_cost_item_rates: list[int]
+    """List of contracted const item rates ids."""
+
     @classmethod
-    def get_cost_props(cls) -> "BIMCostProperties":
+    def get_cost_props(cls) -> BIMCostProperties:
         return bpy.context.scene.BIMCostProperties
 
     @classmethod
@@ -119,7 +130,7 @@ class Cost(bonsai.core.tool.Cost):
 
         props = cls.get_cost_props()
         props.cost_schedule_attributes.clear()
-        bonsai.bim.helper.import_attributes2(cost_schedule, props.cost_schedule_attributes, callback=special_import)
+        bonsai.bim.helper.import_attributes(cost_schedule, props.cost_schedule_attributes, callback=special_import)
 
     @classmethod
     def enable_editing_cost_items(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
@@ -161,15 +172,18 @@ class Cost(bonsai.core.tool.Cost):
             for rel in cost_schedule.Controls or []
             for cost_item in rel.RelatedObjects or []
         ]
+        props.active_cost_item_index = tool.Blender.get_valid_uilist_index(
+            props.active_cost_item_index, props.cost_items
+        )
         props.is_cost_update_enabled = True
 
     @classmethod
-    def expand_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
+    def expand_cost_item(cls, cost_item_id: int) -> None:
         props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        if cost_item.id() in cls.contracted_cost_items:
-            cls.contracted_cost_items.remove(cost_item.id())
+        if cost_item_id in cls.contracted_cost_items:
+            cls.contracted_cost_items.remove(cost_item_id)
             props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
@@ -182,11 +196,11 @@ class Cost(bonsai.core.tool.Cost):
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
-    def contract_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
+    def contract_cost_item(cls, cost_item_id: int) -> None:
         props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        cls.contracted_cost_items.append(cost_item.id())
+        cls.contracted_cost_items.append(cost_item_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
@@ -201,13 +215,14 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def clean_up_cost_item_tree(cls, cost_item_id: int) -> None:
+        """Clean up cost item tree after ``cost_item_id`` was deleted."""
         props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         if props.active_cost_item_id == cost_item_id:
             props.active_cost_item_id = 0
-        if props.active_cost_item_index in cls.contracted_cost_items:
-            cls.contracted_cost_items.remove(props.active_cost_item_index)
+        if cost_item_id in cls.contracted_cost_items:
+            cls.contracted_cost_items.remove(cost_item_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
         cls.enable_editing_cost_items(cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id))
 
@@ -221,7 +236,7 @@ class Cost(bonsai.core.tool.Cost):
     def load_cost_item_attributes(cls, cost_item: ifcopenshell.entity_instance) -> None:
         props = cls.get_cost_props()
         props.cost_item_attributes.clear()
-        bonsai.bim.helper.import_attributes2(cost_item, props.cost_item_attributes)
+        bonsai.bim.helper.import_attributes(cost_item, props.cost_item_attributes)
 
     @classmethod
     def disable_editing_cost_item(cls) -> None:
@@ -366,7 +381,7 @@ class Cost(bonsai.core.tool.Cost):
     def load_cost_item_quantity_attributes(cls, physical_quantity: ifcopenshell.entity_instance) -> None:
         props = cls.get_cost_props()
         props.quantity_attributes.clear()
-        bonsai.bim.helper.import_attributes2(physical_quantity, props.quantity_attributes)
+        bonsai.bim.helper.import_attributes(physical_quantity, props.quantity_attributes)
 
     @classmethod
     def enable_editing_cost_item_values(cls, cost_item: ifcopenshell.entity_instance) -> None:
@@ -402,7 +417,13 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def load_cost_item_value_attributes(cls, cost_value: ifcopenshell.entity_instance) -> None:
-        def import_attributes(name, prop, data, cost_value, is_rates, props_collection):
+        props = cls.get_cost_props()
+        props.cost_value_attributes.clear()
+        props_collection = props.cost_value_attributes
+        # is_rates = cls.is_active_schedule_of_rates()
+        is_rates = True  # so it is possible to assign a cost item rate that it not only from a  Schedule of Rate
+
+        def import_attributes_callback(name: str, prop: Union[Attribute, None], data) -> None | Literal[True]:
             if name == "AppliedValue":
                 # TODO: for now, only support simple IfcValues (which are effectively IfcMonetaryMeasure)
                 prop = props_collection.add()
@@ -439,13 +460,9 @@ class Cost(bonsai.core.tool.Cost):
                             break
                 return True
 
-        props = cls.get_cost_props()
-        props.cost_value_attributes.clear()
-        is_rates = cls.is_active_schedule_of_rates()
-        callback = lambda name, prop, data: import_attributes(
-            name, prop, data, cost_value, is_rates, props.cost_value_attributes
+        bonsai.bim.helper.import_attributes(
+            cost_value, props.cost_value_attributes, callback=import_attributes_callback
         )
-        bonsai.bim.helper.import_attributes2(cost_value, props.cost_value_attributes, callback=callback)
 
     @classmethod
     def calculate_applied_value(
@@ -570,10 +587,32 @@ class Cost(bonsai.core.tool.Cost):
         import time
 
         start = time.time()
-        csv2ifc = Csv2Ifc(file_path, tool.Ifc.get(), is_schedule_of_rates=is_schedule_of_rates)
+
+        resolved_path = tool.Ifc.resolve_uri(file_path)
+
+        csv2ifc = Csv2Ifc(resolved_path, tool.Ifc.get(), is_schedule_of_rates=is_schedule_of_rates)
         csv2ifc.execute()
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return csv2ifc.cost_schedule
+
+    @classmethod
+    def get_or_create_cost_documents(cls) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = next(
+            (
+                document
+                for document in ifc_file.by_type("IfcDocumentInformation")
+                if document.Name == "BBIM_Cost_Documents"
+            ),
+            None,
+        )
+
+        if not cost_docs_document:
+            cost_docs_document = ifcopenshell.api.document.add_information(ifc_file)
+            cost_docs_document.Name = "BBIM_Cost_Documents"
+            cost_docs_document.Description = "Bonsai internal document containing references to cost CSV files"
+
+        return cost_docs_document
 
     @classmethod
     def add_csv_filepath(
@@ -582,32 +621,40 @@ class Cost(bonsai.core.tool.Cost):
         is_schedule_of_rates: bool = False,
         cost_schedule: ifcopenshell.entity_instance = None,
     ) -> None:
-        if not file_path:
+        if not file_path or not cost_schedule:
             return
 
-        props = cls.get_cost_props()
-        if not props.active_cost_schedule_id in [item.cost_item_id for item in props.cost_schedule_files]:
-            item = props.cost_schedule_files.add()
-            item.cost_item_id = cost_schedule.id()
-            item.csv_filepath = file_path
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = cls.get_or_create_cost_documents()
+
+        reference = ifcopenshell.api.document.add_reference(ifc_file, cost_docs_document)
+        reference.Location = file_path
+
+        reference.Description = f"Cost Schedule ID: {cost_schedule.id()}"
+
+        if is_schedule_of_rates:
+            reference.Identification = "SCHEDULE_OF_RATES"
         else:
-            return
+            reference.Identification = "COST_SCHEDULE"
 
     @classmethod
     def remove_csv_filepath(cls, cost_schedule: ifcopenshell.entity_instance = None) -> None:
         if not cost_schedule:
             return
 
-        props = cls.get_cost_props()
-        cost_schedule_id = cost_schedule.id()
-        if cost_schedule_id in [item.cost_item_id for item in props.cost_schedule_files]:
-            for i, item in enumerate(props.cost_schedule_files):
-                if item.cost_item_id == cost_schedule_id:
-                    props.cost_schedule_files.remove(i)
-                    print(f"Cost schedule id={cost_schedule_id} csv filepath correctly removed")
-                    return
-        else:
+        ifc_file = tool.Ifc.get()
+        cost_docs_document = cls.get_or_create_cost_documents()
+
+        if not cost_docs_document:
             return
+
+        cost_schedule_id = cost_schedule.id()
+        references = tool.Document.get_document_references(cost_docs_document)
+
+        for reference in references:
+            if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
+                ifcopenshell.api.document.remove_reference(ifc_file, reference)
+                return
 
     @classmethod
     def delete_all_cost_items(cls):
@@ -615,28 +662,62 @@ class Cost(bonsai.core.tool.Cost):
         items = ifcopenshell.util.cost.get_root_cost_items(cost_schedule)
         for item in items:
             cost_item_id = item.id()
-            ifcopenshell.api.run("cost.remove_cost_item", tool.Ifc.get(), cost_item=item)
+            ifcopenshell.api.cost.remove_cost_item(tool.Ifc.get(), cost_item=item)
             tool.Cost.clean_up_cost_item_tree(cost_item_id)
 
     @classmethod
+    def is_schedule_of_rates_csv(cls, cost_schedule_id: int) -> bool:
+        """Check if a cost schedule is a schedule of rates based on document references."""
+        cost_docs_document = cls.get_or_create_cost_documents()
+
+        if not cost_docs_document:
+            return False
+
+        references = tool.Document.get_document_references(cost_docs_document)
+
+        for reference in references:
+            if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
+                return reference.Identification == "SCHEDULE_OF_RATES"
+
+        return False
+
+    @classmethod
+    def get_cost_schedule_csv_filepath(cls, cost_schedule_id: int) -> Optional[str]:
+        cost_docs_document = cls.get_or_create_cost_documents()
+
+        if not cost_docs_document:
+            return None
+
+        references = tool.Document.get_document_references(cost_docs_document)
+
+        for reference in references:
+            if reference.Description and f"Cost Schedule ID: {cost_schedule_id}" in reference.Description:
+                return reference.Location
+
+        return None
+
+    @classmethod
     def refresh_cost_schedule_csv(cls):
+        """Refresh cost schedule from CSV file stored in document references."""
         from ifc5d.csv2ifc import Csv2Ifc
 
         props = cls.get_cost_props()
         cost_schedule_id = props.active_cost_schedule_id
-        file_path = next(
-            (item.csv_filepath for item in props.cost_schedule_files if item.cost_item_id == cost_schedule_id), None
-        )
+        file_path = cls.get_cost_schedule_csv_filepath(cost_schedule_id)
+
         if not file_path:
             return
 
+        resolved_path = tool.Ifc.resolve_uri(file_path)
+
         cost_schedule = tool.Ifc.get_entity_by_id(cost_schedule_id)
+        is_schedule_of_rates = cls.is_schedule_of_rates_csv(cost_schedule_id)
 
         csv2ifc = Csv2Ifc()
-        csv2ifc.csv = file_path
+        csv2ifc.csv = resolved_path
         csv2ifc.file = tool.Ifc.get()
         csv2ifc.cost_schedule = cost_schedule
-        csv2ifc.is_schedule_of_rates = False
+        csv2ifc.is_schedule_of_rates = is_schedule_of_rates
         csv2ifc.refresh()
 
         print("Csv file correctly refreshed")
@@ -661,20 +742,21 @@ class Cost(bonsai.core.tool.Cost):
         return tool.Ifc.get().by_id(int(schedule_id))
 
     @classmethod
-    def expand_cost_item_rate(cls, cost_item: ifcopenshell.entity_instance) -> None:
+    def expand_cost_item_rate(cls, cost_item_id: int) -> None:
         props = cls.get_cost_props()
-        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
-        contracted_cost_item_rates.remove(cost_item)
-        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+        if not hasattr(cls, "contracted_cost_item_rates"):
+            cls.contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        if cost_item_id in cls.contracted_cost_item_rates:
+            cls.contracted_cost_item_rates.remove(cost_item_id)
+            props.contracted_cost_item_rates = json.dumps(cls.contracted_cost_item_rates)
 
     @classmethod
-    def contract_cost_item_rate(cls, cost_item: ifcopenshell.entity_instance) -> None:
+    def contract_cost_item_rate(cls, cost_item_id: int) -> None:
         props = cls.get_cost_props()
-        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
-        contracted_cost_item_rates.append(cost_item)
-        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+        if not hasattr(cls, "contracted_cost_item_rates"):
+            cls.contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        cls.contracted_cost_item_rates.append(cost_item_id)
+        props.contracted_cost_item_rates = json.dumps(cls.contracted_cost_item_rates)
 
     @classmethod
     def create_new_cost_item_li(
@@ -764,6 +846,21 @@ class Cost(bonsai.core.tool.Cost):
             return "Could not open file location"
 
     @classmethod
+    def export_cost_schedules_to_pdf(
+        cls, filepath: str, cost_schedule: ifcopenshell.entity_instance, options: dict, force_schedule_type: str = ""
+    ):
+        from ifc5d.ifc5Dspreadsheet import Ifc5DPdfWriter
+
+        writer = Ifc5DPdfWriter(
+            file=tool.Ifc.get(),
+            output=filepath,
+            cost_schedule=cost_schedule,
+            options=options,
+            force_schedule_type=force_schedule_type,
+        )
+        writer.write()
+
+    @classmethod
     def get_units(cls) -> dict[int, str]:
         units = {}
         for unit in tool.Ifc.get().by_type("IfcNamedUnit"):
@@ -806,8 +903,8 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def highlight_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        def expand_ancestors(cost_item):
-            cls.expand_cost_item(cost_item)
+        def expand_ancestors(cost_item: ifcopenshell.entity_instance) -> None:
+            cls.expand_cost_item(cost_item.id())
             for rel in cost_item.Nests or []:
                 parent_cost = rel.RelatingObject if rel.RelatingObject.is_a("IfcCostItem") else None
                 if parent_cost:
@@ -834,6 +931,12 @@ class Cost(bonsai.core.tool.Cost):
                 cost_item for cost_item in cost_items or [] if cls.get_cost_schedule(cost_item) == cost_schedule
             ]
         return bool(cost_items)
+
+    @classmethod
+    def get_assigned_rate_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        for assignment in cost_item.HasAssignments:
+            if assignment.RelatingControl.is_a() == "IfcCostItem":
+                return assignment.RelatingControl
 
     @classmethod
     def load_product_cost_items(cls, product: ifcopenshell.entity_instance) -> None:
@@ -882,7 +985,7 @@ class Cost(bonsai.core.tool.Cost):
     def change_parent_cost_item(
         cls, cost_item: ifcopenshell.entity_instance, new_parent: ifcopenshell.entity_instance
     ) -> None:
-        ifcopenshell.api.run("nest.change_nest", tool.Ifc.get(), item=cost_item, new_parent=new_parent)
+        ifcopenshell.api.nest.change_nest(tool.Ifc.get(), item=cost_item, new_parent=new_parent)
 
     @classmethod
     def disable_editing_cost_item_parent(cls) -> None:
@@ -982,8 +1085,8 @@ class Cost(bonsai.core.tool.Cost):
             return {"id": unit.id(), "name": unit.Currency}
 
     @classmethod
-    def generate_cost_schedule_browser(cls, cost_chedule) -> None:
-        if not bpy.context.scene.WebProperties.is_connected:
+    def generate_cost_schedule_browser(cls, cost_chedule: ifcopenshell.entity_instance) -> None:
+        if not tool.Web.get_web_props().is_connected:
             bpy.ops.bim.connect_websocket_server(page="costing")
         tool.Web.load_cost_schedule_web_ui(cost_chedule)
 
@@ -1011,3 +1114,9 @@ class Cost(bonsai.core.tool.Cost):
         if results["quantity_type"] == "IfcQuantityCount":
             results["unit_symbol"] = "U"
         return results
+
+    @classmethod
+    def copy_cost_schedule(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
+        ifc_file = tool.Ifc.get()
+        new_schedule = ifcopenshell.api.cost.copy_cost_schedule(ifc_file, cost_schedule=cost_schedule)
+        new_schedule.Name = (cost_schedule.Name or "Unnamed") + " Copy"

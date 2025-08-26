@@ -21,7 +21,11 @@
 
 import ifcopenshell
 import ifcopenshell.api
-import boltspy as bolts
+import ifcopenshell.api.material
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
+import boltspy as bolts  # pyright: ignore[reportMissingImports]
 from math import cos, pi
 from pathlib import Path
 from ifcopenshell.util.shape_builder import ShapeBuilder, V, ifc_safe_vector_type
@@ -35,29 +39,26 @@ class LibraryGenerator:
 
         self.materials = {}
 
-        self.file = ifcopenshell.api.run("project.create_file")
-        self.project = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProject", name=f"{parse_profiles_type} Steel Profiles Library"
+        self.file = ifcopenshell.api.project.create_file()
+        self.project = ifcopenshell.api.root.create_entity( self.file, ifc_class="IfcProject", name=f"{parse_profiles_type} Steel Profiles Library"
         )
-        self.library = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name=f"{parse_profiles_type} Steel Profiles Library"
+        self.library = ifcopenshell.api.root.create_entity( self.file, ifc_class="IfcProjectLibrary", name=f"{parse_profiles_type} Steel Profiles Library"
         )
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.project
+        ifcopenshell.api.project.assign_declaration( self.file, definitions=[self.library], relating_context=self.project
         )
         dim_exponents = self.file.createIfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0)
-        length_unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        length_unit = ifcopenshell.api.unit.add_si_unit( self.file, unit_type="LENGTHUNIT", prefix="MILLI")
         builder = ShapeBuilder(self.file)
 
         # define angle unit to use degrees for IfcPlaneAngleMeasure:
         # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPlaneAngleMeasure.htm
-        angle_unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="PLANEANGLEUNIT")
+        angle_unit = ifcopenshell.api.unit.add_si_unit( self.file, unit_type="PLANEANGLEUNIT")
         value_component =  self.file.createIfcReal(pi/180)
         angle_unit = self.file.createIfcMeasureWithUnit(ValueComponent=value_component, UnitComponent=angle_unit)
         angle_unit = self.file.createIfcConversionBasedUnit(Name="degree", Dimensions=dim_exponents, UnitType="PLANEANGLEUNIT", ConversionFactor=angle_unit)
-        ifcopenshell.api.run("unit.assign_unit", self.file, units=[length_unit, angle_unit])
+        ifcopenshell.api.unit.assign_unit( self.file, units=[length_unit, angle_unit])
 
-        self.material = ifcopenshell.api.run("material.add_material", self.file, name="Unknown")
+        self.material = ifcopenshell.api.material.add_material( self.file, name="Unknown")
 
         # NOTE: parameters could be optional (example: welded i-beams don't have FilletRadius)
         profiles_translation = {
@@ -174,15 +175,14 @@ class LibraryGenerator:
         print('-----------------------')
 
     def create_profile_type(self, ifc_class, name, profile):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet")
+        element = ifcopenshell.api.root.create_entity( self.file, ifc_class=ifc_class, name=name)
+        rel = ifcopenshell.api.material.assign_material( self.file, products=[element], type="IfcMaterialProfileSet")
         profile_set = rel.RelatingMaterial
-        material_profile = ifcopenshell.api.run(
-            "material.add_profile", self.file, profile_set=profile_set, material=self.material
+        material_profile = ifcopenshell.api.material.add_profile( self.file, profile_set=profile_set, material=self.material
             # material=self.materials["TBD"]["ifc"]
         )
-        ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.material.assign_profile( self.file, material_profile=material_profile, profile=profile)
+        ifcopenshell.api.project.assign_declaration( self.file, definitions=[element], relating_context=self.library)
 
     def create_double_l_profile(self, profile, resulting_profile_name=None, profiles_gap=0, mode = "LLBB"):
         def create_derived_profile(profile, mirrored=False):

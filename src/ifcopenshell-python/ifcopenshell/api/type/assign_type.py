@@ -22,7 +22,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.api.material
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Union, Iterable, Any
+from typing import Union
 
 
 def assign_type(
@@ -188,10 +188,7 @@ class Usecase:
         if not related_objects:
             return
 
-        related_objects_set = set(related_objects)
-
         ifc2x3 = self.file.schema == "IFC2X3"
-
         related_objects_set = set(related_objects)
         if ifc2x3:
             types = next(iter(relating_type.ObjectTypeOf), None)
@@ -228,7 +225,7 @@ class Usecase:
             cur_related_objects = set(is_typed_by.RelatedObjects) - related_objects_set
             if cur_related_objects:
                 is_typed_by.RelatedObjects = list(cur_related_objects)
-                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": is_typed_by})
+                ifcopenshell.api.owner.update_owner_history(self.file, element=is_typed_by)
             else:
                 history = is_typed_by.OwnerHistory
                 self.file.remove(is_typed_by)
@@ -238,7 +235,7 @@ class Usecase:
         # assign objects to a new type
         if types:
             types.RelatedObjects = list(set(types.RelatedObjects) | related_objects_set)
-            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": types})
+            ifcopenshell.api.owner.update_owner_history(self.file, element=types)
         else:
             types = self.file.create_entity(
                 "IfcRelDefinesByType",
@@ -257,6 +254,14 @@ class Usecase:
                         relating_type=relating_type,
                     )
             self.map_material_usages(objects_to_change, relating_type)
+
+        # Remove PredefinedType  / ObjectType if existing to forbid double typing(See #7006)
+        predefined_type = ifcopenshell.util.element.get_predefined_type(relating_type)
+        if predefined_type != "NOTDEFINED" and predefined_type is not None:
+            for obj in related_objects_set:
+                obj.ObjectType = None
+                if hasattr(obj, "PredefinedType"):
+                    obj.PredefinedType = None
         return types
 
     def map_material_usages(

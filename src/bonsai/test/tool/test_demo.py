@@ -55,9 +55,10 @@ class TestImplementsTool(NewFile):
 # these tests.
 class TestClearNameField(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMDemoProperties.name = "name"
+        props = tool.Demo.get_demo_props()
+        props.name = "name"
         subject.clear_name_field()
-        assert bpy.context.scene.BIMDemoProperties.name == ""
+        assert props.name == ""
 
 
 class TestGetProject(NewFile):
@@ -73,22 +74,25 @@ class TestGetProject(NewFile):
 
 class TestHideUserHints(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMDemoProperties.show_hints = True
+        props = tool.Demo.get_demo_props()
+        props.show_hints = True
         subject.hide_user_hints()
-        assert bpy.context.scene.BIMDemoProperties.show_hints == False
+        assert props.show_hints == False
 
 
 class TestSetMessage(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMDemoProperties.message = ""
+        props = tool.Demo.get_demo_props()
+        props.message = ""
         subject.set_message("message")
-        assert bpy.context.scene.BIMDemoProperties.message == "message"
+        assert props.message == "message"
 
 
 class TestShowUserHints(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMDemoProperties.show_hints = False
+        props = tool.Demo.get_demo_props()
+        props.show_hints = False
         subject.show_user_hints()
-        assert bpy.context.scene.BIMDemoProperties.show_hints == True
+        assert props.show_hints == True
 
 """

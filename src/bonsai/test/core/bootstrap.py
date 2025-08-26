@@ -20,8 +20,7 @@ import sys
 import json
 import pytest
 import bonsai.core.tool
-from typing import Any, Optional
-from typing_extensions import Self
+from typing import Any, Optional, TypedDict, Literal, Self
 
 
 @pytest.fixture
@@ -241,23 +240,93 @@ def voider():
     prophet.verify()
 
 
+def flatten(iterable):
+    for item in iterable:
+        if isinstance(item, (list, tuple)):
+            yield from flatten(item)
+        else:
+            yield item
+
+
+class Call(TypedDict):
+    name: str
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+
+
+class Prediction(TypedDict):
+    type: Literal["SHOULD_BE_CALLED"]
+    number: Optional[int]
+    call: Call
+
+
 class Prophecy:
-    def __init__(self, cls):
+    """
+    Rough outline how it works:
+    1. Test run pass:
+    - Remember calls (all calls should also have ``.should_be_called()`` after).
+    - Remember predictions.
+    - Associate return values with calls.
+
+    2. Core function pass:
+    - Remember calls.
+    - Use return values from the first pass.
+
+    3. Verification pass:
+    - Ensure all predicted calls actually happened.
+    """
+
+    subject: type
+
+    def __init__(self, cls: type):
         self.subject = cls
-        self.predictions: list[dict] = []
-        self.calls: list[dict] = []
+        self.predictions: list[Prediction] = []
+        self.calls: list[Call] = []
         self.return_values: dict[str, Any] = {}
-        self.should_call: Optional[dict] = None
+        self.should_call: Optional[Call] = None
+
+    @staticmethod
+    def serialize(call: Call) -> str:
+        return json.dumps(call, sort_keys=True)
+
+    def __repr__(self) -> str:
+        return f"<Prophecy for '{self.subject.__original_qualname__}'>"
 
     def __getattr__(self, attr: str):
         if not hasattr(self.subject, attr):
-            raise AttributeError(f"Prophecy {self.subject} has no attribute {attr}")
+            raise AttributeError(f"Interface '{self.subject.__original_qualname__}' has no attribute '{attr}'.")
 
-        def decorate(*args, **kwargs):
-            call = {"name": attr, "args": args, "kwargs": kwargs}
+        # It also returns `Any` but it only happens during `subject.xxx` call.
+        def decorate(*args: Any, **kwargs: Any) -> Self:
+            """Remember a call."""
+            call: Call = {"name": attr, "args": args, "kwargs": kwargs}
             # Ensure that signature is valid
             getattr(self.subject, attr)(*args, **kwargs)
-            key = json.dumps(call, sort_keys=True)
+
+            try:
+                key = self.serialize(call)
+            except TypeError as e:
+                # Serialization error will occur if unpredicted return value
+                # will be used as an argument to other call
+                msg = f"Failed to serialize call: '{call}'."
+                values = list(flatten(args)) + list(flatten(kwargs.values()))
+                prophecy = next((value for value in values if isinstance(value, Prophecy)), None)
+                if prophecy is None:
+                    msg += "\nCouldn't find related Prophecy."
+                    raise TypeError(msg) from e
+
+                msg += "\nPossibly due to unpredicted return value for some call."
+                calls_strs: list[str] = []
+                for call in reversed(prophecy.calls):
+                    call_str = self.serialize(call)
+                    if call_str in prophecy.return_values:
+                        continue
+                    calls_strs.append(f"- {call}")
+                if calls_strs:
+                    msg += "\nSee the list of the recent calls without return values:\n"
+                    msg += "\n".join(calls_strs)
+                raise TypeError(msg) from e
+
             self.calls.append(call)
             if key in self.return_values:
                 return self.return_values[key]
@@ -265,18 +334,21 @@ class Prophecy:
 
         return decorate
 
-    def should_be_called(self, number=None):
+    def should_be_called(self, number: Optional[int] = None) -> Self:
+        """Predict the last added call."""
         self.should_call = self.calls.pop()
         self.predictions.append({"type": "SHOULD_BE_CALLED", "number": number, "call": self.should_call})
         return self
 
     def will_return(self, value: Any) -> Self:
-        key = json.dumps(self.should_call, sort_keys=True)
+        """Remember a return value for the last predicted call."""
+        assert self.should_call
+        key = self.serialize(self.should_call)
         self.return_values[key] = value
         return self
 
     def verify(self) -> None:
-        predicted_calls = []
+        predicted_calls: list[Call] = []
         for prediction in self.predictions:
             predicted_calls.append(prediction["call"])
             if prediction["type"] == "SHOULD_BE_CALLED":
@@ -285,14 +357,14 @@ class Prophecy:
             if call not in predicted_calls:
                 raise Exception(f"Unpredicted call: {call}")
 
-    def verify_should_be_called(self, prediction: dict) -> None:
+    def verify_should_be_called(self, prediction: Prediction) -> None:
         if prediction["number"]:
             count = self.calls.count(prediction["call"])
             if count != prediction["number"]:
                 raise Exception(f"Called {count}: {prediction}")
         else:
             if prediction["call"] not in self.calls:
-                error_msg = f"{self.subject} was not called with {prediction['call']['name']}:\n - {prediction}"
+                error_msg = f"Interface '{self.subject.__original_qualname__}' was not called with {prediction['call']['name']}:\n - {prediction}"
 
                 # Print all unprocessed calls if pytest was started in verbose mode.
                 if "-v" in sys.argv or "-vv" in sys.argv:

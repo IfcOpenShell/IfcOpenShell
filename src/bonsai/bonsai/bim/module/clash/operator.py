@@ -19,16 +19,19 @@
 import os
 import bpy
 import json
+import tempfile
 import bmesh
 import logging
 import numpy as np
 import ifcopenshell
 import bonsai.tool as tool
+from pathlib import Path
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from math import radians
 from mathutils import Matrix, Vector
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.clash.decorator import ClashDecorator
+from typing import TYPE_CHECKING
 
 
 class ExportClashSets(bpy.types.Operator, ExportHelper):
@@ -127,7 +130,8 @@ class AddClashSource(bpy.types.Operator):
     def execute(self, context):
         props = tool.Clash.get_clash_props()
         clash_set = props.active_clash_set
-        source = getattr(clash_set, self.group).add()
+        assert clash_set
+        clash_set.get_clash_sources_group(self.group).add()
         return {"FINISHED"}
 
 
@@ -142,7 +146,8 @@ class RemoveClashSource(bpy.types.Operator):
     def execute(self, context):
         props = tool.Clash.get_clash_props()
         clash_set = props.active_clash_set
-        getattr(clash_set, self.group).remove(self.index)
+        assert clash_set
+        clash_set.get_clash_sources_group(self.group).remove(self.index)
         return {"FINISHED"}
 
 
@@ -152,14 +157,16 @@ class SelectClashSource(bpy.types.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select an IFC file to add as a clash source"
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
-    index: bpy.props.IntProperty()
-    group: bpy.props.StringProperty()
+    index: bpy.props.IntProperty(options={"HIDDEN"})
+    group: bpy.props.StringProperty(options={"HIDDEN"})
     filename_ext = ".ifc"
 
     def execute(self, context):
         props = tool.Clash.get_clash_props()
         clash_set = props.active_clash_set
-        getattr(clash_set, self.group)[self.index].name = self.filepath
+        assert clash_set
+        clash_source = clash_set.get_clash_sources_group(self.group)[self.index]
+        clash_source.name = self.filepath
         return {"FINISHED"}
 
 
@@ -190,16 +197,39 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator, ImportHelper):
 class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
-    bl_description = "Execute clash detection and save the information to a .bcf or .json file"
-    filter_glob: bpy.props.StringProperty(default="*.bcf;*.json", options={"HIDDEN"})
-    format: bpy.props.EnumProperty(name="Format", items=[(i, i, "") for i in ("bcf", "json")])
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
+    bl_description = (
+        "Execute clash detection and save the information to a .bcf or .json file.\n\n"
+        "ALT+click to run a quick clash without selecting a file to save."
+    )
+
+    filter_glob: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
+        default="*.bcf;*.json", options={"HIDDEN"}
+    )
+    format: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Format", items=[(i, i, "") for i in ("bcf", "json")]
+    )
+    filepath: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
+        subtype="FILE_PATH", options={"SKIP_SAVE"}
+    )
+    quick_clash: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        options={"SKIP_SAVE"},
+    )
+
+    if TYPE_CHECKING:
+        filter_glob: str
+        format: str
+        filepath: str
+        quick_clash: bool
 
     @property
     def filename_ext(self) -> str:
         return f".{self.format.lower()}"
 
     def invoke(self, context, event):
+        if event.alt:
+            self.quick_clash = True
+            return self.execute(context)
+
         if self.filepath:
             return self.execute(context)
         return ExportHelper.invoke(self, context, event)
@@ -209,14 +239,32 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
 
         self.props = tool.Clash.get_clash_props()
 
-        _, extension = os.path.splitext(self.filepath)
-        if extension != ".bcf":
-            self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
-        # TODO Temporarily until BCF support comes back
-        if extension != ".json":
-            self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
+        for clash_set in self.props.clash_sets:
+            for clash_sources in clash_set.get_clash_sources().values():
+                for clash_source in clash_sources:
+                    if not Path(clash_source.name).is_file():
+                        self.report(
+                            {"ERROR"},
+                            f"One of the provided clash source filepaths do not exist: '{clash_source.name}'.",
+                        )
+                        return {"CANCELLED"}
 
-        self.props.export_path = self.filepath
+        temp_file = None
+        if self.quick_clash:
+            temp_file = tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w")
+            temp_file.close()
+            extension = ".json"
+            self.filepath = temp_file.name
+        else:
+            extension = Path(self.filepath).suffix.lower()
+            if extension != ".bcf":
+                self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+            # TODO Temporarily until BCF support comes back
+            if extension != ".json":
+                self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
+            assert extension in (".bcf", ".json")
+            self.props.export_path = self.filepath
+
         settings = ifcclash.ClashSettings()
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
@@ -225,11 +273,14 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
 
         if self.props.should_create_clash_snapshots:
 
-            def get_viewpoint_snapshot(viewpoint):
+            def get_viewpoint_snapshot(viewpoint) -> tuple[str, bytes]:
+                assert context.scene
+
                 camera = bpy.data.objects.get("IFC Clash Camera")
                 if not camera:
                     camera = bpy.data.objects.new("IFC Clash Camera", bpy.data.cameras.new("IFC Clash Camera"))
                     context.scene.collection.objects.link(camera)
+                assert isinstance(camera.data, bpy.types.Camera)
 
                 bcf_camera = viewpoint.visualization_info.perspective_camera
                 p = bcf_camera.camera_view_point
@@ -238,6 +289,7 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
                 y = bcf_camera.camera_up_vector
                 y = Vector([y.x, y.y, y.z])
                 x = y.cross(z)
+                assert isinstance(x, Vector)
 
                 mat = Matrix(
                     [
@@ -251,9 +303,9 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
                 camera.matrix_world = mat
                 context.scene.camera = camera
                 camera.data.angle = radians(60)
-                area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-                area.spaces[0].region_3d.view_perspective = "CAMERA"
-                area.spaces[0].shading.show_xray = True
+                assert (space := tool.Blender.get_view3d_space()) and space.region_3d
+                space.region_3d.view_perspective = "CAMERA"
+                space.shading.show_xray = True
                 context.scene.render.resolution_x = 480
                 context.scene.render.resolution_y = 270
                 context.scene.render.image_settings.file_format = "PNG"
@@ -268,10 +320,26 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
         clasher.clash()
         clasher.export()
 
-        if extension == ".json":
+        # Load clash results to UI.
+        if extension == ".bcf":
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+                try:
+                    tmp.close()
+                    settings.output = tmp.name
+                    clasher.export()
+                    tool.Clash.load_clash_sets(tmp.name)
+                finally:
+                    Path(tmp.name).unlink()
+        else:
             tool.Clash.load_clash_sets(self.filepath)
-            tool.Clash.import_active_clashes()
-        self.report({"INFO"}, "Finished IFC clash.")
+        tool.Clash.import_active_clashes()
+
+        if self.quick_clash:
+            assert temp_file is not None
+            Path(temp_file.name).unlink()
+            self.report({"INFO"}, "IFC Clash completed and results are loaded.")
+        else:
+            self.report({"INFO"}, f"IFC Clash results are saved to '{Path(self.filepath).name}'.")
         return {"FINISHED"}
 
 
@@ -348,14 +416,16 @@ class SelectClash(bpy.types.Operator):
 
     def execute(self, context):
         self.props = tool.Clash.get_clash_props()
-        clash_set = tool.Clash.get_clash_set(self.props.active_clash_set.name)
-        active_clash = self.props.active_clash
+        assert (active_clash := self.props.active_clash)
+        assert (active_clash_set := self.props.active_clash_set)
+        clash_set = tool.Clash.get_clash_set(active_clash_set.name)
+        assert clash_set
         clash = tool.Clash.get_clash(clash_set, active_clash.a_global_id, active_clash.b_global_id)
 
         if not clash:
             return {"FINISHED"}
 
-        products = []
+        products: list[ifcopenshell.entity_instance] = []
 
         for global_id in (clash["a_global_id"], clash["b_global_id"]):
             try:

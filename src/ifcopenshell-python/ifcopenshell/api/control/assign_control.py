@@ -74,9 +74,8 @@ def assign_control(
             if assignment.is_a("IfcRelAssignsToControl") and assignment.RelatingControl == relating_control:
                 return
 
-    controls = None
-    if relating_control.Controls:
-        controls = relating_control.Controls[0]
+    controls: Union[ifcopenshell.entity_instance, None]
+    controls = next(iter(relating_control.Controls), None)
 
     if controls:
         if related_object in controls.RelatedObjects:
@@ -84,7 +83,7 @@ def assign_control(
         related_objects = set(controls.RelatedObjects)
         related_objects.add(related_object)
         controls.RelatedObjects = list(related_objects)
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": controls})
+        ifcopenshell.api.owner.update_owner_history(file, element=controls)
     else:
         controls = file.create_entity(
             "IfcRelAssignsToControl",

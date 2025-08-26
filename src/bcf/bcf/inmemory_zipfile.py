@@ -6,6 +6,7 @@ Copyright (c) 2017-2020 Anthon van der Neut, Ruamel bvba
 original idea from https://stackoverflow.com/a/19722365/1307905
 """
 
+from __future__ import annotations
 import zipfile
 from io import BytesIO
 from os import PathLike
@@ -47,7 +48,7 @@ class InMemoryZipFile:
     def data(self) -> bytes:
         return self.in_memory_data.getvalue()
 
-    def __enter__(self) -> "InMemoryZipFile":
+    def __enter__(self) -> InMemoryZipFile:
         return self
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:

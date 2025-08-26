@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.spatial
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -72,5 +74,5 @@ class TestGetContainer(NewFile):
         tool.Ifc.set(ifc)
         element = ifc.createIfcWall()
         container = ifc.createIfcBuildingStorey()
-        ifcopenshell.api.run("spatial.assign_container", ifc, products=[element], relating_structure=container)
+        ifcopenshell.api.spatial.assign_container(ifc, products=[element], relating_structure=container)
         assert subject.get_container(element) == container

@@ -28,7 +28,8 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING, Iterable, cast
+from typing import TypeVar, Union, Optional, Any, Literal, overload, TYPE_CHECKING, cast
+from collections.abc import Generator, Iterable
 
 if TYPE_CHECKING:
     from OCC.Core import TopoDS
@@ -54,7 +55,7 @@ if has_occ:
     except ImportError:
         from OCC import TopoDS
 
-    def wrap_shape_creation(settings, shape):
+    def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.Element):
         if getattr(settings, "use_python_opencascade", False):
             return utils.create_shape_from_serialization(shape)
         else:
@@ -64,9 +65,12 @@ if has_occ:
 SETTING = Literal[
     "angle-unit",
     "apply-default-materials",
+    "apply-offset",
     "boolean-attempt-2d",
     "building-local-placement",
+    "cache-shapes",
     "cgal-original-edges",
+    "cgal-smooth-angle-degrees",
     "circle-segments",
     "compute-curvature",
     "context-identifiers",
@@ -74,6 +78,7 @@ SETTING = Literal[
     "context-types",
     "convert-back-units",
     "debug",
+    "defer-processing-first-element",
     "dimensionality",
     "disable-boolean-result",
     "disable-opening-subtractions",
@@ -88,16 +93,20 @@ SETTING = Literal[
     "keep-bounding-boxes",
     "layerset-first",
     "length-unit",
+    "max-offset-deviation",
+    "max-offset",
     "mesher-angular-deflection",
     "mesher-linear-deflection",
     "model-offset",
     "model-rotation",
+    "no-clean-triangulation",
     "no-normals",
     "no-parallel-mapping",
     "no-wire-intersection-check",
     "no-wire-intersection-tolerance",
-    "precision",
+    "permissive-shape-reuse",
     "precision-factor",
+    "precision",
     "reorient-shells",
     "site-local-placement",
     "surface-colour",
@@ -141,7 +150,7 @@ class settings_mixin:
     """
 
     def __init__(self, **kwargs):
-        super(settings_mixin, self).__init__()
+        super().__init__()
         for k, v in kwargs.items():
             self.set(getattr(self, k), v)
 
@@ -295,8 +304,11 @@ class iterator(ifcopenshell_wrapper.Iterator):
     ):
         self.settings = settings
         if isinstance(file_or_filename, file):
+            self.file = file
             file_or_filename = file_or_filename.wrapped_data
         else:
+            # @todo?
+            self.file = None
             # Makes sure people are able to use python's platform agnostic paths
             file_or_filename = os.path.abspath(file_or_filename)
 
@@ -315,8 +327,10 @@ class iterator(ifcopenshell_wrapper.Iterator):
             if include_or_exclude_type == {"entity_instance"}:
                 include_or_exclude = cast(set[entity_instance], include_or_exclude)
 
-                if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
-                    raise ValueError("include and exclude need to be an aggregate of IfcProduct")
+                if not all((last_inst := inst).is_a("IfcProduct") for inst in include_or_exclude):
+                    raise ValueError(
+                        f"include and exclude need to be an aggregate of IfcProduct. Violating element: '{last_inst}'."
+                    )
 
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_id
 
@@ -342,6 +356,13 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 if not self.next():
                     break
 
+    def get_task_products(self):
+        return entity_instance.wrap_value(ifcopenshell_wrapper.Iterator.get_task_products(self), self.file)
+
+
+ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
+CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
+
 
 class tree(ifcopenshell_wrapper.tree):
     def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
@@ -361,7 +382,7 @@ class tree(ifcopenshell_wrapper.tree):
     def select(
         self,
         value: Union[
-            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], "TopoDS.TopoDS_Shape"
+            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], TopoDS.TopoDS_Shape
         ],
         **kwargs,
     ) -> list[entity_instance]:
@@ -409,13 +430,13 @@ class tree(ifcopenshell_wrapper.tree):
         set_b: Iterable[entity_instance],
         tolerance: float = 0.002,
         check_all: bool = True,
-    ):
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], tolerance, check_all]
         return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
     def clash_collision_many(
         self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
-    ):
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], allow_touching]
         return ifcopenshell_wrapper.tree.clash_collision_many(*args)
 
@@ -425,9 +446,17 @@ class tree(ifcopenshell_wrapper.tree):
         set_b: Iterable[entity_instance],
         clearance: float = 0.05,
         check_all: bool = False,
-    ):
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
+
+    @staticmethod
+    def get_clash_type(clash_type_i: int) -> ClashType:
+        """Convert clash type index to a readable string format.
+
+        :param clash_type_i: Type index that comes from ``clash.clash_type``.
+        """
+        return CLASH_TYPE_ITEMS[clash_type_i]
 
 
 def create_shape(
@@ -437,9 +466,7 @@ def create_shape(
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
     """
-    Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
-    or
-    Return an OpenCASCADE BRep if 'use-python-opencascade' is True
+    Returns a geometric interpretation of the IFC entity instance
 
     Note that in Python, you must store a reference to the element returned by this function to prevent garbage
     collection when you access its children. See #1124.
@@ -486,6 +513,20 @@ def create_shape(
             settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None, geometry_library
         ),
     )
+
+
+def map_shape(settings: settings, inst: entity_instance) -> ifcopenshell_wrapper.item:
+    """
+    Returns an interpretation of the geometry encoded as per IfcOpenShell's taxonomy layer.
+    In many cases this is somewhat equivalent to the raw IFC data (but schema-agnostic in C++), but
+    in other cases such as IfcParameterizedProfileDef the returned item is the equivalent
+    of an explicit composite curve.
+
+    >>> point = ifc_file.by_type('IfcCartesianPoint')[0]
+    >>> ifcopenshell.geom.map_shape(ifcopenshell.geom.settings(), point).components
+    (0.0, 0.0, 0.0)
+    """
+    return ifcopenshell_wrapper.map_shape(settings, inst.wrapped_data)
 
 
 @overload

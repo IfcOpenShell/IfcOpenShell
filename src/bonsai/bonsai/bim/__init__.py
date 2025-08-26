@@ -22,7 +22,8 @@ import bpy.utils.previews
 import importlib
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from . import handler, ui, prop, operator
-from typing import Callable, Union
+from typing import Union
+from collections.abc import Callable
 
 try:
     from bonsai.translations import translations_dict
@@ -96,17 +97,20 @@ for name in modules.keys():
 
 
 classes = [
-    operator.AddIfcFile,
     operator.BIM_OT_add_section_plane,
     operator.BIM_OT_delete_object,
     operator.BIM_OT_remove_section_plane,
     operator.BIM_OT_select_entity,
+    operator.BIM_OT_select_entity_by_guid,
     operator.BIM_OT_select_object,
     operator.BIM_OT_show_description,
     operator.BIM_OT_multiple_file_selector,
+    operator.BIM_OT_attribute_add_subitem,
+    operator.BIM_OT_attribute_remove_subitem,
     operator.ClippingPlaneCutWithCappings,
     operator.CloseBlendWarning,
     operator.CloseError,
+    operator.CreateMacBonsaiApp,
     operator.CopyTextToClipboard,
     operator.EditBlenderCollection,
     operator.FileAssociate,
@@ -115,24 +119,25 @@ classes = [
     operator.OpenUpstream,
     operator.OpenUri,
     operator.ReloadIfcFile,
-    operator.RemoveIfcFile,
     operator.RevertClippingPlaneCut,
     operator.SelectDir,
     operator.SelectIfcFile,
     operator.SelectURIAttribute,
     operator.SetTab,
     operator.SwitchTab,
+    operator.ShowSystemInfo,
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
+    operator.BIM_OT_attribute_search_values,
     prop.ObjProperty,
     prop.MultipleFileSelect,
     prop.Attribute,
+    prop.ISODuration,
     prop.BIMAreaProperties,
     prop.BIMTabProperties,
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,
-    prop.GlobalId,
     prop.BIMObjectProperties,
     prop.BIMCollectionProperties,
     prop.BIMMeshProperties,
@@ -142,7 +147,7 @@ classes = [
     prop.BIMSnapGroups,
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
-    ui.BIM_UL_topics,
+    ui.DocPreferences,
     ui.BIM_ADDON_preferences,
     # Tabs panel
     ui.BIM_PT_tabs,
@@ -150,10 +155,10 @@ classes = [
     ui.BIM_PT_tab_new_project_wizard,
     ui.BIM_PT_tab_project_info,
     ui.BIM_PT_tab_spatial,
+    ui.BIM_PT_tab_grouping_and_filtering,
     ui.BIM_PT_tab_project_setup,
     ui.BIM_PT_tab_geometry,
     ui.BIM_PT_tab_stakeholders,
-    ui.BIM_PT_tab_grouping_and_filtering,
     # Object information
     ui.BIM_PT_tab_object_metadata,
     ui.BIM_PT_tab_misc,

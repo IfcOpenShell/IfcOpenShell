@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def add_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material) -> ifcopenshell.entity_instance:
+def add_style(ifc: type[tool.Ifc], style: type[tool.Style], obj: bpy.types.Material) -> ifcopenshell.entity_instance:
     element = ifc.run("style.add_style", name=style.get_name(obj))
     ifc.link(element, obj)
     if style.can_support_rendering_style(obj):
@@ -38,7 +38,9 @@ def add_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material) -> ifco
 
 
 # TODO: outdated.
-def add_external_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material, attributes: dict[str, Any]) -> None:
+def add_external_style(
+    ifc: type[tool.Ifc], style: type[tool.Style], obj: bpy.types.Material, attributes: dict[str, Any]
+) -> None:
     element = ifc.get_entity(obj)
     ifc.run(
         "style.add_surface_style", style=element, ifc_class="IfcExternallyDefinedSurfaceStyle", attributes=attributes
@@ -47,7 +49,7 @@ def add_external_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material
 
 # TODO: unused `style` argument?
 def update_external_style(
-    ifc: tool.Ifc,
+    ifc: type[tool.Ifc],
     style: ifcopenshell.entity_instance,
     external_style: ifcopenshell.entity_instance,
     attributes: dict[str, Any],
@@ -56,7 +58,10 @@ def update_external_style(
 
 
 def remove_style(
-    ifc: tool.Ifc, style_tool: tool.Style, style: ifcopenshell.entity_instance, reload_styles_ui: bool = False
+    ifc: type[tool.Ifc],
+    style_tool: type[tool.Style],
+    style: ifcopenshell.entity_instance,
+    reload_styles_ui: bool = False,
 ) -> None:
     """Remove IfcPresentationStyle and associated Blender material.
 
@@ -78,7 +83,9 @@ def remove_style(
         style_tool.import_presentation_styles(style_type)
 
 
-def update_style_colours(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material, verbose: bool = False) -> None:
+def update_style_colours(
+    ifc: type[tool.Ifc], style: type[tool.Style], obj: bpy.types.Material, verbose: bool = False
+) -> None:
     element = ifc.get_entity(obj)
 
     if style.can_support_rendering_style(obj):
@@ -114,7 +121,10 @@ def update_style_colours(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Materi
 
 
 def update_style_textures(
-    ifc: tool.Ifc, style: tool.Style, obj: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ifc: type[tool.Ifc],
+    style: type[tool.Style],
+    obj: ifcopenshell.entity_instance,
+    representation: ifcopenshell.entity_instance,
 ) -> None:
     element = ifc.get_entity(obj)
 
@@ -136,22 +146,22 @@ def update_style_textures(
 
 
 # TODO: outdated.
-def unlink_style(ifc: tool.Ifc, style: ifcopenshell.entity_instance) -> None:
+def unlink_style(ifc: type[tool.Ifc], style: ifcopenshell.entity_instance) -> None:
     ifc.unlink(element=style)
 
 
-def enable_editing_style(style_tool: tool.Style, style: ifcopenshell.entity_instance) -> None:
+def enable_editing_style(style_tool: type[tool.Style], style: ifcopenshell.entity_instance) -> None:
     style_tool.enable_editing(style)
     style_tool.import_surface_attributes(style)
 
 
-def disable_editing_style(style: tool.Style) -> None:
+def disable_editing_style(style: type[tool.Style]) -> None:
     obj = style.get_currently_edited_material()
     style.disable_editing()
     style.reload_material_from_ifc(obj)
 
 
-def edit_style(ifc: tool.Ifc, style: tool.Style) -> None:
+def edit_style(ifc: type[tool.Ifc], style: type[tool.Style]) -> None:
     obj = style.get_currently_edited_material()
     style_element = ifc.get_entity(obj)
     assert style_element
@@ -164,14 +174,16 @@ def edit_style(ifc: tool.Ifc, style: tool.Style) -> None:
         style.reload_representations(style_element)
 
 
-def load_styles(style: tool.Style, style_type: str) -> None:
+def load_styles(style: type[tool.Style], style_type: str) -> None:
     style.import_presentation_styles(style_type)
     style.enable_editing_styles()
 
 
-def disable_editing_styles(style: tool.Style) -> None:
+def disable_editing_styles(style: type[tool.Style]) -> None:
     style.disable_editing_styles()
 
 
-def select_by_style(style_tool: tool.Style, spatial: tool.Spatial, style: ifcopenshell.entity_instance) -> None:
+def select_by_style(
+    style_tool: type[tool.Style], spatial: type[tool.Spatial], style: ifcopenshell.entity_instance
+) -> None:
     spatial.select_products(style_tool.get_elements_by_style(style))

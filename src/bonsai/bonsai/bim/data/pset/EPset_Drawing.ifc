@@ -14,7 +14,7 @@ DATA;
 #7=IFCSIMPLEPROPERTYTEMPLATE('2j2ZEZR8X5tONm7kli5hM6',$,'HasLinework','',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #8=IFCSIMPLEPROPERTYTEMPLATE('1ttChRysH9UuEX2FeMj5Hu',$,'HasAnnotation','',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #9=IFCSIMPLEPROPERTYTEMPLATE('2NPPxuABv1huDTVh32TFgw',$,'GlobalReferencing','',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
-#10=IFCSIMPLEPROPERTYTEMPLATE('10hT_1zrzEbRRKMXYAWvtD',$,'Metadata','',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
+#10=IFCSIMPLEPROPERTYTEMPLATE('10hT_1zrzEbRRKMXYAWvtD',$,'Metadata','Comma separated list of selector expressions to evaluate for each drawing elementand add results to their ''class'' attribute.\X2\000A\X0\E.g. ''Name, id'' would add to ''class'' value similar to ''Name-Wall id-1220''.\X2\000A\X0\Then it can be used to applied css styles based on the resulting class.\X2\000A\X0\If attribute is not present on the element, then it won''t be added to it''s ''class''.',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
 #11=IFCSIMPLEPROPERTYTEMPLATE('3Z0BXPSG5CWgtI33ioV7aj',$,'Include','Selector expression to include ifc elements in the drawing',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
 #12=IFCSIMPLEPROPERTYTEMPLATE('1RVts_g3PAw98PJA2yL3bO',$,'Exclude','Selector expression to exclude ifc elements in the drawing',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
 #13=IFCSIMPLEPROPERTYTEMPLATE('0c1$8NpYDEaBiJrj16jHIo',$,'Stylesheet','',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);

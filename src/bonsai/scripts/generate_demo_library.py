@@ -81,7 +81,7 @@ def sync_guids(target_file: ifcopenshell.file, source_file: ifcopenshell.file) -
                 # New type with material was added.
                 print(f"WARNING! Couldn't find a matching rel for '{rel}'.")
                 return
-            rel_ = next((r for r in related_object_.HasAssociations if r.is_a("IfcRelAssociatesMaterial")))
+            rel_ = next(r for r in related_object_.HasAssociations if r.is_a("IfcRelAssociatesMaterial"))
             assert rel_
             rel.GlobalId = rel_.GlobalId
         elif rel.is_a("IfcRelDeclares"):

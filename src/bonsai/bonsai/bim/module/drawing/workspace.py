@@ -19,7 +19,9 @@
 
 import os
 import bpy
+import ifcopenshell.api.group
 import ifcopenshell.util.element
+import bonsai.core.geometry
 import bonsai.core.type
 import bonsai.core.drawing as core
 import bonsai.tool as tool
@@ -143,13 +145,16 @@ add_layout_hotkey_operator = partial(
 # TODO: move to operator
 def create_annotation_occurrence(context):
     props = tool.Drawing.get_annotation_props()
-    relating_type = tool.Ifc.get().by_id(int(props.relating_type_id))
+    ifc_file = tool.Ifc.get()
+    relating_type = ifc_file.by_id(int(props.relating_type_id))
     object_type = props.object_type
 
     drawing = tool.Ifc.get_entity(context.scene.camera)
+    assert drawing
     obj = tool.Drawing.create_annotation_object(drawing, object_type)
     obj.name = relating_type.Name
     ifc_context = tool.Drawing.get_annotation_context(tool.Drawing.get_drawing_target_view(drawing), object_type)
+    assert ifc_context
     relating_type_rep = tool.Drawing.get_annotation_representation(relating_type)
     element = tool.Drawing.run_root_assign_class(
         obj=obj,
@@ -159,10 +164,11 @@ def create_annotation_occurrence(context):
         context=ifc_context,
         ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
     )
+    assert element
 
     bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
-    tool.Ifc.run("group.assign_group", group=tool.Drawing.get_drawing_group(drawing), products=[element])
+    ifcopenshell.api.group.assign_group(ifc_file, group=tool.Drawing.get_drawing_group(drawing), products=[element])
     tool.Collector.assign(obj)
 
     if relating_type_rep is None and props.object_type == "IMAGE":
@@ -218,7 +224,7 @@ class AnnotationToolUI:
 
     @classmethod
     def draw_edit_object_interface(cls, context):
-        if DecoratorData.get_ifc_text_data(bpy.context.active_object):
+        if DecoratorData.get_text_data(bpy.context.active_object):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
 
     @classmethod
@@ -232,7 +238,14 @@ class AnnotationToolUI:
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="FILE_3D")
-        prop_with_search(row, cls.props, "relating_type_id", text="")
+        prop_with_search(
+            row,
+            cls.props,
+            "relating_type_id",
+            text="",
+            enable_relating_type_suggestions=True,
+            search_threshold=0,
+        )
         row.operator("bim.launch_annotation_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
 
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
@@ -311,7 +324,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.active_object:
             return
 
-        if DecoratorData.get_ifc_text_data(bpy.context.active_object):
+        if DecoratorData.get_text_data(bpy.context.active_object):
             bpy.ops.bim.edit_text_popup()
 
     def hotkey_S_G(self):

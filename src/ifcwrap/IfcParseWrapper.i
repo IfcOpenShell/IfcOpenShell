@@ -29,6 +29,8 @@ private:
 %ignore IfcParse::IfcFile::schema;
 %ignore IfcParse::IfcFile::begin;
 %ignore IfcParse::IfcFile::end;
+// Available as get_inverse().
+%ignore IfcParse::IfcFile::instances_by_reference;
 
 %ignore parse_context;
 
@@ -49,8 +51,11 @@ private:
 %ignore IfcUtil::IfcBaseClass::is;
 
 %rename("by_id") instance_by_id;
+%rename("by_guid") instance_by_guid;
 %rename("by_type") instances_by_type;
 %rename("by_type_excl_subtypes") instances_by_type_excl_subtypes;
+%rename("get_inverses_by_declaration") getInverse;
+%rename("get_total_inverses_by_id") getTotalInverses;
 %rename("entity_instance") IfcBaseClass;
 %rename("file") IfcFile;
 %rename("add") addEntity;
@@ -124,20 +129,25 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return reinterpret_cast<size_t>($self);
 	}
 
-	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
-		return $self->instance_by_guid(guid);
-	}
-	
 	aggregate_of_instance::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
-		return $self->getInverse(e->as<IfcUtil::IfcBaseEntity>()->id(), 0, -1);
+		if (auto e_ = e->as<IfcUtil::IfcBaseEntity>()) {
+			return $self->getInverse(e_->id(), 0, -1);
+		}
+		throw IfcParse::IfcException("Only entities with ids are supported for get_inverse. Provided entity: '" + e->declaration().name() + "'.");
 	}
 
 	std::vector<int> get_inverse_indices(IfcUtil::IfcBaseClass* e) {
-		return $self->get_inverse_indices(e->as<IfcUtil::IfcBaseEntity>()->id());
+		if (auto e_ = e->as<IfcUtil::IfcBaseEntity>()) {
+			return $self->get_inverse_indices(e_->id());
+		}
+		throw IfcParse::IfcException("Only entities with ids are supported for get_inverse_indices. Provided entity: '" + e->declaration().name() + "'.");
 	}
 
 	int get_total_inverses(IfcUtil::IfcBaseClass* e) {
-		return $self->getTotalInverses(e->as<IfcUtil::IfcBaseEntity>()->id());
+		if (auto e_ = e->as<IfcUtil::IfcBaseEntity>()) {
+			return $self->getTotalInverses(e_->id());
+		}
+		throw IfcParse::IfcException("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e->declaration().name() + "'.");
 	}
 
 	void write(const std::string& fn) {
@@ -194,6 +204,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 }
 
 %extend IfcUtil::IfcBaseClass {
+
+	%pythoncode %{
+		# Will be assigned when `ifcopenshell.entity_instance` is created.
+		file = None
+	%}
 
 	int get_attribute_category(const std::string& name) const {
 		if (!$self->declaration().as_entity()) {

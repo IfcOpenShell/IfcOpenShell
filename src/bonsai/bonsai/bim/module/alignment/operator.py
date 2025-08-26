@@ -21,7 +21,6 @@
 import os
 
 import ifcopenshell.api.alignment
-import ifcopenshell.api.alignment.add_stationing_to_alignment
 
 import bpy
 import json
@@ -38,8 +37,6 @@ import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
 from bpy_extras.io_utils import ImportHelper
-from typing import get_args, TYPE_CHECKING
-from typing_extensions import assert_never
 
 
 class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
@@ -64,9 +61,7 @@ class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         self.file = tool.Ifc.get()
         start = time.time()
-        alignment = ifcopenshell.api.alignment.create_alignment_from_csv(self.file, self.filepath)
-        ifcopenshell.api.alignment.create_geometric_representation(self.file, alignment)
-        ifcopenshell.api.alignment.add_stationing_to_alignment(self.file, alignment=alignment, start_station=0.0)
+        alignment = ifcopenshell.api.alignment.create_from_csv(self.file, self.filepath)
 
         # IFC 4.1.5.1 alignments cannot be contained in spatial structures, but can be referenced into them
         sites = self.file.by_type("IfcSite")

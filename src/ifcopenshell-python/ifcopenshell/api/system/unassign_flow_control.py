@@ -64,4 +64,4 @@ def unassign_flow_control(
     related_flow_controls = list(assignment.RelatedControlElements)
     related_flow_controls.remove(related_flow_control)
     assignment.RelatedControlElements = related_flow_controls
-    ifcopenshell.api.owner.update_owner_history(file, **{"element": assignment})
+    ifcopenshell.api.owner.update_owner_history(file, element=assignment)

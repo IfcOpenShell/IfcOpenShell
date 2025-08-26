@@ -53,7 +53,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 	// Get starting position of gradient curve, which is relative to the base curve
 	// The gradient curve can start before or after the start of the base curve
 	auto first_segment = *(segments->begin());
-   auto p = taxonomy::cast<taxonomy::matrix4>(map(first_segment->as<IfcSchema::IfcCurveSegment>()->Placement()));
+	taxonomy::matrix4::ptr p;
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
+	p = taxonomy::cast<taxonomy::matrix4>(map(first_segment->as<IfcSchema::IfcCurveSegment>()->Placement()));
+#else
+	throw std::runtime_error("Unsupported schema");
+#endif
    const Eigen::Matrix4d& m = p->ccomponents();
    double gradient_start = m(0, 3); // start of vertical (row 0, col 3) - "Distance Along" horizontal curve
 

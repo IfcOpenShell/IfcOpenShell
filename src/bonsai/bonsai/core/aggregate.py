@@ -25,18 +25,18 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def enable_editing_aggregate(aggregator: tool.Aggregate, obj: bpy.types.Object) -> None:
+def enable_editing_aggregate(aggregator: type[tool.Aggregate], obj: bpy.types.Object) -> None:
     aggregator.enable_editing(obj)
 
 
-def disable_editing_aggregate(aggregator: tool.Aggregate, obj: bpy.types.Object) -> None:
+def disable_editing_aggregate(aggregator: type[tool.Aggregate], obj: bpy.types.Object) -> None:
     aggregator.disable_editing(obj)
 
 
 def assign_object(
-    ifc: tool.Ifc,
-    aggregator: tool.Aggregate,
-    collector: tool.Collector,
+    ifc: type[tool.Ifc],
+    aggregator: type[tool.Aggregate],
+    collector: type[tool.Collector],
     relating_obj: Optional[bpy.types.Object] = None,
     related_obj: Optional[bpy.types.Object] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
@@ -53,9 +53,9 @@ def assign_object(
 
 
 def unassign_object(
-    ifc: tool.Ifc,
-    aggregate: tool.Aggregate,
-    collector: tool.Collector,
+    ifc: type[tool.Ifc],
+    aggregate: type[tool.Aggregate],
+    collector: type[tool.Collector],
     relating_obj: Optional[bpy.types.Object] = None,
     related_obj: Optional[bpy.types.Object] = None,
 ) -> None:
@@ -74,10 +74,10 @@ def unassign_object(
 
 
 def add_part_to_object(
-    ifc: tool.Ifc,
-    aggregator: tool.Aggregate,
-    collector: tool.Collector,
-    blender: tool.Blender,
+    ifc: type[tool.Ifc],
+    aggregator: type[tool.Aggregate],
+    collector: type[tool.Collector],
+    blender: type[tool.Blender],
     obj: bpy.types.Object,
     part_class: str,
     part_name: Optional[str] = None,
@@ -88,7 +88,7 @@ def add_part_to_object(
 
 
 def enter_aggregate_mode(
-    aggregator: tool.Aggregate,
+    aggregator: type[tool.Aggregate],
     obj: bpy.types.Object,
 ):
     aggregator.update_previous_aggregate_mode_state()
@@ -98,7 +98,7 @@ def enter_aggregate_mode(
     aggregator.enable_aggregate_mode(obj)
 
 
-def exit_aggregate_mode(aggregator: tool.Aggregate):
+def exit_aggregate_mode(aggregator: type[tool.Aggregate]):
     aggregator.update_previous_aggregate_mode_state()
     if new_obj := aggregator.get_higher_aggregate():
         aggregator.disable_aggregate_mode()

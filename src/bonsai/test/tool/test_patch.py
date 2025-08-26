@@ -36,5 +36,6 @@ class TestRunMigratePatch(NewFile):
         infile = os.path.join(cwd, "..", "files", "ifc2x3.ifc")
         outfile = os.path.join(cwd, "..", "files", "temp", "ifc2x3-migrated.ifc")
         subject.run_migrate_patch(infile, outfile, "IFC4")
+        ifc: ifcopenshell.file
         ifc = ifcopenshell.open(outfile)
         assert ifc.schema == "IFC4"

@@ -25,6 +25,7 @@ import ifcopenshell.util.schema
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
 from typing import Any, Union
+from natsort import natsorted
 
 
 def refresh():
@@ -67,15 +68,16 @@ class MaterialsData:
 
     @classmethod
     def profiles(cls):
-        return [
+        results = [
             (str(p.id()), p.ProfileName or "Unnamed", "")
             for p in tool.Ifc.get().by_type("IfcProfileDef")
-            if p.ProfileName
+            if (profile_name := p.ProfileName) is not None
         ]
+        return natsorted(results, key=lambda i: i[1])
 
     @classmethod
     def contexts(cls):
-        results = []
+        results: list[tuple[str, str, str]] = []
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             results.append((str(element.id()), element.ContextType or "Unnamed", ""))
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
@@ -90,15 +92,18 @@ class MaterialsData:
                     "",
                 )
             )
-        return results
+        return natsorted(results, key=lambda i: i[1])
 
     @classmethod
     def styles(cls) -> list[tuple[str, str, str]]:
-        return [
+        results = [
             (str(s.id()), style_name or "Unnamed", "")
             for s in tool.Ifc.get().by_type("IfcPresentationStyle")
-            if (style_name := s.Name)
+            if (style_name := s.Name) is not None
         ]
+        results = natsorted(results, key=lambda i: i[1])
+        results.insert(0, ("-", "No Surface Style", ""))
+        return results
 
     @classmethod
     def material_styles_data(cls) -> dict[int, list[dict[str, Any]]]:
@@ -288,9 +293,9 @@ class ObjectMaterialData:
                 if item.is_a("IfcMaterialLayer"):
                     total_thickness = item.LayerThickness
                     unit_system = bpy.context.scene.unit_settings.system
-                    props = tool.Drawing.get_document_props()
+                    prefs = tool.Blender.get_addon_preferences()
                     if unit_system == "IMPERIAL":
-                        precision = props.imperial_precision
+                        precision = prefs.doc.imperial_precision
                     else:
                         precision = None
                     formatted_thickness = format_distance(
@@ -325,11 +330,12 @@ class ObjectMaterialData:
             elif cls.material.is_a("IfcMaterialLayerSet"):
                 layers = cls.material.MaterialLayers
             thickness = sum([l.LayerThickness for l in layers or []])
-            props = tool.Drawing.get_document_props()
+            prefs = tool.Blender.get_addon_preferences()
+            assert bpy.context.scene
             unit_system = bpy.context.scene.unit_settings.system
             precision = None
             if unit_system == "IMPERIAL":
-                precision = props.imperial_precision
+                precision = prefs.doc.imperial_precision
             return format_distance(thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     @classmethod
@@ -394,7 +400,7 @@ class ObjectMaterialData:
         return [(m, m, ifcopenshell.util.doc.get_entity_doc(version, m).get("description", "")) for m in material_types]
 
     @classmethod
-    def active_material_constituents(cls):
+    def active_material_constituents(cls) -> list[str]:
         material = cls.material
         if not cls.material or not material.is_a("IfcMaterialConstituentSet"):
             return []

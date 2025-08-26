@@ -56,8 +56,28 @@ class CostSchedulesData:
             "cost_values": cls.cost_values(),
             "quantity_types": cls.quantity_types(),
             "currency": cls.currency(),
+            "csv_filepaths": cls.get_csv_filepaths(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def get_csv_filepaths(cls) -> dict[int, str]:
+        """Get CSV filepaths for cost schedules from document references."""
+        filepaths = {}
+        cost_docs_document = tool.Cost.get_or_create_cost_documents()
+
+        if cost_docs_document:
+            references = tool.Document.get_document_references(cost_docs_document)
+            for reference in references:
+                if reference.Description and "Cost Schedule ID:" in reference.Description:
+                    schedule_id_str = reference.Description.split("Cost Schedule ID:")[1].strip()
+                    try:
+                        schedule_id = int(schedule_id_str)
+                        filepaths[schedule_id] = reference.Location
+                    except ValueError:
+                        pass
+
+        return filepaths
 
     @classmethod
     def currency(cls) -> Union[Currency, None]:
@@ -110,6 +130,8 @@ class CostSchedulesData:
             cls._load_cost_item_quantities(cost_item, data)
             cls._load_cost_values(cost_item, data)
             cls._load_nesting_index(cost_item, data)
+            cls._load_assigned_cost_rate(cost_item, data)
+            cls._load_parent_cost_schedule(cost_item, data)
             results[cost_item.id()] = data
         return results
 
@@ -154,7 +176,16 @@ class CostSchedulesData:
         else:
             data["TotalCost"] = data["TotalAppliedValue"] * cost_quantity
         if is_sum:
-            data["TotalAppliedValue"] = None
+            pass  # If it is None it doesn't allow me to assign a cost rate composed by sum
+            # data["TotalAppliedValue"] = None
+
+    @classmethod
+    def _load_assigned_cost_rate(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
+        data["AssignedCostRate"] = tool.Cost.get_assigned_rate_cost_item(cost_item)
+
+    @classmethod
+    def _load_parent_cost_schedule(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
+        data["ParentCostSchedule"] = tool.Cost.get_cost_schedule(cost_item)
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
@@ -165,6 +196,7 @@ class CostSchedulesData:
         #         parametric_quantities.extend(quantities)
         data["TotalCostQuantity"] = ifcopenshell.util.cost.get_total_quantity(cost_item)
         data["UnitSymbol"] = "-"
+        data["QuantityType"] = None
         quantities: list[ifcopenshell.entity_instance] = cost_item.CostQuantities
         if quantities:
             quantity = quantities[0]
@@ -248,6 +280,8 @@ class CostSchedulesData:
     ) -> None:
         value_data = cost_value.get_info()
         del value_data["AppliedValue"]
+        if tool.Cost.get_assigned_rate_cost_item(root_element):
+            root_element = tool.Cost.get_assigned_rate_cost_item(root_element)
         if value_data["UnitBasis"]:
             data = cost_value.UnitBasis.get_info()
             data["ValueComponent"] = data["ValueComponent"].wrappedValue
@@ -292,10 +326,8 @@ class CostSchedulesData:
 
     @classmethod
     def quantity_types(cls) -> list[tuple[str, str, str]]:
-        return [
-            (t.name(), t.name(), "")
-            for t in tool.Ifc.schema().declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()
-        ]
+        assert (entity := tool.Ifc.schema().declaration_by_name("IfcPhysicalSimpleQuantity").as_entity())
+        return [(t.name(), t.name(), "") for t in entity.subtypes()]
 
     @classmethod
     def get_cost_schedule_types(cls) -> list[tuple[str, str, str]]:
@@ -311,6 +343,7 @@ class CostItemRatesData:
     def load(cls):
         cls.data = {
             "schedule_of_rates": cls.schedule_of_rates(),
+            "cost_schedules": cls.cost_schedules(),
         }
         cls.is_loaded = True
 
@@ -321,6 +354,10 @@ class CostItemRatesData:
             for s in tool.Ifc.get().by_type("IfcCostSchedule")
             if s.PredefinedType == "SCHEDULEOFRATES"
         ]
+
+    @classmethod
+    def cost_schedules(cls) -> list[tuple[str, str, str]]:
+        return [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcCostSchedule")]
 
 
 class CostItemQuantitiesData:
@@ -337,13 +374,13 @@ class CostItemQuantitiesData:
         cls.is_loaded = True
 
     @classmethod
-    def product_quantity_names(cls):
-        elements = tool.Spatial.get_selected_products()
+    def product_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        elements = list(tool.Spatial.get_selected_products())
         names = ifcopenshell.util.cost.get_product_quantity_names(elements)
         return [(n, n, "") for n in names]
 
     @classmethod
-    def process_quantity_names(cls):
+    def process_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         props = tool.Sequence.get_work_schedule_props()
         active_task_index = props.active_task_index
         tprops = tool.Sequence.get_task_tree_props()
@@ -359,14 +396,11 @@ class CostItemQuantitiesData:
         return [(n, n, "") for n in names if n != "id"]
 
     @classmethod
-    def resource_quantity_names(cls):
-        active_resource_index = bpy.context.scene.BIMResourceProperties.active_resource_index
-        total_resources = len(bpy.context.scene.BIMResourceTreeProperties.resources)
-        if not total_resources or active_resource_index >= total_resources:
+    def resource_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        active_resource = tool.Resource.get_resource_props().active_resource
+        if not active_resource:
             return []
-        ifc_definition_id = bpy.context.scene.BIMResourceTreeProperties.resources[
-            active_resource_index
-        ].ifc_definition_id
+        ifc_definition_id = active_resource.ifc_definition_id
         element = tool.Ifc.get().by_id(ifc_definition_id)
         names = set()
         qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True)

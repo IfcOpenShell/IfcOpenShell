@@ -79,11 +79,11 @@ class TestImportLibraryAttributes(NewFile):
         library = ifc.createIfcLibraryInformation("Name", "Version", None, "VersionDate", "Location", "Description")
         subject.import_library_attributes(library)
         props = tool.Library.get_library_props()
-        assert props.library_attributes.get("Name").string_value == "Name"
-        assert props.library_attributes.get("Version").string_value == "Version"
-        assert props.library_attributes.get("VersionDate").string_value == "VersionDate"
-        assert props.library_attributes.get("Location").string_value == "Location"
-        assert props.library_attributes.get("Description").string_value == "Description"
+        assert props.library_attributes["Name"].string_value == "Name"
+        assert props.library_attributes["Version"].string_value == "Version"
+        assert props.library_attributes["VersionDate"].string_value == "VersionDate"
+        assert props.library_attributes["Location"].string_value == "Location"
+        assert props.library_attributes["Description"].string_value == "Description"
 
 
 class TestImportReferenceAttributes(NewFile):
@@ -92,11 +92,11 @@ class TestImportReferenceAttributes(NewFile):
         reference = ifc.createIfcLibraryReference("Location", "Identification", "Name", "Description", "Language")
         subject.import_reference_attributes(reference)
         props = tool.Library.get_library_props()
-        assert props.reference_attributes.get("Location").string_value == "Location"
-        assert props.reference_attributes.get("Identification").string_value == "Identification"
-        assert props.reference_attributes.get("Name").string_value == "Name"
-        assert props.reference_attributes.get("Description").string_value == "Description"
-        assert props.reference_attributes.get("Language").string_value == "Language"
+        assert props.reference_attributes["Location"].string_value == "Location"
+        assert props.reference_attributes["Identification"].string_value == "Identification"
+        assert props.reference_attributes["Name"].string_value == "Name"
+        assert props.reference_attributes["Description"].string_value == "Description"
+        assert props.reference_attributes["Language"].string_value == "Language"
 
 
 class TestImportReferences(NewFile):

@@ -1451,10 +1451,10 @@ TopoDS_Shape IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape
 		return shape;
 	}
 
-	TopoDS_Solid solid;
-	if (!create_solid_from_compound(shape, solid, tol)) {
+	TopoDS_Shape solid_or_compound_of_solids;
+	if (!create_solid_from_compound(shape, solid_or_compound_of_solids, tol)) {
 		return shape;
 	}
 
-	return solid;
+	return solid_or_compound_of_solids;
 }

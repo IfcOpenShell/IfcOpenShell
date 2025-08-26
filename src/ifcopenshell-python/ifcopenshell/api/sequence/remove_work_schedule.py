@@ -29,9 +29,7 @@ def remove_work_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.en
     All tasks in the work schedule are also removed recursively.
 
     :param work_schedule: The IfcWorkSchedule to remove.
-    :type work_schedule: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

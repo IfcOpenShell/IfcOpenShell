@@ -1,7 +1,7 @@
 ======================
 Drawings and documents
 ======================
-
+.. include:: /_incomplete_message.rst
 Bonsai provides powerful tools for generating 2D drawings from your 3D BIM models and adding detailed annotations.
 This section covers the process of creating various types of drawings and enhancing them with annotations.
 

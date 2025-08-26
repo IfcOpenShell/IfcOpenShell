@@ -19,21 +19,30 @@
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.module.owner.data import PeopleData, OrganisationsData, OwnerData, ActorData, ObjectActorData
+from typing import Any
+from bonsai.bim.module.owner.data import (
+    PeopleData,
+    OrganisationsData,
+    OwnerData,
+    ActorData,
+    ObjectActorData,
+    ApplicationsData,
+)
 
 
-def draw_roles(box, parent):
+def draw_roles(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
+    props = tool.Owner.get_owner_props()
     row = box.row(align=True)
     row.label(text="Roles")
     op = row.operator("bim.add_role", icon="ADD", text="")
     op.parent = parent["id"]
 
     for role in parent["roles"]:
-        if role["is_editing"]:
+        if props.active_role_id == role["id"]:
             row = box.row(align=True)
             row.operator("bim.edit_role", icon="CHECKMARK")
             row.operator("bim.disable_editing_role", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(role["props"], box)
+            bonsai.bim.helper.draw_attributes(props.role_attributes, box)
         else:
             row = box.row(align=True)
             row.label(text=role["label"])
@@ -41,34 +50,36 @@ def draw_roles(box, parent):
             row.operator("bim.remove_role", icon="X", text="").role = role["id"]
 
 
-def draw_addresses(box, parent):
+def draw_addresses(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
+    props = tool.Owner.get_owner_props()
     row = box.row(align=True)
     row.label(text="Addresses")
-    op = row.operator("bim.add_address", icon="LINK_BLEND", text="")
+
+    assert (wm := bpy.context.window_manager)
+    row.prop(wm.operator_properties_last(bpy.ops.bim.add_address.idname()), "ifc_class", text="")
+    op = row.operator("bim.add_address", icon="ADD", text="")
     op.parent = parent["id"]
-    op.ifc_class = "IfcTelecomAddress"
-    op = row.operator("bim.add_address", icon="APPEND_BLEND", text="")
-    op.parent = parent["id"]
-    op.ifc_class = "IfcPostalAddress"
 
     for address in parent["addresses"]:
-        if address["is_editing"]:
+        if props.active_address_id == address["id"]:
             row = box.row(align=True)
             row.operator("bim.edit_address", icon="CHECKMARK")
             row.operator("bim.disable_editing_address", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(address["props"], box)
-            for attribute in address["list_attributes"]:
+            bonsai.bim.helper.draw_attributes(props.address_attributes, box)
+            attributes: list[str] = address["list_attributes"]
+            for attribute_name in attributes:
                 row = box.row(align=True)
-                row.label(text=attribute["name"])
+                row.label(text=attribute_name)
                 op = row.operator("bim.add_address_attribute", icon="ADD", text="")
-                op.name = attribute["name"]
+                op.name = attribute_name
 
-                for item in attribute["items"]:
+                collection = tool.Owner.get_address_collection(attribute_name)
+                for i, item in enumerate(collection):
                     row = box.row(align=True)
-                    row.prop(item["prop"], "name", text="")
+                    row.prop(item, "name", text="")
                     op = row.operator("bim.remove_address_attribute", icon="REMOVE", text="")
-                    op.name = attribute["name"]
-                    op.id = item["id"]
+                    op.name = attribute_name
+                    op.id = i
         else:
             row = box.row(align=True)
             row.label(text=address["label"])
@@ -87,12 +98,13 @@ class BIM_PT_people(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not PeopleData.is_loaded:
             PeopleData.load()
 
+        assert self.layout
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
 
@@ -102,26 +114,30 @@ class BIM_PT_people(bpy.types.Panel):
         for person in PeopleData.data["people"]:
             self.draw_person(person)
 
-    def draw_person(self, person):
-        if person["is_editing"]:
+    def draw_person(self, person: dict[str, Any]) -> None:
+        assert self.layout
+        props = tool.Owner.get_owner_props()
+
+        if props.active_person_id == person["id"]:
             box = self.layout.box()
             row = box.row(align=True)
             row.operator("bim.edit_person", icon="CHECKMARK")
             row.operator("bim.disable_editing_person", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(person["props"], box)
+            bonsai.bim.helper.draw_attributes(props.person_attributes, box)
 
-            for attribute in person["list_attributes"]:
+            for attribute_name in tool.Owner.PERSON_ATTRIBUTE_TYPES:
                 row = box.row(align=True)
-                row.label(text=attribute["name"])
+                row.label(text=attribute_name)
                 op = row.operator("bim.add_person_attribute", icon="ADD", text="")
-                op.name = attribute["name"]
+                op.name = attribute_name
 
-                for item in attribute["items"]:
+                collection = tool.Owner.get_names_collection(attribute_name)
+                for i, item in enumerate(collection):
                     row = box.row(align=True)
-                    row.prop(item["prop"], "name", text="")
+                    row.prop(item, "name", text="")
                     op = row.operator("bim.remove_person_attribute", icon="REMOVE", text="")
-                    op.name = attribute["name"]
-                    op.id = item["id"]
+                    op.name = attribute_name
+                    op.id = i
 
             draw_roles(box, person)
             draw_addresses(box, person)
@@ -146,12 +162,13 @@ class BIM_PT_organisations(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not OrganisationsData.is_loaded:
             OrganisationsData.load()
 
+        assert self.layout
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
 
@@ -161,13 +178,15 @@ class BIM_PT_organisations(bpy.types.Panel):
         for organisation in OrganisationsData.data["organisations"]:
             self.draw_organisation(organisation)
 
-    def draw_organisation(self, organisation):
-        if organisation["is_editing"]:
+    def draw_organisation(self, organisation: dict[str, Any]) -> None:
+        assert self.layout
+        props = tool.Owner.get_owner_props()
+        if props.active_organisation_id == organisation["id"]:
             box = self.layout.box()
             row = box.row(align=True)
             row.operator("bim.edit_organisation", icon="CHECKMARK")
             row.operator("bim.disable_editing_organisation", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(organisation["props"], box)
+            bonsai.bim.helper.draw_attributes(props.organisation_attributes, box)
 
             draw_roles(box, organisation)
             draw_addresses(box, organisation)
@@ -193,15 +212,16 @@ class BIM_PT_owner(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not OwnerData.is_loaded:
             OwnerData.load()
 
+        assert self.layout
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
-        props = context.scene.BIMOwnerProperties
+        props = tool.Owner.get_owner_props()
 
         if not OwnerData.data["user_person"]:
             self.layout.label(text="No people found.")
@@ -215,7 +235,7 @@ class BIM_PT_owner(bpy.types.Panel):
             row = self.layout.row()
             row.prop(props, "user_organisation")
 
-        if OwnerData.data["can_add_user"]:
+        if OwnerData.data["user_organisation"] and OwnerData.data["user_person"]:
             row = self.layout.row()
             op = row.operator("bim.add_person_and_organisation", icon="ADD")
             op.person = int(props.user_person)
@@ -223,7 +243,7 @@ class BIM_PT_owner(bpy.types.Panel):
 
         for user in OwnerData.data["users"]:
             row = self.layout.row(align=True)
-            if user["is_active"]:
+            if props.active_user_id == user["id"]:
                 row.label(text=user["label"], icon="USER")
                 row.operator("bim.clear_user", icon="KEYFRAME", text="").user = user["id"]
             else:
@@ -234,7 +254,7 @@ class BIM_PT_owner(bpy.types.Panel):
 
 
 class BIM_PT_actor(bpy.types.Panel):
-    bl_label = "Actor"
+    bl_label = "Actors"
     bl_idname = "BIM_PT_actor"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
@@ -244,13 +264,14 @@ class BIM_PT_actor(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not ActorData.is_loaded:
             ActorData.load()
 
-        self.props = context.scene.BIMOwnerProperties
+        assert self.layout
+        self.props = tool.Owner.get_owner_props()
 
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
@@ -268,13 +289,16 @@ class BIM_PT_actor(bpy.types.Panel):
         for actor in ActorData.data["actors"]:
             self.draw_actor(actor)
 
-    def draw_actor(self, actor):
-        if actor["is_editing"]:
+    def draw_actor(self, actor: dict[str, Any]) -> None:
+        assert self.layout
+        props = tool.Owner.get_owner_props()
+
+        if props.active_actor_id == actor["id"]:
             box = self.layout.box()
             row = box.row(align=True)
             row.operator("bim.edit_actor", icon="CHECKMARK")
             row.operator("bim.disable_editing_actor", icon="CANCEL", text="")
-            bonsai.bim.helper.draw_attributes(self.props.actor_attributes, box)
+            bonsai.bim.helper.draw_attributes(props.actor_attributes, box)
         else:
             row = self.layout.row(align=True)
             row.label(text=actor["name"], icon="USER")
@@ -295,13 +319,14 @@ class BIM_PT_object_actor(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not ObjectActorData.is_loaded:
             ObjectActorData.load()
 
-        self.props = context.scene.BIMOwnerProperties
+        assert self.layout
+        self.props = tool.Owner.get_owner_props()
 
         if not ObjectActorData.data["actor"]:
             row = self.layout.row(align=True)
@@ -317,3 +342,46 @@ class BIM_PT_object_actor(bpy.types.Panel):
             row.label(text=actor["name"], icon="USER")
             row.label(text=actor["role"])
             row.operator("bim.unassign_actor", icon="X", text="").actor = actor["id"]
+
+
+class BIM_PT_applications(bpy.types.Panel):
+    bl_label = "Applications"
+    bl_idname = "BIM_PT_applications"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_stakeholders"
+
+    @classmethod
+    def poll(cls, context) -> bool:
+        return bool(tool.Ifc.get())
+
+    def draw(self, context):
+        if not ApplicationsData.is_loaded:
+            ApplicationsData.load()
+
+        assert (layout := self.layout)
+        props = tool.Owner.get_owner_props()
+
+        row = self.layout.row()
+        row.operator("bim.add_application", icon="ADD")
+
+        apps_data: list[dict[str, Any]] = ApplicationsData.data["applications"]
+        if not apps_data:
+            layout.label(text="No Applications Found")
+            return
+
+        for app_data in apps_data:
+            if props.active_application_id == app_data["id"]:
+                box = self.layout.box()
+                row = box.row(align=True)
+                row.operator("bim.edit_application", icon="CHECKMARK")
+                row.operator("bim.disable_editing_application", icon="CANCEL", text="")
+                bonsai.bim.helper.draw_attributes(props.application_attributes, box)
+            else:
+                row = layout.row(align=True)
+                row.label(text=app_data["name"])
+                op = row.operator("bim.enable_editing_application", icon="GREASEPENCIL", text="")
+                op.application_id = app_data["id"]
+                row.operator("bim.remove_application", icon="X", text="").application_id = app_data["id"]

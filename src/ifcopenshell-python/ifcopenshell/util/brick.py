@@ -19,8 +19,9 @@
 import os
 import json
 import ifcopenshell
-import ifcopenshell.util.element
 import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.system
 from typing import Union
 
 

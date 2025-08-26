@@ -28,10 +28,12 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
 from mathutils import Color
-from typing import Union, Any, Optional, Literal, TYPE_CHECKING, Sequence
+from typing import Union, Any, Optional, Literal, TYPE_CHECKING
+from collections.abc import Sequence
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties
+    from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties, ColourRgb
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -516,7 +518,11 @@ class Style(bonsai.core.tool.Style):
         return results
 
     @classmethod
-    def get_style_ui_props_attributes(cls, style_type: str) -> Union[bpy.types.PropertyGroup, None]:
+    def get_style_ui_props_attributes(cls, style_type: str) -> Union[
+        bpy.types.bpy_prop_collection_idprop[Attribute],
+        bpy.types.bpy_prop_collection_idprop[ColourRgb],
+        None,
+    ]:
         props = tool.Style.get_style_props()
         if style_type == "IfcExternallyDefinedSurfaceStyle":
             return props.external_style_attributes
@@ -554,7 +560,7 @@ class Style(bonsai.core.tool.Style):
         props = cls.get_style_props()
         attributes = props.attributes
         attributes.clear()
-        bonsai.bim.helper.import_attributes2(style, attributes)
+        bonsai.bim.helper.import_attributes(style, attributes)
 
     @classmethod
     def has_blender_external_style(cls, style_elements: dict[str, ifcopenshell.entity_instance]) -> bool:
@@ -608,7 +614,10 @@ class Style(bonsai.core.tool.Style):
     def assign_style_to_object(cls, style: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
         """assigns `style` to `object` current representation"""
         representation = tool.Geometry.get_active_representation(obj)
-        tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
+        assert representation
+        ifcopenshell.api.style.assign_representation_styles(
+            tool.Ifc.get(), shape_representation=representation, styles=[style]
+        )
 
     @classmethod
     def assign_style_to_representation_item(

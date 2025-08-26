@@ -61,29 +61,27 @@ class UnitsData:
             return ifcopenshell.util.unit.get_full_unit_name(unit)
 
     @classmethod
-    def unit_classes(cls):
-        declarations = ifcopenshell.util.schema.get_subtypes(tool.Ifc.schema().declaration_by_name("IfcNamedUnit"))
+    def unit_classes(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        assert (entity := tool.Ifc.schema().declaration_by_name("IfcNamedUnit").as_entity())
+        declarations = ifcopenshell.util.schema.get_subtypes(entity)
         version = tool.Ifc.get_schema()
+        classes = sorted([d.name() for d in declarations]) + ["IfcDerivedUnit", "IfcMonetaryUnit"]
         results = [
-            (c, c, get_entity_doc(version, c).get("description", "")) for c in sorted([d.name() for d in declarations])
+            (
+                c,
+                c,
+                get_entity_doc(version, c).get("description", ""),
+                tool.Unit.get_icon_for_unit_class(c),
+                i,
+            )
+            for i, c in enumerate(classes)
         ]
-        results.extend(
-            [
-                ("IfcDerivedUnit", "IfcDerivedUnit", get_entity_doc(version, "IfcDerivedUnit").get("description", "")),
-                (
-                    "IfcMonetaryUnit",
-                    "IfcMonetaryUnit",
-                    get_entity_doc(version, "IfcMonetaryUnit").get("description", ""),
-                ),
-            ]
-        )
         return results
 
     @classmethod
     def named_unit_types(cls):
-        values = ifcopenshell.util.attribute.get_enum_items(
-            tool.Ifc.schema().declaration_by_name("IfcNamedUnit").all_attributes()[1]
-        )
+        assert (entity := tool.Ifc.schema().declaration_by_name("IfcNamedUnit").as_entity())
+        values = ifcopenshell.util.attribute.get_enum_items(entity.all_attributes()[1])
         return [(c, c, "") for c in sorted(values)]
 
     @classmethod

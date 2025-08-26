@@ -86,6 +86,7 @@ src/bonsai/bonsai/bim/data/build/
 src/bonsai/bonsai/bim/data/gantt/index.html
 src/bonsai/bonsai/bim/data/gantt/jsgantt.js
 src/bonsai/bonsai/bim/data/gantt/jsgantt.css
+src/bonsai/bonsai/bim/data/webui/static/js/jquery.min.js
 
 src/bonsai/drawings
 src/bonsai/layouts

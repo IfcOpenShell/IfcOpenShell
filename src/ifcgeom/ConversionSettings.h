@@ -40,7 +40,7 @@ namespace ifcopenshell {
 			struct HasDefault<T, decltype((void)T::defaultvalue, 0)> : std::true_type { };
 #endif
 
-			template <typename Derived, typename T>
+			template <typename Derived, typename T, bool Internal=false>
 			struct SettingBase {
 				typedef T base_type;
 
@@ -61,7 +61,9 @@ namespace ifcopenshell {
 							return x;
 						}
 					};
-					if constexpr (std::is_same_v<T, bool>) {
+					if constexpr (Internal) {
+						// do nothing, this is an internal setting and not supposed to be set from the command line
+					} else if constexpr (std::is_same_v<T, bool>) {
 						// @todo bool_switch doesn't work with optional unfortunately...
 						value.emplace();
 						desc.add_options()(Derived::name, apply_default(po::bool_switch(&*value)), Derived::description);
@@ -120,19 +122,19 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
-			struct LengthUnit : public SettingBase<LengthUnit, double> {
+			struct LengthUnit : public SettingBase<LengthUnit, double, true> {
 				static constexpr const char* const name = "length-unit";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 1.0;
 			};
 
-			struct PlaneUnit : public SettingBase<PlaneUnit, double> {
+			struct PlaneUnit : public SettingBase<PlaneUnit, double, true> {
 				static constexpr const char* const name = "angle-unit";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 1.0;
 			};
 
-			struct Precision : public SettingBase<Precision, double> {
+			struct Precision : public SettingBase<Precision, double, true> {
 				static constexpr const char* const name = "precision";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 0.00001;
@@ -228,17 +230,17 @@ namespace ifcopenshell {
 
 			struct ContextIds : public SettingBase<ContextIds, std::set<int>> {
 				static constexpr const char* const name = "context-ids";
-				static constexpr const char* const description = "";
+				static constexpr const char* const description = "List of comma separated context ids to process - e.g. '15,29' (no quotes needed).";
 			};
 
-			struct ContextTypes : public SettingBase<ContextIds, std::set<std::string>> {
+			struct ContextTypes : public SettingBase<ContextTypes, std::set<std::string>> {
 				static constexpr const char* const name = "context-types";
-				static constexpr const char* const description = "";
+				static constexpr const char* const description = "Currently option has no effect.";
 			};
 
-			struct ContextIdentifiers : public SettingBase<ContextIds, std::set<std::string>> {
+			struct ContextIdentifiers : public SettingBase<ContextIdentifiers, std::set<std::string>> {
 				static constexpr const char* const name = "context-identifiers";
-				static constexpr const char* const description = "";
+				static constexpr const char* const description = "Currently option has no effect.";
 			};
 
 			enum OutputDimensionalityTypes {
@@ -251,7 +253,10 @@ namespace ifcopenshell {
 
 			struct OutputDimensionality : public SettingBase<OutputDimensionality, OutputDimensionalityTypes> {
 				static constexpr const char* const name = "dimensionality";
-				static constexpr const char* const description = "Specifies whether to include curves and/or surfaces and solids in the output result. Defaults to only surfaces and solids.";
+				static constexpr const char* const description =
+					"Specifies whether to include curves and/or surfaces and solids in the output result. "
+					"Defaults to only surfaces and solids (SURFACES_AND_SOLIDS). "
+					"Other possible values are CURVES, CURVES_SURFACES_AND_SOLIDS.";
 				static constexpr OutputDimensionalityTypes defaultvalue = SURFACES_AND_SOLIDS;
 			};
 
@@ -342,6 +347,12 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			struct PermissiveShapeReuse : public SettingBase<PermissiveShapeReuse, bool> {
+				static constexpr const char* const name = "permissive-shape-reuse";
+				static constexpr const char* const description = "Traverse geometry-level transformations and apply to product-level placement in order to increase reuse of geometries";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct ForceSpaceTransparency : public SettingBase<ForceSpaceTransparency, double> {
 				static constexpr const char* const name = "force-space-transparency";
 				static constexpr const char* const description = "Overrides transparency of spaces in geometry output.";
@@ -351,6 +362,12 @@ namespace ifcopenshell {
 				static constexpr const char* const name = "circle-segments";
 				static constexpr const char* const description = "Number of segments to approximate full circles in CGAL kernel.";
 				static constexpr int defaultvalue = 16;
+			};
+
+			struct CgalSmoothAngleDegrees : public SettingBase<CgalSmoothAngleDegrees, double> {
+				static constexpr const char* const name = "cgal-smooth-angle-degrees";
+				static constexpr const char* const description = "Angle in degrees under which adjacent facets will have averaged vertex normals in CGAL output. NB irrespective of original IFC geometry types. Defaults to -1 to disable smoothing.";
+				static constexpr double defaultvalue = -1.;
 			};
 
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
@@ -420,6 +437,39 @@ namespace ifcopenshell {
 				static constexpr const char* const name = "cgal-original-edges";
 				static constexpr const char* const description = "Try to emit original edge face boundary edges instead of recomputed ones based on face normal. Falls back to triangulated data in case of boolean operands and faces with holes.";
 				static constexpr bool defaultvalue = false;
+			};
+
+			struct OcctNoCleanTriangulation : public SettingBase<OcctNoCleanTriangulation, bool, true> {
+				static constexpr const char* const name = "no-clean-triangulation";
+				static constexpr const char* const description = "Don't clean triangulations, might cause memory leaks";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct CacheShapes : public SettingBase<CacheShapes, bool> {
+				static constexpr const char* const name = "cache-shapes";
+				static constexpr const char* const description = "Experimental as not all topology hash functions fully implemented";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct DeferProcessingFirstElement : public SettingBase<DeferProcessingFirstElement, bool, true> {
+				static constexpr const char* const name = "defer-processing-first-element";
+				static constexpr const char* const description = "Don't process first element in Iterator::initialize call()";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct MaxOffset : public SettingBase<MaxOffset, double> {
+				static constexpr const char* const name = "max-offset";
+				static constexpr const char* const description = "Maximum translation offset to be observed after which median offset in model gets removed and logged. Requires --no-parallel-mapping.";
+			};
+
+			struct MaxOffsetDeviation : public SettingBase<MaxOffsetDeviation, double> {
+				static constexpr const char* const name = "max-offset-deviation";
+				static constexpr const char* const description = "To retain field of view, completely remove elements outside of the median offset. Requires --no-parallel-mapping.";
+			};
+
+			struct ApplyOffset : public SettingBase<ApplyOffset, std::vector<double>> {
+				static constexpr const char* const name = "apply-offset";
+				static constexpr const char* const description = "Slight variation of --model-offset where large offsets are applied by negating existing large offsets to retain maximum precision. Requires --no-parallel-mapping.";
 			};
 		}
 		
@@ -596,7 +646,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset>
 		>
 		{};
 }

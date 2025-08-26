@@ -22,6 +22,7 @@ import ifcopenshell.api.feature
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.api.geometry
+import ifcopenshell.util.placement
 
 
 class TestAddFeature(test.bootstrap.IFC4X3):

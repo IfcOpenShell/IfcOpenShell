@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.module.fm.data import FMData
 from bonsai.bim.prop import MultipleFileSelect, StrProperty
 from bpy.types import PropertyGroup
@@ -30,9 +31,10 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal
 
 
-def get_engine(self, context):
+def get_engine(self: "BIMFMProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not FMData.is_loaded:
         FMData.load()
     return FMData.data["engine"]
@@ -57,3 +59,10 @@ class BIMFMProperties(PropertyGroup):
         default="ods",
         options=set(),
     )
+
+    if TYPE_CHECKING:
+        ifc_files: MultipleFileSelect
+        spreadsheet_files: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        should_load_from_memory: bool
+        engine: str
+        format: Literal["csv", "xlsx", "ods"]

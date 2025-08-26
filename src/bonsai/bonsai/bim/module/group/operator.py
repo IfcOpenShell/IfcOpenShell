@@ -19,10 +19,11 @@
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.group
-import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
 import json
+from natsort import natsorted
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -30,15 +31,17 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Load Groups"
     bl_options = {"REGISTER", "UNDO"}
 
+    expanded_groups: list[int]
+
     def _execute(self, context):
-        self.props = context.scene.BIMGroupProperties
-        self.expanded_groups = json.loads(context.scene.ExpandedGroups.json_string)
+        self.props = tool.Blender.get_group_props()
+        self.expanded_groups = json.loads(self.props.expanded_groups_json)
         self.props.groups.clear()
 
         groups = [
             group for group in tool.Ifc.get().by_type("IfcGroup", include_subtypes=False) if not group.HasAssignments
         ]
-        sorted_groups = sorted(groups, key=lambda group: group.Name or "Unnamed")
+        sorted_groups = natsorted(groups, key=lambda group: group.Name or "Unnamed")
 
         for group in sorted_groups:
             self.load_group(group)
@@ -47,27 +50,28 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.disable_editing_group()
         return {"FINISHED"}
 
-    def load_group(self, group, tree_depth=0):
+    def load_group(self, group: ifcopenshell.entity_instance, tree_depth: int = 0) -> None:
         new = self.props.groups.add()
         new.ifc_definition_id = group.id()
-        new.name = group.Name or "Unnamed"
+        new["name"] = group.Name or "Unnamed"
         new.tree_depth = tree_depth
         new.has_children = False
         new.is_expanded = group.id() in self.expanded_groups
 
+        related_groups: list[ifcopenshell.entity_instance]
         related_groups = [
             related_object
             for rel in group.IsGroupedBy or []
             for related_object in rel.RelatedObjects
             if related_object.is_a("IfcGroup")
         ]
-        sorted_related_groups = sorted(related_groups, key=lambda group: group.Name or "Unnamed")
+        sorted_related_groups = natsorted(related_groups, key=lambda group: group.Name or "Unnamed")
 
-        for related_group in sorted_related_groups:
+        if sorted_related_groups:
             new.has_children = True
-            if not new.is_expanded:
-                return
-            self.load_group(related_group, tree_depth=tree_depth + 1)
+            if new.is_expanded:
+                for related_group in sorted_related_groups:
+                    self.load_group(related_group, tree_depth=tree_depth + 1)
 
 
 class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
@@ -79,12 +83,14 @@ class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
     option: bpy.props.StringProperty(name="Expand or Collapse")
 
     def _execute(self, context):
-        expanded_groups = set(json.loads(context.scene.ExpandedGroups.json_string))
+        props = tool.Blender.get_group_props()
+        expanded_groups: set[int]
+        expanded_groups = set(json.loads(props.expanded_groups_json))
         if self.option == "Expand":
             expanded_groups.add(self.ifc_definition_id)
         elif self.ifc_definition_id in expanded_groups:
             expanded_groups.remove(self.ifc_definition_id)
-        context.scene.ExpandedGroups.json_string = json.dumps(list(expanded_groups))
+        props.expanded_groups_json = json.dumps(list(expanded_groups))
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 
@@ -95,8 +101,9 @@ class DisableGroupEditingUI(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        context.scene.BIMGroupProperties.is_editing = False
-        context.scene.BIMGroupProperties.active_group_id = 0
+        props = tool.Blender.get_group_props()
+        props.is_editing = False
+        props.active_group_id = 0
         return {"FINISHED"}
 
 
@@ -106,11 +113,17 @@ class AddGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     group: bpy.props.IntProperty()
 
+    @classmethod
+    def description(cls, context, properties) -> str:
+        if properties.group:
+            return "Add new subgroup to the active IfcGroup."
+        return "Add new IfcGroup."
+
     def _execute(self, context):
-        result = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
+        result = ifcopenshell.api.group.add_group(tool.Ifc.get())
         if self.group:
-            ifcopenshell.api.run(
-                "group.assign_group", tool.Ifc.get(), products=[result], group=tool.Ifc.get().by_id(self.group)
+            ifcopenshell.api.group.assign_group(
+                tool.Ifc.get(), products=[result], group=tool.Ifc.get().by_id(self.group)
             )
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
@@ -122,7 +135,7 @@ class EditGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMGroupProperties
+        props = tool.Blender.get_group_props()
         attributes = bonsai.bim.helper.export_attributes(props.group_attributes)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.group.edit_group(ifc_file, group=ifc_file.by_id(props.active_group_id), attributes=attributes)
@@ -138,7 +151,7 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        ifcopenshell.api.run("group.remove_group", self.file, **{"group": self.file.by_id(self.group)})
+        ifcopenshell.api.group.remove_group(self.file, group=self.file.by_id(self.group))
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 
@@ -150,9 +163,9 @@ class EnableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMGroupProperties
+        props = tool.Blender.get_group_props()
         props.group_attributes.clear()
-        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
+        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.group), props.group_attributes)
         props.active_group_id = self.group
         return {"FINISHED"}
 
@@ -163,7 +176,8 @@ class DisableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        context.scene.BIMGroupProperties.active_group_id = 0
+        props = tool.Blender.get_group_props()
+        props.active_group_id = 0
         return {"FINISHED"}
 
 
@@ -183,9 +197,9 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
         if not self.is_assigning:
             return bpy.ops.bim.unassign_group(group=self.group)
         products = [
-            tool.Ifc.get_entity(o)
+            element
             for o in tool.Blender.get_selected_objects(include_active=False)
-            if tool.Ifc.get_entity(o)
+            if (element := tool.Ifc.get_entity(o))
         ]
         ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
 

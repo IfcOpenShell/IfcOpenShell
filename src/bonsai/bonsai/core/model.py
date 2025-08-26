@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Literal, Iterable
+from typing import TYPE_CHECKING, Optional, Literal
 
 if TYPE_CHECKING:
     import bpy
@@ -32,7 +32,11 @@ if TYPE_CHECKING:
 
 
 def unjoin_walls(
-    ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner: DumbWallJoiner, model: tool.Model
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    geometry: type[tool.Geometry],
+    joiner: DumbWallJoiner,
+    model: type[tool.Model],
 ) -> None:
     """Unjoin selected walls."""
     for obj in blender.get_selected_objects():
@@ -45,27 +49,28 @@ def unjoin_walls(
 
 
 def extend_walls(
-    ifc: tool.Ifc,
-    blender: tool.Blender,
-    geometry: tool.Geometry,
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    geometry: type[tool.Geometry],
     joiner: DumbWallJoiner,
-    model: tool.Model,
+    model: type[tool.Model],
     target: Vector,
+    connection: Optional[str] = None,
 ) -> None:
     """Extend selected walls to the target."""
     for obj in blender.get_selected_objects():
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
             continue
         geometry.clear_scale(obj)
-        joiner.extend(obj, target)
+        joiner.extend(obj, target, connection)
 
 
 def join_walls_LV(
-    ifc: tool.Ifc,
-    blender: tool.Blender,
-    geometry: tool.Geometry,
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    geometry: type[tool.Geometry],
     joiner: DumbWallJoiner,
-    model: tool.Model,
+    model: type[tool.Model],
     join_type: Literal["L", "V"] = "L",
 ) -> None:
     selected_objs = [
@@ -85,7 +90,7 @@ def join_walls_LV(
     joiner.connect(another_selected_object, active_obj)
 
 
-def offset_walls(ifc: tool.Ifc, blender: tool.Blender, model: tool.Model, offset_type: OffsetType):
+def offset_walls(ifc: type[tool.Ifc], blender: type[tool.Blender], model: type[tool.Model], offset_type: OffsetType):
     objs = [
         obj
         for obj in blender.get_selected_objects()
@@ -97,7 +102,11 @@ def offset_walls(ifc: tool.Ifc, blender: tool.Blender, model: tool.Model, offset
 
 
 def align_walls(
-    ifc: tool.Ifc, blender: tool.Blender, model: tool.Model, aligner: DumbWallAligner, align_type: AlignType
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    model: type[tool.Model],
+    aligner: DumbWallAligner,
+    align_type: AlignType,
 ):
     reference_obj = blender.get_active_object(is_selected=True)
     if not (e := ifc.get_entity(reference_obj) or not model.get_usage_type(e) == "LAYER2"):
@@ -121,7 +130,9 @@ def align_walls(
             aligner.align_last_layer(obj)
 
 
-def align_objects(blender: tool.Blender, model: tool.Model, align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"]):
+def align_objects(
+    blender: type[tool.Blender], model: type[tool.Model], align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"]
+):
     reference_obj = blender.get_active_object(is_selected=True)
     objs = [o for o in blender.get_selected_objects() if o != reference_obj]
     if not reference_obj or not objs:
@@ -130,9 +141,9 @@ def align_objects(blender: tool.Blender, model: tool.Model, align_type: Literal[
 
 
 def extend_wall_to_slab(
-    ifc: tool.Ifc,
-    geometry: tool.Geometry,
-    model: tool.Model,
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
+    model: type[tool.Model],
     slab_obj: bpy.types.Object,
     wall_objs: list[bpy.types.Object],
 ) -> None:
@@ -149,7 +160,11 @@ def extend_wall_to_slab(
 
 
 def join_walls_TZ(
-    ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner: DumbWallJoiner, model: tool.Model
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    geometry: type[tool.Geometry],
+    joiner: DumbWallJoiner,
+    model: type[tool.Model],
 ) -> None:
     selected_objs = [
         o

@@ -45,6 +45,8 @@ namespace IfcGeom {
 
 		bool is_nested_compound_of_solid(const TopoDS_Shape& s, int depth = 0);
 
+		// Creates a solid from a compound of faces. When there are multiple connected components,
+		// a compound of solids is returned.
 		bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid, double tol);
 		bool shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li);
 		bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& solid, double tol, bool force_sewing = false);

@@ -25,35 +25,35 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def add_library(ifc: tool.Ifc) -> ifcopenshell.entity_instance:
+def add_library(ifc: type[tool.Ifc]) -> ifcopenshell.entity_instance:
     return ifc.run("library.add_library", name="Unnamed")
 
 
-def remove_library(ifc: tool.Ifc, library: ifcopenshell.entity_instance) -> None:
+def remove_library(ifc: type[tool.Ifc], library: ifcopenshell.entity_instance) -> None:
     ifc.run("library.remove_library", library=library)
 
 
-def enable_editing_library_references(library_tool: tool.Library, library: ifcopenshell.entity_instance) -> None:
+def enable_editing_library_references(library_tool: type[tool.Library], library: ifcopenshell.entity_instance) -> None:
     library_tool.set_editing_mode("REFERENCES")
     library_tool.set_active_library(library)
     library_tool.import_references(library)
 
 
-def disable_editing_library_references(library: tool.Library) -> None:
+def disable_editing_library_references(library: type[tool.Library]) -> None:
     library.clear_editing_mode()
     library.set_active_library(None)
 
 
-def enable_editing_library(library: tool.Library) -> None:
+def enable_editing_library(library: type[tool.Library]) -> None:
     library.set_editing_mode("LIBRARY")
     library.import_library_attributes(library.get_active_library())
 
 
-def disable_editing_library(library: tool.Library) -> None:
+def disable_editing_library(library: type[tool.Library]) -> None:
     library.set_editing_mode("REFERENCES")
 
 
-def edit_library(ifc: tool.Ifc, library: tool.Library) -> None:
+def edit_library(ifc: type[tool.Ifc], library: type[tool.Library]) -> None:
     library.set_editing_mode("REFERENCES")
     active_library = library.get_active_library()
     attributes = library.export_library_attributes()
@@ -61,29 +61,31 @@ def edit_library(ifc: tool.Ifc, library: tool.Library) -> None:
     library.import_references(active_library)
 
 
-def add_library_reference(ifc: tool.Ifc, library: tool.Library) -> ifcopenshell.entity_instance:
+def add_library_reference(ifc: type[tool.Ifc], library: type[tool.Library]) -> ifcopenshell.entity_instance:
     active_library = library.get_active_library()
     reference = ifc.run("library.add_reference", library=active_library)
     library.import_references(active_library)
     return reference
 
 
-def remove_library_reference(ifc: tool.Ifc, library: tool.Library, reference: ifcopenshell.entity_instance) -> None:
+def remove_library_reference(
+    ifc: type[tool.Ifc], library: type[tool.Library], reference: ifcopenshell.entity_instance
+) -> None:
     ifc.run("library.remove_reference", reference=reference)
     library.import_references(library.get_active_library())
 
 
-def enable_editing_library_reference(library: tool.Library, reference: ifcopenshell.entity_instance) -> None:
+def enable_editing_library_reference(library: type[tool.Library], reference: ifcopenshell.entity_instance) -> None:
     library.set_editing_mode("REFERENCE")
     library.set_active_reference(reference)
     library.import_reference_attributes(reference)
 
 
-def disable_editing_library_reference(library: tool.Library) -> None:
+def disable_editing_library_reference(library: type[tool.Library]) -> None:
     library.set_editing_mode("REFERENCES")
 
 
-def edit_library_reference(ifc: tool.Ifc, library: tool.Library) -> None:
+def edit_library_reference(ifc: type[tool.Ifc], library: type[tool.Library]) -> None:
     library.set_editing_mode("REFERENCES")
     active_reference = library.get_active_reference()
     attributes = library.export_reference_attributes()
@@ -91,9 +93,13 @@ def edit_library_reference(ifc: tool.Ifc, library: tool.Library) -> None:
     library.import_references(library.get_active_library())
 
 
-def assign_library_reference(ifc: tool.Ifc, obj: bpy.types.Object, reference: ifcopenshell.entity_instance) -> None:
+def assign_library_reference(
+    ifc: type[tool.Ifc], obj: bpy.types.Object, reference: ifcopenshell.entity_instance
+) -> None:
     ifc.run("library.assign_reference", products=[ifc.get_entity(obj)], reference=reference)
 
 
-def unassign_library_reference(ifc: tool.Ifc, obj: bpy.types.Object, reference: ifcopenshell.entity_instance) -> None:
+def unassign_library_reference(
+    ifc: type[tool.Ifc], obj: bpy.types.Object, reference: ifcopenshell.entity_instance
+) -> None:
     ifc.run("library.unassign_reference", products=[ifc.get_entity(obj)], reference=reference)

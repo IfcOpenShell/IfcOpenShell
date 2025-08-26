@@ -21,15 +21,16 @@ import ifcopenshell.api
 import ifcopenshell.api.project
 import ifcopenshell.guid
 import ifcopenshell.util.selector
+import ifcpatch
 from typing import Union
 from logging import Logger
 
 
-class Patcher:
+class Patcher(ifcpatch.BasePatcher):
     def __init__(
         self,
         file: ifcopenshell.file,
-        logger: Logger,
+        logger: Union[Logger, None] = None,
         query: str = "IfcWall",
         assume_asset_uniqueness_by_name: bool = True,
     ):
@@ -62,8 +63,7 @@ class Patcher:
             # Extract all walls and slabs
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcWall, IfcSlab"]})
         """
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
         self.query = query
         self.assume_asset_uniqueness_by_name = assume_asset_uniqueness_by_name
 

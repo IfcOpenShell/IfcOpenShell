@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel
 from bonsai.bim.module.clash.data import ClashData
+from typing import TYPE_CHECKING, assert_never
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.clash.prop import BIMClashProperties, ClashSet, SmartClashGroup, Clash
 
 
 class BIM_PT_ifcclash(Panel):
@@ -36,6 +41,7 @@ class BIM_PT_ifcclash(Panel):
         if not ClashData.is_loaded:
             ClashData.load()
 
+        assert self.layout
         layout = self.layout
         props = tool.Clash.get_clash_props()
 
@@ -74,46 +80,62 @@ class BIM_PT_ifcclash(Panel):
             row.prop(clash_set, "clearance")
             row = layout.row()
             row.prop(clash_set, "check_all")
+        else:
+            assert_never(clash_set.mode)
 
-        row = layout.row(align=True)
-        row.label(text="Group A:", icon="OUTLINER_OB_POINTCLOUD")
-        row.operator("bim.add_clash_source", icon="ADD", text="").group = "a"
-
-        for index, source in enumerate(clash_set.a):
+        def draw_clash_set_group(group: tool.Clash.ClashSourceGroup) -> None:
             row = layout.row(align=True)
-            row.prop(source, "name", text="")
-            row.prop(source, "mode", text="")
-            op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
-            op.index = index
-            op.group = "a"
-            op = row.operator("bim.remove_clash_source", icon="X", text="")
-            op.index = index
-            op.group = "a"
+            row.label(text=f"Group {group.upper()}:", icon="OUTLINER_OB_POINTCLOUD")
+            row.operator("bim.add_clash_source", icon="ADD", text="").group = group
 
-            if source.mode != "a":
-                bonsai.bim.helper.draw_filter(
-                    layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_a_{index}"
-                )
+            sources = clash_set.get_clash_sources_group(group)
+            if not sources:
+                return
+            layout_ = layout.box()
+            for index, source in enumerate(sources):
+                row = layout_.row(align=True)
+                row.column().label(text="", icon="POINTCLOUD_POINT")
 
-        row = layout.row(align=True)
-        row.label(text="Group B:", icon="OUTLINER_OB_POINTCLOUD")
-        row.operator("bim.add_clash_source", icon="ADD", text="").group = "b"
+                # Draw user attention to empty filepaths.
+                col = row.column()
+                col.alert = not bool(source.name)
+                col.prop(source, "name", text="", placeholder="source.ifc")
 
-        for index, source in enumerate(clash_set.b):
-            row = layout.row(align=True)
-            row.prop(source, "name", text="")
-            row.prop(source, "mode", text="")
-            op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
-            op.index = index
-            op.group = "b"
-            op = row.operator("bim.remove_clash_source", icon="X", text="")
-            op.index = index
-            op.group = "b"
+                op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
+                op.index = index
+                op.group = group
+                # Make sure file selection sticks to "name" field.
+                row.label(text="", icon="BLANK1")
 
-            if source.mode != "a":
-                bonsai.bim.helper.draw_filter(
-                    layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_b_{index}"
-                )
+                row.prop(source, "mode", text="")
+                op = row.operator("bim.remove_clash_source", icon="X", text="")
+                op.index = index
+                op.group = group
+
+                if source.mode != "a":
+
+                    def draw_filter(layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+                        bonsai.bim.helper.draw_filter(
+                            layout,
+                            source.filter_groups,
+                            ClashData,
+                            f"clash_{props.active_clash_set_index}_{group}_{index}",
+                        )
+
+                    bonsai.bim.helper.draw_expandable_panel(
+                        layout_,
+                        context,
+                        "Filter",
+                        draw_filter,
+                        default_closed=True,
+                        panel_id=f"filter_{group}_{index}",
+                    )
+
+        layout.separator()
+        draw_clash_set_group("a")
+        layout.separator()
+        draw_clash_set_group("b")
+        layout.separator()
 
         row = layout.row()
         row.prop(props, "should_create_clash_snapshots")
@@ -125,11 +147,26 @@ class BIM_PT_ifcclash(Panel):
         op.filepath = props.export_path
 
         row = layout.row()
-        row.label(text=f"{len(clash_set.clashes)} Clashes Found", icon="PIVOT_CURSOR")
+        if clash_set.clashes_loaded:
+            row.column().label(text=f"{len(clash_set.clashes)} Clashes Found", icon="PIVOT_CURSOR")
 
-        layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
-        row = layout.row()
-        row.operator("bim.select_clash")
+            col = row.column()
+            col.alignment = "RIGHT"
+            col.prop(clash_set, "clashes_loaded", text="", icon="TRASH", invert_checkbox=True)
+
+            split = layout.split(factor=0.07, align=True)
+            split.label(text="#")
+
+            row = split.row(align=True)
+            row.label(text="Group A Element")
+            row.label(text="Group B Element")
+            row.label(text="Type")
+
+            layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
+            row = layout.row()
+            row.operator("bim.select_clash")
+        else:
+            row.label(text="Clashes Are Not Loaded", icon="PIVOT_CURSOR")
 
 
 class BIM_PT_clash_manager(Panel):
@@ -155,6 +192,7 @@ class BIM_PT_smart_clash_manager(Panel):
     bl_parent_id = "BIM_PT_clash_manager"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         props = tool.Clash.get_clash_props()
 
@@ -188,8 +226,16 @@ class BIM_PT_smart_clash_manager(Panel):
 
 
 class BIM_UL_clash_sets(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMClashProperties,
+        item: ClashSet,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             layout.prop(item, "name", text="", emboss=False)
         else:
@@ -197,8 +243,16 @@ class BIM_UL_clash_sets(bpy.types.UIList):
 
 
 class BIM_UL_smart_groups(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMClashProperties,
+        item: SmartClashGroup,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             layout.label(text=str(item.number), translate=False, icon="NONE", icon_value=0)
         else:
@@ -206,11 +260,30 @@ class BIM_UL_smart_groups(bpy.types.UIList):
 
 
 class BIM_UL_clashes(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMClashProperties,
+        item: Clash,
+        icon,
+        active_data,
+        active_propname,
+        index,
+        fit_flag,
+    ) -> None:
         if item:
-            row = layout.row(align=True)
+            split = layout.split(factor=0.05, align=True)
+            split.label(text=str(index + 1))
+
+            row = split.row(align=False)
             row.label(text=str(item.a_name), translate=False, icon="NONE", icon_value=0)
             row.label(text=str(item.b_name), translate=False, icon="NONE", icon_value=0)
+
+            col = row.column()
+            col.enabled = False
+            col.prop(item, "clash_type", text="")
+
             row.prop(item, "status", text="")
         else:
             layout.label(text="", translate=False)

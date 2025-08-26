@@ -98,7 +98,9 @@ class PsetTemplatesData:
         pset_type = next(iter(pset_types)) if len(pset_types) == 1 else None
 
         schema = ifcopenshell.schema_by_name(ifc_file.schema)
-        attribute = schema.declaration_by_name("IfcSimplePropertyTemplate").attributes()[0]
+        entity = schema.declaration_by_name("IfcSimplePropertyTemplate").as_entity()
+        assert entity
+        attribute = entity.attributes()[0]
         enum_items = [
             a
             for a in ifcopenshell.util.attribute.get_enum_items(attribute)

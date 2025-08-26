@@ -18,7 +18,8 @@
 
 import ifcopenshell
 import ifcopenshell.api.georeference
-from ifcpatch.recipes import OffsetObjectPlacements, SetWorldCoordinateSystem
+import ifcopenshell.util.geolocation
+from ifcpatch.recipes import OffsetObjectPlacements, SetWorldCoordinateSystem, ResetSpatialElementLocations
 import typing
 
 
@@ -36,6 +37,7 @@ class Patcher:
         h: typing.Union[str, float] = "0",
         gn_angle: typing.Union[str, float] = "0",
         rotate_angle: typing.Union[str, float] = "0",
+        reset_spatial_elements: bool = True,
     ):
         """Sets local coordinates XYZ as a (false) origin that correlates to map coordinates ENH
 
@@ -82,6 +84,7 @@ class Patcher:
         self.h = float(h)
         self.gn_angle = float(gn_angle)
         self.rotate_angle = float(rotate_angle)
+        self.reset_spatial_elements = reset_spatial_elements
 
     def patch(self):
         SetWorldCoordinateSystem.Patcher(self.file, self.logger, x=0, y=0, z=0, ax=0, ay=0, az=0).patch()
@@ -110,6 +113,8 @@ class Patcher:
                 should_rotate_first=False,
                 ax=self.rotate_angle or None,
             ).patch()
+            if self.reset_spatial_elements:
+                ResetSpatialElementLocations.Patcher(self.file, self.logger).patch()
         else:
             ifcopenshell.api.georeference.remove_georeferencing(self.file)
             OffsetObjectPlacements.Patcher(
@@ -121,6 +126,8 @@ class Patcher:
                 should_rotate_first=False,
                 ax=self.rotate_angle or None,
             ).patch()
+            if self.reset_spatial_elements:
+                ResetSpatialElementLocations.Patcher(self.file, self.logger).patch()
             OffsetObjectPlacements.Patcher(
                 self.file,
                 self.logger,

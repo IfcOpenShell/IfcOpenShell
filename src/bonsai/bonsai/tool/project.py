@@ -35,10 +35,10 @@ from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING, Generator
+from typing import Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import BIMProjectProperties
+    from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings
 
 HiearchyDict = dict[ifcopenshell.entity_instance, "HiearchyDict"]
 
@@ -47,6 +47,11 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def get_project_props(cls) -> BIMProjectProperties:
         return bpy.context.scene.BIMProjectProperties
+
+    @classmethod
+    def get_measure_tool_settings(cls) -> MeasureToolSettings:
+        assert (scene := bpy.context.scene)
+        return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
@@ -68,8 +73,8 @@ class Project(bonsai.core.tool.Project):
             bpy.ops.bim.load_type_thumbnails()
 
     @classmethod
-    def load_pset_templates(cls) -> None:
-        props = tool.Blender.get_bim_props()
+    def load_project_pset_templates(cls) -> None:
+        props = tool.Blender.get_addon_preferences()
         pset_dir = tool.Ifc.resolve_uri(props.pset_dir)
         if os.path.isdir(pset_dir):
             for path in Path(pset_dir).glob("*.ifc"):
@@ -159,7 +164,6 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def set_default_modeling_dimensions(cls) -> None:
         props = tool.Model.get_model_props()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props.extrusion_depth = 3
         props.length = 1
         props.rl1 = 0
@@ -269,14 +273,7 @@ class Project(bonsai.core.tool.Project):
         for link in links:
             filepaths.add(Path(link.name))
 
-        links_document = next(
-            (
-                document
-                for document in ifc_file.by_type("IfcDocumentInformation")
-                if document.Name == "BBIM_Linked_Models"
-            ),
-            None,
-        )
+        links_document = cls.get_linked_models_document()
 
         if not filepaths and links_document is None:
             return

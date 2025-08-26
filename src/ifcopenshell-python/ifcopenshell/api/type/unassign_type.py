@@ -63,7 +63,7 @@ def unassign_type(file: ifcopenshell.file, related_objects: list[ifcopenshell.en
         related_objects_set = set(rel.RelatedObjects) - related_objects_set
         if related_objects_set:
             rel.RelatedObjects = list(related_objects_set)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
         else:
             history = rel.OwnerHistory
             file.remove(rel)

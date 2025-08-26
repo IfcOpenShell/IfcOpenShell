@@ -32,7 +32,7 @@ from bonsai.bim.module.drawing.data import (
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.drawing.prop import DocProperties, Drawing
+    from bonsai.bim.module.drawing.prop import DocProperties, Drawing, Sheet
 
 
 class BIM_PT_camera(Panel):
@@ -71,8 +71,31 @@ class BIM_PT_camera(Panel):
         row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
+        # Drawing linked projects.
+        row = col.row(align=True)
+        row.prop(dprops, "should_draw_linked_projects")
+        if dprops.should_draw_linked_projects:
+            header, panel = self.layout.panel("links_to_draw")
+            header.label(text="Linked Projects to Draw", icon="OUTPUT")
+
+            pprops = tool.Project.get_project_props()
+            links = list(pprops.get_loaded_links())
+            if panel:
+                if links:
+                    for link in links:
+                        row = panel.row(align=True)
+                        split = row.split(factor=0.9)
+                        split.label(text=link.name, icon="FILE")
+                        split.prop(link, "include_in_drawings", text="")
+                else:
+                    panel.label(text="No IFC projects linked and loaded.")
+
         row = self.layout.row(align=True)
         row.prop(props, "target_view")
+
+        if props.target_view == "MODEL_VIEW":
+            row = self.layout.row()
+            row.prop(props, "camera_type")
 
         row = self.layout.row()
         row.prop(props, "linework_mode")
@@ -86,6 +109,24 @@ class BIM_PT_camera(Panel):
         row.prop(props, "width")
         row = self.layout.row()
         row.prop(props, "height")
+
+        render = context.scene.render
+        MEGAPIXELS_WARNING_THRESHOLD = 50
+        # See #6686.
+        if (
+            props.has_underlay
+            and str(render.engine) == "BLENDER_EEVEE_NEXT"
+            and ((megapixels := (render.resolution_x * render.resolution_y / 10**6)) > MEGAPIXELS_WARNING_THRESHOLD)
+        ):
+            box = self.layout.box()
+            box.label(
+                text=f"Resulting image size is {render.resolution_x} x {render.resolution_y} ({round(megapixels, 2)} MP).",
+                icon="ERROR",
+            )
+            box.label(
+                text=(f"Which is more than {MEGAPIXELS_WARNING_THRESHOLD} megapixels and will require a lot of VRAM.")
+            )
+            box.label(text="Underlay render might crash if VRAM requirement is not met.")
 
         row = self.layout.row()
         row.prop(camera_data, "clip_end", text="Depth")
@@ -169,12 +210,13 @@ class BIM_PT_drawing_underlay(Panel):
         return bool((camera := context.scene.camera) and tool.Ifc.get_entity(camera))
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         layout.use_property_split = True
         assert context.scene and (camera := context.scene.camera)
         dprops = tool.Drawing.get_document_props()
         props = tool.Drawing.get_camera_props(camera)
-        drawing_index_is_valid = props.active_drawing_style_index < len(dprops.drawing_styles)
+        drawing_style = props.get_active_drawing_style()
 
         if not DrawingsData.is_loaded:
             DrawingsData.load()
@@ -188,7 +230,7 @@ class BIM_PT_drawing_underlay(Panel):
             row.label(text="Current Shading Style:")
             row.label(text=current_shading_style)
         row.operator("bim.add_drawing_style", icon="ADD", text="")
-        if drawing_index_is_valid:
+        if drawing_style:
             row.operator("bim.remove_drawing_style", icon="X", text="").index = props.active_drawing_style_index
         row.operator("bim.reload_drawing_styles", icon="FILE_REFRESH", text="")
 
@@ -203,27 +245,14 @@ class BIM_PT_drawing_underlay(Panel):
             "active_drawing_style_index",
         )
 
-        if not drawing_index_is_valid:
+        if drawing_style is None:
             return
-        drawing_style = dprops.drawing_styles[props.active_drawing_style_index]
 
         row = layout.row(align=True)
         row.prop(drawing_style, "name")
 
         row = layout.row()
         row.prop(drawing_style, "render_type")
-        row = layout.row(align=True)
-        row.prop(drawing_style, "include_query")
-        row = layout.row(align=True)
-        row.prop(drawing_style, "exclude_query")
-
-        row = layout.row()
-        row.operator("bim.add_drawing_style_attribute")
-
-        for index, attribute in enumerate(drawing_style.attributes):
-            row = layout.row(align=True)
-            row.prop(attribute, "name", text="")
-            row.operator("bim.remove_drawing_style_attribute", icon="X", text="").index = index
 
         row = layout.row(align=True)
         row.operator("bim.save_drawing_style")
@@ -277,9 +306,6 @@ class BIM_PT_drawings(Panel):
                 row3 = row.row(align=True)
                 row3.alignment = "RIGHT"
 
-                row3.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="").drawing = (
-                    active_drawing.ifc_definition_id
-                )
                 row3.operator("bim.activate_model", icon="VIEW3D", text="")
 
                 row3.separator(factor=0.5, type="SPACE")
@@ -291,16 +317,6 @@ class BIM_PT_drawings(Panel):
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
-
-        # Commented out until federated drawing generation is rebuilt
-        # row = self.layout.row()
-        # row.operator("bim.add_ifc_file")
-
-        # for index, ifc_file in enumerate(self.props.ifc_files):
-        #     row = self.layout.row(align=True)
-        #     row.prop(ifc_file, "name", text="IFC #{}".format(index + 1))
-        #     row.operator("bim.select_doc_ifc_file", icon="FILE_FOLDER", text="").index = index
-        #     row.operator("bim.remove_ifc_file", icon="X", text="").index = index
 
 
 class BIM_PT_schedules(Panel):
@@ -422,6 +438,7 @@ class BIM_PT_sheets(Panel):
             draw_project_not_saved_ui(self)
             return
 
+        assert self.layout
         self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_sheets:
@@ -435,8 +452,8 @@ class BIM_PT_sheets(Panel):
         row.operator("bim.add_sheet", text="", icon="ADD")
         row.operator("bim.disable_editing_sheets", text="", icon="CANCEL")
 
-        if self.props.sheets and self.props.active_sheet_index < len(self.props.sheets):
-            active_sheet = self.props.sheets[self.props.active_sheet_index]
+        active_sheet = tool.Drawing.get_active_sheet_item()
+        if active_sheet:
             row = self.layout.row(align=True)
             row2 = row.row(align=True)
             if active_sheet.is_sheet:
@@ -501,17 +518,19 @@ class BIM_PT_product_assignments(Panel):
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get() or not context.active_object:
-            return
+            return False
         element = tool.Ifc.get_entity(context.active_object)
         if not element:
-            return
+            return False
         return element.is_a("IfcAnnotation")
 
     def draw(self, context):
         if not ProductAssignmentsData.is_loaded:
             ProductAssignmentsData.load()
 
-        props = context.active_object.BIMAssignedProductProperties
+        assert self.layout
+        assert (obj := context.active_object)
+        props = tool.Drawing.get_object_assigned_product_props(obj)
 
         if props.is_editing_product:
             row = self.layout.row(align=True)
@@ -597,7 +616,7 @@ class BIM_PT_text(Panel):
                 col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
 
         else:
-            text_data = DecoratorData.get_ifc_text_data(obj)
+            text_data = DecoratorData.get_text_data(obj)
 
             row = self.layout.row()
             row.operator("bim.enable_editing_text", icon="GREASEPENCIL")
@@ -618,7 +637,16 @@ class BIM_PT_text(Panel):
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
-    def draw_item(self, context, layout, data: DocProperties, item: Drawing, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: DocProperties,
+        item: Drawing,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if not item:
             layout.label(text="", translate=False)
             return
@@ -628,14 +656,22 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             row.label(text="", icon="BLANK1")
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
+            row.separator(factor=0.5, type="SPACE")
             row.prop(item, "name", text="", emboss=False)
+            row.separator(factor=0.25, type="SPACE")
             self.props = tool.Drawing.get_document_props()
             if (
                 self.props.drawings
                 and self.props.active_drawing_id
                 and item.ifc_definition_id == self.props.active_drawing_id
             ):
-                row.label(text="", icon="OUTLINER_OB_CAMERA")
+                row.operator("bim.activate_drawing", text="", icon="VIEW_CAMERA", emboss=True, depress=True).drawing = (
+                    item.ifc_definition_id
+                )
+            else:
+                row.operator("bim.activate_drawing", text="", icon="VIEW_CAMERA_UNSELECTED", emboss=False).drawing = (
+                    item.ifc_definition_id
+                )
         else:
             if item.target_view == "PLAN_VIEW":
                 icon = "UV_FACESEL"
@@ -650,18 +686,27 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             else:
                 icon = "CLIPUV_HLT"
             if item.is_expanded:
-                row.operator(
-                    "bim.contract_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                ).target_view = item.target_view
+                op = row.operator("bim.toggle_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN")
+                op.target_view = item.target_view
+                op.option = "CONTRACT"
             else:
-                row.operator(
-                    "bim.expand_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                ).target_view = item.target_view
+                op = row.operator("bim.toggle_target_view", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT")
+                op.target_view = item.target_view
+                op.option = "EXPAND"
             row.prop(item, "name", text="", icon=icon, emboss=False)
 
 
 class BIM_UL_sheets(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: DocProperties,
+        item: Sheet,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if not item:
             layout.label(text="", translate=False)
             return

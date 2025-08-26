@@ -39,7 +39,7 @@ class ExecuteIfcTester(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.IfcTesterProperties
+        props = tool.Tester.get_tester_props()
         if not props.should_load_from_memory and not props.ifc_files.single_file:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
@@ -48,7 +48,7 @@ class ExecuteIfcTester(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        props = context.scene.IfcTesterProperties
+        props = tool.Tester.get_tester_props()
 
         props.specifications.clear()
 
@@ -69,7 +69,8 @@ class ExecuteIfcTester(bpy.types.Operator):
         return {"FINISHED"}
 
     def execute_tester(self, ifc_data: ifcopenshell.file, ifc_path: str, specs_path: str) -> Union[set[str], None]:
-        props = bpy.context.scene.IfcTesterProperties
+        props = tool.Tester.get_tester_props()
+        props.failed_entities.clear()
 
         # No need for if-statement, just postponing lots of diffs.
         if True:
@@ -131,7 +132,7 @@ class SelectRequirement(bpy.types.Operator):
     req_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.IfcTesterProperties
+        props = tool.Tester.get_tester_props()
         report = tool.Tester.report
         props.old_index = self.spec_index
         failed_entities = report[self.spec_index]["requirements"][self.req_index]["failed_entities"]
@@ -168,7 +169,7 @@ class SelectFailedEntities(bpy.types.Operator):
     req_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.IfcTesterProperties
+        props = tool.Tester.get_tester_props()
         report = tool.Tester.report
         props.old_index = self.spec_index
         failed_entities = report[self.spec_index]["requirements"][self.req_index]["failed_entities"]

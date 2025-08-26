@@ -615,6 +615,8 @@ class BIM_UL_links(UIList):
                 op.filepath = item.name
             else:
                 row.prop(item, "name", text="")
+                op = row.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+                op.attribute_data_path = tool.Blender.get_full_data_path(item, "name")
                 op = row.operator("bim.load_link", text="", icon="LINKED")
                 op.filepath = item.name
                 op = row.operator("bim.unlink_ifc", text="", icon="X")
@@ -634,11 +636,18 @@ class BIM_PT_purge(Panel):
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
         layout.operator("bim.purge_unused_openings", text="Purge Unused Openings in Selected Objects")
-        row = layout.row(align=True)
-        row.label(text="Materials: ")
-        row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "MATERIAL"
-        row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = "MATERIAL"
-        row = layout.row(align=True)
-        row.label(text="Styles: ")
-        row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "STYLE"
-        row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = "STYLE"
+
+        MERGEABLE_OBJECT_TYPES = (
+            "MATERIAL",
+            "STYLE",
+            "ORGANIZATION",
+            "APPLICATION",
+            "PERSON",
+            "PERSON_AND_ORGANIZATION",
+        )
+
+        for object_type in MERGEABLE_OBJECT_TYPES:
+            row = layout.row(align=True)
+            row.label(text=f"{object_type.replace('_', ' ').capitalize()}:")
+            row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = object_type
+            row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = object_type

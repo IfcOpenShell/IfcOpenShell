@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.api.cost
 import bonsai.tool as tool
 from bonsai.bim.module.classification.data import CostClassificationsData
 from bonsai.bim.module.cost.data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
@@ -33,44 +34,51 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Union
 
 
-def get_schedule_of_rates(self, context):
+def get_schedule_of_rates(self: "BIMCostProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not CostItemRatesData.is_loaded:
         CostItemRatesData.load()
-    return CostItemRatesData.data["schedule_of_rates"]
+    # return CostItemRatesData.data["schedule_of_rates"]
+    return CostItemRatesData.data["cost_schedules"]
 
 
-def update_schedule_of_rates(self, context):
+def update_schedule_of_rates(self: "BIMCostProperties", context: bpy.types.Context) -> None:
     tool.Cost.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(self.schedule_of_rates)))
 
 
-def get_quantity_types(self, context):
+def get_quantity_types(self: "BIMCostProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not CostSchedulesData.is_loaded:
         CostSchedulesData.load()
     return CostSchedulesData.data["quantity_types"]
 
 
-def get_product_quantity_names(self, context):
+def get_product_quantity_names(
+    self: "BIMCostProperties", context: bpy.types.Context
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not CostItemQuantitiesData.is_loaded:
         CostItemQuantitiesData.load()
     return CostItemQuantitiesData.data["product_quantity_names"]
 
 
-def get_process_quantity_names(self, context):
+def get_process_quantity_names(
+    self: "BIMCostProperties", context: bpy.types.Context
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not CostItemQuantitiesData.is_loaded:
         CostItemQuantitiesData.load()
     return CostItemQuantitiesData.data["process_quantity_names"]
 
 
-def get_resource_quantity_names(self, context):
+def get_resource_quantity_names(
+    self: "BIMCostProperties", context: bpy.types.Context
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not CostItemQuantitiesData.is_loaded:
         CostItemQuantitiesData.load()
     return CostItemQuantitiesData.data["resource_quantity_names"]
 
 
-def update_active_cost_item_index(self, context):
+def update_active_cost_item_index(self: "BIMCostProperties", context: bpy.types.Context) -> None:
     schedule = tool.Ifc.get().by_id(self.active_cost_schedule_id)
     if schedule.PredefinedType == "SCHEDULEOFRATES":
         tool.Cost.load_cost_item_types()
@@ -83,14 +91,14 @@ def update_cost_item_identification(self: "CostItem", context: bpy.types.Context
     props = tool.Cost.get_cost_props()
     if not props.is_cost_update_enabled or self.identification == "XXX":
         return
-    self.file = tool.Ifc.get()
-    ifcopenshell.api.run(
-        "cost.edit_cost_item",
-        self.file,
-        **{"cost_item": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
+    ifc_file = tool.Ifc.get()
+    ifcopenshell.api.cost.edit_cost_item(
+        ifc_file,
+        cost_item=ifc_file.by_id(self.ifc_definition_id),
+        attributes={"Identification": self.identification},
     )
     if props.active_cost_item_id == self.ifc_definition_id:
-        attribute = props.cost_item_attributes.get("Identification")
+        attribute = props.cost_item_attributes["Identification"]
         attribute.string_value = self.identification
 
 
@@ -98,14 +106,14 @@ def update_cost_item_name(self: "CostItem", context: bpy.types.Context) -> None:
     props = tool.Cost.get_cost_props()
     if not props.is_cost_update_enabled or self.name == "Unnamed":
         return
-    self.file = tool.Ifc.get()
-    ifcopenshell.api.run(
-        "cost.edit_cost_item",
-        self.file,
-        **{"cost_item": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
+    ifc_file = tool.Ifc.get()
+    ifcopenshell.api.cost.edit_cost_item(
+        ifc_file,
+        cost_item=ifc_file.by_id(self.ifc_definition_id),
+        attributes={"Name": self.name},
     )
     if props.active_cost_item_id == self.ifc_definition_id:
-        attribute = props.cost_item_attributes.get("Name")
+        attribute = props.cost_item_attributes["Name"]
         attribute.string_value = self.name
 
 
@@ -165,15 +173,6 @@ class CostItemQuantity(PropertyGroup):
         total_quantity: float
         unit_symbol: str
         total_cost_quantity: float
-
-
-class CostItemsMapping(PropertyGroup):
-    cost_item_id: IntProperty(name="cost_item_id")
-    csv_filepath: StringProperty(name="filepath")
-
-    if TYPE_CHECKING:
-        cost_item_id: int
-        csv_filepath: str
 
 
 class CostItemType(PropertyGroup):
@@ -281,7 +280,6 @@ class BIMCostProperties(PropertyGroup):
     custom_currency: StringProperty(
         name="Custom Currency", default="USD", description="Custom Currency in ISO 4217 format"
     )
-    cost_schedule_files: CollectionProperty(name="Cost Schedule Files", type=CostItemsMapping)
 
     if TYPE_CHECKING:
         cost_schedule_predefined_types: str
@@ -336,4 +334,7 @@ class BIMCostProperties(PropertyGroup):
         show_cost_item_operators: bool
         currency: str
         custom_currency: str
-        cost_schedule_files: bpy.types.bpy_prop_collection_idprop[CostItemsMapping]
+
+    @property
+    def active_cost_item(self) -> Union[CostItem, None]:
+        return tool.Blender.get_active_uilist_element(self.cost_items, self.active_cost_item_index)
