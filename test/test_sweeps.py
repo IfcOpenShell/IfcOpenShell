@@ -23,6 +23,9 @@ def _size_from_bbox(mn, mx):
 def _triples(flat: Sequence[float]) -> List[Tuple[float, float, float]]:
     return [(float(flat[i]), float(flat[i + 1]), float(flat[i + 2])) for i in range(0, len(flat), 3)]
 
+def load_ifc_occ_shape(ifc_path: str) -> TopoDS_Shape:
+    ...
+
 def load_ifc_mesh_bbox(ifc_path: str):
     """Load first product's mesh from IFC using ifcopenshell.geom and return bbox and size."""
     try:
@@ -60,3 +63,9 @@ def test_dir():
 def test_simple_sweep_1(test_dir):
     ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(test_dir / "input_temp/simple_sweep_1.ifc")
     assert ifc_sz == pytest.approx((1.1, 0.1, 0.89578254))
+
+def test_pipe_12d(test_dir):
+    ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(test_dir / "input_temp/pipe.ifc")
+    assert ifc_sz == pytest.approx((1.1068712115520611, 6.2215114729478955, 0.35776115971654576))
+    assert ifc_mn == pytest.approx((289080.64128449163, 5822851.344592881, 118.70711942014172))
+    assert ifc_mx == pytest.approx((289081.7481557032, 5822857.566104354, 119.06488057985827))

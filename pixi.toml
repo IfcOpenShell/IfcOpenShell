@@ -9,6 +9,7 @@ platforms = ["win-64", "linux-64", "osx-64"]
 common = { features = ["common"], no-default-feature = true }
 prod = { features = ["prod", "common"], no-default-feature = true }
 dev = { features = ["dev", "common"], no-default-feature = true }
+#tests = { features = ["tests", "common"], no-default-feature = true }
 
 [feature.common.dependencies]
 # Build deps
@@ -31,15 +32,26 @@ mpfr = "*"
 gmp = "*"
 nlohmann_json = "*"
 zlib = "*"
-pytest = "*"
+pythonocc-core = "*"
 
+#[feature.tests.dependencies]
+# tests
+pytest = "*"
+#shapely = "*"
+#tabulate = "*"
+#isodate = "*"
+#python-dateutil = "*"
+#xmlschema = "*"
+#xsdata = "*"
+#lxml = "*"
+#networkx = "*"
 
 [feature.common.target.win-64.dependencies]
 vs2022_win-64 = "*"
 #vs_win-64 = "*" # Visual Studio
 #vswhere = "*" # Visual Studio
 
-[feature.common.target.win-64.tasks]
+[feature.common.tasks]
 init-submodules = { cmd = "git submodule update --init --recursive", outputs =["$PIXI_PROJECT_ROOT/src/svgfill/3rdparty/svgpp/*"]}
 
 [feature.prod.target.win-64.tasks]
@@ -47,12 +59,15 @@ configure-release = { cmd = ["cmake", "--preset", "win-release", "-B", "build/wi
 build-release = { cmd = ["cmake", "--build", "build/win-release", "--config", "Release"], description = "Build the project" }
 
 [feature.dev.target.win-64.tasks]
-configure-debug = { cmd = ["cmake", "--preset", "win-debug", "-B", "build/win-debug", "cmake"], description = "Configure the project", depends-on=["init-submodules"], outputs=["$PIXI_PROJECT_ROOT/build/win-debug/CMakeCache.txt"] }
-build-debug = { cmd = ["cmake", "--build", "build/win-debug", "--config", "Debug"], description = "Build the project" }
+configure-debug = { cmd = ["cmake", "--preset", "win-debug", "-B", "build/win-debug", "cmake"], description = "Configure the project", depends-on=["init-submodules"], outputs=["build/win-debug/CMakeCache.txt"] }
+build-debug = { cmd = ["cmake", "--build", "build/win-debug", "--config", "Debug"], description = "Build the project", depends-on = ["configure-debug"] }
 
 install-debug = { cmd = ["cmake", "--install", "build/win-debug", "--config", "Debug"], description = "Install the project" } # Optionally Install files to your desired env using --prefix
 
 vsdebug = { cmd = ["python"], description = "Run a python script with vs debugger attached" }
+
+#[feature.tests.target.win-64.tasks]
+test = { cmd = "pytest test/test_sweeps.py"}
 
 [feature.common.target.win-64.activation]
 #scripts = ["cmake/activate.bat"]
