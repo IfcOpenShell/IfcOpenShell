@@ -105,10 +105,19 @@ public:
     virtual const IfcParse::declaration& declaration() const = 0;
 
     template <typename T>
-    void set_attribute_value(size_t i, const T& t);
+    typename std::enable_if<
+        (!(std::is_pointer<T>::value && std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
+        void>::type
+    set_attribute_value(size_t i, const T& t);
 
     template <typename T>
-    void set_attribute_value(const std::string& name, const T& t);
+    typename std::enable_if<
+        (!(std::is_pointer<T>::value&& std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
+        void>::type
+    set_attribute_value(const std::string& name, const T& t);
+
+    void set_attribute_value(size_t i, IfcUtil::IfcBaseClass* p);
+    void set_attribute_value(const std::string& name, IfcUtil::IfcBaseClass* p);
     
     void unset_attribute_value(size_t i);
 
