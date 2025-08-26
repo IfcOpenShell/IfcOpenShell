@@ -133,6 +133,9 @@ MPFR_VERSION = "3.1.6"  # latest is 4.1.0
 CGAL_VERSION = "5.6.x-branch"
 USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
+# this is a 3y old version due to conda-forge's python-rocksdb depending on v6,
+# but actually utility is limited as we need the merge operator to read data
+ROCKSDB_VERSION = "6.29.5"
 
 # binaries
 cp = "cp"
@@ -244,7 +247,7 @@ cecho(
 )
 
 dependency_tree: "dict[str, tuple[str, ...]]" = {
-    "IfcParse": ("boost", "libxml2", "hdf5"),
+    "IfcParse": ("boost", "libxml2", "hdf5", "rocksdb"),
     "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen"),
     "IfcConvert": ("IfcGeom",),
     "OpenCOLLADA": ("libxml2", "pcre"),
@@ -261,6 +264,7 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "cgal": (),
     "eigen": (),
     "freetype": (),
+    "rocksdb": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
@@ -752,8 +756,8 @@ if USE_OCCT and "occ" in targets:
         build_tool_args=[
             f"-DINSTALL_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}",
             f"-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}",
-            "-DBUILD_MODULE_Draw=0",
-            "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
+            f"-DBUILD_MODULE_Draw=0",
+            f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
         ],
         download_url="https://github.com/Open-Cascade-SAS/OCCT",
@@ -767,12 +771,12 @@ elif "occ" in targets:
         name=f"oce-{OCE_VERSION}",
         mode="cmake",
         build_tool_args=[
-            "-DOCE_DISABLE_TKSERVICE_FONT=ON",
-            "-DOCE_TESTING=OFF",
-            "-DOCE_BUILD_SHARED_LIB=OFF",
-            "-DOCE_DISABLE_X11=ON",
-            "-DOCE_VISUALISATION=OFF",
-            "-DOCE_OCAF=OFF",
+            f"-DOCE_DISABLE_TKSERVICE_FONT=ON",
+            f"-DOCE_TESTING=OFF",
+            f"-DOCE_BUILD_SHARED_LIB=OFF",
+            f"-DOCE_DISABLE_X11=ON",
+            f"-DOCE_VISUALISATION=OFF",
+            f"-DOCE_OCAF=OFF",
             f"-DOCE_INSTALL_PREFIX={DEPS_DIR}/install/oce-{OCE_VERSION}",
         ],
         download_url="https://github.com/tpaviot/oce/archive/",
@@ -934,8 +938,8 @@ if "cgal" in targets:
             f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
             f"-DBoost_INCLUDE_DIR={DEPS_DIR}/install/boost-{BOOST_VERSION}",
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/cgal-{CGAL_VERSION}/",
-            "-DCGAL_HEADER_ONLY=On",
-            "-DBUILD_SHARED_LIBS=Off",
+            f"-DCGAL_HEADER_ONLY=On",
+            f"-DBUILD_SHARED_LIBS=Off",
         ],
         download_url="https://github.com/CGAL/cgal.git",
         download_name="cgal",
@@ -975,6 +979,21 @@ if "usd" in targets:
         revision=f"v{USD_VERSION}",
     )
 
+if "rocksdb" in targets:
+    build_dependency(
+        name=f"rocksdb-{ROCKSDB_VERSION}",
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/usd-{ROCKSDB_VERSION}",
+            f"-DFAIL_ON_WARNINGS=Off",
+            f"-DWITH_TESTS=OFF",
+        ],
+        download_url="https://github.com/facebook/rocksdb",
+        download_name="rocksdb",
+        download_tool=download_tool_git,
+        revision=f"v{ROCKSDB_VERSION}",
+    )
+
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -1009,11 +1028,11 @@ if "wasm" in flags:
 if "cgal" in targets:
     cmake_args.extend(
         [
-            "-DCGAL_INCLUDE_DIR=" f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
-            "-DGMP_INCLUDE_DIR=" f"{DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-            "-DGMP_LIBRARY_DIR=" f"{DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
-            "-DMPFR_INCLUDE_DIR=" f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
-            "-DMPFR_LIBRARY_DIR=" f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
+            f"-DCGAL_INCLUDE_DIR={DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
+            f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
+            f"-DGMP_LIBRARY_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
+            f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
+            f"-DMPFR_LIBRARY_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
         ]
     )
 
@@ -1030,33 +1049,33 @@ elif "occ" in targets:
 if "OpenCOLLADA" in targets:
     cmake_args.extend(
         [
-            "-DOPENCOLLADA_INCLUDE_DIR=" f"{DEPS_DIR}/install/OpenCOLLADA/include/opencollada",
-            "-DOPENCOLLADA_LIBRARY_DIR=" f"{DEPS_DIR}/install/OpenCOLLADA/lib/opencollada",
+            f"-DOPENCOLLADA_INCLUDE_DIR={DEPS_DIR}/install/OpenCOLLADA/include/opencollada",
+            f"-DOPENCOLLADA_LIBRARY_DIR={DEPS_DIR}/install/OpenCOLLADA/lib/opencollada",
         ]
     )
 else:
     cmake_args.extend(
         [
-            "-DCOLLADA_SUPPORT=" "Off",
+            f"-DCOLLADA_SUPPORT=Off",
         ]
     )
 
 if "pcre" in targets:
-    cmake_args.append("-DPCRE_LIBRARY_DIR=" f"{DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib")
+    cmake_args.append(f"-DPCRE_LIBRARY_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib")
 
 if "libxml2" in targets:
     cmake_args.extend(
         [
-            "-DLIBXML2_INCLUDE_DIR=" f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
-            "-DLIBXML2_LIBRARIES=" f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
+            f"-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
+            f"-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
         ]
     )
 
 if "hdf5" in targets:
     cmake_args.extend(
         [
-            "-DHDF5_INCLUDE_DIR=" f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/include",
-            "-DHDF5_LIBRARY_DIR=" f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/lib",
+            f"-DHDF5_INCLUDE_DIR={DEPS_DIR}/install/hdf5-{HDF5_VERSION}/include",
+            f"-DHDF5_LIBRARY_DIR={DEPS_DIR}/install/hdf5-{HDF5_VERSION}/lib",
         ]
     )
 else:
@@ -1065,9 +1084,18 @@ else:
 if "usd" in targets:
     cmake_args.extend(
         [
-            "-DUSD_SUPPORT=" "On",
-            "-DUSD_INCLUDE_DIR=" f"{DEPS_DIR}/install/usd-{USD_VERSION}/include",
-            "-DUSD_LIBRARY_DIR=" f"{DEPS_DIR}/install/usd-{USD_VERSION}/lib",
+            f"-DUSD_SUPPORT=" "On",
+            f"-DUSD_INCLUDE_DIR={DEPS_DIR}/install/usd-{USD_VERSION}/include",
+            f"-DUSD_LIBRARY_DIR={DEPS_DIR}/install/usd-{USD_VERSION}/lib",
+        ]
+    )
+
+if "rocksdb" in targets:
+    cmake_args.extend(
+        [
+            f"-DWITH_ROCKSDB=On",
+            f"-DROCKSDB_INCLUDE_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/include",
+            f"-DROCKSDB_LIBRARY_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/lib",
         ]
     )
 
@@ -1079,7 +1107,7 @@ if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(expl
         "-DBUILD_GEOMSERVER=" + OFF_ON["IfcGeomServer" in targets],
         "-DBUILD_CONVERT=" + OFF_ON["IfcConvert" in targets],
         "-DBUILD_IFCPYTHON=" "OFF",
-        "-DCMAKE_INSTALL_PREFIX=" f"{DEPS_DIR}/install/ifcopenshell",
+        "-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
     ]
 
     run_cmake("", exec_args + cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
@@ -1140,7 +1168,7 @@ if "IfcOpenShell-Python" in targets:
                     else []
                 ),
                 "-DPYTHON_INCLUDE_DIR=" + python_include,
-                "-DCMAKE_INSTALL_PREFIX=" f"{DEPS_DIR}/install/ifcopenshell/tmp",
+                f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
                 "-DUSERSPACE_PYTHON_PREFIX="
                 + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
                 *swig_when_built,
