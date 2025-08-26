@@ -31,6 +31,7 @@ mpfr = "*"
 gmp = "*"
 nlohmann_json = "*"
 zlib = "*"
+pytest = "*"
 
 
 [feature.common.target.win-64.dependencies]
