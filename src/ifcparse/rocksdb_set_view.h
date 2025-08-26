@@ -17,8 +17,14 @@
 *                                                                              *
 ********************************************************************************/
 
+#ifndef ROCKSDB_SET_VIEW_H
+#define ROCKSDB_SET_VIEW_H
+
+#ifdef WITH_ROCKSDB
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
+#endif
+
 #include <memory>
 #include <string>
 #include <iterator>
@@ -60,11 +66,15 @@ public:
 
         // Helper: extract the key (i.e. the value) from the current RocksDB key.
         value_type extract_current_value() const {
+#ifdef WITH_ROCKSDB
             std::string full_key = it_->key().ToString();
             std::string remainder = full_key.substr(prefix_.size());
             size_t pos = remainder.find('|');
             std::string key_str = (pos != std::string::npos) ? remainder.substr(0, pos) : remainder;
             return key_from_string<key_type>(key_str);
+#else
+            return cached_value_;
+#endif
         }
 
         // Validates the current iterator state.
@@ -86,6 +96,7 @@ public:
         iterator(const iterator& other)
             : db_(other.db_), prefix_(other.prefix_)
         {
+#ifdef WITH_ROCKSDB
             if (other.it_) {
                 std::string curr = other.it_->key().ToString();
                 it_.reset(db_->NewIterator(rocksdb::ReadOptions{}));
@@ -93,9 +104,11 @@ public:
                 if (!it_->Valid() || it_->key().ToString() != curr)
                     it_.reset();
             }
+#endif
         }
 
         iterator& operator=(const iterator& other) {
+#ifdef WITH_ROCKSDB
             if (this != &other) {
                 db_ = other.db_;
                 prefix_ = other.prefix_;
@@ -109,6 +122,7 @@ public:
                     it_.reset();
                 }
             }
+#endif
             return *this;
         }
 
@@ -125,6 +139,7 @@ public:
 
         // Pre-increment: advance the iterator and skip over any duplicate keys.
         iterator& operator++() {
+#ifdef WITH_ROCKSDB
             if (it_) {
                 // Record the current key value.
                 value_type curr = extract_current_value();
@@ -135,6 +150,7 @@ public:
                 if (!it_ || !it_->Valid() || !it_->key().starts_with(prefix_))
                     it_.reset();
             }
+#endif
             return *this;
         }
 
@@ -145,10 +161,12 @@ public:
         }
 
         bool operator==(const iterator& other) const {
+#ifdef WITH_ROCKSDB
             if (!it_ && !other.it_)
                 return true;
             if (it_ && other.it_)
                 return it_->key().ToString() == other.it_->key().ToString();
+#endif
             return false;
         }
 
@@ -159,10 +177,12 @@ public:
 
     // Returns an iterator to the first element in the key-space (or end() if none exist).
     iterator begin() const {
+#ifdef WITH_ROCKSDB
         auto iter = std::unique_ptr<rocksdb::Iterator>(db_->NewIterator(rocksdb::ReadOptions{}));
         iter->Seek(prefix_);
         if (iter->Valid() && iter->key().starts_with(prefix_))
             return iterator(db_, prefix_, std::move(iter));
+#endif
         return end();
     }
 
@@ -173,6 +193,7 @@ public:
 
     // Read-only find: returns an iterator to the element with the given key if it exists.
     iterator find(const key_type& key) const {
+#ifdef WITH_ROCKSDB
         std::string key_str = key_to_string(key);
         // Construct the search key: prefix + key_str + separator.
         std::string start_key = prefix_ + key_str + "|";
@@ -186,6 +207,7 @@ public:
             if (key_from_string<key_type>(found_key_str) == key)
                 return iterator(db_, prefix_, std::move(iter));
         }
+#endif
         return end();
     }
 
@@ -193,3 +215,5 @@ public:
         // @todo
     }
 };
+
+#endif

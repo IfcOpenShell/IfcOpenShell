@@ -25,12 +25,16 @@
 #include "aggregate_of_instance.h"
 #include "IfcSchema.h"
 
+#ifdef WITH_ROCKSDB
+
 #pragma push_macro("Handle")
 #undef Handle
 
 #include <rocksdb/db.h>
 
 #pragma pop_macro("Handle")
+
+#endif
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -161,6 +165,7 @@ namespace IfcParse {
     }
 }
 
+#if WITH_ROCKSDB
 
 namespace impl {
 
@@ -275,6 +280,7 @@ namespace impl {
     bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, aggregate_of_aggregate_of_instance::ptr& t);
 }
 
+#endif
 
 // short lived
 struct AttributeValue {
@@ -384,8 +390,10 @@ struct AttributeValue {
     }
 };
 
+
 struct rocks_db_attribute_storage {
 public:
+#ifdef WITH_ROCKSDB
     // @todo void* is obviously very ugly here
     template<typename T>
     void set(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, const T& value);
@@ -398,6 +406,7 @@ public:
         // @todo do we need visitation on all data/storage/attribute levels?
         AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl->as_entity() ? 1 : 0, index).apply_visitor(std::forward<Visitor>(visitor));
     }
+#endif
 };
 
 class IFC_PARSE_API IfcEntityInstanceData {
@@ -439,27 +448,36 @@ class IFC_PARSE_API IfcEntityInstanceData {
     void set_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, T&& value) {
         if (storage_) {
             storage_->set(index, value);
-        } else {
+        }
+#ifdef WITH_ROCKSDB
+        else {
             rocks_db_attribute_storage{}.set(storage, decl, identity, index, value);
         }
+#endif
     }
 
     template<typename T>
     bool has_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const {
         if (storage_) {
             return storage_->has<T>(index);
-        } else {
+        }
+#ifdef WITH_ROCKSDB
+        else {
             return rocks_db_attribute_storage{}.has<T>(storage, decl, identity, index);
         }
+#endif
     }
 
     template<typename Visitor>
     auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, Visitor&& visitor, std::size_t index) const {
         if (storage_) {
             return storage_->apply_visitor(std::forward<Visitor>(visitor), index);
-        } else {
+        }
+#ifdef WITH_ROCKSDB
+        else {
             return rocks_db_attribute_storage{}.apply_visitor(storage, decl, identity, index, std::forward<Visitor>(visitor));
         }
+#endif
     }
 
     void toString(void* storage, const IfcParse::declaration*, std::size_t identity, std::ostream&, bool upper = false) const;

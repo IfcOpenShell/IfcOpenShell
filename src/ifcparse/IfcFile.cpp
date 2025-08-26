@@ -344,6 +344,7 @@ IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::value_type const&
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
+#ifdef WITH_ROCKSDB
     if (r == IfcParse::impl::rocks_db_file_storage::entityinstance_ref) {
         auto it = instance_cache_.find(number);
         if (it != instance_cache_.end()) {
@@ -388,11 +389,15 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
     } else {
         throw IfcException("Instance #" + boost::lexical_cast<std::string>(number) + " not found");
     }
+#else
+	throw IfcException("RocksDB support not compiled in");
+#endif
 }
 
 namespace {
     rocksdb::DB* init_db(const std::string& filepath) {
-        rocksdb::DB* db;
+        rocksdb::DB* db = nullptr;
+#ifdef WITH_ROCKSDB
         rocksdb::Options options;
         // options.disable_auto_compactions = true;
         options.create_if_missing = true;
@@ -401,6 +406,7 @@ namespace {
         if (!status.ok()) {
             throw std::runtime_error(status.ToString());
         }
+#endif // WITH_ROCKSDB#
         return db;
     }
 }
@@ -423,6 +429,7 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
 
 IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
 {
+#ifdef WITH_ROCKSDB
     rocksdb::FlushOptions flush_options;
     flush_options.allow_write_stall = true;
     flush_options.wait = true; // Wait until flush completes.
@@ -435,6 +442,7 @@ IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
 
     db->Close();
     delete db;
+#endif
 }
 
 
@@ -447,6 +455,7 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::instance_by_id(int
 
 void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::IfcBaseClass* inst)
 {
+#ifdef WITH_ROCKSDB
     auto id = inst->id();
 
     {
@@ -500,6 +509,7 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
             }
         }
     }
+#endif
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::instance_by_id(int id)

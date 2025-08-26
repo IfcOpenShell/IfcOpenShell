@@ -17,8 +17,14 @@
 *                                                                              *
 ********************************************************************************/
 
+#ifndef ROCKSDB_MAP_ADAPTER_H
+#define ROCKSDB_MAP_ADAPTER_H
+
+#ifdef WITH_ROCKSDB
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
+#endif
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -217,6 +223,7 @@ public:
         iterator(const iterator& other)
             : db_(other.db_), prefix_(other.prefix_), codec_(other.codec_)
         {
+#ifdef WITH_ROCKSDB
             if (other.it_) {
                 std::string curr = other.it_->key().ToString();
                 it_.reset(db_->NewIterator(rocksdb::ReadOptions{}));
@@ -224,9 +231,11 @@ public:
                 if (!it_->Valid() || it_->key().ToString() != curr)
                     it_.reset();
             }
+#endif
         }
 
         iterator& operator=(const iterator& other) {
+#ifdef WITH_ROCKSDB
             if (this != &other) {
                 db_ = other.db_;
                 prefix_ = other.prefix_;
@@ -241,14 +250,19 @@ public:
                     it_.reset();
                 }
             }
+#endif
             return *this;
         }
 
         value_type operator*() const {
+#ifdef WITH_ROCKSDB
             std::string full_key = it_->key().ToString();
             std::string key_without_prefix = full_key.substr(prefix_.size());
             std::string value_str = it_->value().ToString();
             return { key_from_string<key_type>(key_without_prefix), codec_.decode(value_str) };
+#else
+            return cached_value_;
+#endif
         }
 
         // operator-> uses a mutable cache to return a pointer to the current value.
@@ -258,10 +272,12 @@ public:
         }
 
         iterator& operator++() {
+#if WITH_ROCKSDB
             if (it_) {
                 it_->Next();
                 check_valid();
             }
+#endif
             return *this;
         }
 
@@ -272,9 +288,11 @@ public:
         }
 
         bool operator==(const iterator& other) const {
+#ifdef WITH_ROCKSDB
             if (!it_ && !other.it_) return true;
             if (it_ && other.it_)
                 return it_->key().ToString() == other.it_->key().ToString();
+#endif
             return false;
         }
 
@@ -284,11 +302,13 @@ public:
     };
 
     iterator begin() const {
+#ifdef WITH_ROCKSDB
         auto iter = std::unique_ptr<rocksdb::Iterator>(db_->NewIterator(rocksdb::ReadOptions{}));
         iter->Seek(prefix_);
         if (iter->Valid() && iter->key().starts_with(prefix_)) {
             return iterator(db_, prefix_, std::move(iter), codec_);
         }
+#endif
         return end();
     }
 
@@ -297,23 +317,30 @@ public:
     }
 
     iterator find(const key_type& key) const {
+#ifdef WITH_ROCKSDB
         std::string key_str = key_to_string(key);
         std::string full_key = prefix_ + key_str;
         auto iter = std::unique_ptr<rocksdb::Iterator>(db_->NewIterator(rocksdb::ReadOptions{}));
         iter->Seek(full_key);
         if (iter->Valid() && iter->key().ToString() == full_key)
             return iterator(db_, prefix_, std::move(iter), codec_);
+#endif
         return end();
     }
 
     size_t erase(const key_type& key) {
+#ifdef WITH_ROCKSDB
         std::string key_str = key_to_string(key);
         std::string full_key = prefix_ + key_str;
         rocksdb::Status s = db_->Delete(rocksdb::WriteOptions{}, full_key);
         return s.ok() ? 1 : 0;
+#else
+        return 0;
+#endif
     }
 
     std::pair<iterator, bool> insert(const value_type& val) {
+#ifdef WITH_ROCKSDB
         std::string key_str = key_to_string(val.first);
         std::string full_key = prefix_ + key_str;
         std::string existing;
@@ -327,6 +354,9 @@ public:
         if (!s.ok()) {
             return { end(), false };
         }
+#endif
         return { find(val.first), true };
     }
 };
+
+#endif

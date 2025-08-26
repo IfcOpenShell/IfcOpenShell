@@ -791,6 +791,7 @@ namespace {
 }
 
 void IfcParse::impl::rocks_db_file_storage::register_inverse(unsigned id_from, const IfcParse::entity* from_entity, int inst_id, int attribute_index) {
+#ifdef WITH_ROCKSDB
     static std::string s;
     uint32_t v = id_from;
     s.resize(sizeof(uint32_t));
@@ -808,9 +809,11 @@ void IfcParse::impl::rocks_db_file_storage::register_inverse(unsigned id_from, c
         auto new_val = current + s;
         db->Put(wopts, key, new_val);
     }*/
+#endif
 }
 
 void IfcParse::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
+#ifdef WITH_ROCKSDB
     static std::string s;
     auto inst_id = inst->id();
     auto key = "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2);
@@ -827,10 +830,12 @@ void IfcParse::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from,
         memcpy(s.data(), vals.data(), s.size());
         db->Put(wopts, key, s);
     }
+#endif
 }
 
 void IfcParse::impl::rocks_db_file_storage::add_type_ref(IfcUtil::IfcBaseClass* new_entity)
 {
+#ifdef WITH_ROCKSDB
     size_t v;
     std::string s(sizeof(size_t), ' ');
 
@@ -855,10 +860,12 @@ void IfcParse::impl::rocks_db_file_storage::add_type_ref(IfcUtil::IfcBaseClass* 
     v = new_entity->declaration().index_in_schema();
     memcpy(s.data(), &v, sizeof(size_t));
     db->Put(wopts, (new_entity->declaration().as_entity() ? "i|" : "t|") + std::to_string(new_entity->id() ? new_entity->id() : new_entity->identity()) + "|_", s);
+#endif
 }
 
 void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClass* new_entity)
 {
+#ifdef WITH_ROCKSDB
     if (new_entity->declaration().as_entity()) {
         std::string s;
         auto key = "t|" + std::to_string(new_entity->declaration().index_in_schema());
@@ -873,6 +880,7 @@ void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClas
     }
 
     db->Delete(wopts, (new_entity->declaration().as_entity() ? "i|" : "t|") + std::to_string(new_entity->id() ? new_entity->id() : new_entity->identity()) + "|_");
+#endif
 }
 
 namespace {
@@ -2275,7 +2283,9 @@ aggregate_of_instance::ptr IfcFile::instances_by_reference(int t) {
                     ret->push(instance_by_id(i));
                 }
             }
-        } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+        }
+#ifdef WITH_ROCKSDB
+        else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo no lower/upper_bounds() implemented yet
             auto prefix = "v|" + std::to_string(t) + "|";
             auto it = x.db->NewIterator(rocksdb::ReadOptions());
@@ -2288,7 +2298,9 @@ aggregate_of_instance::ptr IfcFile::instances_by_reference(int t) {
                 }
                 it->Next();
             }
-        } else {
+        }
+#endif
+        else {
             throw std::runtime_error("Storage not initialized");
         }
     }, storage_);
@@ -2482,7 +2494,9 @@ aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::
                         }
                     }
                 }
-            } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+            }
+#ifdef WITH_ROCKSDB            
+            else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
                 if (attribute_index == -1) {
                     // @todo no lower/upper_bounds() implemented yet
                     auto prefix = "v|" + std::to_string(instance_id) + "|" + std::to_string(ent->index_in_schema()) + "|";
@@ -2505,6 +2519,7 @@ aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::
                     }
                 }
             }
+#endif
         }, storage_);
     });
 
@@ -2717,6 +2732,7 @@ AttributeValue IfcEntityInstanceData::get_attribute_value(void* storage, const I
 }
 
 bool IfcParse::impl::rocks_db_file_storage::read_schema(const IfcParse::schema_definition*& schema) {
+#ifdef WITH_ROCKSDB
     std::string value;
     auto key = "h|file_schema|0";
     db->Get(rocksdb::ReadOptions{}, key, &value);
@@ -2725,6 +2741,7 @@ bool IfcParse::impl::rocks_db_file_storage::read_schema(const IfcParse::schema_d
         schema = schema_by_name(strings[0]);
         return true;
     }
+#endif
     return false;    
 }
 
