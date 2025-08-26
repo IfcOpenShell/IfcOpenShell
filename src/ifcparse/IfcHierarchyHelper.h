@@ -470,7 +470,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                 aggregate_of_instance::ptr related_objects(new aggregate_of_instance);
                 related_objects->push(related_object);
 
-                T* t = create(&T::Class())->as<T>();
+                T* t = create(&T::Class())->template as<T>();
                 t->set_attribute_value(0, (std::string)IfcParse::IfcGlobalId());
                 t->set_attribute_value(1, owner_hist);
                 int relating_index = 4;
