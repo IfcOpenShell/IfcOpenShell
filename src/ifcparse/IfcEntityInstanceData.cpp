@@ -35,7 +35,9 @@ namespace {
     {
         if (storage_model_ == 0) {
             return array_.storage_ptr->get<T>(index_);
-        } else {
+        }
+#ifdef WITH_ROCKSDB
+        else {
             T val;
             if constexpr (
                 // the following types cannot be directly deserialized from rocksdb, but need to be constructed
@@ -48,6 +50,7 @@ namespace {
             }
             return val;
         }
+#endif
     }
 
     template<typename T>
@@ -55,7 +58,9 @@ namespace {
     {
         if (storage_model_ == 0) {
             return array_.storage_ptr->has<T>(index_);
-        } else {
+        }
+#ifdef WITH_ROCKSDB
+        else {
             std::string str;
             array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
             if constexpr (std::is_same_v<T, Blank>) {
@@ -65,21 +70,24 @@ namespace {
             }
             return str[0] == TypeEncoder::encode_type<T>();
         }
+#endif
     }
 
     inline size_t dispatch_index_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, bool is_entity, uint8_t index_)
     {
         if (storage_model_ == 0) {
             return array_.storage_ptr->index(index_);
-        } else {
+        }
+#ifdef WITH_ROCKSDB
+        else {
             std::string str;
             if (!array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str).ok()) {
                 return TypeEncoder::encode_type<Blank>() - 'A';
             }
             return (size_t) str[0] - 'A';
         }
+#endif 
     }
-
 }
 
 AttributeValue::operator int() const
@@ -112,7 +120,9 @@ AttributeValue::operator std::string() const
         // @todo also we don't really need to store a reference to the enumeration type, when this same type is already stored on the definition of the entity and no other value can be provided.
         if (storage_model_ == 0) {
             return dispatch_get_<EnumerationReference>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_).value();
-        } else {
+        }
+#ifdef WITH_ROCKSDB
+        else {
             std::string str;
             array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
             size_t v;
@@ -121,6 +131,7 @@ AttributeValue::operator std::string() const
             memcpy(&v, str.data() + 1 + sizeof(size_t), sizeof(size_t));
             return decl->lookup_enum_value(v);
         }
+#endif
     }
     return dispatch_get_<std::string>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
@@ -129,7 +140,9 @@ AttributeValue::operator EnumerationReference() const
 {
     if (storage_model_ == 0) {
         return dispatch_get_<EnumerationReference>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
-    } else {
+    }
+#ifdef WITH_ROCKSDB
+    else {
         std::string str;
         array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
         size_t v;
@@ -138,6 +151,7 @@ AttributeValue::operator EnumerationReference() const
         memcpy(&v, str.data() + 1 + sizeof(size_t), sizeof(size_t));
         return EnumerationReference(decl, v);
     }
+#endif
 }
 
 AttributeValue::operator boost::dynamic_bitset<>() const
@@ -149,7 +163,9 @@ AttributeValue::operator IfcUtil::IfcBaseClass* () const
 {
     if (storage_model_ == 0) {
         return dispatch_get_<IfcUtil::IfcBaseClass*>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
-    } else {
+    }
+#ifdef WITH_ROCKSDB
+    else {
         std::string str;
         array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
         size_t v;
@@ -160,9 +176,9 @@ AttributeValue::operator IfcUtil::IfcBaseClass* () const
         } else if (str[1] == 't') {
             // type reference by Identity
             return array_.db_ptr->assert_existance(v, IfcParse::impl::rocks_db_file_storage::typedecl_ref);
-        }
-        
+        }     
     }
+#endif
 }
 
 AttributeValue::operator std::vector<int>() const
@@ -220,6 +236,8 @@ IfcUtil::ArgumentType AttributeValue::type() const
 {
     return static_cast<IfcUtil::ArgumentType>(dispatch_index_(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_));
 }
+
+#ifdef WITH_ROCKSDB
 
 bool impl::serialize(std::string& val, const IfcUtil::IfcBaseClass* t)
 {
@@ -432,3 +450,5 @@ template bool rocks_db_attribute_storage::has<aggregate_of_aggregate_of_instance
 template bool rocks_db_attribute_storage::has<Derived>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
 template bool rocks_db_attribute_storage::has<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
 template bool rocks_db_attribute_storage::has<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+
+#endif

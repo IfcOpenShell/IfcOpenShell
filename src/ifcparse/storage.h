@@ -1,6 +1,19 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+#ifndef WITH_ROCKSDB
+
+namespace rocksdb {
+    class DB {};
+    class Options {};
+    class WriteOptions {};
+    class ReadOptions {};
+    class Iterator {};
+    class Status {};
+}
+
+#endif
+
 #include "rocksdb_map_adapter.h"
 #include "rocksdb_set_view.h"
 #include "map_variant.h"
@@ -436,6 +449,7 @@ namespace IfcParse {
                 static constexpr char prefix_[] = "t|";
 
                 boost::optional<size_t> read_id_() const {
+#ifdef WITH_ROCKSDB
                     auto sv = state_->key().ToStringView();
                     auto ii = sv.find("|", 2);
                     if (ii != decltype(sv)::npos) {
@@ -445,6 +459,7 @@ namespace IfcParse {
                             return (size_t)result;
                         }
                     }
+#endif
                     return boost::none;
                 }
             public:
@@ -464,15 +479,18 @@ namespace IfcParse {
                 rocksdb_types_iterator(const rocks_db_file_storage* fs)
                     : storage_(fs)
                 {
+#ifdef WITH_ROCKSDB
                     state_ = fs->db->NewIterator(rocksdb::ReadOptions());
                     state_->Seek(prefix_);
                     if (!state_->Valid() || !state_->key().starts_with(prefix_)) {
                         delete state_;
                         state_ = nullptr;
                     }
+#endif
                 }
 
                 rocksdb_types_iterator& operator++() {
+#ifdef WITH_ROCKSDB
                     if (!state_) {
                         return *this;
                     }
@@ -490,6 +508,7 @@ namespace IfcParse {
                         }
                     }
                     return *this;
+#endif
                 }
 
                 rocksdb_types_iterator operator++(int) {

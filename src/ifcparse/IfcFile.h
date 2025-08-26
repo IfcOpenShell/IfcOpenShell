@@ -35,7 +35,8 @@
 #include <iterator>
 #include <map>
 
-#include "rocksdb/merge_operator.h"
+#ifdef WITH_ROCKSDB
+#include <rocksdb/merge_operator.h>
 
 namespace {
     // @todo move to a proper place
@@ -69,6 +70,7 @@ namespace {
         }
     };
 }
+#endif
 
 namespace IfcParse {
 
