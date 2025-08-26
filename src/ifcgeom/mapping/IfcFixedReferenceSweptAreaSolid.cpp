@@ -115,9 +115,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
             }
         }
     } else {
+        taxonomy::matrix4::ptr matrix;
+        bool has_position = true;
+        has_position = inst->Position() != nullptr;
+        auto pos = inst->Position();
+        if (has_position) {
+            matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+        }
         // TODO: Implement handling for non-alignment curves using sweep_along_curve
         auto sweep = taxonomy::make<taxonomy::sweep_along_curve>(
-            nullptr, // matrix4::ptr - no transformation needed
+            matrix, // matrix4::ptr - no transformation needed
             profile, // face::ptr - the profile to sweep
             nullptr, // item::ptr surface - not used for fixed reference sweep
             dir      // item::ptr curve - the directrix curve
