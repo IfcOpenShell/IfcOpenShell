@@ -207,6 +207,23 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return $self->schema()->name();
 	}
 
+	PyObject* key_value_store_query(const std::string& key) const {
+        auto* storage = std::visit([](auto& m) -> IfcParse::impl::rocks_db_file_storage const * {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+                return &m;
+            }
+            return nullptr;
+        }, $self->storage_);
+		if (!storage) {
+			Py_RETURN_NONE;
+		}
+		std::string value;
+		if (storage->db->Get(storage->ropts, key, &value) != rocksdb::Status::OK()) {
+			Py_RETURN_NONE;
+		}
+		return PyBytes_FromStringAndSize(value.data(), value.size());
+	}
+
 	%pythoncode %{
         # Hide the getters with read-only property implementations
         header = property(header)
@@ -593,6 +610,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %include "../ifcparse/file_open_status.h"
 %include "../ifcparse/IfcBaseClass.h"
 %include "../ifcparse/IfcSchema.h"
+%include "../serializers/RocksDbSerializer.h"
 
 // The IfcFile* returned by open() is to be freed by SWIG/Python
 %newobject open;
