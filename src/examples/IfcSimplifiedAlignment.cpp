@@ -42,7 +42,7 @@
 Schema::IfcProject* setup_project(IfcHierarchyHelper<Schema>& file) {
     std::vector<std::string> file_description;
     file_description.push_back("ViewDefinition[Alignment-basedReferenceView]");
-    file.header().file_description().description(file_description);
+    file.header().file_description()->setdescription(file_description);
 
     auto project = file.addProject();
     project->setName(std::string("FHWA Bridge Geometry Manual Example Alignment"));
