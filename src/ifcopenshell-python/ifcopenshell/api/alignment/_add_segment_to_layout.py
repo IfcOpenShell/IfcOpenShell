@@ -173,7 +173,8 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
 
         # get the previous segment. Working from the end of the basis curve, -1 is zero length segment
         # -2 is the newly added segment, so -3 is the segment occuring just before the newly added segment
-        prev_segment = layout.IsNestedBy[0].RelatedObjects[-3] if 2 < len(layout.IsNestedBy[0].RelatedObjects) else None
+        segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout)
+        prev_segment = segment_nest.RelatedObjects[-3] if 2 < len(segment_nest.RelatedObjects) else None
         name = f"{_get_segment_start_point_label(prev_segment,segment)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
         referent = ifcopenshell.api.alignment.add_stationing_referent(
             file, segment, distance_along=dist_along, station=station, name=name
@@ -183,7 +184,8 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
             # this is the first real segment in the horizontal alignment
             # update the location of the alignment's stationing referent
             alignment = ifcopenshell.api.alignment.get_alignment(layout)
-            stationing_referent = alignment.IsNestedBy[0].RelatedObjects[0]
+            ref_nest = ifcopenshell.api.alignment.get_referent_nest(file,alignment)
+            stationing_referent = ref_nest.RelatedObjects[0]
             p = curve_evaluator.evaluate(
                 stationing_referent.ObjectPlacement.RelativePlacement.Location.DistanceAlong.wrappedValue
             )

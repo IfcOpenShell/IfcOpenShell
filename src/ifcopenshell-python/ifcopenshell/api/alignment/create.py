@@ -87,7 +87,6 @@ def create(
         # define stationing
         name = ifcopenshell.util.alignment.station_as_string(file, start_station)
         referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name)
-        ifcopenshell.api.nest.reorder_nesting(file, referent, -1, 0)
 
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
