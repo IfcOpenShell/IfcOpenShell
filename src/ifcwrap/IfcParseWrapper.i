@@ -1030,12 +1030,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				});
 			}
 
-			for (auto& p : $self->references()) {
+			for (auto& p : self->references()) {
 				int index = p.first.index_;
 				auto name_py = pythonize(decl->as_entity()->attribute_by_index(index)->name());
 
 				std::visit([&](const auto& v) -> void {
-					PyObject* attribute_val_py;
+                    PyObject* attribute_val_py = nullptr;
 					using T = std::decay_t<decltype(v)>;
 					
 					if constexpr (std::is_same_v<T, IfcParse::reference_or_simple_type>) {
@@ -1071,9 +1071,25 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 						}
 					}
 
-					PyDict_SetItem(d, name_py, attribute_val_py);
-					Py_DECREF(name_py);
-					Py_DECREF(attribute_val_py);
+                    if (attribute_val_py) {
+                        // This is for IfcPropertySetDefinitionSet where the references need to be written
+                        // into a simple type.
+                        PyObject* existing = PyDict_GetItemWithError(d, name_py);
+                        bool set_in_dict = false;
+                        if (existing && PyDict_Check(existing) && PyDict_GetItemString(existing, "type")) {
+                            PyObject* val = PyDict_GetItemString(existing, "value");
+                            if (val && val == Py_None) {
+                                PyDict_SetItemString(existing, "value", attribute_val_py);
+                                set_in_dict = true;
+                            }
+                        }
+
+                        if (!set_in_dict) {
+                            PyDict_SetItem(d, name_py, attribute_val_py);
+                            Py_DECREF(name_py);
+                            Py_DECREF(attribute_val_py);
+                        }
+                    }
 
 				}, p.second);
 			}
