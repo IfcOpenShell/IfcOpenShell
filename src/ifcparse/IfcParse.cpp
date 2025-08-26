@@ -1233,7 +1233,10 @@ class apply_individual_instance_visitor {
 };
 
 template <typename T>
-void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
+typename std::enable_if<
+    (!(std::is_pointer<T>::value&& std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
+    void>::type
+IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
     if constexpr (std::is_same_v<std::decay_t<T>, double>) {
         if (!std::isfinite(t)) {
             throw IfcParse::IfcException("Only finite values are allowed");
@@ -1314,7 +1317,10 @@ void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
 }
 
 template <typename T>
-void IfcUtil::IfcBaseClass::set_attribute_value(const std::string& s, const T& t) {
+typename std::enable_if<
+    (!(std::is_pointer<T>::value&& std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
+    void>::type
+IfcUtil::IfcBaseClass::set_attribute_value(const std::string& s, const T& t) {
     set_attribute_value(declaration().as_entity()->attribute_index(s), t);
 }
 
@@ -2738,6 +2744,12 @@ IfcUtil::IfcBaseClass::IfcBaseClass(IfcEntityInstanceData&& data)
     */
 }
 
+void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, IfcUtil::IfcBaseClass* p) {
+    set_attribute_value<IfcUtil::IfcBaseClass*>(i, p);
+}
+void IfcUtil::IfcBaseClass::set_attribute_value(const std::string& name, IfcUtil::IfcBaseClass* p) {
+    set_attribute_value<IfcUtil::IfcBaseClass*>(name, p);
+}
 
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Blank>(size_t index, const Blank& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Derived>(size_t index, const Derived& value);
@@ -2748,7 +2760,7 @@ template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<double>(s
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::string>(size_t index, const std::string& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::dynamic_bitset<>>(size_t index, const boost::dynamic_bitset<>& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<EnumerationReference>(size_t index, const EnumerationReference& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<IfcUtil::IfcBaseClass*>(size_t index, IfcUtil::IfcBaseClass* const& value);
+// template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<IfcUtil::IfcBaseClass*>(size_t index, IfcUtil::IfcBaseClass* const& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<int>>(size_t index, const std::vector<int>& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<double>>(size_t index, const std::vector<double>& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<std::string>>(size_t index, const std::vector<std::string>& value);
@@ -2767,7 +2779,7 @@ template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<double>(c
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::string>(const std::string& name, const std::string& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::dynamic_bitset<>>(const std::string& name, const boost::dynamic_bitset<>& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<EnumerationReference>(const std::string& name, const EnumerationReference& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<IfcUtil::IfcBaseClass*>(const std::string& name, IfcUtil::IfcBaseClass* const& value);
+// template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<IfcUtil::IfcBaseClass*>(const std::string& name, IfcUtil::IfcBaseClass* const& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<int>>(const std::string& name, const std::vector<int>& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<double>>(const std::string& name, const std::vector<double>& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<std::string>>(const std::string& name, const std::vector<std::string>& value);
