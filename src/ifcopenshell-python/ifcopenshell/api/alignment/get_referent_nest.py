@@ -16,16 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 from ifcopenshell import entity_instance
 
-def get_alignment(layout: entity_instance) -> entity_instance:
+def get_referent_nest(file: ifcopenshell.file,entity: entity_instance) -> entity_instance:
     """
-    Returns the alignment that nests this layout
-    """
-    alignment = None
-    for nest in layout.Nests:
-        if nest.RelatingObject.is_a("IfcAlignment"):
-            alignment = nest.RelatingObject
-            break
+    Searches for the IfcRelNest that contains IfcReferent. If one is not found, a empty IfcRelNests is created.
 
-    return alignment
+    :param file:
+    :param entity: any entity that is the parent in a nesting relationship, but intended to be IfcAlignment, IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
+    :return: Returns the IfcRelNests.
+    """
+    for nest in entity.IsNestedBy:
+        for related_object in nest.RelatedObjects:
+            if related_object.is_a("IfcReferent"):
+                return nest
+
+    nest = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(),RelatingObject=entity,RelatedObjects=[])
+    return nest

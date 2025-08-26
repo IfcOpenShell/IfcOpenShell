@@ -46,22 +46,15 @@ def test_create_by_pi_method():
     )
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
-    assert len(alignment.IsNestedBy) == 1  # one nest
-    assert (
-        len(alignment.IsNestedBy[0].RelatedObjects) == 3
-    )  # nesting IfcReferent, IfcAlignmentHorizontal, IfcAlignmentVertical
-    assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
-    assert alignment.IsNestedBy[0].RelatedObjects[1].is_a("IfcAlignmentHorizontal")
-    assert alignment.IsNestedBy[0].RelatedObjects[2].is_a("IfcAlignmentVertical")
-    assert (
-        len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy) == 1
-    )  # nesting of segments beneath IfcAlignmentHorizontal
-    assert (
-        len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 8
-    )  # segments in horizontal layout
-    assert (
-        len(alignment.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects) == 10
-    )  # segments in vertical layout
+    assert len(alignment.IsNestedBy) == 2  # one nest
+    assert (len(alignment.IsNestedBy[0].RelatedObjects) == 2)
+    assert ifcopenshell.api.alignment.get_referent_nest(file,alignment).RelatedObjects[0].is_a("IfcReferent")
+    layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
+    assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
+    assert layout_nest.RelatedObjects[1].is_a("IfcAlignmentVertical")
+    assert (len(layout_nest.RelatedObjects[0].IsNestedBy) == 1)  # nesting of segments beneath IfcAlignmentHorizontal
+    assert (len(layout_nest.RelatedObjects[0].IsNestedBy[0].RelatedObjects) == 8)  # segments in horizontal layout
+    assert (len(layout_nest.RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 10)  # segments in vertical layout
 
 
 test_create_by_pi_method()
