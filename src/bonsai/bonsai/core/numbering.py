@@ -1,5 +1,5 @@
 # Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of Bonsai.
 #
@@ -16,23 +16,3 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import annotations
-
-import bpy
-import bonsai.core.tool
-import ifcopenshell
-import bonsai.tool as tool
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from bonsai.bim.module.numbering.prop import BIMNumberingProperties
-
-class Numbering(bonsai.core.tool.Numbering):
-    @classmethod
-    def get_numbering_props(cls) -> BIMNumberingProperties:
-        return bpy.context.scene.BIMNumberingProperties
-
-    @classmethod
-    def get_project(cls) -> ifcopenshell.entity_instance:
-        return tool.Ifc.get().by_type("IfcProject")[0]
-    

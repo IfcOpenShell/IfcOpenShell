@@ -22,7 +22,7 @@ from bonsai.bim.ifc import IfcStore
 
 import json
 import functools as ft
-from .util import Settings, LoadSelection, NumberFormatting, SaveNumber, Storeys, ObjectGeometry, get_id
+from bonsai.bim.module.numbering.util import Settings, LoadSelection, NumberFormatting, SaveNumber, Storeys, ObjectGeometry, get_id
 
 class UndoOperator:
     @staticmethod

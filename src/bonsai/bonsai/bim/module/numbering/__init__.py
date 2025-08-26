@@ -19,22 +19,22 @@
 import bpy
 from . import ui, operator, prop, workspace
 
-# Registration
-classes = (operator.AssignNumbers, 
-           operator.RemoveNumbers, 
-           operator.SaveSettings, 
-           operator.LoadSettings, 
-           operator.ExportSettings, 
-           operator.ImportSettings, 
-           operator.DeleteSettings, 
-           operator.ClearSettings,
-           operator.ShowMessage, 
+classes = (
+        #    operator.AssignNumbers, 
+        #    operator.RemoveNumbers, 
+        #    operator.SaveSettings, 
+        #    operator.LoadSettings, 
+        #    operator.ExportSettings, 
+        #    operator.ImportSettings, 
+        #    operator.DeleteSettings, 
+        #    operator.ClearSettings,
+        #    operator.ShowMessage, 
            prop.BIMNumberingProperties, 
            ui.BIM_PT_Numbering)
 
 def register():   
-    if not bpy.app.background:
-        bpy.utils.register_tool(workspace.NumberingTool, after={"bim.numbering_tool"}, separator=False, group=False)
+    # if not bpy.app.background:
+    #     bpy.utils.register_tool(workspace.NumberingTool, after={"bim.explore_tool"}, separator=False, group=False)
     bpy.types.Scene.BIMNumberingProperties = bpy.props.PointerProperty(type=prop.BIMNumberingProperties)
 
 def unregister():

@@ -39,8 +39,8 @@ class SaveNumber:
     
     pset_names = [("Custom", "Custom Pset", "")]
     pset_common_names = {}
-    ifc_file = tool.Ifc.get()
-    pset_qto = PsetQto(ifc_file.schema)
+    ifc_file = None
+    pset_qto = None
 
     @staticmethod
     def update_ifc_file():

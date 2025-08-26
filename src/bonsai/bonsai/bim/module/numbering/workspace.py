@@ -28,11 +28,12 @@ class NumberingTool(WorkSpaceTool):
     bl_idname = "bim.numbering_tool"
     bl_label = "Numbering Tool"
     bl_description = "Assign or remove numbers from elements"
-    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.covering")
+    # TODO: replace with numbering icon
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.numbering")
     bl_widget = None
 
     @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
+    def draw_settings(context, layout, ws_tool):
         NumberingToolUI.draw(context, layout)
 
 class NumberingToolUI:
