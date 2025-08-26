@@ -1,5 +1,5 @@
 # Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of Bonsai.
 #
@@ -17,30 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, operator, prop, workspace
+from . import prop, operator, workspace
 
 classes = (
-        #    operator.AssignNumbers, 
-        #    operator.RemoveNumbers, 
-        #    operator.SaveSettings, 
-        #    operator.LoadSettings, 
-        #    operator.ExportSettings, 
-        #    operator.ImportSettings, 
-        #    operator.DeleteSettings, 
-        #    operator.ClearSettings,
-        #    operator.ShowMessage, 
-           prop.BIMNumberingProperties, 
-           ui.BIM_PT_Numbering)
+    prop.BIMNumberingProperties,
+    operator.AssignNumbers,
+    operator.RemoveNumbers,
+    operator.SaveSettings,
+    operator.LoadSettings,
+    operator.DeleteSettings,
+    operator.ClearSettings,
+    operator.ImportSettings,
+    operator.ExportSettings,
+    operator.ShowMessage
+)
 
-def register():   
-    # if not bpy.app.background:
-    #     bpy.utils.register_tool(workspace.NumberingTool, after={"bim.explore_tool"}, separator=False, group=False)
+def register():
+    if not bpy.app.background:
+        bpy.utils.register_tool(workspace.NumberingTool, after={"bim.structural_tool"}, separator=False, group=False)
     bpy.types.Scene.BIMNumberingProperties = bpy.props.PointerProperty(type=prop.BIMNumberingProperties)
 
+
+# When someone disables the add-on, we need to unload everything we loaded. This
+# does the reverse of the register function.
 def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.NumberingTool)
     del bpy.types.Scene.BIMNumberingProperties
-
-register()
-

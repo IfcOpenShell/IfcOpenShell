@@ -65,7 +65,7 @@ class UndoOperator:
         for element in ifc_file.by_type(LoadSelection.get_parent_type(settings)):
             old_number = data["old_value"].get(get_id(element), None)
             rollback_count += int(SaveNumber.save_number(ifc_file, element, old_number, settings, data["new_value"]) or 0)
-        bpy.ops.bonsai.show_message('EXEC_DEFAULT', message=f"Rollback {rollback_count} numbers.")
+        bpy.ops.bim.show_message('EXEC_DEFAULT', message=f"Rollback {rollback_count} numbers.")
     
     @staticmethod
     def commit(operator, data):
@@ -79,7 +79,7 @@ class UndoOperator:
             if element is not None and element.is_a(LoadSelection.get_parent_type(settings)):
                 new_number = data["new_value"].get(obj.name, None)
                 commit_count += int(SaveNumber.save_number(ifc_file, element, new_number, settings, data["old_value"]) or 0)
-        bpy.ops.bonsai.show_message('EXEC_DEFAULT', message=f"Commit {commit_count} numbers.")
+        bpy.ops.bim.show_message('EXEC_DEFAULT', message=f"Commit {commit_count} numbers.")
   
 class AssignNumbers(bpy.types.Operator):
     bl_idname = "bim.assign_numbers"

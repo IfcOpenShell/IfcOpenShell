@@ -18,13 +18,13 @@
 
 import bonsai.tool as tool
 
+
 def refresh():
     NumberingData.is_loaded = False
 
 class NumberingData:
     data = {}
     is_loaded = False
-
     @classmethod
     def load(cls):
         cls.data = {
