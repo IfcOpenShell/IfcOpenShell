@@ -1,3 +1,5 @@
+#ifndef ROCKSDBSERIALIZER_H
+#define ROCKSDBSERIALIZER_H
 #ifdef WITH_ROCKSDB
 
 #include "../serializers/serializers_api.h"
@@ -28,4 +30,5 @@ public:
 	void setFile(IfcParse::IfcFile*) { throw IfcParse::IfcException("Should be supplied on construction"); }
 };
 
+#endif
 #endif

@@ -122,9 +122,23 @@ void RocksDbSerializer::write_streaming_() {
 				});
 			}
 
+			std::set<size_t> type_identities_wrote_as_refs;
+
 			for (auto& p : streamer.references()) {
 				// @nb cast to int in order not be interpreted as a char when appending to string
 				int index = p.first.index_;
+
+				auto key = (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
+					(is_header ? decl->name() : std::to_string(p.first.name_)) + "|" +
+					std::to_string(index);
+
+				if (storage.db->Get(storage.ropts, key, &tmp) == rocksdb::Status::OK() && tmp.size() == (sizeof(size_t) + 2) && tmp[0] == TypeEncoder::encode_type<IfcUtil::IfcBaseClass*>() && tmp[1] == 't')
+				{
+					size_t iden;
+					memcpy(&iden, tmp.data() + 2, sizeof(size_t));
+					key = "t|" + std::to_string(iden) + "|0";
+					type_identities_wrote_as_refs.insert(iden);
+				}
 
 				std::visit([&](const auto& v) {
 					serialize(tmp, v);
@@ -155,9 +169,7 @@ void RocksDbSerializer::write_streaming_() {
 
 				storage.db->Put(
 					storage.wopts,
-					(is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
-					(is_header ? decl->name() : std::to_string(p.first.name_)) + "|" +
-					std::to_string(index), tmp);
+					key, tmp);
 
 				auto write_inverse = [&](const IfcParse::reference_or_simple_type& v) {
 					if (auto* ref = std::get_if<IfcParse::InstanceReference>(&v)) {
@@ -187,6 +199,10 @@ void RocksDbSerializer::write_streaming_() {
 			}
 
 			for (const auto* inst : simple_type_instances) {
+				if (type_identities_wrote_as_refs.find(inst->identity()) != type_identities_wrote_as_refs.end()) {
+					// already written as reference, skip
+					continue;
+				}
 				std::string s(sizeof(size_t), ' ');
 				size_t v = inst->declaration().index_in_schema();
 				memcpy(s.data(), &v, sizeof(size_t));
