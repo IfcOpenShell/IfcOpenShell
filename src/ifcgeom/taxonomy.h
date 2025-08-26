@@ -1158,6 +1158,7 @@ typedef item const* ptr;
 
 				item::ptr surface;
 				item::ptr curve;
+                direction3::ptr direction = nullptr;
 
 				virtual sweep_along_curve* clone_() const { return new sweep_along_curve(*this); }
 				virtual kinds kind() const { return SWEEP_ALONG_CURVE; }
