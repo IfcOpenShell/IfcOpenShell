@@ -48,7 +48,8 @@ build-release = { cmd = ["cmake", "--build", "build/win-release", "--config", "R
 [feature.dev.target.win-64.tasks]
 configure-debug = { cmd = ["cmake", "--preset", "win-debug", "-B", "build/win-debug", "cmake"], description = "Configure the project", depends-on=["init-submodules"], outputs=["$PIXI_PROJECT_ROOT/build/win-debug/CMakeCache.txt"] }
 build-debug = { cmd = ["cmake", "--build", "build/win-debug", "--config", "Debug"], description = "Build the project" }
-install-debug = { cmd = ["cmake", "--install", "build/win-debug", "--config", "Debug"], description = "Install the project" }
+
+install-debug = { cmd = ["cmake", "--install", "build/win-debug", "--config", "Debug"], description = "Install the project" } # Optionally Install files to your desired env using --prefix
 
 vsdebug = { cmd = ["python"], description = "Run a python script with vs debugger attached" }
 
