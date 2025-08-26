@@ -26,9 +26,7 @@ def remove_reference(file: ifcopenshell.file, reference: ifcopenshell.entity_ins
     All associations with objects are removed.
 
     :param reference: The IfcDocumentReference to remove
-    :type reference: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

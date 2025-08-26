@@ -55,7 +55,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	for (auto& cs : *css) {
 		faces.push_back(std::move(taxonomy::cast<taxonomy::geom_item>(map(cs))));
 	}
-#ifdef SCHEMA_HAS_IfcPointByDistanceExpression
+	// IfcSectionedSurface::FixedAxisVertical removed in rc4, where CrossSectionPositions was IfcPointByDistanceExpression instead of IfcAxis2PlacementLinear
+#if defined(SCHEMA_HAS_IfcPointByDistanceExpression) && !defined(SCHEMA_IfcSectionedSurface_HAS_FixedAxisVertical)
 	for (auto& csp : *csps) {
 		auto pbde = csp->Location()->as<IfcSchema::IfcPointByDistanceExpression>(true);
 

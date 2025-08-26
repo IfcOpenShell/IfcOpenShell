@@ -29,17 +29,20 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.unit
 from collections import Counter
-from typing import Union, Optional, Any, TypedDict, NotRequired
+from typing import Union, Optional, Any, TypedDict
 
 
 class CostItem(TypedDict):
     # Exported columns.
     Index: int
     Hierarchy: str
+    ItemIsASum: int
     Id: int
     Identification: Union[str, None]
     Name: Union[str, None]
+    Description: Union[str, None]
     Unit: str
+    Quantities: str
     Quantity: Union[float, None]
     RateSubtotal: float
     TotalPrice: float
@@ -102,6 +105,13 @@ class IfcDataGetter:
         return values
 
     @staticmethod
+    def cost_item_is_a_sum(cost_item: ifcopenshell.entity_instance) -> bool:
+        for cost_value in cost_item.CostValues or []:
+            if cost_value.Category == "*":
+                return True
+        return False
+
+    @staticmethod
     def get_cost_items_data(
         file: ifcopenshell.file,
         cost_item: ifcopenshell.entity_instance,
@@ -138,11 +148,14 @@ class IfcDataGetter:
 
         data: CostItem = {
             "Index": index,
+            "ItemIsASum": IfcDataGetter.cost_item_is_a_sum(cost_item),
             "Hierarchy": hierarchy,
             "Id": cost_item.id(),
             "Identification": cost_item.Identification,
             "Name": cost_item.Name,
+            "Description": cost_item.Description,
             "Unit": unit,
+            "Quantities": IfcDataGetter.serialise_cost_quantities(file, cost_item),
             "Quantity": quantity_data["quantity"],
             "RateSubtotal": rate_subtotal,
             "TotalPrice": total_price,
@@ -160,8 +173,12 @@ class IfcDataGetter:
     @staticmethod
     def get_schedule_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[CostItem]:
         cost_items_data: list[CostItem] = []
+        index = 1
         for cost_item in IfcDataGetter.get_root_costs(schedule):
-            cost_items_data.extend(IfcDataGetter.get_cost_items_data(file, cost_item))
+            cost_items_data.extend(
+                IfcDataGetter.get_cost_items_data(file=file, cost_item=cost_item, hierarchy=str(index))
+            )
+            index += 1
         return cost_items_data
 
     @staticmethod
@@ -231,6 +248,33 @@ class IfcDataGetter:
             "unit": unit,
         }
 
+    @staticmethod
+    def serialise_cost_quantities(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> str:
+        if not cost_item.is_a("IfcCostItem"):
+            return ""
+        if cost_item.CostQuantities is None:
+            return ""
+        string = "["
+        for quantity in cost_item.CostQuantities:
+            string += '["'
+            for rel in file.get_inverse(quantity):
+                if rel.is_a("IfcPropertySet") or rel.is_a("IfcElementQuantity"):
+                    prop_set = rel
+                    # Find elements that have this property set
+                    for prop_rel in file.get_inverse(prop_set):
+                        if prop_rel.is_a("IfcRelDefinesByProperties"):
+                            for obj in prop_rel.RelatedObjects:
+                                if obj.is_a("IfcElement"):
+                                    string += obj.Name + " - "
+            string += quantity.Name
+            if quantity.is_a("IfcPhysicalSimpleQuantity"):
+                string += '", ' + str(quantity[3]) + "],"
+            else:
+                string += ' ERROR: Only IfcPhysicalSimpleQuantity is supported", 0.0],'
+        string = string.removesuffix(",")
+        string += "]"
+        return string
+
 
 class SheetData(TypedDict):
     headers: list[str]
@@ -296,13 +340,16 @@ class Ifc5Dwriter:
             cost_items = IfcDataGetter.get_schedule_cost_items_data(self.file, cost_schedule)
             headers: list[str] = [
                 "Id",
+                "ItemIsASum",
                 "Hierarchy",
                 "Index",
                 "Identification",
                 "Name",
+                "Description",
                 "Unit",
             ]
             if cost_schedule.PredefinedType != "SCHEDULEOFRATES":
+                headers.insert(-1, "Quantities")
                 headers.insert(-1, "Quantity")
             headers.extend(["RateSubtotal", "TotalPrice"])
 
@@ -515,6 +562,122 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
                 worksheet.write(row, col, cost_item_data.get(header, ""))
                 col += 1
             row += 1
+
+
+class Ifc5DPdfWriter(Ifc5Dwriter):
+    def __init__(
+        self,
+        file: Union[str, ifcopenshell.file],
+        output: str,
+        options: dict,
+        cost_schedule: ifcopenshell.entity_instance,
+        force_schedule_type: Optional[str] = None,
+    ):
+        """
+        PDF Writer is based on typst library, be sure it is available.
+        :param file: IFC file to exprot cost schedules from.
+        :param output: Output file path including name and .pdf extension.
+        :param cost_schedule: exported cost schedule. Output will be different accoding to Cost Schedule PredefinedType.
+        :param force_schedule_type: optional parameter to force the output to a specific Schedule Type (suports "PRICEDBILLOFQUANTITIES", "UNPRICEDBILLOFQUANTITIES", "SCHEDULEOFRATES",).
+        """
+        self.output = output
+        if isinstance(file, str):
+            self.file = ifcopenshell.open(file)
+        else:
+            self.file = file
+        self.cost_schedule = cost_schedule
+        self.force_schedule_type = force_schedule_type
+        self.options = options
+
+    def write(self) -> None:
+        import os
+        import ifc5d
+        import shutil
+        import typst
+        import tempfile
+
+        DEFAULT_OPTIONS = {
+            "nested_structure_depth": 0,
+            "parent_to_new_page_up_to_depth": 0,
+            "show_only_parents": False,
+            "should_print_cover": False,
+            "should_print_cost_ids": True,
+            "should_print_description": False,
+            "should_print_each_quantity": True,
+            "should_print_each_cost_value": False,
+            "should_print_rates": True,
+            "should_print_summary": True,
+        }
+
+        HANDLED_COST_SCHEDULE_TYPES = (
+            # Commented predefined types are not handled at the moment
+            # "BUDGET",
+            # "COSTPLAN",
+            # "ESTIMATE",
+            # "TENDER",
+            "PRICEDBILLOFQUANTITIES",
+            "UNPRICEDBILLOFQUANTITIES",
+            "SCHEDULEOFRATES",
+            # "USERDEFINED",
+            # "NOTDEFINED"
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            cost_schedule_name = self.cost_schedule.Name or "Unnamed"
+            if self.force_schedule_type in ("PRICEDBILLOFQUANTITIES", "SCHEDULEOFRATES"):
+                schedule_type = self.force_schedule_type
+            elif self.force_schedule_type is None or self.force_schedule_type == "AUTO":
+                schedule_type = self.cost_schedule.PredefinedType
+                if schedule_type not in HANDLED_COST_SCHEDULE_TYPES:
+                    schedule_type = "PRICEDBILLOFQUANTITIES"
+            else:
+                raise ValueError(
+                    "force_schedule_type can be set to AUTO, PRICEDBILLOFQUANTITIES, SCHEDULEOFRATES values only."
+                )
+            project_monetary_unit = self.file.by_type("IfcMonetaryUnit")
+            if project_monetary_unit:
+                project_currency = project_monetary_unit[0].Currency
+            else:
+                project_currency = ""
+
+            # export csv file
+            csv_file_writer = Ifc5DCsvWriter(file=self.file, output=temp_dir, cost_schedule=self.cost_schedule)
+            csv_file_writer.write()
+            csv_file_name = cost_schedule_name + ".csv"
+
+            # locate typst template file
+            typst_template_file_path = os.path.join(
+                os.path.dirname(ifc5d.__file__), "typst_template_ifc_cost_schedule.typ"
+            )
+            shutil.copy(typst_template_file_path, temp_dir)
+
+            # generate typst main file content and write it
+            typst_main_content = ""
+            typst_main_content += '#import "{}": *\n'.format("typst_template_ifc_cost_schedule.typ")
+            typst_main_content += "#show: project.with(\n"
+            typst_main_content += '  schedule_path: "{}",\n'.format(csv_file_name)
+            typst_main_content += '  title: "{}",\n'.format(self.file.by_type("IfcProject")[0].Name)
+            typst_main_content += '  schedule_name: "{}",\n'.format(cost_schedule_name)
+            typst_main_content += '  schedule_description: "{}",\n'.format(self.cost_schedule.Description or "")
+            typst_main_content += '  schedule_type: "{}",\n'.format(schedule_type)
+            typst_main_content += '  project_currency: "{}",\n'.format(project_currency)
+            for option_name, default_value in DEFAULT_OPTIONS.items():
+                value = self.options.get(option_name, default_value)
+                if isinstance(value, bool):
+                    formatted_value = str(value).lower()
+                else:
+                    formatted_value = str(value)
+                typst_main_content += f"  {option_name}: {formatted_value},\n"
+
+            typst_main_content += ")"
+            typst_main_path = os.path.join(temp_dir, "main.typ")
+            with open(typst_main_path, "w") as typ_file:
+                typ_file.write(typst_main_content)
+
+            # compile pdf file and write it
+            pdf_bytes = typst.compile(typst_main_path)
+            with open(self.output, "wb") as f:
+                f.write(pdf_bytes)
 
 
 if __name__ == "__main__":

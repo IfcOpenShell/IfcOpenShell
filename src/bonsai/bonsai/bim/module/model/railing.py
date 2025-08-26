@@ -21,6 +21,8 @@ import bpy
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.core.root
@@ -71,10 +73,9 @@ def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
     # update pset
     pset_common = tool.Pset.get_element_pset(element, "Pset_RailingCommon")
     if not pset_common:
-        pset_common = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="Pset_RailingCommon")
+        pset_common = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="Pset_RailingCommon")
 
-    ifcopenshell.api.run(
-        "pset.edit_pset",
+    ifcopenshell.api.pset.edit_pset(
         ifc_file,
         pset=pset_common,
         properties={
@@ -102,9 +103,7 @@ def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
             "height": props.height / si_conversion,
             "looped_path": looped_path,
         }
-        model_representation = ifcopenshell.api.run(
-            "geometry.add_railing_representation", ifc_file, **representation_data
-        )
+        model_representation = ifcopenshell.api.geometry.add_railing_representation(ifc_file, **representation_data)
         tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
     elif props.railing_type == "FRAMELESS_PANEL":
@@ -114,9 +113,9 @@ def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
 def update_bbim_railing_pset(element: ifcopenshell.entity_instance, railing_data: dict[str, Any]) -> None:
     pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
     if not pset:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Railing")
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Railing")
     railing_data = tool.Ifc.get().createIfcText(json.dumps(railing_data, default=list))
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": railing_data})
+    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": railing_data})
 
 
 def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
@@ -598,5 +597,5 @@ class RemoveRailing(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
         return {"FINISHED"}

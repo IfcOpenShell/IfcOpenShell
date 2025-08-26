@@ -362,7 +362,7 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 		}
     }
 
-#ifdef SCHEMA_HAS_IfcAlignmentSegment
+#if defined(SCHEMA_HAS_IfcAlignmentSegment) && defined(SCHEMA_IfcAlignmentSegment_HAS_DesignParameters)
 	if (auto* als = product->as<IfcSchema::IfcAlignmentSegment>()) {
 		ptree node;
 		format_entity_instance(mapping, als->DesignParameters(), node, child, false);

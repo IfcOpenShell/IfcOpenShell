@@ -134,6 +134,7 @@ def format_distance(
     custom_unit=None,
 ):
     # Get Blender Scene Unit Settings
+    assert bpy.context.scene
     unit_scale = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
@@ -305,7 +306,7 @@ def format_distance(
             if unit_length == "MILLIMETERS":
                 value = value / 1000
 
-        if precision:
+        if precision and isinstance(precision, float):
             value = precision * round(float(value) / precision)
 
         if decimal_places is not None:
@@ -390,18 +391,6 @@ def format_distance(
         tx_dist = fmt % value
 
     return tx_dist
-
-
-def get_active_drawing(
-    scene: bpy.types.Scene,
-) -> Union[tuple[bpy.types.Collection, bpy.types.Camera], tuple[None, None]]:
-    """Get active drawing collection and camera"""
-    props = tool.Drawing.get_document_props()
-    try:
-        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
-        return tool.Blender.get_object_bim_props(camera).collection, camera
-    except:
-        return None, None
 
 
 def get_project_collection(scene):

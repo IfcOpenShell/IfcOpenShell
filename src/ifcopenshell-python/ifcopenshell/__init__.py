@@ -65,7 +65,7 @@ if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
 
 
-if hasattr(os, "uname"):
+if sys.platform != "win32":
     platform_system = os.uname()[0].lower()
 else:
     platform_system = "windows"
@@ -93,10 +93,10 @@ from .sql import sqlite, sqlite_entity
 # explicitly specify available imported symbols
 # (it's a requirement for a typed library)
 __all__ = [
-    "ifcopenshell_wrapper",
+    "entity_instance",
     "file",
     "guid",
-    "entity_instance",
+    "ifcopenshell_wrapper",
     "sqlite",
     "sqlite_entity",
     "stream",
@@ -166,7 +166,7 @@ def open(
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
         if f:
             return file(f)
-        raise IOError(f"Failed to parse .ifcXML file from {path}")
+        raise OSError(f"Failed to parse .ifcXML file from {path}")
     if format == ".ifcZIP":
         with tempfile.TemporaryDirectory() as unzipped_path:
             with zipfile.ZipFile(path) as zf:
@@ -260,7 +260,7 @@ def schema_by_name(
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
-def guess_format(path: Path) -> Union[str, None]:
+def guess_format(path: Path) -> Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", None]:
     """Guesses the IFC format using file extension
 
     IFCs may be serialised as different formats. The most common is a ``.ifc``
@@ -273,8 +273,6 @@ def guess_format(path: Path) -> Union[str, None]:
 
     Users generally won't call this function. The :func:`open` function uses
     this internally to guess the file format.
-
-    :return: Either .ifc, .ifcZIP, .ifcXML, .ifcJSON, .ifcSQLite, or None.
     """
     suffix = path.suffix.lower()
     if suffix == ".ifc":

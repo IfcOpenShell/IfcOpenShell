@@ -27,9 +27,7 @@ def remove_reference(file: ifcopenshell.file, reference: ifcopenshell.entity_ins
     removed.
 
     :param reference: The IfcLibraryReference entity you want to remove
-    :type reference: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

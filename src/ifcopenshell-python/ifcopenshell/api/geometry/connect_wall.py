@@ -18,11 +18,10 @@
 
 import numpy as np
 import ifcopenshell
-import ifcopenshell.api.owner
-import ifcopenshell.guid
-import ifcopenshell.util.element
+import ifcopenshell.api.geometry
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
 from typing import Optional
 
 

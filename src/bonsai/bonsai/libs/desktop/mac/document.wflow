@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>AMApplicationBuild</key>
+    <string>526</string>
+    <key>AMApplicationVersion</key>
+    <string>2.10</string>
+    <key>AMDocumentVersion</key>
+    <string>2</string>
+    <key>actions</key>
+    <array>
+        <dict>
+            <key>action</key>
+            <dict>
+                <key>ActionBundlePath</key>
+                <string>/System/Library/Automator/Run Shell Script.action</string>
+                <key>ActionParameters</key>
+                <dict>
+                    <key>COMMAND_STRING</key>
+                    <string>
+BLENDER="{{BLENDER_BINARY}}"
+if [[ $# -eq 1 &amp;&amp; -f "$1" ]]; then
+    "$BLENDER" --python-expr "import bpy; \
+        import sys; \
+        filepath = sys.argv[sys.argv.index('--') + 1]; \
+        bpy.ops.bim.load_project(filepath=filepath) \
+    " -- "$1"
+else
+    "$BLENDER" --python-expr "import bpy; \
+        bpy.ops.bim.create_project()\
+    "
+fi
+                    </string>
+                    <key>CheckedForUserDefaultShell</key>
+                    <true/>
+                    <key>inputMethod</key>
+                    <integer>1</integer>
+                    <key>shell</key>
+                    <string>/bin/zsh</string>
+                    <key>source</key>
+                    <string></string>
+                </dict>
+                <key>BundleIdentifier</key>
+                <string>com.apple.RunShellScript</string>
+                <key>Class Name</key>
+                <string>RunShellScriptAction</string>
+            </dict>
+        </dict>
+    </array>
+    <key>workflowMetaData</key>
+    <dict>
+        <key>workflowTypeIdentifier</key>
+        <string>com.apple.Automator.application</string>
+    </dict>
+</dict>
+</plist>

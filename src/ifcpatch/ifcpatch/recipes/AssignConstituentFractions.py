@@ -20,8 +20,6 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from logging import Logger
-from collections import defaultdict
-from typing import List, Dict, Tuple, Optional
 
 
 class Patcher:
@@ -97,7 +95,7 @@ class Patcher:
                     f"Fraction: {fraction:.4f}"
                 )
 
-    def get_element_quantities(self, element: ifcopenshell.entity_instance) -> Dict[str, float]:
+    def get_element_quantities(self, element: ifcopenshell.entity_instance) -> dict[str, float]:
         """Get width quantities for an element."""
         qtos = [
             v
@@ -116,10 +114,10 @@ class Patcher:
 
     def calculate_constituent_widths(
         self,
-        constituents: List[ifcopenshell.entity_instance],
+        constituents: list[ifcopenshell.entity_instance],
         elements: set[ifcopenshell.entity_instance],
         unit_scale: float,
-    ) -> Tuple[Dict[ifcopenshell.entity_instance, float], float]:
+    ) -> tuple[dict[ifcopenshell.entity_instance, float], float]:
         """Calculate the widths of constituents based on associated quantities."""
         if not elements:
             return {}, 0.0

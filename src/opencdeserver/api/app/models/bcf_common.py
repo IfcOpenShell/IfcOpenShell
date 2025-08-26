@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from enum import Enum
 
 
@@ -72,7 +72,7 @@ class Component(BaseModel):
 
 class Coloring(BaseModel):
     color: Optional[str] = None
-    components: Optional[List[Component]] = None
+    components: Optional[list[Component]] = None
 
 
 class ViewSetupHints(BaseModel):
@@ -83,5 +83,5 @@ class ViewSetupHints(BaseModel):
 
 class Visibility(BaseModel):
     default_visibility: Optional[bool] = False
-    exceptions: Optional[List[Component]] = None
+    exceptions: Optional[list[Component]] = None
     view_setup_hints: Optional[ViewSetupHints] = None

@@ -24,16 +24,18 @@ import ifcopenshell.util.unit
 import ifcopenshell.api.owner.settings
 import bonsai.bim
 import bonsai.tool as tool
+import weakref
 from bpy.app.handlers import persistent
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
-from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
+from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator, BoundingBoxDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
 from mathutils import Vector
 from math import cos
-from typing import Union, Callable
+from typing import Union
+from collections.abc import Callable
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -217,12 +219,12 @@ def refresh_ui_data():
         except AttributeError:
             pass
 
-    if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
-        tool.Ifc.get().clear_cache()
+    if isinstance(ifc_file := tool.Ifc.get(), ifcopenshell.sqlite):
+        ifc_file.clear_cache()
 
     props = tool.Drawing.get_document_props()
     props.should_draw_decorations = props.should_draw_decorations
-    if bpy.context.scene.WebProperties.is_connected:
+    if tool.Web.get_web_props().is_connected:
         tool.Web.send_webui_data()
 
 
@@ -256,31 +258,73 @@ def redo_post(scene: bpy.types.Scene) -> None:
     tool.Ifc.rebuild_element_maps()
 
 
+# Cache is important as those entities will be retrieved very often,
+# for every IfcOwnerHistory creation or update.
+class SettingsCache:
+    APPLICATION_ID: Union[int, None] = None
+    USER_ID: Union[int, None] = None
+
+    _file: Union[weakref.ReferenceType[ifcopenshell.file], None] = None
+
+    @classmethod
+    def get_file(cls) -> Union[ifcopenshell.file, None]:
+        if cls._file is None:
+            return None
+        return cls._file()
+
+    @classmethod
+    def set_file(cls, file: ifcopenshell.file) -> None:
+        cls._file = weakref.ref(file)
+
+
 def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
-    # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
-    version = tool.Blender.get_bonsai_version()
+    if SettingsCache.get_file() is ifc and SettingsCache.APPLICATION_ID is not None:
+        try:
+            app = ifc.by_id(SettingsCache.APPLICATION_ID)
+            return app
+        except RuntimeError:
+            pass
+
+    # Use only main part from the version to avoid flooding advanced users projects with IfcApplications.
+    version = tool.Blender.get_bonsai_version().split("-")[0]
+    identifier = f"Bonsai-{version}"
     for element in ifc.by_type("IfcApplication"):
-        if element.ApplicationIdentifier == "Bonsai" and element.Version == version:
+        if element.ApplicationIdentifier == identifier:
             return element
-    return ifcopenshell.api.run(
-        "owner.add_application",
+    application_developer = next((org for org in ifc.by_type("IfcOrganization") if org.Name == "IfcOpenShell"), None)
+    application = ifcopenshell.api.owner.add_application(
         ifc,
+        application_developer=application_developer,
         version=version,
         application_full_name="Bonsai",
-        application_identifier="Bonsai",
+        application_identifier=identifier,
     )
+    SettingsCache.APPLICATION_ID = application.id()
+    SettingsCache.set_file(ifc)
+    return application
 
 
 def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
     # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
+    if SettingsCache.get_file() is ifc and SettingsCache.USER_ID is not None:
+        try:
+            user = ifc.by_id(SettingsCache.USER_ID)
+            return user
+        except RuntimeError:
+            pass
+
     if pao := next(iter(ifc.by_type("IfcPersonAndOrganization")), None):
+        SettingsCache.USER_ID = pao.id()
+        SettingsCache.set_file(ifc)
         return pao
     elif ifc.schema == "IFC2X3":
         if (person := next(iter(ifc.by_type("IfcPerson")), None)) is None:
-            person = tool.Ifc.run("owner.add_person")
+            person = ifcopenshell.api.owner.add_person(ifc)
         if (organization := next(iter(ifc.by_type("IfcOrganization")), None)) is None:
-            organization = tool.Ifc.run("owner.add_organisation")
-        pao = tool.Ifc.run("owner.add_person_and_organisation", person=person, organisation=organization)
+            organization = ifcopenshell.api.owner.add_organisation(ifc)
+        pao = ifcopenshell.api.owner.add_person_and_organisation(ifc, person=person, organisation=organization)
+        SettingsCache.USER_ID = pao.id()
+        SettingsCache.set_file(ifc)
         return pao
 
 
@@ -350,6 +394,11 @@ def load_post(scene):
     aggregate_props = tool.Aggregate.get_aggregate_props()
     nest_props = tool.Nest.get_nest_props()
     model_props = tool.Model.get_model_props()
+    GeoreferenceDecorator.uninstall()
+    AggregateDecorator.uninstall()
+    NestDecorator.uninstall()
+    WallAxisDecorator.uninstall()
+    SlabDirectionDecorator.uninstall()
     if georeference_props.should_visualise:
         GeoreferenceDecorator.install(bpy.context)
     if aggregate_props.aggregate_decorator:
@@ -360,9 +409,13 @@ def load_post(scene):
         WallAxisDecorator.install(bpy.context)
     if model_props.show_slab_direction:
         SlabDirectionDecorator.install(bpy.context)
+    if model_props.show_bounding_box:
+        BoundingBoxDecorator.install(bpy.context)
 
     if preferences.should_use_snap and (scene := bpy.context.scene):
         # Snapping is off by default in Blender, but in BIM, it's more useful to be on
         scene.tool_settings.use_snap = True
         # Match default Bonsai snaps
         scene.tool_settings.snap_elements_base = {"EDGE", "EDGE_PERPENDICULAR", "VERTEX", "EDGE_MIDPOINT", "FACE"}
+
+    tool.Blender.sync_old_preferences()

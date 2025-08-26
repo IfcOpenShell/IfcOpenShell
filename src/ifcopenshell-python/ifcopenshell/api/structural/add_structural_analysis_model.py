@@ -30,7 +30,6 @@ def add_structural_analysis_model(file: ifcopenshell.file) -> ifcopenshell.entit
     A 3D analytical model is assumed.
 
     :return: The newly created IfcStructuralAnalysisModel
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

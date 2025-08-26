@@ -18,6 +18,8 @@
 
 import test.bootstrap
 import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.root
 
 
 class TestRemoveContext(test.bootstrap.IFC4):

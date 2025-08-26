@@ -51,6 +51,14 @@ def unassign_product(
         ifcopenshell.api.drawing.unassign_product(model,
             relating_product=furniture, related_object=annotation)
     """
+    if relating_product.is_a("IfcGridAxis"):
+        grid = None
+        for attribute in ("PartOfW", "PartOfV", "PartOfU"):
+            if getattr(relating_product, attribute, None):
+                grid = getattr(relating_product, attribute)[0]
+                break
+        relating_product = grid
+
     for rel in related_object.HasAssignments or []:
         if not rel.is_a("IfcRelAssignsToProduct") or rel.RelatingProduct != relating_product:
             continue

@@ -20,7 +20,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.project
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner.settings
-import ifcopenshell.util.date
+import ifcopenshell.api.sequence
 from datetime import time
 from datetime import datetime
 from typing import Union, Optional
@@ -30,7 +30,7 @@ def add_work_schedule(
     file: ifcopenshell.file,
     name: str = "Unnamed",
     predefined_type: str = "NOTDEFINED",
-    object_type=None,
+    object_type: Union[str, None] = None,
     start_time: Optional[Union[str, time]] = None,
     work_plan: Optional[ifcopenshell.entity_instance] = None,
 ) -> ifcopenshell.entity_instance:
@@ -40,22 +40,19 @@ def add_work_schedule(
     either for maintenance or for construction scheduling.
 
     :param name: The name of the work schedule.
-    :type name: str
     :param predefined_type: The type of schedule, chosen from ACTUAL,
         BASELINE, and PLANNED. Typically you would start with PLANNED, then
         convert to a BASELINE when changes are made with separate schedules,
         then have a parallel ACTUAL schedule.
-    :type predefined_type: str
+    :param object_type: Work schedule Object Type. Should be provided
+        in case if ``predefined_type`` is USERDEFINED.
     :param start_time: The earlier start time when the schedule is relevant.
         May be represented with an ISO standard string.
-    :type start_time: str,datetime.time,optional
     :param work_plan: The IfcWorkPlan the schedule will be part of. If not
         provided, the schedule will not be grouped in a work plan and would
         exist as a top level schedule in the project. This is not
         recommended.
-    :type work_plan: ifcopenshell.entity_instance,optional
     :return: The newly created IfcWorkSchedule
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -84,26 +81,18 @@ def add_work_schedule(
         predefined_type=predefined_type,
         name=name,
     )
-    if file.schema == "IFC2X3":
-        work_schedule.CreationDate = createIfcDateAndTime(file, datetime.now())
-    else:
-        work_schedule.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+    work_schedule.CreationDate = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
     user = ifcopenshell.api.owner.settings.get_user(file)
     if user:
         work_schedule.Creators = [user.ThePerson]
-    if file.schema == "IFC2X3":
-        work_schedule.StartTime = createIfcDateAndTime(file, start_time)
-    else:
-        work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(start_time, "IfcDateTime")
+    work_schedule.StartTime = ifcopenshell.api.sequence.add_date_time(file, start_time)
     if object_type:
         work_schedule.ObjectType = object_type
     if work_plan:
         ifcopenshell.api.aggregate.assign_object(
             file,
-            **{
-                "products": [work_schedule],
-                "relating_object": work_plan,
-            }
+            products=[work_schedule],
+            relating_object=work_plan,
         )
     elif file.schema != "IFC2X3":
         # TODO: this is an ambiguity by buildingSMART
@@ -115,12 +104,3 @@ def add_work_schedule(
             relating_context=context,
         )
     return work_schedule
-
-
-def createIfcDateAndTime(file: ifcopenshell.file, dt: datetime):
-    ifc_dt = file.create_entity("IfcDateAndTime")
-    ifc_dt.DateComponent = file.create_entity(
-        "IfcCalendarDate", **ifcopenshell.util.date.datetime2ifc(dt, "IfcCalendarDate")
-    )
-    ifc_dt.TimeComponent = file.create_entity("IfcLocalTime", **ifcopenshell.util.date.datetime2ifc(dt, "IfcLocalTime"))
-    return ifc_dt

@@ -44,7 +44,7 @@ router = APIRouter(route_class=LoggingRoute)
 
 
 @router.get("/bcf/3.0/projects", tags=["projects_get"])
-def projects_get(current_user: User = Depends(get_current_active_user)) -> List[ProjectGET]:
+def projects_get(current_user: User = Depends(get_current_active_user)) -> list[ProjectGET]:
     projects_response = bcf_db.get_projects(current_user)
     bcf_db.debug(
         endpoint="projects_get",
@@ -90,7 +90,7 @@ def project_extensions_get(project_id: UUID, current_user: User = Depends(get_cu
 
 
 @router.get("/bcf/3.0/projects/{project_id}/topics", tags=["topics_get"])
-def topics_get(project_id: str, current_user: User = Depends(get_current_active_user)) -> List[TopicGET]:
+def topics_get(project_id: str, current_user: User = Depends(get_current_active_user)) -> list[TopicGET]:
     topics_response = bcf_db.get_topics(project_id, current_user)
     bcf_db.debug(
         endpoint="topics_get",
@@ -198,7 +198,7 @@ def bim_snippet_put(
 @router.get("/bcf/3.0/projects/{project_id}/files_information", tags=["files_information_get"])
 def files_information_get(
     project_id: UUID, current_user: User = Depends(get_current_active_user)
-) -> List[ProjectFileInformation]:
+) -> list[ProjectFileInformation]:
     files_information_response = bcf_db.get_files_information(project_id, current_user)
     bcf_db.debug(
         endpoint="files_information_get",
@@ -210,7 +210,7 @@ def files_information_get(
 
 # Implemented
 @router.get("/bcf/3.0/projects/{project_id}/topics/{topic_id}/files", tags=["files_get"])
-def files_get(project_id: UUID, topic_id: UUID, current_user: User = Depends(get_current_active_user)) -> List[FileGET]:
+def files_get(project_id: UUID, topic_id: UUID, current_user: User = Depends(get_current_active_user)) -> list[FileGET]:
     files_response = bcf_db.get_files(project_id, topic_id, current_user)
     bcf_db.debug(
         endpoint="files_get",
@@ -223,8 +223,8 @@ def files_get(project_id: UUID, topic_id: UUID, current_user: User = Depends(get
 # request body file = FilePUT
 @router.put("/bcf/3.0/projects/{project_id}/topics/{topic_id}/files", tags=["files_put"], status_code=200)
 def files_put(
-    project_id: UUID, topic_id: UUID, files: List[FilePUT], current_user: User = Depends(get_current_active_user)
-) -> List[FileGET]:
+    project_id: UUID, topic_id: UUID, files: list[FilePUT], current_user: User = Depends(get_current_active_user)
+) -> list[FileGET]:
     files_response = bcf_db.put_files(project_id, topic_id, files, current_user)
     bcf_db.debug(
         endpoint="files_put",
@@ -247,7 +247,7 @@ def files_put(
 @router.get("/bcf/3.0/projects/{project_id}/topics/{topic_id}/comments", tags=["comments_get"])
 def comments_get(
     project_id: UUID, topic_id: UUID, current_user: User = Depends(get_current_active_user)
-) -> List[CommentGET]:
+) -> list[CommentGET]:
     comments_response = bcf_db.get_comments(project_id, topic_id, current_user)
     bcf_db.debug(
         endpoint="comments_get",
@@ -331,7 +331,7 @@ def comment_delete(
 @router.get("/bcf/3.0/projects/{project_id}/topics/{topic_id}/viewpoints", tags=["viewpoints_get"])
 def viewpoints_get(
     project_id: UUID, topic_id: UUID, current_user: User = Depends(get_current_active_user)
-) -> List[ViewpointGET]:
+) -> list[ViewpointGET]:
     viewpoints_response = bcf_db.get_viewpoints(project_id, topic_id, current_user)
     bcf_db.debug(
         endpoint="viewpoints_get",
@@ -495,7 +495,7 @@ def viewpoint_delete(
 @router.get("/bcf/3.0/projects/{project_id}/topics/{topic_id}/related_topics", tags=["related_topics_get"])
 def related_topics_get(
     project_id: UUID, topic_id: UUID, current_user: User = Depends(get_current_active_user)
-) -> List[RelatedTopicGET]:
+) -> list[RelatedTopicGET]:
     related_topics_response = bcf_db.get_related_topics(project_id, topic_id, current_user)
     bcf_db.debug(
         endpoint="related_topics_get",
@@ -512,9 +512,9 @@ def related_topics_get(
 def related_topics_put(
     project_id: UUID,
     topic_id: UUID,
-    related_topics: List[RelatedTopicPUT],
+    related_topics: list[RelatedTopicPUT],
     current_user: User = Depends(get_current_active_user),
-) -> List[RelatedTopicGET]:
+) -> list[RelatedTopicGET]:
     related_topics_response = bcf_db.put_related_topics(project_id, topic_id, related_topics, current_user)
     bcf_db.debug(
         endpoint="related_topics_put",
@@ -539,7 +539,7 @@ def related_topics_put(
 )
 def topic_document_references_get(
     project_id: UUID, topic_id: UUID, current_user: User = Depends(get_current_active_user)
-) -> List[DocumentReferenceGET]:
+) -> list[DocumentReferenceGET]:
     topic_document_references_response = bcf_db.get_topic_document_references(project_id, topic_id, current_user)
     bcf_db.debug(
         endpoint="topic_document_references_get",
@@ -608,7 +608,7 @@ def topic_document_references_put(
 
 
 @router.get("/bcf/3.0/projects/{project_id}/documents", tags=["documents_get"])
-def documents_get(project_id: UUID, current_user: User = Depends(get_current_active_user)) -> List[DocumentGET]:
+def documents_get(project_id: UUID, current_user: User = Depends(get_current_active_user)) -> list[DocumentGET]:
     documents_response = bcf_db.get_documents(project_id, current_user)
     bcf_db.debug(
         endpoint="documents_get",
@@ -649,7 +649,7 @@ def document_get(
 
 # ...
 @router.get("/bcf/3.0/projects/{project_id}/topics/events", tags=["topics_events_get"])
-def topics_events_get(project_id: UUID, current_user: User = Depends(get_current_active_user)) -> List[TopicEventGET]:
+def topics_events_get(project_id: UUID, current_user: User = Depends(get_current_active_user)) -> list[TopicEventGET]:
     topic_events_response = bcf_db.get_topics_events(project_id, current_user)
     bcf_db.debug(
         endpoint="topics_events_get",
@@ -662,7 +662,7 @@ def topics_events_get(project_id: UUID, current_user: User = Depends(get_current
 @router.get("/bcf/3.0/projects/{project_id}/topics/{topic_id}/events", tags=["topic_events_get"])
 def topic_events_get(
     project_id: UUID, topic_id: UUID, current_user: User = Depends(get_current_active_user)
-) -> List[TopicEventGET]:
+) -> list[TopicEventGET]:
     topic_events_response = bcf_db.get_topic_events(project_id, topic_id, current_user)
     bcf_db.debug(
         endpoint="topic_events_get",
@@ -681,7 +681,7 @@ def topic_events_get(
 @router.get("/bcf/3.0/projects/{project_id}/topics/comments/events", tags=["comments_events_get"])
 def comments_events_get(
     project_id: UUID, current_user: User = Depends(get_current_active_user)
-) -> List[CommentEventGET]:
+) -> list[CommentEventGET]:
     comments_events_response = bcf_db.get_comments_events(project_id, current_user)
     bcf_db.debug(
         endpoint="comments_events_get",
@@ -696,7 +696,7 @@ def comments_events_get(
 )
 def comment_events_get(
     project_id: UUID, topic_id: UUID, comment_id: UUID, current_user: User = Depends(get_current_active_user)
-) -> List[CommentEventGET]:
+) -> list[CommentEventGET]:
     comment_events_response = bcf_db.get_comment_events(project_id, topic_id, comment_id, current_user)
     bcf_db.debug(
         endpoint="comment_events_get",

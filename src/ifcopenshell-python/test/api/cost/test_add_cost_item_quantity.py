@@ -25,7 +25,8 @@ import ifcopenshell.api.control
 class TestAddCostItemQuantity(test.bootstrap.IFC4):
     def test_run(self):
         schema = ifcopenshell.schema_by_name(self.file.schema)
-        quantity_types = [t.name() for t in schema.declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()]
+        assert (entity := schema.declaration_by_name("IfcPhysicalSimpleQuantity").as_entity())
+        quantity_types = [t.name() for t in entity.subtypes()]
         schedule = ifcopenshell.api.cost.add_cost_schedule(self.file)
         item = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

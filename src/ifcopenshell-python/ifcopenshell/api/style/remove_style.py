@@ -18,7 +18,7 @@
 
 import ifcopenshell.api.style
 import ifcopenshell.util.element
-from typing import Iterable
+from collections.abc import Iterable
 
 
 def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:

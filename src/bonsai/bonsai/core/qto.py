@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def calculate_circle_radius(qto: tool.Qto, obj: bpy.types.Object) -> float:
+def calculate_circle_radius(qto: type[tool.Qto], obj: bpy.types.Object) -> float:
     result = qto.get_radius_of_selected_vertices(obj)
     qto.set_qto_result(result)
     return result

@@ -23,6 +23,7 @@ import bpy
 import bmesh
 import logging
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
@@ -38,7 +39,7 @@ from ifcopenshell.util.shape_builder import np_to_4d
 from math import atan, radians
 from mathutils import Vector, Matrix
 from pathlib import Path
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, cast
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -74,9 +75,6 @@ class Loader(bonsai.core.tool.Loader):
     def get_representation_id_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> int:
         representation_id: str = geometry.id
         if "-" in representation_id:
-            # Example: 2432-openings-2468, where
-            # 2432 is mapped representation id
-            # and 2468 is IFCRELVOIDSELEMENT
             representation_id = re.sub(r"\D", "", representation_id.split("-")[0])
         else:
             representation_id = re.sub(r"\D", "", representation_id)
@@ -104,7 +102,7 @@ class Loader(bonsai.core.tool.Loader):
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
-        geometry = shape.geometry if hasattr(shape, "geometry") else shape
+        geometry = shape.geometry if isinstance(shape, ifcopenshell.geom.ShapeElementType) else shape
         tool.Geometry.get_mesh_props(mesh).ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
@@ -643,7 +641,10 @@ class Loader(bonsai.core.tool.Loader):
     ) -> bool:
         limit = cls.settings.distance_limit
         limit = limit if is_meters else (limit / cls.unit_scale)
-        coords = getattr(point, "Coordinates", point)
+        if isinstance(point, ifcopenshell.entity_instance):
+            coords = cast(tuple[float, ...], point.Coordinates)
+        else:
+            coords = point
         return any(abs(c) > limit for c in coords)
 
     @classmethod
@@ -802,8 +803,7 @@ class Loader(bonsai.core.tool.Loader):
             print(f"WARNING. Unsupported point type for IfcStructuralPointConnection: {point}.")
             return
 
-        ifc_file = tool.Ifc.get()
-        co = np.array(point.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        co = np.array(point.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         mesh_name = tool.Geometry.get_representation_name(representation)
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata([co], [], [])
@@ -815,47 +815,42 @@ class Loader(bonsai.core.tool.Loader):
         cls,
         element: ifcopenshell.entity_instance,
         representation: ifcopenshell.entity_instance,
-        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        shape: W.TriangulationElement,
     ) -> bpy.types.Camera:
-        from bonsai.bim.module.drawing.prop import get_diagram_scales
+        """Create camera data.
 
-        if isinstance(shape, ifcopenshell.geom.ShapeElementType):
-            geometry = shape.geometry
-        else:
-            geometry = shape
-
-        v = geometry.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        z = [v[i + 2] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
-        depth = max(z) - min(z)
+        Camera props are automatically updated based on ``element`` and ``shape``.
+        """
+        geometry = shape.geometry
+        width = ifcopenshell.util.shape.get_x(geometry)
+        height = ifcopenshell.util.shape.get_y(geometry)
 
         camera_type = "ORTHO"
-        if "IfcRectangularPyramid" in {e.is_a() for e in tool.Ifc.get().traverse(representation)}:
+        if any(e.is_a() == "IfcRectangularPyramid" for e in tool.Ifc.get().traverse(representation)):
             camera_type = "PERSP"
 
         camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
-        camera.type = camera_type
-        camera.show_limits = True
         props = tool.Drawing.get_camera_props(camera)
+        props.camera_type = camera_type
+        camera.show_limits = True
 
         if camera_type == "ORTHO":
+            depth = ifcopenshell.util.shape.get_z(geometry)
             camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
             camera.clip_end = depth
 
-            props.width = width
-            props.height = height
+            props["width"] = width
+            props["height"] = height
         elif camera_type == "PERSP":
-            abs_min_z = abs(min(z))
-            abs_max_z = abs(max(z))
+            z_values = ifcopenshell.util.shape.get_vertices(geometry)[:, 2]
+            abs_min_z = abs(np.min(z_values).item())
+            abs_max_z = abs(np.max(z_values).item())
             camera.clip_start = abs_max_z
             camera.clip_end = abs_min_z
             max_res = 1000
 
-            props.width = width
-            props.height = height
+            props["width"] = width
+            props["height"] = height
 
             if width > height:
                 fov = 2 * atan(width / (2 * abs_min_z))
@@ -865,6 +860,9 @@ class Loader(bonsai.core.tool.Loader):
             camera.angle = fov
 
         tool.Drawing.import_camera_props(element, camera)
+        props.update_camera_resolution()  # Only after all props are imported.
+        mat = tool.Drawing.get_camera_shape_matrix(element, shape)
+        props.update_representation(mat)
         return camera
 
     @classmethod
@@ -971,7 +969,7 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def convert_geometry_to_mesh(
         cls,
-        geometry: ifcopenshell.geom.ShapeType,
+        geometry: W.Triangulation,
         mesh: bpy.types.Mesh,
         verts: Optional[npt.NDArray[np.float64]] = None,
         *,
@@ -1173,47 +1171,6 @@ class Loader(bonsai.core.tool.Loader):
         mesh.update()
 
         return mesh
-
-    @classmethod
-    def setup_active_bsdd_classification(cls) -> None:
-        ifc_file = tool.Ifc.get()
-        schema = ifc_file.schema
-
-        # In IFC2X3 IfcClassification doesn't have an attribute for uri.
-        if schema == "IFC2X3":
-            classifications = [c for c in ifc_file.by_type("IfcClassification") if c.Name]
-            if not classifications:
-                return
-            pattern = r"^https://identifier\.buildingsmart\.org/uri/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)/([0-9]+\.[0-9]+)"
-
-            # No inverse attribute in IFC2X3...
-            for ref in ifc_file.by_type("IfcClassificationReference"):
-                if (
-                    not (uri := ref.Location)
-                    or not uri.startswith("https://identifier.buildingsmart.org/uri/")
-                    or not (pattern_match := re.match(pattern, uri))
-                    or not (classification := ref.ReferencedSource)
-                    or classification not in classifications
-                    or not classification.is_a("IfcClassification")
-                ):
-                    continue
-                tool.Bsdd.set_active_bsdd(classification.Name, pattern_match.group(0))
-            return
-
-        attr_name = "Specification" if schema == "IFC4X3" else "Location"
-        bsdd_classification, uri, name = None, None, None
-        for c in ifc_file.by_type("IfcClassification"):
-            if (
-                (uri := getattr(c, attr_name))
-                and uri.startswith("https://identifier.buildingsmart.org/uri/")
-                and (name := c.Name)
-            ):
-                bsdd_classification = c
-                break
-        if not bsdd_classification:
-            return
-        assert name and uri
-        tool.Bsdd.set_active_bsdd(name, uri)
 
     @classmethod
     def is_native_swept_disk_solid(

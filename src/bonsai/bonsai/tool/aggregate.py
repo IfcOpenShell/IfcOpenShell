@@ -89,9 +89,9 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 return rel.RelatingObject
 
     @classmethod
-    def get_aggregates_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    def get_aggregates_recursively(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         """Get elements aggregates recursively, resulting set includes `element`."""
-        aggregates = list()
+        aggregates: list[ifcopenshell.entity_instance] = list()
         queue = {element}
         while queue:
             element = queue.pop()
@@ -163,6 +163,9 @@ class Aggregate(bonsai.core.tool.Aggregate):
             for obj in objs:
                 if obj.original not in parts_objs:
                     if obj == props.editing_aggregate:
+                        continue
+                    # Skips adding the object to not_editing_objects if it already exists in the list
+                    if any(obj == existing_obj.obj.original for existing_obj in props.not_editing_objects):
                         continue
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original

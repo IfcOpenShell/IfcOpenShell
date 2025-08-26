@@ -112,7 +112,9 @@ def update_blender_coordinates(self: "BIMGeoreferenceProperties", context: bpy.t
     props.is_updating_coordinates = True
     blender_coordinates = tool.Georeference.get_coordinates("blender")
     local_coordinates = ifcopenshell.util.geolocation.xyz2enh(
-        *blender_coordinates,
+        blender_coordinates[0],
+        blender_coordinates[1],
+        blender_coordinates[2],
         float(props.blender_offset_x),
         float(props.blender_offset_y),
         float(props.blender_offset_z),

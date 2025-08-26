@@ -731,3 +731,27 @@ Scenario: Create a MEP bend between intersecting segments at the same location
     And the object "IfcDuctSegment/Seg2" dimensions are "0.4,0.2,4.5"
     And the object "IfcDuctFitting/DuctFitting" is at "0.0, 0.5, 1.0"
     And the object "IfcDuctFitting/DuctFitting" dimensions are "0.7, 0.2, 0.7"
+
+Scenario: Generate a space from cursor location
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the cursor is at "1.1,0,0"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall.001" is selected
+    And I press "bim.hotkey(hotkey='S_R')"
+    And the cursor is at "0,.9,0"
+    And I press "bim.add_occurrence"
+    And the cursor is at "-1,0,0"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall.003" is selected
+    And I press "bim.hotkey(hotkey='S_R')"
+    And the object "IfcWall/Wall.003" is moved to "0,0,0"
+    When the cursor is at "0.5,0.5,0"
+    And I deselect all objects
+    And I press "bim.generate_space"
+    Then the object "IfcSpace/Space" exists
+    And the object "IfcSpace/Space" dimensions are "1,0.8,3"

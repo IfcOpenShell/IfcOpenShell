@@ -22,24 +22,37 @@ import re
 import subprocess
 import bpy
 import logging
+import tempfile
 from bonsai.bim import import_ifc
 from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
-from typing import TYPE_CHECKING, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, Union, Literal, Any
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 try:
     import git
+    import git.exc
+    import git.objects
 except ImportError:
     print("Warning: GitPython not available.")
 
 if TYPE_CHECKING:
     import git
+    import git.exc
+    import git.objects
+
+    from bonsai.bim.module.ifcgit.prop import IfcGitProperties
 
 
 class IfcGit:
     STEP_IDS = dict[str, set[int]]
+
+    @classmethod
+    def get_ifcgit_props(cls) -> IfcGitProperties:
+        assert (scene := bpy.context.scene)
+        return scene.IfcGitProperties
 
     @classmethod
     def init_repo(cls, path_dir: str) -> None:
@@ -118,7 +131,7 @@ class IfcGit:
     @classmethod
     def checkout_new_branch(cls, path_file: str) -> None:
         """Create a branch and move uncommitted changes to this branch"""
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         if props.new_branch_name:
             IfcGitRepo.repo.git.checkout(b=props.new_branch_name)
             props.display_branch = props.new_branch_name
@@ -127,7 +140,7 @@ class IfcGit:
 
     @classmethod
     def git_commit(cls, path_file: str) -> None:
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         repo = IfcGitRepo.repo
         if os.name == "nt":
             cls.dos2unix(path_file)
@@ -137,7 +150,7 @@ class IfcGit:
 
     @classmethod
     def add_tag(cls, repo: git.Repo) -> None:
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         item = props.ifcgit_commits[props.commit_index]
         repo.create_tag(props.new_tag_name, ref=item.hexsha, message=props.new_tag_message)
         props.new_tag_name = ""
@@ -150,14 +163,14 @@ class IfcGit:
 
     @classmethod
     def add_remote(cls, repo: git.Repo) -> None:
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         repo.create_remote(name=props.remote_name, url=props.remote_url)
         props.remote_name = ""
         props.remote_url = ""
 
     @classmethod
     def delete_remote(cls, repo: git.Repo) -> None:
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         remote_name = props.select_remote
         if remote_name in repo.remotes:
             repo.delete_remote(remote_name)
@@ -176,7 +189,7 @@ class IfcGit:
     @classmethod
     def create_new_branch(cls) -> None:
         """Convert a detached HEAD into a branch"""
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         repo = IfcGitRepo.repo
         new_branch = repo.create_head(props.new_branch_name)
         new_branch.checkout()
@@ -187,7 +200,7 @@ class IfcGit:
 
     @classmethod
     def clear_commits_list(cls) -> None:
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
 
         # ifcgit_commits is registered list widget
         props.ifcgit_commits.clear()
@@ -195,7 +208,7 @@ class IfcGit:
     @classmethod
     def get_commits_list(cls, path_ifc: str, lookup: dict[str, Any]) -> None:
 
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         repo = cls.repo_from_path(path_ifc)
         commits = list(
             git.objects.commit.Commit.iter_items(
@@ -271,7 +284,7 @@ class IfcGit:
         settings.should_setup_viewport_camera = False
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
-        tool.Project.load_pset_templates()
+        tool.Project.load_project_pset_templates()
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
@@ -342,7 +355,7 @@ class IfcGit:
     def get_revisions_step_ids(cls) -> Union[STEP_IDS, None]:
         props = tool.Blender.get_bim_props()
         path_ifc = tool.Blender.get_bim_props().ifc_file
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
 
@@ -404,7 +417,7 @@ class IfcGit:
 
     @classmethod
     def colourise(cls, step_ids: STEP_IDS) -> None:
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = tool.Blender.get_view3d_area()
         area.spaces[0].shading.color_type = "OBJECT"
         bpy.ops.object.select_all(action="DESELECT")
 
@@ -426,12 +439,12 @@ class IfcGit:
 
     @classmethod
     def decolourise(cls) -> None:
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = tool.Blender.get_view3d_area()
         area.spaces[0].shading.color_type = "MATERIAL"
 
     @classmethod
     def switch_to_revision_item(cls) -> None:
-        props = bpy.context.scene.IfcGitProperties
+        props = cls.get_ifcgit_props()
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
 
@@ -500,8 +513,8 @@ class IfcGit:
                 output.write(line + b"\n")
 
     @classmethod
-    def execute_merge(cls, path_ifc: str, operator: bpy.types.Operator) -> Union[None, False]:
-        props = bpy.context.scene.IfcGitProperties
+    def execute_merge(cls, path_ifc: str, operator: bpy.types.Operator) -> Union[None, Literal[False]]:
+        props = cls.get_ifcgit_props()
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
         lookup = cls.branches_by_hexsha(repo)
@@ -564,11 +577,39 @@ class IfcGit:
         """Command to install Git on Windows using winget"""
         command = ["winget", "install", "--id", "Git.Git", "-e", "--source", "winget"]
         try:
-            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.check_output(command)
         except subprocess.CalledProcessError as e:
             operator.report({"ERROR"}, f"Called Process Error occurred: {e}")
         except FileNotFoundError:
             operator.report({"ERROR"}, "Winget is not available. Make sure Windows Package Manager is installed.")
+
+    @classmethod
+    def run_git_diff(cls, operator: bpy.types.Operator, save_to_temp: bool) -> None:
+        path = tool.Ifc.get_path()
+        ifc_file = tool.Ifc.get()
+        ifc_str = ifc_file.to_string()
+
+        color = "never" if save_to_temp else "always"
+        # Avoid `text=True` as it's causing issues with colorful output.
+        try:
+            subprocess.check_output(
+                ("git", "diff", "--no-index", f"--color={color}", "--", path, "-"),
+                input=ifc_str.encode(),
+            )
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 1:
+                if save_to_temp:
+                    temp_path = Path(tempfile.gettempdir()) / "bonsai.diff"
+                    temp_path.write_bytes(e.stdout)
+                    operator.report({"INFO"}, f"Git diff output is saved to {temp_path}.")
+                else:
+                    print(e.stdout.decode())
+                    operator.report({"INFO"}, "See system console for git diff output.")
+                return
+            print(e.output)
+            raise Exception("Error running git diff, see system console.")
+
+        operator.report({"INFO"}, "No changes since last save.")
 
 
 class IfcGitRepo:

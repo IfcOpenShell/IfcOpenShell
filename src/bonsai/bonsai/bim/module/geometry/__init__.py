@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 from bpy.app.handlers import persistent
 import ifcopenshell.util.element
+import math
 
 classes = (
     operator.AddCurvelikeItem,
@@ -56,7 +57,7 @@ classes = (
     operator.OverrideMeshSeparate,
     operator.OverrideModeSetEdit,
     operator.OverrideModeSetObject,
-    operator.OverrideMove,
+    operator.OverrideMoveSelect,
     operator.OverrideMoveMacro,
     operator.OverrideOriginSet,
     operator.OverrideOutlinerDelete,
@@ -76,6 +77,7 @@ classes = (
     operator.UpdateItemAttributes,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    operator.CreateInstance,
     prop.RepresentationItem,
     prop.RepresentationItemObject,
     prop.ShapeAspect,
@@ -108,6 +110,7 @@ def block_scale(scene: bpy.types.Scene) -> None:
                 camera = tool.Ifc.get_entity(obj)
                 if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
                     obj.scale = (-1, -1, -1)
+                    obj.rotation_euler = (0.0, 0.0, math.radians(180))
             else:
                 if obj.scale != (1, 1, 1):
                     obj.scale = (1, 1, 1)
@@ -124,9 +127,9 @@ def register():
     operator.OverrideDuplicateMoveLinkedMacro.define("BIM_OT_override_object_duplicate_move_linked")
     operator.OverrideDuplicateMoveLinkedMacro.define("TRANSFORM_OT_translate")
     operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_object_duplicate_move_linked_aggregate")
-    operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_override_move")
+    operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_override_move_select")
     operator.DuplicateMoveLinkedAggregateMacro.define("TRANSFORM_OT_translate")
-    operator.OverrideMoveMacro.define("BIM_OT_override_move")
+    operator.OverrideMoveMacro.define("BIM_OT_override_move_select")
     operator.OverrideMoveMacro.define("TRANSFORM_OT_translate")
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
@@ -156,10 +159,18 @@ def register():
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")
         addon_keymaps.append((km, kmi))
+        # Deletion.
         kmi = km.keymap_items.new("bim.override_object_delete", "X", "PRESS")
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("bim.override_object_delete", "X", "PRESS", shift=True)
+        kmi.properties.use_global = True
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_delete", "DEL", "PRESS")
         kmi.properties.confirm = False
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("bim.override_object_delete", "DEL", "PRESS", shift=True)
+        kmi.properties.confirm = False
+        kmi.properties.use_global = True
         addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")

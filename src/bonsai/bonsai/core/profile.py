@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def purge_unused_profiles(ifc: tool.Ifc, profile: tool.Profile) -> int:
+def purge_unused_profiles(ifc: type[tool.Ifc], profile: type[tool.Profile]) -> int:
     """Purge profiles that have no inverses.
 
     :return: Number of removed profiles.

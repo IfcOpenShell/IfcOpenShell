@@ -39,8 +39,8 @@ class TesterData:
         return bool(tool.Tester.report)
 
     @classmethod
-    def specification(cls) -> list[ifctester.reporter.ResultsSpecification]:
+    def specification(cls) -> ifctester.reporter.ResultsSpecification:
         if not tool.Tester.report:
             return []
-        props = bpy.context.scene.IfcTesterProperties
+        props = tool.Tester.get_tester_props()
         return tool.Tester.report[props.active_specification_index]

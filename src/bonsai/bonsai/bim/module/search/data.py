@@ -20,6 +20,7 @@ import bpy
 import json
 import ifcopenshell.util.element
 import bonsai.tool as tool
+from natsort import natsorted
 
 
 def refresh():
@@ -39,11 +40,11 @@ class SearchData:
         cls.data["saved_searches"] = cls.saved_searches()
 
     @classmethod
-    def saved_searches(cls):
+    def saved_searches(cls) -> list[tuple[str, str, str]]:
         if not tool.Ifc.get():
             return []
         groups = tool.Ifc.get().by_type("IfcGroup")
-        results = []
+        results: list[ifcopenshell.entity_instance] = []
         for group in groups:
             try:
                 data = json.loads(group.Description)
@@ -51,7 +52,8 @@ class SearchData:
                     results.append(group)
             except:
                 pass
-        return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
+        enum_items = [(str(g.id()), g.Name or "Unnamed", "") for g in results]
+        return natsorted(enum_items, key=lambda x: x[1])
 
 
 class ColourByPropertyData:

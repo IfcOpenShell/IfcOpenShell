@@ -28,9 +28,7 @@ def disconnect_port(file: ifcopenshell.file, port: ifcopenshell.entity_instance)
     needed to be specified.
 
     :param port: The IfcDistributionPort to disconnect.
-    :type port: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

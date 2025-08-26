@@ -63,7 +63,7 @@ class Usecase:
             related_objects -= products_set
             if related_objects:
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, element=rel)
                 continue
 
             history = rel.OwnerHistory

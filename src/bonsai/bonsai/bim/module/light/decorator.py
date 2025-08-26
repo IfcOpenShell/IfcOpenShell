@@ -22,7 +22,7 @@ import gpu
 import bmesh
 import bonsai.tool as tool
 from bpy.types import SpaceView3D
-from math import radians
+from math import radians, degrees
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -59,10 +59,10 @@ class SolarDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_text(self, context):
+    def draw_text(self, context: bpy.types.Context) -> None:
         self.addon_prefs = tool.Blender.get_addon_preferences()
 
-        props = bpy.context.scene.BIMSolarProperties
+        props = tool.Blender.get_solar_props()
         origin = Matrix.Translation(props.sun_path_origin)
         location = origin @ (props.sun_position * 1.05)
 
@@ -72,11 +72,12 @@ class SolarDecorator:
         self.draw_text_at_position(context, f"{props.hour:02}:{props.minute:02}", location)
 
         self.tn_angle = props.true_north
-        angle = Matrix.Rotation(radians(self.tn_angle), 4, "Z")
+        angle = Matrix.Rotation(props.true_north, 4, "Z")
         grid_north_p = origin @ angle @ (Vector((0, 0.8, 0)) * props.sun_path_size)
         self.draw_text_at_position(context, "True North", grid_north_p)
 
-    def draw_text_at_position(self, context, text, position):
+    def draw_text_at_position(self, context: bpy.types.Context, text: str, position: Vector) -> None:
+        assert context.region and context.region_data
         coords_2d = location_3d_to_region_2d(context.region, context.region_data, position)
         if not coords_2d:
             return
@@ -87,7 +88,8 @@ class SolarDecorator:
             blf.position(self.font_id, co[0], co[1], 0)
             blf.draw(self.font_id, line)
 
-    def draw_geometry(self, context):
+    def draw_geometry(self, context: bpy.types.Context) -> None:
+        assert context.region
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color_special = self.addon_prefs.decorator_color_special
         decorator_color_error = self.addon_prefs.decorator_color_error
@@ -102,12 +104,7 @@ class SolarDecorator:
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.line_shader.uniform_float("lineWidth", 2.0)
 
-        # general shader
-        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-
         vertex_shader = """
-            uniform mat4 ModelViewProjectionMatrix;
-            in vec3 pos;
             void main()
             {
                 gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
@@ -116,8 +113,6 @@ class SolarDecorator:
         """
 
         fragment_shader = """
-            uniform vec4 color;
-            out vec4 fragColor;
             void main()
             {
                 float dist = length(gl_PointCoord - vec2(0.5));
@@ -129,9 +124,16 @@ class SolarDecorator:
             }
         """
 
-        self.shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
+        shader_info = gpu.types.GPUShaderCreateInfo()
+        shader_info.push_constant("MAT4", "ModelViewProjectionMatrix")
+        shader_info.vertex_in(0, "VEC3", "pos")
+        shader_info.vertex_source(vertex_shader)
+        shader_info.fragment_out(0, "VEC4", "fragColor")
+        shader_info.push_constant("VEC4", "color")
+        shader_info.fragment_source(fragment_shader)
+        self.shader = gpu.shader.create_from_info(shader_info)
 
-        props = bpy.context.scene.BIMSolarProperties
+        props = tool.Blender.get_solar_props()
 
         origin = Matrix.Translation(props.sun_path_origin)
 
@@ -153,13 +155,13 @@ class SolarDecorator:
         # True north
         self.tn_angle = props.true_north
         points = [Vector((0, 0, 0)), Vector((0, 0.75, 0))]
-        angle = Matrix.Rotation(radians(self.tn_angle), 4, "Z")
+        angle = Matrix.Rotation(self.tn_angle, 4, "Z")
         points = [origin @ angle @ (v * props.sun_path_size) for v in points]
         self.draw_batch("POINTS", points, decorator_color_special)
 
         verts = [Vector((0, 0, 0)), Vector((0, 0.75, 0))]
         edges = [[0, 1]]
-        angle = Matrix.Rotation(radians(self.tn_angle), 4, "Z")
+        angle = Matrix.Rotation(self.tn_angle, 4, "Z")
         verts = [origin @ angle @ (v * props.sun_path_size) for v in verts]
         self.draw_batch("LINES", verts, decorator_color_special, edges)
 
@@ -172,7 +174,7 @@ class SolarDecorator:
 
         arc_start = Vector((0, 0.25, 0)) * props.sun_path_size
         arc_end = angle @ arc_start
-        angle_half = Matrix.Rotation(radians(self.tn_angle / 2), 4, "Z")
+        angle_half = Matrix.Rotation(self.tn_angle / 2, 4, "Z")
         arc_mid = angle_half @ arc_start
         arc_segments = tool.Cad.create_arc_segments(
             pts=[origin @ v for v in [arc_start, arc_mid, arc_end]], num_verts=12, make_edges=True

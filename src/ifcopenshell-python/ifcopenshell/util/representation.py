@@ -19,9 +19,11 @@
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
-import ifcopenshell.util.shape
+import ifcopenshell.util.representation
 import ifcopenshell.util.placement
-from typing import Optional, Union, TypedDict, Literal, Generator, Sequence
+import ifcopenshell.util.shape
+from typing import Optional, Union, TypedDict, Literal
+from collections.abc import Generator, Sequence
 
 
 CONTEXT_TYPE = Literal["Model", "Plan", "NotDefined"]
@@ -142,7 +144,7 @@ def get_representation(
     :param target_view: A TargetView string, or any if left blank.
     :return: The first IfcShapeRepresentation matching the criteria.
     """
-    for r in get_representations_iter(element):  # type: ignore
+    for r in get_representations_iter(element):
         if is_representation_of_context(r, context, subcontext, target_view):
             return r
 
@@ -286,6 +288,16 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
         return "SectionedSpine"
     elif all([True if i.is_a("IfcLightSource") else False for i in items]):
         return "LightSource"
+    elif all([True if i.is_a("IfcVertex") else False for i in items]):
+        return "Vertex"
+    elif all([True if i.is_a("IfcEdge") else False for i in items]):
+        return "Edge"
+    elif all([True if i.is_a("IfcPath") else False for i in items]):
+        return "Path"
+    elif all([True if i.is_a("IfcFace") else False for i in items]):
+        return "Face"
+    elif all([True if i.is_a("IfcOpenShell") else False for i in items]):
+        return "Shell"
 
 
 def resolve_representation(representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -294,8 +306,13 @@ def resolve_representation(representation: ifcopenshell.entity_instance) -> ifco
     :param representation: IfcRepresentation
     :return: Representation resolved from mappings
     """
-    if len(representation.Items) == 1 and representation.Items[0].is_a("IfcMappedItem"):
-        return resolve_representation(representation.Items[0].MappingSource.MappedRepresentation)
+    # Tekla 2023 has missing items and mapped representation, though it's invalid IFC.
+    if (
+        len(representation.Items or []) == 1
+        and representation.Items[0].is_a("IfcMappedItem")
+        and (mapped_rep := representation.Items[0].MappingSource.MappedRepresentation)
+    ):
+        return resolve_representation(mapped_rep)
     return representation
 
 

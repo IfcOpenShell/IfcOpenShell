@@ -46,6 +46,7 @@ class BIM_PT_styles(Panel):
             StylesData.load()
 
         self.props = tool.Style.get_style_props()
+        assert self.layout
 
         if not self.props.is_editing:
             row = self.layout.row(align=True)
@@ -55,6 +56,7 @@ class BIM_PT_styles(Panel):
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = style_type
             return
 
+        self.is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
         active_style = self.props.active_style
         row = self.layout.row(align=True)
         row.label(text="{} {}s".format(len(self.props.styles), self.props.style_type), icon="SHADING_RENDERED")
@@ -133,7 +135,7 @@ class BIM_PT_styles(Panel):
         # display style elements props during edit
         if self.props.is_editing_style:
             if self.props.is_editing_class == "IfcSurfaceStyle":
-                bonsai.bim.helper.draw_attributes(self.props.attributes, self.layout)
+                bonsai.bim.helper.draw_attributes(self.props.attributes, self.layout, enable_search=True)
                 edit_label = "Save Attributes"
             elif self.props.is_editing_class == "IfcSurfaceStyleShading":
                 self.draw_surface_style_shading()
@@ -158,8 +160,9 @@ class BIM_PT_styles(Panel):
     def draw_surface_style_shading(self):
         row = self.layout.row()
         row.prop(self.props, "surface_colour")
-        row = self.layout.row()
-        row.prop(self.props, "transparency")
+        if not self.is_ifc2x3:
+            row = self.layout.row()
+            row.prop(self.props, "transparency")
 
     def draw_surface_style_rendering(self):
         row = self.layout.row()
@@ -243,10 +246,10 @@ class BIM_PT_styles(Panel):
         op = row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
         style = self.props.active_style
         op.active_surface_style_id = style.ifc_definition_id
-        bonsai.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout, enable_search=True)
 
     def draw_refraction_surface_style(self):
-        bonsai.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout, enable_search=True)
         row = self.layout.row(align=True)
 
     def draw_lighting_surface_style(self):

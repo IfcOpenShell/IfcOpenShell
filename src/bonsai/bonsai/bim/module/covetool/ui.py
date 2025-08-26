@@ -16,7 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy.types
+import bonsai.tool as tool
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.covetool.prop import CoveToolProperties, CoveToolProject
 
 
 class BIM_PT_covetool(bpy.types.Panel):
@@ -32,8 +38,7 @@ class BIM_PT_covetool(bpy.types.Panel):
         layout = self.layout
         layout.use_property_split = True
 
-        scene = context.scene
-        props = scene.CoveToolProperties
+        props = tool.Blender.get_covetool_props()
 
         if not props.token:
             row = layout.row()
@@ -81,7 +86,16 @@ class BIM_PT_covetool(bpy.types.Panel):
 
 
 class BIM_UL_covetool_projects(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: CoveToolProperties,
+        item: CoveToolProject,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         ob = data
         if item:
             layout.prop(item, "name", text="", emboss=False)

@@ -30,7 +30,8 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Generator, Any, Union, TYPE_CHECKING
+from typing import Any, Union, TYPE_CHECKING
+from collections.abc import Generator
 
 try:
     import brickschema

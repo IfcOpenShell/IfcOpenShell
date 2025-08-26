@@ -2,6 +2,8 @@
 Project 4: Terraced/Town Houses/Duplexes
 ========================================
 
+.. include:: /_incomplete_message.rst
+
 In this project, we'll design a row of terraced houses, town houses, or duplexes using Bonsai.
 This tutorial will introduce concepts such as shared walls, duplicating units, parametric design,
 and collaboration with other stakeholders.

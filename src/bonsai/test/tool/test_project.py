@@ -18,8 +18,10 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.document
 import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import tempfile
@@ -106,9 +108,8 @@ class TestSetDefaultContext(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifc.createIfcProject()
-        model = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        body = ifcopenshell.api.run(
-            "context.add_context",
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
             ifc,
             parent=model,
             context_type="Model",
@@ -125,7 +126,7 @@ class TestSetDefaultModelingDimensions(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifc.createIfcProject()
-        ifcopenshell.api.run("unit.assign_unit", ifc)
+        ifcopenshell.api.unit.assign_unit(ifc)
         subject.set_default_modeling_dimensions()
         props = tool.Model.get_model_props()
         assert props.extrusion_depth == 3

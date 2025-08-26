@@ -121,7 +121,6 @@ class Qto(bonsai.core.tool.Qto):
         """_summary_: Returns the related cost item and related quantities of the product
 
         :param ifc-instance product: ifc instance
-        :type product: ifcopenshell.entity_instance.entity_instance
 
         :return list of dictionaries in the form [
         {
@@ -132,7 +131,6 @@ class Qto(bonsai.core.tool.Qto):
         "quantity_value" : XX,
         "quantity_type" : XX
         }]
-        :rtype: list
 
         Example:
 

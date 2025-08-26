@@ -19,11 +19,14 @@
 import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
-def test_add_stationing_to_alignment():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(Name="Test")
+def test_distance_along_from_station():
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -38,18 +41,15 @@ def test_add_stationing_to_alignment():
     vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
     lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
 
-    alignment = ifcopenshell.api.alignment.create_alignment_by_pi_method(
-        file, "TestAlignment", coordinates, radii, vpoints, lengths
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(
+        file, "TestAlignment", coordinates, radii, vpoints, lengths, start_station=10000.0
     )
-
-    # test alignment without stationing referent
-    assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 500.0) == pytest.approx(500.0)
-
-    # add stationing referent
-    ifcopenshell.api.alignment.add_stationing_to_alignment(file, alignment, 10000.0)
 
     # Station 138+83.96
     assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 13883.96) == pytest.approx(3883.96)
 
     # Station 175+25.36
     assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 17525.36) == pytest.approx(7525.36)
+
+
+test_distance_along_from_station()

@@ -21,6 +21,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.type
 from bonsai.bim.module.type.data import TypeData
 import bonsai.tool as tool
+from typing import TYPE_CHECKING, Union
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -34,23 +35,23 @@ from bpy.props import (
 )
 
 
-def get_relating_type_class(self, context):
+def get_relating_type_class(self: "BIMTypeProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not TypeData.is_loaded:
         TypeData.load()
     return TypeData.data["relating_type_classes"]
 
 
-def get_relating_type(self, context):
+def get_relating_type(self: "BIMTypeProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not TypeData.is_loaded:
         TypeData.load()
     return TypeData.data["relating_types"]
 
 
-def update_relating_type_class(self, context):
+def update_relating_type_class(self: "BIMTypeProperties", context: bpy.types.Context) -> None:
     TypeData.is_loaded = False
 
 
-def update_relating_type_from_object(self, context):
+def update_relating_type_from_object(self: "BIMTypeProperties", context: bpy.types.Context) -> None:
     if self.relating_type_object is None:
         return
     element = tool.Ifc.get_entity(self.relating_type_object)
@@ -63,12 +64,12 @@ def update_relating_type_from_object(self, context):
     bpy.ops.bim.assign_type()
 
 
-def is_object_class_applicable(self, obj):
+def is_object_class_applicable(self: "BIMTypeProperties", obj: bpy.types.Object) -> bool:
     if not TypeData.is_loaded:
         TypeData.load()
     element = tool.Ifc.get_entity(obj)
     if not element:
-        return
+        return False
     element_type = ifcopenshell.util.element.get_type(element)
     if element_type is None:
         return False
@@ -89,3 +90,9 @@ class BIMTypeProperties(PropertyGroup):
         update=update_relating_type_from_object,
         poll=is_object_class_applicable,
     )
+
+    if TYPE_CHECKING:
+        is_editing_type: bool
+        relating_type_class: str
+        relating_type: str
+        relating_type_object: Union[bpy.types.Object, None]

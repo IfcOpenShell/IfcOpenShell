@@ -16,9 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bonsai.tool as tool
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import bpy
 from bpy.types import Panel, UIList
+import bonsai.tool as tool
 from bonsai.bim.module.tester.data import TesterData
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.tester.prop import (
+        FailedEntities,
+        IfcTesterProperties,
+        Specification,
+    )
 
 
 class BIM_PT_tester(Panel):
@@ -34,8 +46,9 @@ class BIM_PT_tester(Panel):
         if not TesterData.is_loaded:
             TesterData.load()
 
+        assert self.layout
         self.layout.use_property_split = True
-        props = context.scene.IfcTesterProperties
+        props = tool.Tester.get_tester_props()
 
         if tool.Ifc.get():
             row = self.layout.row()
@@ -68,16 +81,17 @@ class BIM_PT_tester(Panel):
                 "active_specification_index",
             )
 
-            self.draw_editable_ui(context)
+            self.draw_editable_ui()
             row = self.layout.row()
             row.operator("bim.export_bcf", text="Export BCF", icon="EXPORT")
 
-    def draw_editable_ui(self, context):
-        props = context.scene.IfcTesterProperties
+    def draw_editable_ui(self) -> None:
+        props = tool.Tester.get_tester_props()
         specification = TesterData.data["specification"]
 
         n_requirements = len(specification["requirements"])
 
+        assert self.layout
         row = self.layout.row()
         row.label(
             text=f'Passed: {specification["total_checks_pass"]}/{specification["total_checks"]} ({specification["percent_checks_pass"]}%)'
@@ -96,7 +110,11 @@ class BIM_PT_tester(Panel):
                 op2.spec_index = props.active_specification_index
                 op2.req_index = i
 
-        if props.old_index == props.active_specification_index and props.n_entities > 0:
+        if (
+            props.old_index == props.active_specification_index
+            and props.n_entities > 0
+            and len(props.failed_entities) > 0
+        ):
             row = self.layout.row()
             row.label(text=f"Failed entities [{props.n_entities}]:")
             self.layout.template_list(
@@ -110,7 +128,16 @@ class BIM_PT_tester(Panel):
 
 
 class BIM_UL_tester_specifications(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: IfcTesterProperties,
+        item: Specification,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             row = layout.split(factor=0.3, align=True)
             row.label(text=item.name, icon="CHECKMARK" if item.status else "CANCEL")
@@ -118,12 +145,20 @@ class BIM_UL_tester_specifications(UIList):
 
 
 class BIM_UL_tester_failed_entities(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.IfcTesterProperties
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: IfcTesterProperties,
+        item: FailedEntities,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             row = layout.row(align=True)
             row.label(text=item.element)
             row.label(text=item.reason)
-            if props.should_load_from_memory:
+            if data.should_load_from_memory:
                 op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
                 op.ifc_id = item.ifc_id

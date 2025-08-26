@@ -36,6 +36,7 @@ from .assign_actor import assign_actor
 from .create_owner_history import create_owner_history
 from .edit_actor import edit_actor
 from .edit_address import edit_address
+from .edit_application import edit_application
 from .edit_organisation import edit_organisation
 from .edit_person import edit_person
 from .edit_role import edit_role
@@ -63,6 +64,7 @@ __all__ = [
     "create_owner_history",
     "edit_actor",
     "edit_address",
+    "edit_application",
     "edit_organisation",
     "edit_person",
     "edit_role",

@@ -87,6 +87,11 @@ IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
+set PYTHON_VERSION=3.11
+py -%PYTHON_VERSION% --version 2>&1>NUL
+IF %ERRORLEVEL%==0 set IFCOS_INSTALL_PYTHON=EXISTS
+set PYTHON_VERSION=%PYTHON_VERSION%.7
+
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
@@ -143,6 +148,8 @@ echo     Defaults to Build if not specified. Rebuild/Clean also uninstalls Pytho
 call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
 echo   - Download and install Python.
 echo     Set to something other than TRUE if you wish to use an already installed version of Python.
+echo     EXISTS value is set automatically if same Python version is already found on the system
+echo     and we won't be able to install it again.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -167,16 +174,16 @@ echo.
 cd "%DEPS_DIR%"
 
 :: VERSIONS
-set HDF5_VERSION=1.8.22
-set HDF5_VERSION_MAJOR=1.8
+set HDF5_VERSION=1.12.1
+set HDF5_VERSION_MAJOR=1.12
 set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-set PYTHON_VERSION=3.11.7
+set PYTHON_VERSION=%PYTHON_VERSION%
 
 :: VERSION DERIVATIONS
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do ( 
+for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do (
     set PY_VER_MAJOR_MINOR=%%a%%b
 )
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
@@ -253,7 +260,7 @@ git clean -fdx
 REM There probably need to be quotes here around the filename
 powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace 
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -301,26 +308,33 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :HDF5
 
 set DEPENDENCY_NAME=hdf5
-set DEPENDENCY_DIR=%DEPS_DIR%
+set DEPENDENCY_DIR=%DEPS_DIR%\hdf5-%HDF5_VERSION%
 cd "%DEPENDENCY_DIR%"
-set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
-set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+set HDF5_CMAKE_ZIP=hdf5-%HDF5_VERSION%.zip
+set HDF5_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
 
-IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%" (
-    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%", skipping
+IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_NAME%", skipping
     goto :Boost
 )
 
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
-call :DownloadFile http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/CMake-hdf5-%HDF5_VERSION%.zip "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
+call :DownloadFile ^
+    http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/%HDF5_CMAKE_ZIP% ^
+    "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
+call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\hdf5-%HDF5_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-pushd "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
-git apply %~dp0patches\hdf5vs2022.patch --ignore-whitespace
-rem It is not checked whether this patch is applied successfully!
-ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG% -V -O hdf5.log
-call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
+pushd "%DEPS_DIR%\hdf5-%HDF5_VERSION%"
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%HDF5_INSTALL_NAME%" ^
+               -DHDF5_ENABLE_Z_LIB_SUPPORT=OFF -DBUILD_TESTING=OFF ^
+               -DHDF5_BUILD_TOOLS=OFF -DHDF5_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=OFF -DHDF5_BUILD_UTILS=OFF ^
+               -DHDF5_BUILD_CPP_LIB=ON
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\HDF5.sln" %DEBUG_OR_RELEASE%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
 popd
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
@@ -360,7 +374,7 @@ call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, 
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
 
 call .\b2 toolset=%BOOST_TOOLSET% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
-    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND% 
+    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -427,7 +441,7 @@ if not %ERRORLEVEL%==0 goto :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\freetype.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-if not %ERRORLEVEL%==0 goto :Error 
+if not %ERRORLEVEL%==0 goto :Error
 
 set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
@@ -500,6 +514,12 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     IF NOT EXIST "%PYTHONHOME%". (
         call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
         start /w  %PYTHON_INSTALLER% /quiet TargetDir="%PYTHONHOME%"
+        if errorlevel 1 (
+            :: Standard installer doesn't support installing same Python version twice,
+            :: but we skip installation during IFCOS_INSTALL_PYTHON initialization.
+            call cecho.cmd 0 12 "Failed to install Python. Error code: !ERRORLEVEL!."
+            GOTO :Error
+        )
     ) ELSE (
         call cecho.cmd 0 13 "%DEPENDENCY_NAME% already installed. Skipping."
     )
@@ -539,7 +559,7 @@ IF EXIST "%INSTALL_DIR%\cgal" (
 
 set DEPENDENCY_NAME=cgal
 set DEPENDENCY_DIR=%DEPS_DIR%\cgal
-call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" v5.2.3
+call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" v5.5.5
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 git reset --hard
@@ -561,6 +581,11 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :Eigen
 set DEPENDENCY_NAME=Eigen
 set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
+
+IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
+    goto :Successful
+)
 call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
 
 :: :tbb
@@ -576,7 +601,7 @@ call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPEND
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
-:: 
+::
 :: :usd
 :: set DEPENDENCY_NAME=usd
 :: set DEPENDENCY_DIR=%DEPS_DIR%\usd
@@ -709,7 +734,7 @@ call git checkout %3
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
- 
+
 :: RunCMake - Runs CMake for a CMake-based project
 :: Params: %* cmakeOptions
 :: NOTE cd to root CMakeLists.txt folder before calling this if the CMakeLists.txt is not in the repo root.
@@ -718,7 +743,7 @@ call cecho.cmd 0 13 "Running CMake for %DEPENDENCY_NAME%."
 IF NOT EXIST %BUILD_DIR%. mkdir %BUILD_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd %BUILD_DIR%
-:: TODO make deleting cache a parameter for this subroutine? We probably want to delete the 
+:: TODO make deleting cache a parameter for this subroutine? We probably want to delete the
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
 

@@ -26,20 +26,43 @@ import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.schema
-from typing import Union, Literal, Any, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
 
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.pset.prop import PsetProperties, GlobalPsetProperties
+    from bonsai.bim.module.pset.prop import (
+        PsetProperties,
+        GlobalPsetProperties,
+        AddEditPropertyEntry,
+        RenamePropertyEntry,
+        DeletePsetEntry,
+    )
 
 
 class Pset(bonsai.core.tool.Pset):
     PSET_TYPE = Literal["PSET", "QTO"]
+    BulkOperationType = Literal["ADD_EDIT", "RENAME", "DELETE"]
+    BULK_OPERATION_TYPES = ("ADD_EDIT", "RENAME", "DELETE")
 
     @classmethod
     def get_global_pset_props(cls) -> GlobalPsetProperties:
         return bpy.context.scene.GlobalPsetProperties
+
+    @classmethod
+    def get_bulk_operation_collection(cls, operation_type: BulkOperationType) -> Union[
+        bpy.types.bpy_prop_collection_idprop[AddEditPropertyEntry],
+        bpy.types.bpy_prop_collection_idprop[RenamePropertyEntry],
+        bpy.types.bpy_prop_collection_idprop[DeletePsetEntry],
+    ]:
+        props = cls.get_global_pset_props()
+        if operation_type == "ADD_EDIT":
+            return props.psets_to_add_edit
+        elif operation_type == "RENAME":
+            return props.psets_to_rename
+        elif operation_type == "DELETE":
+            return props.psets_to_delete
+        else:
+            assert False
 
     @classmethod
     def get_element_pset(
@@ -52,11 +75,11 @@ class Pset(bonsai.core.tool.Pset):
     @classmethod
     def get_pset_props(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> PsetProperties:
         if obj_type == "Object":
-            return bpy.data.objects.get(obj).PsetProperties
+            return bpy.data.objects[obj].PsetProperties
         elif obj_type == "Material":
             return bpy.context.scene.MaterialPsetProperties
         elif obj_type == "MaterialSetItem":
-            return bpy.data.objects.get(obj).MaterialSetItemPsetProperties
+            return bpy.data.objects[obj].MaterialSetItemPsetProperties
         elif obj_type == "Task":
             return bpy.context.scene.TaskPsetProperties
         elif obj_type == "Resource":
@@ -67,13 +90,15 @@ class Pset(bonsai.core.tool.Pset):
             return bpy.context.scene.WorkSchedulePsetProperties
         elif obj_type == "Group":
             return bpy.context.scene.GroupPsetProperties
+        elif obj_type == "Zone":
+            return bpy.context.scene.ZonePsetProperties
         assert_never(obj_type)
 
     @classmethod
     def get_pset_name(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE, pset_type: PSET_TYPE = "PSET") -> str:
         props = cls.get_pset_props(obj, obj_type)
         name = props.pset_name if pset_type == "PSET" else props.qto_name
-        if name == "BBIM_CUSTOM":
+        if name in ("BBIM_CUSTOM", "BBIM_BSDD"):
             return ""
         return name
 
@@ -109,7 +134,9 @@ class Pset(bonsai.core.tool.Pset):
         )
 
     @classmethod
-    def get_special_type_for_prop(cls, prop_or_prop_template: ifcopenshell.entity_instance) -> str:
+    def get_special_type_for_prop(
+        cls, prop_or_prop_template: ifcopenshell.entity_instance
+    ) -> Literal["LENGTH"] | Literal["AREA"] | Literal["VOLUME"] | Literal["URI"] | Literal[""]:
         special_type = ""
         if prop_or_prop_template.is_a("IfcPropertyTemplate"):
             primary_measure_type = prop_or_prop_template.PrimaryMeasureType
@@ -120,6 +147,8 @@ class Pset(bonsai.core.tool.Pset):
                 special_type = "AREA"
             elif primary_measure_type == "IfcVolumeMeasure" or template_type == "Q_VOLUME":
                 special_type = "VOLUME"
+            elif primary_measure_type == "IfcURIReference":
+                special_type = "URI"
         else:
             if prop_or_prop_template.is_a("IfcPropertySingleValue"):
                 value = prop_or_prop_template.NominalValue
@@ -247,7 +276,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.name = prop_template.Name
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
-        metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
+        metadata.special_type = "URI" if prop_template.PrimaryMeasureType == "IfcURIReference" else ""
 
         # Cute hack to abuse the metadata to find the Blender data_type
         metadata.set_value(enum_items[0])
@@ -264,7 +293,7 @@ class Pset(bonsai.core.tool.Pset):
         pset_template: ifcopenshell.entity_instance,
         prop_template: ifcopenshell.entity_instance,
         data: dict[str, Any],
-        props: bpy.types.PropertyGroup,
+        props: PsetProperties,
     ) -> None:
         prop = props.properties.add()
         prop.name = prop_template.Name
@@ -273,7 +302,6 @@ class Pset(bonsai.core.tool.Pset):
         metadata.name = prop_template.Name
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
-        metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
         metadata.data_type = cls.get_prop_template_primitive_type(prop_template)
         metadata.special_type = cls.get_special_type_for_prop(prop_template)
 
@@ -294,7 +322,7 @@ class Pset(bonsai.core.tool.Pset):
         cls,
         pset_template: ifcopenshell.entity_instance,
         pset: Union[ifcopenshell.entity_instance, None],
-        props: bpy.types.PropertyGroup,
+        props: PsetProperties,
     ) -> None:
         if pset:
             data = ifcopenshell.util.element.get_property_definition(pset, verbose=True)

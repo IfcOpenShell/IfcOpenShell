@@ -34,7 +34,7 @@ import bonsai.tool as tool
 import bonsai.bim.handler
 import bonsai.core.geometry
 import ifcopenshell
-import ifcopenshell.util.element
+import ifcopenshell.api.attribute
 import ifcopenshell.util.unit
 from typing import TYPE_CHECKING, Union, Literal
 
@@ -74,8 +74,9 @@ def update_name(self: "BIMContainer", context: bpy.types.Context) -> None:
 
 def update_long_name(self: "BIMContainer", context: bpy.types.Context) -> None:
     if ifc_definition_id := self.ifc_definition_id:
-        element = tool.Ifc.get().by_id(ifc_definition_id)
-        tool.Ifc.run("attribute.edit_attributes", product=element, attributes={"LongName": self.long_name})
+        ifc_file = tool.Ifc.get()
+        element = ifc_file.by_id(ifc_definition_id)
+        ifcopenshell.api.attribute.edit_attributes(ifc_file, product=element, attributes={"LongName": self.long_name})
         bonsai.bim.handler.refresh_ui_data()
 
 

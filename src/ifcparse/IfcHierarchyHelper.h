@@ -330,11 +330,19 @@ aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_add2::IfcRelAggregate
     return t->RelatedObjects()->generalize();
 }
 
+aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_add2::IfcRelNests* t) {
+    return t->RelatedObjects()->generalize();
+}
+
 void set_children_of_relation(Ifc4x3_add2::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
     t->setRelatedElements(cs->as<Ifc4x3_add2::IfcProduct>());
 }
 
 void set_children_of_relation(Ifc4x3_add2::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+    t->setRelatedObjects(cs->as<Ifc4x3_add2::IfcObjectDefinition>());
+}
+
+void set_children_of_relation(Ifc4x3_add2::IfcRelNests* t, aggregate_of_instance::ptr& cs) {
     t->setRelatedObjects(cs->as<Ifc4x3_add2::IfcObjectDefinition>());
 }
 #endif

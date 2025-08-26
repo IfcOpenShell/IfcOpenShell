@@ -63,5 +63,5 @@ def assign_group(
     if products_set.issubset(related_objects):
         return rel
     rel.RelatedObjects = list(related_objects | products_set)
-    ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+    ifcopenshell.api.owner.update_owner_history(file, element=rel)
     return rel

@@ -26,7 +26,11 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.attribute as core
 import bonsai.core.spatial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Union, Literal
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
+    import bpy.stub_internal.rna_enums as rna_enums
 
 
 def get_objs_for_operation(
@@ -75,7 +79,9 @@ class EnableEditingAttributes(bpy.types.Operator, AttributesOperator):
                 None,
             )
 
-        def callback(name, prop, data):
+        lookup_attrs = tool.Attribute.does_ifc_class_support_explorer_lookup(element.is_a())
+
+        def callback(name: str, prop: Union["Attribute", None], data: dict[str, Any]) -> None | Literal[True]:
             if name in ("RefLatitude", "RefLongitude"):
                 new = props.attributes.add()
                 new.name = name
@@ -89,8 +95,19 @@ class EnableEditingAttributes(bpy.types.Operator, AttributesOperator):
             if name in ("PredefinedType", "ObjectType") and has_inherited_predefined_type:
                 props.attributes.remove(len(props.attributes) - 1)
                 return True
+            if lookup_attrs and (name in lookup_attrs):
+                new = props.attributes.add()
+                new.name = name
+                new.ifc_class = data["type"]
+                new.data_type = "enum"
+                new.is_optional = True
+                new.enum_items_dynamic = lookup_attrs[name]
+                new.use_explorer_ui = True
+                value: Union[ifcopenshell.entity_instance, None] = data[name]
+                if value is not None:
+                    new.enum_value = str(value.id())
 
-        bonsai.bim.helper.import_attributes2(element, props.attributes, callback=callback)
+        bonsai.bim.helper.import_attributes(element, props.attributes, callback=callback)
         props.is_editing_attributes = True
 
     def execute(self, context):
@@ -107,7 +124,8 @@ class DisableEditingAttributes(bpy.types.Operator, AttributesOperator):
 
     def disable_editing_attributes_on_obj(self, obj: bpy.types.Object) -> None:
         props = tool.Blender.get_object_attribute_props(obj)
-        props.is_editing_attributes = False
+        props.attributes.clear()
+        props.property_unset("is_editing_attributes")
 
     def execute(self, context):
         for obj in get_objs_for_operation(self, context):
@@ -127,7 +145,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
         if not obj or not (element := tool.Ifc.get_entity(obj)):
             return
 
-        def callback(attributes, prop):
+        def callback(attributes: dict[str, Any], prop: "Attribute") -> None | Literal[True]:
             if prop.name in ("RefLatitude", "RefLongitude"):
                 if not prop.is_null:
                     try:
@@ -138,6 +156,9 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
 
         props = tool.Blender.get_object_attribute_props(obj)
         attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
+        lookup_attrs = tool.Attribute.does_ifc_class_support_explorer_lookup(element.is_a())
+        if lookup_attrs:
+            bonsai.bim.helper.process_exported_entity_attribute(attributes, list(lookup_attrs))
         ifcopenshell.api.attribute.edit_attributes(self.file, product=element, attributes=attributes)
 
         tool.Root.set_object_name(obj, element)
@@ -204,3 +225,139 @@ class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc, tool.Blender, tool.Root, tool.Spatial, name=self.name, value=value
         )
         self.report({"INFO"}, f"Attribute was successfully copied to {total} elements.")
+
+
+class ExplorerAddEntity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.explorer_add_entity"
+    bl_label = "Add Entity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context) -> None:
+        props = tool.Attribute.get_explorer_props()
+        ifc_file = tool.Ifc.get()
+
+        entity = ifc_file.create_entity(props.ifc_class)
+        tool.Attribute.refresh_uilist_entities()
+        tool.Attribute.enable_editing_entity(entity)
+        tool.Attribute.import_entity_attributes(entity)
+
+
+class ExplorerEnableEditingEntity(bpy.types.Operator):
+    bl_idname = "bim.explorer_enable_editing_entity"
+    bl_label = "Enable Editing Entity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
+        props = tool.Attribute.get_explorer_props()
+        ifc_file = tool.Ifc.get()
+        assert (active_entity := props.active_entity)
+        entity = ifc_file.by_id(active_entity.ifc_definition_id)
+
+        tool.Attribute.disable_editing_entity()
+        tool.Attribute.enable_editing_entity(entity)
+        tool.Attribute.import_entity_attributes(entity)
+        return {"FINISHED"}
+
+
+class ExplorerDisableEditingEntity(bpy.types.Operator):
+    bl_idname = "bim.explorer_disable_editing_entity"
+    bl_label = "Disable Editing Entity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        tool.Attribute.disable_editing_entity()
+        return {"FINISHED"}
+
+
+class ExplorerEditEntity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.explorer_edit_entity"
+    bl_label = "Edit Entity"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context) -> None:
+        ifc_file = tool.Ifc.get()
+        props = tool.Attribute.get_explorer_props()
+        entity = ifc_file.by_id(props.editing_entity_id)
+
+        attrs = tool.Attribute.export_entity_attributes()
+        for attr, value in attrs.items():
+            setattr(entity, attr, value)
+        tool.Attribute.refresh_uilist_entities()
+        tool.Attribute.disable_editing_entity()
+
+
+class ExplorerShowUIPopup(bpy.types.Operator):
+    bl_idname = "bim.explorer_show_ui_popup"
+    bl_label = "Show Explorer UI"
+    bl_description = "Show Explorer UI to select element as attribute value or edit it."
+    bl_options = {"REGISTER", "UNDO"}
+
+    ifc_class: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    """Element IFC class."""
+    attribute_name: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    """IFC class attribute name."""
+    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    """Full data path"""
+    preselect_ifc_id: bpy.props.IntProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    """IFC id to preselect in the popup."""
+
+    if TYPE_CHECKING:
+        ifc_class: str
+        attribute_name: str
+        data_path: str
+        preselect_ifc_id: int
+
+    def invoke(self, context, event) -> "set[rna_enums.OperatorReturnItems]":
+        assert context.window_manager
+        assert self.ifc_class and self.attribute_name and self.data_path
+
+        props = tool.Attribute.get_explorer_props()
+        props.is_loaded = True
+        props.ifc_class = self.get_attribute_type()
+
+        if self.preselect_ifc_id:
+            props.active_entity_index = next(
+                i for i, e in enumerate(props.entities) if e.ifc_definition_id == self.preselect_ifc_id
+            )
+
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def get_attribute_type(self) -> str:
+        schema = tool.Ifc.schema()
+        entity = schema.declaration_by_name(self.ifc_class).as_entity()
+        assert entity
+        i = entity.attribute_index(self.attribute_name)
+        attr = entity.all_attributes()[i]
+        named_type = attr.type_of_attribute().as_named_type()
+        assert named_type
+        declared = named_type.declared_type()
+        return declared.name()
+
+    def draw(self, context) -> None:
+        from bonsai.bim.module.attribute.ui import BIM_PT_explorer
+
+        BIM_PT_explorer.draw(self, context, is_popup=True)
+
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
+        props = tool.Attribute.get_explorer_props()
+        active_entity = props.active_entity
+        if active_entity is None:
+            self.report({"WARNING"}, "No entity selected.")
+            return {"FINISHED"}
+
+        # Apply pending changes for convenience.
+        if props.editing_entity_id:
+            if props.editing_entity_id == active_entity.ifc_definition_id:
+                bpy.ops.bim.explorer_edit_entity()
+            else:
+                bpy.ops.bim.explorer_disable_editing_entity()
+
+        # Very important to do it after changes applied, otherwise enum might update
+        # and index will be pointing to a different element.
+        exec(f"{self.data_path} = '{active_entity.ifc_definition_id}'")
+        return {"FINISHED"}
+
+    def cancel(self, context: bpy.types.Context) -> None:
+        props = tool.Attribute.get_explorer_props()
+        if props.editing_entity_id:
+            bpy.ops.bim.explorer_disable_editing_entity()

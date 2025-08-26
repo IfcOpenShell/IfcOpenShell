@@ -56,6 +56,7 @@ class System(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
     if TYPE_CHECKING:
+        name: str
         ifc_class: str
         ifc_definition_id: int
 
@@ -69,10 +70,11 @@ def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
 
 
 class Zone(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_zone_name)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
     if TYPE_CHECKING:
+        name: str
         ifc_definition_id: int
 
 
@@ -113,12 +115,20 @@ class BIMSystemProperties(PropertyGroup):
         return tool.Blender.get_active_uilist_element(self.systems, self.active_system_index)
 
 
+def update_active_zone_index(self: "BIMZoneProperties", context: object) -> None:
+    from bonsai.bim.module.classification.data import ZoneClassificationsData
+    from bonsai.bim.module.pset.data import ZonePsetsData
+
+    ZoneClassificationsData.is_loaded = False
+    ZonePsetsData.is_loaded = False
+
+
 class BIMZoneProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_editing: IntProperty(name="Is Editing", default=0)
     zones: CollectionProperty(name="Zones", type=Zone)
-    active_zone_index: IntProperty(name="Active Zone Index")
+    active_zone_index: IntProperty(name="Active Zone Index", update=update_active_zone_index)
 
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -126,3 +136,7 @@ class BIMZoneProperties(PropertyGroup):
         is_editing: int
         zones: bpy.types.bpy_prop_collection_idprop[Zone]
         active_zone_index: int
+
+    @property
+    def active_zone(self) -> Zone | None:
+        return tool.Blender.get_active_uilist_element(self.zones, self.active_zone_index)

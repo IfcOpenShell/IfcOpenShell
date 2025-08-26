@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from ifcopenshell.util.classification import get_classification_data, get_references
 from ifcopenshell.util.selector import filter_elements
 import ifcopenshell.util.cost
@@ -25,8 +26,9 @@ from ifcopenshell.util.element import get_psets, get_type, has_property
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api.sequence
+import ifcopenshell.api.classification
 import ifcopenshell.api.cost
-from typing import Any, Dict, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import time
 import socket
 import sys
@@ -46,6 +48,9 @@ import bonsai.core.cost
 from ifc5d.ifc2json import ifc5D2json
 from bonsai.bim.ifc import IfcStore
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.web.prop import WebProperties
+
 sio = None
 ws_process = None
 ws_thread = None
@@ -61,6 +66,11 @@ IFC_TASK_ATTRIBUTE_MAP = {
 
 
 class Web(bonsai.core.tool.Web):
+    @classmethod
+    def get_web_props(cls) -> WebProperties:
+        assert (scene := bpy.context.scene)
+        return scene.WebProperties  # pyright: ignore[reportAttributeAccessIssue]
+
     @classmethod
     def generate_port_number(cls) -> int:
         """
@@ -150,7 +160,7 @@ class Web(bonsai.core.tool.Web):
         """
         global ws_thread, sio
 
-        if bpy.context.scene.WebProperties.is_connected:
+        if tool.Web.get_web_props().is_connected:
             print(f"Already connected to websocket server on port: {port}")
             return
 
@@ -199,7 +209,7 @@ class Web(bonsai.core.tool.Web):
             print("No Websocket server running")
             return
 
-        if bpy.context.scene.WebProperties.is_connected:
+        if tool.Web.get_web_props().is_connected:
             cls.disconnect_websocket_server()
 
         # sleep(0.5)
@@ -281,7 +291,7 @@ class Web(bonsai.core.tool.Web):
         if data is not None:
             payload[data_key] = data
 
-        if ws_thread is not None and bpy.context.scene.WebProperties.is_connected:
+        if ws_thread is not None and tool.Web.get_web_props().is_connected:
             ws_thread.run_coro(cls.sio_send(payload, event, namespace))
 
     @classmethod
@@ -294,7 +304,7 @@ class Web(bonsai.core.tool.Web):
         Returns:
             (Optional[float]): Returns None if the WebProperties.is_connected is False, otherwise returns 1.0 to continue the timer.
         """
-        if not bpy.context.scene.WebProperties.is_connected:
+        if not tool.Web.get_web_props().is_connected:
             with web_operator_queue.mutex:
                 web_operator_queue.queue.clear()
             return None  # unregister timer if not connected
@@ -376,28 +386,30 @@ class Web(bonsai.core.tool.Web):
             tool.Spatial.select_products(products, unhide=True)
         if operator_data["type"] == "addSummaryCostItem":
             cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
-            tool.Ifc.run("cost.add_cost_item", cost_schedule=cost_schedule)
+            ifcopenshell.api.cost.add_cost_item(ifc_file, cost_schedule=cost_schedule)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "addCostItem":
             if not operator_data["costItemId"]:
                 return
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
-            tool.Ifc.run("cost.add_cost_item", cost_item=cost_item)
+            ifcopenshell.api.cost.add_cost_item(ifc_file, cost_item=cost_item)
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "deleteCostItem":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
-            tool.Ifc.run("cost.remove_cost_item", cost_item=cost_item)
+            ifcopenshell.api.cost.remove_cost_item(ifc_file, cost_item=cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "duplicateCostItem":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
-            tool.Ifc.run("cost.copy_cost_item", cost_item=cost_item)
+            ifcopenshell.api.cost.copy_cost_item(ifc_file, cost_item=cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "editCostItemName":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
-            tool.Ifc.run("cost.edit_cost_item", cost_item=cost_item, attributes={"Name": operator_data["name"]})
+            ifcopenshell.api.cost.edit_cost_item(
+                ifc_file, cost_item=cost_item, attributes={"Name": operator_data["name"]}
+            )
         if operator_data["type"] == "enableEditingCostValues":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             cost_values = ifcopenshell.util.cost.get_cost_values(cost_item)
@@ -418,15 +430,15 @@ class Web(bonsai.core.tool.Web):
             )
         if operator_data["type"] == "addSumCostValue":
             cost_item = ifc_file.by_id(operator_data["costItemId"])
-            value = tool.Ifc.run("cost.add_cost_value", parent=cost_item)
-            tool.Ifc.run("cost.edit_cost_value", cost_value=value, attributes={"Category": "*"})
+            value = ifcopenshell.api.cost.add_cost_value(ifc_file, parent=cost_item)
+            ifcopenshell.api.cost.edit_cost_value(ifc_file, cost_value=value, attributes={"Category": "*"})
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
 
         if operator_data["type"] == "deleteCostValue":
             cost_item = ifc_file.by_id(operator_data["costItemId"])
             cost_value = ifc_file.by_id(operator_data["costValueId"])
-            tool.Ifc.run("cost.remove_cost_value", parent=cost_item, cost_value=cost_value)
+            ifcopenshell.api.cost.remove_cost_value(ifc_file, parent=cost_item, cost_value=cost_value)
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "editCostValues":
@@ -473,7 +485,9 @@ class Web(bonsai.core.tool.Web):
             cost_item_id = operator_data["costItemId"]
             cost_item = ifc_file.by_id(cost_item_id)
             cost_schedule = tool.Cost.get_cost_schedule(cost_item)
-            tool.Ifc.run("cost.add_cost_item_quantity", cost_item=cost_item, ifc_class=operator_data["ifcClass"])
+            ifcopenshell.api.cost.add_cost_item_quantity(
+                ifc_file, cost_item=cost_item, ifc_class=operator_data["ifcClass"]
+            )
             cls.load_cost_schedule_web_ui(cost_schedule)
             cls.load_cost_item_quantities_ui(cost_item)
         if operator_data["type"] == "editCostItemQuantity":
@@ -481,8 +495,8 @@ class Web(bonsai.core.tool.Web):
             cost_item = ifc_file.by_id(cost_item_id)
             cost_schedule = tool.Cost.get_cost_schedule(cost_item)
             physical_quantity = tool.Ifc.get().by_id(operator_data["quantityId"])
-            tool.Ifc.run(
-                "cost.edit_cost_item_quantity",
+            ifcopenshell.api.cost.edit_cost_item_quantity(
+                ifc_file,
                 physical_quantity=physical_quantity,
                 attributes=operator_data["attributes"],
             )
@@ -491,7 +505,9 @@ class Web(bonsai.core.tool.Web):
         if operator_data["type"] == "deleteCostItemQuantity":
             cost_item = ifc_file.by_id(operator_data["costItemId"])
             physical_quantity = ifc_file.by_id(operator_data["quantityId"])
-            tool.Ifc.run("cost.remove_cost_item_quantity", cost_item=cost_item, physical_quantity=physical_quantity)
+            ifcopenshell.api.cost.remove_cost_item_quantity(
+                ifc_file, cost_item=cost_item, physical_quantity=physical_quantity
+            )
             cost_schedule = tool.Cost.get_cost_schedule(cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
             cls.load_cost_item_quantities_ui(cost_item)
@@ -518,7 +534,7 @@ class Web(bonsai.core.tool.Web):
             cost_item = ifc_file.by_id(operator_data["costItemId"])
             cost_schedule = tool.Cost.get_cost_schedule(cost_item)
             reference = ifc_file.by_id(operator_data["classificationId"])
-            tool.Ifc.run("classification.remove_reference", products=[cost_item], reference=reference)
+            ifcopenshell.api.classification.remove_reference(ifc_file, products=[cost_item], reference=reference)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "addClassificationReference":
             cost_item = ifc_file.by_id(operator_data["costItemId"])
@@ -530,8 +546,8 @@ class Web(bonsai.core.tool.Web):
                     classification = element
                     break
             reference = IfcStore.classification_file.by_id(operator_data["classificationId"])
-            tool.Ifc.run(
-                "classification.add_reference", products=[cost_item], reference=reference, classification=classification
+            ifcopenshell.api.classification.add_reference(
+                ifc_file, products=[cost_item], reference=reference, classification=classification
             )
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "assignFromQuery":
@@ -562,8 +578,8 @@ class Web(bonsai.core.tool.Web):
                 return
             products_with_quantity = [r for r in results if has_property(r, prop_name)]
             if products_with_quantity:
-                tool.Ifc.run(
-                    "cost.assign_cost_item_quantity",
+                ifcopenshell.api.cost.assign_cost_item_quantity(
+                    ifc_file,
                     cost_item=cost_item,
                     products=results,
                     prop_name=prop_name,
@@ -592,7 +608,7 @@ class Web(bonsai.core.tool.Web):
             cost_schedule = tool.Cost.get_cost_schedule(ifc_file.by_id(operator_data["costItemIds"][0]))
             for cost_item_id in operator_data["costItemIds"]:
                 cost_item = ifc_file.by_id(cost_item_id)
-                tool.Ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
+                ifcopenshell.api.cost.assign_cost_value(ifc_file, cost_item=cost_item, cost_rate=cost_rate)
             cls.load_cost_schedule_web_ui(cost_schedule)
 
     @classmethod
@@ -734,7 +750,7 @@ class Web(bonsai.core.tool.Web):
             ifc_file_dir = os.path.dirname(props.ifc_file)
 
             sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
-            for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
+            for sheet in sorted(sheets, key=lambda s: tool.Drawing.get_sheet_identification(s)):
                 for reference in tool.Drawing.get_document_references(sheet):
                     reference_description = tool.Drawing.get_reference_description(reference)
                     if reference_description != "SHEET":
@@ -872,11 +888,13 @@ class Web(bonsai.core.tool.Web):
 
     @classmethod
     def set_is_running(cls, is_running: bool) -> None:
-        bpy.context.scene.WebProperties.is_running = is_running
+        props = tool.Web.get_web_props()
+        props.is_running = is_running
 
     @classmethod
     def set_is_connected(cls, is_connected: bool) -> None:
-        bpy.context.scene.WebProperties.is_connected = is_connected
+        props = tool.Web.get_web_props()
+        props.is_connected = is_connected
 
 
 class AsyncioThread(threading.Thread):

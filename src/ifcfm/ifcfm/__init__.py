@@ -180,7 +180,8 @@ class Writer:
                 continue
 
             if not headers:
-                headers = list(data[list(data.keys())[0]].keys())
+                key = next(iter(data.keys()))
+                headers = list(data[key].keys())
 
             rows = []
             for row in data.values():

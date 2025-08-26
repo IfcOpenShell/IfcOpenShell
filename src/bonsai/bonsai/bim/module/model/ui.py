@@ -36,6 +36,7 @@ from bonsai.bim.module.model.stair import regenerate_stair_mesh
 from bonsai.bim.module.model.railing import update_railing_modifier_bmesh
 from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
 from collections.abc import Iterable
+from typing import Any
 
 
 class BIM_MT_type_manager_menu(bpy.types.Menu):
@@ -95,6 +96,7 @@ class LaunchTypeManager(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=550, title="Type Manager", confirm_text="Close")
 
     def draw(self, context):
+        assert self.layout
         props = tool.Model.get_model_props()
         row = self.layout.row(align=True)
         text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type'] or 'Types'}"
@@ -135,6 +137,7 @@ class LaunchTypeManager(bpy.types.Operator):
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
+        relating_type: dict[str, Any]
         for relating_type in AuthoringData.data["paginated_relating_types"]:
             outer_col = flow.column()
             box = outer_col.box()

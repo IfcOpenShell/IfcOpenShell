@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
+
 import bpy
 import ifcopenshell
 import ifcopenshell.util.attribute
@@ -26,7 +28,7 @@ import bonsai.bim.schema
 
 
 # TODO: Should this cache belong here? Dunno. Maybe.
-is_expanded = {}
+is_expanded: dict[int, bool] = {}
 
 
 def refresh():
@@ -41,7 +43,9 @@ def refresh():
     GroupPsetData.is_loaded = False
     ProfilePsetsData.is_loaded = False
     WorkSchedulePsetsData.is_loaded = False
+    ZonePsetsData.is_loaded = False
     AddEditCustomPropertiesData.is_loaded = False
+    PsetsGeneralData.is_loaded = False
 
 
 class Data:
@@ -176,8 +180,8 @@ class MaterialPsetsData(Data):
     def load(cls):
         ifc_definition_id = None
         props = tool.Material.get_material_props()
-        if props.materials and props.active_material_index < len(props.materials):
-            ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
+        if material := props.active_material:
+            ifc_definition_id = material.ifc_definition_id
 
         cls.data = {
             "ifc_definition_id": ifc_definition_id,
@@ -189,8 +193,7 @@ class MaterialPsetsData(Data):
     @classmethod
     def pset_name(cls):
         props = tool.Material.get_material_props()
-        if props.materials and props.active_material_index < len(props.materials):
-            material = props.materials[props.active_material_index]
+        if material := props.active_material:
             if material.ifc_definition_id:
                 material = tool.Ifc.get().by_id(material.ifc_definition_id)
                 category = getattr(material, "Category", None) or None
@@ -240,9 +243,9 @@ class ResourceQtosData(Data):
 
     @classmethod
     def load(cls):
-        rprops = bpy.context.scene.BIMResourceProperties
-        rtprops = bpy.context.scene.BIMResourceTreeProperties
-        ifc_definition_id = rtprops.resources[rprops.active_resource_index].ifc_definition_id
+        active_resource = tool.Resource.get_resource_props().active_resource
+        assert active_resource
+        ifc_definition_id = active_resource.ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True
 
@@ -253,9 +256,9 @@ class ResourcePsetsData(Data):
 
     @classmethod
     def load(cls):
-        rprops = bpy.context.scene.BIMResourceProperties
-        rtprops = bpy.context.scene.BIMResourceTreeProperties
-        ifc_definition_id = rtprops.resources[rprops.active_resource_index].ifc_definition_id
+        active_resource = tool.Resource.get_resource_props().active_resource
+        assert active_resource
+        ifc_definition_id = active_resource.ifc_definition_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 
@@ -266,8 +269,9 @@ class GroupQtosData(Data):
 
     @classmethod
     def load(cls):
-        props = bpy.context.scene.BIMGroupProperties
-        ifc_definition_id = props.groups[props.active_group_index].ifc_definition_id
+        props = tool.Blender.get_group_props()
+        assert (active_group := props.active_group)
+        ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True
 
@@ -278,8 +282,9 @@ class GroupPsetData(Data):
 
     @classmethod
     def load(cls):
-        props = bpy.context.scene.BIMGroupProperties
-        ifc_definition_id = props.groups[props.active_group_index].ifc_definition_id
+        props = tool.Blender.get_group_props()
+        assert (active_group := props.active_group)
+        ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 
@@ -317,6 +322,21 @@ class WorkSchedulePsetsData(Data):
         cls.is_loaded = True
 
 
+class ZonePsetsData(Data):
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        props = tool.System.get_zone_props()
+        assert (active_zone := props.active_zone)
+        ifc_definition_id = active_zone.ifc_definition_id
+        cls.data = {
+            "psets": (cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)),
+        }
+        cls.is_loaded = True
+
+
 class AddEditCustomPropertiesData:
     data = {}
     is_loaded = False
@@ -340,3 +360,31 @@ class AddEditCustomPropertiesData:
         return [
             (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", "")) for t in sorted(declarations)
         ]
+
+
+class PsetsGeneralData:
+    data: dict[str, Any] = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls) -> None:
+        cls.data = {
+            "bsdd_enum_items": cls.bsdd_enum_items(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def bsdd_enum_items(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        res: list[tuple[str, str, str]] = []
+        dictionaries = tool.Bsdd.get_active_bsdd_enum_items()
+        if not dictionaries:
+            return res
+        res.append(
+            (
+                "BBIM_BSDD",
+                "All Data Dictionaries",
+                "Manage properties from all active buildingSMART Data Dictionaries",
+            )
+        )
+        res.extend([(uri, f"bSDD: {name}", descr) for uri, name, descr in tool.Bsdd.get_active_bsdd_enum_items()])
+        return res

@@ -27,7 +27,8 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import locale
 from pathlib import Path
-from typing import Any, Union, Optional, TypedDict, NotRequired
+from typing import Union, Optional, TypedDict
+from typing_extensions import NotRequired
 
 
 class CsvHeader(TypedDict):

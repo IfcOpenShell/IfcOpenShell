@@ -20,6 +20,7 @@ import ifcopenshell
 import bpy
 from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
+from bonsai.bim.module.classification.data import MaterialClassificationsData
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
 from bonsai.bim.module.profile.data import ProfileData
 from bonsai.bim.prop import StrProperty, Attribute
@@ -157,10 +158,16 @@ class Material(PropertyGroup):
 
 
 class BIMMaterialProperties(PropertyGroup):
+
+    def update_active_material_index(self, context: bpy.types.Context) -> None:
+        if not MaterialClassificationsData.is_loaded:
+            return
+        MaterialClassificationsData.data["references"] = MaterialClassificationsData.references()
+
     is_editing: BoolProperty(name="Is Editing", default=False)
     material_type: EnumProperty(items=get_material_types, update=update_material_type, name="Material Type")
     materials: CollectionProperty(name="Materials", type=Material)
-    active_material_index: IntProperty(name="Active Material Index")
+    active_material_index: IntProperty(name="Active Material Index", update=update_active_material_index)
     profiles: EnumProperty(items=get_profiles, name="Profiles")
     active_material_id: IntProperty(name="Active Material ID")
     material_attributes: CollectionProperty(name="Material Attributes", type=Attribute)
@@ -169,9 +176,8 @@ class BIMMaterialProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
 
     @property
-    def active_material(self):
-        if 0 <= self.active_material_index < len(self.materials):
-            return self.materials[self.active_material_index]
+    def active_material(self) -> Material | None:
+        return tool.Blender.get_active_uilist_element(self.materials, self.active_material_index)
 
     if TYPE_CHECKING:
         is_editing: bool

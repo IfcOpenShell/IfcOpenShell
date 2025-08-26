@@ -40,9 +40,7 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
     previously existing values are removed.
 
     :param cost_item: The IfcCostItem to calculate
-    :type cost_item: ifccopenshell.entity_instance.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

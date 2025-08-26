@@ -21,11 +21,11 @@ import bpy
 import blf
 import bpy
 import gpu
-import gpu_extras
 import bmesh
 import ifcopenshell
 import bonsai.tool as tool
 import math
+import mathutils
 from math import sin, cos, radians
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
@@ -36,6 +36,7 @@ from typing import Union
 from bonsai.bim.module.drawing.helper import format_distance
 from itertools import chain
 from typing import Union, Any
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 
 def transparent_color(color, alpha=0.1):
@@ -323,6 +324,7 @@ class PolylineDecorator:
     snap_info = None
     tool_state = None
     relating_type = None
+    polyline_points = None
 
     @classmethod
     def install(cls, context, ui_only=False):
@@ -335,7 +337,14 @@ class PolylineDecorator:
                 SpaceView3D.draw_handler_add(handler.draw_snap_point, (context,), "WINDOW", "POST_PIXEL")
             )
             cls.handlers.append(
-                SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL")
+                SpaceView3D.draw_handler_add(
+                    handler.select_and_draw_measurements_text, (context,), "WINDOW", "POST_PIXEL"
+                )
+            )
+            cls.handlers.append(
+                SpaceView3D.draw_handler_add(
+                    handler.select_and_draw_measurements_poly, (context,), "WINDOW", "POST_VIEW"
+                )
             )
             cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
@@ -361,28 +370,20 @@ class PolylineDecorator:
         cls.tool_state = tool_state
         cls.input_ui = input_ui
 
-    # TODO: unused?
-    @classmethod
-    def set_input_ui(cls, input_ui: tool.Polyline.PolylineUI) -> None:
-        cls.input_ui = input_ui
-
     @classmethod
     def set_angle_axis_line(cls, start: Vector, end: Vector) -> None:
         cls.axis_start = start
         cls.axis_end = end
 
     def calculate_measurement_x_y_and_z(self, context: bpy.types.Context) -> None:
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if polyline_data else []
-
-        if len(polyline_points) == 0 or len(polyline_points) > 2:
+        if len(self.polyline_points) == 0 or len(self.polyline_points) > 2:
             return None, None
 
-        start = polyline_points[0]
-        if len(polyline_points) == 1:
-            end = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        start = self.polyline_points[0]
+        if len(self.polyline_points) == 1:
+            end = tool.Model.get_polyline_props().snap_mouse_point[0]
         else:
-            end = polyline_points[1]
+            end = self.polyline_points[1]
 
         x_axis = (Vector((start.x, start.y, start.z)), Vector((end.x, start.y, start.z)))
         y_axis = (Vector((end.x, start.y, start.z)), Vector((end.x, end.y, start.z)))
@@ -422,6 +423,30 @@ class PolylineDecorator:
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
         batch.draw(shader)
+
+    def shader_config(self, context):
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.decorator_color = self.addon_prefs.decorations_colour
+        self.decorator_color_special = self.addon_prefs.decorator_color_special
+        self.decorator_color_selected = self.addon_prefs.decorator_color_selected
+        self.decorator_color_error = self.addon_prefs.decorator_color_error
+        self.decorator_color_unselected = self.addon_prefs.decorator_color_unselected
+        self.decorator_color_background = self.addon_prefs.decorator_color_background
+        theme = context.preferences.themes.items()[0][1]
+        self.decorator_color_object_active = (*theme.view_3d.object_active, 1)  # unwrap color values and adds alpha=1
+        self.decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
+        self.decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
+        self.decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
+
+        gpu.state.blend_set("ALPHA")
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()  # required to be able to change uniforms of the shader
+        # POLYLINE_UNIFORM_COLOR specific uniforms
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+
+        # general shader
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        gpu.state.point_size_set(6)
 
     def draw_input_ui(self, context: bpy.types.Context) -> None:
         texts = {
@@ -483,17 +508,9 @@ class PolylineDecorator:
         gpu.state.blend_set("ALPHA")
         self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
 
-    def draw_measurements(self, context):
-        region = context.region
+    def draw_measurements_text(self, context):
+        region = bpy.context.region
         rv3d = region.data
-        measure_type = context.scene.MeasureToolSettings.measurement_type
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        if not polyline_data:
-            return
-        else:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
-        polyline_points = polyline_data.polyline_points
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -504,13 +521,15 @@ class PolylineDecorator:
         color = self.addon_prefs.decorations_colour
 
         blf.color(self.font_id, *color)
-        for i in range(len(polyline_points)):
+        for i in range(len(self.polyline_points)):
+            if i < 1 and self.measure_type == "POLY_AREA":
+                continue
             if i == 0:
                 continue
-            dim_text_pos = (Vector(polyline_points[i].position) + Vector(polyline_points[i - 1].position)) / 2
+            dim_text_pos = (Vector(self.polyline_points[i].position) + Vector(self.polyline_points[i - 1].position)) / 2
             dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
 
-            formatted_value = polyline_points[i].dim
+            formatted_value = self.polyline_points[i].dim
 
             blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
             text = "d: " + formatted_value
@@ -520,19 +539,19 @@ class PolylineDecorator:
 
             if i == 1:
                 continue
-            angle_text_pos = Vector(polyline_points[i - 1].position)
+            angle_text_pos = Vector(self.polyline_points[i - 1].position)
             angle_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, angle_text_pos)
             blf.position(self.font_id, angle_text_coords[0], angle_text_coords[1], 0)
-            text = "a: " + polyline_points[i].angle
+            text = "a: " + self.polyline_points[i].angle
             text_length = blf.dimensions(self.font_id, text)
             self.draw_text_background(context, angle_text_coords, text_length)
             blf.draw(self.font_id, text)
 
-        if measure_type == "SINGLE":
+        if self.measure_type == "SINGLE":
             axis_line, axis_line_center = self.calculate_measurement_x_y_and_z(context)
             for i, dim_text_pos in enumerate(axis_line_center):
                 dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
-                blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
+                pos = blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
                 value = round((axis_line[i][1] - axis_line[i][0]).length, 4)
                 direction = axis_line[i][1] - axis_line[i][0]
                 if (i == 0 and direction.x < 0) or (i == 1 and direction.y < 0) or (i == 2 and direction.z < 0):
@@ -545,10 +564,10 @@ class PolylineDecorator:
                 blf.draw(self.font_id, text)
 
         # Area and Length text
-        polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
+        polyline_verts = [Vector((p.x, p.y, p.z)) for p in self.polyline_points]
 
         # Area
-        if measure_type == "POLY_AREA" and polyline_data.area:
+        if self.measure_type == "POLY_AREA" and self.polyline_data.area:
             if len(polyline_verts) < 3:
                 return
             center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
@@ -557,7 +576,7 @@ class PolylineDecorator:
                     polyline_verts[:-1]
                 )  # Doesn't use the last point if is a closed polyline
             area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
-            value = polyline_data.area
+            value = self.polyline_data.area
             text = f"area: {value}"
             text_length = blf.dimensions(self.font_id, text)
             area_text_coords[0] -= text_length[0] / 2  # Center text horizontally
@@ -566,18 +585,87 @@ class PolylineDecorator:
             blf.draw(self.font_id, text)
 
         # Length
-        if measure_type in {"POLYLINE", "POLY_AREA"}:
+        if self.measure_type in {"POLYLINE", "POLY_AREA"}:
             if len(polyline_verts) < 3:
                 return
             total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
             blf.position(self.font_id, total_length_text_coords[0], total_length_text_coords[1], 0)
-            value = polyline_data.total_length
+            value = self.polyline_data.total_length
             text = f"length: {value}"
             text_length = blf.dimensions(self.font_id, text)
             self.draw_text_background(context, total_length_text_coords, text_length)
             blf.draw(self.font_id, text)
 
         blf.disable(self.font_id, blf.SHADOW)
+
+    def draw_measurements_poly(self, context):
+        self.shader_config(context)
+        polyline_verts: list[Vector] = []
+        polyline_edges: list[list[int]] = []
+        for point_prop in self.polyline_points:
+            point = Vector((point_prop.x, point_prop.y, point_prop.z))
+            polyline_verts.append(point)
+
+        for i in range(len(polyline_verts) - 1):
+            polyline_edges.append([i, i + 1])
+
+        # Lines for X, Y, Z of single measure
+        if self.polyline_data and self.polyline_data.measurement_type == "SINGLE":
+            axis, _ = self.calculate_measurement_x_y_and_z(context)
+            x_axis, y_axis, z_axis = axis
+            self.draw_batch("LINES", [*x_axis], self.decorator_color_x_axis, [(0, 1)])
+            self.draw_batch("LINES", [*y_axis], self.decorator_color_y_axis, [(0, 1)])
+            self.draw_batch("LINES", [*z_axis], self.decorator_color_z_axis, [(0, 1)])
+
+        # Area highlight
+        if self.polyline_data:
+            area = self.polyline_data.area.split(" ")[0]
+            if self.polyline_data.measurement_type == "POLY_AREA" and area:
+                if float(area) > 0:
+                    tris = self.calculate_polygon(polyline_verts)["tris"]
+                    self.draw_batch("TRIS", polyline_verts, transparent_color(self.decorator_color_special), tris)
+
+        # Draw polyline with selected points
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        self.draw_batch("POINTS", polyline_verts, self.decorator_color_special)
+        if len(polyline_verts) > 1:
+            self.draw_batch("LINES", polyline_verts, self.decorator_color_special, polyline_edges)
+
+    def get_polylines_data(self, context):
+        self.measure_type = tool.Project.get_measure_tool_settings().measurement_type
+        polyline_props = tool.Model.get_polyline_props()
+        self.polyline_data = polyline_props.insertion_polyline
+        self.measure_data = polyline_props.measurement_polyline
+
+    def select_and_draw_measurements_text(self, context):
+        self.get_polylines_data(context)
+        if self.polyline_data:
+            polyline_props = tool.Model.get_polyline_props()
+            self.polyline_data = polyline_props.insertion_polyline[0]
+            self.polyline_points = self.polyline_data.polyline_points
+            self.draw_measurements_text(context)
+
+        if self.measure_data:
+            for polyline_data in self.measure_data:
+                self.polyline_data = polyline_data
+                self.measure_type = polyline_data.measurement_type
+                self.polyline_points = self.polyline_data.polyline_points
+                self.draw_measurements_text(context)
+
+    def select_and_draw_measurements_poly(self, context):
+        self.get_polylines_data(context)
+        if self.polyline_data:
+            polyline_props = tool.Model.get_polyline_props()
+            self.polyline_data = polyline_props.insertion_polyline[0]
+            self.polyline_points = self.polyline_data.polyline_points
+            self.draw_measurements_poly(context)
+
+        if self.measure_data:
+            for polyline_data in self.measure_data:
+                self.polyline_data = polyline_data
+                self.measure_type = polyline_data.measurement_type
+                self.polyline_points = self.polyline_data.polyline_points
+                self.draw_measurements_poly(context)
 
     def draw_snap_point(self, context):
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -591,11 +679,12 @@ class PolylineDecorator:
         region = context.region
         rv3d = region.data
 
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         try:
-            snap_prop = context.scene.BIMPolylineProperties.snap_mouse_ref[0]
+            snap_prop = polyline_props.snap_mouse_ref[0]
             mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
         except:
             pass
@@ -657,7 +746,8 @@ class PolylineDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         gpu.state.point_size_set(6)
 
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
         # Point related to the mouse
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
 
@@ -730,12 +820,14 @@ class PolylineDecorator:
                     self.draw_batch("LINES", axis2, highlight_color(axis_color2), [(0, 1)])
 
         # Create polyline with selected points
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         if polyline_data:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_data = polyline_props.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
         else:
             polyline_points = []
+        self.polyline_points = polyline_points
         polyline_verts: list[Vector] = []
         polyline_edges: list[list[int]] = []
         for point_prop in polyline_points:
@@ -763,22 +855,6 @@ class PolylineDecorator:
 
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], axis_color, [(0, 1)])
-
-        # Lines for X, Y, Z of single measure
-        if polyline_data and polyline_data.measurement_type == "SINGLE":
-            axis, _ = self.calculate_measurement_x_y_and_z(context)
-            x_axis, y_axis, z_axis = axis
-            self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
-            self.draw_batch("LINES", [*y_axis], decorator_color_y_axis, [(0, 1)])
-            self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
-
-        # Area highlight
-        if polyline_data:
-            area = polyline_data.area.split(" ")[0]
-            if polyline_data.measurement_type == "POLY_AREA" and area:
-                if float(area) > 0:
-                    tris = self.calculate_polygon(polyline_verts)["tris"]
-                    self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
 
         # Mouse points
         if snap_prop.snap_type in ["Plane", "Axis", "Mix"]:
@@ -817,7 +893,7 @@ class ProductDecorator:
 
     @classmethod
     def uninstall(cls):
-        props = bpy.context.scene.BIMProductPreviewProperties  # updated by model/polyline.py
+        props = tool.Model.get_product_preview_props()  # updated by model/polyline.py
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()
@@ -836,9 +912,9 @@ class ProductDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def get_product_preview_data(self, context):
-        props = context.scene.BIMProductPreviewProperties
-        data = {}
+    def get_product_preview_data(self, context) -> dict[str, Any]:
+        props = tool.Model.get_product_preview_props()
+        data: dict[str, Any] = {}
         data["verts"] = [(*v.value_3d,) for v in props.verts]
         data["edges"] = [(int(e.value_2d[0]), int(e.value_2d[1])) for e in props.edges]
         data["tris"] = [(int(t.value_3d[0]), int(t.value_3d[1]), int(t.value_3d[2])) for t in props.tris]
@@ -857,7 +933,8 @@ class ProductDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         self.line_shader.uniform_float("lineWidth", 2.0)
         decorator_color = self.addon_prefs.decorator_color_special
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
 
         self.relating_type = None
@@ -1044,7 +1121,8 @@ class FaceAreaDecorator:
         gpu.state.blend_set("ALPHA")
         decorator_color = self.addon_prefs.decorator_color_special
 
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         for i, polyline in enumerate(polyline_data):
             vertices = []
             for point in polyline.polyline_points:
@@ -1054,3 +1132,272 @@ class FaceAreaDecorator:
                 self.draw_batch("POINTS", data["verts"], decorator_color)
                 self.draw_batch("LINES", data["verts"], decorator_color, data["edges"])
                 self.draw_batch("TRIS", data["verts"], transparent_color(decorator_color, alpha=0.5), data["tris"])
+
+
+class BoundingBoxDecorator:
+    is_installed = False
+    handlers = []
+
+    def __init__(self):
+        context = bpy.context
+        theme = context.preferences.themes.items()[0][1]
+        self.decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
+        self.decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
+        self.decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
+        self.decorator_color_wire = (*theme.view_3d.bone_solid, 1)
+        self.decorator_color_special = tool.Blender.get_addon_preferences().decorator_color_special
+
+    @classmethod
+    def install(cls, context):
+        if cls.is_installed:
+            cls.uninstall()
+        handler = cls()
+        cls.handlers.append(
+            bpy.types.SpaceView3D.draw_handler_add(
+                handler.draw_bounding_box_wire_cube, (context,), "WINDOW", "POST_VIEW"
+            )
+        )
+        cls.handlers.append(
+            bpy.types.SpaceView3D.draw_handler_add(handler.draw_dimension_text, (context,), "WINDOW", "POST_PIXEL")
+        )
+        cls.is_installed = True
+
+    @classmethod
+    def uninstall(cls):
+        for handler in cls.handlers:
+            try:
+                bpy.types.SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except Exception:
+                pass
+        cls.handlers.clear()
+        cls.is_installed = False
+
+    @staticmethod
+    def get_combined_bounding_box_corners(objects):
+
+        if not objects:
+            return None, None, None
+        if len(objects) == 1:
+            obj = objects[0]
+            corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+        else:
+            all_corners = []
+            for obj in objects:
+                if hasattr(obj, "bound_box"):
+                    all_corners.extend([obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box])
+            min_corner = mathutils.Vector(
+                (min(v.x for v in all_corners), min(v.y for v in all_corners), min(v.z for v in all_corners))
+            )
+            max_corner = mathutils.Vector(
+                (max(v.x for v in all_corners), max(v.y for v in all_corners), max(v.z for v in all_corners))
+            )
+            corners = [
+                mathutils.Vector((min_corner.x, min_corner.y, min_corner.z)),
+                mathutils.Vector((min_corner.x, min_corner.y, max_corner.z)),
+                mathutils.Vector((min_corner.x, max_corner.y, max_corner.z)),
+                mathutils.Vector((min_corner.x, max_corner.y, min_corner.z)),
+                mathutils.Vector((max_corner.x, min_corner.y, min_corner.z)),
+                mathutils.Vector((max_corner.x, min_corner.y, max_corner.z)),
+                mathutils.Vector((max_corner.x, max_corner.y, max_corner.z)),
+                mathutils.Vector((max_corner.x, max_corner.y, min_corner.z)),
+            ]
+        edges = [
+            (0, 1, "Z"),
+            (1, 2, "Y"),
+            (2, 3, "Z"),
+            (3, 0, "Y"),
+            (4, 5, "Z"),
+            (5, 6, "Y"),
+            (6, 7, "Z"),
+            (7, 4, "Y"),
+            (0, 4, "X"),
+            (1, 5, "X"),
+            (2, 6, "X"),
+            (3, 7, "X"),
+        ]
+        axis_colors = {
+            "X": (0.956, 0.282, 0.322, 1),
+            "Y": (0.565, 0.812, 0.125, 1),
+            "Z": (0.196, 0.529, 0.929, 1),
+        }
+        return corners, edges, axis_colors
+
+    @staticmethod
+    def find_closest_trihedron(corners, edges, region, rv3d):
+
+        min_y = float("inf")
+        best_origin = None
+        for idx, corner in enumerate(corners):
+            screen_co = location_3d_to_region_2d(region, rv3d, corner)
+            if screen_co is not None and screen_co.y < min_y:
+                min_y = screen_co.y
+                best_origin = idx
+        trihedron = [
+            {"X": (0, 4), "Y": (0, 3), "Z": (0, 1)},
+            {"X": (1, 5), "Y": (1, 2), "Z": (1, 0)},
+            {"X": (2, 6), "Y": (2, 1), "Z": (2, 3)},
+            {"X": (3, 7), "Y": (3, 0), "Z": (3, 2)},
+            {"X": (4, 0), "Y": (4, 7), "Z": (4, 5)},
+            {"X": (5, 1), "Y": (5, 6), "Z": (5, 4)},
+            {"X": (6, 2), "Y": (6, 5), "Z": (6, 7)},
+            {"X": (7, 3), "Y": (7, 4), "Z": (7, 6)},
+        ]
+        return trihedron[best_origin]
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    def draw_text_background(self, context, coords_dim, text_dim):
+        padding = 5
+        theme = context.preferences.themes.items()[0][1]
+        color = (*theme.user_interface.wcol_menu_back.inner[:3], 0.5)  # unwrap color values and adds alpha
+        top_left = (coords_dim[0] - padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_left = (coords_dim[0] - padding, coords_dim[1] - padding)
+        top_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] - padding)
+
+        verts = [top_left, bottom_left, top_right, bottom_right]
+        gpu.state.blend_set("ALPHA")
+        self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
+
+    def draw_bounding_box_wire_cube(self, context):
+
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+
+        selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
+        if not selected_objects:
+            return
+        corners, edges, axis_colors = self.get_combined_bounding_box_corners(selected_objects)
+        region = bpy.context.region
+        rv3d = bpy.context.region_data
+        gpu.state.line_width_set(2.0)
+        for i1, i2, axis in edges:
+            self.draw_batch("LINES", [corners[i1], corners[i2]], self.decorator_color_wire)
+        closest_indices = self.find_closest_trihedron(corners, edges, region, rv3d)
+        for axis in "XYZ":
+            pair = closest_indices[axis]
+            if pair is not None:
+                i1, i2 = pair
+                color = getattr(self, f"decorator_color_{axis.lower()}_axis")
+                self.draw_batch("LINES", [corners[i1], corners[i2]], color)
+
+    def draw_dimension_text(self, context):
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+
+        selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
+        if not selected_objects:
+            return
+        corners, edges, axis_colors = self.get_combined_bounding_box_corners(selected_objects)
+        if not corners:
+            return
+        dims = mathutils.Vector(
+            (
+                (corners[4] - corners[0]).length,
+                (corners[3] - corners[0]).length,
+                (corners[1] - corners[0]).length,
+            )
+        )
+        region = bpy.context.region
+        rv3d = bpy.context.region_data
+
+        addon_prefs = tool.Blender.get_addon_preferences()
+        font_id = 0
+        font_size = tool.Blender.scale_font_size(12)
+        blf.size(font_id, font_size)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 6, 0, 0, 0, 1)
+        color = addon_prefs.decorations_colour
+        blf.color(font_id, *color)
+
+        closest_indices = self.find_closest_trihedron(corners, edges, region, rv3d)
+
+        screen_coords = {}
+        for axis_idx, axis in enumerate("XYZ"):
+            pair = closest_indices[axis]
+            if pair is not None:
+                i1, i2 = pair
+                offset_factor = 0.6 - (axis_idx * 0.1)
+                center = corners[i1].lerp(corners[i2], offset_factor)
+                value = getattr(dims, axis.lower())
+                screen_co = location_3d_to_region_2d(region, rv3d, center)
+                if screen_co is not None:
+                    screen_coords[axis] = (screen_co, value)
+
+        self.adjust_overlapping_labels(screen_coords)
+
+        for axis, (screen_co, value) in screen_coords.items():
+            blf.position(font_id, screen_co.x, screen_co.y, 0)
+            blf.color(font_id, 1, 1, 1, 1)
+            value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
+            text_length = blf.dimensions(font_id, value_str)
+            self.draw_text_background(context, screen_co, text_length)
+            blf.draw(font_id, value_str)
+
+        blf.disable(font_id, blf.SHADOW)
+
+    def adjust_overlapping_labels(self, screen_coords):
+        font_id = 0
+        text_dimensions = {}
+        for axis, (screen_co, value) in screen_coords.items():
+            value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
+            text_dimensions[axis] = blf.dimensions(font_id, value_str)
+
+        min_spacing = 5
+
+        axes = list(screen_coords.keys())
+        for i in range(len(axes)):
+            for j in range(i + 1, len(axes)):
+                axis1, axis2 = axes[i], axes[j]
+                co1, _ = screen_coords[axis1]
+                co2, _ = screen_coords[axis2]
+                dim1 = text_dimensions[axis1]
+                dim2 = text_dimensions[axis2]
+
+                bounds1 = {
+                    "left": co1.x - min_spacing,
+                    "right": co1.x + dim1[0] + min_spacing,
+                    "top": co1.y + dim1[1] + min_spacing,
+                    "bottom": co1.y - min_spacing,
+                }
+                bounds2 = {
+                    "left": co2.x - min_spacing,
+                    "right": co2.x + dim2[0] + min_spacing,
+                    "top": co2.y + dim2[1] + min_spacing,
+                    "bottom": co2.y - min_spacing,
+                }
+
+                if (
+                    bounds1["left"] < bounds2["right"]
+                    and bounds1["right"] > bounds2["left"]
+                    and bounds1["bottom"] < bounds2["top"]
+                    and bounds1["top"] > bounds2["bottom"]
+                ):
+
+                    x_overlap = min(bounds1["right"], bounds2["right"]) - max(bounds1["left"], bounds2["left"])
+                    y_overlap = min(bounds1["top"], bounds2["top"]) - max(bounds1["bottom"], bounds2["bottom"])
+
+                    if x_overlap < y_overlap:
+                        if co1.x < co2.x:
+                            co1.x -= x_overlap / 2 + min_spacing
+                            co2.x += x_overlap / 2 + min_spacing
+                        else:
+                            co1.x += x_overlap / 2 + min_spacing
+                            co2.x -= x_overlap / 2 + min_spacing
+                    else:
+                        if co1.y < co2.y:
+                            co1.y -= y_overlap / 2 + min_spacing
+                            co2.y += y_overlap / 2 + min_spacing
+                        else:
+                            co1.y += y_overlap / 2 + min_spacing
+                            co2.y -= y_overlap / 2 + min_spacing

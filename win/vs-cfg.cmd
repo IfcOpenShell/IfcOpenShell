@@ -110,7 +110,7 @@ IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
 set GENERATOR_CHECK=%GENERATOR: Win64=%
 cmake --help | findstr /c:%GENERATOR_CHECK% >nul
 if not %ERRORLEVEL%==0 (
-call utils\cecho.cmd 0 12 "%~nx0: The used CMake version does not support '`"!GENERATOR!`'"- cannot proceed."
+call utils\cecho.cmd 0 12 "%~nx0: The used CMake version does not support generator '`"!GENERATOR!`'"- cannot proceed."
 exit /b 1
 )
 

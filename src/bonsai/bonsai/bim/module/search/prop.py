@@ -33,7 +33,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, get_args
 
 
 def get_element_key(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -60,28 +60,26 @@ def get_saved_colourschemes(self: "BIMSearchProperties", context: bpy.types.Cont
     return ColourByPropertyData.data["saved_colourschemes"]
 
 
-def update_is_class_selected(self: "BIMFilterClasses", context: bpy.types.Context) -> None:
+def update_is_filter_item_selected(self: "BIMFilterItem", context: bpy.types.Context) -> None:
     if self.is_selected:
         for obj in self.unselected_objects:
+            assert obj.obj
             obj.obj.select_set(True)
         self.unselected_objects.clear()
-    else:
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
+        return
+
+    props = tool.Search.get_search_props()
+    for obj in context.selected_objects:
+        element = tool.Ifc.get_entity(obj)
+        if props.filter_type == "CLASS":
             if element and element.is_a() == self.name:
                 obj.select_set(False)
                 new = self.unselected_objects.add()
                 new.obj = obj
-
-
-def update_is_container_selected(self: "BIMFilterBuildingStoreys", context: bpy.types.Context) -> None:
-    if self.is_selected:
-        for obj in self.unselected_objects:
-            obj.obj.select_set(True)
-        self.unselected_objects.clear()
-    else:
-        for obj in context.selected_objects:
-            container = tool.Spatial.get_container(tool.Ifc.get_entity(obj))
+        else:
+            if not element:
+                continue
+            container = tool.Spatial.get_container(element)
             if (container and container.Name == self.name) or (not container and self.name == "None"):
                 obj.select_set(False)
                 new = self.unselected_objects.add()
@@ -103,21 +101,8 @@ def update_show_flat_colours(self: "BIMSearchProperties", context: bpy.types.Con
         space.shading.show_cavity = False
 
 
-class BIMFilterClasses(PropertyGroup):
-    name: StringProperty(name="Name")
-    is_selected: BoolProperty(name="Is Selected", default=True, update=update_is_class_selected)
-    total: IntProperty(name="Total")
-    unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
-
-    if TYPE_CHECKING:
-        is_selected: bool
-        total: int
-        unselected_objects: bpy.types.bpy_prop_collection_idprop[ObjProperty]
-
-
-class BIMFilterBuildingStoreys(PropertyGroup):
-    name: StringProperty(name="Name")
-    is_selected: BoolProperty(name="Is Level Selected", default=True, update=update_is_container_selected)
+class BIMFilterItem(PropertyGroup):
+    is_selected: BoolProperty(name="Is Selected", default=True, update=update_is_filter_item_selected)
     total: IntProperty(name="Total")
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
 
@@ -128,7 +113,6 @@ class BIMFilterBuildingStoreys(PropertyGroup):
 
 
 class BIMColour(PropertyGroup):
-    name: StringProperty(name="Name")
     total: IntProperty(name="Total")
     colour: FloatVectorProperty(name="Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0)
 
@@ -137,23 +121,93 @@ class BIMColour(PropertyGroup):
         colour: tuple[float, float, float]
 
 
+FilterType = Literal["CLASS", "CONTAINER"]
+
+
 class BIMSearchProperties(PropertyGroup):
     element_key: EnumProperty(items=get_element_key, name="Element Key")
     filter_query: StringProperty(name="Filter Query")
     filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     facet: EnumProperty(
+        name="Facet",
         items=[
-            ("entity", "Class", "", "FILE_3D", 0),
-            ("attribute", "Attribute", "", "COPY_ID", 1),
-            ("property", "Property", "", "PROPERTIES", 2),
-            ("material", "Material", "", "MATERIAL", 3),
-            ("classification", "Classification", "", "OUTLINER", 4),
-            ("location", "Location", "", "PACKAGE", 5),
-            ("type", "Type", "", "FILE_VOLUME", 6),
-            ("group", "Group", "", "OUTLINER_COLLECTION", 7),
-            ("parent", "Parent", "", "FILE_PARENT", 8),
-            ("query", "Query", "", "POINTCLOUD_DATA", 9),
-            ("instance", "GlobalId", "", "GRIP", 10),
+            ("entity", "Class", "Search by IFC class.\n\nExample: 'IfcWall'.", "FILE_3D", 0),
+            (
+                "attribute",
+                "Attribute",
+                "Search by IFC class attribute value.\n\nExample values: 'Name', 'Cube'.",
+                "COPY_ID",
+                1,
+            ),
+            (
+                "property",
+                "Property",
+                "Search by Pset property value.\n\n"
+                "Example values: 'Pset_WallCommon', 'FireRating', 'equal to', '2HR'.",
+                "PROPERTIES",
+                2,
+            ),
+            (
+                "material",
+                "Material",
+                "Search by material name.\n\n"
+                "Example: 'concrete'\n"
+                "(to select all elements with material named 'concrete').",
+                "MATERIAL",
+                3,
+            ),
+            (
+                "classification",
+                "Classification",
+                "Search by classification references.\n\n"
+                "Example: 'MyReference'\n"
+                "(to select all elements that have classification reference with Id 'MyReference').",
+                "OUTLINER",
+                4,
+            ),
+            (
+                "location",
+                "Location",
+                "Search by spatial element.\n\n"
+                "Example: 'My Storey'\n"
+                "(to select all elements contained in 'My Storey' spatial element).",
+                "PACKAGE",
+                5,
+            ),
+            (
+                "type",
+                "Type",
+                "Search by element type.\n\n"
+                "Example: 'BaseType'\n(to select all elements that have element type named 'BaseType').",
+                "FILE_VOLUME",
+                6,
+            ),
+            (
+                "group",
+                "Group",
+                "Search by IfcGroup name.\n\n"
+                "Example: 'MyGroup'\n(to select all elements that are assigned to IfcGroup named 'MyGroup').",
+                "OUTLINER_COLLECTION",
+                7,
+            ),
+            (
+                "parent",
+                "Parent",
+                "Search by parent element.\n\n"
+                "Example: 'My Building'\n"
+                "(to select all children elements of 'My Building').",
+                "FILE_PARENT",
+                8,
+            ),
+            (
+                "query",
+                "Query",
+                "Search elements by special queries.\n\n"
+                "Example values: 'types.count', '0' (to select all elements that have 0 occurrences).",
+                "POINTCLOUD_DATA",
+                9,
+            ),
+            ("instance", "GlobalId", "Search entity by guid.\n\nExample: '2W83_qKWvEGgeo5v66dTxG'.", "GRIP", 10),
         ],
     )
     saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
@@ -197,12 +251,19 @@ class BIMSearchProperties(PropertyGroup):
     max_value: FloatProperty(name="Max Value", default=100)
     colourscheme: CollectionProperty(type=BIMColour)
     active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
-    filter_type: StringProperty(name="Filter Type")
-    filter_classes: CollectionProperty(type=BIMFilterClasses, name="Filter Classes")
-    filter_classes_index: IntProperty(name="Filter Classes Index")
-    filter_container: CollectionProperty(type=BIMFilterBuildingStoreys, name="Filter Level")
-    filter_container_index: IntProperty(name="Filter Level Index")
-    show_flat_colours: BoolProperty(name="Flat Colours", default=False, update=update_show_flat_colours)
+
+    # Ideally those should be props on operators, but if we move them to operators,
+    # then there's no way for suboperator to select/deselect all displayed items.
+    filter_type: EnumProperty(name="Filter Type", items=[(i, i, "") for i in get_args(FilterType)])
+    filter_items: CollectionProperty(type=BIMFilterItem, name="Filter Classes")
+    filter_items_index: IntProperty(name="Filter Classes Index")
+
+    show_flat_colours: BoolProperty(
+        name="Flat Colours",
+        description="Toggle flat shading in the active viewport.",
+        default=False,
+        update=update_show_flat_colours,
+    )
 
     if TYPE_CHECKING:
         element_key: str
@@ -220,16 +281,7 @@ class BIMSearchProperties(PropertyGroup):
         max_value: float
         colourscheme: bpy.types.bpy_prop_collection_idprop[BIMColour]
         active_colourscheme_index: int
-        filter_type: str
-        filter_classes: bpy.types.bpy_prop_collection_idprop[BIMFilterClasses]
-        filter_classes_index: int
-        filter_container: bpy.types.bpy_prop_collection_idprop[BIMFilterBuildingStoreys]
-        filter_container_index: int
+        filter_type: FilterType
+        filter_items: bpy.types.bpy_prop_collection_idprop[BIMFilterItem]
+        filter_items_index: int
         show_flat_colours: bool
-
-
-def get_classes(self, ifc_product):
-    declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
-    declarations = ifcopenshell.util.schema.get_subtypes(declaration)
-    names = [d.name() for d in declarations]
-    return [(c, c, "") for c in sorted(names)]

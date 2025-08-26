@@ -1,8 +1,11 @@
+import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
+DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
-@dataclass(slots=True, kw_only=True)
+
+@dataclass(**DATACLASS_KWARGS)
 class Project:
     name: Optional[str] = field(
         default=None,
@@ -25,7 +28,7 @@ class Project:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ProjectInfo:
     project: Project = field(
         metadata={

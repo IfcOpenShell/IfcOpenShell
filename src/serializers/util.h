@@ -22,6 +22,8 @@
 
 #include <sstream>
 #include <vector>
+#include <iomanip>
+#include <limits>
 
 #include <boost/shared_ptr.hpp>
 
@@ -50,7 +52,7 @@ namespace util {
 			void assign(const double& d) { this->d = d; }
 			const double& value() const { return d; }
 			double& value() { return d; }
-			std::string str() const { std::stringstream ss; ss << d; return ss.str(); }
+			std::string str() const { std::stringstream ss; ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d; return ss.str(); }
 			virtual ~float_item() {};
 		};
 	private:

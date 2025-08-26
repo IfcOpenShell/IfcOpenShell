@@ -49,20 +49,21 @@ class TestRemoveRoleIFC2X3(test.bootstrap.IFC2X3):
 
 
 class TestRemoveRoleIFC4(test.bootstrap.IFC4, TestRemoveRoleIFC2X3):
+    # IfcResourceLevelRelationships were added in IFC4.
     def test_deleting_resource_approval_relationships(self):
-        organisation = self.file.create_entity("IfcOrganization")
-        self.file.create_entity("IfcResourceApprovalRelationship", RelatedResourceObjects=[organisation])
-        ifcopenshell.api.owner.remove_organisation(self.file, organisation=organisation)
+        role = self.file.create_entity("IfcActorRole")
+        self.file.create_entity("IfcResourceApprovalRelationship", RelatedResourceObjects=[role])
+        ifcopenshell.api.owner.remove_role(self.file, role=role)
         assert len(self.file.by_type("IfcResourceApprovalRelationship")) == 0
 
     def test_deleting_resource_constraint_relationships(self):
-        organisation = self.file.create_entity("IfcOrganization")
-        self.file.create_entity("IfcResourceConstraintRelationship", RelatedResourceObjects=[organisation])
-        ifcopenshell.api.owner.remove_organisation(self.file, organisation=organisation)
+        role = self.file.create_entity("IfcActorRole")
+        self.file.create_entity("IfcResourceConstraintRelationship", RelatedResourceObjects=[role])
+        ifcopenshell.api.owner.remove_role(self.file, role=role)
         assert len(self.file.by_type("IfcResourceConstraintRelationship")) == 0
 
     def test_deleting_external_reference_relationships(self):
-        organisation = self.file.create_entity("IfcOrganization")
-        self.file.create_entity("IfcExternalReferenceRelationship", RelatedResourceObjects=[organisation])
-        ifcopenshell.api.owner.remove_organisation(self.file, organisation=organisation)
+        role = self.file.create_entity("IfcActorRole")
+        self.file.create_entity("IfcExternalReferenceRelationship", RelatedResourceObjects=[role])
+        ifcopenshell.api.owner.remove_role(self.file, role=role)
         assert len(self.file.by_type("IfcExternalReferenceRelationship")) == 0

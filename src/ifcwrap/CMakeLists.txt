@@ -17,9 +17,20 @@
 #                                                                              #
 ################################################################################
 
+if(POLICY CMP0148) # 3.27
+    cmake_policy(SET CMP0148 OLD)
+endif()
+if(POLICY CMP0177) # 3.31
+    cmake_policy(SET CMP0177 OLD)
+endif()
+
 FIND_PACKAGE(SWIG)
 IF(NOT SWIG_FOUND)
-	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed.")
+	MESSAGE(
+        FATAL_ERROR
+        "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed. "
+        "Likely SWIG_EXECUTABLE is missing (current value - '${SWIG_EXECUTABLE}')."
+    )
 ENDIF()
 include(GNUInstallDirs)
 INCLUDE(${SWIG_USE_FILE})
@@ -41,7 +52,7 @@ IF(NOT PYTHONLIBS_FOUND OR "$PYTHON_INCLUDE_DIRS}" STREQUAL "")
 ENDIF()
 
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
@@ -114,7 +125,7 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
     IF("${python_package_dir}" STREQUAL "")
         MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
     ELSE()
-        FILE(GLOB_RECURSE sourcefiles 
+        FILE(GLOB_RECURSE sourcefiles
             "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*"
         )
         FOREACH(file ${sourcefiles})

@@ -18,9 +18,11 @@
 
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.profile
 import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.geom
 import ifcopenshell.util.unit
@@ -37,9 +39,9 @@ class TestSettings(test.bootstrap.IFC4):
         builder = ShapeBuilder(ifc_file)
 
         ifcopenshell.api.root.create_entity(ifc_file, "IfcProject")
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", ifc_file, units=[unit])
-        model = ifcopenshell.api.run("context.add_context", ifc_file, context_type="Model")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(ifc_file, units=[unit])
+        model = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
 
         # Placement.
         element = ifcopenshell.api.root.create_entity(ifc_file, "IfcWall")

@@ -19,13 +19,16 @@ from __future__ import annotations
 
 import uuid
 import time
-import urllib
+import urllib.parse
 import requests
 import webbrowser
 import http.server
-from typing import TypedDict, Literal, Optional
+from typing import TypedDict, Literal, Optional, TYPE_CHECKING, Any
 from typing_extensions import NotRequired
 
+
+if TYPE_CHECKING:
+    import ifcopenshell
 
 __version__ = version = "0.0.0"
 
@@ -428,7 +431,7 @@ class OAuthReceiver(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write("You have now authenticated :) You may now close this browser window.".encode("utf-8"))
+        self.wfile.write(b"You have now authenticated :) You may now close this browser window.")
 
 
 class Client:
@@ -610,15 +613,15 @@ class Client:
         print(f"function 'Client.Unit' is deprecated, use 'Client.get_units' instead")
         return self.get(f"api/Unit/{version}")
 
-    def get_dictionary(self, dictionary_uri: str = "", version: int = 1) -> DictionaryResponseContractV1:
+    def get_dictionary(
+        self, dictionary_uri: str = "", include_test_dictionaries: bool = "False", version: int = 1
+    ) -> DictionaryResponseContractV1:
         """
         Get list of available Dictionaries
         This API replaces Domain
         """
         endpoint = f"Dictionary/v{version}"
-        params = {
-            "Uri": dictionary_uri,
-        }
+        params = {"Uri": dictionary_uri, "IncludeTestDictionaries": "true" if include_test_dictionaries else "false"}
         return self.get(endpoint, params)
 
     def get_classes(
@@ -626,6 +629,8 @@ class Client:
         dictionary_uri: str,
         use_nested_classes: bool = True,
         class_type: ClassTypes = "Class",
+        search_text: str = "",
+        related_ifc_entity: str = "",
         language_code: str = "",
         version: int = 1,
         offset=0,
@@ -636,24 +641,45 @@ class Client:
         This API replaces Domain
         """
         endpoint = f"Dictionary/v{version}/Classes"
-        params = {
-            "Uri": dictionary_uri,
+        params = {"Uri": dictionary_uri}
+        for param, value in {
             "UseNestedClasses": use_nested_classes,
             "ClassType": class_type,
             "languageCode": language_code,
             "offset": offset,
             "limit": limit,
-        }
+        }.items():
+            if value:
+                params[param] = value
+        if not use_nested_classes:
+            for param, value in {
+                "SearchText": search_text,
+                "RelatedIfcEntity": related_ifc_entity,
+            }.items():
+                if value:
+                    params[param] = value
         return self.get(endpoint, params)
 
     def get_properties(
-        self, dictionary_uri: str, offset: int = 0, limit: int = 100, language_code: str = "", version: int = 1
+        self,
+        dictionary_uri: str,
+        search_text: str = "",
+        offset: int = 0,
+        limit: int = 100,
+        language_code: str = "",
+        version: int = 1,
     ) -> DictionaryPropertiesResponseContractV1:
         """
         Get Dictionary with its properties
         """
         endpoint = f"Dictionary/v{version}/Properties"
-        params = {"Uri": dictionary_uri, "languageCode": language_code, "offset": offset, "limit": limit}
+        params = {
+            "Uri": dictionary_uri,
+            "SearchText": search_text,
+            "languageCode": language_code,
+            "offset": offset,
+            "limit": limit,
+        }
         return self.get(endpoint, params)
 
     def get_class(
@@ -781,8 +807,8 @@ class Client:
         this API replaces ClassificationSearch
         """
 
-        if len(search_text) < 3:
-            raise ValueError("Search text must be at least 3 characters long.")
+        if len(search_text) < 1:
+            raise ValueError("Search text must be at least 1 characters long.")
 
         if related_ifc_entities is None:
             related_ifc_entities = []
@@ -835,8 +861,11 @@ class Client:
         return self.get(endpoint, params)
 
 
-def apply_ifc_classification_properties(ifc_file, element, classificationProperties):
+def apply_ifc_classification_properties(
+    ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, classificationProperties: dict[str, Any]
+) -> None:
     import ifcopenshell.api
+    import ifcopenshell.api.pset
     import ifcopenshell.util.element
 
     psets = ifcopenshell.util.element.get_psets(element)
@@ -848,7 +877,7 @@ def apply_ifc_classification_properties(ifc_file, element, classificationPropert
         if pset:
             pset = ifc_file.by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name=prop["propertySet"])
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name=prop["propertySet"])
         if prop["dataType"] == "boolean":
             predefinedValue = predefinedValue == "TRUE"
-        ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={prop["name"]: predefinedValue})
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={prop["name"]: predefinedValue})

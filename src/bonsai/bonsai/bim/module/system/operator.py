@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.api.system
 import ifcopenshell.util.system
 import bonsai.tool as tool
 import bonsai.core.system as core
@@ -406,7 +407,7 @@ class AddZone(bpy.types.Operator, tool.Ifc.Operator):
         row.prop(self, "name", text="Name")
 
     def _execute(self, context):
-        element = ifcopenshell.api.run("system.add_system", tool.Ifc.get(), ifc_class="IfcZone")
+        element = ifcopenshell.api.system.add_system(tool.Ifc.get(), ifc_class="IfcZone")
         if self.name:
             element.Name = self.name
         bpy.ops.bim.load_zones()
@@ -421,12 +422,12 @@ class EnableEditingZone(bpy.types.Operator):
     def execute(self, context):
         props = tool.System.get_zone_props()
         props.attributes.clear()
-        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.zone), props.attributes)
+        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.zone), props.attributes)
         props.is_editing = self.zone
         return {"FINISHED"}
 
 
-class DisableEditingZone(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingZone(bpy.types.Operator):
     bl_idname = "bim.disable_editing_zone"
     bl_label = "Disable Editing Zone"
     bl_options = {"REGISTER", "UNDO"}
@@ -446,7 +447,7 @@ class EditZone(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.System.get_zone_props()
         zone = tool.Ifc.get().by_id(props.is_editing)
         attributes = bonsai.bim.helper.export_attributes(props.attributes)
-        ifcopenshell.api.run("system.edit_system", tool.Ifc.get(), system=zone, attributes=attributes)
+        ifcopenshell.api.system.edit_system(tool.Ifc.get(), system=zone, attributes=attributes)
         props.is_editing = 0
         bpy.ops.bim.load_zones()
 
@@ -458,7 +459,7 @@ class RemoveZone(bpy.types.Operator, tool.Ifc.Operator):
     zone: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifcopenshell.api.run("system.remove_system", tool.Ifc.get(), system=tool.Ifc.get().by_id(self.zone))
+        ifcopenshell.api.system.remove_system(tool.Ifc.get(), system=tool.Ifc.get().by_id(self.zone))
         bpy.ops.bim.load_zones()
 
 
@@ -511,12 +512,12 @@ class AssignUnassignFlowControl(bpy.types.Operator, tool.Ifc.Operator):
 
         for control in flow_controls:
             if self.assign:
-                tool.Ifc.run(
-                    "system.assign_flow_control", relating_flow_element=flow_element, related_flow_control=control
+                ifcopenshell.api.system.assign_flow_control(
+                    ifc_file, relating_flow_element=flow_element, related_flow_control=control
                 )
             else:
-                tool.Ifc.run(
-                    "system.unassign_flow_control", relating_flow_element=flow_element, related_flow_control=control
+                ifcopenshell.api.system.unassign_flow_control(
+                    ifc_file, relating_flow_element=flow_element, related_flow_control=control
                 )
 
         if from_selected_objects:

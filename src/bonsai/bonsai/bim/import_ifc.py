@@ -29,6 +29,7 @@ import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
@@ -38,7 +39,8 @@ import ifcopenshell.util.shape
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any, Literal
+from typing import Union, Optional, Any, Literal
+from collections.abc import Iterable
 from ifcopenshell.util.shape import MatrixType
 
 
@@ -47,7 +49,7 @@ class MaterialCreator:
     obj: bpy.types.Object
 
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
-        self.styles: Dict[int, bpy.types.Material] = {}
+        self.styles: dict[int, bpy.types.Material] = {}
         self.parsed_meshes: set[str] = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
@@ -198,11 +200,16 @@ class MaterialCreator:
 
 
 class IfcImporter:
+    file: ifcopenshell.file
+    """Either provided by user as an attribute or will be loaded from ``input_file`` during ``execute()``."""
+
+    elements: set[ifcopenshell.entity_instance]
+    """Set of IfcElements to import. Excluding ``gross_elements`` and ```native_elements``."""
+
     def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
         tool.Loader.set_settings(ifc_import_settings)
         self.diff = None
-        self.file: ifcopenshell.file = None
         self.project = None
         self.has_existing_project = False
         # element guids to blender collections mapping
@@ -224,7 +231,8 @@ class IfcImporter:
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
-        classes_to_wireframe_str = tool.Drawing.get_document_props().classes_to_wireframe
+        prefs = tool.Blender.get_addon_preferences()
+        classes_to_wireframe_str = prefs.doc.classes_to_wireframe
         self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:
@@ -295,11 +303,11 @@ class IfcImporter:
         tool.Spatial.run_spatial_import_spatial_decomposition()
         if default_container := tool.Spatial.guess_default_container():
             tool.Spatial.set_default_container(default_container)
-        tool.Loader.setup_active_bsdd_classification()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
     def process_context_filter(self) -> None:
+        """Setup contexts. Necessary for importing elements representations."""
         contexts = self.file.by_type("IfcGeometricRepresentationContext")
         if len(contexts) > 100:  # Probably something strange happening. Encountered from Revizto.
             print("Warning! Excessive contexts were found and merged where applicable.")
@@ -319,16 +327,15 @@ class IfcImporter:
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
     def process_element_filter(self) -> None:
+        elements: list[ifcopenshell.entity_instance]
         if self.ifc_import_settings.has_filter:
-            self.elements = self.ifc_import_settings.elements
-            if isinstance(self.elements, set):
-                self.elements = list(self.elements)
+            elements = list(self.ifc_import_settings.elements)
             # TODO: enable filtering for annotations
         else:
             if self.file.schema in ("IFC2X3", "IFC4"):
-                self.elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
+                elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
             else:
-                self.elements = self.file.by_type("IfcElement")
+                elements = self.file.by_type("IfcElement")
 
         drawing_groups = [g for g in self.file.by_type("IfcGroup") if g.ObjectType == "DRAWING"]
         drawing_annotations = set()
@@ -338,16 +345,16 @@ class IfcImporter:
         self.annotations = set([a for a in self.file.by_type("IfcAnnotation")])
         self.annotations -= drawing_annotations
 
-        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
+        elements = [e for e in elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
         if self.ifc_import_settings.element_limit_mode == "UNLIMITED":
-            self.elements = set(self.elements)
+            self.elements = set(elements)
         else:
             offset = self.ifc_import_settings.element_offset
             offset_limit = offset + self.ifc_import_settings.element_limit
-            self.elements = set(self.elements[offset:offset_limit])
+            self.elements = set(elements[offset:offset_limit])
 
         if self.ifc_import_settings.has_filter or self.ifc_import_settings.element_limit_mode != "UNLIMITED":
-            self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+            self.element_types = {t for e in self.elements if (t := ifcopenshell.util.element.get_type(e))}
         else:
             self.element_types = set(self.file.by_type("IfcTypeProduct"))
 
@@ -385,6 +392,7 @@ class IfcImporter:
         return results
 
     def parse_native_elements(self) -> None:
+        # TODO: move to `process_element_filter` to incapsulate all `self.elements` logic.
         if not self.ifc_import_settings.should_load_geometry:
             return
         if not self.file.by_type("IfcSweptDiskSolid"):
@@ -422,7 +430,8 @@ class IfcImporter:
 
         rep = representation
         while True:
-            if len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
+            # Tekla 2023 has missing items, though it's invalid IFC.
+            if rep.Items and len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
                 rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(rep.Items[0])
                 if not np.allclose(rep_matrix, np.eye(4)):
                     matrix = rep_matrix @ matrix
@@ -589,6 +598,7 @@ class IfcImporter:
             return self.create_generic_sqlite_elements(elements)
 
         if self.ifc_import_settings.should_load_geometry:
+            elements = elements.copy()  # Prevent argument mutation.
             context_settings = (
                 tool.Loader.settings.gross_context_settings if is_gross else tool.Loader.settings.context_settings
             )
@@ -653,7 +663,7 @@ class IfcImporter:
         settings: Optional[ifcopenshell.geom.main.settings] = None,
     ) -> set[ifcopenshell.entity_instance]:
         checkpoint = time.time()
-        results = set()
+        results: set[ifcopenshell.entity_instance] = set()
         if not products:
             return results
 
@@ -849,7 +859,7 @@ class IfcImporter:
         return obj
 
     def load_existing_meshes(self) -> None:
-        self.meshes.update({m.name: m for m in bpy.data.meshes})
+        self.meshes.update({m.name: m for m in bpy.data.meshes if m.library is None})
 
     def merge_materials_by_colour(self):
         cleaned_materials = {}
@@ -874,7 +884,8 @@ class IfcImporter:
         for material in self.material_creator.materials.values():
             bpy.data.materials.remove(material)
 
-    def add_project_to_scene(self):
+    def add_project_to_scene(self) -> None:
+        assert bpy.context.scene
         try:
             bpy.context.scene.collection.children.link(self.project["blender"])
         except:
@@ -899,6 +910,7 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent()
         bpy.ops.object.editmode_toggle()
 
+        assert bpy.context.view_layer
         bpy.context.view_layer.objects.active = last_obj
         IfcStore.edited_objs.clear()
 
@@ -917,6 +929,7 @@ class IfcImporter:
         if not (assignment := self.file.by_type("IfcProject")[0].UnitsInContext):
             return  # Geometry is optional in IFC
         props = tool.Blender.get_bim_props()
+        assert bpy.context.scene
         for unit in assignment.Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
@@ -1024,9 +1037,9 @@ class IfcImporter:
     def create_curve(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        shape: Union[W.Triangulation, W.TriangulationElement],
     ) -> bpy.types.Curve:
-        if hasattr(shape, "geometry"):
+        if isinstance(shape, W.TriangulationElement):
             geometry = shape.geometry
         else:
             geometry = shape
@@ -1055,11 +1068,11 @@ class IfcImporter:
     def create_mesh(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        shape: Union[W.Triangulation, W.TriangulationElement],
         cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
     ) -> Union[bpy.types.Mesh, None]:
         try:
-            if hasattr(shape, "geometry"):
+            if isinstance(shape, W.TriangulationElement):
                 # shape is ShapeElementType
                 geometry = shape.geometry
             else:
@@ -1068,7 +1081,7 @@ class IfcImporter:
             # Mesh may already exists (e.g. during representation reimport)
             # and we assign some suffix to it to prevent Blender from adding '.001' suffix to the new mesh.
             mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
-            if old_mesh := bpy.data.meshes.get(mesh_name):
+            if old_mesh := bpy.data.meshes.get((mesh_name, None)):
                 old_mesh.name = mesh_name + ".old"
             mesh = bpy.data.meshes.new(mesh_name)
 
@@ -1130,7 +1143,22 @@ class IfcImporter:
             bpy.ops.view3d.view_selected()
             bpy.ops.object.select_all(action="DESELECT")
 
-    def setup_arrays(self):
+    def setup_arrays(
+        self,
+        *,
+        annotations_to_import: Optional[set[ifcopenshell.entity_instance]] = None,
+        openings_to_import: Optional[set[ifcopenshell.entity_instance]] = None,
+    ) -> None:
+        # During base import some elements are skipped.
+        is_base_import = True
+        elements_to_import: set[ifcopenshell.entity_instance] = set()
+        if annotations_to_import is not None:
+            is_base_import = False
+            elements_to_import = annotations_to_import
+        elif openings_to_import is not None:
+            is_base_import = False
+            elements_to_import = openings_to_import
+
         for pset in self.file.by_type("IfcPropertySet"):
             if pset.Name != "BBIM_Array":
                 continue
@@ -1138,16 +1166,28 @@ class IfcImporter:
                 continue
             data = json.loads(data)
             for rel in pset.DefinesOccurrence:
+                element: ifcopenshell.entity_instance
                 for element in rel.RelatedObjects:
+                    if is_base_import:
+                        if element.is_a("IfcAnnotation") or element.is_a("IfcOpeningElement"):
+                            continue
+                    else:
+                        if element not in elements_to_import:
+                            continue
                     for i in range(len(data)):
                         tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
                         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:
+    """
+    Initialize only using `IfcImportSettings.factory()`.
+    """
+
+    input_file: Union[str, None] = None
+    logger: logging.Logger
+
     def __init__(self):
-        self.logger: logging.Logger = None
-        self.input_file = None
         self.diff_file = None
         self.geometry_library = "opencascade"
         self.should_use_cpu_multiprocessing = True
@@ -1168,18 +1208,21 @@ class IfcImportSettings:
         self.element_limit_mode = "UNLIMITED"
         self.element_offset = 0
         self.element_limit = 30000
-        self.has_filter = None
+        self.has_filter = False
         self.should_filter_spatial_elements = True
         self.should_setup_viewport_camera = True
         self.contexts: list[ifcopenshell.entity_instance] = []
         self.context_settings: list[ifcopenshell.geom.main.settings] = []
         self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
-        self.elements: set[ifcopenshell.entity_instance] = set()
+        self.elements: Iterable[ifcopenshell.entity_instance] = set()
         self.load_indexed_maps = False
 
     @staticmethod
-    def factory(context=None, input_file=None, logger=None):
+    def factory(
+        context=None, input_file: Optional[str] = None, logger: Optional[logging.Logger] = None
+    ) -> IfcImportSettings:
         scene_diff = tool.Blender.get_diff_props()
+        prefs = tool.Blender.get_addon_preferences()
         props = tool.Project.get_project_props()
         settings = IfcImportSettings()
         settings.input_file = input_file
@@ -1192,7 +1235,7 @@ class IfcImportSettings:
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_load_geometry = props.should_load_geometry
         settings.should_clean_mesh = props.should_clean_mesh
-        settings.should_cache = props.should_cache
+        settings.should_cache = prefs.should_always_cache or props.should_cache
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.void_limit = props.void_limit

@@ -19,6 +19,8 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.feature
+import ifcopenshell.api.type
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -74,8 +76,8 @@ class TestGetDecompositionRelationships(NewFile):
         element = ifc.createIfcWall()
         opening = ifc.createIfcOpeningElement()
         fill = ifc.createIfcWindow()
-        ifcopenshell.api.run("feature.add_feature", ifc, feature=opening, element=element)
-        ifcopenshell.api.run("feature.add_filling", ifc, opening=opening, element=fill)
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=element)
+        ifcopenshell.api.feature.add_filling(ifc, opening=opening, element=fill)
 
         obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(fill, obj)
@@ -99,7 +101,7 @@ class TestGetElementType(NewFile):
         ifc = tool.Ifc.get()
         element = ifc.createIfcWall()
         type = ifc.createIfcWallType()
-        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=type)
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=type)
         assert subject.get_element_type(element) == type
 
 
@@ -174,6 +176,39 @@ class TestSetObjectName(NewFile):
 
 
 class TestReassignClass(NewFile):
+    def test_reassign_type_to_reassign_occurrences(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+
+        n_wall_types = len(ifc_file.by_type("IfcWallType"))
+        n_slab_types = len(ifc_file.by_type("IfcSlabType"))
+        relating_type = ifc_file.by_type("IfcSlabType")[0]
+        relating_type_obj = tool.Ifc.get_object(relating_type)
+        assert isinstance(relating_type_obj, bpy.types.Object)
+        relating_type_id = relating_type.id()
+
+        # Add occurrences.
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+
+        # Run operator.
+        tool.Blender.set_objects_selection(context, relating_type_obj, selected_objects=(relating_type_obj,))
+        props = tool.Root.get_root_props()
+        props.ifc_product = "IfcElementType"
+        props.ifc_class = "IfcWallType"
+        bpy.ops.bim.reassign_class()
+
+        assert len(ifc_file.by_type("IfcWall")) == 3
+        assert len(ifc_file.by_type("IfcSlab")) == 0
+        assert len(ifc_file.by_type("IfcWallType")) == n_wall_types + 1
+        assert len(ifc_file.by_type("IfcSlabType")) == n_slab_types - 1
+        for wall in ifc_file.by_type("IfcWall"):
+            assert isinstance(obj := tool.Ifc.get_object(wall), bpy.types.Object)
+            assert obj.name.startswith("IfcWall/")
+
     def test_reassigning_multiple_occurrences_of_the_same_type(self):
         tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
         bpy.ops.bim.create_project()
@@ -188,7 +223,9 @@ class TestReassignClass(NewFile):
         bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
         bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
 
-        slabs = [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSlab")]
+        slabs = [
+            obj for e in ifc_file.by_type("IfcSlab") if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)
+        ]
         assert len(slabs) == 3
         tool.Blender.set_objects_selection(context, slabs[0], (slabs[1],))
 
@@ -201,3 +238,77 @@ class TestReassignClass(NewFile):
         assert len(ifc_file.by_type("IfcSlab")) == 0
         assert len(ifc_file.by_type("IfcWallType")) == n_wall_types + 1
         assert len(ifc_file.by_type("IfcSlabType")) == n_slab_types - 1
+
+
+class TestAssignClass(NewFile):
+    def create_objects(self, context):
+        # Create blender cylinder
+        bpy.ops.mesh.primitive_cylinder_add(vertices=10, location=(0, 4, 0))
+        datablock_obj = bpy.data.objects["Cylinder"]
+
+        # Create blender cube w/ props
+        bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0))
+        obj = bpy.data.objects["Cube"]
+        # Set all the custom properties on the obj
+        obj["01_float"] = 3.14159
+        obj["02_float_array"] = [3.14159, 1.61803, 2.71828]
+        obj["03_integer"] = 2
+        obj["04_integer_array"] = [2, 3, 5, 7]
+        obj["05_boolean"] = True
+        obj["06_boolean_array"] = [True, False]
+        obj["07_string"] = "Bonsai!"
+        # Data Block is not proper Pointer in UI. Probably doesn't matter.
+        obj["08_data_block"] = datablock_obj
+        # Python expressions can also be stored, i.e. dictionary
+        obj["09_python"] = {"test": 12}
+        # Or a list of things, i.e. objects: [bpy.data.objects['IfcBuildingElementProxy/Cube']]
+        obj["10_python"] = bpy.context.selected_objects
+
+        return obj, datablock_obj
+
+    def test_normal_assign_ifc_class(self):
+        # Setup project
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+        obj, datablock_obj = self.create_objects(context)
+
+        # Assign IfcClass
+        bpy.ops.bim.assign_class(ifc_class="IfcBuildingElementProxy", predefined_type="ELEMENT", userdefined_type="")
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        # Get Psets
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        assert psets == {}
+
+    def test_alternative_assign_ifc_class(self):
+        # Setup project
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+        obj, datablock_obj = self.create_objects(context)
+
+        # Assign IfcClass
+        bpy.ops.bim.assign_class(
+            ifc_class="IfcBuildingElementProxy", predefined_type="ELEMENT", userdefined_type="", props_to_pset=True
+        )
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        # Get Psets
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        assert "BBIM_ImportedBlenderProps" in psets
+        pset = psets["BBIM_ImportedBlenderProps"]
+        assert "01_float" in pset and type(pset["01_float"]) is float
+        assert "02_float_array.1" in pset and type(pset["02_float_array.1"]) is float
+        assert "03_integer" in pset and type(pset["03_integer"]) is int
+        assert "04_integer_array.1" in pset and type(pset["04_integer_array.1"]) is int
+        assert "05_boolean" in pset and type(pset["05_boolean"]) is bool
+        assert "06_boolean_array.1" in pset and type(pset["06_boolean_array.1"]) is bool
+        assert "07_string" in pset and type(pset["07_string"]) is str
+        assert "08_data_block" not in pset
+        assert "09_python" not in pset
+        assert "10_python" not in pset

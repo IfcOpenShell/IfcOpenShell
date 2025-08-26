@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.document
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -170,7 +171,7 @@ class TestImportProjectDocuments(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
         ifc.createIfcProject()
-        document = ifcopenshell.api.run("document.add_information", ifc)
+        document = ifcopenshell.api.document.add_information(ifc)
         subject.import_project_documents()
         props = tool.Document.get_document_props()
         assert len(props.documents) == 1
@@ -185,8 +186,8 @@ class TestImportReferences(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
         ifc.createIfcProject()
-        document = ifcopenshell.api.run("document.add_information", ifc)
-        reference = ifcopenshell.api.run("document.add_reference", ifc, information=document)
+        document = ifcopenshell.api.document.add_information(ifc)
+        reference = ifcopenshell.api.document.add_reference(ifc, information=document)
         subject.import_references(document)
         props = tool.Document.get_document_props()
         assert len(props.documents) == 1
@@ -201,8 +202,8 @@ class TestImportSubdocuments(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
         ifc.createIfcProject()
-        document = ifcopenshell.api.run("document.add_information", ifc)
-        subdocument = ifcopenshell.api.run("document.add_information", ifc, parent=document)
+        document = ifcopenshell.api.document.add_information(ifc)
+        subdocument = ifcopenshell.api.document.add_information(ifc, parent=document)
         subject.import_subdocuments(document)
         props = tool.Document.get_document_props()
         assert len(props.documents) == 1

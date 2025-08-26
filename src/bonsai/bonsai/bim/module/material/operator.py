@@ -20,17 +20,19 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.api.material
+import ifcopenshell.api.profile
+import ifcopenshell.api.style
 import ifcopenshell.util.element
-import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
-import ifcopenshell.util.unit
 import bonsai.bim.helper
 import bonsai.tool as tool
-import bonsai.core.style
 import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
-from typing import Any, Union, TYPE_CHECKING
+from typing import Any, Union, TYPE_CHECKING, Literal
 from bonsai.bim.module.model import wall, slab
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
 
 
 class LoadMaterials(bpy.types.Operator):
@@ -121,15 +123,14 @@ class AssignParameterizedProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = tool.Ifc.get()
-        profile = ifcopenshell.api.run(
-            "profile.add_parameterized_profile",
+        profile = ifcopenshell.api.profile.add_parameterized_profile(
             self.file,
-            **{"ifc_class": self.ifc_class},
+            ifc_class=self.ifc_class,
         )
-        ifcopenshell.api.run(
-            "material.assign_profile",
+        ifcopenshell.api.material.assign_profile(
             self.file,
-            **{"material_profile": self.file.by_id(self.material_profile), "profile": profile},
+            material_profile=self.file.by_id(self.material_profile),
+            profile=profile,
         )
         bpy.ops.bim.enable_editing_material_set_item(obj=obj.name, material_set_item=self.material_profile)
 
@@ -472,13 +473,10 @@ class RemoveListItem(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = tool.Ifc.get()
-        ifcopenshell.api.run(
-            "material.remove_list_item",
+        ifcopenshell.api.material.remove_list_item(
             self.file,
-            **{
-                "material_list": self.file.by_id(self.list_item_set),
-                "material_index": self.list_item_index,
-            },
+            material_list=self.file.by_id(self.list_item_set),
+            material_index=self.list_item_index,
         )
 
 
@@ -505,15 +503,17 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
         props.material_set_attributes.clear()
 
         if "Usage" in material.is_a():
-            bonsai.bim.helper.import_attributes2(
-                material, props.material_set_usage_attributes, callback=self.import_attributes
+            bonsai.bim.helper.import_attributes(
+                material, props.material_set_usage_attributes, callback=self.import_attributes_callback
             )
-            bonsai.bim.helper.import_attributes2(material[0], props.material_set_attributes)
+            bonsai.bim.helper.import_attributes(material[0], props.material_set_attributes)
         else:
-            bonsai.bim.helper.import_attributes2(material, props.material_set_attributes)
+            bonsai.bim.helper.import_attributes(material, props.material_set_attributes)
         return {"FINISHED"}
 
-    def import_attributes(self, name, prop, data):
+    def import_attributes_callback(
+        self, name: str, prop: Union["Attribute", None], data: dict[str, Any]
+    ) -> None | Literal[True]:
         if name == "CardinalPoint":
             # TODO: complain to buildingSMART
             cardinal_point_map = {
@@ -537,6 +537,7 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
                 18: "right in line with the shear centre",
                 19: "top in line with the shear centre",
             }
+            assert prop
             prop.data_type = "enum"
             prop.enum_items = json.dumps(cardinal_point_map)
             if data[name]:
@@ -625,6 +626,15 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     wall.DumbWallPlaner().regenerate_from_layer_set(layer_set)
                     slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
 
+            if material_set_usage.is_a("IfcMaterialProfileSetUsage"):
+                attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
+                ifcopenshell.api.material.edit_profile_usage(
+                    self.file,
+                    usage=material_set_usage,
+                    attributes=attributes,
+                )
+                model_profile.DumbProfileRecalculator().recalculate(objects)
+
         bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)
 
 
@@ -642,7 +652,7 @@ class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
         self.props.active_material_set_item_id = self.material_set_item
         self.props.material_set_item_profile_attributes.clear()
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
-        bonsai.bim.helper.import_attributes2(profile, self.props.material_set_item_profile_attributes)
+        bonsai.bim.helper.import_attributes(profile, self.props.material_set_item_profile_attributes)
         return {"FINISHED"}
 
 
@@ -674,7 +684,7 @@ class EditMaterialSetItemProfile(bpy.types.Operator, tool.Ifc.Operator):
         self.props = tool.Material.get_object_material_props(obj)
         attributes = bonsai.bim.helper.export_attributes(self.props.material_set_item_profile_attributes)
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
-        ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
+        ifcopenshell.api.profile.edit_profile(tool.Ifc.get(), profile=profile, attributes=attributes)
         self.props.active_material_set_item_id = 0
         self.props.material_set_item_profile_attributes.clear()
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
@@ -703,7 +713,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         self.props.material_set_item_material = str(material_set_item.Material.id())
 
         self.props.material_set_item_attributes.clear()
-        bonsai.bim.helper.import_attributes2(material_set_item, self.props.material_set_item_attributes)
+        bonsai.bim.helper.import_attributes(material_set_item, self.props.material_set_item_attributes)
 
         if material_set_item.is_a("IfcMaterialProfile"):
             if material_set_item.Profile and material_set_item.Profile.ProfileName:
@@ -878,6 +888,9 @@ class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded")
+            return False
         props = tool.Material.get_material_props()
         active_style = tool.Blender.get_enum_safe(props, "styles")
         if not active_style:
@@ -891,7 +904,7 @@ class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
         material = ifc_file.by_id(props.active_material_id)
         style = ifc_file.by_id(int(props.styles))
         context = ifc_file.by_id(int(props.contexts))
-        ifcopenshell.api.run("style.assign_material_style", ifc_file, material=material, style=style, context=context)
+        ifcopenshell.api.style.assign_material_style(ifc_file, material=material, style=style, context=context)
         tool.Material.disable_editing_material()
         core.load_materials(tool.Material, props.material_type)
         # NOTE: Update all elements that has this material and
@@ -914,9 +927,7 @@ class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
         material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
         style = tool.Ifc.get().by_id(self.style)
         context = tool.Ifc.get().by_id(self.context)
-        ifcopenshell.api.run(
-            "style.unassign_material_style", tool.Ifc.get(), material=material, style=style, context=context
-        )
+        ifcopenshell.api.style.unassign_material_style(tool.Ifc.get(), material=material, style=style, context=context)
         core.load_materials(tool.Material, props.material_type)
         tool.Material.update_elements_using_material(material)
 

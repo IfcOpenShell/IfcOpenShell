@@ -113,6 +113,7 @@ class IFC_PARSE_API IfcFile {
     typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
     typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_t;
     typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
+    // instance_id, declaration->index_in_schema, attribute_index
     typedef std::tuple<int, short, short> inverse_attr_record;
     enum INVERSE_ATTR {
         INSTANCE_ID,

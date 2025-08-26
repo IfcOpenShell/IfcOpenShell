@@ -20,6 +20,7 @@ import uuid
 import datetime
 import ifcopenshell
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 import xml.etree.ElementTree as ET
 
 

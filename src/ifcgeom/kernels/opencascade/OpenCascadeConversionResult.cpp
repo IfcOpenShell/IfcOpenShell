@@ -66,12 +66,28 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 	// to keep track of which edges were already emitted.
 	std::set<std::pair<int, int>> emitted_edges;
 
-	// Triangulate the shape
-	try {
-		BRepMesh_IncrementalMesh(shape_, settings.get<settings::MesherLinearDeflection>().get(), false, settings.get<settings::MesherAngularDeflection>().get());
-	} catch (...) {
-		Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
-		return;
+	// Do our own check if there are triangulations. Any will do. This is faster than the OCCT incremental check which compares the deflection tolerances and initialized a bunch of state
+	bool has_triangulation = false;
+	{
+		TopExp_Explorer exp;
+		for (exp.Init(shape_, TopAbs_FACE); exp.More(); exp.Next()) {
+			TopLoc_Location loc;
+			const Handle(Poly_Triangulation)& tri =
+				BRep_Tool::Triangulation(TopoDS::Face(exp.Current()), loc);
+			if (tri) {
+				has_triangulation = true;
+				break;
+			}
+		}
+	}
+	if (!has_triangulation) {
+		// Triangulate the shape
+		try {
+			BRepMesh_IncrementalMesh(shape_, settings.get<settings::MesherLinearDeflection>().get(), false, settings.get<settings::MesherAngularDeflection>().get());
+		} catch (...) {
+			Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
+			return;
+		}
 	}
 
 	// Iterates over the faces of the shape
@@ -328,7 +344,9 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		}
 	}
 
-	BRepTools::Clean(shape_);
+	if (!settings.get<settings::OcctNoCleanTriangulation>().get()) {
+		BRepTools::Clean(shape_);
+	}
 }
 
 void ifcopenshell::geometry::OpenCascadeShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& r) const {

@@ -42,6 +42,7 @@ options:
 
 """
 
+from __future__ import annotations
 import os
 import sys
 import json
@@ -50,13 +51,22 @@ import types
 import argparse
 
 from collections import namedtuple
-from typing import Union, Iterator, Any, Optional
+from typing import Union, Any, Optional, TYPE_CHECKING
+from collections.abc import Iterator
 from logging import Logger, Handler
+
+if sys.version_info >= (3, 10):
+    from types import EllipsisType
+else:
+    EllipsisType = type(...)
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.express.rule_executor
+
+if TYPE_CHECKING:
+    import ifcopenshell.simple_spf
 
 named_type = ifcopenshell.ifcopenshell_wrapper.named_type
 aggregation_type = ifcopenshell.ifcopenshell_wrapper.aggregation_type
@@ -74,7 +84,7 @@ attribute_types = Union[simple_type, named_type, enumeration_type, select_type, 
 
 class ValidationError(Exception):
     def __init__(self, message, attribute=None):
-        super(ValidationError, self).__init__(message)
+        super().__init__(message)
         self.attribute = attribute
 
 
@@ -109,12 +119,14 @@ simple_type_python_mapping = {
 
 
 def annotate_inst_attr_pos(
-    inst: Union[ifcopenshell.entity_instance, W.HeaderEntity], pos: int, entity_str: str = ""
+    inst: Union[ifcopenshell.entity_instance, W.HeaderEntity],
+    pos: Union[int, tuple[int, ...]],
+    entity_str: str = "",
 ) -> str:
     """Add a caret annotation to the entity string at the given attribute index.
 
     :param inst: Instance to annotate.
-    :param pos: Attribute index to annotate.
+    :param pos: Attribute index or a tuple of them to annotate.
     :param entity_str: Entity string to annotate. If not provided, ``str(inst)`` is used.
 
     Example:
@@ -125,7 +137,12 @@ def annotate_inst_attr_pos(
         #                                                  ^^^^^^^^
     """
 
+    if isinstance(pos, int):
+        pos = (pos,)
+
     def get_pos() -> Iterator[int]:
+        # -1  - outside of entity attributes or on comma.
+        # >=0 - current attribute index
         depth = 0
         idx = -1
         for c in entity_str or str(inst):
@@ -149,7 +166,7 @@ def annotate_inst_attr_pos(
             else:
                 yield idx
 
-    return "".join(" ^"[i == pos] for i in get_pos())
+    return "".join(" ^"[i in pos] for i in get_pos())
 
 
 def format(val: Any) -> str:
@@ -244,8 +261,12 @@ def assert_valid(
             invalid = not any(type(val) == t for t in simple_type_python)
         else:
             invalid = type(val) != simple_type_python
-    elif isinstance(attr_type, (entity_type, type_declaration)):
+    elif isinstance(attr_type, entity_type):
         invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
+    elif isinstance(attr_type, type_declaration):
+        # @nb this only applies to direct type declarations, not those indirectly referenced
+        # by means of one or more selects.
+        invalid = isinstance(val, ifcopenshell.entity_instance)
     elif isinstance(attr_type, select_type):
         if not isinstance(val, ifcopenshell.entity_instance):
             invalid = True
@@ -254,7 +275,10 @@ def assert_valid(
             if not isinstance(value_type, entity_type):
                 # we need to check two things: is (enumeration) literal/value valid
                 # for this type and is enumeration/value type valid for this select.
-                assert_valid(value_type, val.wrappedValue, schema, no_throw=no_throw)
+                try:
+                    invalid = invalid or not assert_valid(value_type, val.wrappedValue, schema, no_throw=True)
+                except RuntimeError as _:
+                    invalid = True
 
             # Previously we relied on `is_a(x) for x in attr_type.select_items()`
             # this was linear in the number of select leafs, which is very large
@@ -262,7 +286,7 @@ def assert_valid(
             # calculate (and cache) the select leafs (including entity subtypes)
             # for the select definition and simply check for membership in this
             # set.
-            invalid = val.is_a() not in get_select_members(schema, attr_type)
+            invalid = invalid or val.is_a() not in get_select_members(schema, attr_type)
     elif isinstance(attr_type, enumeration_type):
         invalid = val not in attr_type.enumeration_items()
     elif isinstance(attr_type, aggregation_type):
@@ -287,7 +311,7 @@ def assert_valid(
         return True
 
 
-def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Logger) -> None:
+def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Union[Logger, json_logger]) -> None:
     import re
     import bisect
 
@@ -311,7 +335,7 @@ def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Logger)
                 line = lines[bisect.bisect_left(cs, int(offsets[0]))].decode("ascii", errors="ignore").rstrip()
                 m = chr_offset_re.sub("", msg["message"])
 
-                if hasattr(logger, "set_state"):
+                if isinstance(logger, json_logger):
                     logger.set_state("instance", line)
                     logger.set_state("attribute", None)
                     logger.error("%s:\n\n%s" % (m, line))
@@ -327,7 +351,7 @@ def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Logger)
                     inst = f[int(instid[0])]
                 except:
                     inst = None
-                if hasattr(logger, "set_state"):
+                if isinstance(logger, json_logger):
                     logger.set_state("instance", inst)
                     logger.set_state("attribute", None)
                     logger.error(m)
@@ -337,25 +361,24 @@ def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Logger)
                     logger.error(m)
 
 
-entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute]]] = {}
+entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute, ...]]] = {}
 
 
-def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entity_type, tuple[attribute]]:
+def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entity_type, tuple[attribute, ...]]:
     cache_key = schema.name(), entity
     from_cache = entity_attribute_map.get(cache_key)
     if from_cache:
         return from_cache
 
-    entity_attrs = (
-        ent := schema.declaration_by_name(entity),
-        ent.all_attributes(),
-    )
+    ent = schema.declaration_by_name(entity).as_entity()
+    assert ent
+    entity_attrs = (ent, ent.all_attributes())
 
     entity_attribute_map[cache_key] = entity_attrs
     return entity_attrs
 
 
-def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=False) -> None:
+def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger], express_rules=False) -> None:
     """
     For an IFC population model `f` (or filepath to such a file) validate whether the entity attribute values are correctly supplied. As this
     is a function that is applied after a file has been parsed, certain types of errors in syntax, duplicate
@@ -393,7 +416,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
 
     filename = None
 
-    if hasattr(logger, "set_state"):
+    if isinstance(logger, json_logger):
         logger.set_state("type", "schema")
 
     if not isinstance(f, ifcopenshell.file):
@@ -428,10 +451,10 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
     used_guids: dict[str, ifcopenshell.entity_instance] = dict()
 
     for inst in f:
-        if hasattr(logger, "set_state"):
+        if isinstance(logger, json_logger):
             logger.set_state("instance", inst)
 
-        guid: Union[str, None, types.EllipsisType]
+        guid: Union[str, None, EllipsisType]
         if (guid := getattr(inst, "GlobalId", ...)) is not ...:
             if guid is not None and guid in used_guids:
                 rule = "Rule IfcRoot.UR1:\n    The attribute GlobalId should be unique"
@@ -463,7 +486,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
 
         if entity.is_abstract():
             e = "Entity %s is abstract" % entity.name()
-            if hasattr(logger, "set_state"):
+            if isinstance(logger, json_logger):
                 logger.set_state("attribute", None)
                 logger.error(e)
             else:
@@ -476,7 +499,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                 values[i] = inst[i]
                 pass
             except:
-                if hasattr(logger, "set_state"):
+                if isinstance(logger, json_logger):
                     logger.set_state("attribute", f"{entity.name()}.{attrs[i].name()}")
                     logger.error("Invalid attribute value")
                 else:
@@ -492,7 +515,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         if not has_invalid_value:
             for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
                 if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
-                    if hasattr(logger, "set_state"):
+                    if isinstance(logger, json_logger):
                         logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
                         logger.error("Attribute is derived in subtype")
                     else:
@@ -504,7 +527,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                         )
 
                 if val is None and not attr.optional() and not is_derived:
-                    if hasattr(logger, "set_state"):
+                    if isinstance(logger, json_logger):
                         logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
                         logger.error("Attribute not optional")
                     else:
@@ -520,7 +543,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                     try:
                         assert_valid(attr_type, val, schema, attr=attr)
                     except ValidationError as e:
-                        if hasattr(logger, "set_state"):
+                        if isinstance(logger, json_logger):
                             logger.set_state("attribute", e.attribute)
                             logger.error(str(e))
                         else:
@@ -535,7 +558,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
             try:
                 val = getattr(inst, attr.name())
             except Exception as e:
-                if hasattr(logger, "set_state"):
+                if isinstance(logger, json_logger):
                     logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
                     logger.error(str(e))
                 else:
@@ -544,7 +567,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
             try:
                 assert_valid_inverse(attr, val, schema)
             except ValidationError as e:
-                if hasattr(logger, "set_state"):
+                if isinstance(logger, json_logger):
                     logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
                     logger.error(str(e))
                 else:
@@ -562,7 +585,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
     ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", attribute_value_derived_org)
 
     if express_rules:
-        if hasattr(logger, "set_state"):
+        if isinstance(logger, json_logger):
             logger.set_state("instance", None)
             logger.set_state("attribute", None)
         ifcopenshell.express.rule_executor.run(f, logger)
@@ -590,19 +613,36 @@ def validate_guid(guid: str) -> Union[str, None]:
     return None
 
 
-def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
-    header: W.IfcSpfHeader = f.wrapped_data.header
+def to_string_header_entity(header_entity):
+    """Recreate IFC header string representation, like FILE_NAME(...)"""
+
+    # Prefer native .toString() if available (native IfcOpenShell wrapper)
+    if isinstance(header_entity, W.HeaderEntity):
+        return header_entity.toString()
+    elif hasattr(header_entity, "_fields"):
+        values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
+        return f"{type(header_entity).__name__.upper()}({','.join(values)})"
+    else:
+        raise TypeError(f"Cannot stringify header_entity of type {type(header_entity)}")
+
+
+def validate_ifc_header(
+    f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file], logger: Union[Logger, json_logger]
+) -> None:
+    header: Union[W.IfcSpfHeader, types.SimpleNamespace] = f.header
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
-    def log_error(header_entity: W.HeaderEntity, name: str, index: int, expected_type: str, provided_type: str) -> None:
+    def log_error(
+        header_entity: Union[W.HeaderEntity, tuple], name: str, index: int, expected_type: str, provided_type: str
+    ) -> None:
         logger.error(
             (
                 "For instance:\n    %s\n    %s\n"
                 "Attribute '%s' has invalid type:\n"
                 "    Expected: %s\n    Current value type: %s\n"
             ),
-            (s := header_entity.toString()),
+            (s := to_string_header_entity(header_entity)),
             annotate_inst_attr_pos(header_entity, index, s),
             name,
             expected_type,
@@ -610,7 +650,11 @@ def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
         )
 
     def validate_attribute(header_entity: W.HeaderEntity, name: str, index: int, *, aggregate: bool = False) -> None:
-        value = getattr(header_entity, name)
+        try:
+            value = getattr(header_entity, name)
+        except RuntimeError as _:
+            log_error(header_entity, name, index, AGGREGATE_TYPE if aggregate else STRING_TYPE, "INVALID")
+            return
         if aggregate:
             if not isinstance(value, tuple):
                 log_error(header_entity, name, index, AGGREGATE_TYPE, type(value).__name__)
@@ -645,38 +689,38 @@ def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
     validate_attribute(file_name, "authorization", 6)
 
 
-def validate_ifc_applications(f: ifcopenshell.file, logger: Logger) -> None:
-    used_names: dict[str, ifcopenshell.entity_instance] = dict()
+def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_logger]) -> None:
+    used_names: dict[tuple[str, str], ifcopenshell.entity_instance] = dict()
     used_ids: dict[str, ifcopenshell.entity_instance] = dict()
 
     for inst in f.by_type("IfcApplication"):
-        app_name: str = inst.ApplicationFullName
+        app_name: tuple[str, str] = (inst.ApplicationFullName, inst.Version)
         app_id: str = inst.ApplicationIdentifier
 
-        if app_name is not None:
+        if all(x is not None for x in app_name):
             if app_name not in used_names:
                 used_names[app_name] = inst
             else:
-                if hasattr(logger, "set_state"):
+                if isinstance(logger, json_logger):
                     logger.set_state("instance", inst)
-                rule = "Rule IfcApplication.UR1:\n    The attribute ApplicationFullName should be unique"
+                rule = "Rule IfcApplication.UR2:\n    The combination of attributes ApplicationFullName and Version should be unique"
                 previous_element = used_names[app_name]
                 logger.error(
                     "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
                     inst,
-                    annotate_inst_attr_pos(inst, 2),
+                    annotate_inst_attr_pos(inst, (1, 2)),
                     rule,
                     previous_element,
-                    annotate_inst_attr_pos(previous_element, 2),
+                    annotate_inst_attr_pos(previous_element, (1, 2)),
                 )
 
         if app_id is not None:
             if app_id not in used_ids:
                 used_ids[app_id] = inst
             else:
-                if hasattr(logger, "set_state"):
+                if isinstance(logger, json_logger):
                     logger.set_state("instance", inst)
-                rule = "Rule IfcApplication.UR2:\n    The attribute ApplicationIdentifier should be unique"
+                rule = "Rule IfcApplication.UR1:\n    The attribute ApplicationIdentifier should be unique"
                 previous_element = used_ids[app_id]
                 logger.error(
                     "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",

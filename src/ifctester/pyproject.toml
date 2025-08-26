@@ -17,6 +17,11 @@ classifiers = [
 ]
 dependencies = ["ifcopenshell", "python-dateutil", "xmlschema", "numpy", "odfpy", "pystache", "bcf-client"]
 
+[project.optional-dependencies]
+advanced = [
+  "flask",
+]
+
 [project.urls]
 Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"

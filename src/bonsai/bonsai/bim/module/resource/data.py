@@ -124,7 +124,7 @@ class ResourceData:
     @classmethod
     def cost_values(cls) -> list[dict[str, Any]]:
         results = []
-        ifc_id = bpy.context.scene.BIMResourceProperties.active_resource_id
+        ifc_id = tool.Resource.get_resource_props().active_resource_id
         if not ifc_id:
             return results
         resource = tool.Ifc.get().by_id(ifc_id)

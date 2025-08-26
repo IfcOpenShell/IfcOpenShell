@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Python bindings, utility functions, and high-level API for IfcOpenShell"
 readme = "README.md"
-requires-python = ">=3.9,<3.13"
+requires-python = ">=3.9,<3.14"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
@@ -25,7 +25,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+advanced = [
+  "networkx",
+]
+dev = [
+  "pytest",
+  "tabulate",
+]
 
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"
@@ -36,3 +42,6 @@ include = ["ifcopenshell*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"

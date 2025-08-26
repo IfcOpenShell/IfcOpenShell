@@ -24,6 +24,9 @@ import json
 import os
 import platform
 import subprocess
+import contextlib
+import tempfile
+import traceback
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell import entity_instance
@@ -34,19 +37,34 @@ import bonsai.tool as tool
 import bonsai.bim
 import types
 import importlib
+from datetime import datetime
 from mathutils import Vector
 from pathlib import Path
-from functools import lru_cache
+from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import (
+    Any,
+    Optional,
+    Union,
+    Literal,
+    TypeVar,
+    TYPE_CHECKING,
+    assert_never,
+)
+from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 
 if TYPE_CHECKING:
-    import bpy._typing.rna_enums as rna_enums
+    from sun_position.properties import SunPosProperties
+    import bpy.stub_internal.rna_enums as rna_enums
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
+    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
+    from bonsai.bim.module.covetool.prop import CoveToolProperties
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
+    from bonsai.bim.module.fm.prop import BIMFMProperties
+    from bonsai.bim.module.group.prop import BIMGroupProperties
+    from bonsai.bim.module.light.prop import BIMSolarProperties, RadianceExporterProperties
 
     T = TypeVar("T")
 
@@ -68,8 +86,11 @@ class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
+    SEQUENCE_COLOR_SCHEME_ICON: Literal["STRIP_COLOR_03"] = (  # pyright: ignore[reportAssignmentType]
+        "STRIP_COLOR_03" if bpy.app.version >= (4, 4, 0) else "SEQUENCE_COLOR_04"
+    )
 
-    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, str], tuple[str, str, str, str, str]]
+    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]
     """
     Options:
 
@@ -79,13 +100,17 @@ class Blender(bonsai.core.tool.Blender):
 
     - (identifier, name, description, icon, number)
     """
+    BLENDER_ENUM_ITEMS = Iterable[BLENDER_ENUM_ITEM]
 
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:
 
         area = cls.get_view3d_area()
-        is_local_view = area.spaces[0].local_view is not None
+        assert area
+        assert isinstance((space := area.spaces[0]), bpy.types.SpaceView3D)
+        is_local_view = space.local_view is not None
 
+        assert bpy.context.screen and bpy.context.scene
         if is_local_view:
             # Turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
@@ -98,7 +123,8 @@ class Blender(bonsai.core.tool.Blender):
         else:
             bpy.context.scene.camera = obj
 
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+        assert space.region_3d
+        space.region_3d.view_perspective = "CAMERA"
 
     @classmethod
     def get_area_props(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
@@ -224,9 +250,9 @@ class Blender(bonsai.core.tool.Blender):
             cost_props = tool.Cost.get_cost_props()
             return cost_props.cost_items[cost_props.active_cost_item_index].ifc_definition_id
         elif obj_type == "Resource":
-            return context.scene.BIMResourceTreeProperties.resources[
-                context.scene.BIMResourceProperties.active_resource_index
-            ].ifc_definition_id
+            active_resource = tool.Resource.get_resource_props().active_resource
+            assert active_resource
+            return active_resource.ifc_definition_id
         elif obj_type == "Profile":
             props = tool.Profile.get_profile_props()
             return props.profiles[props.active_profile_index].ifc_definition_id
@@ -234,8 +260,13 @@ class Blender(bonsai.core.tool.Blender):
             wsprops = tool.Sequence.get_work_schedule_props()
             return wsprops.active_work_schedule_id
         elif obj_type == "Group":
-            prop = context.scene.BIMGroupProperties
-            return prop.groups[prop.active_group_index].ifc_definition_id
+            props = tool.Blender.get_group_props()
+            assert (active_group := props.active_group)
+            return active_group.ifc_definition_id
+        elif obj_type == "Zone":
+            props = tool.System.get_zone_props()
+            assert (active_zone := props.active_zone)
+            return active_zone.ifc_definition_id
         assert_never(obj_type)
 
     @classmethod
@@ -291,7 +322,7 @@ class Blender(bonsai.core.tool.Blender):
             return area.spaces.active
 
     @classmethod
-    def get_blender_prop_default_value(cls, props, prop_name: str) -> Any:
+    def get_blender_prop_default_value(cls, props: bpy.types.bpy_struct, prop_name: str) -> Any:
         prop_bl_rna = props.bl_rna.properties[prop_name]
         if getattr(prop_bl_rna, "array_length", 0) > 0:
             prop_value = prop_bl_rna.default_array
@@ -569,7 +600,7 @@ class Blender(bonsai.core.tool.Blender):
         return op, row
 
     @classmethod
-    def get_object_bounding_box(cls, obj: bpy.types.Object) -> dict:
+    def get_object_bounding_box(cls, obj: bpy.types.Object) -> dict[str, Union[tuple[float, float, float], Vector]]:
         """Returns dict with local min and max x, y, z values for the object.
 
         Careful with using this method for objects in EDIT mode because
@@ -647,7 +678,7 @@ class Blender(bonsai.core.tool.Blender):
         cls,
         context: bpy.types.Context,
         active_object: Optional[bpy.types.Object] = None,
-        selected_objects: list[bpy.types.Object] = list(),
+        selected_objects: Sequence[bpy.types.Object] = (),
         clear_previous_selection=True,
     ) -> None:
         if clear_previous_selection:
@@ -763,7 +794,6 @@ class Blender(bonsai.core.tool.Blender):
             to False, which will make datablock deletion significantly faster
             by avoiding unnecessary Blender data checks.
         :return: None
-        :rtype: None
         """
         collection_name = repr(data_block).split(".", 2)[-1].split("[", 1)[0]
         getattr(bpy.data, collection_name).remove(
@@ -777,7 +807,6 @@ class Blender(bonsai.core.tool.Blender):
         :param data_blocks: iterable of data blocks to remove
         :param remove_unused_data: set to True to purge data that would be orphaned by the operation
         :return: None
-        :rtype: None
         """
         data_blocks = list(data_blocks)
         if remove_unused_data:
@@ -1243,21 +1272,31 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_last_commit_hash(cls) -> Union[str, None]:
-        """Get 8 symbols of last commit hash if it's present or return None otherwise."""
-        bbim = cls.get_bbim_extension_package()
-        commit_hash = bbim.last_commit_hash
-
-        # Commit hash is unset - user is using __init__ from repo
-        # without setting up git repository.
-        if commit_hash == "8888888":
-            return None
-
-        return commit_hash[:7]
+        return bonsai.get_last_commit_hash()
 
     @classmethod
+    @cache
     def get_bonsai_version(cls) -> str:
-        bbim = cls.get_bbim_extension_package()
-        version = bbim.bbim_semver["version"]
+        """E.g. `0.8.3-alpha250617-15453a9`"""
+        version = None
+
+        # Try to retrieve actual version for live-dev environment.
+        with contextlib.suppress(Exception):
+            import git
+
+            path = Path(__file__).resolve().parent
+            repo = git.Repo(str(path), search_parent_directories=True)
+            repo_path = repo.working_tree_dir
+            assert repo_path
+            version_ = (Path(repo_path) / "VERSION").read_text().strip()
+            commit_date = bonsai.get_last_commit_date()
+            assert commit_date
+            commit_date = datetime.fromisoformat(commit_date)
+            version = f"{version_}-alpha{commit_date.strftime('%y%m%d')}"
+
+        if version is None:
+            bbim = cls.get_bbim_extension_package()
+            version = bbim.bbim_semver["version"]
         if commit_hash := cls.get_last_commit_hash():
             version += f"-{commit_hash}"
         return version
@@ -1466,6 +1505,11 @@ class Blender(bonsai.core.tool.Blender):
         return sun_position
 
     @classmethod
+    def get_sun_props(cls) -> Union[SunPosProperties, None]:
+        assert (scene := bpy.context.scene)
+        return getattr(scene, "sun_pos_properties", None)
+
+    @classmethod
     def scale_font_size(cls, size):
         default_dpi = 72
         default_pixel_size = 1.0
@@ -1497,6 +1541,67 @@ class Blender(bonsai.core.tool.Blender):
         obj.constraints.clear()
         obj.matrix_world = matrix
         return True
+
+    @classmethod
+    def get_full_data_path(cls, bpy_struct: bpy.types.bpy_struct, path: str = "") -> str:
+        """Get full data path to Blender entity or it's attributes.
+
+        :param bpy_struct: Blender entity.
+        :param path: Additional path to add to entity.
+
+        :return: Path in a format
+            ``bpy.data.scenes['Scene'].BIMExplorerProperties.entity_attributes[4].enum_value``
+        """
+        if path:
+            bpy_prop: bpy.types.bpy_prop  # pyright: ignore[reportAttributeAccessIssue]
+            bpy_prop = bpy_struct.path_resolve(path, False)
+            return repr(bpy_prop)
+        return repr(bpy_struct)
+
+    @classmethod
+    def resolve_data_path_to_data_attr(cls, data_path: str) -> tuple[bpy.types.bpy_struct, str]:
+        """
+        :param data_path: Non-full data path to attribute.
+        Examples:
+            - `preferences.prop_group.string_prop` (`preferences` would mean addon preferences)
+            - `scene.string_prop` (`scene` can be any member of `Context`)
+
+        :return: Resolved tuple of Blender Struct and property name.
+        Examples:
+            - `(preferences.prop_group, "string_prop)`
+            - `(scene, "string_prop)`
+
+        """
+        # Get data to modify.
+        base_path, _, data_path_ = data_path.partition(".")
+        if base_path == "preferences":
+            data = tool.Blender.get_addon_preferences()
+            data_path = data_path_
+        else:
+            data = bpy.context
+
+        # Get property group if available.
+        base_path, _, attr = data_path.rpartition(".")
+        if base_path:
+            data = data.path_resolve(base_path)
+        return data, attr
+
+    @classmethod
+    @contextlib.contextmanager
+    def preserve_prop_value(cls, bpy_object: bpy.types.bpy_struct, prop_name: str):
+        if bpy_object.is_property_set(prop_name):
+            prop_value = getattr(bpy_object, prop_name)
+        else:
+            prop_value = ...
+        try:
+            yield
+        except:
+            raise
+        finally:
+            if prop_value is ...:
+                bpy_object.property_unset(prop_name)
+                return
+            setattr(bpy_object, prop_name, prop_value)
 
     @classmethod
     def set_prop_from_path(cls, bpy_object: bpy.types.bpy_struct, prop_path: str, value: Any) -> None:
@@ -1566,7 +1671,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_user_data_dir(cls) -> Path:
-        props = cls.get_bim_props()
+        props = cls.get_addon_preferences()
         return Path(props.data_dir)
 
     @classmethod
@@ -1627,26 +1732,62 @@ class Blender(bonsai.core.tool.Blender):
         return types.MappingProxyType(dct)
 
     @classmethod
+    def get_object_constraint_props(cls, obj: bpy.types.Object) -> BIMObjectConstraintProperties:
+        return obj.BIMObjectConstraintProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_constraint_props(cls) -> BIMConstraintProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMConstraintProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
     def get_csv_props(cls) -> CsvProperties:
-        return bpy.context.scene.CsvProperties
+        assert (scene := bpy.context.scene)
+        return scene.CsvProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_diff_props(cls) -> DiffProperties:
-        return bpy.context.scene.DiffProperties
+        assert (scene := bpy.context.scene)
+        return scene.DiffProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_group_props(cls) -> BIMGroupProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMGroupProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_bim_props(cls, scene: Optional[bpy.types.Scene] = None) -> BIMProperties:
         if scene is None:
-            scene = bpy.context.scene
-        return scene.BIMProperties
+            assert (scene := bpy.context.scene)
+        return scene.BIMProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_object_bim_props(cls, obj: bpy.types.Object) -> BIMObjectProperties:
-        return obj.BIMObjectProperties
+        return obj.BIMObjectProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_object_attribute_props(cls, obj: bpy.types.Object) -> BIMAttributeProperties:
-        return obj.BIMAttributeProperties
+        return obj.BIMAttributeProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_solar_props(cls) -> BIMSolarProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMSolarProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_radiance_exporter_props(cls) -> RadianceExporterProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMRadianceExporeterProperies  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_fm_props(cls) -> BIMFMProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMFMProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_covetool_props(cls) -> CoveToolProperties:
+        assert (scene := bpy.context.scene)
+        return scene.CoveToolProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
@@ -1661,6 +1802,14 @@ class Blender(bonsai.core.tool.Blender):
         if 0 <= index < len(collection):
             return collection[index]
         return None
+
+    @classmethod
+    def get_valid_uilist_index(cls, current_index: int, items: Sized) -> int:
+        """
+        Method to help maintaining item selection after some uilist item was removed
+        and items were reloaded.
+        """
+        return max(0, min(current_index, len(items) - 1))
 
     @classmethod
     def clear_undo_history(cls) -> None:
@@ -1705,3 +1854,128 @@ class Blender(bonsai.core.tool.Blender):
         if len(pos) == 0 or (indices is not None and len(indices) == 0):
             return False
         return True
+
+    @classmethod
+    def extract_error_reports(cls, exception: RuntimeError) -> list[str]:
+        """Extracts error report lines from a runtime exception during operator execution.
+
+        If operator had any `ERROR` reports, it will always raise a `RuntimeError`,
+        no matter what status is returned.
+        And sometimes it's useful to pass those reports to another operator
+        that called it. That way user won't get to see a scary traceback.
+
+        If empty list is returned, then exception should be reraised,
+        as it is an actual unhandled runtime error.
+        """
+        error_message = str(exception)
+        extracted: list[str] = []
+
+        # If operator was cancelled and had error message,
+        # it will always start with this (warnings and info msgs are ignored).
+        if not error_message.startswith("Error: "):
+            return extracted
+
+        # Ignore actual runtime errors, as they has to be handled separately
+        # and not just rereported.
+        if error_message.startswith("Error: Python: Traceback (most recent call last):"):
+            return extracted
+
+        for report in error_message.strip().split("Error: "):
+            report = report.strip()
+            if not report:
+                continue
+            extracted.append(report)
+        return extracted
+
+    @classmethod
+    def report_operator_errors(cls, operator: bpy.types.Operator, error_reports: list[str]) -> None:
+        for report in error_reports:
+            operator.report({"ERROR"}, report)
+
+    @classmethod
+    @contextlib.contextmanager
+    def bonsai_crash_txt(cls, s: str = "") -> Generator[Path, Any, None]:
+        """Create a temporary bonsai.crash.txt file the with current traceback.
+
+        Useful in case Blender crash might occur too unexpectedly (e.g. #6686),
+        and at least we'll have a slightest clue on what happened.
+
+        Intended to be used via `with` block.
+        `atexit` wouldn't work for this as crash breaks everything
+        and no callbacks are called.
+
+        :param s: Optional string to add at the top of the txt file.
+        """
+        # TODO: Indicate that crash occurred after Blender restart?
+
+        # Create a temp file with the traceback.
+        temp_dir = tempfile.gettempdir()
+        path = Path(temp_dir) / "bonsai.crash.txt"
+        traceback_ = "\n".join(traceback.format_stack())
+        output = ""
+        if s:
+            output += f"{s}\n\n"
+        time = datetime.now().isoformat()
+        output += f"Created at: {time} (local time).\n"
+        output += f"Traceback (most recent called last):\n{traceback_}"
+        path.write_text(output)
+        yield path
+
+        # Remove file if crash didn't happened.
+        path.unlink()
+
+    @classmethod
+    def sync_old_preferences(cls) -> None:
+        # Added on 25.07.15.
+        # TODO: deprecate later.
+        settings_remap = {
+            "scene.BIMBSDDProperties.load_preview_dictionaries": "preferences.bsdd_load_preview_dictionaries",
+            "scene.BIMBSDDProperties.load_inactive_dictionaries": "preferences.bsdd_load_inactive_dictionaries",
+            "scene.BIMBSDDProperties.load_test_dictionaries": "preferences.bsdd_load_test_dictionaries",
+            "scene.BIMProjectProperties.should_disable_undo_on_save": "preferences.should_disable_undo_on_save",
+            "scene.BIMProjectProperties.should_stream": "preferences.should_stream",
+            "scene.BIMModelProperties.occurrence_name_style": "preferences.occurrence_name_style",
+            "scene.BIMModelProperties.occurrence_name_function": "preferences.occurrence_name_function",
+            "scene.BIMProperties.pset_dir": "preferences.pset_dir",
+            "scene.BIMProperties.data_dir": "preferences.data_dir",
+            "scene.BIMProperties.cache_dir": "preferences.cache_dir",
+            "scene.DocProperties.sheets_dir": "preferences.doc.sheets_dir",
+            "scene.DocProperties.layouts_dir": "preferences.doc.layouts_dir",
+            "scene.DocProperties.titleblocks_dir": "preferences.doc.titleblocks_dir",
+            "scene.DocProperties.drawings_dir": "preferences.doc.drawings_dir",
+            "scene.DocProperties.stylesheet_path": "preferences.doc.stylesheet_path",
+            "scene.DocProperties.schedules_stylesheet_path": "preferences.doc.schedules_stylesheet_path",
+            "scene.DocProperties.markers_path": "preferences.doc.markers_path",
+            "scene.DocProperties.symbols_path": "preferences.doc.symbols_path",
+            "scene.DocProperties.patterns_path": "preferences.doc.patterns_path",
+            "scene.DocProperties.shadingstyles_path": "preferences.doc.shadingstyles_path",
+            "scene.DocProperties.shadingstyle_default": "preferences.doc.shadingstyle_default",
+            "scene.DocProperties.drawing_font": "preferences.doc.drawing_font",
+            "scene.DocProperties.magic_font_scale": "preferences.doc.magic_font_scale",
+            "scene.DocProperties.imperial_precision": "preferences.doc.imperial_precision",
+            "scene.DocProperties.tolerance": "preferences.doc.tolerance",
+            "scene.DocProperties.classes_to_wireframe": "preferences.doc.classes_to_wireframe",
+            "scene.DocProperties.classes_no_cut": "preferences.doc.classes_no_cut",
+        }
+
+        props_updated = False
+        for old_path, path in settings_remap.items():
+            data, attr = cls.resolve_data_path_to_data_attr(path)
+            # User already overridden the value.
+            if data.is_property_set(attr):
+                continue
+
+            data_old, attr_old = cls.resolve_data_path_to_data_attr(old_path)
+            # User was only using default value previously.
+            if attr_old not in data_old:
+                continue
+
+            old_value = data_old[attr_old]
+            print(f"Updating {path} based on previous value from {old_path} - '{old_value}'.")
+            setattr(data, attr, old_value)
+            props_updated = True
+
+        # Doesn't seem to save on exit if edited from Python API, so we do it manually.
+        assert bpy.context.preferences
+        if props_updated and bpy.context.preferences.use_preferences_save:
+            bpy.ops.wm.save_userpref()

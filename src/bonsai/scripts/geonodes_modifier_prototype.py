@@ -18,6 +18,8 @@
 
 
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import bonsai.tool as tool
 
 import bpy
@@ -67,9 +69,8 @@ def update_geometry_data():
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Geonodes")
-    ifcopenshell.api.run(
-        "pset.edit_pset",
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Geonodes")
+    ifcopenshell.api.pset.edit_pset(
         tool.Ifc.get(),
         pset=pset,
         properties={"Data": json.dumps(geo_data, default=list)},

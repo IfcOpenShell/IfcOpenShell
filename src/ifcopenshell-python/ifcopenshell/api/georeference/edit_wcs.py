@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
+import ifcopenshell.util.unit
 import numpy as np
 from math import sin, cos, radians
 

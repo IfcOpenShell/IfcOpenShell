@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.tool as tool
 import bonsai.bim.module.type.prop as type_prop
 from bpy.types import Panel
@@ -55,8 +56,9 @@ class BIM_PT_type(Panel):
         else:
             self.draw_type_ui(context)
 
-    def draw_type_ui(self, context):
-        oprops = tool.Blender.get_object_bim_props(context.active_object)
+    def draw_type_ui(self, context: bpy.types.Context) -> None:
+        assert (obj := context.active_object)
+        oprops = tool.Blender.get_object_bim_props(obj)
         row = self.layout.row(align=True)
         row.label(text=f"{TypeData.data['total_instances']} Typed Objects")
         select_type_objects_row = row.row(align=True)
@@ -66,9 +68,10 @@ class BIM_PT_type(Panel):
         op.element = oprops.ifc_definition_id
         row.operator("bim.auto_rename_occurrences", icon="ITALIC", text="")
 
-    def draw_product_ui(self, context):
+    def draw_product_ui(self, context: bpy.types.Context) -> None:
         layout = self.layout
-        props = context.active_object.BIMTypeProperties
+        assert (obj := context.active_object)
+        props = tool.Type.get_object_type_props(obj)
 
         if props.is_editing_type:
             row = layout.row(align=True)
@@ -76,7 +79,14 @@ class BIM_PT_type(Panel):
 
             row.prop(props, "relating_type_class", text="")
             if type_prop.get_relating_type(None, context):
-                prop_with_search(row, props, "relating_type", text="")
+                prop_with_search(
+                    row,
+                    props,
+                    "relating_type",
+                    text="",
+                    enable_relating_type_suggestions=True,
+                    search_threshold=0,
+                )
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
                 row_object.prop(props, "relating_type_object", icon="COPYDOWN")
             else:

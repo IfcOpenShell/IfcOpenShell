@@ -123,7 +123,7 @@ def assign_object(
         related_objects = set(decomposes.RelatedObjects) - products_set
         if related_objects:
             decomposes.RelatedObjects = list(related_objects)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": decomposes})
+            ifcopenshell.api.owner.update_owner_history(file, element=decomposes)
         else:
             history = decomposes.OwnerHistory
             file.remove(decomposes)
@@ -133,7 +133,7 @@ def assign_object(
     # assign elements to a new aggregate
     if is_decomposed_by:
         is_decomposed_by.RelatedObjects = list(set(is_decomposed_by.RelatedObjects) | products_set)
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": is_decomposed_by})
+        ifcopenshell.api.owner.update_owner_history(file, element=is_decomposed_by)
     else:
         is_decomposed_by = file.create_entity(
             "IfcRelAggregates",

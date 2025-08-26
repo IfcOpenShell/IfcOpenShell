@@ -43,7 +43,6 @@ def add_derived_unit(
 
     :param unit_type: A type of unit chosen from the list above. For
         example, choosing THERMALCONDUCTANCEUNIT will give you a Thermal conductance.
-    :type unit_type: str
     :param userdefinedtype: The user defined type in case of choosing USERDEFINED, or None for no
         user defined type.
     :param attributes: a dictionary of attribute names and values.

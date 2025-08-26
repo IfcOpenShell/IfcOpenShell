@@ -79,7 +79,20 @@ def draw_boundary_condition_ui(
 def draw_boundary_condition_editable_ui(
     layout: bpy.types.UILayout, props: Union[BIMStructuralProperties, BIMObjectStructuralProperties]
 ) -> None:
-    draw_attributes(props.boundary_condition_attributes, layout)
+    # Reimplement `draw_attributes` as we need to support multiple types for the same attribute.
+    for attribute in props.boundary_condition_attributes:
+        if attribute.data_type == "string":
+            row = layout.row(align=True)
+            bonsai.bim.helper.draw_attribute(attribute, row, enable_search=True)
+        else:
+            row = layout.row(align=True)
+            row.prop(attribute, "enum_value", text=attribute["name"])
+            if attribute.enum_value == "IfcBoolean":
+                row.prop(attribute, "bool_value", text="")
+            else:
+                row.prop(attribute, "float_value", text="")
+            if attribute.is_optional:
+                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
 
 def draw_boundary_condition_read_only_ui(layout: bpy.types.UILayout, boundary_condition: dict[str, Any]) -> None:
@@ -605,6 +618,7 @@ class BIM_PT_boundary_conditions(Panel):
             BoundaryConditionsData.load()
 
         self.props = tool.Structural.get_structural_props()
+        assert self.layout
 
         row = self.layout.row(align=True)
         row.label(
@@ -636,9 +650,8 @@ class BIM_PT_boundary_conditions(Panel):
                 "active_boundary_condition_index",
             )
 
-        if self.props.active_boundary_condition_id:
-            draw_boundary_condition_editable_ui(self.layout, self.props)
-            # bonsai.bim.helper.draw_attributes(self.props.boundary_condition_attributes, self.layout)
+            if self.props.active_boundary_condition_id:
+                draw_boundary_condition_editable_ui(self.layout, self.props)
 
 
 class BIM_UL_boundary_conditions(UIList):

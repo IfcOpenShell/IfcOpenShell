@@ -35,8 +35,8 @@ from bpy.props import (
     IntProperty,
     StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union, get_args
-from typing_extensions import assert_never
+from typing import TYPE_CHECKING, Literal, Union, get_args, assert_never
+from collections.abc import Generator
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -96,7 +96,7 @@ def is_editing_project_library_update(self: "BIMProjectProperties", context: bpy
         self.editing_project_library_id = int(self.selected_project_library)
         project_library = library_file.by_id(int(self.selected_project_library))
         self.project_library_attributes.clear()
-        bonsai.bim.helper.import_attributes2(project_library, self.project_library_attributes)
+        bonsai.bim.helper.import_attributes(project_library, self.project_library_attributes)
         self.parent_library = str(tool.Project.get_parent_library(project_library).id())
         ProjectLibraryData.load()  # Show edit icon in enum.
         return
@@ -225,6 +225,7 @@ class Link(PropertyGroup):
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
+    include_in_drawings: BoolProperty(name="Include in Drawings", default=True, options=set())
     empty_handle: PointerProperty(
         name="Empty Object Handle",
         description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
@@ -237,6 +238,7 @@ class Link(PropertyGroup):
         is_selectable: bool
         is_wireframe: bool
         is_hidden: bool
+        include_in_drawings: bool
         empty_handle: Union[bpy.types.Object, None]
 
 
@@ -300,7 +302,6 @@ class BIMProjectProperties(PropertyGroup):
     )
     should_use_cpu_multiprocessing: BoolProperty(name="CPU Multiprocessing", default=True)
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
-    should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_load_geometry: BoolProperty(name="Load Geometry", default=True)
     should_clean_mesh: BoolProperty(
         name="Clean Meshes",
@@ -310,7 +311,14 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    should_cache: BoolProperty(name="Cache", default=False)
+    should_cache: BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Cache",
+        description=(
+            "Cache loaded geometry to .h5 file in your cache directory (see in preferences) "
+            "for faster imports and geometry reloads."
+        ),
+        default=False,
+    )
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(
@@ -362,9 +370,6 @@ class BIMProjectProperties(PropertyGroup):
         description="Load indexed maps (UV and color maps)",
         default=True,
     )
-    should_disable_undo_on_save: BoolProperty(
-        name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
-    )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema", update=update_export_schema)
@@ -409,8 +414,12 @@ class BIMProjectProperties(PropertyGroup):
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
-    clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
+    clipping_planes_active_index: bpy.props.IntProperty(min=0, default=0, max=5)
     edited_objs: bpy.props.CollectionProperty(type=EditedObj)
+
+    @property
+    def active_clipping_plane(self) -> ObjProperty | None:
+        return tool.Blender.get_active_uilist_element(self.clipping_planes, self.clipping_planes_active_index)
 
     @property
     def clipping_planes_objs(self) -> list[bpy.types.Object]:
@@ -435,7 +444,7 @@ class BIMProjectProperties(PropertyGroup):
         return new
 
     def get_library_element_index(self, lib_element: LibraryElement) -> int:
-        return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
+        return next(i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element)
 
     if TYPE_CHECKING:
         is_editing: bool
@@ -458,7 +467,6 @@ class BIMProjectProperties(PropertyGroup):
         geometry_library: Literal["opencascade", "cgal", "cgal-simple", "hybrid-cgal-simple-opencascade"]
         should_use_cpu_multiprocessing: bool
         should_merge_materials_by_colour: bool
-        should_stream: bool
         should_load_geometry: bool
         should_clean_mesh: bool
         should_cache: bool
@@ -474,7 +482,6 @@ class BIMProjectProperties(PropertyGroup):
         element_offset: int
         element_limit: int
         load_indexed_maps: bool
-        should_disable_undo_on_save: bool
         links: bpy.types.bpy_prop_collection_idprop[Link]
         active_link_index: int
         export_schema: str
@@ -492,13 +499,28 @@ class BIMProjectProperties(PropertyGroup):
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
         clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]
-        clipping_planes_active: int
+        clipping_planes_active_index: int
         edited_objs: bpy.types.bpy_prop_collection_idprop[EditedObj]
 
     def get_active_library_breadcrumb(self) -> Union[LibraryBreadcrumb, None]:
         if self.library_breadcrumb:
             return self.library_breadcrumb[-1]
         return None
+
+    def get_loaded_links(self) -> Generator[Link]:
+        for link in self.links:
+            if not link.is_loaded:
+                continue
+            yield link
+
+    def get_loaded_links_for_drawings(self) -> Generator[Link]:
+        props = tool.Drawing.get_document_props()
+        if not props.should_draw_linked_projects:
+            return
+        for link in self.get_loaded_links():
+            if not link.include_in_drawings:
+                continue
+            yield link
 
 
 class MeasureToolSettings(PropertyGroup):

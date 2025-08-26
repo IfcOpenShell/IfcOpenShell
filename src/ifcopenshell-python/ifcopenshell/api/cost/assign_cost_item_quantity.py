@@ -47,18 +47,16 @@ def assign_cost_item_quantity(
 
     If cost item has just 1 quantity and it's IfcQuantityCount, API will
     assume that quantity is used for counting controlled objects
-    and it will recalculate the quantity value at the end of the API call.
+    and it will recalculate the quantity value at the end of the API call
+    as long as the RelatedObjects are not IfcConstructionResource which do not
+    count towards the cost item (they only provide value).
 
     :param cost_item: The IfcCostItem to assign parametric quantities to
-    :type cost_item: ifcopenshell.entity_instance
     :param products: The IfcObjects to assign parametric quantities to
-    :type products: list[ifcopenshell.entity_instance]
     :param prop_name: The name of the quantity. If this is not specified,
         then it is assumed that there is no calculated quantity, and the
         number of objects are counted instead.
-    :type prop_name: str, optional
     :return: None
-    :rtype: None
 
     Example:
 
@@ -154,5 +152,8 @@ class Usecase:
             if quantity.is_a("IfcQuantityCount"):
                 count = 0
                 for rel in self.settings["cost_item"].Controls:
-                    count += len(rel.RelatedObjects)
+                    for obj in rel.RelatedObjects:
+                        # Only increment if not a resource
+                        if not obj.is_a("IfcConstructionResource"):
+                            count += 1
                 quantity[3] = count
