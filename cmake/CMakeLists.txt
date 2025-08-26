@@ -346,7 +346,9 @@ if (WITH_ROCKSDB)
     add_definitions(-DWITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_ROCKSDB)
 
-    set(RPCRT_LIBRARIES "rpcrt4.lib" "shlwapi.lib")
+    if(WIN32)
+        set(RPCRT_LIBRARIES "rpcrt4.lib" "shlwapi.lib")
+    endif()
 endif()
 
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
