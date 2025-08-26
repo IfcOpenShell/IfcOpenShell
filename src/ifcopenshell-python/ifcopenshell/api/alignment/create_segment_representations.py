@@ -17,11 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-from ifcopenshell import ifcopenshell_wrapper
-import math
-from typing import Sequence
 
 
 def create_segment_representations(
@@ -49,17 +48,17 @@ def create_segment_representations(
             representation.RepresentationIdentifier == "FootPrint" and representation.RepresentationType == "Curve2D"
         ):
             curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
-            nested_alignment = [
+            nested_alignment = next(
                 c for c in ifcopenshell.util.element.get_components(alignment) if c.is_a("IfcAlignmentHorizontal")
-            ][0]
+            )
         elif representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve3D":
             curve = ifcopenshell.api.alignment.get_curve(alignment)
-            nested_alignment = [
+            nested_alignment = next(
                 c for c in ifcopenshell.util.element.get_components(alignment) if c.is_a("IfcAlignmentVertical")
-            ][0]
+            )
 
         curve_segments = curve.Segments
-        segments = nested_alignment.IsNestedBy[0].RelatingObjects
+        segments = nested_alignment.IsNestedBy[0].RelatedObjects
 
         for curve_segment, alignment_segment in zip(curve_segments, segments):
             axis_representation = file.create_entity(

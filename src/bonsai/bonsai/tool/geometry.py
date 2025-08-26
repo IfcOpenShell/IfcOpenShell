@@ -27,12 +27,17 @@ import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
+import ifcopenshell.api.group
 import ifcopenshell.api.profile
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -43,6 +48,7 @@ import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.core.drawing
 import bonsai.core.geometry
+import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.core.style
 import bonsai.core.system
@@ -56,17 +62,15 @@ from mathutils.bvhtree import BVHTree
 from bonsai.bim.ifc import IfcStore
 from typing import (
     Union,
-    Iterable,
     Optional,
     Literal,
-    Iterator,
-    List,
     TYPE_CHECKING,
     get_args,
-    Generator,
     cast,
     TypeGuard,
+    Any,
 )
+from collections.abc import Iterable, Iterator, Generator
 from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
@@ -99,6 +103,10 @@ class Geometry(bonsai.core.tool.Geometry):
         if getattr(old_data, "is_editmode", None):
             raise Exception("user_remap is not supported for meshes in EDIT mode")
         old_data.user_remap(new_data)
+
+    @classmethod
+    def get_cache(cls) -> Union[ifcopenshell.geom.serializers.hdf5, None]:
+        return IfcStore.get_cache()
 
     @classmethod
     def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
@@ -202,6 +210,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def delete_ifc_item(cls, obj: bpy.types.Object) -> None:
+        """Delete IfcRepresentationItem's Object."""
         props = tool.Geometry.get_geometry_props()
         if len(props.item_objs) == 1:
             return
@@ -212,19 +221,22 @@ class Geometry(bonsai.core.tool.Geometry):
         mesh = obj.data
         assert isinstance(mesh, bpy.types.Mesh)
         item = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(mesh).ifc_definition_id)
-        cls.remove_representation_item(item)
+        rep_obj = props.representation_obj
+        assert (rep_obj := props.representation_obj) and (rep_element := tool.Ifc.get_entity(rep_obj))
+        cls.remove_representation_item(item, rep_element)
         cls.reload_representation(props.representation_obj)
         bpy.data.objects.remove(obj)
 
     @classmethod
     def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
+        ifc_file = tool.Ifc.get()
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
         elif element.is_a("IfcRelSpaceBoundary"):
-            ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
+            ifcopenshell.api.boundary.remove_boundary(ifc_file, boundary=element)
             tool.Boundary.undecorate_boundary(obj)
             return bpy.data.objects.remove(obj)
         elif element.is_a("IfcGridAxis"):
@@ -236,18 +248,23 @@ class Geometry(bonsai.core.tool.Geometry):
                 is_last_axis = True
             if is_last_axis:
                 return
-            ifcopenshell.api.run("grid.remove_grid_axis", tool.Ifc.get(), axis=element)
+            ifcopenshell.api.grid.remove_grid_axis(ifc_file, axis=element)
             return bpy.data.objects.remove(obj)
         elif element.is_a("IfcGrid"):
             axes = list(element.UAxes or []) + list(element.VAxes or []) + list(element.WAxes or [])
             for axis in axes:
                 if axis_obj := tool.Ifc.get_object(axis):
                     bpy.data.objects.remove(axis_obj)
-                ifcopenshell.api.grid.remove_grid_axis(tool.Ifc.get(), axis=axis)
+                ifcopenshell.api.grid.remove_grid_axis(ifc_file, axis=axis)
 
         collection = tool.Blender.get_object_bim_props(obj).collection
         if collection:
             parent = ifcopenshell.util.element.get_aggregate(element)
+
+            # Fallback to the aggregate as a new default container instead of resetting it.
+            if tool.Root.get_default_container() == element and parent and not parent.is_a("IfcProject"):
+                tool.Spatial.set_default_container(parent)
+
             if not parent:
                 parent = ifcopenshell.util.element.get_container(element)
             if parent:
@@ -276,14 +293,43 @@ class Geometry(bonsai.core.tool.Geometry):
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
             for port in ifcopenshell.util.system.get_ports(element):
                 bonsai.core.system.remove_port(tool.Ifc, tool.System, port=port)
-            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
 
+            occurrences: list[ifcopenshell.entity_instance] = []
+            if element.is_a("IfcTypeProduct"):
+                occurrences = ifcopenshell.util.element.get_types(element)
+            ifcopenshell.api.root.remove_product(ifc_file, product=element)
+
+            def get_active_representation_not_strict(
+                obj: bpy.types.Object,
+            ) -> Union[ifcopenshell.entity_instance, None]:
+                if (
+                    (data := obj.data)
+                    and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
+                    and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
+                ):
+                    return tool.Ifc.get_entity_by_id(ifc_id)
+
+            # Removing unused Blender mesh representation.
             data = obj.data
-            if (
-                tool.Geometry.has_mesh_properties(data)
-                and tool.Ifc.get_entity_by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id) is None
-            ):
-                tool.Blender.remove_data_block(data)
+            if tool.Geometry.has_mesh_properties(data) and get_active_representation_not_strict(obj) is None:
+                # If it's was a type, need to be careful not to remove still used mesh
+                # as it would implicitly remove all Blender objects-users.
+                data_to_remove: set[Geometry.TYPES_WITH_MESH_PROPERTIES] = {data}
+                for occurrence in occurrences:
+                    occ_obj = tool.Ifc.get_object(occurrence)
+                    assert isinstance(occ_obj, bpy.types.Object)
+                    occ_data = occ_obj.data
+                    assert isinstance(occ_data, Geometry.TYPES_WITH_MESH_PROPERTIES)
+
+                    occ_repr = get_active_representation_not_strict(occ_obj)
+                    if occ_repr is not None:
+                        continue
+                    # In theory we could look for another representation that object might have
+                    # but it occurs pretty rare.
+                    cls.recreate_object_with_data(occ_obj, None)
+                    data_to_remove.add(occ_data)
+                for data_ in data_to_remove:
+                    tool.Blender.remove_data_block(data_)
 
             if is_spatial:
                 bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
@@ -661,7 +707,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def get_representation_data(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
-        return bpy.data.meshes.get(cls.get_representation_name(representation))
+        return bpy.data.meshes.get((cls.get_representation_name(representation), None))
 
     @classmethod
     def get_representation_id(cls, representation: ifcopenshell.entity_instance) -> int:
@@ -838,6 +884,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
+                assert isinstance(shape, W.TriangulationElement)
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
                     # It's possible that there will be multiple shapes for the same context,
@@ -1001,7 +1048,13 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def is_meshlike_item(cls, item: ifcopenshell.entity_instance) -> bool:
-        return item.is_a("IfcTessellatedItem") or item.is_a("IfcManifoldSolidBrep")
+        return (
+            item.is_a("IfcTessellatedItem")
+            or item.is_a("IfcManifoldSolidBrep")
+            or item.is_a("IfcVertex")
+            or item.is_a("IfcEdge")
+            or item.is_a("IfcFace")
+        )
 
     @classmethod
     def is_curvelike_item(cls, item: ifcopenshell.entity_instance) -> bool:
@@ -1017,7 +1070,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return item.is_a("IfcSweptAreaSolid") or item.is_a("IfcHalfSpaceSolid")
 
     @classmethod
-    def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
+    def is_profile_based(cls, data: TYPES_WITH_MESH_PROPERTIES) -> bool:
         props = tool.Geometry.get_mesh_props(data)
         return props.subshape_type == "PROFILE"
 
@@ -1130,7 +1183,9 @@ class Geometry(bonsai.core.tool.Geometry):
             if is_global and element.is_a("IfcTypeProduct"):
                 ocurrences = ifcopenshell.util.element.get_types(element)
                 for occurrence in ocurrences:
-                    cls.recreate_object_with_data(tool.Ifc.get_object(occurrence), data)
+                    obj_ = tool.Ifc.get_object(occurrence)
+                    assert isinstance(obj_, bpy.types.Object)
+                    cls.recreate_object_with_data(obj_, data)
 
             tool.Ifc.unlink(element=element)
 
@@ -1339,12 +1394,19 @@ class Geometry(bonsai.core.tool.Geometry):
         )
 
     @classmethod
-    def remove_representation_item(cls, representation_item: ifcopenshell.entity_instance) -> None:
+    def remove_representation_item(
+        cls, representation_item: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
+    ) -> None:
+        """Remove IfcRepresentationItem.
+
+        :param representation_item: item to remove.
+        :param element: item's element. Is used to unmark manual booleans.
+        """
         # NOTE: we assume it's not the last representation item
         # otherwise we probably would need to remove representation too
         # NOTE: a lot of shared code with `geometry.remove_representation`
         ifc_file = tool.Ifc.get()
-        shape_aspects = []
+        shape_aspects: list[ifcopenshell.entity_instance] = []
 
         consider_inverses = []
         styled_item, colour, texture, layer = None, None, None, None
@@ -1361,7 +1423,7 @@ class Geometry(bonsai.core.tool.Geometry):
         [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
 
         representation = None
-        boolean_results_to_remove = set()
+        boolean_results_to_remove: set[ifcopenshell.entity_instance] = set()
         for inverse in ifc_file.get_inverse(representation_item):
             if inverse.is_a("IfcShapeRepresentation"):
                 if inverse.OfShapeAspect:
@@ -1404,11 +1466,9 @@ class Geometry(bonsai.core.tool.Geometry):
         also_consider = list(consider_inverses)
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
 
-        props = tool.Geometry.get_geometry_props()
-        rep_element = tool.Ifc.get_entity(props.representation_obj)
-        tool.Model.unmark_manual_booleans(rep_element, [b.id() for b in boolean_results_to_remove])
+        tool.Model.unmark_manual_booleans(element, [b.id() for b in boolean_results_to_remove])
         for boolean_result in boolean_results_to_remove:
-            cls.remove_representation_item(boolean_result)
+            cls.remove_representation_item(boolean_result, element)
 
     @classmethod
     def create_shape_aspect(
@@ -1447,18 +1507,20 @@ class Geometry(bonsai.core.tool.Geometry):
         ifc_file = tool.Ifc.get()
         # as shape aspect might have multiple representations
         # it's easier to find it from the item
+        representation = None
         for inverse in ifc_file.get_inverse(representation_items[0]):
             if inverse.is_a("IfcShapeRepresentation") and shape_aspect in inverse.OfShapeAspect:
                 representation = inverse
                 break
 
+        assert representation
         # removing last item would make representation invalid
         if len(representation.Items) == len(representation_items):
             # removing last representation would make shape aspect invalid.
             # remove shape aspect first otherwise remove_representation won't remove it because of the inverse
             if len(shape_aspect.ShapeRepresentations) == 1:
                 ifc_file.remove(shape_aspect)
-            tool.Ifc.run("geometry.remove_representation", representation=representation)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=representation)
         else:
             items = set(representation.Items) - set(representation_items)
             representation.Items = tuple(items)
@@ -1725,11 +1787,6 @@ class Geometry(bonsai.core.tool.Geometry):
                     new_m = np.array(new_m)
                     surface.Position = builder.create_axis2_placement_3d_from_matrix(new_m)
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), position)
-                else:
-                    self.report(
-                        {"INFO"},
-                        f"Editing boolean using non-IfcPlane IfcSurface ({surface.is_a()}) is not supported.",
-                    )
 
         if has_changed:
             cls.reload_representation(rep_obj)
@@ -1751,7 +1808,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 return False
             return None
 
-        bonsai.bim.helper.import_attributes2(item, props.item_attributes, callback=callback)
+        bonsai.bim.helper.import_attributes(item, props.item_attributes, callback=callback)
 
         profile = None
         if item.is_a("IfcSweptAreaSolid"):
@@ -1811,6 +1868,9 @@ class Geometry(bonsai.core.tool.Geometry):
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
             position.translation *= unit_scale
             obj.matrix_world = rep_obj.matrix_world @ position
+        elif item.is_a("IfcVertex"):
+            co = np.array(item.VertexGeometry.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            obj.data.from_pydata([co], [], [])
         else:
             geometry = tool.Loader.create_generic_shape(item)
             verts = ifcopenshell.util.shape.get_vertices(geometry)
@@ -1852,6 +1912,7 @@ class Geometry(bonsai.core.tool.Geometry):
             tool.Blender.set_active_object(props.representation_obj)
             cls.sync_item_positions()
             representation = cls.get_active_representation(props.representation_obj)
+            assert representation
             ifcopenshell.api.geometry.validate_type(tool.Ifc.get(), representation)
             props.is_changing_mode = True
             if props.mode != "OBJECT":
@@ -1861,9 +1922,13 @@ class Geometry(bonsai.core.tool.Geometry):
         tool.Feature.get_boolean_props().is_editing = False
 
     @classmethod
-    def edit_meshlike_item(cls, obj: bpy.types.Object) -> None:
+    def edit_meshlike_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+        """
+        :return: New IfcRepresentationItem or ``None`` if mesh hasn't changed.
+        """
         item = tool.Geometry.get_active_representation(obj)
         assert item
+        assert isinstance(obj.data, (bpy.types.Curve, bpy.types.Mesh))
         mprops = tool.Geometry.get_mesh_props(obj.data)
         if mprops.mesh_checksum == cls.get_mesh_checksum(obj.data):
             return
@@ -1883,16 +1948,24 @@ class Geometry(bonsai.core.tool.Geometry):
         faces = [p.vertices[:] for p in obj.data.polygons]
         if item.is_a("IfcAdvancedBrep"):
             new_item = builder.faceted_brep(verts, faces)
+        elif item.is_a("IfcVertex"):
+            new_item = builder.vertex(verts[0])
+        elif item.is_a("IfcEdge"):
+            new_item = builder.edge(start=verts[0], end=verts[1])
+        elif item.is_a("IfcFace"):
+            new_item = builder.face([verts[i] for i in faces[0]])
         else:
             new_item = builder.mesh(verts, faces)
         for inverse in tool.Ifc.get().get_inverse(item):
             ifcopenshell.util.element.replace_attribute(inverse, item, new_item)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+        cls.name_item_object(obj, new_item)
         tool.Ifc.link(new_item, obj.data)
-        cls.reload_representation(props.representation_obj)
+        cls.reload_representation(rep_obj)
+        return new_item
 
     @classmethod
-    def split_by_loose_parts(cls, obj: bpy.types.Object) -> List[bpy.types.Mesh]:
+    def split_by_loose_parts(cls, obj: bpy.types.Object) -> list[bpy.types.Mesh]:
         # Before .copy() since it also copies the selection.
         selection = tool.Blender.get_objects_selection(bpy.context)
 
@@ -1931,6 +2004,7 @@ class Geometry(bonsai.core.tool.Geometry):
     def export_mesh_to_tessellation(
         cls, obj: bpy.types.Object, ifc_context: ifcopenshell.entity_instance
     ) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         items = []
@@ -1946,9 +2020,12 @@ class Geometry(bonsai.core.tool.Geometry):
             items.append(item)
             material_index = mesh.polygons[0].material_index
             if materials := list(mesh.materials):
+                # TODO: we don't account for multiple materials if they're not on loose parts.
                 material = materials[material_index]
+                if not material:
+                    continue
                 if not (style := tool.Ifc.get_entity(material)):
-                    style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=material.name)
+                    style = ifcopenshell.api.style.add_style(ifc_file, name=material.name)
                     if material.use_nodes:
                         ifc_class = "IfcSurfaceStyleRendering"
                         attributes = tool.Style.get_surface_rendering_attributes(material)
@@ -1998,3 +2075,252 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def run_edit_object_placement(cls, obj: bpy.types.Object) -> None:
         return bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+    @classmethod
+    def duplicate_ifc_objects(
+        cls,
+        objects_to_duplicate: Iterable[bpy.types.Object],
+        active_object: Optional[bpy.types.Object] = None,
+        linked: bool = False,
+    ) -> tuple[dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]], Union[bpy.types.Object, None]]:
+        # Handle arrays
+        objects_to_duplicate = set(objects_to_duplicate)
+        arrays_to_duplicate, array_children = cls.process_arrays_for_duplication(objects_to_duplicate)
+        objects_to_duplicate -= array_children
+        for child in array_children:
+            child.select_set(False)
+
+        new_active_obj = None
+        # Track decompositions so they can be recreated after the operation
+        decomposition_relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
+        connection_relationships = tool.Root.get_connection_relationships(objects_to_duplicate)
+        old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
+
+        for obj in objects_to_duplicate:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                    tool.Blender.deselect_object(obj)
+                    continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+                elif tool.Geometry.is_locked(element):
+                    tool.Blender.deselect_object(obj)
+                    continue
+            elif tool.Geometry.is_representation_item(obj):
+                cls.duplicate_ifc_item(obj)
+                continue
+
+            tracked_opening_type = tool.Model.get_tracked_opening_type(obj)
+            is_tracked_opening = bool(tracked_opening_type)
+            keep_data_linked = linked and not element and not is_tracked_opening
+
+            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
+            if tool.Ifc.is_moved(obj):
+                bonsai.core.geometry.edit_object_placement(
+                    tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False
+                )
+
+            new_obj = obj.copy()
+            temp_data = None
+
+            # Currently for optimization we do not apply pending changes (scale or changed .data)
+            # to the original and duplicated objects.
+            # Keep new object edited if original is.
+            if tool.Ifc.is_edited(obj, ignore_scale=True):
+                tool.Ifc.edit(new_obj)
+
+            if obj.data and not keep_data_linked:
+                # assure root.copy_class won't replace the previous mesh globally
+                temp_data = obj.data.copy()
+                new_obj.data = temp_data
+
+                # Unlink from previous boolean element
+                # and keep object tracked for decorations.
+                if is_tracked_opening:
+                    mprops = tool.Geometry.get_mesh_props(new_obj.data)
+                    mprops.ifc_boolean_id = 0
+                    tool.Root.add_tracked_opening(new_obj, tracked_opening_type)
+
+            if obj == active_object:
+                new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+
+            if not element:
+                continue
+
+            # clear object's collection so it will be able to have it's own
+            tool.Blender.get_object_bim_props(new_obj).collection = None
+            # copy the actual class
+            new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+
+            # clean up the orphaned mesh with ifc id of the original object to avoid confusion
+            # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
+            if new and temp_data and not new.is_a("IfcGridAxis"):
+                if new.is_a("IfcRelSpaceBoundary"):
+                    surface = new.ConnectionGeometry.SurfaceOnRelatingElement
+                    temp_data.name = f"0/{surface.id()}"
+                    tool.Ifc.link(surface, temp_data)
+                else:
+                    tool.Blender.remove_data_block(temp_data)
+
+            if new:
+                # TODO: handle array data for other cases of duplication
+                array_data = arrays_to_duplicate.get(obj, None)
+                tool.Model.handle_array_on_copied_element(new, array_data)
+                if array_data:
+                    for child in tool.Blender.Modifier.Array.get_all_children_objects(new):
+                        child.select_set(True)
+
+                # TODO: add new array children to recreate their decomposition too
+                old_to_new[element] = [new]
+                if new.is_a("IfcRelSpaceBoundary"):
+                    tool.Boundary.decorate_boundary(new_obj)
+
+        # Recreate aggregate relationship
+        for old in old_to_new.keys():
+            if old.is_a("IfcElementAssembly"):
+                tool.Root.recreate_aggregate(old_to_new)
+
+        # Remove connections with old objects and recreates paths
+        cls.remove_old_connections(old_to_new)
+        tool.Root.recreate_connections(connection_relationships, old_to_new)
+
+        # Recreate decompositions
+        tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
+        cls.remove_linked_aggregate_data(old_to_new)
+        bonsai.bim.handler.refresh_ui_data()
+        tool.Root.reload_grid_decorator()
+        return old_to_new, new_active_obj or active_object
+
+    @classmethod
+    def duplicate_ifc_item(cls, obj: bpy.types.Object) -> None:
+        props = tool.Geometry.get_geometry_props()
+        item = tool.Geometry.get_active_representation(obj)
+        assert item
+        new_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+        new_obj = obj.copy()
+        assert tool.Geometry.has_mesh_properties(obj.data)
+        temp_data = obj.data.copy()
+        new_obj.data = temp_data
+        tool.Ifc.link(new_item, temp_data)
+        tool.Geometry.name_item_object(obj, item)
+        props.add_item_object(new_obj, new_item)
+
+        for collection in obj.users_collection:
+            collection.objects.link(new_obj)
+
+        assert (rep_obj := props.representation_obj)
+        representation = tool.Geometry.get_active_representation(rep_obj)
+        assert representation
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        representation.Items = list(representation.Items) + [new_item]
+
+        tool.Geometry.reload_representation(rep_obj)
+
+        obj.select_set(False)
+        tool.Root.reload_item_decorator()
+
+    @classmethod
+    def process_arrays_for_duplication(
+        cls, objects_to_duplicate: Iterable[bpy.types.Object]
+    ) -> tuple[dict[bpy.types.Object, Any], set[ifcopenshell.entity_instance]]:
+        """ "Process arrays for currently selected objects.
+
+        :return: A tuple of two elements:\n
+            - dictionary of objects and their array data. Those objects are safe to duplicate and regenerate arrays using the data.\n
+            - set of array children objects. Those objects can be ignored during duplication, they will be recreated automatically
+            when arrays are regenerated for objects from the dictionary.
+        """
+        selected_objects = set(objects_to_duplicate)
+        array_parents = set()
+        arrays_to_create: dict[bpy.types.Object, Any] = dict()
+        array_children: set[ifcopenshell.entity_instance] = set()  # will be ignored during the duplication
+
+        for obj in objects_to_duplicate:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                continue
+            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+
+        for array_parent in array_parents:
+            array_parent_obj = tool.Ifc.get_object(array_parent)
+            if array_parent_obj not in selected_objects:
+                continue
+
+            array_data = []
+            for modifier_data in tool.Blender.Modifier.Array.get_modifiers_data(array_parent):
+                children = set(tool.Blender.Modifier.Array.get_children_objects(modifier_data))
+                if children.issubset(selected_objects):
+                    modifier_data["children"] = []
+                    array_data.append(modifier_data)
+                    array_children.update(children)
+                else:
+                    break  # allows to duplicate only n first layers of an array
+
+            if array_data:
+                arrays_to_create[array_parent_obj] = array_data
+
+        return arrays_to_create, array_children
+
+    @classmethod
+    def remove_old_connections(cls, old_to_new):
+        single_obj = False
+        if len(old_to_new) == 1:
+            single_obj = True
+
+        for new in old_to_new.values():
+            if not hasattr(new[0], "ConnectedTo"):
+                continue
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys() or single_obj:
+                    cls.remove_connection(connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys() or single_obj:
+                    cls.remove_connection(connection)
+
+    @classmethod
+    def remove_linked_aggregate_data(cls, old_to_new):
+        ifc_file = tool.Ifc.get()
+        for old, new in old_to_new.items():
+            pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
+            if pset:
+                pset = tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=new[0], pset=pset)
+
+            if new[0].is_a("IfcElementAssembly"):
+                linked_aggregate_group = [
+                    r.RelatingGroup
+                    for r in getattr(new[0], "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                ]
+                if linked_aggregate_group:
+                    ifcopenshell.api.group.unassign_group(ifc_file, group=linked_aggregate_group[0], products=[new[0]])
+
+    @classmethod
+    def name_item_object(cls, obj: bpy.types.Object, item: ifcopenshell.entity_instance) -> None:
+        assert (data := obj.data)
+        obj.name = data.name = f"Item/{item.is_a()}/{item.id()}"
+
+    @classmethod
+    def get_selected_objects_with_representations(cls) -> set[bpy.types.Object]:
+        objects: set[bpy.types.Object] = set()
+        props = tool.Geometry.get_geometry_props()
+        for obj in tool.Blender.get_selected_objects():
+            if not obj.data:
+                continue
+            if not tool.Ifc.get_entity(obj):
+                if tool.Geometry.is_representation_item(obj):
+                    assert (obj := props.representation_obj)
+                    objects.add(obj)
+                    continue
+                continue
+            objects.add(obj)
+        return objects

@@ -239,7 +239,7 @@ Advanced Loading Mode
 ---------------------
 
 .. seealso::
-  :ref:`users/advanced/dealing_with_large_models:Filtered model loading`.
+  :ref:`guides/viewing/dealing_with_large_models:Filtered model loading`.
 
 The Advanced Loading Mode is an additional mode that is available when loading an IFC file using the **Enable Advanced Mode** checkbox.
 

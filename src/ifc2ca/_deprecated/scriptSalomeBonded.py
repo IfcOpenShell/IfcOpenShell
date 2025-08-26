@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
-from __future__ import print_function
 import os
 import time
 import json
@@ -194,7 +192,7 @@ class MODEL:
 
             el["linkObjs"] = [None for _ in el["connections"]]
             for j, rel in enumerate(el["connections"]):
-                conn = [c for c in connections if c["referenceName"] == rel["relatedConnection"]][0]
+                conn = next(c for c in connections if c["referenceName"] == rel["relatedConnection"])
                 if rel["eccentricity"]:
                     rel["index"] = len(conn["relatedElements"]) + 1
 

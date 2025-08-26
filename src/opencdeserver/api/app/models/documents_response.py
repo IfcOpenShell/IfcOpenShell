@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, constr
-from typing import List, Optional
+from typing import Optional
 from enum import Enum
 
 from models.documents_common import DocumentVersion, LinkData
@@ -33,7 +33,7 @@ class HeaderValue(BaseModel):
 
 
 class Headers(BaseModel):
-    values: List[HeaderValue]
+    values: list[HeaderValue]
 
 
 class MultipartFormData(BaseModel):
@@ -65,7 +65,7 @@ class DocumentToUpload(BaseModel):
         description="A client-provided identifier that allows matching the specification with the correct file on the "
         "user's machine"
     )
-    upload_file_parts: List[UploadFilePartInstruction] = Field(
+    upload_file_parts: list[UploadFilePartInstruction] = Field(
         description="An array of request specifications detailing how to split the file to parts and upload each part "
         "to the CDE"
         # min_length=1,
@@ -80,7 +80,7 @@ class DocumentsToUpload(BaseModel):
         "and folder the user was on. If the client provides the `server_context` in subsequent calls then "
         "the CDE will attemp to load the UI at the same place."
     )
-    documents_to_upload: Optional[List[DocumentToUpload]]
+    documents_to_upload: Optional[list[DocumentToUpload]]
 
 
 # ---- DOWNLOAD MODELS ----
@@ -95,7 +95,7 @@ class DocumentDiscoverySessionInitialization(BaseModel):
 
 
 class DocumentsMarkedAsSelected(BaseModel):
-    documents: Optional[List[str]]
+    documents: Optional[list[str]]
 
 
 class SelectedDocuments(BaseModel):
@@ -104,7 +104,7 @@ class SelectedDocuments(BaseModel):
         "and folder the user was on. If the client provides the `server_context` in subsequent calls then "
         "the CDE will attemp to load the UI at the same place."
     )
-    documents: List[DocumentVersion] = Field(description="An array containing all the documents selected by the user")
+    documents: list[DocumentVersion] = Field(description="An array containing all the documents selected by the user")
 
 
 class DocumentMetadata(BaseModel):
@@ -124,4 +124,4 @@ class DocumentMetadata(BaseModel):
 
 
 class DocumentVersions(BaseModel):
-    documents: List[DocumentVersion]
+    documents: list[DocumentVersion]

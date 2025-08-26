@@ -175,9 +175,7 @@ public:
 /// This class provides access to the entity instances in an IFC file
 /// The file takes ownership of instances added to this file and deletes them when the file is deleted.
 class IFC_PARSE_API IfcFile {
-  public:
-
-  private:
+private:
     typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
     // @todo determine the constness of things (probably needs to be all const, we don't want to overwrite)

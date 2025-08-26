@@ -1,0 +1,18 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "BonsaiDocsServer",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/home/falken10vdl/bonsaiDevel/IfcOpenShell/src/bonsai/docs/_build/html",
+            "args": ["-m", "http.server"],
+            "preLaunchTask": "Build and Serve Docs",
+            "console": "integratedTerminal"
+        }
+    ]
+}

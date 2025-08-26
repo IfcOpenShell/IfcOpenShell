@@ -1,5 +1,6 @@
 """BCF XML V2 Topic handler."""
 
+from __future__ import annotations
 import datetime
 import tempfile
 import uuid
@@ -152,7 +153,7 @@ class TopicHandler:
         topic_type: str = "",
         topic_status: str = "",
         xml_handler: Optional[AbstractXmlParserSerializer] = None,
-    ) -> "TopicHandler":
+    ) -> TopicHandler:
         """
         Create a new BCF topic.
 

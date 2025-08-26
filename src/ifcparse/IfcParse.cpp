@@ -717,8 +717,14 @@ void IfcParse::impl::in_memory_file_storage::load(unsigned entity_instance_name,
                     const auto* decl = (schema ? schema : file->schema())->declaration_by_name(TokenFunc::asStringRef(next));
                     parse_context ps;
                     tokens->Next();
-                    load(0, nullptr, ps, -1);
-                    auto* simple_type_instance = (schema ? schema : file->schema())->instantiate(decl, ps.construct(-1, *references_to_resolve, decl, boost::none));
+                    // The only case we know where a defined type contains entity
+                    // instance references is IfcPropertySetDefinitionSet. For
+                    // that purpose we propagate the entity_instance_name to
+                    // register inverses to the host entity (and not the defined
+                    // type) and to be able to actually register the references in
+                    // the 2nd pass.
+                    load(entity_instance_name, entity, ps, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index);
+                    auto* simple_type_instance = (schema ? schema : file->schema())->instantiate(decl, ps.construct(entity_instance_name, references_to_resolve, decl, boost::none, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index));
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
                     simple_type_instance->file_ = file;
@@ -1527,7 +1533,23 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
                 if (it == byid_.end()) {
                     Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
-                    byid_[p.first.name_]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, it->second);
+                    auto* storage = &byid_[p.first.name_]->data();
+                    auto attr_index = p.first.index_;
+                    
+                    if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
+                        auto inst = storage->get_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index);
+                        if (!inst->declaration().as_entity()) {
+                            // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
+                            storage = &inst->data();
+                            attr_index = 0;
+                        }
+                    }
+
+                    if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
+                        storage->set(nullptr, nullptr, 0, attr_index, it->second);
+                    } else {
+                        Logger::Error("Duplicate definition for instance reference");
+                    }
                 }
             } else if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(v)) {
                 byid_[p.first.name_]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, *inst);
@@ -1547,7 +1569,24 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
                     instances->push(*inst);
                 }
             }
-            byid_[p.first.name_]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, instances);
+
+            auto* storage = &byid_[p.first.name_]->data();
+            auto attr_index = p.first.index_;
+            
+            if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
+                auto inst = storage->get_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index);
+                if (!inst->declaration().as_entity()) {
+                    // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
+                    storage = &inst->data();
+                    attr_index = 0;
+                }
+            }
+
+            if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
+                storage->set(nullptr, nullptr, 0, attr_index, instances);
+            } else {
+                Logger::Error("Duplicate definition for instance reference");
+            }
         } else if (auto* v = std::get_if<std::vector<std::vector<reference_or_simple_type>>>(&p.second)) {
             aggregate_of_aggregate_of_instance::ptr instances(new aggregate_of_aggregate_of_instance);
             for (const auto& vi : *v) {
@@ -1566,7 +1605,24 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
                 }
                 instances->push(inner);
             }
-            byid_[p.first.name_]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, instances);
+
+            auto* storage = &byid_[p.first.name_]->data();
+            auto attr_index = p.first.index_;
+            
+            if (storage->has_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index)) {
+                auto inst = storage->get_attribute_value<IfcUtil::IfcBaseClass*>(nullptr, nullptr, 0, attr_index);
+                if (!inst->declaration().as_entity()) {
+                    // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
+                    storage = &inst->data();
+                    attr_index = 0;
+                }
+            }
+
+            if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
+                storage->set(nullptr, nullptr, 0, attr_index, instances);
+            } else {
+                Logger::Error("Duplicate definition for instance reference");
+            }
         }
     }
 

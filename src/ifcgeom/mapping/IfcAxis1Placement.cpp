@@ -27,7 +27,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis1Placement* inst) {
 	try {
 		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst->Location()));
 		P = *v->components_;
-	} catch (const std::runtime_error&) {
+	} catch (const std::exception&) {
 		Logger::Warning("Placement with invalid Location:", inst);
 	}
 	const bool hasAxis = inst->Axis();

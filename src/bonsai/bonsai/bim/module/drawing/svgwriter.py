@@ -22,9 +22,11 @@ import bpy
 import math
 import bmesh
 import shutil
+from bpy.types import SplineBezierPoints, SplinePoints
 import mathutils
 import xml.etree.ElementTree as ET
 import svgwrite
+import svgwrite.container
 import svgwrite.text
 import ifcopenshell
 import ifcopenshell.util.element
@@ -37,7 +39,8 @@ from bonsai.bim.module.drawing.data import DrawingsData
 from bonsai.bim.module.drawing.data import DecoratorData
 from math import pi, ceil, atan, degrees, acos
 from mathutils import geometry, Vector
-from typing import Optional, Self
+from typing import Optional, Self, Union
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 
@@ -52,21 +55,36 @@ class External(svgwrite.container.Group):
             if elem.tag.startswith(ns):
                 elem.tag = elem.tag[nsl:]
 
-        super(External, self).__init__(**extra)
+        super().__init__(**extra)
 
     def get_xml(self):
         return self.xml
 
 
 class SvgWriter:
-    def __init__(self):
+    metadata: list[str]
+    resource_paths: dict[tool.Drawing.ResourceType, Union[str, None]]
+
+    def __init__(
+        self,
+        *,
+        camera_width: float,
+        camera_height: float,
+        camera: bpy.types.Object,
+        camera_projection: Vector,
+        scale: float = 1 / 100,  # 1:100
+        human_scale: str = "NTS",
+    ):
         self.data_dir = None
-        self.human_scale = "NTS"
+        self.human_scale = human_scale
         self.metadata = []
-        self.scale = 1 / 100  # 1:100
-        self.camera_width = None
-        self.camera_height = None
+        self.scale = scale
+        self.camera = camera
+        self.camera_width = camera_width
+        self.camera_height = camera_height
+        self.camera_projection = camera_projection
         self.resource_paths = {}
+        self.calculate_scale()
 
     def create_blank_svg(self, output_path: str) -> Self:
         self.calculate_scale()
@@ -90,7 +108,7 @@ class SvgWriter:
 
     def setup_drawing_resource_paths(self, element: ifcopenshell.entity_instance) -> None:
         pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
-        for resource in ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles"):
+        for resource in tool.Drawing.RESOURCE_TYPES:
             resource_path = pset.get(resource)
             if not resource_path:
                 self.resource_paths[resource] = None
@@ -176,12 +194,20 @@ class SvgWriter:
         for child in root:
             self.svg.defs.add(External(child))
 
-    def draw_annotations(self, annotations, precision, decimal_places):
+    def draw_annotations(
+        self,
+        annotations: list[ifcopenshell.entity_instance],
+        precision: Union[float, None],
+        decimal_places: Union[int, None],
+    ) -> Self:
         self.precision = precision
         self.decimal_places = decimal_places
         for element in annotations:
             obj = tool.Ifc.get_object(element)
-            if not obj or (object_type := ifcopenshell.util.element.get_predefined_type(element)) == "DRAWING":
+            if (
+                not isinstance(obj, bpy.types.Object)
+                or (object_type := ifcopenshell.util.element.get_predefined_type(element)) == "DRAWING"
+            ):
                 continue
             elif object_type == "GRID":
                 self.draw_grid_annotation(obj)
@@ -256,11 +282,12 @@ class SvgWriter:
                 get_text, tag, dimension_data, text_position=text_position, angle=angle, class_str="SECTIONLEVEL"
             )
 
-    def draw_stair_annotation(self, obj):
+    def draw_stair_annotation(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         matrix_world = obj.matrix_world
         classes = self.get_attribute_classes(obj)
+        assert isinstance(obj.data, bpy.types.Curve)
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
@@ -284,7 +311,7 @@ class SvgWriter:
                 )
             )
 
-    def draw_grid_annotation(self, obj):
+    def draw_grid_annotation(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         matrix_world = obj.matrix_world
@@ -358,6 +385,7 @@ class SvgWriter:
 
     def get_attribute_classes(self, obj: bpy.types.Object) -> list[str]:
         element = tool.Ifc.get_entity(obj)
+        assert element
         global_id = "GlobalId-{}".format(element.GlobalId)
         predefined_type = "PredefinedType-" + tool.Drawing.canonicalise_class_name(
             str(ifcopenshell.util.element.get_predefined_type(element))
@@ -374,7 +402,7 @@ class SvgWriter:
                 )
         return classes
 
-    def draw_line_annotation(self, obj):
+    def draw_line_annotation(self, obj: bpy.types.Object) -> None:
         # TODO: properly scope these offsets
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
@@ -397,7 +425,7 @@ class SvgWriter:
         elif isinstance(obj.data, bpy.types.Mesh):
             self.draw_edge_annotation(obj, classes)
 
-    def draw_edge_annotation(self, obj, classes):
+    def draw_edge_annotation(self, obj: bpy.types.Object, classes: list[str]) -> None:
         predefined_type = classes[2].split("-", 1)[1]
 
         x_offset = self.raw_width / 2
@@ -415,7 +443,7 @@ class SvgWriter:
                 self.svg.line(start=start * self.svg_scale, end=end * self.svg_scale, class_=" ".join(classes))
             )
 
-        def draw_batting_annotation():
+        def draw_batting_annotation() -> None:
             v0_global = matrix_world @ obj.data.vertices[0].co.xyz
             v1_global = matrix_world @ obj.data.vertices[1].co.xyz
             v0 = self.project_point_onto_camera(v0_global)
@@ -481,41 +509,42 @@ class SvgWriter:
             )
             self.svg.add(self.svg.polyline(points=points, class_=" ".join(classes), style=polyline_style))
 
-        def draw_revision_cloud_annotation():
+        def draw_revision_cloud_annotation() -> None:
             segment_width = 15.0
             base_height = 1
             width = 5
 
-            def get_svg_half_circle(height, width):
+            def get_svg_half_circle(height: float, width: float) -> str:
                 cp0 = f"0,-{height}"
                 cp1 = f"{width},-{height}"
                 end_point = f"{width},0"
                 circle = f"c{cp0} {cp1} {end_point}"
                 return circle
 
-            def get_revision_pattern(base_offset):
+            def get_revision_pattern(base_offset: Vector) -> str:
                 pattern = f"m{base_offset.x},{base_offset.y}"
                 pattern += " " + get_svg_half_circle(2 * base_height, width)
                 pattern += " " + get_svg_half_circle(2.5 * base_height, width)
                 pattern += " " + get_svg_half_circle(1.5 * base_height, width)
                 return pattern
 
-            def get_scale(size, direction):
+            def get_scale(size: float, direction: Vector) -> str:
                 original_edge = direction * size
                 current_svg_segments = ceil(size / segment_width) * segment_width * direction
                 scale = [1 if original_edge[i] == 0 else original_edge[i] / current_svg_segments[i] for i in range(2)]
                 return "scale(%f, %f)" % (scale[0], scale[1])
 
-            def poly_to_edges(poly):
-                edges = []
+            def poly_to_edges(poly: Sequence[int]) -> list[tuple[int, int]]:
+                edges: list[tuple[int, int]] = []
                 n_verts = len(poly)
-                lats_index = n_verts - 1
+                last_index = n_verts - 1
                 for i in range(len(poly)):
-                    edge = [poly[i], (poly[i + 1]) if i != lats_index else poly[0]]
+                    edge = (poly[i], (poly[i + 1]) if i != last_index else poly[0])
                     edges.append(edge)
                 return edges
 
             element = tool.Ifc.get_entity(obj)
+            assert element
             safe_offset_x = 2.0
             marker_width = segment_width + safe_offset_x * 2
             market_height = 15.0
@@ -573,7 +602,7 @@ class SvgWriter:
                 )
                 self.svg.add(polyline)
 
-        def draw_section_annotation():
+        def draw_section_annotation() -> None:
             display_data = DecoratorData.get_section_markers_display_data(obj)
             connect_markers = display_data["connect_markers"]
 
@@ -624,7 +653,7 @@ class SvgWriter:
             for edge in obj.data.edges:
                 draw_simple_edge_annotation(*edge.vertices[:])
 
-    def draw_leader_annotation(self, obj):
+    def draw_leader_annotation(self, obj: bpy.types.Object) -> None:
         self.draw_line_annotation(obj)
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
@@ -634,7 +663,7 @@ class SvgWriter:
             position = Vector((0, 0, 0))
         self.draw_text_annotation(obj, position)
 
-    def draw_section_annotation(self, obj):
+    def draw_section_annotation(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
@@ -688,7 +717,7 @@ class SvgWriter:
                         )
                     )
 
-    def draw_elevation_annotation(self, obj):
+    def draw_elevation_annotation(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         symbol_position = self.project_point_onto_camera(obj.location)
@@ -927,7 +956,7 @@ class SvgWriter:
             symbol_transform = self.get_symbol_transform(svg_position_str)
             self.draw_symbol(svg_id, symbol_transform)
 
-    def draw_break_annotations(self, obj):
+    def draw_break_annotations(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
@@ -950,18 +979,20 @@ class SvgWriter:
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
-    def draw_plan_level_annotation(self, obj):
+    def draw_plan_level_annotation(self, obj: bpy.types.Object) -> None:
         offset = Vector([self.raw_width, self.raw_height]) / 2
         matrix_world = obj.matrix_world
         classes = self.get_attribute_classes(obj)
 
         element = tool.Ifc.get_entity(obj)
+        assert element
         description = element.Description
 
         dimension_data = DecoratorData.get_dimension_data(obj)
         suppress_zero_inches = dimension_data["suppress_zero_inches"]
         base_offset_y = 1.0
 
+        assert isinstance(obj.data, bpy.types.Curve)
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
@@ -1000,7 +1031,8 @@ class SvgWriter:
                 box_alignment=box_alignment,
             )
 
-    def draw_angle_annotations(self, obj):
+    def draw_angle_annotations(self, obj: bpy.types.Object) -> None:
+        assert isinstance(obj.data, bpy.types.Curve)
         points = obj.data.splines[0].points
         # [1, 2, 3, 4, 5] -> [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
         points_chunked = [points[i : i + 3] for i in range(len(points) - 2)]
@@ -1009,18 +1041,18 @@ class SvgWriter:
             points_chunk = [obj.matrix_world @ p.co.xyz for p in points_chunk]
             self.draw_svg_3point_arc(obj, points_chunk)
 
-    def draw_svg_3point_arc(self, obj, angle_points):
+    def draw_svg_3point_arc(self, obj: bpy.types.Object, angle_points: list[Vector]) -> None:
         """`angle_points` are expected to be already in world space"""
         # This implementation uses an SVG arc, which means that it can only draw
         # arcs that are orthogonal to the view (e.g. not arcs in 3D).
         # Gosh this is bad code :(
 
-        def position_on_svg(p):
+        def position_on_svg(p: Vector) -> Vector:
             p = self.project_point_onto_camera(p)
             offset = Vector([self.raw_width / 2, self.raw_height / 2])
             return (offset + p.xy * Vector((1, -1))) * self.svg_scale
 
-        def get_angle_value():
+        def get_angle_value() -> float:
             """points should be in world space"""
             # calculate arc angle, need to make sure we do it in world space
             v0, v1, v2 = angle_points
@@ -1068,7 +1100,7 @@ class SvgWriter:
         # When rewriting to use polylines, we should use this normal instead.
         # center = tool.Cad.get_center_of_arc([p.to_3d() for p in arc_points], None).to_2d()
         # normal = mathutils.geometry.normal([arc_end_pts[0], arc_end_pts[1], center])
-        # normal = Vector(self.camera_projection)
+        # normal = self.camera_projection
         # dir1 = (arc_end_pts[0] - center).normalized()
         # arc_mid_dir = (arc_end_pts[1] - center).normalized()
 
@@ -1104,10 +1136,11 @@ class SvgWriter:
         classes = self.get_attribute_classes(obj)
         path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
-    def draw_radius_annotations(self, obj):
+    def draw_radius_annotations(self, obj: bpy.types.Object) -> None:
         offset = Vector([self.raw_width, self.raw_height]) / 2
         classes = self.get_attribute_classes(obj)
         element = tool.Ifc.get_entity(obj)
+        assert element
         tag = element.Description
         matrix_world = obj.matrix_world
 
@@ -1141,7 +1174,7 @@ class SvgWriter:
                 get_text, tag, dimension_data, text_position=text_position, class_str="RADIUS", box_alignment="center"
             )
 
-    def draw_dimension_text(self, get_text, tag, dimension_data, **create_text_kwargs):
+    def draw_dimension_text(self, get_text: Callable[[], str], tag, dimension_data, **create_text_kwargs) -> None:
         prefix = dimension_data["text_prefix"]
         suffix = dimension_data["text_suffix"]
         show_description_only = dimension_data["show_description_only"]
@@ -1166,12 +1199,13 @@ class SvgWriter:
         for text in text_tags:
             self.svg.add(text)
 
-    def draw_fall_annotations(self, obj):
+    def draw_fall_annotations(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         classes = self.get_attribute_classes(obj)
         element = tool.Ifc.get_entity(obj)
         matrix_world = obj.matrix_world
+        assert isinstance(obj.data, bpy.types.Curve)
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
@@ -1236,13 +1270,14 @@ class SvgWriter:
             text_style = SvgWriter.get_box_alignment_parameters("center")
             self.svg.add(self.svg.text(tag, insert=tuple(text_position), class_="RADIUS", **text_style))
 
-    def draw_diameter_annotations(self, obj):
+    def draw_diameter_annotations(self, obj: bpy.types.Object) -> None:
         classes = self.get_attribute_classes(obj)
         matrix_world = obj.matrix_world
         element = tool.Ifc.get_entity(obj)
         dimension_text = element.Description
         dimension_data = DecoratorData.get_dimension_data(obj)
 
+        assert isinstance(obj.data, bpy.types.Curve)
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             for i, p in enumerate(points):
@@ -1264,13 +1299,14 @@ class SvgWriter:
                     custom_unit=dimension_data["custom_unit"],
                 )
 
-    def draw_dimension_annotations(self, obj):
+    def draw_dimension_annotations(self, obj: bpy.types.Object) -> None:
         classes = self.get_attribute_classes(obj)
         matrix_world = obj.matrix_world
         element = tool.Ifc.get_entity(obj)
         dimension_text = element.Description
         dimension_data = DecoratorData.get_dimension_data(obj)
 
+        assert isinstance(obj.data, bpy.types.Curve)
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
             for i in range(len(points) - 1):
@@ -1289,7 +1325,7 @@ class SvgWriter:
                     custom_unit=dimension_data["custom_unit"],
                 )
 
-    def draw_measureit_arch_dimension_annotations(self):
+    def draw_measureit_arch_dimension_annotations(self) -> None:
         try:
             import MeasureIt_ARCH.measureit_arch_external_utils
 
@@ -1303,9 +1339,9 @@ class SvgWriter:
 
     def draw_dimension_annotation(
         self,
-        v0_global,
-        v1_global,
-        classes,
+        v0_global: Vector,
+        v1_global: Vector,
+        classes: list[str],
         dimension_text=None,
         text_format=lambda x: x,
         show_description_only=False,
@@ -1314,7 +1350,7 @@ class SvgWriter:
         text_suffix="",
         fill_bg=False,
         custom_unit=None,
-    ):
+    ) -> None:
         offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
         v1 = self.project_point_onto_camera(v1_global)
@@ -1441,12 +1477,12 @@ class SvgWriter:
         # TODO is this needlessly complex?
         return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
             point.xyz,
-            point.xyz - Vector(self.camera_projection),
+            point.xyz - self.camera_projection,
             self.camera.location,
-            Vector(self.camera_projection),
+            self.camera_projection,
         )
 
-    def get_spline_points(self, spline):
+    def get_spline_points(self, spline: bpy.types.Spline) -> Union[SplineBezierPoints, SplinePoints]:
         return spline.bezier_points if spline.bezier_points else spline.points
 
     def draw_polygon(self, polygon, position):

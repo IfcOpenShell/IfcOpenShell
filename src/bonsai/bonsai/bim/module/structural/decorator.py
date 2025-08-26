@@ -21,9 +21,11 @@ import numpy as np
 import bpy
 import gpu
 import blf
+import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
-from typing import Iterable, Union
+from typing import Union
+from collections.abc import Iterable
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 
@@ -86,6 +88,8 @@ class LoadsDecorator:
                 shader = info["shader"]
                 args = info["args"]
                 indices = info["indices"]
+                if not tool.Blender.validate_shader_batch_data(args["coord"], indices):
+                    continue
                 batch = batch_for_shader(shader, "TRIS", args, indices=indices)
                 matrix = bpy.context.region_data.perspective_matrix
                 shader.bind()
@@ -127,6 +131,7 @@ class LoadsDecorator:
 
         coord = Vector(coord)
         rv3d = context.region_data
+        assert rv3d and context.region
         perspective = rv3d.view_perspective
         view_matrix = rv3d.view_matrix
         point_view_space = view_matrix @ coord

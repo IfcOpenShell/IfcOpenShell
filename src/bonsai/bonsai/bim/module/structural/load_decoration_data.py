@@ -22,24 +22,30 @@ import numpy as np
 from math import sin
 from mathutils import Vector
 import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.attribute
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import ifcopenshell.util.unit as ifcunit
 import bonsai.tool as tool
 from bonsai.bim.module.structural.shader import DecorationShader
-from typing import Literal, TypedDict, Iterable
+from typing import Literal, TypedDict
+from collections.abc import Iterable
 
-MemberInfo = TypedDict(
-    "MemberInfo",
-    {"member": ifcopenshell.entity_instance, "activities": list[tuple[ifcopenshell.entity_instance, float]]},
-)
+
+class MemberInfo(TypedDict):
+    member: ifcopenshell.entity_instance
+    activities: list[tuple[ifcopenshell.entity_instance, float]]
+
 
 LoadConfigItem = TypedDict(
     "LoadConfigItem", {"pos": float, "descr": Literal["start", "end", "middle"], "load values": np.ndarray}
 )
 
-DiscreteConfigItem = TypedDict("DiscreteConfigItem", {"pos": float, "values": list[float]})
+
+class DiscreteConfigItem(TypedDict):
+    pos: float
+    values: list[float]
+
 
 ParsedLoad = TypedDict(
     "ParsedLoad",
@@ -51,9 +57,14 @@ ParsedLoad = TypedDict(
         "point load configuration": list[list[DiscreteConfigItem]],
     },
 )
-LoadByDirection = TypedDict(
-    "LoadByDirection", {"constant": float, "quadratic": float, "sinus": float, "polyline": list[list[float]]}
-)
+
+
+class LoadByDirection(TypedDict):
+    constant: float
+    quadratic: float
+    sinus: float
+    polyline: list[list[float]]
+
 
 ProcessedLoad = TypedDict(
     "ProcessedLoad",
@@ -388,12 +399,12 @@ class ShaderInfo:
         returns a numpy array with the sum of the values of structural activities
         applied loads in each direction, multiplied by the factors in load combinations
         """
-        values = np.zeros((3))
+        values = np.zeros(3)
         for item in activity_list:
             activity = item[0]
             factor = item[1]
             load = activity.AppliedLoad
-            temp = np.zeros((3))
+            temp = np.zeros(3)
             if load is not None and load.is_a("IfcStructuralLoadPlanarForce"):
                 temp[0] = load.PlanarForceX if load.PlanarForceX is not None else 0
                 temp[1] = load.PlanarForceY if load.PlanarForceY is not None else 0

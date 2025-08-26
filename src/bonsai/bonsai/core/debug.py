@@ -26,17 +26,27 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def parse_express(debug: tool.Debug, filename: str) -> None:
+def parse_express(debug: type[tool.Debug], filename: str) -> None:
     debug.add_schema_identifier(debug.load_express(filename))
 
 
-def purge_hdf5_cache(debug: tool.Debug) -> None:
+def purge_hdf5_cache(debug: type[tool.Debug]) -> None:
     debug.purge_hdf5_cache()
 
 
-def purge_unused_elements(ifc, debug: tool.Debug, ifc_class: str) -> int:
+def purge_unused_elements(ifc: type[tool.Ifc], debug: type[tool.Debug], ifc_class: str) -> int:
     ifc_file = ifc.get()
     unused_elements = [i for i in ifc_file.by_type(ifc_class) if ifc_file.get_total_inverses(i) == 0]
     unused_elements_amount = len(unused_elements)
-    debug.remove_unused_elements(unused_elements)
+    if ifc_class == "IfcApplication":
+        for element in unused_elements:
+            ifc.run("owner.remove_application", application=element)
+    elif ifc_class == "IfcPerson":
+        for element in unused_elements:
+            ifc.run("owner.remove_person", person=element)
+    elif ifc_class == "IfcPersonAndOrganization":
+        for element in unused_elements:
+            ifc.run("owner.remove_person_and_organisation", person_and_organisation=element)
+    else:
+        debug.remove_unused_elements(unused_elements)
     return unused_elements_amount

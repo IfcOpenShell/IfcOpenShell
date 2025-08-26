@@ -19,15 +19,21 @@
 import bpy
 import math
 import collections
+import collections.abc
 import bmesh
 import re
 import json
 import ifcopenshell
 import ifcopenshell.api
-import ifcopenshell.util.unit
-import ifcopenshell.util.system
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
+import ifcopenshell.api.system
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.system
+import ifcopenshell.util.unit
 import numpy as np
 import bonsai.core.type
 import bonsai.core.root
@@ -539,14 +545,10 @@ class MEPGenerator:
             ifc_representation_class=None,
         )
 
-        rel = ifcopenshell.api.run(
-            "material.assign_material", ifc_file, products=[element], type="IfcMaterialProfileSet"
-        )
+        rel = ifcopenshell.api.material.assign_material(ifc_file, products=[element], type="IfcMaterialProfileSet")
         profile_set = rel.RelatingMaterial
-        material_profile = ifcopenshell.api.run(
-            "material.add_profile", ifc_file, profile_set=profile_set, material=material
-        )
-        ifcopenshell.api.run("material.assign_profile", ifc_file, material_profile=material_profile, profile=profile)
+        material_profile = ifcopenshell.api.material.add_profile(ifc_file, profile_set=profile_set, material=material)
+        ifcopenshell.api.material.assign_profile(ifc_file, material_profile=material_profile, profile=profile)
         return element
 
     def add_obstruction(self, segment, length, at_segment_start=False):
@@ -569,7 +571,9 @@ class MEPGenerator:
         if length >= segment_data["extrusion_depth"]:
             return None, "Failed to add obstruction - obstruction length is larger than the segment."
 
+        ifc_file = tool.Ifc.get()
         segment_obj = tool.Ifc.get_object(segment)
+        assert isinstance(segment_obj, bpy.types.Object)
         segment_matrix = segment_obj.matrix_world
         segment_rotation = segment_matrix.to_quaternion()
         fitting_data = self.get_compatible_fitting_type(segment, related_port, "OBSTRUCTION")
@@ -582,6 +586,7 @@ class MEPGenerator:
         # NOTE: at this point we loose current blender objects selection
         bpy.ops.bim.add_occurrence(relating_type_id=obstruction_type.id())
         obstruction_obj = bpy.context.active_object
+        assert obstruction_obj
         obstruction_obj.matrix_world = segment_matrix
 
         profile_joiner.set_depth(obstruction_obj, length)
@@ -602,7 +607,9 @@ class MEPGenerator:
         else:
             obstruction_obj.location += segment_rotation @ V(0, 0, new_segment_length)
 
-        tool.Ifc.run("system.connect_port", port1=related_port, port2=obstruction_port, direction="NOTDEFINED")
+        ifcopenshell.api.system.connect_port(
+            ifc_file, port1=related_port, port2=obstruction_port, direction="NOTDEFINED"
+        )
         obstruction = tool.Ifc.get_entity(obstruction_obj)
         return obstruction, None
 
@@ -800,7 +807,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 f"Failed to add transition - transition length is larger the segments and the distance between them.\n"
                 + f"Transition length: {full_transition_length:.2f}m, segments length: {entire_length:.2f}m",
             )
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
             return {"CANCELLED"}
 
         # calculate bunch of points to for adjustments
@@ -832,7 +839,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
         if transition_type:
             # TODO: handle the case without creating a representation in the first place?
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Transition")
             obj = bpy.data.objects.new("Transition", mesh)
@@ -848,9 +855,8 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             # Will implicitly remove `mesh`.
             tool.Model.replace_object_ifc_representation(body, obj, rep)
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
+            ifcopenshell.api.pset.edit_pset(
                 tool.Ifc.get(),
                 pset=pset,
                 properties={"Data": tool.Ifc.get().createIfcText(json.dumps(transition_data, default=list))},
@@ -861,6 +867,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         # create transition element
         bpy.ops.bim.add_occurrence(relating_type_id=transition_type.id())
         transition_obj = bpy.context.active_object
+        assert transition_obj
 
         # adjust transition segment rotation and location
         # required since we'll base our `transition_obj_dir` on this
@@ -882,8 +889,8 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         ports = tool.System.get_ports(tool.Ifc.get_entity(transition_obj))
         if not start_port_match:
             start_port, end_port = end_port, start_port
-        tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
-        tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")
+        ifcopenshell.api.system.connect_port(ifc_file, port1=ports[0], port2=start_port, direction="NOTDEFINED")
+        ifcopenshell.api.system.connect_port(ifc_file, port1=ports[1], port2=end_port, direction="NOTDEFINED")
         return {"FINISHED"}
 
 
@@ -1183,7 +1190,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 z_sign_type = -1 if bbim_data["flip_z_axis"] else 1
 
             # TODO: handle the case without creating a representation in the first place?
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Bend")
             obj = bpy.data.objects.new("Bend", mesh)
@@ -1199,9 +1206,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             # Will implicitly remove `mesh`.
             tool.Model.replace_object_ifc_representation(body, obj, rep)
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
+            ifcopenshell.api.pset.edit_pset(
                 tool.Ifc.get(),
                 pset=pset,
                 properties={"Data": tool.Ifc.get().createIfcText(json.dumps(bend_data, default=list))},
@@ -1257,8 +1263,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         # We cannot use start_port_match because tool.System.get_ports is unordered
         if not np.allclose(start_co, port0_co):
             start_port, end_port = end_port, start_port
-        tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
-        tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")
+        ifcopenshell.api.system.connect_port(ifc_file, port1=ports[0], port2=start_port, direction="NOTDEFINED")
+        ifcopenshell.api.system.connect_port(ifc_file, port1=ports[1], port2=end_port, direction="NOTDEFINED")
 
         self.report({"INFO"}, f"Success!.. kind of. The angle was {round(bend_data['angle'])}")
         return {"FINISHED"}

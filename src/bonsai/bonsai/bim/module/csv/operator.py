@@ -181,6 +181,7 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
     bl_label = "Export IFC"
     bl_description = "Export IFC data as a spreadsheet."
     filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
@@ -202,6 +203,8 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
         props = tool.Blender.get_csv_props()
         if props.format == "web":
             return self.execute(context)
+        self.filter_glob = f"*.{props.format}"
+        self.filename_ext = f".{props.format}"
         return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
@@ -266,7 +269,7 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             schedule_creator = scheduler.Scheduler()
             schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
         if props.format == "web":
-            if not context.scene.WebProperties.is_connected:
+            if not tool.Web.get_web_props().is_connected:
                 bpy.ops.bim.connect_websocket_server()
             df = ifc_csv.dataframe
             assert df is not None
@@ -309,6 +312,7 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         import ifccsv
 
         props = tool.Blender.get_csv_props()
+        ifc_file: ifcopenshell.file
         if props.should_load_from_memory:
             ifc_file = tool.Ifc.get()
         else:

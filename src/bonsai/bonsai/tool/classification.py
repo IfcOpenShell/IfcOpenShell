@@ -22,11 +22,23 @@ import ifcopenshell.api
 import ifcopenshell.util.classification
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Any, Optional, Union, Literal, Iterable, Callable
-from typing_extensions import assert_never
+from typing import Union, assert_never, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.classification.prop import BIMClassificationReferenceProperties, BIMClassificationProperties
 
 
 class Classification(bonsai.core.tool.Classification):
+    @classmethod
+    def get_classification_props(cls) -> BIMClassificationProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMClassificationProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_classification_reference_props(cls) -> BIMClassificationReferenceProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMClassificationReferenceProperties  # pyright: ignore[reportAttributeAccessIssue]
+
     @classmethod
     def get_location(cls, classification: ifcopenshell.entity_instance) -> Union[str, None]:
         schema = classification.file.schema

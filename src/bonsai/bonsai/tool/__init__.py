@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bonsai.tool.aggregate import Aggregate
+from bonsai.tool.attribute import Attribute
 from bonsai.tool.bcf import Bcf
 from bonsai.tool.blender import Blender
 from bonsai.tool.boundary import Boundary

@@ -31,11 +31,8 @@ def assign_profile(
     :param material_profile: The IfcMaterialProfile to change the profile
         curve of. See ifcopenshell.api.material.add_profile to see how to
         create profiles.
-    :type material_profile: ifcopenshell.entity_instance
     :param profile: The IfcProfileDef to set the profile item's curve to.
-    :type profile: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

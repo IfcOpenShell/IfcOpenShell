@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.model.decorator import PolylineDecorator
@@ -25,7 +26,7 @@ import math
 import mathutils
 from mathutils import Matrix, Vector
 from lark import Lark, Transformer
-from typing import Union
+from typing import Union, Any
 
 
 class Snap(bonsai.core.tool.Snap):
@@ -44,8 +45,9 @@ class Snap(bonsai.core.tool.Snap):
         cls.snap_plane_method = value
 
     @classmethod
-    def get_increment_snap_value(cls, context):
+    def get_increment_snap_value(cls, context: bpy.types.Context) -> Union[float, None]:
         rv3d = context.region_data
+        assert rv3d
 
         factor = 1
         fractions = [100, 20, 10, 2]
@@ -109,10 +111,11 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def update_snapping_point(cls, snap_point, snap_type, snap_obj=None):
+        polyline_props = tool.Model.get_polyline_props()
         try:
-            snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point[0]
+            snap_vertex = polyline_props.snap_mouse_point[0]
         except:
-            snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point.add()
+            snap_vertex = polyline_props.snap_mouse_point.add()
 
         snap_vertex.x = snap_point[0]
         snap_vertex.y = snap_point[1]
@@ -125,14 +128,16 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def clear_snapping_point(cls):
-        bpy.context.scene.BIMPolylineProperties.snap_mouse_point.clear()
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_props.snap_mouse_point.clear()
 
     @classmethod
     def update_snapping_ref(cls, snap_point, snap_type):
+        polyline_props = tool.Model.get_polyline_props()
         try:
-            snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_ref[0]
+            snap_vertex = polyline_props.snap_mouse_ref[0]
         except:
-            snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_ref.add()
+            snap_vertex = polyline_props.snap_mouse_ref.add()
 
         snap_vertex.x = snap_point[0]
         snap_vertex.y = snap_point[1]
@@ -141,16 +146,17 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def clear_snapping_ref(cls):
-        bpy.context.scene.BIMPolylineProperties.snap_mouse_ref.clear()
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_props.snap_mouse_ref.clear()
 
     @classmethod
     def snap_on_axis(cls, intersection, tool_state):
-        def create_axis_line_data(rot_mat, origin):
+        def create_axis_line_data(rot_mat: Matrix, origin: Vector) -> tuple[Vector, Vector]:
             length = 1000
             direction = Vector((1, 0, 0))
             if tool_state.plane_method == "YZ" or (not tool_state.plane_method and tool_state.axis_method == "Z"):
                 direction = Vector((0, 0, 1))
-            rot_dir = rot_mat.inverted() @ direction
+            rot_dir: Vector = rot_mat.inverted() @ direction
             start = origin + rot_dir * length
             end = origin - rot_dir * length
 
@@ -162,10 +168,11 @@ class Snap(bonsai.core.tool.Snap):
         snap_threshold = 1 * cls.get_increment_snap_value(bpy.context)
 
         if tool.Ifc.get():
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            default_container_elevation = tool.Root.get_default_container_elevation()
         else:
             default_container_elevation = 0.0
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if polyline_points:
             last_point_data = polyline_points[-1]
@@ -261,13 +268,14 @@ class Snap(bonsai.core.tool.Snap):
             intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point["point"], y_axis))
             intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point["point"], z_axis))
 
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if polyline_points:
             last_point_data = polyline_points[-1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         else:
-            last_point = Vector(0, 0, 0)
+            last_point = Vector()
 
         valid_intersections = []
         for i in intersections:
@@ -280,10 +288,16 @@ class Snap(bonsai.core.tool.Snap):
         return sorted_intersections
 
     @classmethod
-    def detect_snapping_points(cls, context: bpy.types.Context, event: bpy.types.Event, objs_2d_bbox, tool_state):
+    def detect_snapping_points(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        objs_2d_bbox: list[tuple[bpy.types.Object, list[float]]],
+        tool_state: tool.Polyline.ToolState,
+    ) -> list[dict[str, Any]]:
         rv3d = context.region_data
         space = context.space_data
-        detected_snaps = []
+        detected_snaps: list[dict[str, Any]] = []
 
         def select_plane_method():
             if not last_polyline_point:
@@ -321,8 +335,9 @@ class Snap(bonsai.core.tool.Snap):
             return plane_origin, plane_normal
 
         # Polyline
+        polyline_props = tool.Model.get_polyline_props()
         try:
-            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_data = polyline_props.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
             last_polyline_point = polyline_points[len(polyline_points) - 1]
         except:
@@ -336,7 +351,7 @@ class Snap(bonsai.core.tool.Snap):
                     detected_snaps.append(point)
 
         # Measure
-        measure_data = context.scene.BIMPolylineProperties.measurement_polyline
+        measure_data = polyline_props.measurement_polyline
         for measure in measure_data:
             measure_points = measure.polyline_points
             snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
@@ -347,6 +362,16 @@ class Snap(bonsai.core.tool.Snap):
 
         # Objects
         objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
+        # Wireframes
+        # For wireframe we have to get all the objects so we can further calculate edge intersection
+        for snap_obj in objs_to_raycast:
+            if snap_obj.type in {"EMPTY", "CURVE"} or (snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0):
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj)
+                if snap_points:
+                    for point in snap_points:
+                        point["group"] = "Wireframe"
+                        detected_snaps.append(point)
+
         if (space.shading.type == "SOLID" and space.shading.show_xray) or (
             space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
         ):
@@ -366,12 +391,7 @@ class Snap(bonsai.core.tool.Snap):
                 if snap_obj.type in {"EMPTY", "CURVE"} or (
                     snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0
                 ):
-                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj)
-                    if snap_points:
-                        for point in snap_points:
-                            point["group"] = "Wireframe"
-                            detected_snaps.append(point)
-
+                    continue
                 # Meshes
                 else:
                     # Add face snap
@@ -396,7 +416,7 @@ class Snap(bonsai.core.tool.Snap):
 
         # Axis and Plane
         if tool.Ifc.get():
-            elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            elevation = tool.Root.get_default_container_elevation()
         else:
             elevation = 0.0
 
@@ -483,17 +503,17 @@ class Snap(bonsai.core.tool.Snap):
 
         def sort_points_by_weighted_distance(snapping_points):
             for snap in snapping_points:
-                weight_factor = 100 * cls.get_increment_snap_value(context)
+                zoom_factor = bpy.context.region_data.view_distance
                 if snap["type"] == "Vertex":
-                    snap["distance"] *= weight_factor / 12
-                if snap["type"] == "Edge":
-                    snap["distance"] *= weight_factor
+                    snap["distance"] *= zoom_factor / 10
                 if snap["type"] == "Edge Center":
-                    snap["distance"] *= weight_factor / 5
+                    snap["distance"] *= zoom_factor / 8
                 if snap["type"] == "Edge Intersection":
-                    snap["distance"] *= weight_factor / 10
+                    snap["distance"] *= zoom_factor / 5
+                if snap["type"] == "Edge":
+                    snap["distance"] *= zoom_factor
                 if snap["type"] in ["Plane", "Axis", "Face"]:
-                    snap["distance"] = weight_factor / 50
+                    snap["distance"] *= zoom_factor
             return sorted(snapping_points, key=lambda x: x["distance"])
 
         snaps_by_group = filter_snapping_points_by_group(detected_snaps)
@@ -530,7 +550,7 @@ class Snap(bonsai.core.tool.Snap):
                                 "object": obj,
                             }
                             ordered_snaps.insert(0, snap_point)
-                            cls.update_snapping_point(snap_point["point"], snap_point["type"])
+                            cls.update_snapping_point(snap_point["point"], snap_point["type"], obj)
                         return ordered_snaps
                     cls.update_snapping_point(point["point"], point["type"])
                     return ordered_snaps

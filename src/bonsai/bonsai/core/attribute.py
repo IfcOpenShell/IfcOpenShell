@@ -26,7 +26,12 @@ if TYPE_CHECKING:
 
 
 def copy_attribute_to_selection(
-    ifc: tool.Ifc, blender: tool.Blender, root: tool.Root, spatial: tool.Spatial, name: str, value: Union[str, None]
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    root: type[tool.Root],
+    spatial: type[tool.Spatial],
+    name: str,
+    value: Union[str, None],
 ) -> int:
     total_changed = 0
     has_edited_spatial_name = False

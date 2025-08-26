@@ -273,9 +273,11 @@ Here's an example of it in action:
 
 .. code-block:: python
 
-    import ifcopenshell.api
-    ifcopenshell.api.run("grid.create_grid_axis", model, ...)
-    ifcopenshell.api.run("structural.add_structural_load", model, ...)
+    import ifcopenshell.api.grid
+    import ifcopenshell.api.structural
+
+    ifcopenshell.api.grid.create_grid_axis(model, ...)
+    ifcopenshell.api.structural.add_structural_load(model, ...)
 
 Because the API performs all the IFC manipulations to achieve a usecase, no
 further interaction is required in a typical native IFC authoring environment.

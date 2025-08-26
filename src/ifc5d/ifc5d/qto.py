@@ -23,6 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
@@ -31,7 +32,8 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import multiprocessing
 from collections import defaultdict
-from typing import Any, Literal, get_args, Union, Iterable, NamedTuple
+from typing import Any, Literal, get_args, Union, NamedTuple
+from collections.abc import Iterable
 
 
 class Function(NamedTuple):
@@ -277,6 +279,8 @@ class IfcOpenShell(QtoCalculator):
                     formula = formula.partition("_")[2]
                     gross_or_net_qtos.setdefault(name, {})[quantity] = formula
                     formula_functions[formula] = getattr(ifcopenshell.util.shape, formula)
+                else:
+                    print(f"WARNING. Unexpected formula: '{formula}' ({name}.{quantity}).")
 
         tasks: list[tuple[Union[ifcopenshell.geom.iterator, IteratorForTypes], QtosFormulas]] = []
 
@@ -355,16 +359,17 @@ class IfcOpenShell(QtoCalculator):
                 y = item.SweptArea.YDim
                 z = item.Depth
                 return max([x, y, z])
-            elif item.SweptArea.is_a("IfcCircleProfileDef"):
-                return item.Depth
             elif item.SweptArea.is_a("IfcParameterizedProfileDef"):
                 return item.Depth
+            settings = ifcopenshell.geom.settings()
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             try:
                 area_shape = ifcopenshell.geom.create_shape(settings, item.SweptArea)
-            except:
+            except RuntimeError:
                 return
-            x = ifcopenshell.util.shape.get_x(area_shape.geometry) / cls.unit_scale
-            y = ifcopenshell.util.shape.get_y(area_shape.geometry) / cls.unit_scale
+            assert isinstance(area_shape, W.Triangulation)
+            x = ifcopenshell.util.shape.get_x(area_shape) / cls.unit_scale
+            y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
             z = item.Depth
             return max([x, y, z])
 
@@ -441,6 +446,8 @@ class Blender(QtoCalculator):
         "get_rectangular_perimeter": Function("IfcLengthMeasure", "Rectangular Perimeter", ""),
         "get_stair_length": Function("IfcLengthMeasure", "Stair Length", ""),
         "get_width": Function("IfcLengthMeasure", "Width", ""),
+        "get_footing_height": Function("IfcLengthMeasure", "Height", ""),
+        "get_footing_length": Function("IfcLengthMeasure", "Length", ""),
         # IfcAreaMeasure
         "get_covering_gross_area": Function("IfcAreaMeasure", "Covering Gross Area", ""),
         "get_covering_net_area": Function("IfcAreaMeasure", "Covering Net Area", ""),
@@ -500,9 +507,9 @@ class Blender(QtoCalculator):
             obj = tool.Ifc.get_object(element)
             if not obj or obj.type != "MESH":
                 continue
-            element_results = {}
+            element_results = results.setdefault(element, {})
             for name, quantities in qtos.items():
-                qto_results = {}
+                qto_results = element_results.setdefault(name, {})
                 for quantity, formula in quantities.items():
                     if not formula:
                         continue
@@ -513,8 +520,8 @@ class Blender(QtoCalculator):
                 if qto_results:
                     element_results[name] = qto_results
             # Avoid adding empty qsets if nothing was calculated.
-            if element_results:
-                results[element] = element_results
+            if not element_results:
+                del results[element]
 
 
 calculators: dict[str, type[QtoCalculator]] = {

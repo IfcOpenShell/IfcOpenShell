@@ -4,6 +4,7 @@ import bpy
 import bonsai.core.ifcgit as core
 import bonsai.tool as tool
 from bonsai.bim.module.ifcgit.data import IfcGitData, refresh
+from typing import TYPE_CHECKING
 
 
 class CreateRepo(bpy.types.Operator):
@@ -68,7 +69,7 @@ class CloneRepo(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if (
             props.remote_url
             and props.local_folder
@@ -80,7 +81,7 @@ class CloneRepo(bpy.types.Operator):
 
     def execute(self, context):
 
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         core.clone_repo(tool.IfcGit, props.remote_url, props.local_folder, self)
         props.remote_url = ""
         refresh()
@@ -112,7 +113,7 @@ class CommitChanges(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         repo = IfcGitData.data["repo"]
         if props.commit_message == "":
             return False
@@ -148,7 +149,7 @@ class AddTag(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if props.new_tag_name == "":
             return False
         repo = IfcGitData.data["repo"]
@@ -218,7 +219,7 @@ class DisplayRevision(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if props.ifcgit_commits:
             return True
 
@@ -253,7 +254,7 @@ class SwitchRevision(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if props.ifcgit_commits:
             return True
 
@@ -274,7 +275,7 @@ class Merge(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if IfcGitData.data["ifcmerge_exe"] and props.ifcgit_commits and not IfcGitData.data["is_detached"]:
             return True
         return False
@@ -296,8 +297,7 @@ class Push(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         repo = IfcGitData.data["repo"]
         core.push(tool.IfcGit, repo, props.select_remote, self)
         return {"FINISHED"}
@@ -311,8 +311,7 @@ class Fetch(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         repo = IfcGitData.data["repo"]
         remote = repo.remotes[props.select_remote]
         remote.fetch()
@@ -329,7 +328,7 @@ class AddRemote(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         repo = IfcGitData.data["repo"]
         if (
             not repo
@@ -408,4 +407,39 @@ class InstallGit(bpy.types.Operator):
     def execute(self, context):
         core.install_git(tool.IfcGit, self)
         refresh()
+        return {"FINISHED"}
+
+
+class RunGitDiff(bpy.types.Operator):
+
+    bl_label = "Git Diff"
+    bl_idname = "ifcgit.git_diff"
+    bl_description = (
+        "Run `git diff` for the current version of IFC file and the last saved one.\n\n"
+        "ALT+click to save output to temp directory."
+    )
+    bl_options = set()
+
+    save_to_temp: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        save_to_temp: bool
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        if not tool.Ifc.get_path():
+            cls.poll_message_set("Current IFC file was never saved.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        if event.alt:
+            self.save_to_temp = True
+        return self.execute(context)
+
+    def execute(self, context):
+        core.run_git_diff(tool.IfcGit, self, self.save_to_temp)
         return {"FINISHED"}

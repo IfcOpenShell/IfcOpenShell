@@ -18,6 +18,7 @@
 
 from collections import defaultdict
 import bpy
+import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
@@ -70,9 +71,9 @@ class IfcClassData:
             if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
                 names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         if ifc_product == "IfcElement":
-            feature_elements = ifcopenshell.util.schema.get_subtypes(
-                tool.Ifc.schema().declaration_by_name("IfcFeatureElement")
-            )
+            entity = tool.Ifc.schema().declaration_by_name("IfcFeatureElement").as_entity()
+            assert entity
+            feature_elements = ifcopenshell.util.schema.get_subtypes(entity)
             for feature_element in feature_elements:
                 names.remove(feature_element.name())
         version = tool.Ifc.get_schema()
@@ -83,14 +84,15 @@ class IfcClassData:
         types_enum = []
         rprops = tool.Root.get_root_props()
         ifc_class = rprops.ifc_class
-        declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
+        assert declaration
         version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
             if attribute.name() == "PredefinedType":
                 types_enum.extend(
                     [
                         (e, e, get_predefined_type_doc(version, ifc_class, e) or "")
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
+                        for e in ifcopenshell.util.attribute.get_enum_items(attribute)
                     ]
                 )
                 break
@@ -118,29 +120,31 @@ class IfcClassData:
     def representation_template(cls):
         rprops = tool.Root.get_root_props()
         ifc_class = rprops.ifc_class
+        if ifc_class.startswith("IfcStructuralPoint"):
+            return [("VERTEX", "Vertex", "A single 3D point")]
+        elif ifc_class.startswith("IfcStructuralCurve"):
+            return [("EDGE", "Edge", "A straight edge between two points")]
+        elif ifc_class.startswith("IfcStructuralSurface"):
+            return [("FACE", "Face", "A planar face surface")]
         templates = [
             ("EMPTY", "No Geometry", "Start with an empty object"),
             None,
+            (
+                "OBJ",
+                "Tessellation From Object",
+                "Use an object as a template to create a new tessellation",
+            ),
+            (
+                "MESH",
+                "Custom Tessellation",
+                "Create a basic tessellated or faceted cube",
+            ),
+            (
+                "EXTRUSION",
+                "Custom Extruded Solid",
+                "An extrusion from an arbitrary profile",
+            ),
         ]
-        templates.extend(
-            [
-                (
-                    "OBJ",
-                    "Tessellation From Object",
-                    "Use an object as a template to create a new tessellation",
-                ),
-                (
-                    "MESH",
-                    "Custom Tessellation",
-                    "Create a basic tessellated or faceted cube",
-                ),
-                (
-                    "EXTRUSION",
-                    "Custom Extruded Solid",
-                    "An extrusion from an arbitrary profile",
-                ),
-            ]
-        )
         if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
             templates.extend(
                 [
@@ -251,6 +255,8 @@ class IfcClassData:
         if not element:
             return False
         if element_type := ifcopenshell.util.element.get_type(element):
+            if element_type == element:
+                return False
             # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
             return ifcopenshell.util.element.get_predefined_type(element_type) not in ("NOTDEFINED", None)
         return False

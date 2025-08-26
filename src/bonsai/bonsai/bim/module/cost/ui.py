@@ -16,13 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.bim.module.cost.prop as CostProp
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.module.cost.data import CostSchedulesData
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity
 
 
 class BIM_PT_cost_schedules(Panel):
@@ -34,6 +38,8 @@ class BIM_PT_cost_schedules(Panel):
     bl_parent_id = "BIM_PT_tab_cost"
     bl_options = {"HIDE_HEADER"}
 
+    layout: bpy.types.UILayout
+
     @classmethod
     def poll(cls, context):
         file = tool.Ifc.get()
@@ -43,12 +49,13 @@ class BIM_PT_cost_schedules(Panel):
         if not CostSchedulesData.is_loaded:
             CostSchedulesData.load()
 
-        self.props = context.scene.BIMCostProperties
+        self.props = tool.Cost.get_cost_props()
         if not self.props.active_cost_schedule_id:
             row = self.layout.row(align=True)
             if CostSchedulesData.data["total_cost_schedules"]:
                 row.alignment = "RIGHT"
                 row.operator("bim.export_cost_schedules", icon="EXPORT", text="Export All Schedules")
+                row.operator("bim.export_cost_schedules_to_pdf", icon="OUTPUT", text="")
                 row = self.layout.row(align=True)
                 row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
             else:
@@ -67,6 +74,23 @@ class BIM_PT_cost_schedules(Panel):
                 text="Currently editing: {}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]),
                 icon="LINENUMBERS_ON",
             )
+
+            row0 = self.layout.row(align=True)
+            col = row0.column()
+            col.label(text="Linked CSV:")
+            row_1 = col.row(align=True)
+
+            csv_filepaths = CostSchedulesData.data["csv_filepaths"]
+            file_path = csv_filepaths.get(self.props.active_cost_schedule_id)
+
+            if file_path:
+                row_1.label(text=file_path)
+                row_1.operator("bim.refresh_cost_schedule_csv", icon="FILE_REFRESH", text="")
+                row_1.operator("bim.remove_cost_schedule_csv_link", icon="X", text="")
+            else:
+                row_1.label(text="No CSV file found")
+                row_1.operator("bim.import_cost_schedule_csv", icon="IMPORT", text="")
+
             grid = self.layout.grid_flow(columns=2, even_columns=True)
             col = grid.column()
             row1 = col.row(align=True)
@@ -105,6 +129,7 @@ class BIM_PT_cost_schedules(Panel):
             row.operator("bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL").cost_schedule = (
                 cost_schedule["id"]
             )
+            row.operator("bim.copy_cost_schedule", text="", icon="DUPLICATE").cost_schedule = cost_schedule["id"]
             row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
         if self.props.active_cost_schedule_id == cost_schedule["id"]:
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
@@ -116,13 +141,13 @@ class BIM_PT_cost_schedules(Panel):
                     self.draw_currency_ui()
                 self.draw_editable_cost_item_ui()
 
-    def draw_column_ui(self):
+    def draw_column_ui(self) -> None:
         row = self.layout.row(align=True)
         row.prop(self.props, "cost_column", text="")
         row.operator("bim.add_cost_column", text="", icon="ADD").name = self.props.cost_column
         self.layout.template_list("BIM_UL_cost_columns", "", self.props, "columns", self.props, "active_column_index")
 
-    def draw_currency_ui(self):
+    def draw_currency_ui(self) -> None:
         row = self.layout.row(align=True)
         if CostSchedulesData.data["currency"]:
             text = "Currency used: {}".format(CostSchedulesData.data["currency"]["name"])
@@ -139,7 +164,7 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_schedule_ui(self):
         bonsai.bim.helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
-    def draw_editable_cost_item_ui(self):
+    def draw_editable_cost_item_ui(self) -> None:
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         ifc_definition_id = None
@@ -195,14 +220,14 @@ class BIM_PT_cost_schedules(Panel):
             elif self.props.cost_item_editing_type == "VALUES":
                 self.draw_editable_cost_item_values_ui()
 
-    def draw_editable_cost_item_attributes_ui(self):
+    def draw_editable_cost_item_attributes_ui(self) -> None:
         bonsai.bim.helper.draw_attributes(self.props.cost_item_attributes, self.layout)
 
     def draw_editable_cost_item_quantities_ui(self, cost_item: dict[str, Any]):
         quantities = CostSchedulesData.data["cost_quantities"]
         row = self.layout.row(align=True)
         # In IFC, all quantities of IfcCostTime should have 1 type.
-        if quantities:
+        if quantities and cost_item.get("QuantityType"):
             quantity_class = cost_item["QuantityType"]
             row.label(text=quantity_class)
         else:
@@ -299,7 +324,7 @@ class BIM_PT_cost_item_types(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMCostProperties
+        props = tool.Cost.get_cost_props()
         total_cost_items = len(props.cost_items)
         if not props.active_cost_schedule_id:
             return False
@@ -312,7 +337,7 @@ class BIM_PT_cost_item_types(Panel):
         return False
 
     def draw(self, context):
-        self.props = context.scene.BIMCostProperties
+        self.props = tool.Cost.get_cost_props()
         cost_item = self.props.cost_items[self.props.active_cost_item_index]
         grid = self.layout.grid_flow(columns=3, even_columns=True)
 
@@ -348,8 +373,8 @@ class BIM_PT_cost_item_types(Panel):
 
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_processes",
             self.props,
             "cost_item_processes",
             self.props,
@@ -360,13 +385,34 @@ class BIM_PT_cost_item_types(Panel):
         # TODO
         col = grid.column()
 
+        has_quantity_names = CostProp.get_resource_quantity_names(self, context)
+
         row2 = col.row(align=True)
-        row2.label(text="Resources")
+        # row2.label(text="Resources")
+        total_cost_item_resources = len(self.props.cost_item_resources)
+        row2.label(text="Resources({})".format(total_cost_item_resources))
+
+        op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
+        op.cost_item = cost_item.ifc_definition_id
+
+        rtprops = context.scene.BIMResourceTreeProperties
+        rprops = tool.Resource.get_resource_props()
+        if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):
+            if has_quantity_names:
+                op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
+                op.related_object_type = "RESOURCE"
+                op.cost_item = cost_item.ifc_definition_id
+                op.prop_name = self.props.resource_quantity_names
+
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "RESOURCE"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = ""
 
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_resources",
             self.props,
             "cost_item_resources",
             self.props,
@@ -385,7 +431,7 @@ class BIM_PT_cost_item_quantities(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMCostProperties
+        props = tool.Cost.get_cost_props()
         total_cost_items = len(props.cost_items)
         if not props.active_cost_schedule_id:
             return False
@@ -398,7 +444,7 @@ class BIM_PT_cost_item_quantities(Panel):
         return False
 
     def draw(self, context):
-        self.props = context.scene.BIMCostProperties
+        self.props = tool.Cost.get_cost_props()
 
         cost_item = self.props.cost_items[self.props.active_cost_item_index]
 
@@ -435,8 +481,8 @@ class BIM_PT_cost_item_quantities(Panel):
         row2.prop(self.props, "show_nested_elements", text="Show nested")
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_products",
             self.props,
             "cost_item_products",
             self.props,
@@ -462,7 +508,7 @@ class BIM_PT_cost_item_quantities(Panel):
         row2.label(text="Tasks ({})".format(total_cost_item_processes))
 
         tprops = tool.Sequence.get_task_tree_props()
-        wprops = context.scene.BIMWorkScheduleProperties
+        wprops = tool.Sequence.get_work_schedule_props()
         if tprops.tasks and wprops.active_task_index < len(tprops.tasks):
             if has_quantity_names:
                 op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
@@ -480,8 +526,8 @@ class BIM_PT_cost_item_quantities(Panel):
 
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_processes",
             self.props,
             "cost_item_processes",
             self.props,
@@ -509,9 +555,8 @@ class BIM_PT_cost_item_quantities(Panel):
         op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
         op.cost_item = cost_item.ifc_definition_id
 
-        rtprops = context.scene.BIMResourceTreeProperties
-        rprops = context.scene.BIMResourceProperties
-        if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):
+        active_resource = tool.Resource.get_resource_props().active_resource
+        if active_resource:
             if has_quantity_names:
                 op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
                 op.related_object_type = "RESOURCE"
@@ -528,8 +573,8 @@ class BIM_PT_cost_item_quantities(Panel):
 
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_resources",
             self.props,
             "cost_item_resources",
             self.props,
@@ -557,20 +602,20 @@ class BIM_PT_cost_item_rates(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMCostProperties
+        props = tool.Cost.get_cost_props()
         total_cost_items = len(props.cost_items)
         if not props.active_cost_schedule_id:
             return False
         if not CostSchedulesData.is_loaded:
             return False
-        if CostSchedulesData.data["is_editing_rates"]:
-            return False
+        # if CostSchedulesData.data["is_editing_rates"]:
+        #    return False
         if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
             return True
         return False
 
     def draw(self, context):
-        self.props = context.scene.BIMCostProperties
+        self.props = tool.Cost.get_cost_props()
         row = self.layout.row(align=True)
         row.prop(self.props, "schedule_of_rates", text="")
         if self.props.active_cost_item_rate_index < len(self.props.cost_item_rates):
@@ -606,13 +651,16 @@ class BIM_UL_cost_items_trait:
             split2.label(text="Quantity")
         split2.label(text="Value")
 
-        for column in bpy.context.scene.BIMCostProperties.columns:
+        props = tool.Cost.get_cost_props()
+        for column in props.columns:
             split2.label(text=column.name)
         split2.label(text="Total Cost")
+        split2.alignment = "LEFT"
+        split2.label(text="Rate")
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
-            self.props = context.scene.BIMCostProperties
+            self.props = tool.Cost.get_cost_props()
             cost_item = CostSchedulesData.data["cost_items"][item.ifc_definition_id]
             row = layout.row(align=True)
 
@@ -638,6 +686,8 @@ class BIM_UL_cost_items_trait:
 
             if self.props.change_cost_item_parent:
                 self.draw_parent_operator(row, item.ifc_definition_id)
+
+            self.draw_assigned_rate_column(split2, cost_item)
 
             # TODO: reimplement "bim.copy_cost_item_values" somewhere with better UX
 
@@ -677,6 +727,24 @@ class BIM_UL_cost_items_trait:
             layout.label(text=label)
         else:
             layout.label(text="-")
+
+    def draw_assigned_rate_column(self, layout, cost_item):
+        row = layout.row()
+        row.alignment = "LEFT"
+        if cost_item["AssignedCostRate"] is not None:
+            op = row.operator("bim.show_assigned_cost_rate", text="", emboss=False, icon="ZOOM_IN")
+            identification = cost_item["AssignedCostRate"].Identification
+            op.parent_cost_schedule_name = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()][
+                "ParentCostSchedule"
+            ].Name
+            op.assigned_rate_identification = identification if identification is not None else "XXX"
+            op.assigned_rate_name = cost_item["AssignedCostRate"].Name or ""
+            op.assigned_rate_description = cost_item["AssignedCostRate"].Description or ""
+            op.assigned_rate_total_value = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()][
+                "TotalAppliedValue"
+            ]
+        else:
+            row.label(text="-")
 
     def draw_value_column(self, layout, cost_item):
         if cost_item["TotalAppliedValue"]:
@@ -728,7 +796,6 @@ class BIM_UL_cost_item_rates(BIM_UL_cost_items_trait, UIList):
 
 class BIM_UL_cost_columns(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMCostProperties
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
@@ -737,7 +804,7 @@ class BIM_UL_cost_columns(UIList):
 
 class BIM_UL_cost_item_types(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMCostProperties
+        props = tool.Cost.get_cost_props()
         cost_item = props.cost_items[props.active_cost_item_index]
 
         if item:
@@ -749,9 +816,17 @@ class BIM_UL_cost_item_types(UIList):
 
 
 class BIM_UL_cost_item_quantities(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMCostProperties
-        cost_item = props.cost_items[props.active_cost_item_index]
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: BIMCostProperties,
+        item: CostItemQuantity,
+        icon,
+        active_data,
+        active_propname,
+    ):
+        cost_item = data.cost_items[data.active_cost_item_index]
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
@@ -788,15 +863,15 @@ class BIM_PT_Costing_Tools(Panel):
     bl_parent_id = "BIM_PT_tab_cost"
 
     def draw(self, context):
-        self.props = context.scene.BIMCostProperties
+        props = tool.Cost.get_cost_props()
         row = self.layout.row()
         row.operator("bim.load_product_cost_items", icon="FILE_REFRESH")
         row = self.layout.row()
         row.template_list(
             "BIM_UL_product_cost_items",
             "",
-            self.props,
+            props,
             "product_cost_items",
-            self.props,
+            props,
             "active_product_cost_item_index",
         )

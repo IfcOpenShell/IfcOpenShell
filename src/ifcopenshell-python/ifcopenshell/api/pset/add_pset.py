@@ -66,6 +66,10 @@ def add_pset(
         like "Pset_WallCommon". If you create your own, you must not use
         that prefix. It is recommended to use your own prefix tailored to
         your project, company, or local government requirement.
+
+        In IFC2X3 should be provided as an empty string for profile properties
+        (they all don't have a name property) and all material properties
+        besides IfcExtendedMaterialProperties.
     :param ifc2x3_subclass: IFC2X3 subclass for material or profile properties.
         In IFC2X3 IfcProfileProperties and IfcMaterialProperties are abstract
         so you need one of their subclasses to instantiate them.

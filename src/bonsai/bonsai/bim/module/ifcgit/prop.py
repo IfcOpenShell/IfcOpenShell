@@ -1,4 +1,5 @@
 import bpy
+import bonsai.tool as tool
 from bpy.types import PropertyGroup
 from bpy.props import (
     StringProperty,
@@ -8,11 +9,10 @@ from bpy.props import (
     EnumProperty,
 )
 from bonsai.bim.module.ifcgit.data import IfcGitData
+from typing import TYPE_CHECKING, Literal
 
 
-def git_branches(self, context):
-    """branches enum"""
-
+def git_branches(self: "IfcGitProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     # NOTE "Python must keep a reference to the strings returned by
     # the callback or Blender will misbehave or even crash"
     IfcGitData.data["branch_names"] = sorted([branch.name for branch in IfcGitData.data["repo"].heads])
@@ -29,9 +29,7 @@ def git_branches(self, context):
     return [(myname, myname, myname) for myname in IfcGitData.data["branch_names"]]
 
 
-def git_remotes(self, context):
-    """remotes enum"""
-
+def git_remotes(self: "IfcGitProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     IfcGitData.data["remote_names"] = sorted([remote.name for remote in IfcGitData.data["remotes"]])
 
     if "origin" in IfcGitData.data["remote_names"]:
@@ -41,12 +39,11 @@ def git_remotes(self, context):
     return [(myname, myname, myname) for myname in IfcGitData.data["remote_names"]]
 
 
-def update_revlist(self, context):
+def update_revlist(self: "IfcGitProperties", context: bpy.types.Context) -> None:
     """wrapper to trigger update of the revision list"""
 
     bpy.ops.ifcgit.refresh()
-    props = context.scene.IfcGitProperties
-    props.commit_index = 0
+    self.commit_index = 0
 
 
 class IfcGitTag(PropertyGroup):
@@ -60,6 +57,10 @@ class IfcGitTag(PropertyGroup):
         name="Tag message",
         default="",
     )
+
+    if TYPE_CHECKING:
+        name: str
+        message: str
 
 
 class IfcGitListItem(PropertyGroup):
@@ -88,6 +89,14 @@ class IfcGitListItem(PropertyGroup):
         default="",
     )
     tags: CollectionProperty(type=IfcGitTag, name="List of revision tags")
+
+    if TYPE_CHECKING:
+        hexsha: str
+        relevant: bool
+        author_name: str
+        author_email: str
+        message: str
+        tags: bpy.types.bpy_prop_collection_idprop[IfcGitTag]
 
 
 class IfcGitProperties(PropertyGroup):
@@ -140,3 +149,17 @@ class IfcGitProperties(PropertyGroup):
         ],
         update=update_revlist,
     )
+
+    if TYPE_CHECKING:
+        ifcgit_commits: bpy.types.bpy_prop_collection_idprop[IfcGitListItem]
+        commit_index: int
+        commit_message: str
+        new_branch_name: str
+        new_tag_name: str
+        new_tag_message: str
+        remote_name: str
+        remote_url: str
+        local_folder: str
+        display_branch: str
+        select_remote: str
+        ifcgit_filter: Literal["all", "tagged", "relevant"]

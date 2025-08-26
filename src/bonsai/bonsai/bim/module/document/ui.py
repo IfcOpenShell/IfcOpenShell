@@ -61,14 +61,17 @@ class BIM_PT_documents(Panel):
         if self.props.breadcrumbs:
             row.operator("bim.add_document_reference", text="", icon="FILE_HIDDEN")
 
+        active_document = self.props.active_document
+
         if self.props.active_document_id:
             row.operator("bim.edit_document", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_document", text="", icon="CANCEL")
-        elif self.props.documents and self.props.active_document_index < len(self.props.documents):
-            ifc_definition_id = self.props.documents[self.props.active_document_index].ifc_definition_id
+        elif active_document:
+            ifc_definition_id = active_document.ifc_definition_id
             row.operator("bim.select_document_objects", text="", icon="RESTRICT_SELECT_OFF").document = (
                 ifc_definition_id
             )
+            row.operator("bim.assign_document", text="", icon="BRUSH_DATA").document = ifc_definition_id
             row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = ifc_definition_id
             row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id
 

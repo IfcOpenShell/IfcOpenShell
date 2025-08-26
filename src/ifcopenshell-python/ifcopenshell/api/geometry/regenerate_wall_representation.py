@@ -19,11 +19,13 @@
 import json
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
 from collections import namedtuple
 from math import sin, cos
 from typing import Optional
@@ -105,8 +107,6 @@ class Regenerator:
             )
 
     def regenerate(self, wall, length=1.0, height=1.0, angle=None):
-        print("-" * 100)
-        print(wall)
         self.fallback_length = length / self.unit_scale
         self.fallback_height = height / self.unit_scale
         self.fallback_angle = angle
@@ -150,6 +150,8 @@ class Regenerator:
                     continue
                 self.join(wall, wall2, layers1, layers2, rel.RelatedConnectionType, rel.RelatingConnectionType)
 
+        miny = axes[-2][0][1]
+        maxy = axes[-1][0][1]
         if not self.start_points:
             minx = axes[0][0][0]
             self.start_points = [
@@ -162,9 +164,6 @@ class Regenerator:
                 np.array((maxx, axes[0][0][1])),
                 np.array((maxx, axes[-1][0][1])),
             ]
-        print("FINISHED")
-        print(self.start_points)
-        print(self.end_points)
 
         if self.start_points[0][1] > self.start_points[-1][1]:  # Canonicalise to the +Y direction
             self.start_points.reverse()
@@ -269,6 +268,13 @@ class Regenerator:
             split_points.append(end_points)
             split_points = iter(split_points)
 
+            if maxy < miny:
+                self.maxpath_points, self.minpath_points = self.minpath_points, self.maxpath_points
+                if self.maxpath_points:
+                    self.maxpath_points[0] = list(reversed(self.maxpath_points[0]))
+                if self.minpath_points:
+                    self.minpath_points[0] = list(reversed(self.minpath_points[0]))
+
             while True:
                 # Draw each profile as clockwise starting from (minx, miny)
                 start_split = next(split_points, None)
@@ -358,8 +364,6 @@ class Regenerator:
             return
         if connection1 == "ATPATH" and connection2 == "ATPATH":
             return
-        print("joining", wall1, layers1, connection1)
-        print("to", wall2, layers2, connection2)
 
         reference1 = ifcopenshell.util.representation.get_reference_line(wall1, self.fallback_length)
         reference2 = ifcopenshell.util.representation.get_reference_line(wall2, self.fallback_length)
@@ -368,8 +372,6 @@ class Regenerator:
         axes2 = self.get_axes(wall2, reference2, layers2, wall_vectors2["a"])
         matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement))
         matrix2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
-        print(axes1)
-        print(axes2)
 
         # Convert wall2 data to wall1 local coordinates
         for axis in axes2:
@@ -406,9 +408,6 @@ class Regenerator:
                 axes1 = list(reversed(axes1))
                 layers1 = list(reversed(layers1))
 
-        print("modified")
-        print(axes1)
-        print(axes2)
         if connection1 == "ATPATH":
             first_axis2 = axes2[0]
             last_axis2 = axes2[-1]
@@ -517,7 +516,6 @@ class Regenerator:
 
             # This creates "mitering" behaviour which is an ambiguity by bSI.
             while layer1 and layer2:
-                print("considering", layer1, layer2)
                 if layer1.priority > layer2.priority:
                     axis2 = next(axes2)
                     x = ifcopenshell.util.shape_builder.intersect_x_axis_2d(*axis2, y=y)
@@ -533,7 +531,6 @@ class Regenerator:
                     layer2 = next(layers2, None)
                 points.append(np.array((x, y)))
 
-            print("points", points)
             if points[-1][1] != last_y:
                 points.append(
                     np.array((ifcopenshell.util.shape_builder.intersect_x_axis_2d(*last_axis2, y=last_y), last_y))

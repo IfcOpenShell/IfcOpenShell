@@ -50,7 +50,8 @@ class SystemData:
 
     @classmethod
     def system_class(cls):
-        declaration = tool.Ifc.schema().declaration_by_name("IfcSystem")
+        declaration = tool.Ifc.schema().declaration_by_name("IfcSystem").as_entity()
+        assert declaration
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         version = tool.Ifc.get_schema()
 

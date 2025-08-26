@@ -41,7 +41,7 @@ class MyDB:
 
     @staticmethod
     def bcf_time(any_datetime):
-        if isinstance(any_datetime, type("str")):
+        if isinstance(any_datetime, str):
             datetime_any = parser.parse(any_datetime).astimezone(pytz.utc)
         elif isinstance(any_datetime, type(datetime.now())):
             datetime_any = any_datetime.astimezone(pytz.utc)

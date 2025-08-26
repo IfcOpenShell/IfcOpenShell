@@ -96,9 +96,9 @@ class sqlite(file):
         self.preprocess_schema()
 
     def preprocess_schema(self) -> None:
-        self.ifc_class_subtypes = {}
+        self.ifc_class_subtypes: dict[str, Any] = {}
         self.ifc_class_attributes: dict[str, dict[str, ifcopenshell_wrapper.attribute]] = {}
-        self.ifc_class_inverse_attributes = {}
+        self.ifc_class_inverse_attributes: dict[str, Any] = {}
         self.ifc_class_references = {}
         self.ifc_class_inverses = {}
 

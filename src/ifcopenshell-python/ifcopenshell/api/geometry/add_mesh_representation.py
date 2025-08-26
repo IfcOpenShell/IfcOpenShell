@@ -17,94 +17,116 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
-from typing import Optional, Any
+import numpy as np
+import numpy.typing as npt
+from ifcopenshell.util.shape_builder import ShapeBuilder, SequenceOfVectors, VectorType
+from typing import Optional, TypeVar
 
+T = TypeVar("T")
 COORD_3D = tuple[float, float, float]
 
 
 def add_mesh_representation(
     file: ifcopenshell.file,
-    # IfcGeometricRepresentationContext
     context: ifcopenshell.entity_instance,
-    # Vertices, edges, and faces are given in the form of: [item1, item2, item3, ...]
-    # A list of coordinates
-    # ... where itemN = [(0., 0., 0.), (1., 1., 1.), (x, y, z), ...]
-    vertices: list[COORD_3D],
-    # A list of edges, represented by vertex index pairs
-    # ... where itemN = [(0, 1), (1, 2), (v1, v2), ...]
-    edges: list[tuple[int, int]] = None,
-    # A list of polygons, represented by vertex indices
-    # ... where itemN = [(0, 1, 2), (5, 4, 2, 3), (v1, v2, v3, ... vN), ...]
-    faces: list[list[int]] = None,
-    # Optionally apply a vector offset to all coordinates
-    cooridnate_offset: Optional[COORD_3D] = None,
-    # A scale factor to apply for all vectors in case the unit is different
+    vertices: list[SequenceOfVectors],
+    edges: Optional[list[list[tuple[int, int]]]] = None,
+    # Optional faces is not supported currently.
+    faces: list[list[list[int]]] = None,
+    coordinate_offset: Optional[VectorType] = None,
     unit_scale: Optional[float] = None,
-    # Force using IfcFacetedBreps instead of IfcPolygonalFaceSets
     force_faceted_brep: bool = False,
 ) -> ifcopenshell.entity_instance:
+    """
+    Add a mesh representation.
+
+    Vertices, edges, and faces are given in the form of: ``[item1, item2, item3, ...]``.
+    Each ``itemN`` is a sublist representing data for a separate IfcRepresentationItem to add.
+
+    You can provide either ``edges`` or ``faces``, no need to provide both.
+    But currently ``edges`` argument is not supported.
+
+    :param context: The IfcGeometricRepresentationContext for the representation.
+    :param vertices: A list of coordinates.
+        where ``itemN = [(0., 0., 0.), (1., 1., 1.), (x, y, z), ...]``
+    :param edges: A list of edges, represented by vertex index pairs
+        where ``itemN = [(0, 1), (1, 2), (v1, v2), ...]``
+    :param faces: A list of polygons, represented by vertex indices.
+        where ``itemN = [(0, 1, 2), (5, 4, 2, 3), (v1, v2, v3, ... vN), ...]``
+    :param coordinate_offset: Optionally apply a vector offset to all coordinates.
+        In project units.
+    :param unit_scale: Scale factor for ``vertices`` units.
+
+        If omitted, it is assumed that ``vertices`` are in SI units.
+
+        If other value is provided ``vertices`` coords will be divided by ``unit_scale``.
+    :param force_faceted_brep: Force using IfcFacetedBreps instead of IfcPolygonalFaceSets.
+    :return: IfcShapeRepresentation.
+    """
     # TODO: Support edges without faces.
     assert faces is not None, f"Currently 'faces' argument is not optional."
+    assert len(faces) != 0
+    assert len(vertices) != 0
+    assert len(faces) == len(vertices)
+
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "context": context,
-        "vertices": vertices,
-        "edges": edges,
-        "faces": faces,
-        "coordinate_offset": cooridnate_offset,
-        "unit_scale": unit_scale,
-        "force_faceted_brep": force_faceted_brep,
-    }
-    return usecase.execute()
+
+    # Process arguments.
+    if unit_scale is None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+    np_vertices = np.array(vertices, dtype=np.float64) * (1 / unit_scale)
+    if coordinate_offset is not None:
+        np_vertices += coordinate_offset
+
+    return usecase.execute(context, np_vertices, faces, force_faceted_brep)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        if self.settings["unit_scale"] is None:
-            self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+    vertices: npt.NDArray[np.float64]
+    """In project units."""
+
+    def execute(
+        self,
+        context: ifcopenshell.entity_instance,
+        vertices: npt.NDArray[np.float64],
+        faces: list[list[list[int]]],
+        force_faceted_brep: bool,
+    ) -> ifcopenshell.entity_instance:
+        self.builder = ShapeBuilder(self.file)
+        self.vertices = vertices
+        self.faces = faces
+        self.context = context
+        self.force_faceted_brep = force_faceted_brep
         return self.create_mesh_representation()
 
-    def create_mesh_representation(self):
-        if self.settings["force_faceted_brep"] or self.file.schema == "IFC2X3":
+    def create_mesh_representation(self) -> ifcopenshell.entity_instance:
+        if self.force_faceted_brep or self.file.schema == "IFC2X3":
             return self.create_faceted_brep()
         return self.create_polygonal_face_set()
 
-    def create_faceted_brep(self):
-        items = []
-        for i in range(0, len(self.settings["vertices"])):
-            vertices = [
-                self.file.createIfcCartesianPoint(self.convert_si_to_unit(v)) for v in self.settings["vertices"][i]
-            ]
-            faces = [
-                self.file.createIfcFace(
-                    [self.file.createIfcFaceOuterBound(self.file.createIfcPolyLoop([vertices[v] for v in f]), True)]
-                )
-                for f in self.settings["faces"][i]
-            ]
-            items.append(self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(faces)))
-        return self.file.createIfcShapeRepresentation(
-            self.settings["context"], self.settings["context"].ContextIdentifier, "Brep", items
+    def create_faceted_brep(self) -> ifcopenshell.entity_instance:
+        items: list[ifcopenshell.entity_instance] = []
+        for i in range(0, len(self.vertices)):
+            items.append(self.builder.faceted_brep(self.vertices[i], self.faces[i]))
+        return self.file.create_entity(
+            "IfcShapeRepresentation",
+            self.context,
+            self.context.ContextIdentifier,
+            "Brep",
+            items,
         )
 
-    def create_polygonal_face_set(self):
-        items = []
-        for i in range(0, len(self.settings["vertices"])):
-            coordinates = self.file.createIfcCartesianPointList3D(
-                [self.convert_si_to_unit(v) for v in self.settings["vertices"][i]]
-            )
-            faces = [self.file.createIfcIndexedPolygonalFace([v + 1 for v in f]) for f in self.settings["faces"][i]]
-            items.append(self.file.createIfcPolygonalFaceSet(coordinates, None, faces))
-        return self.file.createIfcShapeRepresentation(
-            self.settings["context"], self.settings["context"].ContextIdentifier, "Tessellation", items
+    def create_polygonal_face_set(self) -> ifcopenshell.entity_instance:
+        items: list[ifcopenshell.entity_instance] = []
+        for i in range(0, len(self.vertices)):
+            items.append(self.builder.polygonal_face_set(self.vertices[i], self.faces[i]))
+        return self.file.create_entity(
+            "IfcShapeRepresentation",
+            self.context,
+            self.context.ContextIdentifier,
+            "Tessellation",
+            items,
         )
-
-    def convert_si_to_unit(self, co):
-        if isinstance(co, (tuple, list)):
-            return [self.convert_si_to_unit(o) for o in co]
-        if self.settings["coordinate_offset"]:
-            return (co / self.settings["unit_scale"]) + self.settings["coordinate_offset"]
-        return co / self.settings["unit_scale"]

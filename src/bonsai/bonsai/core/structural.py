@@ -25,7 +25,9 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def add_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural) -> ifcopenshell.entity_instance:
+def add_structural_analysis_model(
+    ifc: type[tool.Ifc], structural: type[tool.Structural]
+) -> ifcopenshell.entity_instance:
     result = ifc.run("structural.add_structural_analysis_model")
     structural.load_structural_analysis_models()
     structural.ensure_representation_contexts()
@@ -33,78 +35,72 @@ def add_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural) ->
 
 
 def assign_structural_analysis_model(
-    ifc: tool.Ifc,
+    ifc: type[tool.Ifc],
     products: list[ifcopenshell.entity_instance],
     structural_analysis_model: ifcopenshell.entity_instance,
 ) -> None:
     ifc.run(
         "structural.assign_structural_analysis_model",
-        **{
-            "products": products,
-            "structural_analysis_model": structural_analysis_model,
-        },
+        products=products,
+        structural_analysis_model=structural_analysis_model,
     )
 
 
-def disable_editing_structural_analysis_model(structural: tool.Structural) -> None:
+def disable_editing_structural_analysis_model(structural: type[tool.Structural]) -> None:
     structural.disable_editing_structural_analysis_model()
 
 
-def disable_structural_analysis_model_editing_ui(structural: tool.Structural) -> None:
+def disable_structural_analysis_model_editing_ui(structural: type[tool.Structural]) -> None:
     structural.disable_structural_analysis_model_editing_ui()
 
 
-def edit_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural) -> None:
+def edit_structural_analysis_model(ifc: type[tool.Ifc], structural: type[tool.Structural]) -> None:
     attributes = structural.get_structural_analysis_model_attributes()
     ifc.run(
         "structural.edit_structural_analysis_model",
-        **{
-            "structural_analysis_model": structural.get_active_structural_analysis_model(),
-            "attributes": attributes,
-        },
+        structural_analysis_model=structural.get_active_structural_analysis_model(),
+        attributes=attributes,
     )
     structural.load_structural_analysis_models()
     structural.disable_editing_structural_analysis_model()
 
 
-def enable_editing_structural_analysis_model(structural: tool.Structural, model: Union[int, None]) -> None:
+def enable_editing_structural_analysis_model(structural: type[tool.Structural], model: Union[int, None]) -> None:
     structural.enable_editing_structural_analysis_model(model)
 
 
-def enable_structural_analysis_model_editing_ui(structural: tool.Structural) -> None:
+def enable_structural_analysis_model_editing_ui(structural: type[tool.Structural]) -> None:
     structural.enable_structural_analysis_model_editing_ui()
 
 
-def load_structural_analysis_model_attributes(structural: tool.Structural, model: Union[int, None]) -> None:
+def load_structural_analysis_model_attributes(structural: type[tool.Structural], model: Union[int, None]) -> None:
     data = structural.get_ifc_structural_analysis_model_attributes(model)
     if data is None:
         return
     structural.load_structural_analysis_model_attributes(data)
 
 
-def load_structural_analysis_models(structural: tool.Structural) -> None:
+def load_structural_analysis_models(structural: type[tool.Structural]) -> None:
     structural.load_structural_analysis_models()
     structural.enable_structural_analysis_model_editing_ui()
     # structural.disable_editing_structural_analysis_model()
 
 
-def remove_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural, model: int) -> None:
+def remove_structural_analysis_model(ifc: type[tool.Ifc], structural: type[tool.Structural], model: int) -> None:
     ifc.run(
         "structural.remove_structural_analysis_model",
-        **{"structural_analysis_model": ifc.get().by_id(model)},
+        structural_analysis_model=ifc.get().by_id(model),
     )
     structural.load_structural_analysis_models()
 
 
 def unassign_structural_analysis_model(
-    ifc: tool.Ifc,
+    ifc: type[tool.Ifc],
     products: list[ifcopenshell.entity_instance],
     structural_analysis_model: ifcopenshell.entity_instance,
 ) -> None:
     ifc.run(
         "structural.unassign_structural_analysis_model",
-        **{
-            "products": products,
-            "structural_analysis_model": structural_analysis_model,
-        },
+        products=products,
+        structural_analysis_model=structural_analysis_model,
     )

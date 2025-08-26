@@ -23,6 +23,10 @@ import ifcopenshell.api.resource
 import isodate
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.cost
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.resource
@@ -186,24 +190,23 @@ class Csv2Ifc:
     def create_resource(self, resource: dict[str, Any], parent: Union[ifcopenshell.entity_instance, None]) -> None:
         assert self.file
         if parent is None:
-            resource["ifc"] = ifcopenshell.api.run("resource.add_resource", self.file, ifc_class=resource["class"])
+            resource["ifc"] = ifcopenshell.api.resource.add_resource(self.file, ifc_class=resource["class"])
         else:
-            resource["ifc"] = ifcopenshell.api.run(
-                "resource.add_resource", self.file, parent_resource=parent, ifc_class=resource["class"]
+            resource["ifc"] = ifcopenshell.api.resource.add_resource(
+                self.file, parent_resource=parent, ifc_class=resource["class"]
             )
         resource["ifc"].Name = resource["Name"]
         if resource.get("Description", None):
             resource["ifc"].Description = resource.get("Description")
         if resource["Productivity"]:
-            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=resource["ifc"], name="EPset_Productivity")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=resource["ifc"], name="EPset_Productivity")
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=pset,
                 properties=resource["Productivity"],
             )
         if resource["BaseCostValue"]:
-            cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=resource["ifc"])
+            cost_value = ifcopenshell.api.cost.add_cost_value(self.file, parent=resource["ifc"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(resource["BaseCostValue"])
         if usage_value := resource["usage"]:
             usage = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource["ifc"])
@@ -227,7 +230,7 @@ class Csv2Ifc:
         if unit:
             return unit
         else:
-            unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type=unit_type)
+            unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type=unit_type)
         # unit = self.file.createIfcContextDependentUnit(
         #     self.file.createIfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0), "USERDEFINED", symbol
         # )
@@ -236,8 +239,8 @@ class Csv2Ifc:
 
     def create_boilerplate_ifc(self) -> None:
         self.file = ifcopenshell.file(schema="IFC4")
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        ifcopenshell.api.run("unit.assign_unit", self.file)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
 
 
 class Ifc2CsvRow(NamedTuple):

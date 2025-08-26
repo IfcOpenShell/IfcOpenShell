@@ -26,11 +26,15 @@ from ifcopenshell.entity_instance import entity_instance
 from functools import lru_cache
 from typing import Optional, Literal, NamedTuple, Union
 
-templates: dict[str, "PsetQto"] = {}
+templates: dict[ifcopenshell.util.schema.IFC_SCHEMA, "PsetQto"] = {}
 
 
-def get_template(schema: str) -> "PsetQto":
+def get_template(schema_identiier: str) -> "PsetQto":
+    """
+    :param schema_identiier: As in ``file.schema_identifier``, not ``file.schema``.
+    """
     global templates
+    schema = ifcopenshell.util.schema.get_fallback_schema(schema_identiier)
     if schema not in templates:
         templates[schema] = PsetQto(schema)
     return templates[schema]
@@ -38,28 +42,34 @@ def get_template(schema: str) -> "PsetQto":
 
 class PsetQto:
     # fmt: off
-    templates_path = {
+    templates_path: dict[ifcopenshell.util.schema.IFC_SCHEMA, str] = {
         "IFC2X3": "Pset_IFC2X3.ifc",
         "IFC4": "Pset_IFC4_ADD2.ifc",
-        "IFC4X3_ADD2": "Pset_IFC4X3.ifc"
+        "IFC4X3": "Pset_IFC4X3.ifc"
     }
     # fmt: on
+    templates: list[ifcopenshell.file]
 
-    def __init__(self, schema_identifier: str, templates=None) -> None:
-        self.schema = ifcopenshell.schema_by_name(schema_identifier)
+    def __init__(
+        self,
+        schema: ifcopenshell.util.schema.IFC_SCHEMA,
+        templates: Optional[list[ifcopenshell.file]] = None,
+    ) -> None:
+        self.schema = ifcopenshell.schema_by_name(schema)
         if not templates:
             folder_path = pathlib.Path(__file__).parent.absolute()
-            path = str(folder_path.joinpath("schema", self.templates_path[schema_identifier]))
-            templates = [ifcopenshell.open(path)]
+            path = str(folder_path.joinpath("schema", self.templates_path[schema]))
+            ifc_file: ifcopenshell.file = ifcopenshell.open(path)
+            templates = [ifc_file]
             # See bug 3583. We backport this change from IFC4X3 because it just makes sense.
             # Users aren't forced to use it.
-            if schema_identifier == "IFC4":
+            if schema == "IFC4":
                 for element in templates[0].by_type("IfcPropertySetTemplate"):
                     if element.TemplateType == "QTO_OCCURRENCEDRIVEN":
                         element.TemplateType = "QTO_TYPEDRIVENOVERRIDE"
         self.templates = templates
 
-    @lru_cache()
+    @lru_cache
     def get_applicable(
         self,
         ifc_class="",
@@ -68,10 +78,12 @@ class PsetQto:
         qto_only=False,
         schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
     ) -> list[entity_instance]:
+        """Get applicable property set templates."""
         any_class = not ifc_class
+        entity = None
         if not any_class:
-            entity: W.entity
-            entity = self.schema.declaration_by_name(ifc_class)
+            entity = self.schema.declaration_by_name(ifc_class).as_entity()
+            assert entity
         result = []
         for template in self.templates:
             for prop_set in template.by_type("IfcPropertySetTemplate"):
@@ -81,13 +93,16 @@ class PsetQto:
                 if qto_only:
                     if prop_set.TemplateType and prop_set.TemplateType.startswith("PSET_"):
                         continue
-                if any_class or self.is_applicable(
-                    entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type, prop_set.TemplateType, schema
+                if any_class or (
+                    entity
+                    and self.is_applicable(
+                        entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type, prop_set.TemplateType, schema
+                    )
                 ):
                     result.append(prop_set)
         return result
 
-    @lru_cache()
+    @lru_cache
     def get_applicable_names(
         self,
         ifc_class: str,
@@ -162,7 +177,7 @@ class PsetQto:
                         return True
         return False
 
-    @lru_cache()
+    @lru_cache
     def get_by_name(self, name: str) -> Optional[entity_instance]:
         for template in self.templates:
             for prop_set in template.by_type("IfcPropertySetTemplate"):

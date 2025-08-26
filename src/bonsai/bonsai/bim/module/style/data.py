@@ -44,12 +44,14 @@ class StylesData:
 
     @classmethod
     def reflectance_methods(cls):
-        declaration = tool.Ifc.schema().declaration_by_name("IfcReflectanceMethodEnum")
+        declaration = tool.Ifc.schema().declaration_by_name("IfcReflectanceMethodEnum").as_enumeration_type()
+        assert declaration
         return [(i, i, "") for i in declaration.enumeration_items()]
 
     @classmethod
     def style_types(cls):
-        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle").as_entity()
+        assert declaration
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         version = tool.Ifc.get_schema()
         return [
@@ -66,7 +68,8 @@ class StylesData:
 
     @classmethod
     def get_presentation_style_declarations(cls):
-        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle").as_entity()
+        assert declaration
         return ifcopenshell.util.schema.get_subtypes(declaration)
 
 

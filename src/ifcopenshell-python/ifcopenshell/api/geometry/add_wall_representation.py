@@ -112,7 +112,7 @@ class Usecase:
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),
             extrusion_direction,
-            self.convert_si_to_unit(self.settings["height"]) * abs((1 / cos(self.settings["x_angle"]))),
+            self.convert_si_to_unit(self.settings["height"]) * abs(1 / cos(self.settings["x_angle"])),
         )
         if self.settings["booleans"]:
             extrusion = self.apply_booleans(extrusion)

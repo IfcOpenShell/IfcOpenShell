@@ -20,6 +20,7 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import bonsai.tool as tool
@@ -33,8 +34,23 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
+        assert (obj := context.active_object)
+        assert (element := tool.Ifc.get_entity(obj))
+        ifc_file = tool.Ifc.get()
+
+        allowed_types = (
+            "IfcElement",
+            "IfcAnnotation",
+            "IfcOpeningElement",
+            "IfcSpatialElement",
+        )
+
+        if not any(element.is_a(c) for c in allowed_types):
+            self.report(
+                {"ERROR"},
+                f"Adding array to element of type '{element.is_a()}' is not supported. Supported types: {','.join(allowed_types)}.",
+            )
+            return {"CANCELLED"}
 
         array = {
             "children": [],
@@ -54,14 +70,13 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
             data.append(array)
             pset = tool.Ifc.get().by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Array")
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_Array")
             data = [array]
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
-            tool.Ifc.get(),
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file,
             pset=pset,
-            properties={"Parent": element.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
+            properties={"Parent": element.GlobalId, "Data": ifc_file.create_entity("IfcText", json.dumps(data))},
         )
         return {"FINISHED"}
 
@@ -149,7 +164,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Ifc.get().by_id(pset["id"])
         data = tool.Ifc.get().createIfcText(json.dumps(data))
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, True)
         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
@@ -213,11 +228,11 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
         else:
             del data[self.item]
             data = tool.Ifc.get().createIfcText(json.dumps(data))
-            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
             tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
         return {"FINISHED"}

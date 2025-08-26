@@ -33,11 +33,11 @@ class BIM_PT_fm(Panel):
         if not FMData.is_loaded:
             FMData.load()
 
+        assert self.layout
         layout = self.layout
         layout.use_property_split = True
 
-        scene = context.scene
-        props = scene.BIMFMProperties
+        props = tool.Blender.get_fm_props()
 
         if tool.Ifc.get():
             row = layout.row()

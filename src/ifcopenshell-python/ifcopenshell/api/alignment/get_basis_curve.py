@@ -19,7 +19,6 @@
 import ifcopenshell
 import ifcopenshell.util
 from ifcopenshell import entity_instance
-from typing import Sequence
 
 import ifcopenshell.util.representation
 
@@ -42,10 +41,19 @@ def get_basis_curve(alignment: entity_instance) -> entity_instance:
 
     representations = ifcopenshell.util.representation.get_representations_iter(alignment)
     for representation in representations:
-        if (representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve2D") or (
-            representation.RepresentationIdentifier == "FootPrint" and representation.RepresentationType == "Curve2D"
-        ):
+        if (
+            (representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve2D")
+            or (
+                representation.RepresentationIdentifier == "FootPrint"
+                and representation.RepresentationType == "Curve2D"
+            )
+            or (representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve3D")
+        ):  # in the case of IfcPolyline or IfcIndexedPolyCurve with 3D points
             axis = representation
-            break
+            return None if axis.Items == None or len(axis.Items) == 0 else axis.Items[0]
 
-    return None if axis == None or axis.Items == None or len(axis.Items) == 0 else axis.Items[0]
+    if axis == None and 0 < len(alignment.Decomposes):
+        parent_alignment = alignment.Decomposes[0].RelatingObject
+        return get_basis_curve(parent_alignment)
+
+    return None

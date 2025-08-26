@@ -19,11 +19,14 @@
 import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
 def test_name_segments():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(Name="Test")
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -38,7 +41,7 @@ def test_name_segments():
     vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
     lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
 
-    alignment = ifcopenshell.api.alignment.create_alignment_by_pi_method(
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(
         file, "TestAlignment", coordinates, radii, vpoints, lengths
     )
 

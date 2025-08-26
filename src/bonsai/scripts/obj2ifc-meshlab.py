@@ -19,9 +19,16 @@
 
 # This can be packaged with `pyinstaller --onefile --hidden-import numpy --collect-all ifcopenshell --clean obj2ifc.py`
 import argparse
-import pymeshlab
+import pymeshlab  # pyright: ignore[reportMissingImports]
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.unit
 import ifcopenshell.api.owner.settings
 import ifcopenshell.guid
 from pathlib import Path
@@ -86,9 +93,7 @@ class Obj2Ifc:
                 Name=mesh.label() or self.basename,
                 Representation=representation,
             )
-            ifcopenshell.api.run(
-                "spatial.assign_container", self.file, products=[product], relating_structure=self.storey
-            )
+            ifcopenshell.api.spatial.assign_container(self.file, products=[product], relating_structure=self.storey)
             product.ObjectPlacement = self.placement
 
         self.file.write(self.outfile)
@@ -99,42 +104,39 @@ class Obj2Ifc:
             return [coordinates[0], -coordinates[2], coordinates[1]]
 
     def create_ifc_file(self, version):
-        self.file = ifcopenshell.api.run("project.create_file", version=version)
-        person = ifcopenshell.api.run("owner.add_person", self.file)
+        self.file = ifcopenshell.api.project.create_file(version=version)
+        person = ifcopenshell.api.owner.add_person(self.file)
         person[0] = person.GivenName = None
         person.FamilyName = "user"
-        org = ifcopenshell.api.run("owner.add_organisation", self.file)
+        org = ifcopenshell.api.owner.add_organisation(self.file)
         org[0] = None
         org.Name = "template"
-        user = ifcopenshell.api.run("owner.add_person_and_organisation", self.file, person=person, organisation=org)
-        application = ifcopenshell.api.run("owner.add_application", self.file)
+        user = ifcopenshell.api.owner.add_person_and_organisation(self.file, person=person, organisation=org)
+        application = ifcopenshell.api.owner.add_application(self.file)
         ifcopenshell.api.owner.settings.get_user = lambda ifc: user
         ifcopenshell.api.owner.settings.get_application = lambda ifc: application
 
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject", name=self.basename)
-        lengthunit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT")
-        ifcopenshell.api.run("unit.assign_unit", self.file, units=[lengthunit])
-        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
-        self.context = ifcopenshell.api.run(
-            "context.add_context",
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name=self.basename)
+        lengthunit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[lengthunit])
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        self.context = ifcopenshell.api.context.add_context(
             self.file,
             context_type="Model",
             context_identifier="Body",
             target_view="MODEL_VIEW",
             parent=model,
         )
-        site = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSite", name="My Site")
-        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding", name="My Building")
-        self.storey = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcBuildingStorey", name="My Storey"
-        )
-        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[site], relating_object=project)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[building], relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[self.storey], relating_object=building)
+        site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite", name="My Site")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding", name="My Building")
+        self.storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="My Storey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[site], relating_object=project)
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[building], relating_object=site)
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[self.storey], relating_object=building)
 
-        ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=site)
-        ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=building)
-        ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=self.storey)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=site)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=building)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=self.storey)
 
         self.origin = self.file.createIfcAxis2Placement3D(
             self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
@@ -142,7 +144,7 @@ class Obj2Ifc:
             self.file.createIfcDirection((1.0, 0.0, 0.0)),
         )
         self.placement = self.file.createIfcLocalPlacement(self.storey.ObjectPlacement, self.origin)
-        self.history = ifcopenshell.api.run("owner.create_owner_history", self.file)
+        self.history = ifcopenshell.api.owner.create_owner_history(self.file)
 
 
 if __name__ == "__main__":

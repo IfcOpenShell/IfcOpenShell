@@ -44,8 +44,8 @@ class AddPsetTemplateFile(bpy.types.Operator):
         template = ifcopenshell.file()
         filepath = (tool.Blender.get_data_dir_path("pset") / self.new_template_filename).with_suffix(".ifc").__str__()
 
-        pset_template = ifcopenshell.api.run("pset_template.add_pset_template", template)
-        ifcopenshell.api.run("pset_template.add_prop_template", template, pset_template=pset_template)
+        pset_template = ifcopenshell.api.pset_template.add_pset_template(template)
+        ifcopenshell.api.pset_template.add_prop_template(template, pset_template=pset_template)
         template.write(filepath)
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
@@ -82,10 +82,9 @@ class RemovePsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
         current_pset_template_id = int(props.pset_templates)
         if props.active_pset_template_id == current_pset_template_id:
             bpy.ops.bim.disable_editing_pset_template()
-        ifcopenshell.api.run(
-            "pset_template.remove_pset_template",
+        ifcopenshell.api.pset_template.remove_pset_template(
             self.template_file,
-            **{"pset_template": self.template_file.by_id(current_pset_template_id)},
+            pset_template=self.template_file.by_id(current_pset_template_id),
         )
         self.template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
@@ -169,17 +168,14 @@ class EditPsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
 
     def _execute(self, context):
         props = tool.PsetTemplate.get_pset_template_props()
-        ifcopenshell.api.run(
-            "pset_template.edit_pset_template",
+        ifcopenshell.api.pset_template.edit_pset_template(
             IfcStore.pset_template_file,
-            **{
-                "pset_template": IfcStore.pset_template_file.by_id(props.active_pset_template_id),
-                "attributes": {
-                    "Name": props.active_pset_template.name,
-                    "Description": props.active_pset_template.description,
-                    "TemplateType": props.active_pset_template.template_type,
-                    "ApplicableEntity": props.active_pset_template.applicable_entity,
-                },
+            pset_template=IfcStore.pset_template_file.by_id(props.active_pset_template_id),
+            attributes={
+                "Name": props.active_pset_template.name,
+                "Description": props.active_pset_template.description,
+                "TemplateType": props.active_pset_template.template_type,
+                "ApplicableEntity": props.active_pset_template.applicable_entity,
             },
         )
         bpy.ops.bim.disable_editing_pset_template()
@@ -232,8 +228,7 @@ class AddPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator
     def _execute(self, context):
         props = tool.PsetTemplate.get_pset_template_props()
         pset_template_id = props.active_pset_template_id or int(props.pset_templates)
-        prop_template = ifcopenshell.api.run(
-            "pset_template.add_prop_template",
+        prop_template = ifcopenshell.api.pset_template.add_prop_template(
             IfcStore.pset_template_file,
             pset_template=IfcStore.pset_template_file.by_id(pset_template_id),
         )
@@ -251,10 +246,9 @@ class RemovePropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
     prop_template: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifcopenshell.api.run(
-            "pset_template.remove_prop_template",
+        ifcopenshell.api.pset_template.remove_prop_template(
             IfcStore.pset_template_file,
-            **{"prop_template": IfcStore.pset_template_file.by_id(self.prop_template)},
+            prop_template=IfcStore.pset_template_file.by_id(self.prop_template),
         )
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
@@ -283,8 +277,7 @@ class EditPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
         if primary_measure_type == "-" or template_type.startswith("Q_"):
             primary_measure_type = None
 
-        ifcopenshell.api.run(
-            "pset_template.edit_prop_template",
+        ifcopenshell.api.pset_template.edit_prop_template(
             IfcStore.pset_template_file,
             prop_template=IfcStore.pset_template_file.by_id(props.active_prop_template_id),
             attributes={

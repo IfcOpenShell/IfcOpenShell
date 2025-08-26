@@ -20,7 +20,8 @@ import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Any, Callable, Optional, Union, Literal, overload, Sequence, Generator
+from typing import Any, Callable, Optional, Union, Literal, overload
+from collections.abc import Generator, Sequence
 from collections import namedtuple
 
 
@@ -72,6 +73,7 @@ def get_pset(
     type_pset = None
     ifc_file = element.file
     is_ifc2x3 = ifc_file.schema == "IFC2X3"
+    is_profile = False
 
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
@@ -81,14 +83,19 @@ def get_pset(
     elif (
         (is_ifc2x3_material := (is_ifc2x3 and element.is_a("IfcMaterial")))
         or element.is_a("IfcMaterialDefinition")
-        or element.is_a("IfcProfileDef")
+        or (is_profile := element.is_a("IfcProfileDef"))
     ):
         if is_ifc2x3_material:
+            # Support extended props as they do have a name.
             for definition in ifc_file.by_type("IfcExtendedMaterialProperties"):
                 if definition.Material == element and definition.Name == name:
                     pset = definition
                     break
+        elif is_ifc2x3 and is_profile:
+            # Don't support them as they don't have a name.
+            pass
         else:
+            # IfcProfileDef or IfcMaterialDefinition, IFC4+.
             for definition in element.HasProperties or []:
                 if definition.Name == name:
                     pset = definition
@@ -165,6 +172,8 @@ def get_psets(
         qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
         psets_and_qtos = ifcopenshell.util.element.get_psets(element)
     """
+    ifc_file = element.file
+    is_ifc2x3 = ifc_file.schema == "IFC2X3"
     psets = {}
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
@@ -174,8 +183,22 @@ def get_psets(
                 continue
             psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     # NOTE: doesn't account for IFC2X3 missing HasProperties
-    elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
-        for definition in getattr(element, "HasProperties", None) or []:
+    elif (
+        (is_ifc2x3_material := (is_ifc2x3 and element.is_a("IfcMaterial")))
+        or element.is_a("IfcMaterialDefinition")
+        or element.is_a("IfcProfileDef")
+    ):
+        definitions: list[ifcopenshell.entity_instance]
+        if is_ifc2x3:
+            if is_ifc2x3_material:
+                # Only extended props have a name.
+                definitions = [d for d in ifc_file.by_type("IfcExtendedMaterialProperties") if d.Material == element]
+            else:
+                # Ignoring profiles as they don't have names.
+                definitions = []
+        else:
+            definitions = getattr(element, "HasProperties", None) or []
+        for definition in definitions:
             if qtos_only:
                 continue
             psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
@@ -247,6 +270,9 @@ def get_property_definition(
     elif ifc_class == "IfcMaterialProperties" or ifc_class == "IfcProfileProperties":
         # 2 IfcExtendedProperties.Properties
         props.update(get_properties(definition[2], verbose=verbose))
+    elif ifc_class == "IfcExtendedMaterialProperties":
+        # 1 IfcExtendedMaterialProperties.ExtendedProperties
+        props.update(get_properties(definition[1], verbose=verbose))
     else:
         # Entity introduced in IFC4
         # definition.is_a('IfcPreDefinedPropertySet'):
@@ -1230,10 +1256,15 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.e
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
-    if decomposes := getattr(element, "Decomposes", None):
-        is_not_ifc2x3 = element.file.schema != "IFC2X3"
-        if is_not_ifc2x3 or decomposes[0].is_a("IfcRelAggregates"):
-            return decomposes[0].RelatingObject
+    if not (decomposes := getattr(element, "Decomposes", None)):
+        return
+    is_ifc2x3 = element.file.schema == "IFC2X3"
+    rel: ifcopenshell.entity_instance = decomposes[0]
+    if is_ifc2x3 and not rel.is_a("IfcRelAggregates"):
+        # In IFCF2X3 Decomposes is used for both aggregates and nests,
+        # but only for 1 at the time.
+        return
+    return rel.RelatingObject
 
 
 def get_nest(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -1488,7 +1519,7 @@ def unbatch_remove_deep2(ifc_file: ifcopenshell.file) -> ifcopenshell.file:
     lines = iter(ifc_string.split("\n"))
     ids_to_delete = iter(sorted([e.id() for e in ifc_file.to_delete]))
     id_to_delete = next(ids_to_delete, None)
-    result = []
+    result: list[str] = []
 
     for line in lines:
         if id_to_delete is None:
@@ -1561,20 +1592,27 @@ def remove_deep2(
         if not are_inverses_contained():
             return
 
-    to_delete = set()
+    to_delete: set[ifcopenshell.entity_instance] = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)
     subelement_queue = [element]
+
+    # Cache already processed entities to avoid traversing them multiple time.
+    # E.g. lots of IFCINDEXEDPOLYCURVES may reference the same IFCCARTESIANPOINTLIST2D.
+    processed_ids: set[int] = set()
+
     while subelement_queue:
         subelement = subelement_queue.pop(0)
+        subelement_id = subelement.id()
         if (
-            subelement.id()
+            subelement_id
+            and subelement_id not in processed_ids
             and subelement not in do_not_delete
             and (
                 # 0 or 1 inverses guarantees that the subelement only exists in this subgraph
                 ifc_file.get_total_inverses(subelement) < 2
-                # Alternatively, let's ensure all inverses are within the subgrpah
+                # Alternatively, let's ensure all inverses are within the subgraph
                 or len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
             )
         ):
@@ -1592,6 +1630,7 @@ def remove_deep2(
             for i, attribute in enumerate(subelement):
                 if isinstance(attribute, tuple) and len(attribute) > 10:
                     subelement[i] = []
+        processed_ids.add(subelement_id)
 
     if ifc_file.to_delete is not None:
         ifc_file.to_delete.update(to_delete)

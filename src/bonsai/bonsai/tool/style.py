@@ -29,9 +29,11 @@ import bonsai.tool as tool
 import bonsai.bim.helper
 from mathutils import Color
 from typing import Union, Any, Optional, Literal, TYPE_CHECKING
+from collections.abc import Sequence
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties
+    from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties, ColourRgb
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -291,7 +293,7 @@ class Style(bonsai.core.tool.Style):
     def get_surface_rendering_attributes(cls, obj: bpy.types.Material, verbose: bool = False) -> dict[str, Any]:
         report = (lambda *x: print(*x)) if verbose else (lambda *x: None)
 
-        def color_to_ifc_format(color):
+        def color_to_ifc_format(color: Sequence[float]) -> dict[str, Any]:
             return {
                 "Name": None,
                 "Red": color[0],
@@ -324,6 +326,7 @@ class Style(bonsai.core.tool.Style):
         report(f"{GREEN}Viewport color{R} saved as {GREEN}SurfaceColour{R}")
 
         # TODO: make sure bsdf is connected to the output?
+        assert obj.node_tree
         bsdfs = {n.type: n for n in obj.node_tree.nodes if n.outputs and n.outputs[0].is_linked}
         if "BSDF_PRINCIPLED" not in bsdfs:
             report(f"{GREEN}Viewport color alpha{R} saved as {GREEN}Transparency{R}")
@@ -386,10 +389,10 @@ class Style(bonsai.core.tool.Style):
             report(f"BSDF {GREEN}Color{R} saved as {GREEN}DiffuseColour{R}")
             diffuse_color = bsdf.inputs["Color"].default_value
 
-        elif "BSDF_DIFFUSE" in bsdfs:
+        elif "BSDF_DIFFUSE" in bsdfs or "DIFFUSE_BSDF" in bsdfs:
             report(f"Because of {BLUE}BSDF_DIFFUSE{R} node reflectance method identified as {BLUE}MATT{R}")
             attributes["ReflectanceMethod"] = "MATT"
-            bsdf = bsdfs["BSDF_DIFFUSE"]
+            bsdf = bsdfs["BSDF_DIFFUSE"] if "BSDF_DIFFUSE" in bsdfs else bsdfs["DIFFUSE_BSDF"]
 
             report(f"BSDF {GREEN}Roughness{R} saved as {GREEN}IfcSpecularRoughness{R}")
             attributes["SpecularHighlight"] = {"IfcSpecularRoughness": round(bsdf.inputs["Roughness"].default_value, 3)}
@@ -515,7 +518,11 @@ class Style(bonsai.core.tool.Style):
         return results
 
     @classmethod
-    def get_style_ui_props_attributes(cls, style_type: str) -> Union[bpy.types.PropertyGroup, None]:
+    def get_style_ui_props_attributes(cls, style_type: str) -> Union[
+        bpy.types.bpy_prop_collection_idprop[Attribute],
+        bpy.types.bpy_prop_collection_idprop[ColourRgb],
+        None,
+    ]:
         props = tool.Style.get_style_props()
         if style_type == "IfcExternallyDefinedSurfaceStyle":
             return props.external_style_attributes
@@ -553,7 +560,7 @@ class Style(bonsai.core.tool.Style):
         props = cls.get_style_props()
         attributes = props.attributes
         attributes.clear()
-        bonsai.bim.helper.import_attributes2(style, attributes)
+        bonsai.bim.helper.import_attributes(style, attributes)
 
     @classmethod
     def has_blender_external_style(cls, style_elements: dict[str, ifcopenshell.entity_instance]) -> bool:
@@ -607,7 +614,10 @@ class Style(bonsai.core.tool.Style):
     def assign_style_to_object(cls, style: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
         """assigns `style` to `object` current representation"""
         representation = tool.Geometry.get_active_representation(obj)
-        tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
+        assert representation
+        ifcopenshell.api.style.assign_representation_styles(
+            tool.Ifc.get(), shape_representation=representation, styles=[style]
+        )
 
     @classmethod
     def assign_style_to_representation_item(
@@ -665,9 +675,12 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def rename_style(cls, style: ifcopenshell.entity_instance, name: str) -> None:
         """Rename style and related blender material."""
+        if style.Name == name:
+            return
+        style.Name = name
         blender_material = tool.Ifc.get_object(style)
-        # Will implicitly update the style name using handler.
-        blender_material.name = name
+        assert isinstance(blender_material, bpy.types.Material)
+        tool.Root.set_material_name(blender_material, name)
 
     @classmethod
     def purge_unused_styles(cls) -> int:

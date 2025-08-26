@@ -18,24 +18,23 @@
 
 import ifcopenshell
 from ifcopenshell import entity_instance
-from typing import Sequence
 
 
-def name_segments(prefix: str, alignment: entity_instance) -> None:
+def name_segments(prefix: str, layout: entity_instance) -> None:
     """
-    Sets the segment name like ("H1" for horizontal, "V1" for vertical, "C1" for cant)
+    Sets the IfcAlignmentSegment.Name attribute using a prefix and sequence number (e.g. "H1" for horizontal, "V1" for vertical, "C1" for cant)
 
     :param prefix: The naming prefix
-    :param alignment: The alignment whose segments are to be named. This should be a IfcAlignmentHorizontal, IfcAlignmentVertical or IfcAlignmentCant
+    :param layout: The layout alignment whose segments are to be named. This should be a IfcAlignmentHorizontal, IfcAlignmentVertical or IfcAlignmentCant
     """
     expected_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]
-    if not alignment.is_a() in expected_types:
+    if not layout.is_a() in expected_types:
         raise TypeError(
-            f"Expected entity type to be one of {[_ for _ in expected_types]}, instead received '{v.is_a()}"
+            f"Expected entity type to be one of {[_ for _ in expected_types]}, instead received '{layout.is_a()}"
         )
 
     i = 1
-    for rel in alignment.IsNestedBy:
+    for rel in layout.IsNestedBy:
         for segment in rel.RelatedObjects:
             if segment.is_a("IfcAlignmentSegment"):
                 segment.Name = f"{prefix}{i}"

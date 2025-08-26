@@ -1,4 +1,3 @@
 Coordination
 ============
-
-TODO
+.. include:: /_incomplete_message.rst

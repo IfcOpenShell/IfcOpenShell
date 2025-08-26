@@ -54,6 +54,8 @@ class GeoreferenceDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         props = tool.Georeference.get_georeference_props()
         self.scale = props.visualization_scale
         content_pos = [v * self.scale for v in content_pos]

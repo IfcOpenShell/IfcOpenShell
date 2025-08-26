@@ -34,7 +34,8 @@ from .add_railing_representation import add_railing_representation
 
 try:
     from .add_representation import add_representation
-except ModuleNotFoundError:
+except (ModuleNotFoundError, ImportError):
+    # ImportError - in case if user has fake-bpy modules.
     pass  # Silently fail. This is Blender / Bonsai specific and on its way out.
 from .add_shape_aspect import add_shape_aspect
 from .add_slab_representation import add_slab_representation

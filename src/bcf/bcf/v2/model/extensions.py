@@ -14,16 +14,20 @@
 # Currently extensions support for v2 is only read-only.
 
 
+import sys
 from dataclasses import dataclass, field, fields
-from typing import List, NamedTuple, Optional
+from typing import Optional
 
 
-@dataclass(slots=True, kw_only=True)
+DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
+
+
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsPriorities:
     class Meta:
         global_type = False
 
-    priority: List[str] = field(
+    priority: list[str] = field(
         default_factory=list,
         metadata={
             "name": "Priority",
@@ -35,12 +39,12 @@ class ExtensionsPriorities:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsSnippetTypes:
     class Meta:
         global_type = False
 
-    snippet_type: List[str] = field(
+    snippet_type: list[str] = field(
         default_factory=list,
         metadata={
             "name": "SnippetType",
@@ -52,12 +56,12 @@ class ExtensionsSnippetTypes:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsStages:
     class Meta:
         global_type = False
 
-    stage: List[str] = field(
+    stage: list[str] = field(
         default_factory=list,
         metadata={
             "name": "Stage",
@@ -69,12 +73,12 @@ class ExtensionsStages:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsTopicLabels:
     class Meta:
         global_type = False
 
-    topic_label: List[str] = field(
+    topic_label: list[str] = field(
         default_factory=list,
         metadata={
             "name": "TopicLabel",
@@ -86,12 +90,12 @@ class ExtensionsTopicLabels:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsTopicStatuses:
     class Meta:
         global_type = False
 
-    topic_status: List[str] = field(
+    topic_status: list[str] = field(
         default_factory=list,
         metadata={
             "name": "TopicStatus",
@@ -103,12 +107,12 @@ class ExtensionsTopicStatuses:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsTopicTypes:
     class Meta:
         global_type = False
 
-    topic_type: List[str] = field(
+    topic_type: list[str] = field(
         default_factory=list,
         metadata={
             "name": "TopicType",
@@ -120,12 +124,12 @@ class ExtensionsTopicTypes:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsUsers:
     class Meta:
         global_type = False
 
-    user: List[str] = field(
+    user: list[str] = field(
         default_factory=list,
         metadata={
             "name": "UserIdType",
@@ -137,7 +141,7 @@ class ExtensionsUsers:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Extensions:
     topic_types: Optional[ExtensionsTopicTypes] = field(
         default=None,

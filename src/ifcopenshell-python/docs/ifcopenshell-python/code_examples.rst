@@ -14,6 +14,26 @@ that you have a IFC model loaded into model variable like so:
 This is only a small sample of common tasks. To view the full list of available
 functions, check out the API Reference.
 
+Get all entites (STEP ID items)
+-------------------------------
+
+
+IFC file opened through IfcOpenShell is iterable. This means you can get all instance (all STEP ID items) that occurs in the file with a simple loop.
+
+.. code-block:: python
+
+    for inst in model:
+        # It prints out entire entity as it appears in IFC file, e.g
+        print("The STEP entity is: ", inst)
+        # You can get info about attributes of an instance as you normally would, e.g. name, type, get_info()
+        print(inst.get_info())
+        # Get instance type
+        print(inst.is_a())
+        # Get instance name. To ensure you get instances that have attribute Name, simple IF statement will suffice.
+        # For more information check submodule: ifcopenshell.entity_instance
+        if hasattr(inst, "Name"):
+            print(inst.Name)
+
 Get all wall types
 ------------------
 

@@ -20,6 +20,10 @@ import bpy
 import math
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.georeference
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from mathutils import Vector
@@ -36,8 +40,8 @@ class TestImportProjectedCRS(NewFile):
     def test_importing_nothing_with_no_georeferencing(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
         subject.import_projected_crs()
         props = tool.Georeference.get_georeference_props()
         assert len(props.projected_crs) == 0
@@ -45,9 +49,9 @@ class TestImportProjectedCRS(NewFile):
     def test_importing_projected_crs(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        ifcopenshell.api.run("georeference.add_georeferencing", ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.georeference.add_georeferencing(ifc)
         projected_crs = ifc.by_type("IfcProjectedCRS")[0]
         projected_crs.Name = "Name"
         projected_crs.Description = "Description"
@@ -55,17 +59,17 @@ class TestImportProjectedCRS(NewFile):
         projected_crs.VerticalDatum = "VerticalDatum"
         projected_crs.MapProjection = "MapProjection"
         projected_crs.MapZone = "MapZone"
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
         projected_crs.MapUnit = unit
         subject.import_projected_crs()
         props = tool.Georeference.get_georeference_props()
-        assert props.projected_crs.get("Name").string_value == "Name"
-        assert props.projected_crs.get("Description").string_value == "Description"
-        assert props.projected_crs.get("GeodeticDatum").string_value == "GeodeticDatum"
-        assert props.projected_crs.get("VerticalDatum").string_value == "VerticalDatum"
-        assert props.projected_crs.get("MapProjection").string_value == "MapProjection"
-        assert props.projected_crs.get("MapZone").string_value == "MapZone"
-        assert props.projected_crs.get("MapUnit").enum_value == str(unit.id())
+        assert props.projected_crs["Name"].string_value == "Name"
+        assert props.projected_crs["Description"].string_value == "Description"
+        assert props.projected_crs["GeodeticDatum"].string_value == "GeodeticDatum"
+        assert props.projected_crs["VerticalDatum"].string_value == "VerticalDatum"
+        assert props.projected_crs["MapProjection"].string_value == "MapProjection"
+        assert props.projected_crs["MapZone"].string_value == "MapZone"
+        assert props.projected_crs["MapUnit"].enum_value == str(unit.id())
 
     def test_run_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
@@ -79,8 +83,8 @@ class TestImportCoordinateOperation(NewFile):
     def test_importing_nothing_with_no_georeferencing(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
         subject.import_coordinate_operation()
         props = tool.Georeference.get_georeference_props()
         assert len(props.coordinate_operation) == 0
@@ -88,9 +92,9 @@ class TestImportCoordinateOperation(NewFile):
     def test_importing_coordinate_operation(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        ifcopenshell.api.run("georeference.add_georeferencing", ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.georeference.add_georeferencing(ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Eastings = 1
         map_conversion.Northings = 2
@@ -100,13 +104,13 @@ class TestImportCoordinateOperation(NewFile):
         map_conversion.Scale = 6
         subject.import_coordinate_operation()
         props = tool.Georeference.get_georeference_props()
-        assert props.coordinate_operation.get("Eastings").string_value == "1.0"
-        assert props.coordinate_operation.get("Northings").string_value == "2.0"
-        assert props.coordinate_operation.get("OrthogonalHeight").string_value == "3.0"
+        assert props.coordinate_operation["Eastings"].string_value == "1.0"
+        assert props.coordinate_operation["Northings"].string_value == "2.0"
+        assert props.coordinate_operation["OrthogonalHeight"].string_value == "3.0"
         assert props.x_axis_abscissa == "4.0"
         assert props.x_axis_ordinate == "5.0"
         assert props.grid_north_angle == "-51.3401917"
-        assert props.coordinate_operation.get("Scale").string_value == "6.0"
+        assert props.coordinate_operation["Scale"].string_value == "6.0"
 
     def test_run_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
@@ -120,8 +124,8 @@ class TestImportTrueNorth(NewFile):
     def test_detecting_no_true_north(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
         subject.import_true_north()
         props = tool.Georeference.get_georeference_props()
         assert props.true_north_abscissa == "0"
@@ -131,8 +135,8 @@ class TestImportTrueNorth(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        context = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
         context.TrueNorth = ifc.createIfcDirection((1.0, 2.0, 0.0))
         subject.import_true_north()
         props = tool.Georeference.get_georeference_props()
@@ -216,10 +220,11 @@ class TestGetCursorLocation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[unit])
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.get_cursor_location() == [1000.0, 2000.0, 3000.0]
 
@@ -227,28 +232,28 @@ class TestGetCursorLocation(NewFile):
 class TestXyz2Enh(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
-        assert subject.xyz2enh([0.0, 0.0, 0.0]) == (0.0, 0.0, 0.0)
+        assert subject.xyz2enh((0.0, 0.0, 0.0)) == (0.0, 0.0, 0.0)
 
     def test_using_the_blender_offset(self):
         ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
         props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         props.blender_offset_x = "1.0"
-        assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 0.0, 0.0)
+        assert subject.xyz2enh((0.0, 0.0, 0.0)) == (1.0, 0.0, 0.0)
 
     def test_using_the_map_conversion(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        ifcopenshell.api.run("georeference.add_georeferencing", ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.georeference.add_georeferencing(ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Eastings = 1.0
-        assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 0.0, 0.0)
+        assert subject.xyz2enh((0.0, 0.0, 0.0)) == (1.0, 0.0, 0.0)
 
     def test_applying_both_blender_offset_and_map_conversion(self):
         props = tool.Georeference.get_georeference_props()
@@ -256,39 +261,39 @@ class TestXyz2Enh(NewFile):
         props.blender_offset_x = "1.0"
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        ifcopenshell.api.run("georeference.add_georeferencing", ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.georeference.add_georeferencing(ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Northings = 1.0
-        assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 1.0, 0.0)
+        assert subject.xyz2enh((0.0, 0.0, 0.0)) == (1.0, 1.0, 0.0)
 
 
 class TestEnh2Xyz(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
-        assert subject.enh2xyz([0.0, 0.0, 0.0]) == (0.0, 0.0, 0.0)
+        assert subject.enh2xyz((0.0, 0.0, 0.0)) == (0.0, 0.0, 0.0)
 
     def test_using_the_blender_offset(self):
         ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
         props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         props.blender_offset_x = "1.0"
-        assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, 0.0, 0.0)
+        assert subject.enh2xyz((0.0, 0.0, 0.0)) == (-1.0, 0.0, 0.0)
 
     def test_using_the_map_conversion(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        ifcopenshell.api.run("georeference.add_georeferencing", ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.georeference.add_georeferencing(ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Eastings = 1.0
-        assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, 0.0, 0.0)
+        assert subject.enh2xyz((0.0, 0.0, 0.0)) == (-1.0, 0.0, 0.0)
 
     def test_applying_both_blender_offset_and_map_conversion(self):
         props = tool.Georeference.get_georeference_props()
@@ -296,9 +301,9 @@ class TestEnh2Xyz(NewFile):
         props.blender_offset_x = "1.0"
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        ifcopenshell.api.run("georeference.add_georeferencing", ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.georeference.add_georeferencing(ifc)
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Northings = 1.0
-        assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, -1.0, 0.0)
+        assert subject.enh2xyz((0.0, 0.0, 0.0)) == (-1.0, -1.0, 0.0)

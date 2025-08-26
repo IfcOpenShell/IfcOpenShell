@@ -43,13 +43,10 @@ def add_style(
 
     :param name: The name of the style. Used to easily identify it using a
         style library.
-    :type name: str,optional
     :param ifc_class: Choose from IfcSurfaceStyle, IfcCurveStyle,
         IfcFillAreaStyle, or IfcTextStyle.
-    :type ifc_class: str
     :return: The newly created style element, based on the provided
         ifc_class.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

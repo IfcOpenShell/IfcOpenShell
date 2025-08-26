@@ -219,9 +219,9 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, A* instance, p
 // Returns related entity instances using IFC's objectified relationship
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
-typename V::list::ptr get_related(T* t, F f, G g) {
+auto get_related(T* t, F f, G g) {
 	typename U::list::ptr li = (*t.*f)()->template as<U>();
-	typename V::list::ptr acc(new typename V::list);
+	typename aggregate_of<V>::ptr acc(new aggregate_of<V>);
 	for (typename U::list::it it = li->begin(); it != li->end(); ++it) {
 		U* u = *it;
 		try {
@@ -305,6 +305,16 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
 			(object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
+#ifdef SCHEMAS_HAS_IfcPropertySetDefinitionSet
+		aggregate_of<IfcSchema::IfcPropertySetDefinitionSet>::ptr property_set_sets = get_related
+			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinitionSet>
+			(object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+
+		for (auto& s : *property_set_sets) {
+			 property_sets->push((decltype(property_sets))*s);
+		}
+#endif
+
 		for (IfcSchema::IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
 			IfcSchema::IfcPropertySetDefinition* pset = *it;
 			if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
@@ -352,7 +362,7 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 		}
     }
 
-#ifdef SCHEMA_HAS_IfcAlignmentSegment
+#if defined(SCHEMA_HAS_IfcAlignmentSegment) && defined(SCHEMA_IfcAlignmentSegment_HAS_DesignParameters)
 	if (auto* als = product->as<IfcSchema::IfcAlignmentSegment>()) {
 		ptree node;
 		format_entity_instance(mapping, als->DesignParameters(), node, child, false);

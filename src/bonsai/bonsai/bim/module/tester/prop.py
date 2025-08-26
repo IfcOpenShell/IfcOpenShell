@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
+import bpy
 from bonsai.bim.module.tester.data import TesterData
 from bonsai.bim.prop import StrProperty, MultipleFileSelect
 from bpy.types import PropertyGroup
@@ -31,20 +34,28 @@ from bpy.props import (
 )
 
 
-def update_active_specification_index(self, context):
+def update_active_specification_index(self: "IfcTesterProperties", context: bpy.types.Context) -> None:
     TesterData.load()
 
 
 class Specification(PropertyGroup):
-    name: StringProperty(name="Name")
     description: StringProperty(name="Description")
     status: BoolProperty(default=False, name="Status")
+
+    if TYPE_CHECKING:
+        description: str
+        status: bool
 
 
 class FailedEntities(PropertyGroup):
     ifc_id: IntProperty(name="IFC ID")
     element: StringProperty(name="Element")
     reason: StringProperty(name="Reason")
+
+    if TYPE_CHECKING:
+        ifc_id: int
+        element: str
+        reason: str
 
 
 class IfcTesterProperties(PropertyGroup):
@@ -66,3 +77,18 @@ class IfcTesterProperties(PropertyGroup):
     failed_entities: CollectionProperty(name="FailedEntities", type=FailedEntities)
     has_entities: BoolProperty(default=False, name="")
     n_entities: IntProperty(name="", default=0)
+
+    if TYPE_CHECKING:
+        specs: MultipleFileSelect
+        ifc_files: MultipleFileSelect
+        should_load_from_memory: bool
+        generate_html_report: bool
+        generate_ods_report: bool
+        flag: bool
+        active_specification_index: int
+        old_index: int
+        active_failed_entity_index: int
+        specifications: bpy.types.bpy_prop_collection_idprop[Specification]
+        failed_entities: bpy.types.bpy_prop_collection_idprop[FailedEntities]
+        has_entities: bool
+        n_entities: int

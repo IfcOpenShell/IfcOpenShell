@@ -446,4 +446,6 @@ class BIM_UL_zones(UIList):
     ):
         if item:
             row = layout.row(align=True)
+            if data.is_editing == item.ifc_definition_id:
+                row.label(text="", icon="GREASEPENCIL")
             row.prop(item, "name", text="", emboss=False)

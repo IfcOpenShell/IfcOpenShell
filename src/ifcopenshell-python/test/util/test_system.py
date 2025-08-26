@@ -31,7 +31,8 @@ class TestValidateGroupTypes:
         ifcsystem_classes = set()
         for schema_name in get_args(ifcopenshell.util.schema.IFC_SCHEMA):
             schema = ifcopenshell.schema_by_name(schema_name)
-            declaration = schema.declaration_by_name("IfcSystem")
+            declaration = schema.declaration_by_name("IfcSystem").as_entity()
+            assert declaration
             declarations = ifcopenshell.util.schema.get_subtypes(declaration)
             ifcsystem_classes.update(d.name() for d in declarations)
 

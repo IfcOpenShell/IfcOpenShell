@@ -1,6 +1,9 @@
 Object Information
 ==================
 
+.. include:: /_incomplete_message.rst
+
+
 .. figure:: images/interface_property-editor_object-information.png
    :alt: property editor object information sub-tab
 

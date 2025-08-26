@@ -18,12 +18,8 @@
 
 from fractions import Fraction
 from math import pi
-from typing import Any
-from typing import Dict
-from typing import Literal
-from typing import Optional
-from typing import Union
-from typing import Generator
+from typing import Literal, Optional, Union
+from collections.abc import Generator
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
@@ -506,7 +502,7 @@ def get_property_unit(
 
 def get_property_table_unit(
     prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
-) -> Dict[str, Union[ifcopenshell.entity_instance, None]]:
+) -> dict[str, Union[ifcopenshell.entity_instance, None]]:
     """
     Gets the unit definition of a property table
 
@@ -624,7 +620,7 @@ def get_symbol_quantity_class(symbol: Optional[str] = None) -> QUANTITY_CLASS:
 
 
 def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
-    symbol = ""
+    symbol: str = ""
     if unit.is_a("IfcSIUnit"):
         symbol += prefix_symbols.get(unit.Prefix, "")
     symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
@@ -695,16 +691,26 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
     :returns: The scale factor
     """
+    if (
+        unit_type
+        not in ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
+        .declaration_by_name("IfcUnitEnum")
+        .enumeration_items()
+    ):
+        raise ValueError(f"Unit type {unit_type!r} does not name a valid type")
+
     # Currently we assume that all ifc projects must have IfcProject.
     if not (projects := ifc_file.by_type("IfcProject")) or not (units := projects[0].UnitsInContext):
         return 1
     unit_scale = 1
+    unit: ifcopenshell.entity_instance
     for unit in units.Units:
-        if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:
+        if getattr(unit, "UnitType", ...) != unit_type:
             continue
         while unit.is_a("IfcConversionBasedUnit"):
-            unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
-            unit = unit.ConversionFactor.UnitComponent
+            conversion_factor = unit.ConversionFactor
+            unit_scale *= conversion_factor.ValueComponent.wrappedValue
+            unit = conversion_factor.UnitComponent
         if unit.is_a("IfcSIUnit"):
             unit_scale *= get_prefix_multiplier(unit.Prefix)
     return unit_scale
@@ -819,12 +825,13 @@ def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_
     None,
     None,
 ]:
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
+    schema = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
 
     for element in ifc_file:
-        entity = schema.declaration_by_name(element.is_a())
+        entity = schema.declaration_by_name(element.is_a()).as_entity()
+        assert entity
         attrs = entity.all_attributes()
-        attrs_derived: tuple[bool, ...] = entity.derived()
+        attrs_derived = entity.derived()
         for attr, val, is_derived in zip(attrs, list(element), attrs_derived):
             if is_derived:
                 continue

@@ -52,7 +52,6 @@ def get_named_unit_types(self: "BIMUnitProperties", context: bpy.types.Context) 
 
 
 class Unit(PropertyGroup):
-    name: StringProperty(name="Name")
     unit_type: StringProperty(name="Unit Type")
     is_assigned: BoolProperty(name="Is Assigned")
     ifc_class: StringProperty(name="IFC Class")

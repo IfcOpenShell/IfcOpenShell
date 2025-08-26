@@ -74,14 +74,14 @@ class TestDisableEditingSystem:
 
 class TestAssignSystem:
     def test_run(self, ifc):
-        ifc.run("system.assign_system", products=["product"], system="system").should_be_called()
-        subject.assign_system(ifc, system="system", product="product")
+        ifc.run("system.assign_system", products="products", system="system").should_be_called()
+        subject.assign_system(ifc, system="system", products="products")
 
 
 class TestUnassignSystem:
     def test_run(self, ifc):
-        ifc.run("system.unassign_system", products=["product"], system="system").should_be_called()
-        subject.unassign_system(ifc, system="system", product="product")
+        ifc.run("system.unassign_system", products="products", system="system").should_be_called()
+        subject.unassign_system(ifc, system="system", products="products")
 
 
 class TestSelectSystemProducts:

@@ -29,11 +29,8 @@ def unassign_group(
     If the product isn't assigned to the group, nothing will happen.
 
     :param products: A list of IfcProduct elements to unassign from the group
-    :type products: list[ifcopenshell.entity_instance]
     :param group: The IfcGroup to unassign from
-    :type group: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -54,7 +51,7 @@ def unassign_group(
     related_objects -= products_set
     if related_objects:
         rel.RelatedObjects = list(related_objects)
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(file, element=rel)
     else:
         history = rel.OwnerHistory
         file.remove(rel)

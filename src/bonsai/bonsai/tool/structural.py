@@ -19,6 +19,9 @@
 from __future__ import annotations
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.api.structural
+import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import json
 import bonsai.bim.helper
@@ -28,6 +31,7 @@ from typing import Union, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.structural.prop import BIMStructuralProperties, BIMObjectStructuralProperties
+    from ifcopenshell.api.structural.edit_structural_boundary_condition import AttributeDict
 
 
 class Structural(bonsai.core.tool.Structural):
@@ -67,19 +71,20 @@ class Structural(bonsai.core.tool.Structural):
 
     @classmethod
     def ensure_representation_contexts(cls) -> None:
-        model = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
+        ifc_file = tool.Ifc.get()
+        model = ifcopenshell.util.representation.get_context(ifc_file, "Model")
         if not model:
-            model = tool.Ifc.run(
-                "context.add_context",
+            model = ifcopenshell.api.context.add_context(
+                ifc_file,
                 context_type="Model",
                 context_identifier="",
                 target_view="",
                 parent=0,
             )
-        graph = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Reference", "GRAPH_VIEW")
+        graph = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Reference", "GRAPH_VIEW")
         if not graph:
-            model = tool.Ifc.run(
-                "context.add_context",
+            model = ifcopenshell.api.context.add_context(
+                ifc_file,
                 context_type="Model",
                 context_identifier="Reference",
                 target_view="GRAPH_VIEW",
@@ -146,7 +151,8 @@ class Structural(bonsai.core.tool.Structural):
         props = cls.get_structural_props()
         props.structural_analysis_model_attributes.clear()
         schema = tool.Ifc.schema()
-        for attribute in schema.declaration_by_name("IfcStructuralAnalysisModel").all_attributes():
+        assert (entity := schema.declaration_by_name("IfcStructuralAnalysisModel").as_entity())
+        for attribute in entity.all_attributes():
             data_type = str(attribute.type_of_attribute)
             if "<entity" in data_type:
                 continue
@@ -155,7 +161,7 @@ class Structural(bonsai.core.tool.Structural):
             new.is_null = data[attribute.name()] is None
             new.is_optional = attribute.optional()
             if attribute.name() == "PredefinedType":
-                new.enum_items = json.dumps(attribute.type_of_attribute().declared_type().enumeration_items())
+                new.enum_items = json.dumps(ifcopenshell.util.attribute.get_enum_items(attribute))
                 new.data_type = "enum"
                 if data[attribute.name()]:
                     new.enum_value = data[attribute.name()]
@@ -172,3 +178,107 @@ class Structural(bonsai.core.tool.Structural):
             new = props.structural_analysis_models.add()
             new.ifc_definition_id = ifc_definition_id
             new.name = model["Name"] or "Unnamed"
+
+    @classmethod
+    def get_vertex_representation(
+        cls, product: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """
+        :param product: IfcStructuralPointConnection
+        :return: IfcTopologyRepresentation if it's valid.
+        """
+        vertex_representation, undefined_representation = None, None
+        # At least 1 representation is mandatory in IFC for IfcStructuralPointConnection.
+        for rep in product.Representation.Representations:
+            rep: ifcopenshell.entity_instance
+            rep_type: str = rep.RepresentationType
+            if rep_type == "Vertex":
+                vertex_representation = rep
+                break
+            # It's possible to have 'Undefined' or some other non-predefined type.
+            elif rep_type not in ("Edge", "Path", "Face", "Shell"):
+                undefined_representation = rep
+
+        if not vertex_representation and not undefined_representation:
+            return
+
+        # All other checks in this case are covered by IFC validation.
+        if vertex_representation:
+            items = vertex_representation.Items
+            if len(items) != 1:
+                return None
+            return vertex_representation
+
+        if undefined_representation is None:
+            return
+
+        items = undefined_representation.Items
+        if len(items) != 1 or not all(item.is_a("IfcVertex") for item in items):
+            return None
+
+        return undefined_representation
+
+    @classmethod
+    def import_boundary_condition_attributes(
+        cls,
+        boundary_condition: ifcopenshell.entity_instance,
+        props: Union[BIMStructuralProperties, BIMObjectStructuralProperties],
+    ) -> None:
+        props_attrs = props.boundary_condition_attributes
+        props_attrs.clear()
+        schema = tool.Ifc.schema()
+        # Don't use `import_attributes`,
+        # because we need to support 2 types of values for the same props.
+        ifc_class = boundary_condition.is_a()
+        entity = schema.declaration_by_name(ifc_class).as_entity()
+        assert entity
+        for attribute in entity.all_attributes():
+            attribute_name = attribute.name()
+            value = getattr(boundary_condition, attribute_name)
+            new = props_attrs.add()
+            new.name = attribute_name
+            new.ifc_class = ifc_class
+            new.is_null = value is None
+            new.is_optional = attribute.optional()
+
+            # Select attribute values are typically wrapped.
+            if isinstance(value, ifcopenshell.entity_instance):
+                value = value.wrappedValue
+
+            if attribute_name == "Name":
+                new.string_value = "" if new.is_null else value
+                new.data_type = "string"
+            else:
+                enum_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attribute)]
+                new.enum_items = json.dumps(enum_items)
+                if isinstance(value, bool):
+                    new.bool_value = False if new.is_null else value
+                    new.data_type = "boolean"
+                    new.enum_value = "IfcBoolean"
+                else:
+                    print(value)
+                    new.float_value = 0 if new.is_null else value
+                    new.data_type = "float"
+                    new.enum_value = next(i for i in enum_items if i != "IfcBoolean")
+
+    @classmethod
+    def export_and_apply_boundary_condition_attributes(
+        cls,
+        boundary_condition: ifcopenshell.entity_instance,
+        props: Union[BIMStructuralProperties, BIMObjectStructuralProperties],
+    ) -> None:
+        attributes: dict[str, AttributeDict] = {}
+        for attribute in props.boundary_condition_attributes:
+            if attribute.is_null:
+                attributes[attribute.name] = {"value": None, "type": "null"}
+            elif attribute.data_type == "string":
+                attributes[attribute.name] = {"value": attribute.string_value, "type": "string"}
+            elif attribute.enum_value == "IfcBoolean":
+                attributes[attribute.name] = {"value": attribute.bool_value, "type": attribute.enum_value}
+            else:
+                attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
+
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.structural.edit_structural_boundary_condition(
+            ifc_file, condition=boundary_condition, attributes=attributes
+        )

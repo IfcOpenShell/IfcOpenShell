@@ -18,6 +18,9 @@
 
 
 import ifcopenshell
+import ifcopenshell.util.schema
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
 import logging
 from typing import Optional
 

@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
 from typing import Any, Union
-from types import EllipsisType
+
+if sys.version_info >= (3, 10):
+    from types import EllipsisType
+else:
+    EllipsisType = type(...)
 
 
 def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
@@ -81,4 +86,4 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
                 product.PredefinedType = "USERDEFINED"
 
     if hasattr(product, "OwnerHistory"):
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": product})
+        ifcopenshell.api.owner.update_owner_history(file, element=product)

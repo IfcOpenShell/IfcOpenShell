@@ -21,23 +21,24 @@ import pytest
 import ifcpatch
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.root
 import ifcopenshell.util.element
 import test.bootstrap
 
 
 class TestRegenerateGlobalIds(test.bootstrap.IFC4):
     def test_run(self):
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         used_guids = {project.GlobalId, wall.GlobalId}
         ifcpatch.execute({"file": self.file, "recipe": "RegenerateGlobalIds", "arguments": [False]})
         new_guids = {project.GlobalId, wall.GlobalId}
         assert not new_guids.intersection(used_guids)
 
     def test_regenerate_guids_for_duplicates(self):
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         wall1.GlobalId = wall2.GlobalId
         used_guids = {project, wall1.GlobalId, wall2.GlobalId}
 

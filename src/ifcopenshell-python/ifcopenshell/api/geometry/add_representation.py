@@ -28,6 +28,7 @@ from typing import Union, Optional, Literal, Any, TYPE_CHECKING
 from ifcopenshell.util.shape_builder import ifc_safe_vector_type, VectorType
 
 if TYPE_CHECKING:
+    import bonsai.tool as tool
     from bonsai.bim.module.geometry.helper import Helper
 
 
@@ -81,9 +82,11 @@ def add_representation(
     """
     # lazy import Helper to avoid circular import
     if "Helper" not in globals():
+        import bonsai.tool as tool
         from bonsai.bim.module.geometry.helper import Helper
 
         globals()["Helper"] = Helper
+        globals()["tool"] = tool
 
     usecase = Usecase()
     # TODO: This usecase currently depends on Blender's data model
@@ -111,16 +114,16 @@ class Usecase:
     settings: dict[str, Any]
     ifc_vertices: list[ifcopenshell.entity_instance]
     coordinate_offset: Union[npt.NDArray[np.float64], None]
-    geometry: Union[bpy.types.Mesh, bpy.types.Curve]
+    geometry: Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
+    blender_object: bpy.types.Object
 
     def execute(self) -> Union[ifcopenshell.entity_instance, None]:
         self.is_manifold = None
         self.coordinate_offset = self.settings["coordinate_offset"]
         self.geometry = self.settings["geometry"]
-        if (
-            isinstance(self.settings["geometry"], bpy.types.Mesh)
-            and self.settings["geometry"] == self.settings["blender_object"].data
-        ):
+        self.blender_object = self.settings["blender_object"]
+
+        if isinstance(self.geometry, bpy.types.Mesh) and self.geometry == self.blender_object.data:
             self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -140,6 +143,7 @@ class Usecase:
         else:
             vx = vz.cross(X_AXIS)
         vy = vx.cross(vz)
+        assert isinstance(vy, Vector)
         tM = Matrix(
             [[vx.x, vy.x, vz.x, co.x], [vx.y, vy.y, vz.y, co.y], [vx.z, vy.z, vz.z, co.z], [0, 0, 0, 1]]
         ).inverted()
@@ -147,11 +151,11 @@ class Usecase:
         return any([abs((tM @ v.co).z) > threshold for v in face.verts])
 
     def evaluate_geometry(self) -> None:
-        for modifier in self.settings["blender_object"].modifiers:
+        for modifier in self.blender_object.modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = False
 
-        mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        mesh = self.blender_object.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
@@ -173,7 +177,7 @@ class Usecase:
 
         self.settings["geometry"] = mesh
 
-        for modifier in self.settings["blender_object"].modifiers:
+        for modifier in self.blender_object.modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = True
 
@@ -297,11 +301,13 @@ class Usecase:
             return self.create_swept_disk_solid_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Curve):
             return self.create_curve3d_representation()
-        elif isinstance(self.settings["geometry"], bpy.types.Camera):
-            if self.settings["geometry"].type == "ORTHO":
+        elif isinstance(self.geometry, bpy.types.Camera):
+            if self.geometry.type == "ORTHO":
                 return self.create_camera_block_representation()
-            elif self.settings["geometry"].type == "PERSP":
+            elif self.geometry.type == "PERSP":
                 return self.create_camera_pyramid_representation()
+            else:
+                raise ValueError(f"Unsupported camera type: '{self.geometry.type}'.")
         elif not len(self.settings["geometry"].edges):
             return self.create_point_cloud_representation()
         elif not len(self.settings["geometry"].polygons):
@@ -319,8 +325,10 @@ class Usecase:
         return self.create_mesh_representation()
 
     def create_camera_block_representation(self) -> ifcopenshell.entity_instance:
-        raster_x = self.settings["geometry"].BIMCameraProperties.raster_x
-        raster_y = self.settings["geometry"].BIMCameraProperties.raster_y
+        assert isinstance(self.geometry, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(self.geometry)
+        raster_x = props.raster_x
+        raster_y = props.raster_y
 
         if self.is_camera_landscape():
             width = self.settings["geometry"].ortho_scale
@@ -347,8 +355,10 @@ class Usecase:
         )
 
     def create_camera_pyramid_representation(self) -> ifcopenshell.entity_instance:
-        raster_x = self.settings["geometry"].BIMCameraProperties.raster_x
-        raster_y = self.settings["geometry"].BIMCameraProperties.raster_y
+        assert isinstance(self.geometry, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(self.geometry)
+        raster_x = props.raster_x
+        raster_y = props.raster_y
         fov = self.settings["geometry"].angle
 
         clip_end = self.settings["geometry"].clip_end
@@ -389,10 +399,9 @@ class Usecase:
         )
 
     def is_camera_landscape(self) -> bool:
-        return (
-            self.settings["geometry"].BIMCameraProperties.raster_x
-            > self.settings["geometry"].BIMCameraProperties.raster_y
-        )
+        assert isinstance(self.geometry, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(self.geometry)
+        return props.raster_x > props.raster_y
 
     def create_swept_disk_solid_representation(self) -> ifcopenshell.entity_instance:
         return self.file.createIfcShapeRepresentation(
@@ -540,7 +549,7 @@ class Usecase:
 
         # create dummy object that will have more detailed curves
         # since now we do not really support splines curves natively
-        obj = self.settings["blender_object"]
+        obj = self.blender_object
         dummy = bpy.data.objects.new("Dummy", obj.data.copy())
         bpy.context.scene.collection.objects.link(dummy)
         tool.Blender.select_and_activate_single_object(bpy.context, dummy)
@@ -752,7 +761,7 @@ class Usecase:
             profile_def,
             position,
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
-            self.convert_si_to_unit(self.settings["blender_object"].dimensions[2]),
+            self.convert_si_to_unit(self.blender_object.dimensions[2]),
         )
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
@@ -952,7 +961,7 @@ class Usecase:
         )
 
     def create_box_representation(self) -> ifcopenshell.entity_instance:
-        obj = self.settings["blender_object"]
+        obj = self.blender_object
         bounding_box = self.file.createIfcBoundingBox(
             self.create_cartesian_point(obj.bound_box[0][0], obj.bound_box[0][1], obj.bound_box[0][2]),
             self.convert_si_to_unit(obj.dimensions[0]),

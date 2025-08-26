@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "ifcopenshell",
-    "cjio>=0.8"
+    "cjio >=0.8, <0.10"
 ]
 
 [project.urls]

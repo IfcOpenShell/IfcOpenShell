@@ -24,10 +24,17 @@ import math
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.feature
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.type
+import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import mathutils.geometry
 import bonsai.core.type
@@ -36,7 +43,7 @@ import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees
+from math import pi, sin, cos, degrees, atan2
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
@@ -52,7 +59,10 @@ class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
         core.unjoin_walls(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
@@ -66,7 +76,7 @@ class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         slab = None
-        walls = []
+        walls: list[bpy.types.Object] = []
         if (obj := tool.Blender.get_active_object(is_selected=True)) and (element := tool.Ifc.get_entity(obj)):
             slab = obj
         for obj in tool.Blender.get_selected_objects(include_active=False):
@@ -112,10 +122,142 @@ class ExtendWallsToWall(bpy.types.Operator, tool.Ifc.Operator):
                 ifcopenshell.api.geometry.connect_wall(
                     tool.Ifc.get(), wall1=element, wall2=target_element, is_atpath=True
                 )
-                joiner.recreate_wall(element, obj)
-            joiner.recreate_wall(target_element, target_obj)
+                tool.Model.recreate_wall(element, obj)
+            tool.Model.recreate_wall(target_element, target_obj)
         else:
             self.report({"ERROR"}, "Please select at least one LAYER2 element and one active LAYER2 element")
+
+
+class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+    bl_idname = "bim.extend_walls_to_polyline_point"
+    bl_label = "Extend Walls To Polyline Point"
+    bl_description = "Extend and trim selected walls to another wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not (space := context.space_data) or space.type != "VIEW_3D":
+            return False
+        for obj in context.selected_objects:
+            if not (element := tool.Ifc.get_entity(obj)) or not element.is_a("IfcWall"):
+                return False
+        return bool(context.selected_objects)
+
+    def __init__(self):
+        super().__init__()
+        self.connection = "ATEND"
+
+    def set_origin(self, context, event, connection="ATSTART"):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        layers = tool.Model.get_material_layer_parameters(element)
+        axis = tool.Model.get_wall_axis(obj, layers)
+        start = Vector((axis["reference"][0][0], axis["reference"][0][1], obj.location.z))
+        end = Vector((axis["reference"][1][0], axis["reference"][1][1], obj.location.z))
+        direcion = end - start
+        value = end if connection == "ATSTART" else start
+        self.input_ui.set_value("X", value[0])
+        self.input_ui.set_value("Y", value[1])
+        self.input_ui.set_value("Z", value[2])
+        result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+        # Point related to the mouse
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
+        mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+
+        angle = atan2(direcion.y, direcion.x)
+
+        self.tool_state.lock_axis = True
+        self.tool_state.snap_angle = degrees(angle)
+
+    def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+        self.handle_lock_axis(context, event)  # Must come before "PASS_THROUGH"
+        self.handle_mouse_move(context, event)
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        custom_instructions = {
+            "Cycle Input": {"icons": True, "keys": ["EVENT_TAB"]},
+            "Distance Input": {"icons": True, "keys": ["EVENT_D"]},
+            "Flip starting point": {"icons": True, "keys": ["EVENT_F"]},
+            "Confirm": {"icons": True, "keys": ["MOUSE_LMB"]},
+            "Cancel": {"icons": True, "keys": ["MOUSE_RMB", "EVENT_ESC"]},
+        }
+        custom_info = []
+        self.handle_instructions(context, custom_instructions, custom_info, overwrite=True)
+        self.handle_mouse_move(context, event, should_round=True)
+        self.choose_axis(event)
+        self.handle_snap_selection(context, event)
+
+        if event.value == "RELEASE" and event.type == "F":
+            tool.Polyline.clear_polyline()
+            self.connection = "ATSTART" if self.connection == "ATEND" else "ATEND"
+            self.set_origin(context, event, self.connection)
+
+        if event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE", "LEFTMOUSE"}:
+            if self.tool_state.is_input_on:
+                is_valid = self.recalculate_inputs(context)
+                if is_valid:
+                    result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+                    if result:
+                        self.report({"WARNING"}, result)
+            else:
+                result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+                if result:
+                    self.report({"WARNING"}, result)
+
+            polyline_props = tool.Model.get_polyline_props()
+            snap_prop = polyline_props.snap_mouse_point[0]
+            snap_obj = bpy.data.objects.get(snap_prop.snap_object)
+            if snap_obj and tool.Ifc.get_entity(snap_obj).is_a("IfcWall"):
+                tool.Blender.set_active_object(snap_obj)
+                ExtendWallsToWall._execute(self, context)
+            else:
+                point = polyline_props.insertion_polyline[0].polyline_points[1]
+                core.extend_walls(
+                    tool.Ifc,
+                    tool.Blender,
+                    tool.Geometry,
+                    DumbWallJoiner(),
+                    tool.Model,
+                    Vector((point.x, point.y, point.z)),
+                    self.connection,
+                )
+
+            tool.Polyline.clear_polyline()
+            context.workspace.status_text_set(text=None)
+            PolylineDecorator.uninstall()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        self.handle_keyboard_input(context, event)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            return cancel
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        self.set_origin(context, event, self.connection)
+        self.tool_state.use_default_container = True
+        self.tool_state.plane_method = "XY"
+        # Update snaps after changing plane_method
+        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+        self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
+        tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+        tool.Blender.update_viewport()
+        return {"RUNNING_MODAL"}
 
 
 class AlignWall(bpy.types.Operator):
@@ -124,36 +266,22 @@ class AlignWall(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = """ Align the selected walls to the active wall:
     'Ext.': align to the EXTERIOR face
-    'C/L': align to wall CENTERLINE
+    'C/L': align to wall CENTER
     'Int.': align to the INTERIOR face"""
 
-    AlignType = Literal["CENTERLINE", "EXTERIOR", "INTERIOR"]
-    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+    AlignType = Literal["CENTER", "EXTERIOR", "INTERIOR"]
+    align_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
         items=((i, i, "") for i in get_args(AlignType))
     )
 
     if TYPE_CHECKING:
         align_type: AlignType
 
-    @classmethod
-    def poll(cls, context):
-        selected_valid_objects = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
-        return context.active_object and len(selected_valid_objects) > 1
-
     def execute(self, context):
-        selected_objects = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
-        for obj in selected_objects:
-            if obj == context.active_object:
-                continue
-            aligner = DumbWallAligner(obj, context.active_object)
-            if self.align_type == "CENTERLINE":
-                aligner.align_centerline()
-            elif self.align_type == "EXTERIOR":
-                aligner.align_first_layer()
-            elif self.align_type == "INTERIOR":
-                aligner.align_last_layer()
-            else:
-                assert_never(self.align_type)
+        try:
+            core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), self.align_type)
+        except core.RequireAtLeastTwoLayeredElements as e:
+            self.report({"ERROR"}, str(e))
         return {"FINISHED"}
 
 
@@ -165,10 +293,13 @@ class FlipWall(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        selected_objs = tool.Model.get_selected_mesh_objects()
         joiner = DumbWallJoiner()
         for obj in selected_objs:
             joiner.flip(obj)
@@ -185,10 +316,13 @@ class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        selected_objs = tool.Model.get_selected_mesh_objects()
         for obj in selected_objs:
             DumbWallJoiner().split(obj, context.scene.cursor.location)
         return {"FINISHED"}
@@ -202,12 +336,23 @@ class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not context.active_object:
+            cls.poll_message_set("No active object selected.")
+            return False
+        elif not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        mesh_objects = [o for o in tool.Model.get_selected_ifc_objects() if o.type == "MESH"]
+        if len(mesh_objects) != 2:
+            cls.poll_message_set("Please select exactly two mesh IFC objects.")
+            return False
+        return True
 
     def _execute(self, context):
-        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
-        if len(selected_objs) == 2:
-            DumbWallJoiner().merge([o for o in selected_objs if o != context.active_object][0], context.active_object)
+        active_obj = context.active_object
+        assert active_obj
+        selected_objs = tool.Model.get_selected_mesh_objects()
+        DumbWallJoiner().merge(next(o for o in selected_objs if o != active_obj), active_obj)
         return {"FINISHED"}
 
 
@@ -218,82 +363,94 @@ class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        DumbWallRecalculator().recalculate(context.selected_objects)
+        objects = tool.Model.get_selected_mesh_ifc_objects()
+        tool.Model.recalculate_walls(objects)
         return {"FINISHED"}
 
 
 class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_depth"
     bl_label = "Update"
-    bl_description = "Update Height"
+    bl_description = "Update height for the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     depth: bpy.props.FloatProperty()
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        layer2_objs = []
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        for obj in context.selected_objects:
+        layer2_objs: list[bpy.types.Object] = []
+        ifc_file = tool.Ifc.get()
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+
+        for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
-            if not element:
-                return
+            assert element
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
-                return
+                continue
             extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
-                return
+                continue
             x, y, z = extrusion.ExtrudedDirection.DirectionRatios
             x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
             extrusion.Depth = self.depth / si_conversion * (1 / cos(x_angle))
             if tool.Model.get_usage_type(element) == "LAYER2":
                 for rel in element.ConnectedFrom:
                     if rel.is_a() == "IfcRelConnectsElements":
-                        ifcopenshell.api.run(
-                            "geometry.disconnect_element",
-                            tool.Ifc.get(),
+                        ifcopenshell.api.geometry.disconnect_element(
+                            ifc_file,
                             relating_element=rel.RelatingElement,
                             related_element=element,
                         )
                 layer2_objs.append(obj)
+
         if layer2_objs:
-            DumbWallRecalculator().recalculate(layer2_objs)
+            tool.Model.recalculate_walls(layer2_objs)
         return {"FINISHED"}
 
 
 class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_x_angle"
     bl_label = "Update"
-    bl_description = "Update Angle"
+    bl_description = "Update angle for the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE")
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        layer2_objs = []
-        other_objs = []
+        layer2_objs: list[bpy.types.Object] = []
         x_angle = 0 if tool.Cad.is_x(self.x_angle, 0, tolerance=0.001) else self.x_angle
         x_angle = 0 if tool.Cad.is_x(self.x_angle, pi, tolerance=0.001) else self.x_angle
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        for obj in context.selected_objects:
+        selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+
+        for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
-            if not element:
-                return
+            assert element
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
-                return
+                continue
             extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
-                return
+                continue
             existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
             existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
             existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
@@ -301,7 +458,6 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
                 depth = extrusion.Depth / abs(1 / cos(existing_x_angle))
                 perpendicular_depth = depth * abs(1 / cos(x_angle))
-                print(extrusion.Depth, perpendicular_depth)
                 extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
                 layer2_objs.append(obj)
                 extrusion.Depth = perpendicular_depth
@@ -373,26 +529,47 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 obj.rotation_euler.z = current_z_rot
 
         if layer2_objs:
-            DumbWallRecalculator().recalculate(layer2_objs)
+            tool.Model.recalculate_walls(layer2_objs)
         return {"FINISHED"}
 
 
 class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_layer_length"
     bl_label = "Update"
-    bl_description = "Update Length"
+    bl_description = "Update length for the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     length: bpy.props.FloatProperty()
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
         joiner = DumbWallJoiner()
-        for obj in context.selected_objects:
+        selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+        for obj in selected_objs:
             joiner.set_length(obj, self.length)
-        return {"FINISHED"}
+
+
+class OffsetWalls(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.offset_walls"
+    bl_label = "Offset Walls"
+    bl_description = "Offset selected objects from their reference line."
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        props = tool.Model.get_model_props()
+        core.offset_walls(tool.Ifc, tool.Blender, tool.Model, props.offset_type_vertical)
 
 
 class AddWallsFromSlab(bpy.types.Operator, tool.Ifc.Operator):
@@ -463,12 +640,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             material_set_usage = model.by_id(material.id())
             # if material.is_a("IfcMaterialLayerSetUsage"):
             attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
-            ifcopenshell.api.run(
-                "material.edit_layer_usage",
-                model,
-                **{"usage": material_set_usage, "attributes": attributes},
-            )
-            DumbWallRecalculator().recalculate([wall["obj"]])
+            ifcopenshell.api.material.edit_layer_usage(model, usage=material_set_usage, attributes=attributes)
+            tool.Model.recalculate_walls([wall["obj"]])
 
         if walls:
             if is_polyline_closed:
@@ -534,6 +707,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         ):
             self.create_walls_from_polyline(context)
             context.workspace.status_text_set(text=None)
+            self.tool_state.plane_method = None
             ProductDecorator.uninstall()
             PolylineDecorator.uninstall()
             tool.Polyline.clear_polyline()
@@ -569,11 +743,11 @@ class DumbWallAligner:
     # An alignment shifts the origin of all walls to the closest point on the
     # local X axis of the reference wall. In addition, the Z rotation is copied.
     # Z translations are ignored for alignment.
-    def __init__(self, wall: bpy.types.Object, reference_wall: bpy.types.Object):
-        self.wall = wall
+    def set_reference_wall(self, reference_wall: bpy.types.Object):
         self.reference_wall = reference_wall
 
-    def align_centerline(self) -> None:
+    def align_centerline(self, wall: bpy.types.Object) -> None:
+        self.wall = wall
         self.align_rotation()
 
         l_start = Vector(self.reference_wall.bound_box[0]).lerp(Vector(self.reference_wall.bound_box[3]), 0.5)
@@ -591,7 +765,8 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_last_layer(self) -> None:
+    def align_last_layer(self, wall: bpy.types.Object) -> None:
+        self.wall = wall
         self.align_rotation()
 
         if self.is_rotation_flipped():
@@ -614,7 +789,8 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_first_layer(self) -> None:
+    def align_first_layer(self, wall: bpy.types.Object) -> None:
+        self.wall = wall
         self.align_rotation()
 
         if self.is_rotation_flipped():
@@ -656,30 +832,6 @@ class DumbWallAligner:
         return round(degrees(angle) % 360) == 180
 
 
-class DumbWallRecalculator:
-    def recalculate(self, walls: list[bpy.types.Object]) -> None:
-        queue: set[tuple[ifcopenshell.entity_instance, bpy.types.Object]] = set()
-        for wall in walls:
-            element = tool.Ifc.get_entity(wall)
-            if tool.Ifc.is_moved(wall):
-                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall)
-            queue.add((element, wall))
-            for rel in getattr(element, "ConnectedTo", []):
-                obj = tool.Ifc.get_object(rel.RelatedElement)
-                if tool.Ifc.is_moved(obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                queue.add((rel.RelatedElement, obj))
-            for rel in getattr(element, "ConnectedFrom", []):
-                obj = tool.Ifc.get_object(rel.RelatingElement)
-                if tool.Ifc.is_moved(obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                queue.add((rel.RelatingElement, obj))
-        joiner = DumbWallJoiner()
-        for element, wall in queue:
-            if tool.Model.get_usage_type(element) == "LAYER2" and wall:
-                joiner.recreate_wall(element, wall)
-
-
 class DumbWallGenerator:
     def __init__(self, relating_type):
         self.relating_type = relating_type
@@ -717,7 +869,8 @@ class DumbWallGenerator:
             return self.derive_from_cursor()
 
     def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         is_polyline_closed = False
         if len(polyline_points) > 3:
@@ -843,20 +996,18 @@ class DumbWallGenerator:
             ifc_class=ifc_class,
             should_add_representation=False,
         )
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=self.relating_type)
         if self.axis_context:
-            representation = ifcopenshell.api.run(
-                "geometry.add_axis_representation",
+            representation = ifcopenshell.api.geometry.add_axis_representation(
                 tool.Ifc.get(),
                 context=self.axis_context,
                 axis=[(0.0, 0.0), (self.length, 0.0)],
             )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=element, representation=representation
             )
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        representation = ifcopenshell.api.run(
-            "geometry.add_wall_representation",
+        representation = ifcopenshell.api.geometry.add_wall_representation(
             tool.Ifc.get(),
             context=self.body_context,
             thickness=self.layers["thickness"],
@@ -866,9 +1017,7 @@ class DumbWallGenerator:
             height=self.height,
             x_angle=self.x_angle,
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
-        )
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=element, representation=representation)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
@@ -878,16 +1027,16 @@ class DumbWallGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Parametric")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
         material = ifcopenshell.util.element.get_material(element)
         material.LayerSetDirection = "AXIS2"
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
         return obj
 
-    def get_relating_type_class(self, relating_type):
+    def get_relating_type_class(self, relating_type: ifcopenshell.entity_instance) -> str:
         classes = ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), tool.Ifc.get().schema)
-        return [c for c in classes if "StandardCase" not in c][0]
+        return next(c for c in classes if "StandardCase" not in c)
 
 
 class DumbWallPlaner:
@@ -911,7 +1060,7 @@ class DumbWallPlaner:
             else:
                 for rel in inverse.AssociatedTo:
                     walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
-        DumbWallRecalculator().recalculate([w for w in set(walls) if w])
+        tool.Model.recalculate_walls([w for w in set(walls) if w])
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         relating_type = settings["relating_type"]
@@ -942,7 +1091,7 @@ class DumbWallPlaner:
         if layer_set_direction:
             material.LayerSetDirection = layer_set_direction
         if material.LayerSetDirection == "AXIS2":
-            DumbWallRecalculator().recalculate([obj])
+            tool.Model.recalculate_walls([obj])
 
 
 class DumbWallJoiner:
@@ -956,13 +1105,13 @@ class DumbWallJoiner:
         if not element1:
             return
 
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATSTART")
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATSTART")
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATEND")
 
         axis1 = tool.Model.get_wall_axis(wall1)
         axis = copy.deepcopy(axis1["reference"])
         body = copy.deepcopy(axis1["reference"])
-        self.recreate_wall(element1, wall1, axis, body)
+        tool.Model.recreate_wall(element1, wall1)
 
     def split(self, wall1: bpy.types.Object, target: Vector) -> None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -975,7 +1124,6 @@ class DumbWallJoiner:
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
         axis1 = tool.Model.get_wall_axis(wall1)
-        axis2 = copy.deepcopy(axis1)
         intersect, cut_percentage = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
         if cut_percentage < 0 or cut_percentage > 1 or tool.Cad.is_x(cut_percentage, (0, 1)):
             return
@@ -987,22 +1135,24 @@ class DumbWallJoiner:
         relating_element = None
         connections = element1.ConnectedTo
         for conn in connections:
-            if conn.RelatingConnectionType == "ATEND":
+            if conn.is_a("IfcRelConnectsPathElements") and conn.RelatingConnectionType == "ATEND":
                 relating_element = conn.RelatedElement
+                relating_connection = conn.RelatedConnectionType
                 description = conn.Description
+                bonsai.core.geometry.remove_connection(tool.Geometry, connection=conn)
         connections = element1.ConnectedFrom
         for conn in connections:
-            if conn.RelatedConnectionType == "ATEND":
+            if conn.is_a("IfcRelConnectsPathElements") and conn.RelatedConnectionType == "ATEND":
                 relating_element = conn.RelatingElement
+                relating_connection = conn.RelatingConnectionType
                 description = conn.Description
-
+                bonsai.core.geometry.remove_connection(tool.Geometry, connection=conn)
         if relating_element:
-            ifcopenshell.api.run(
-                "geometry.connect_path",
+            ifcopenshell.api.geometry.connect_path(
                 tool.Ifc.get(),
                 relating_element=relating_element,
                 related_element=element2,
-                relating_connection="ATSTART",
+                relating_connection=relating_connection,
                 related_connection="ATEND",
                 description=description,
             )
@@ -1019,7 +1169,7 @@ class DumbWallJoiner:
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position > cut_percentage:
                 # The opening should be removed from element1.
-                ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
+                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
         # Now let's check element2.
         for opening in [
@@ -1031,25 +1181,41 @@ class DumbWallJoiner:
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position < cut_percentage:
                 # The opening should be removed from element2.
-                ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
+                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
         # During the duplication process, filled voids are not copied. So we
         # only need to check fillings on the original element1.
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings if r.RelatedOpeningElement.HasFillings]:
-            filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
+            rel = opening.HasFillings[0]
+            filling = rel.RelatedBuildingElement
+            filling_obj = tool.Ifc.get_object(filling)
             filling_location = filling_obj.matrix_world.translation
             _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis1["reference"])
             if filling_position > cut_percentage:
                 # The filling should be moved from element1 to element2.
-                FilledOpeningGenerator().generate(filling_obj, wall2, target=filling_obj.matrix_world.translation)
+                new_opening = ifcopenshell.api.root.copy_class(tool.Ifc.get(), product=opening)
+                new_opening.VoidsElements[0].RelatingBuildingElement = element2
+                if new_opening.ObjectPlacement and new_opening.ObjectPlacement.is_a("IfcLocalPlacement"):
+                    if element2.ObjectPlacement:
+                        new_opening.ObjectPlacement.PlacementRelTo = element2.ObjectPlacement
+                # For now, we do copy opening representations
+                if opening.Representation:
+                    new_opening.Representation = ifcopenshell.util.element.copy_deep(
+                        tool.Ifc.get(), opening.Representation, exclude=["IfcGeometricRepresentationContext"]
+                    )
+
+                rel.RelatedBuildingElement = element2
+
+                # Remove the old opening
+                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p3 = (wall1.matrix_world.inverted() @ intersect.to_3d()).to_2d() / unit_scale
         self.set_axis(element1, p1, p3)
         self.set_axis(element2, p3, p2)
 
-        self.recreate_wall(element1, wall1)
-        self.recreate_wall(element2, wall2)
+        tool.Model.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element2, wall2)
 
     def flip(self, wall1: bpy.types.Object) -> None:
         if tool.Ifc.is_moved(wall1):
@@ -1076,9 +1242,9 @@ class DumbWallJoiner:
         ifcopenshell.api.geometry.edit_object_placement(
             tool.Ifc.get(), product=element1, matrix=matrix, is_si=False, should_transform_children=False
         )
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
-    def merge(self, wall1, wall2):
+    def merge(self, wall1: bpy.types.Object, wall2: bpy.types.Object) -> None:
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
         if tool.Ifc.is_moved(wall2):
@@ -1086,6 +1252,7 @@ class DumbWallJoiner:
 
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
+        assert element1 and element2
 
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p3, p4 = ifcopenshell.util.representation.get_reference_line(element2)
@@ -1096,7 +1263,7 @@ class DumbWallJoiner:
         p3 = (matrix1i @ matrix2 @ np.concatenate((p3, (0, 1))))[:2]
         p4 = (matrix1i @ matrix2 @ np.concatenate((p4, (0, 1))))[:2]
 
-        if not np.isclose(p1[1], p4[1]) or not np.isclose(p3[1], p4[1]):
+        if not np.isclose(p1[1], p4[1], atol=1e-02) or not np.isclose(p3[1], p4[1], atol=1e-02):
             return
 
         x_ordinates = tuple(co[0] for co in (p1, p2, p3, p4))
@@ -1128,7 +1295,7 @@ class DumbWallJoiner:
                 related_connection=rel.RelatedConnectionType,
             )
 
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
         tool.Geometry.delete_ifc_object(wall2)
 
@@ -1146,22 +1313,20 @@ class DumbWallJoiner:
 
         for rel in element1.ConnectedFrom:
             if rel.is_a() == "IfcRelConnectsElements" and rel.Description == "TOP":
-                ifcopenshell.api.run(
-                    "geometry.disconnect_element",
+                ifcopenshell.api.geometry.disconnect_element(
                     tool.Ifc.get(),
                     relating_element=rel.RelatingElement,
                     related_element=element1,
                 )
 
-        ifcopenshell.api.run(
-            "geometry.connect_element",
+        ifcopenshell.api.geometry.connect_element(
             tool.Ifc.get(),
             relating_element=element2,
             related_element=element1,
             description="TOP",
         )
 
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
     def set_axis(self, wall, p1, p2):
         axis = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
@@ -1174,40 +1339,40 @@ class DumbWallJoiner:
         else:
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=wall, representation=rep)
 
-    def extend(self, wall1, target):
+    def extend(self, wall1, target, connection=False):
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
         element1 = tool.Ifc.get_entity(wall1)
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         target = (wall1.matrix_world.inverted() @ target).to_2d() / unit_scale
-        intersect, connection = mathutils.geometry.intersect_point_line(target, p1, p2)
-        connection = "ATEND" if connection > 0.5 else "ATSTART"
+        intersect, intersection_point = mathutils.geometry.intersect_point_line(target, p1, p2)
+        if not connection:
+            connection = "ATEND" if intersection_point > 0.5 else "ATSTART"
 
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type=connection)
 
         if connection == "ATEND":
             self.set_axis(element1, p1, intersect)
         else:
             self.set_axis(element1, intersect, p2)
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
-    def set_length(self, wall1, si_length):
+    def set_length(self, wall1: bpy.types.Object, si_length: float) -> None:
         element1 = tool.Ifc.get_entity(wall1)
-        if not element1:
-            return
+        assert element1
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATEND")
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p2[0] = p1[0] + si_length / unit_scale
         self.set_axis(element1, p1, p2)
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
-    def join_T(self, wall1, wall2):
+    def join_T(self, wall1: bpy.types.Object, wall2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
         axis1 = tool.Model.get_wall_axis(wall1)
@@ -1219,8 +1384,7 @@ class DumbWallJoiner:
             return
         connection = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
 
-        ifcopenshell.api.run(
-            "geometry.connect_path",
+        ifcopenshell.api.geometry.connect_path(
             tool.Ifc.get(),
             related_element=element1,
             relating_element=element2,
@@ -1229,9 +1393,9 @@ class DumbWallJoiner:
             description="BUTT",
         )
 
-        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        tool.Model.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
 
-    def connect(self, obj1, obj2):
+    def connect(self, obj1: bpy.types.Object, obj2: bpy.types.Object) -> None:
         wall1 = tool.Ifc.get_entity(obj1)
         wall2 = tool.Ifc.get_entity(obj2)
         if tool.Ifc.is_moved(obj1):
@@ -1239,27 +1403,8 @@ class DumbWallJoiner:
         if tool.Ifc.is_moved(obj2):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
         ifcopenshell.api.geometry.connect_wall(tool.Ifc.get(), wall1=wall1, wall2=wall2)
-        self.recreate_wall(wall1, obj1)
-        self.recreate_wall(wall2, obj2)
-
-    def recreate_wall(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None) -> None:
-        rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=rep,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-        tool.Geometry.record_object_materials(obj)
-
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        matrix[:, 3] *= unit_scale
-        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
-        tool.Geometry.record_object_position(obj)
+        tool.Model.recreate_wall(wall1, obj1)
+        tool.Model.recreate_wall(wall2, obj2)
 
     def create_matrix(self, p, x, y, z):
         return Matrix([x, y, z, p]).to_4x4().transposed()

@@ -32,10 +32,11 @@ from bpy.props import (
     CollectionProperty,
 )
 from bonsai.bim.module.nest.decorator import NestDecorator, NestModeDecorator
+from typing import TYPE_CHECKING, Union
 
 
-def update_relating_object(self, context):
-    def message(self, context):
+def update_relating_object(self: "BIMObjectNestProperties", context: bpy.types.Context) -> None:
+    def message(self, context: bpy.types.Context) -> None:
         self.layout.label(text="Please select a valid Ifc Element")
 
     if self.relating_object is None:
@@ -49,15 +50,19 @@ class BIMObjectNestProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     relating_object: PointerProperty(name="Nest Host", type=bpy.types.Object, update=update_relating_object)
 
+    if TYPE_CHECKING:
+        is_editing: bool
+        relating_object: bpy.types.Object
 
-def update_nest_decorator(self, context):
+
+def update_nest_decorator(self: "BIMNestProperties", context: bpy.types.Context) -> None:
     if self.nest_decorator:
         NestDecorator.install(bpy.context)
     else:
         NestDecorator.uninstall()
 
 
-def update_nest_mode_decorator(self, context):
+def update_nest_mode_decorator(self: "BIMNestProperties", context: bpy.types.Context) -> None:
     if self.in_nest_mode:
         NestModeDecorator.install(bpy.context)
     else:
@@ -67,6 +72,10 @@ def update_nest_mode_decorator(self, context):
 class Objects(bpy.types.PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
     previous_display_type: bpy.props.StringProperty(default="TEXTURED")
+
+    if TYPE_CHECKING:
+        obj: Union[bpy.types.Object, None]
+        previous_display_type: str
 
 
 class BIMNestProperties(PropertyGroup):
@@ -79,3 +88,10 @@ class BIMNestProperties(PropertyGroup):
         default=False,
         update=update_nest_decorator,
     )
+
+    if TYPE_CHECKING:
+        in_nest_mode: bool
+        editing_nest: Union[bpy.types.Object, None]
+        editing_objects: bpy.types.bpy_prop_collection_idprop[Objects]
+        not_editing_objects: bpy.types.bpy_prop_collection_idprop[Objects]
+        nest_decorator: bool

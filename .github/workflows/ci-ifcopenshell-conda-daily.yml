@@ -35,11 +35,11 @@ jobs:
 
       - name: Version + date str
         id: verdate
-        run: echo "verdate='${{ steps.version.outputs.version }}alpha${{ steps.date.outputs.date }}'" >> $GITHUB_OUTPUT
+        run: echo "verdate=${{ steps.version.outputs.version }}alpha${{ steps.date.outputs.date }}" >> $GITHUB_OUTPUT
 
       
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
     needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
@@ -48,57 +48,67 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [novtk, all]
         pyver: [
-#          { name: py311, distver: '3.11'},
           { name: py312, distver: '3.12'}
         ]
         platform: [
           { name: win, distver: windows-latest, pkg_dir: 'win-64' },
           { name: linux, distver: ubuntu-latest, pkg_dir: 'linux-64' },
-          { name: macOS, distver: macos-latest, pkg_dir: 'osx-64' }
+          { name: macOS-arm, distver: macos-latest, pkg_dir: 'osx-arm64' },
+          { name: macOS-x86, distver: macos-13, pkg_dir: 'osx-64' }
         ]
     steps:
-      - name: Set up swap space
+      - name: Set Swap Space
         if: runner.os == 'Linux'
-        uses: pierotofy/set-swap-space@v1.0
+        uses: pierotofy/set-swap-space@master
         with:
           swap-size-gb: 10
-
+      
+      - name: set ARTIFACTS ENV vars
+        shell: bash
+        run: |
+          pwd
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "ARTIFACTS_DIR=D:/a/artifacts" >> $GITHUB_ENV
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "ARTIFACTS_DIR=/Users/runner/work/artifacts" >> $GITHUB_ENV
+          elif [[ "$RUNNER_OS" == "Linux" ]]; then
+            echo "ARTIFACTS_DIR=/home/runner/work/artifacts" >> $GITHUB_ENV
+          fi
+      
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Download and extract MacOSX SDK
-        if: ${{ runner.os == 'macOS' }}
+        if: ${{ matrix.platform.name == 'macOS-x86' }}
         run: |
           curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
 
-      - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
+      - uses: mamba-org/setup-micromamba@v2 # https://github.com/mamba-org/setup-micromamba
         with:
           environment-name: test-env
           create-args: >-
-            python=3.11
+            python=3.12
             anaconda-client
-            boa
+            rattler-build
 
       - name: create conda package dist dir
         run: |
-          mkdir -p ${{ github.workspace }}/dist
+          mkdir -p ${{ env.ARTIFACTS_DIR }}
 
       - name: build & test ifcopenshell
         run: |
-          conda mambabuild . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --variants='{variant: ${{ matrix.variant }}}'
-        working-directory: ./conda
+          rattler-build  build -r conda/recipe.yaml --output-dir '${{ env.ARTIFACTS_DIR }}'
         env:
           VERSION_OVERRIDE: ${{ needs.activate.outputs.verdate }}
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name == 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2'
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda'
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name != 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda

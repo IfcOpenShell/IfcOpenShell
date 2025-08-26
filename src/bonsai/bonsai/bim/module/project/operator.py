@@ -41,6 +41,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import bonsai.bim.handler
 import bonsai.bim.helper
@@ -63,10 +64,14 @@ from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneD
 from bonsai.bim.module.project.prop import BreadcrumbType
 from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, TYPE_CHECKING, get_args
+from typing import Union, TYPE_CHECKING, get_args, Literal
 
 if TYPE_CHECKING:
+    import bpy.stub_internal.rna_enums as rna_enums
     from bonsai.bim.module.project.prop import Link
+
+
+PresetType = Literal["metric_m", "metric_mm", "imperial_ft", "demo", "wizard"]
 
 
 class NewProject(bpy.types.Operator):
@@ -74,13 +79,19 @@ class NewProject(bpy.types.Operator):
     bl_label = "New Project"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Start a new IFC project in a fresh session"
-    preset: bpy.props.StringProperty()
+    preset: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(i, i, "") for i in get_args(PresetType)]
+    )
 
-    def execute(self, context):
+    if TYPE_CHECKING:
+        preset: PresetType
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         bpy.ops.wm.read_homefile()
         pprops = tool.Project.get_project_props()
         bim_props = tool.Blender.get_bim_props()
 
+        assert bpy.context.scene
         if self.preset == "metric_m":
             pprops.export_schema = "IFC4"
             bpy.context.scene.unit_settings.system = "METRIC"
@@ -143,7 +154,6 @@ class CreateProject(bpy.types.Operator):
         core.create_project(
             tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
         )
-        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):
@@ -174,6 +184,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     def _execute(self, context):
         filepath = self.get_filepath()
         ifc_file = tool.Ifc.get()
+        library_file: ifcopenshell.file
         library_file = ifcopenshell.open(filepath)
         if library_file.schema_identifier != ifc_file.schema_identifier:
             self.report(
@@ -319,7 +330,7 @@ class ChangeLibraryElement(bpy.types.Operator):
             for element in elements:
                 ifc_classes_elements[element.is_a()].append(element)
 
-            if len(ifc_classes_elements) == 1 and list(ifc_classes_elements)[0] == self.element_name:
+            if len(ifc_classes_elements) == 1 and next(iter(ifc_classes_elements)) == self.element_name:
                 for name, ifc_definition_id in sorted(
                     [(self.get_name(e), e.id()) for e in ifc_classes_elements[self.element_name]]
                 ):
@@ -1060,7 +1071,6 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = tool.Project.get_project_props()
         self.file = tool.Ifc.get()
-        bonsai.bim.schema.reload(self.file.schema_identifier)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")
@@ -1095,7 +1105,6 @@ class LoadProjectElements(bpy.types.Operator):
         props = tool.Project.get_project_props()
         props.is_loading = False
 
-        tool.Project.load_pset_templates()
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
@@ -1103,8 +1112,8 @@ class LoadProjectElements(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-    def get_decomposition_elements(self):
-        containers = set()
+    def get_decomposition_elements(self) -> set[ifcopenshell.entity_instance]:
+        containers: set[ifcopenshell.entity_instance] = set()
         for filter_category in self.props.filter_categories:
             if not filter_category.is_selected:
                 continue
@@ -1116,15 +1125,15 @@ class LoadProjectElements(bpy.types.Operator):
                     container = None
                 elif self.file.schema != "IFC2X3" and container.is_a("IfcContext"):
                     container = None
-        elements = set()
+        elements: set[ifcopenshell.entity_instance] = set()
         for container in containers:
             for rel in container.ContainsElements:
                 elements.update(rel.RelatedElements)
         self.append_decomposed_elements(elements)
         return elements
 
-    def append_decomposed_elements(self, elements):
-        decomposed_elements = set()
+    def append_decomposed_elements(self, elements: set[ifcopenshell.entity_instance]) -> None:
+        decomposed_elements: set[ifcopenshell.entity_instance] = set()
         for element in elements:
             if element.IsDecomposedBy:
                 for subelement in element.IsDecomposedBy[0].RelatedObjects:
@@ -1133,26 +1142,26 @@ class LoadProjectElements(bpy.types.Operator):
             self.append_decomposed_elements(decomposed_elements)
         elements.update(decomposed_elements)
 
-    def get_ifc_class_elements(self):
-        elements = set()
+    def get_ifc_class_elements(self) -> set[ifcopenshell.entity_instance]:
+        elements: set[ifcopenshell.entity_instance] = set()
         for filter_category in self.props.filter_categories:
             if not filter_category.is_selected:
                 continue
             elements.update(self.file.by_type(filter_category.name, include_subtypes=False))
         return elements
 
-    def get_ifc_type_elements(self):
-        elements = set()
+    def get_ifc_type_elements(self) -> set[ifcopenshell.entity_instance]:
+        elements: set[ifcopenshell.entity_instance] = set()
         for filter_category in self.props.filter_categories:
             if not filter_category.is_selected:
                 continue
             elements.update(ifcopenshell.util.element.get_types(self.file.by_id(filter_category.ifc_definition_id)))
         return elements
 
-    def get_whitelist_elements(self):
+    def get_whitelist_elements(self) -> set[ifcopenshell.entity_instance]:
         return set(ifcopenshell.util.selector.filter_elements(self.file, self.props.filter_query))
 
-    def get_blacklist_elements(self):
+    def get_blacklist_elements(self) -> set[ifcopenshell.entity_instance]:
         return set(self.file.by_type("IfcElement")) - set(
             ifcopenshell.util.selector.filter_elements(self.file, self.props.filter_query)
         )
@@ -1192,6 +1201,9 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
         filepath: str
         files: list[bpy.types.OperatorFileListElement]
         directory: str
+        filter_glob: str
+        use_relative_path: bool
+        use_cache: bool
 
     def draw(self, context):
         pprops = tool.Project.get_project_props()
@@ -1304,6 +1316,9 @@ class LoadLink(bpy.types.Operator):
 
     def execute(self, context):
         filepath = Path(tool.Ifc.resolve_uri(self.filepath))
+        if not filepath.exists():
+            self.report({"ERROR"}, f"File does not exist: '{filepath}'")
+            return {"CANCELLED"}
         self.filepath_ = filepath
         if filepath.suffix.lower().endswith(".blend"):
             self.link_blend(filepath)
@@ -1429,23 +1444,11 @@ class ReloadLink(bpy.types.Operator):
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
-        filepath = Path(self.filepath)
-
-        def get_linked_ifcs() -> set[bpy.types.Library]:
-            return {
-                c.library
-                for c in bpy.data.collections
-                if "IfcProject" in c.name and c.library and Path(c.library.filepath) == filepath
-            }
-
-        for library in get_linked_ifcs():
-            library.reload()
-
         is_abs = os.path.isabs(Path(self.filepath))
         use_relative_path = not is_abs
         bpy.ops.bim.unlink_ifc(filepath=self.filepath)
-        status = bpy.ops.bim.link_ifc(filepath=self.filepath, use_cache=False, use_relative_path=use_relative_path)
-
+        filepath = tool.Ifc.resolve_uri(self.filepath)
+        status = bpy.ops.bim.link_ifc(filepath=filepath, use_cache=False, use_relative_path=use_relative_path)
         return {"FINISHED"}
 
 
@@ -1544,7 +1547,8 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     bl_description = "Save active IFC file by the provided filepath."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
+    supported_filexts = (".ifc", ".ifczip", ".ifcjson")
+    filter_glob: bpy.props.StringProperty(default=";".join(f"*{ext}" for ext in supported_filexts), options={"HIDDEN"})
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
@@ -1563,7 +1567,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
         layout.separator()
         layout.label(text="Supported formats for export:")
-        layout.label(text=".ifc, .ifczip, .ifcjson")
+        layout.label(text=",".join(self.supported_filexts))
 
     def invoke(self, context, event):
         if not tool.Ifc.get():
@@ -1578,16 +1582,25 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
         return ExportHelper.invoke(self, context, event)
 
+    def check(self, context):
+        # ExportHelper is automatically adjusting suffix to `filename_ext`.
+        filepath = Path(self.filepath)
+        suffix = filepath.suffix.lower()
+        if suffix != self.filename_ext and suffix in self.supported_filexts:
+            self.filename_ext = suffix
+        return ExportHelper.check(self, context)
+
     def execute(self, context):
         project_props = tool.Project.get_project_props()
+        prefs = tool.Blender.get_addon_preferences()
         project_props.use_relative_project_path = self.use_relative_path
-        if project_props.should_disable_undo_on_save:
+        if prefs.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
             old_undo_steps = context.preferences.edit.undo_steps
             tool.Ifc.get().history_size = 0
             context.preferences.edit.undo_steps = 0
         IfcStore.execute_ifc_operator(self, context)
-        if project_props.should_disable_undo_on_save:
+        if prefs.should_disable_undo_on_save:
             tool.Ifc.get().history_size = old_history_size
             context.preferences.edit.undo_steps = old_undo_steps
         return {"FINISHED"}
@@ -1626,10 +1639,6 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         print("Export finished in {:.2f} seconds".format(time.time() - start))
         # New project created in Bonsai should be in recent projects too.
         tool.Project.add_recent_ifc_project(Path(output_file))
-        props = tool.Drawing.get_document_props()
-        if not props.ifc_files:
-            new = props.ifc_files.add()
-            new.name = output_file
         props = tool.Project.get_project_props()
         if props.use_relative_project_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
@@ -1875,44 +1884,34 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         print("Finished", time.time() - start)
         return {"FINISHED"}
 
-    def process_occurrence(self, shape: ShapeElementType) -> None:
+    def process_occurrence(self, shape: W.TriangulationElement) -> None:
         element = self.file.by_id(shape.id)
-        faces: tuple[int, ...] = shape.geometry.faces
-        verts: tuple[float, ...] = shape.geometry.verts
-        materials: tuple[W.style, ...] = shape.geometry.materials
-        material_ids: tuple[int, ...] = shape.geometry.material_ids
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)
 
-        mesh = self.meshes.get(shape.geometry.id, None)
+        geometry = shape.geometry
+        mesh = self.meshes.get(geometry.id, None)
         if not mesh:
-            mesh = bpy.data.meshes.new("Mesh")
+            verts = ifcopenshell.util.shape.get_vertices(geometry)
+            material_ids = geometry.material_ids
+            mesh = tool.Loader.create_mesh_from_shape(geometry, mesh)
 
-            geometry = shape.geometry
             gprops = tool.Georeference.get_georeference_props()
-            if (
-                gprops.has_blender_offset
-                and geometry.verts
-                and tool.Loader.is_point_far_away(
-                    (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
-                )
-            ):
+            if gprops.has_blender_offset and verts.size and tool.Loader.is_point_far_away(verts[0], is_meters=True):
+                vert: np.ndarray = verts[0]
                 # Shift geometry close to the origin based off that first vert it found
-                verts_array = np.array(geometry.verts)
-                offset = np.array([-geometry.verts[0], -geometry.verts[1], -geometry.verts[2]])
-                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-                verts = offset_verts.tolist()
+                offset = ifcopenshell.util.shape_builder.np_translation_matrix(-vert)
+                mat = offset @ mat
 
                 mesh["has_cartesian_point_offset"] = True
-                mesh["cartesian_point_offset"] = f"{geometry.verts[0]},{geometry.verts[1]},{geometry.verts[2]}"
+                mesh["cartesian_point_offset"] = ",".join(vert.astype(str))
             else:
-                verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            material_to_slot = {}
+            material_to_slot: dict[int, int] = {}
             max_slot_index = 0
 
-            for i, material in enumerate(materials):
+            for i, material in enumerate(geometry.materials):
                 alpha = 1.0
                 if material.has_transparency and material.transparency > 0:
                     alpha = 1.0 - material.transparency
@@ -1935,11 +1934,10 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
 
             material_index = np.array([(material_to_slot[i] if i != -1 else 0) for i in material_ids], dtype="I")
 
-            mesh = tool.Loader.create_mesh_from_shape(geometry, mesh)
             mesh.polygons.foreach_set("material_index", material_index)
             mesh.update()
 
-            self.meshes[shape.geometry.id] = mesh
+            self.meshes[geometry.id] = mesh
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, mat)
@@ -2155,8 +2153,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
             return {"CANCELLED"}
 
         element_to_append = linked_ifc_file.by_guid(guid)
-        element = ifcopenshell.api.run(
-            "project.append_asset",
+        element = ifcopenshell.api.project.append_asset(
             tool.Ifc.get(),
             library=linked_ifc_file,
             element=element_to_append,
@@ -2346,7 +2343,9 @@ class RefreshClippingPlanes(bpy.types.Operator):
         data = region.data
 
         props = tool.Project.get_project_props()
-        if not len(props.clipping_planes) and not self.camera:
+        # See 6452 and 6478.
+        # if not len(props.clipping_planes) and not self.camera:
+        if not len(props.clipping_planes):
             data.use_clip_planes = False
         else:
             with bpy.context.temp_override(area=area, region=region):
@@ -2375,13 +2374,14 @@ class RefreshClippingPlanes(bpy.types.Operator):
                     clip_planes.append(clip_plane)
                     bm.free()
 
-                if self.camera:
-                    normal = self.camera.matrix_world.col[2].to_3d()
-                    normal *= -1
-                    center = self.camera.matrix_world.translation
-                    distance = -center.dot(normal)
-                    clip_plane = (normal.x, normal.y, normal.z, distance)
-                    clip_planes.append(clip_plane)
+                # See 6452 and 6478.
+                # if self.camera:
+                #     normal = self.camera.matrix_world.col[2].to_3d()
+                #     normal *= -1
+                #     center = self.camera.matrix_world.translation
+                #     distance = -center.dot(normal)
+                #     clip_plane = (normal.x, normal.y, normal.z, distance)
+                #     clip_planes.append(clip_plane)
 
                 clip_planes = cycle(clip_planes)
                 data.clip_planes = [tuple(next(clip_planes)) for i in range(0, 6)]
@@ -2622,11 +2622,11 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         single_mode = False
-
+        polyline_props = tool.Model.get_polyline_props()
         if (
             self.measure_type == "SINGLE"
-            and context.scene.BIMPolylineProperties.insertion_polyline
-            and len(context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points) >= 2
+            and polyline_props.insertion_polyline
+            and len(polyline_props.insertion_polyline[0].polyline_points) >= 2
         ):
             single_mode = True
 
@@ -2636,6 +2636,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ) or single_mode:
             context.workspace.status_text_set(text=None)
+            self.tool_state.plane_method = None
             PolylineDecorator.uninstall()
             tool.Polyline.move_polyline_to_measure(context, self.input_ui)
             tool.Polyline.clear_polyline()
@@ -2648,19 +2649,19 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_inserting_polyline(context, event)
 
         # Add measurement type to the insertion polyline
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_data = polyline_props.insertion_polyline
         if not polyline_data:
             pass
         else:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
-            measurement_type = bpy.context.scene.MeasureToolSettings.measurement_type
+            polyline_data = polyline_props.insertion_polyline[0]
+            measurement_type = tool.Project.get_measure_tool_settings().measurement_type
             if not polyline_data.measurement_type:
                 polyline_data.measurement_type = measurement_type
 
         tool.Polyline.calculate_area(context, self.input_ui)
 
         if event.type == "E":
-            context.scene.BIMPolylineProperties.measurement_polyline.clear()
+            polyline_props.measurement_polyline.clear()
             MeasureDecorator.uninstall()
             tool.Blender.update_viewport()
 
@@ -2723,6 +2724,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
             return {"PASS_THROUGH"}
 
         self.handle_mouse_move(context, event)
+        polyline_props = tool.Model.get_polyline_props()
 
         if event.value == "PRESS" and event.type == "LEFTMOUSE":
             tool.Blender.update_viewport()
@@ -2733,7 +2735,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
                     self.clicked_faces.append(obj.data.polygons[face_index])
                     self.total_area += obj.data.polygons[face_index].area
                     self.input_ui.set_value("AREA", self.total_area)
-                    polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline.add()
+                    polyline_data = polyline_props.insertion_polyline.add()
                     polyline_data.id = obj.name + str(face_index)
                     for v_id in obj.data.polygons[face_index].vertices:
                         vertex = obj.matrix_world @ obj.data.vertices[v_id].co
@@ -2751,14 +2753,14 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
                     self.clicked_faces.remove(obj.data.polygons[face_index])
                     self.total_area -= obj.data.polygons[face_index].area
                     self.input_ui.set_value("AREA", self.total_area)
-                    polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+                    polyline_data = polyline_props.insertion_polyline
                     for i, polyline in enumerate(polyline_data):
                         if polyline.id == obj.name + str(face_index):
                             polyline_data.remove(i)
             tool.Blender.update_viewport()
 
         if event.value == "RELEASE" and event.type in {"ESC", "RIGHTMOUSE"}:
-            bpy.context.scene.BIMPolylineProperties.insertion_polyline.clear()
+            polyline_props.insertion_polyline.clear()
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             FaceAreaDecorator.uninstall()
@@ -2782,10 +2784,12 @@ class ClearMeasurement(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.scene.BIMPolylineProperties.measurement_polyline) > 0
+        polyline_props = tool.Model.get_polyline_props()
+        return len(polyline_props.measurement_polyline) > 0
 
     def execute(self, context):
-        context.scene.BIMPolylineProperties.measurement_polyline.clear()
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_props.measurement_polyline.clear()
         MeasureDecorator.uninstall()
         tool.Blender.update_viewport()
         return {"FINISHED"}

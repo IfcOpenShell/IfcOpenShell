@@ -101,7 +101,7 @@ class Usecase:
         new_placement.PlacementRelTo = placement_rel_to
         self.settings["product"].ObjectPlacement = new_placement
 
-        ifcopenshell.api.owner.update_owner_history(self.file, **{"element": self.settings["product"]})
+        ifcopenshell.api.owner.update_owner_history(self.file, element=self.settings["product"])
 
         for settings in children_settings:
             self.settings = settings

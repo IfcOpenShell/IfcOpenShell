@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
@@ -94,7 +95,7 @@ class Patcher:
             replacements[element] = (v, f)
 
         iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
-        replacements = {}
+        replacements: dict[ifcopenshell.entity_instance, tuple[list, list]] = {}
         if iterator.initialize():
             for shape in iterator:
                 element = self.file.by_guid(shape.guid)
@@ -112,8 +113,7 @@ class Patcher:
             v, f = geometry
             if not v or not f:
                 continue
-            mesh = ifcopenshell.api.run(
-                "geometry.add_mesh_representation",
+            mesh = ifcopenshell.api.geometry.add_mesh_representation(
                 self.file,
                 context=context,
                 vertices=v,

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.root
-import ifcopenshell.util.date
+import ifcopenshell.api.sequence
 from datetime import datetime
 from typing import Optional
 
@@ -58,17 +58,5 @@ def add_cost_schedule(
         predefined_type=predefined_type,
         name=name,
     )
-    if file.schema == "IFC2X3":
-        cost_schedule.UpdateDate = createIfcDateAndTime(file, datetime.now())
-    else:
-        cost_schedule.UpdateDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+    cost_schedule.UpdateDate = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
     return cost_schedule
-
-
-def createIfcDateAndTime(file: ifcopenshell.file, dt: datetime):
-    ifc_dt = file.create_entity("IfcDateAndTime")
-    ifc_dt.DateComponent = file.create_entity(
-        "IfcCalendarDate", **ifcopenshell.util.date.datetime2ifc(dt, "IfcCalendarDate")
-    )
-    ifc_dt.TimeComponent = file.create_entity("IfcLocalTime", **ifcopenshell.util.date.datetime2ifc(dt, "IfcLocalTime"))
-    return ifc_dt

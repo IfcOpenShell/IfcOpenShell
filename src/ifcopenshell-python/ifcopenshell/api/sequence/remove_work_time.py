@@ -23,9 +23,7 @@ def remove_work_time(file: ifcopenshell.file, work_time: ifcopenshell.entity_ins
     """Removes a work time
 
     :param work_time: The IfcWorkTime to remove.
-    :type work_time: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

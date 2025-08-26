@@ -23,6 +23,8 @@ import brickschema.persistent
 from brickschema.namespaces import REF, A
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.root
 import ifcopenshell.guid
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -138,6 +140,7 @@ class TestAddBrickifcProject(NewFile):
 class TestAddBrickifcReference(NewFile):
     def test_run(self):
         TestAddBrickifcProject().test_run()
+        assert BrickStore.graph
         element = tool.Ifc.get().createIfcChiller(ifcopenshell.guid.new())
         element.Name = "Chiller"
         project = URIRef(f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}")
@@ -173,9 +176,10 @@ class TestAddRelation(NewFile):
 class TestRemoveRelation(NewFile):
     def test_run(self):
         TestAddRelation().test_run()
-        source, relation, destination = list(
-            BrickStore.graph.triples((None, URIRef("https://brickschema.org/schema/Brick#feeds"), None))
-        )[0]
+        assert BrickStore.graph
+        source, relation, destination = next(
+            iter(BrickStore.graph.triples((None, URIRef("https://brickschema.org/schema/Brick#feeds"), None)))
+        )
         subject.remove_relation(source, relation, destination)
         assert not list(
             BrickStore.graph.triples(
@@ -321,29 +325,29 @@ class TestGetConvertableBrickSystems(NewFile):
 
 
 class TestGetParentSpace(NewFile):
-    def test_run(cls):
+    def test_run(self):
         ifc = ifcopenshell.file()
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBuildingStorey")
-        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
-        project = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("aggregate.assign_object", ifc, products=[subelement], relating_object=element)
-        ifcopenshell.api.run("aggregate.assign_object", ifc, products=[element], relating_object=project)
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBuildingStorey")
+        subelement = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        project = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[subelement], relating_object=element)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[element], relating_object=project)
         assert subject.get_parent_space(subelement) == element
         assert subject.get_parent_space(element) is None
 
 
 class TestGetElementContainer(NewFile):
-    def test_nothing(cls):
+    def test_nothing(self):
         pass
 
 
 class TestGetElementSystems(NewFile):
-    def test_nothing(cls):
+    def test_nothing(self):
         pass
 
 
 class TestGetElementFeeds(NewFile):
-    def test_run(cls):
+    def test_run(self):
         pass
 
 

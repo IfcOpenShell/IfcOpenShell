@@ -1,10 +1,13 @@
+import sys
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 from xsdata.models.datatype import XmlDateTime
 
+DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
-@dataclass(slots=True, kw_only=True)
+
+@dataclass(**DATACLASS_KWARGS)
 class BimSnippet:
     reference: str = field(
         metadata={
@@ -44,7 +47,7 @@ class BimSnippet:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class CommentViewpoint:
     class Meta:
         global_type = False
@@ -59,7 +62,7 @@ class CommentViewpoint:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class DocumentReference:
     document_guid: Optional[str] = field(
         default=None,
@@ -100,7 +103,7 @@ class DocumentReference:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class File:
     filename: Optional[str] = field(
         default=None,
@@ -157,12 +160,12 @@ class File:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicLabels:
     class Meta:
         global_type = False
 
-    label: List[str] = field(
+    label: list[str] = field(
         default_factory=list,
         metadata={
             "name": "Label",
@@ -174,12 +177,12 @@ class TopicLabels:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicReferenceLinks:
     class Meta:
         global_type = False
 
-    reference_link: List[str] = field(
+    reference_link: list[str] = field(
         default_factory=list,
         metadata={
             "name": "ReferenceLink",
@@ -191,7 +194,7 @@ class TopicReferenceLinks:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicRelatedTopicsRelatedTopic:
     class Meta:
         global_type = False
@@ -206,7 +209,7 @@ class TopicRelatedTopicsRelatedTopic:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ViewPoint:
     viewpoint: Optional[str] = field(
         default=None,
@@ -246,7 +249,7 @@ class ViewPoint:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Comment:
     date: XmlDateTime = field(
         metadata={
@@ -312,12 +315,12 @@ class Comment:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class HeaderFiles:
     class Meta:
         global_type = False
 
-    file: List[File] = field(
+    file: list[File] = field(
         default_factory=list,
         metadata={
             "name": "File",
@@ -327,12 +330,12 @@ class HeaderFiles:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicDocumentReferences:
     class Meta:
         global_type = False
 
-    document_reference: List[DocumentReference] = field(
+    document_reference: list[DocumentReference] = field(
         default_factory=list,
         metadata={
             "name": "DocumentReference",
@@ -342,12 +345,12 @@ class TopicDocumentReferences:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicRelatedTopics:
     class Meta:
         global_type = False
 
-    related_topic: List[TopicRelatedTopicsRelatedTopic] = field(
+    related_topic: list[TopicRelatedTopicsRelatedTopic] = field(
         default_factory=list,
         metadata={
             "name": "RelatedTopic",
@@ -357,12 +360,12 @@ class TopicRelatedTopics:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicViewpoints:
     class Meta:
         global_type = False
 
-    view_point: List[ViewPoint] = field(
+    view_point: list[ViewPoint] = field(
         default_factory=list,
         metadata={
             "name": "ViewPoint",
@@ -372,7 +375,7 @@ class TopicViewpoints:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Header:
     files: Optional[HeaderFiles] = field(
         default=None,
@@ -384,12 +387,12 @@ class Header:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicComments:
     class Meta:
         global_type = False
 
-    comment: List[Comment] = field(
+    comment: list[Comment] = field(
         default_factory=list,
         metadata={
             "name": "Comment",
@@ -399,7 +402,7 @@ class TopicComments:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Topic:
     reference_links: Optional[TopicReferenceLinks] = field(
         default=None,
@@ -596,7 +599,7 @@ class Topic:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Markup:
     header: Optional[Header] = field(
         default=None,

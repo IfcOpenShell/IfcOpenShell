@@ -227,7 +227,8 @@ class TestFormatLength(test.bootstrap.IFC4):
 class TestIsAttrType(test.bootstrap.IFC4):
     def test_run(self):
         schema = ifcopenshell.schema_by_name("IFC4")
-        declaration = schema.declaration_by_name("IfcPropertySingleValue")
+        declaration = schema.declaration_by_name("IfcPropertySingleValue").as_entity()
+        assert declaration
         nominal_value = declaration.attribute_by_index(2).type_of_attribute()
         assert subject.is_attr_type(nominal_value, "IfcValue")
         assert subject.is_attr_type(nominal_value, "IfcLengthMeasure")

@@ -20,6 +20,8 @@ import numpy as np
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.spatial import Spatial as subject
@@ -158,7 +160,7 @@ class TestGetContainer(NewFile):
         ifc = ifcopenshell.file()
         site = ifc.createIfcSite()
         wall = ifc.createIfcWall()
-        ifcopenshell.api.run("spatial.assign_container", ifc, products=[wall], relating_structure=site)
+        ifcopenshell.api.spatial.assign_container(ifc, products=[wall], relating_structure=site)
         assert subject.get_container(wall) == site
 
 
@@ -167,7 +169,7 @@ class TestGetDecomposedElements(NewFile):
         ifc = ifcopenshell.file()
         site = ifc.createIfcSite()
         wall = ifc.createIfcWall()
-        ifcopenshell.api.run("spatial.assign_container", ifc, products=[wall], relating_structure=site)
+        ifcopenshell.api.spatial.assign_container(ifc, products=[wall], relating_structure=site)
         assert subject.get_decomposed_elements(site) == {wall}
 
 
@@ -227,7 +229,7 @@ class TestSelectProducts(NewFile):
     def test_select_products(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        product = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        product = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         obj = bpy.data.objects.new("Object", None)
         bpy.context.scene.collection.objects.link(obj)
         tool.Ifc.link(product, obj)
@@ -240,7 +242,7 @@ class TestGenerateSpace(NewFile):
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
         scene = bpy.context.scene
-        product = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        product = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
         scene.collection.objects.link(obj)

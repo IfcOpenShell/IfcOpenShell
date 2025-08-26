@@ -42,6 +42,8 @@ class Search(bonsai.core.tool.Search):
     def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]
 
+    FilterModule = Union[Literal["search", "csv", "diff", "drawing_include", "drawing_exclude"], str]
+
     @classmethod
     def get_filter_groups(cls, module: FilterModule) -> bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]:
         if module == "search":
@@ -51,9 +53,11 @@ class Search(bonsai.core.tool.Search):
         elif module == "diff":
             return tool.Blender.get_diff_props().filter_groups
         elif module == "drawing_include":
-            return bpy.context.scene.camera.data.BIMCameraProperties.include_filter_groups
+            assert (scene := bpy.context.scene) and (camera_obj := (scene.camera))
+            return tool.Drawing.get_camera_props(camera_obj).include_filter_groups
         elif module == "drawing_exclude":
-            return bpy.context.scene.camera.data.BIMCameraProperties.exclude_filter_groups
+            assert (scene := bpy.context.scene) and (camera_obj := (scene.camera))
+            return tool.Drawing.get_camera_props(camera_obj).exclude_filter_groups
         elif module.startswith("clash"):
             _, clash_set_index, ab, clash_source_index = module.split("_")
             props = tool.Clash.get_clash_props()
@@ -306,6 +310,29 @@ class Search(bonsai.core.tool.Search):
             text_data.from_string(query)
             query = f"bpy.data.texts['{name}']"
         return query
+
+    @classmethod
+    def patch_search_ifcgroups(cls) -> None:
+        """Apply a patch trying to convert old search IfcGroups to SEARCH type.
+
+        Previously we were saving search results to IfcGroup with ObjectType None
+        and allowing to write results to any IfcGroup by default, which could lead
+        to breaking by accident drawings or other internal IfcGroups.
+
+        Added temporarily @25.07.04
+        """
+        ifc_file = tool.Ifc.get()
+
+        for group in ifc_file.by_type("IfcGroup"):
+            # It's unsafe to change any other IfcGroup - e.g. it could be DRAWING.
+            if group.ObjectType is not None:
+                continue
+            try:
+                data = json.loads(group.Description)
+                if isinstance(data, dict) and data.get("type") == "BBIM_Search":
+                    group.ObjectType = "SEARCH"
+            except:
+                pass
 
 
 class ImportFilterQueryTransformer(lark.Transformer):

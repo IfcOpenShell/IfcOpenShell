@@ -20,6 +20,9 @@ from os.path import abspath, splitext
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.util.element
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
@@ -96,7 +99,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
         # TODO: same code as ifc.write_file_panel?
         elements_in_buildings = []
         if not 0 <= 0 < len(file.by_type("IfcBuilding")):
-            my_building = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcBuilding", name="My Building")
+            my_building = ifcopenshell.api.root.create_entity(file, ifc_class="IfcBuilding", name="My Building")
             elements = ifcopenshell.util.element.get_decomposition(my_building)
         else:
             for building in file.by_type("IfcBuilding"):
@@ -106,8 +109,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
         for spatial in file.by_type("IfcSpatialElement") or file.by_type("IfcSpatialStructureElement"):
             if not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings):
                 elements = ifcopenshell.util.element.get_decomposition(spatial)
-                ifcopenshell.api.run(
-                    "aggregate.assign_object",
+                ifcopenshell.api.aggregate.assign_object(
                     file,
                     products=[spatial],
                     relating_object=file.by_type("IfcBuilding")[0],
@@ -121,8 +123,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
         elements = file.by_type("IfcElement")
         for element in elements:
             if element not in elements_in_buildings:
-                ifcopenshell.api.run(
-                    "spatial.assign_container",
+                ifcopenshell.api.spatial.assign_container(
                     file,
                     products=[element],
                     relating_structure=file.by_type("IfcBuilding")[0],
@@ -132,9 +133,8 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
             elements = ifcopenshell.util.element.get_decomposition(building)
             if not building.Decomposes:
                 if not 0 <= 0 < len(file.by_type("IfcSite")):
-                    ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
-                ifcopenshell.api.run(
-                    "aggregate.assign_object",
+                    ifcopenshell.api.root.create_entity(file, ifc_class="IfcSite", name="My Site")
+                ifcopenshell.api.aggregate.assign_object(
                     file,
                     products=[building],
                     relating_object=file.by_type("IfcSite")[0],
@@ -144,8 +144,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
                         continue
                 except IndexError:
                     pass
-                ifcopenshell.api.run(
-                    "aggregate.assign_object",
+                ifcopenshell.api.aggregate.assign_object(
                     file,
                     products=[file.by_type("IfcSite")[0]],
                     relating_object=file.by_type("IfcProject")[0],

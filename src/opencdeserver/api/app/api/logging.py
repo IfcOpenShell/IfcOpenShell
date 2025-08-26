@@ -3,7 +3,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 from fastapi.routing import APIRoute
 from starlette.types import Message
-from typing import Callable, Dict, Any
+from typing import Callable
 import logging
 import httpx
 

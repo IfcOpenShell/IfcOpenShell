@@ -22,10 +22,7 @@ Blender versions:
 - 64-bit MacOS Intel (``macos-x64``)
 - 64-bit MacOS Silicon (``macos-arm64``)
 - 64-bit Windows (``windows-x64``)
-- Blender 4.2 with Python 3.11
-
-Due to significant changes in the Blender extensions system, Blender versions
-<4.2 are not supported.
+- Blender 4.3, 4.4, or 4.5 with Python 3.11
 
 Developer builds may exist for different versions of Python but there will be
 no guarantee of the uptime or stability of these builds.
@@ -154,16 +151,14 @@ to restart Blender to see changes).
 
 For Linux or Mac:
 
-.. literalinclude:: ../../../scripts/installation/dev_environment.sh
-   :language: bash
-   :caption: dev_environment.sh
+.. code-block:: bash
 
-For Windows, run this batch script as an administrator. Before running it
-follow the instructions described in the `rem` tags.
+    cd src/bonsai/scripts
+    python dev_environment.py
 
-.. literalinclude:: ../../../scripts/installation/dev_environment.bat
-   :language: bat
-   :caption: dev_environment.bat
+For Windows, you may need to run the script as an administrator. Make sure to 
+run the script with blender closed. By default the script assumes its 
+in the root directory of the IfcOpenShell repository.
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect.

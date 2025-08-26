@@ -29,8 +29,7 @@ from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from typing import Literal, Union, Optional
-from typing_extensions import assert_never
+from typing import Literal, Union, Optional, assert_never
 
 
 AxisType = Literal["x", "y", "z"]
@@ -94,6 +93,20 @@ def get_stair_length(obj: bpy.types.Object) -> float:
     height = get_height(obj)
     stair_length = math.sqrt(pow(length, 2) + pow(height, 2))
     return stair_length
+
+
+def get_footing_length(o: bpy.types.Object) -> float:
+    element = tool.Ifc.get_entity(o)
+    assert element
+    predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+    if not predefined_type:
+        return get_length(o)
+    if predefined_type == "FOOTING_BEAM" or predefined_type == "STRIP_FOOTING":
+        return get_z(o)
+    elif predefined_type == "PAD_FOOTING":
+        return max(get_x(o), get_y(o))
+    else:
+        return get_length(o)
 
 
 def get_net_stair_area(obj: bpy.types.Object) -> float:
@@ -173,6 +186,20 @@ def get_width(o: bpy.types.Object) -> float:
     x = get_x(o)
     y = get_y(o)
     return min(x, y)
+
+
+def get_footing_height(o: bpy.types.Object) -> float:
+    element = tool.Ifc.get_entity(o)
+    assert element
+    predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+    if not predefined_type:
+        return get_height(o)
+    if predefined_type == "FOOTING_BEAM" or predefined_type == "STRIP_FOOTING":
+        return get_y(o)
+    elif predefined_type == "PAD_FOOTING":
+        return get_z(o)
+    else:
+        return get_height(o)
 
 
 def get_height(o: bpy.types.Object) -> float:

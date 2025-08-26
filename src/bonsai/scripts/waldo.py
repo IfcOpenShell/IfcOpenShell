@@ -1,15 +1,17 @@
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.project
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.style
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
-import ifcopenshell.api.project
-import ifcopenshell.api.context
-import ifcopenshell.api.spatial
-import ifcopenshell.api.material
-import ifcopenshell.api.geometry
+import ifcopenshell.util.placement
 import ifcopenshell.util.shape_builder
-import ifcopenshell.util.element
 
 # https://stackoverflow.com/a/9184560/9627415
 # Possible optimisation to linalg.norm?

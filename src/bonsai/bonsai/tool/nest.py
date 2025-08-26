@@ -16,13 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.util.element
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.nest.prop import BIMNestProperties, BIMObjectNestProperties
 
 
 class Nest(bonsai.core.tool.Nest):
+    @classmethod
+    def get_nest_props(cls) -> BIMNestProperties:
+        return bpy.context.scene.BIMNestProperties
+
+    @classmethod
+    def get_object_nest_props(cls, obj: bpy.types.Object) -> BIMObjectNestProperties:
+        return obj.BIMObjectNestProperties
+
     @classmethod
     def can_nest(cls, relating_obj, related_obj):
         relating_object = tool.Ifc.get_entity(relating_obj)
@@ -34,19 +47,23 @@ class Nest(bonsai.core.tool.Nest):
         return False
 
     @classmethod
-    def disable_editing(cls, obj):
-        obj.BIMObjectNestProperties.is_editing = False
+    def disable_editing(cls, obj: bpy.types.Object) -> None:
+        props = cls.get_object_nest_props(obj)
+        props.is_editing = False
 
     @classmethod
-    def enable_editing(cls, obj):
-        obj.BIMObjectNestProperties.is_editing = True
+    def enable_editing(cls, obj: bpy.types.Object) -> None:
+        props = cls.get_object_nest_props(obj)
+        props.is_editing = True
 
     @classmethod
-    def get_container(cls, element):
+    def get_container(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_container(element)
 
     @classmethod
-    def get_relating_object(cls, related_element):
+    def get_relating_object(
+        cls, related_element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_nest(related_element)
 
     @classmethod
@@ -61,13 +78,14 @@ class Nest(bonsai.core.tool.Nest):
         return components
 
     @classmethod
-    def get_nest_mode(cls):
-        return bpy.context.scene.BIMNestProperties.in_nest_mode
+    def get_nest_mode(cls) -> bool:
+        props = cls.get_nest_props()
+        return props.in_nest_mode
 
     @classmethod
     def enable_nest_mode(cls, active_object: bpy.types.Object):
         context = bpy.context
-        props = context.scene.BIMNestProperties
+        props = cls.get_nest_props()
 
         element = tool.Ifc.get_entity(active_object)
         if not element:

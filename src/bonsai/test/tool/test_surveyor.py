@@ -20,6 +20,8 @@ import bpy
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.geolocation
 
 import test.bim.bootstrap
@@ -42,9 +44,9 @@ class TestGetGlobalMatrix(test.bim.bootstrap.NewFile):
 
     def test_applying_an_object_placement_blender_offset(self):
         ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[unit])
         tool.Ifc.set(ifc)
         props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True

@@ -27,6 +27,7 @@
 # panels, buttons, labels, and input fields are laid out.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.module.demo.data import DemoData
 
 
@@ -70,7 +71,7 @@ class BIM_PT_demo(bpy.types.Panel):
 
         # Interface panels often show properties. For convenience, define where
         # the properties are stored for the module.
-        self.props = context.scene.BIMDemoProperties
+        self.props = tool.Demo.get_demo_props()
 
         # This defines a new "row" in our layout. When a new row is defined, the
         # things on that row, like buttons, labels, and input fields, show on a
@@ -145,7 +146,7 @@ class BIM_PT_webui_demo(bpy.types.Panel):
     bl_parent_id = "BIM_PT_demo"
 
     def draw(self, context):
-        self.props = context.scene.BIMDemoProperties
+        self.props = tool.Demo.get_demo_props()
 
         row = self.layout.row()
         # we create an input field for the property webui_message

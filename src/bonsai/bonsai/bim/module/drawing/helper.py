@@ -134,6 +134,7 @@ def format_distance(
     custom_unit=None,
 ):
     # Get Blender Scene Unit Settings
+    assert bpy.context.scene
     unit_scale = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
@@ -305,7 +306,7 @@ def format_distance(
             if unit_length == "MILLIMETERS":
                 value = value / 1000
 
-        if precision:
+        if precision and isinstance(precision, float):
             value = precision * round(float(value) / precision)
 
         if decimal_places is not None:
@@ -392,18 +393,6 @@ def format_distance(
     return tx_dist
 
 
-def get_active_drawing(
-    scene: bpy.types.Scene,
-) -> Union[tuple[bpy.types.Collection, bpy.types.Camera], tuple[None, None]]:
-    """Get active drawing collection and camera"""
-    props = tool.Drawing.get_document_props()
-    try:
-        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
-        return tool.Blender.get_object_bim_props(camera).collection, camera
-    except:
-        return None, None
-
-
 def get_project_collection(scene):
     """Get main project collection"""
 
@@ -413,13 +402,15 @@ def get_project_collection(scene):
     return colls[0]
 
 
-def parse_diagram_scale(camera):
+def parse_diagram_scale(camera: bpy.types.Camera) -> float:
     """Returns numeric value of scale"""
-    if camera.BIMCameraProperties.diagram_scale == "CUSTOM":
-        _, fraction = camera.BIMCameraProperties.custom_diagram_scale.split("|")
+    props = tool.Drawing.get_camera_props(camera)
+    if props.diagram_scale == "CUSTOM":
+        numerator = props.custom_scale_numerator
+        denominator = props.custom_scale_denominator
     else:
-        _, fraction = camera.BIMCameraProperties.diagram_scale.split("|")
-    numerator, denominator = fraction.split("/")
+        _, fraction = props.diagram_scale.split("|")
+        numerator, denominator = fraction.split("/")
     return float(numerator) / float(denominator)
 
 
@@ -431,12 +422,11 @@ def ortho_view_frame(
     Similar to `bpy.types.Camera.view_frame`
 
     :arg camera: camera of drawing
-    :type camera: bpy.types.Camera + BIMCameraProperties
     :arg margin: margins, in scene units
-    :type margin: float
     :return: (xmin, xmax, ymin, ymax, zmin, zmax) in local camera coordinates
     """
-    aspect = camera.BIMCameraProperties.raster_y / camera.BIMCameraProperties.raster_x
+    props = tool.Drawing.get_camera_props(camera)
+    aspect = props.raster_y / props.raster_x
     size = camera.ortho_scale
     hwidth = size * 0.5
     hheight = size * 0.5 * aspect

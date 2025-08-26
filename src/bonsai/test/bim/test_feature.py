@@ -22,6 +22,7 @@ import pytest
 import traceback
 import webbrowser
 import numpy as np
+import test.bim.stub
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
@@ -31,6 +32,7 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.tool.brick import BrickStore
 from bonsai.bim.module.model.data import AuthoringData
 from pytest_bdd import scenarios, given, when, then, parsers
+from inspect import signature
 from mathutils import Vector
 from math import radians
 from pathlib import Path
@@ -40,6 +42,7 @@ scenarios("feature")
 
 variables = {
     "cwd": Path.cwd().as_posix(),
+    "ifc_dir": os.path.join(Path.cwd().as_posix(), "test", "files", "temp"),
     "ifc": "tool.Ifc.get()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
@@ -47,6 +50,9 @@ variables = {
 
 # Monkey-patch webbrowser opening since we want to test headlessly
 webbrowser.open = lambda x: True
+
+
+tool.Bsdd.client = test.bim.stub.bSDDClientStub()
 
 
 class PanelSpy:
@@ -70,6 +76,8 @@ class PanelSpy:
             return annotation.keywords.get("default", None)  # An operator property
         if attr == "layout":
             return self
+        if hasattr(self.panel, attr) and not callable(getattr(self.panel, attr)):
+            return getattr(self.panel, attr)
         return self
 
     def __call__(self, *args, **kwargs):
@@ -85,8 +93,9 @@ class PanelSpy:
                 "active_dataptr": active_dataptr,
                 "active_propname": active_propname,
             }
-            self.spied_lists.append(spied_data)
-            return TemplateListSpy(spied_data)
+            template_list = TemplateListSpy(getattr(bpy.types, listtype_name), spied_data)
+            self.spied_lists.append(template_list)
+            return template_list
         elif self.spied_attr == "context_pointer_set":
             return lambda *args, **kwargs: None
         elif self.spied_attr == "label":
@@ -134,7 +143,10 @@ class PanelSpy:
             icon = kwargs.get("icon", None)
             if text:
                 self.spied_labels.append(text)
-            spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}}
+            after = ""
+            if self.spied_labels:
+                after = self.spied_labels[-1]
+            spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}, "after": after}
             self.spied_operators.append(spied_operator)
             return OperatorSpy(spied_operator)
         else:
@@ -153,13 +165,65 @@ class OperatorSpy:
             self.spied_data["kwargs"][name] = value
 
 
-class TemplateListSpy:
-    def __init__(self, spied_data):
+class TemplateListSpy(PanelSpy):
+    def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict) -> None:
         self.spied_data = spied_data
+        self.items = getattr(self.spied_data["dataptr"], self.spied_data["propname"])
+        self.active_index = getattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"])
+        try:
+            self.active_item = self.items[self.active_index]
+        except:
+            self.active_item = None
+        self.panel = template_list
+
+        self.rows = []
+        for item in self.items:
+            self.rows.append(TemplateListItemSpy(self, item))
+
+    def set_active_index(self, index: int) -> None:
+        self.active_index = index
+        setattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"], self.active_index)
+        try:
+            self.active_item = self.items[self.active_index]
+        except:
+            assert False, f"Could not set active index {index}"
+
+
+class TemplateListItemSpy(PanelSpy):
+    def __init__(self, parent: TemplateListSpy, item):
+        self.panel = parent.panel
+        self.spied_attr: Union[str, None] = None
+        self.spied_labels: list[str] = []
+        self.spied_props: list[dict[str, Any]] = []
+        self.spied_operators: list[dict[str, Any]] = []
+        if len(signature(parent.panel.draw_item).parameters) == 8:
+            parent.panel.draw_item(
+                self,
+                bpy.context,
+                self,
+                parent.spied_data["dataptr"],
+                item,
+                "",
+                parent.spied_data["active_dataptr"],
+                parent.spied_data["active_propname"],
+            )
+        else:
+            parent.panel.draw_item(
+                self,
+                bpy.context,
+                self,
+                parent.spied_data["dataptr"],
+                item,
+                "",
+                parent.spied_data["active_dataptr"],
+                parent.spied_data["active_propname"],
+                0,  # Index?
+                None,
+            )
 
 
 ui_name_cache = {}
-panel_spy: PanelSpy = None
+panel_spy: Union[PanelSpy, None] = None
 
 
 def create_ui_name_cache():
@@ -177,6 +241,8 @@ def create_ui_name_cache():
                 if panel_type.bl_label == "Add" and bl_idname != "VIEW3D_MT_add":
                     continue  # Non-unique, but "VIEW3D_MT_add" is the one we care about
                 ui_name_cache[panel_type.bl_label] = bl_idname
+            elif panel_type.bl_rna.base.name == "UIList":
+                ui_name_cache[panel_type.bl_rna.name] = bl_idname
         except:
             pass
 
@@ -284,14 +350,137 @@ def i_trigger_operator(operator):
 @when(parsers.parse('I see "{text}"'))
 @then(parsers.parse('I see "{text}"'))
 def i_see_text(text):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert [l for l in panel_spy.spied_labels if text in l], f"Text {text} not found in {panel_spy.spied_labels}"
+
+
+@given(parsers.parse('there are "{n}" lists'))
+@when(parsers.parse('there are "{n}" lists'))
+@then(parsers.parse('there are "{n}" lists'))
+def there_are_n_lists(n):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    if len(panel_spy.spied_lists) != int(n):
+        assert False, f"Actual number of lists {len(panel_spy.spied_lists)} not {n}"
+
+
+@given(parsers.parse('I see "{text}" in the "{nth}" list'))
+@when(parsers.parse('I see "{text}" in the "{nth}" list'))
+@then(parsers.parse('I see "{text}" in the "{nth}" list'))
+def i_see_text_in_the_nth_list(text, nth):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    nth = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth:
+        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    debug = []
+    for i, template_list in enumerate(panel_spy.spied_lists):
+        if i + 1 != nth:
+            continue
+        for row in template_list.rows:
+            for p in row.spied_props:
+                debug.append(str(p))
+                if isinstance(p["value"], str) and text in p["value"]:
+                    return True
+            for l in row.spied_labels:
+                debug.append(l)
+                if text in l:
+                    return True
+    debug = "\n".join(debug)
+    assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
+
+
+@given(parsers.parse('I don\'t see "{text}" in the "{nth}" list'))
+@when(parsers.parse('I don\'t see "{text}" in the "{nth}" list'))
+@then(parsers.parse('I don\'t see "{text}" in the "{nth}" list'))
+def i_dont_see_text_in_the_nth_list(text, nth):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    nth = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth:
+        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    debug = []
+    for i, template_list in enumerate(panel_spy.spied_lists):
+        if i + 1 != nth:
+            continue
+        for row in template_list.rows:
+            for l in row.spied_labels:
+                debug.append(l)
+                if text in l:
+                    debug = "\n".join(debug)
+                    assert False, f"We see saw '{text}' in the {nth} list but should not have. We saw:\n{debug}"
+
+
+@given(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
+@when(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
+@then(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
+def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button, text, nth):
+    """
+    :param button: The text or icon of the button to click.
+    """
+    assert panel_spy
+    panel_spy.refresh_spy()
+    nth = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth:
+        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    debug = []
+    for i, template_list in enumerate(panel_spy.spied_lists):
+        if i + 1 != nth:
+            continue
+        for row in template_list.rows:
+            is_row = False
+            for l in row.spied_labels:
+                debug.append(l)
+                if text in l:
+                    is_row = True
+            for p in row.spied_props:
+                debug.append(str(p))
+                if isinstance(p["value"], str) and text in p["value"]:
+                    is_row = True
+            if is_row:
+                _i_click_button_on_panel(button, row)
+                return True
+    debug = "\n".join(debug)
+    assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
+
+
+@given(parsers.parse('I select the row where I see "{text}" in the "{nth}" list'))
+@when(parsers.parse('I select the row where I see "{text}" in the "{nth}" list'))
+@then(parsers.parse('I select the row where I see "{text}" in the "{nth}" list'))
+def i_select_the_row_where_i_see_text_in_the_nth_list(text, nth):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    nth = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth:
+        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    debug = []
+    for i, template_list in enumerate(panel_spy.spied_lists):
+        if i + 1 != nth:
+            continue
+        for i, row in enumerate(template_list.rows):
+            is_row = False
+            for p in row.spied_props:
+                debug.append(str(p))
+                if isinstance(p["value"], str) and text in p["value"]:
+                    is_row = True
+            for l in row.spied_labels:
+                debug.append(l)
+                if text in l:
+                    is_row = True
+            if is_row:
+                template_list.set_active_index(i)
+                panel_spy.is_spy_dirty = True
+                return True
+    debug = "\n".join(debug)
+    assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
 
 
 @given(parsers.parse('I don\'t see "{text}"'))
 @when(parsers.parse('I don\'t see "{text}"'))
 @then(parsers.parse('I don\'t see "{text}"'))
 def i_dont_see_text(text):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert not [l for l in panel_spy.spied_labels if text in l], f"Text {text} found in {panel_spy.spied_labels}"
 
@@ -300,14 +489,16 @@ def i_dont_see_text(text):
 @when(parsers.parse('I don\'t see the "{name}" list'))
 @then(parsers.parse('I don\'t see the "{name}" list'))
 def i_dont_see_the_name_list(name):
+    assert panel_spy
     panel_spy.refresh_spy()
-    assert name not in [l["listtype_name"] for l in panel_spy.spied_lists]
+    assert name not in [l.spied_data["listtype_name"] for l in panel_spy.spied_lists]
 
 
 @given(parsers.parse('I see the "{prop}" property'))
 @when(parsers.parse('I see the "{prop}" property'))
 @then(parsers.parse('I see the "{prop}" property'))
 def i_see_the_prop_property(prop):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert [
         p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
@@ -318,6 +509,7 @@ def i_see_the_prop_property(prop):
 @when(parsers.parse('I don\'t see the "{prop}" property'))
 @then(parsers.parse('I don\'t see the "{prop}" property'))
 def i_dont_see_the_prop_property(prop):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert not [
         p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
@@ -328,6 +520,7 @@ def i_dont_see_the_prop_property(prop):
 @when(parsers.parse('I see the "{prop}" property is "{value}"'))
 @then(parsers.parse('I see the "{prop}" property is "{value}"'))
 def i_see_the_prop_property_is_value(prop, value):
+    assert panel_spy
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
@@ -341,8 +534,13 @@ def i_see_the_prop_property_is_value(prop, value):
 @given(parsers.parse('I set the "{prop}" property to "{value}"'))
 @when(parsers.parse('I set the "{prop}" property to "{value}"'))
 @then(parsers.parse('I set the "{prop}" property to "{value}"'))
-def i_set_the_prop_property_to_value(prop, value):
+def i_set_the_prop_property_to_value(prop: str, value: str):
+    """
+    :param prop: Could be either property name, property text, property icon
+        or property index (e.g. "1st", "2nd", "5th").
+    """
     value = value.strip()
+    assert panel_spy
     panel_spy.refresh_spy()
     is_nth = False
     if prop[0].isnumeric() and (prop.endswith("st") or prop.endswith("nd") or prop.endswith("th")):
@@ -379,10 +577,11 @@ def i_set_the_prop_property_to_value(prop, value):
 @then(parsers.parse('The "{name}" list has {total} items'))
 def the_name_list_has_total_items(name, total):
     total = int(total)
+    assert panel_spy
     panel_spy.refresh_spy()
-    for spied_list in panel_spy.spied_lists:
-        if name == spied_list["listtype_name"]:
-            actual_total = len(getattr(spied_list["dataptr"], spied_list["propname"]))
+    for template_list in panel_spy.spied_lists:
+        if name == template_list.spied_data["listtype_name"]:
+            actual_total = len(template_list.items)
             assert actual_total == total, f"The actual number of items in {name} is {actual_total} not {total}"
             return
     assert False, f"List {name} not found in {panel_spy.spied_lists}"
@@ -390,15 +589,17 @@ def the_name_list_has_total_items(name, total):
 
 @given(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
+@then(parsers.parse('I can select the "{item_name}" item in the "{list_name}" list'))
 def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
+    assert panel_spy
     panel_spy.refresh_spy()
-    for spied_list in panel_spy.spied_lists:
-        if list_name == spied_list["listtype_name"]:
+    for template_list in panel_spy.spied_lists:
+        if list_name == template_list.spied_data["listtype_name"]:
             item_names = []
-            for i, item in enumerate(getattr(spied_list["dataptr"], spied_list["propname"])):
+            for i, item in enumerate(template_list.items):
                 item_names.append(item.name)
                 if item.name == item_name:
-                    setattr(spied_list["active_dataptr"], spied_list["active_propname"], i)
+                    template_list.set_active_index(i)
                     panel_spy.is_spy_dirty = True
                     return
             assert False, f"Could not find item {item_name} in {item_names}"
@@ -476,6 +677,12 @@ def i_add_a_new_collection_item(collection):
         assert False, "Collection does not exist"
 
 
+@given(parsers.parse('I make the collection "{name}" visible'))
+@when(parsers.parse('I make the collection "{name}" visible'))
+def i_make_the_collection_name_visible(name):
+    tool.Blender.get_layer_collection(bpy.data.collections.get(name)).hide_viewport = False
+
+
 @given(parsers.parse('the material "{name}" colour is set to "{colour}"'))
 @when(parsers.parse('the material "{name}" colour is set to "{colour}"'))
 def the_material_name_colour_is_set_to_colour(name, colour):
@@ -546,11 +753,7 @@ def i_press_operator(operator):
         assert False, f"Failed to run operator bpy.ops.{operator} because of {e}"
 
 
-@given(parsers.parse('I click "{button}"'))
-@when(parsers.parse('I click "{button}"'))
-@then(parsers.parse('I click "{button}"'))
-def i_click_button(button):
-    panel_spy.refresh_spy()
+def _i_click_button_on_panel(button, panel_spy):
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["text"] == button or spied_operator["icon"] == button:
             spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
@@ -561,10 +764,40 @@ def i_click_button(button):
         if button in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
             val = getattr(spied_prop["props"], spied_prop["name"])
             setattr(spied_prop["props"], spied_prop["name"], not bool(val))
+            panel_spy.is_spy_dirty = True
             return
     if button == "OK" and panel_spy.panel.bl_rna.base.name == "Operator":
         # Clicked confirm on an operator's draw dialog
         return i_press_operator(panel_spy.panel.bl_idname)
+    debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
+    debug += f"\nHere is the text we see:\n{panel_spy.spied_labels}\n... and props:\n {panel_spy.spied_props}"
+    assert False, f"Could not find {button}:\n{debug}"
+
+
+@given(parsers.parse('I click "{button}"'))
+@when(parsers.parse('I click "{button}"'))
+@then(parsers.parse('I click "{button}"'))
+def i_click_button(button):
+    """
+    :param button: The text or icon of the button to click.
+    """
+    assert panel_spy
+    panel_spy.refresh_spy()
+    _i_click_button_on_panel(button, panel_spy)
+
+
+@given(parsers.parse('I click the "{button}" after the text "{text}"'))
+@when(parsers.parse('I click the "{button}" after the text "{text}"'))
+@then(parsers.parse('I click the "{button}" after the text "{text}"'))
+def i_click_the_button_after_the_text_text(button, text):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    for spied_operator in panel_spy.spied_operators:
+        if spied_operator["after"] == text:
+            if spied_operator["text"] == button or spied_operator["icon"] == button:
+                spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
+                panel_spy.is_spy_dirty = True
+                return
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
     debug += f"\nHere is the text we see: {panel_spy.spied_labels}"
     assert False, f"Could not find {button}:\n{debug}"
@@ -631,6 +864,12 @@ def the_object_name_is_selected(name):
 def then_the_object_name_is_selected(name):
     obj = the_object_name_exists(name)
     assert obj in bpy.context.selected_objects
+
+
+@then(parsers.parse('the object "{name}" is not selected'))
+def then_the_object_name_is_not_selected(name):
+    obj = the_object_name_exists(name)
+    assert obj not in bpy.context.selected_objects
 
 
 @given(parsers.parse('the object "{name}" is rotated by "{rotation_deg}" deg'))
@@ -895,7 +1134,7 @@ def the_object_name_should_display_as_mode(name, mode):
 def the_object_name_is_voided_by_void(name, void):
     ifc = tool.Ifc.get()
     element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
-    assert any((rel for rel in element.HasOpenings if rel.RelatedOpeningElement.Name == void)), "No void found"
+    assert any(rel for rel in element.HasOpenings if rel.RelatedOpeningElement.Name == void), "No void found"
 
 
 @then(parsers.parse('the object "{name}" is not voided by "{void}"'))
@@ -919,7 +1158,7 @@ def the_object_name_is_a_void(name):
     ifc = tool.Ifc.get()
     obj = the_object_name_exists(name)
     element = ifc.by_id(tool.Blender.get_ifc_definition_id(obj))
-    assert any((element.VoidsElements)), "No void was found"
+    assert any(element.VoidsElements), "No void was found"
 
 
 @then(parsers.parse('the object "{name}" is not a void'))
@@ -1020,11 +1259,30 @@ def the_object_name_has_number_vertices(name, number):
     assert total == int(number), f"We found {total} vertices"
 
 
+@then(parsers.parse('the object "{name}" is filled by "{name2}"'))
+def the_object_name_is_filled_by_filling(name, name2):
+    ifc = tool.Ifc.get()
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
+    debug = {}
+    for rel in ifcopenshell.util.element.get_openings(element):
+        filling = None
+        opening = rel.RelatedOpeningElement
+        for rel2 in opening.HasFillings or []:
+            filling = rel2.RelatedBuildingElement
+            break
+        debug[opening] = filling
+        filling_obj = tool.Ifc.get_object(filling)
+        if filling_obj and filling_obj.name == name2:
+            return True
+    debug = "\n".join([f"{k} filled by {v}" for k, v in debug.items()])
+    assert False, f"Object {name} is not filled by {name2}.\n{debug}"
+
+
 @then(parsers.parse('the void "{name}" is filled by "{filling}"'))
 def the_void_name_is_filled_by_filling(name, filling):
     ifc = tool.Ifc.get()
     element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
-    assert any((rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings)), "No filling found"
+    assert any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings), "No filling found"
 
 
 @then(parsers.parse('the void "{name}" is not filled by "{filling}"'))
@@ -1200,7 +1458,7 @@ def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object is at {obj_location} instead of {location}"
+    ).length < 0.05, f"Object is at {obj_location} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" has a vertex at "{location}"'))
@@ -1210,7 +1468,7 @@ def the_object_name_has_a_vertex_at_location(name, location):
     target = Vector([float(co) for co in location.split(",")])
     verts = []
     for v in obj.data.vertices:
-        verts.append((obj.matrix_world @ v.co))
+        verts.append(obj.matrix_world @ v.co)
         if (verts[-1] - target).length < 0.001:
             is_pass = True
     assert is_pass, f"No verts found at {location}: {verts}"
@@ -1241,7 +1499,7 @@ def the_object_name_top_right_corner_is_at_location(name, location):
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has top right corner {obj_corner} instead of {location}"
+    ).length < 0.05, f"Object has top right corner {obj_corner} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
@@ -1250,7 +1508,7 @@ def the_object_name_bottom_left_corner_is_at_location(name, location):
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has bottom left corner {obj_corner} instead of {location}"
+    ).length < 0.05, f"Object has bottom left corner {obj_corner} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
@@ -1298,7 +1556,16 @@ def the_object_name_has_no_aggregate(name: str) -> None:
 def the_file_name_should_contain_value(name, value):
     name = replace_variables(name)
     with open(name, "r") as f:
-        assert value in f.read()
+        content = f.read()
+        assert value in content, f"File {name} does not contain {value}:\n{content}"
+
+
+@then(parsers.parse('the file "{name}" should not contain "{value}"'))
+def the_file_name_should_not_contain_value(name, value):
+    name = replace_variables(name)
+    with open(name, "r") as f:
+        content = f.read()
+        assert value not in content, f"File {name} contains {value}:\n{content}"
 
 
 @then(parsers.parse('the object "{name}" has no modifiers'))
@@ -1320,6 +1587,7 @@ def i_add_a_construction_library():
 
 
 @given(parsers.parse('the cursor is at "{location}"'))
+@when(parsers.parse('the cursor is at "{location}"'))
 def the_cursor_is_at_location(location):
     bpy.context.scene.cursor.location = [float(co) for co in location.split(",")]
 
@@ -1430,7 +1698,7 @@ def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name
 
 
 @when(parsers.parse('the object layer length is set to "{value}"'))
-def the_obj_layer_lenght_is_set_to(value):
+def the_obj_layer_length_is_set_to(value):
     value = float(value)
     try:
         eval("bpy.context.scene.BIMModelProperties.length")

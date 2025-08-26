@@ -42,7 +42,8 @@ def remove_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance) -> 
         if inverse.is_a() in ("IfcOrganization", "IfcPerson", "IfcPersonAndOrganization"):
             if inverse.Roles == (role,):
                 inverse.Roles = None
-        elif inverse.is_a("IfcResourceLevelRelationship") and not inverse.is_a("IfcOrganizationRelationship"):
-            if inverse.RelatedResourceObjects == (organisation,):
+        elif inverse.is_a("IfcResourceLevelRelationship"):
+            # IfcResourceConstraintRelationship or other rels with IfcResourceObjectSelect.
+            if inverse.RelatedResourceObjects == (role,):
                 file.remove(inverse)
     file.remove(role)

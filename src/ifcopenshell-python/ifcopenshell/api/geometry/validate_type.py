@@ -47,7 +47,7 @@ def validate_type(
         combination, or False otherwise.
     """
 
-    def is_operand(item):
+    def is_operand(item: ifcopenshell.entity_instance) -> bool:
         return (
             item.is_a("IfcBooleanResult")
             or item.is_a("IfcCsgPrimitive3D")

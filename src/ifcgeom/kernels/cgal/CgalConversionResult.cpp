@@ -47,8 +47,6 @@ namespace {
 	};
 
 	bool are_facets_coplanar(const Facet_const_handle& f1, const Facet_const_handle& f2) {
-		// Function to determine if two facets are coplanar
-		// You can use the normal vectors and the equation of the planes to determine coplanarity
 		auto normal_1 = CGAL::normal(f1->halfedge()->vertex()->point(),
 			f1->halfedge()->next()->vertex()->point(),
 			f1->halfedge()->next()->next()->vertex()->point());
@@ -69,8 +67,8 @@ namespace {
 				continue;
 			}
 
-			// Create a new component for coplanar facets
-			std::set<Facet_const_handle> component;
+			components.emplace_back();
+			auto& component = components.back();
 			std::queue<Facet_const_handle> queue;
 
 			queue.push(face);
@@ -82,18 +80,15 @@ namespace {
 
 				component.insert(current);
 
-				// Iterate over neighboring facets
 				Halfedge_around_facet_circulator he = current->facet_begin();
 				do {
 					Facet_const_handle neighbour = he->opposite()->face();
-					if (neighbour != nullptr && visited.find(neighbour) == visited.end() && are_facets_coplanar(current, neighbour)) {
+					if (visited.find(neighbour) == visited.end() && neighbour != nullptr && visited.find(neighbour) == visited.end() && are_facets_coplanar(current, neighbour)) {
 						queue.push(neighbour);
 						visited.insert(neighbour);
 					}
 				} while (++he != current->facet_begin());
 			}
-
-			components.push_back(component);
 		}
 	}
 }
@@ -184,20 +179,30 @@ void ifcopenshell::geometry::CgalShape::to_nef() const {
 #endif
 
 void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
-	// Copy is made because triangulate_faces() obviously does not accept a const argument
-	// ... also becuase of transforming the vertex positions, right?
-	cgal_shape_t s = *this;
+	const bool all_triangles = std::all_of(shape_->facets_begin(), shape_->facets_end(), [](auto f) { return f.is_triangle(); });
+	const bool has_iden_transform = place.is_identity();
+
+	std::unique_ptr<cgal_shape_t> shape_copy_holder;
+	cgal_shape_t* shape_to_use;
+
+	if (!all_triangles || !has_iden_transform) {
+		// A copy is made when triangulate_faces() is required or when vertex positions need be transformed
+		shape_copy_holder.reset(new cgal_shape_t(*this));
+		shape_to_use = shape_copy_holder.get();
+	} else {
+		shape_to_use = &*shape_;
+	}
 
 	const bool setting_use_original_edges = settings.get<ifcopenshell::geometry::settings::CgalEmitOriginalEdges>().get();
 	
 	std::set<std::set<Kernel_::Point_3>> original_edges;
 	if (setting_use_original_edges) {
-		for (auto it = s.edges_begin(); it != s.edges_end(); ++it) {
+		for (auto it = shape_to_use->edges_begin(); it != shape_to_use->edges_end(); ++it) {
 			original_edges.insert({ it->vertex()->point(), it->prev()->vertex()->point() });
 		}
 	}
 
-	if (!place.is_identity()) {
+	if (!has_iden_transform) {
 		const auto& m = place.ccomponents();
 
 		// @todo check
@@ -207,35 +212,43 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
 		// Apply transformation
-		for (auto &vertex : s.vertex_handles()) {
+		for (auto &vertex : shape_to_use->vertex_handles()) {
 			vertex->point() = vertex->point().transform(trsf);
 		}
 	}
 
-	if (!std::all_of(s.facets_begin(), s.facets_end(), [](auto f) { return f.is_triangle(); })) {
-		if (!s.is_valid()) {
+	boost::optional<double> smooth_treshold;
+	{
+		auto setting_value = settings.get<ifcopenshell::geometry::settings::CgalSmoothAngleDegrees>().get();
+		if (setting_value > 0.) {
+			smooth_treshold = std::cos(setting_value * boost::math::constants::pi<double>() / 180.0);
+		}
+	}
+
+	if (!all_triangles) {
+		if (!shape_to_use->is_valid()) {
 			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
 			return;
 		}
 
 		bool success = false;
 		try {
-			success = CGAL::Polygon_mesh_processing::triangulate_faces(s);
+			success = CGAL::Polygon_mesh_processing::triangulate_faces(*shape_to_use);
 		} catch (...) {
 			Logger::Message(Logger::LOG_ERROR, "Triangulation crashed");
 			return;
 		}
 
-		CGAL::Polygon_mesh_processing::remove_degenerate_faces(s);
+		CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_to_use);
 
 		if (!success) {
 			Logger::Message(Logger::LOG_ERROR, "Triangulation failed");
 			return;
 		}
 
-		if (!s.is_valid()) {
+		if (!shape_to_use->is_valid()) {
 			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
-			// return;
+			return;
 		}
 	}
 
@@ -244,7 +257,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	std::vector<std::set<Facet_const_handle>> components;
 	std::map<Facet_const_handle, typename decltype(components)::const_iterator> facet_to_component;
 	if (!setting_use_original_edges) {
-		partition_coplanar_components(s, components);
+		partition_coplanar_components(*shape_to_use, components);
 		for (auto it = components.begin(); it != components.end(); ++it) {
 			for (auto& f : *it) {
 				facet_to_component[f] = it;
@@ -256,12 +269,12 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	// boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel_::Vector_3>> vertex_normals_map(vertex_normals);
 	
 	// Triangulate the shape and compute the normals
-	std::map<cgal_face_descriptor_t, Kernel_::Vector_3> face_normals;
-	boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel_::Vector_3>> face_normals_map(face_normals);
+	std::map<Facet_const_handle, Kernel_::Vector_3> face_normals;
+	boost::associative_property_map<std::map<Facet_const_handle, Kernel_::Vector_3>> face_normals_map(face_normals);
 
 	//  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
 	try {
-		CGAL::Polygon_mesh_processing::compute_face_normals(s, face_normals_map);
+		CGAL::Polygon_mesh_processing::compute_face_normals(*shape_to_use, face_normals_map);
 	} catch (...) {
 		Logger::Message(Logger::LOG_ERROR, "Face normal calculation failed");
 		return;
@@ -275,23 +288,55 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	std::set<std::pair<int, int>> registered_edges;
 
 	int num_faces = 0, num_vertices = 0;
-	for (auto &face : faces(s)) {
+	for (auto &face : faces(*shape_to_use)) {
 		if (!face->is_triangle()) {
 			std::cout << "Warning: non-triangular face!" << std::endl;
 			continue;
 		}
 		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
+
+		const Kernel_::Vector_3 facet_normal = face_normals_map[face];
+
 		int vertexidx[3];
 		bool is_face_boundary[3];
 		int i = 0;
 		do {
+			auto v = current_halfedge->vertex();
+
+			auto vertex_norm = facet_normal;
+
+			if (smooth_treshold) {
+				Kernel_::Vector_3 normal_accum(0, 0, 0);
+				{
+					// circulator around the vertex
+					auto vh_begin = v->vertex_begin();
+					if (vh_begin != nullptr) {
+						auto vh = vh_begin;
+						do {
+							if (!vh->is_border()) {
+								Facet_const_handle adj_f = vh->facet();
+								const auto fn2 = face_normals_map[adj_f];
+								if ((fn2 * facet_normal) >= *smooth_treshold) {
+									normal_accum = normal_accum + fn2;
+								}
+								++vh;
+							}
+						} while (vh != vh_begin);
+					}
+				}
+				const double len = std::sqrt(CGAL::to_double(normal_accum.squared_length()));
+				if (len > 0) {
+					vertex_norm = normal_accum / len;
+				}
+			}
+
 			postion_normal pn = {
-				current_halfedge->vertex()->point().cartesian(0),
-				current_halfedge->vertex()->point().cartesian(1),
-				current_halfedge->vertex()->point().cartesian(2),
-				face_normals_map[face].cartesian(0),
-				face_normals_map[face].cartesian(1),
-				face_normals_map[face].cartesian(2)
+				v->point().cartesian(0),
+				v->point().cartesian(1),
+				v->point().cartesian(2),
+				vertex_norm.cartesian(0),
+				vertex_norm.cartesian(1),
+				vertex_norm.cartesian(2)
 			};
 
 			// @todo normalzie based on largest component?

@@ -29,7 +29,7 @@ import ifcopenshell.geom
 
 from xml.dom.minidom import parseString
 from dataclasses import dataclass, fields, field
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import numpy
 
@@ -75,6 +75,7 @@ class draw_settings:
     include_curves: bool = False
     unify_inputs: bool = True
     arrange_spaces: bool = False
+    mirror_y: bool = False
 
 
 def main(
@@ -169,6 +170,7 @@ def main(
     sr.setUseHlrPoly(settings.hlr_poly)
     sr.setUsePrefiltering(settings.prefilter)
     sr.setUnifyInputs(settings.unify_inputs)
+    sr.setMirrorY(settings.mirror_y)
 
     try:
         sh = ["none", "full", "left"].index(settings.storey_heights)
@@ -294,7 +296,7 @@ def main(
             # file 2 only has the groups we are interested in.
             # in fact in the approach, it's only a single group
 
-            g2 = list(yield_groups(svg2))[0]
+            g2 = next(yield_groups(svg2))
 
             # These are attributes on the original group that we can use to reconstruct
             # a 4x4 matrix of the projection used in the SVG generation process
@@ -439,8 +441,18 @@ def main(
                 for p in yield_groups(svg1, "path")
                 if "IfcSpace" in p.parentNode.getAttribute("class")
             ]
-            assert all(s.count("M") == 1 for s in polies)
-            polies = [[[*map(float, s[1:].split(","))] for s in d.split(" ")[:-1]] for d in polies]
+
+            def break_at_second(char, s, offset=1):
+                i = s.find(char, offset)
+                if i == -1:
+                    return s
+                else:
+                    warnings.warn("Polygons with holes are not supported")
+                    return s[0:i]
+
+            polies = [
+                [[*map(float, s[1:].split(","))] for s in break_at_second("M", d).split(" ")[:-1]] for d in polies
+            ]
 
             def create_poly(b):
                 p = ifcopenshell.ifcopenshell_wrapper.polygon_2()

@@ -86,12 +86,13 @@ src/bonsai/bonsai/bim/data/build/
 src/bonsai/bonsai/bim/data/gantt/index.html
 src/bonsai/bonsai/bim/data/gantt/jsgantt.js
 src/bonsai/bonsai/bim/data/gantt/jsgantt.css
+src/bonsai/bonsai/bim/data/webui/static/js/jquery.min.js
 
 src/bonsai/drawings
 src/bonsai/layouts
 
 # ifcopenshell swig and compiled files
-src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper.so
+src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper*.so
 src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
 # apple
@@ -106,4 +107,4 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 src/bonsai/bonsai/bim/schema/Brick.ttl
 
 bonsaiDecoratorForLoads.code-workspace
-dev_environment.bat
+

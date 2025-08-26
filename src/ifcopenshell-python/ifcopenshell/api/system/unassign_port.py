@@ -74,7 +74,7 @@ class Usecase:
                 related_objects = set(rel.RelatedObjects) or set()
                 related_objects.remove(port)
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, element=rel)
 
     def execute_ifc2x3(self) -> None:
         for rel in self.element.HasPorts or []:

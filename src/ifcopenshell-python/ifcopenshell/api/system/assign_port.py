@@ -83,7 +83,7 @@ class Usecase:
             related_objects = set(rel.RelatedObjects) or set()
             related_objects.add(self.port)
             rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(self.file, element=rel)
         else:
             rel = self.file.create_entity(
                 "IfcRelNests",

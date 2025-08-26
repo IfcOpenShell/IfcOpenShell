@@ -2,6 +2,45 @@
 Feature: Spatial
     Covers spatial containment management and spatial tool.
 
+Scenario: Set default container
+    Given an empty IFC project
+    When I look at the "Spatial Decomposition" panel
+    Then I see "My Site" in the "1st" list
+    And I see "Default: My Storey"
+    When I select the row where I see "My Building" in the "1st" list
+    And I click "Set Default"
+    Then I don't see "Default: My Storey"
+    And I see "Default: My Building"
+
+Scenario: Select container
+    Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    When I select the row where I see "My Building" in the "1st" list
+    And I click "OBJECT_DATA"
+    Then the object "IfcBuilding/My Building" is selected
+
+Scenario: View elements - view elements recursively in the project
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    When I look at the "Spatial Decomposition" panel
+    And I select the row where I see "My Project" in the "1st" list
+    Then I see "IfcColumn" in the "2nd" list
+
+Scenario: View elements - view elements non-recursively in their container
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    When I look at the "Spatial Decomposition" panel
+    And I select the row where I see "My Project" in the "1st" list
+    And I click "OUTLINER"
+    Then there are "1" lists
+    And I see "No Elements"
+    And I select the row where I see "My Storey" in the "1st" list
+    Then I see "IfcColumn" in the "2nd" list
+
 Scenario: Enable editing container
     Given an empty IFC project
     And I add a cube
@@ -21,23 +60,27 @@ Scenario: Assign container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.set_default_container(container={site})"
-    And I press "bim.enable_editing_container"
-    When I press "bim.assign_container()"
+    And I look at the "Spatial Decomposition" panel
+    And I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    And I look at the "Spatial Container" panel
+    And I click "GREASEPENCIL"
+    When I click "CHECKMARK"
     Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"
 
 Scenario: Copy to container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcSite/My Site" is selected
     And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
@@ -48,9 +91,10 @@ Scenario: Reference structure
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcBuilding/My Building" is selected
     And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
@@ -61,9 +105,10 @@ Scenario: Dereference structure
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcBuilding/My Building" is selected
     And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
@@ -71,34 +116,42 @@ Scenario: Dereference structure
     And I press "bim.dereference_structure"
     Then nothing happens
 
-Scenario: Select container
+Scenario: Assign container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.enable_editing_container"
-    And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.set_default_container(container={site})"
-    And I press "bim.assign_container()"
-    When I press "bim.select_container"
+    And I look at the "Spatial Decomposition" panel
+    And I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    # Assign container.
+    And I look at the "Spatial Container" panel
+    And I click "GREASEPENCIL"
+    And I click "CHECKMARK"
+    When I click "OBJECT_DATA"
     Then nothing happens
 
 Scenario: Select similar container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.enable_editing_container"
-    And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.set_default_container(container={site})"
-    And I press "bim.assign_container()"
-    When I press "bim.select_similar_container"
+    And I look at the "Spatial Decomposition" panel
+    And I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    # Assign container.
+    And I look at the "Spatial Container" panel
+    And I click "GREASEPENCIL"
+    And I click "CHECKMARK"
+    When I click "RESTRICT_SELECT_OFF"
     Then nothing happens
 
 Scenario: Execute generate space from cursor position
@@ -130,7 +183,7 @@ Scenario: Spatial decomposition - see panel
     Then the "BIM_UL_containers_manager" list has 4 items
     And I don't see the "BIM_UL_elements" list
 
-Scenario: Isolate spatial container
+Scenario: Set element visibility - Isolate spatial container
     Given an empty IFC project
     And I trigger "Add Element"
     And I set the "Definition" property to "IfcElement"
@@ -139,10 +192,10 @@ Scenario: Isolate spatial container
     And I click "OK"
     And I look at the "Spatial Decomposition" panel
     When I select the "My Site" item in the "BIM_UL_containers_manager" list
-    And I click "Isolate"
+    And I click "FULLSCREEN_EXIT"
     Then nothing happens
 
-Scenario: Show spatial container
+Scenario: Set element visibility - Show spatial container
     Given an empty IFC project
     And I trigger "Add Element"
     And I set the "Definition" property to "IfcElement"
@@ -154,7 +207,7 @@ Scenario: Show spatial container
     And I click "HIDE_OFF"
     Then nothing happens
 
-Scenario: Hide spatial container
+Scenario: Set element visibility - Hide spatial container
     Given an empty IFC project
     And I trigger "Add Element"
     And I set the "Definition" property to "IfcElement"

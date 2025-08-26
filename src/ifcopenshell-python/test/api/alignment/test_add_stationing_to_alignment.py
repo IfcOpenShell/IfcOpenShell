@@ -19,11 +19,15 @@
 import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
+import ifcopenshell.api.unit
+import ifcopenshell.util.element
 
 
 def test_add_stationing_to_alignment():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(Name="Test")
+    file = ifcopenshell.file(schema="IFC4X3")
+    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
     axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
         file,
@@ -33,16 +37,7 @@ def test_add_stationing_to_alignment():
         parent=geometric_representation_context,
     )
 
-    coordinates = [(500.0, 2500.0), (3340.0, 660.0), (4340.0, 5000.0), (7600.0, 4560.0), (8480.0, 2010.0)]
-    radii = [(1000.0), (1250.0), (950.0)]
-    vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
-    lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
-
-    alignment = ifcopenshell.api.alignment.create_alignment_by_pi_method(
-        file, "TestAlignment", coordinates, radii, vpoints, lengths
-    )
-
-    ifcopenshell.api.alignment.add_stationing_to_alignment(file, alignment, 2000.0)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=2000.0)
 
     for rel in alignment.IsNestedBy:
         for referent in rel.RelatedObjects:
@@ -54,3 +49,4 @@ def test_add_stationing_to_alignment():
                     ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing", prop="Station")
                     == 2000.0
                 )
+                assert referent.ObjectPlacement != None

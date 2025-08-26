@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel, UIList, Mesh
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.layer.data import LayersData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.layer.prop import BIMLayerProperties, Layer
 
 
 class BIM_PT_layers(Panel):
@@ -40,7 +45,7 @@ class BIM_PT_layers(Panel):
         if not LayersData.is_loaded:
             LayersData.load()
 
-        self.props = context.scene.BIMLayerProperties
+        self.props = tool.Layer.get_layer_props()
 
         row = self.layout.row(align=True)
         row.label(text=f"{LayersData.data['total_layers']} Layers Found", icon="STICKY_UVS_LOC")
@@ -71,7 +76,16 @@ class BIM_PT_layers(Panel):
 
 
 class BIM_UL_layers(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: BIMLayerProperties,
+        item: Layer,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
@@ -89,12 +103,12 @@ class BIM_UL_layers(UIList):
                 row.prop(item, "frozen", text="", icon="FREEZE" if item.frozen else "MESH_PLANE", emboss=False)
                 row.prop(item, "blocked", text="", icon="LOCKED" if item.blocked else "UNLOCKED", emboss=False)
 
-            if context.scene.BIMLayerProperties.active_layer_id == item.ifc_definition_id:
+            if data.active_layer_id == item.ifc_definition_id:
                 op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.layer = item.ifc_definition_id
                 row.operator("bim.edit_presentation_layer", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_layer", text="", icon="CANCEL")
-            elif context.scene.BIMLayerProperties.active_layer_id:
+            elif data.active_layer_id:
                 op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.layer = item.ifc_definition_id
                 row.operator("bim.remove_presentation_layer", text="", icon="X").layer = item.ifc_definition_id

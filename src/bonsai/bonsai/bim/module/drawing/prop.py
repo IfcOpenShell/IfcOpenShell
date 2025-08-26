@@ -22,11 +22,13 @@ import json
 import enum
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.drawing as core
 import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.decoration as decoration
+from mathutils import Matrix
 from bonsai.bim.prop import BIMFilterGroup
 from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
 from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
@@ -44,7 +46,8 @@ from bpy.props import (
     CollectionProperty,
     BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any
+from typing import TYPE_CHECKING, Literal, Any, get_args, Union
+from collections.abc import Callable
 
 
 diagram_scales_enum = []
@@ -55,23 +58,23 @@ def purge():
     diagram_scales_enum = []
 
 
-def update_target_view(self, context):
+def update_target_view_doc(self: "DocProperties", context: bpy.types.Context) -> None:
     DrawingsData.data["location_hint"] = DrawingsData.location_hint()
 
 
-def get_location_hint(self, context):
+def get_location_hint(self: "DocProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not DrawingsData.is_loaded:
         DrawingsData.load()
     return DrawingsData.data["location_hint"]
 
 
-def update_diagram_scale(self, context):
+def update_diagram_scale(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     if not self.update_props:
         return
-    if not context.scene.camera or context.scene.camera.data != self.id_data:
+    assert context.scene
+    if not (camera := context.scene.camera) or camera.data != self.id_data:
         return
-    element = tool.Ifc.get_entity(context.scene.camera)
-    if not element:
+    if not (element := tool.Ifc.get_entity(camera)):
         return
     try:
         element = (
@@ -89,13 +92,15 @@ def update_diagram_scale(self, context):
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=diagram_scale)
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=diagram_scale)
+    self.update_camera_resolution()
 
 
 def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     if not self.update_props:
         return
+    assert context.scene
     if not context.scene.camera or context.scene.camera.data != self.id_data:
         return
     element = tool.Ifc.get_entity(context.scene.camera)
@@ -114,12 +119,13 @@ def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> No
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"IsNTS": self.is_nts})
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"IsNTS": self.is_nts})
 
 
-def get_diagram_scales(self, context):
+def get_diagram_scales(self: "BIMCameraProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global diagram_scales_enum
+    assert context.scene
     if (
         len(diagram_scales_enum) < 1
         or (context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
@@ -200,44 +206,39 @@ def set_drawing_style_name(self: "DrawingStyle", new_value: str) -> None:
     bpy.ops.bim.save_drawing_styles_data(rename_style=True, rename_style_from=old_value, rename_style_to=new_value)
 
 
-def update_document_name(self, context):
+def update_document_name(self: "Document", context: bpy.types.Context) -> None:
     document = tool.Ifc.get().by_id(self.ifc_definition_id)
     core.update_document_name(tool.Ifc, tool.Drawing, document=document, name=self.name)
 
 
-def update_has_underlay(self, context):
+def update_has_underlay(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    if not self.update_props:
+        return
     update_layer(self, context, "HasUnderlay", self.has_underlay)
+    assert context.scene
     # making sure that camera is active
     if self.has_underlay and (context.scene.camera and context.scene.camera.data == self.id_data):
         bpy.ops.bim.reload_drawing_styles()
         bpy.ops.bim.activate_drawing_style()
 
 
-def update_has_linework(self, context):
-    update_layer(self, context, "HasLinework", self.has_linework)
+def get_update_layer_callback(
+    camera_prop_name: str, pset_prop_name: str
+) -> Callable[["BIMCameraProperties", bpy.types.Context], None]:
+    def update_layer_callback(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+        update_layer(self, context, pset_prop_name, getattr(self, camera_prop_name))
+
+    return update_layer_callback
 
 
-def update_has_annotation(self, context):
-    update_layer(self, context, "HasAnnotation", self.has_annotation)
+def update_target_view_camera(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    if self.update_props and self.target_view != "MODEL_VIEW":
+        self.camera_type = "ORTHO"
+    update_layer(self, context, "TargetView", self.target_view)
 
 
-def update_dpi(self, context):
-    update_layer(self, context, "DPI", self.dpi)
-
-
-def update_linework_mode(self, context):
-    update_layer(self, context, "LineworkMode", self.linework_mode)
-
-
-def update_fill_mode(self, context):
-    update_layer(self, context, "FillMode", self.fill_mode)
-
-
-def update_cut_mode(self, context):
-    update_layer(self, context, "CutMode", self.cut_mode)
-
-
-def update_layer(self, context, name, value):
+def update_layer(self: "BIMCameraProperties", context: bpy.types.Context, name: str, value: Any) -> None:
+    assert context.scene
     if not self.update_props:
         return
     if not context.scene.camera or context.scene.camera.data != self.id_data:
@@ -249,8 +250,8 @@ def update_layer(self, context, name, value):
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={name: value})
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={name: value})
 
 
 def get_titleblocks(self, context):
@@ -287,18 +288,34 @@ class Variable(PropertyGroup):
     prop_key: StringProperty(name="Property Key")
 
 
+TargetView = Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
+TARGET_VIEW_ITEMS: list[tuple[TargetView, str, str]] = [
+    ("PLAN_VIEW", "Plan", ""),
+    ("ELEVATION_VIEW", "Elevation", ""),
+    ("SECTION_VIEW", "Section", ""),
+    ("REFLECTED_PLAN_VIEW", "RCP", ""),
+    ("MODEL_VIEW", "Model", ""),
+]
+
+
 class Drawing(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     name: StringProperty(name="Name", update=update_drawing_name)
-    target_view: StringProperty(name="Target View")
+    target_view: EnumProperty(
+        name="Target View",
+        default="PLAN_VIEW",
+        items=TARGET_VIEW_ITEMS,
+    )
     is_selected: BoolProperty(name="Is Selected", default=True)
     is_drawing: BoolProperty(name="Is Drawing", default=False)
+    """``Drawing`` can be either a drawing or a drawing target view header."""
     is_expanded: BoolProperty(name="Is Expanded", default=True)
+    """Whether target view header is expanded in UI. Should be just unset for the actual drawings."""
 
     if TYPE_CHECKING:
         ifc_definition_id: int
         name: str
-        target_view: str
+        target_view: TargetView
         is_selected: bool
         is_drawing: bool
         is_expanded: bool
@@ -334,26 +351,39 @@ class Sheet(PropertyGroup):
         is_expanded: bool
 
 
+RenderType = Literal["DEFAULT", "VIEWPORT"]
+RENDER_TYPE_ENUM_ITEMS: dict[RenderType, tuple[str, str]] = {
+    "DEFAULT": ("Default", "Use default Blender render."),
+    "VIEWPORT": ("Viewport", "Render active viewport (using 'Rendered' viewport shading type)."),
+}
+
+
 class DrawingStyle(PropertyGroup):
     name: StringProperty(name="Name", get=get_drawing_style_name, set=set_drawing_style_name)
-    raster_style: StringProperty(name="Raster Style", default="{}")
+    raster_style: StringProperty(
+        name="Raster Style",
+        description="JSON string for drawing style settings.",
+        default="{}",
+    )
     render_type: EnumProperty(
-        items=[
-            ("NONE", "None", ""),
-            ("DEFAULT", "Default", ""),
-            ("VIEWPORT", "Viewport", ""),
-        ],
+        items=[(k, *v) for k, v in RENDER_TYPE_ENUM_ITEMS.items()],
         name="Render Type",
         default="VIEWPORT",
     )
-    include_query: StringProperty(name="Include Query")
-    exclude_query: StringProperty(name="Exclude Query")
-    attributes: CollectionProperty(name="Attributes", type=StrProperty)
+
+    if TYPE_CHECKING:
+        name: str
+        raster_style: str
+        render_type: RenderType
 
 
 class RasterStyleProperty(enum.Enum):
     # EVAL_PROP_ props will be evaluated explicitly
     EVAL_PROP_WORLD_COLOR = "bpy.data.worlds[0].color"
+    EVAL_PROP_EEVEE_USE_SHADOWS = "scene.eevee.use_shadows"
+    EVAL_PROP_EEVEE_SHADOW_RAY_COUNT = "scene.eevee.shadow_ray_count"
+    EVAL_PROP_EEVEE_SHADOW_STEP_COUNT = "scene.eevee.shadow_step_count"
+    EVAL_PROP_EEVEE_SHADOW_RES_SCALE = "scene.eevee.shadow_resolution_scale"
 
     # those props attributes used as a source for shading style properties
     RENDER = "scene.render"
@@ -368,23 +398,31 @@ RASTER_STYLE_PROPERTIES_EXCLUDE = ("scene.render.filepath",)
 
 
 class DocProperties(PropertyGroup):
-    should_use_underlay_cache: BoolProperty(name="Use Underlay Cache", default=False)
-    should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
-    should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
+    # Note that options are global in descriptions to prevent confusion,
+    # as options are available through Active Drawing UI, but they're actually global.
+    should_use_underlay_cache: BoolProperty(
+        name="Use Underlay Cache", description="Global option for all drawings.", default=False
+    )
+    should_use_linework_cache: BoolProperty(
+        name="Use Linework Cache", description="Global option for all drawings.", default=False
+    )
+    should_use_annotation_cache: BoolProperty(
+        name="Use Annotation Cache", description="Global option for all drawings.", default=False
+    )
+    should_draw_linked_projects: BoolProperty(
+        name="Draw Linked Projects",
+        description=("Whether to draw all currently loaded linked projects.\n\nGlobal option for all drawings."),
+        default=True,
+        options=set(),
+    )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
-        items=[
-            ("PLAN_VIEW", "Plan", ""),
-            ("ELEVATION_VIEW", "Elevation", ""),
-            ("SECTION_VIEW", "Section", ""),
-            ("REFLECTED_PLAN_VIEW", "RCP", ""),
-            ("MODEL_VIEW", "Model", ""),
-        ],
+        items=TARGET_VIEW_ITEMS,
         name="Target View",
         default="PLAN_VIEW",
-        update=update_target_view,
+        update=update_target_view_doc,
     )
     location_hint: EnumProperty(items=get_location_hint, name="Location Hint")
     drawings: CollectionProperty(name="Drawings", type=Drawing)
@@ -399,47 +437,19 @@ class DocProperties(PropertyGroup):
     is_editing_sheets: BoolProperty(name="Is Editing Sheets", default=False)
     sheets: CollectionProperty(name="Sheets", type=Sheet)
     active_sheet_index: IntProperty(name="Active Sheet Index")
-    ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
-    sheets_dir: StringProperty(default=os.path.join("sheets") + os.path.sep, name="Default Sheets Directory")
-    layouts_dir: StringProperty(default=os.path.join("layouts") + os.path.sep, name="Default Layouts Directory")
-    titleblocks_dir: StringProperty(
-        default=os.path.join("layouts", "titleblocks") + os.path.sep, name="Default Titleblocks Directory"
-    )
-    drawings_dir: StringProperty(default=os.path.join("drawings") + os.path.sep, name="Default Drawings Directory")
-    stylesheet_path: StringProperty(
-        default=os.path.join("drawings", "assets", "default.css"), name="Default Stylesheet"
-    )
-    schedules_stylesheet_path: StringProperty(
-        default=os.path.join("drawings", "assets", "schedule.css"), name="Default Stylesheet for Schedules"
-    )
-    markers_path: StringProperty(default=os.path.join("drawings", "assets", "markers.svg"), name="Default Markers")
-    symbols_path: StringProperty(default=os.path.join("drawings", "assets", "symbols.svg"), name="Default Symbols")
-    patterns_path: StringProperty(default=os.path.join("drawings", "assets", "patterns.svg"), name="Default Patterns")
-    shadingstyles_path: StringProperty(
-        default=os.path.join("drawings", "assets", "shading_styles.json"), name="Default Shading Styles"
-    )
-    shadingstyle_default: StringProperty(default="Blender Default", name="Default Shading Style")
-    drawing_font: StringProperty(default="OpenGost Type B TT.ttf", name="Drawing Font")
-    magic_font_scale: bpy.props.FloatProperty(default=0.004118616, name="Font Scale Factor")
-    imperial_precision: StringProperty(default="1/32", name="Imperial Precision")
-    tolerance: bpy.props.FloatProperty(default=0.00001, name="A tolerance used when selecting objects")
-    classes_to_wireframe: StringProperty(
-        default="IfcVirtualElement",
-        name="Classes to Wireframe",
-        description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualelement, IfcSpace",
-    )
 
     if TYPE_CHECKING:
         should_use_underlay_cache: bool
         should_use_linework_cache: bool
         should_use_annotation_cache: bool
+        should_draw_linked_projects: bool
         is_editing_drawings: bool
         is_editing_schedules: bool
         is_editing_references: bool
         target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
-        location_hint: str
+        location_hint: tool.Drawing.LocationHintType
         drawings: bpy.types.bpy_prop_collection_idprop[Drawing]
         active_drawing_id: int
         active_drawing_index: int
@@ -452,25 +462,30 @@ class DocProperties(PropertyGroup):
         is_editing_sheets: bool
         sheets: bpy.types.bpy_prop_collection_idprop[Sheet]
         active_sheet_index: int
-        ifc_files: bpy.types.bpy_prop_collection_idprop[StrProperty]
         drawing_styles: bpy.types.bpy_prop_collection_idprop[DrawingStyle]
         should_draw_decorations: bool
-        sheets_dir: str
-        layouts_dir: str
-        titleblocks_dir: str
-        drawings_dir: str
-        stylesheet_path: str
-        schedules_stylesheet_path: str
-        markers_path: str
-        symbols_path: str
-        patterns_path: str
-        shadingstyles_path: str
-        shadingstyle_default: str
-        drawing_font: str
-        magic_font_scale: float
-        imperial_precision: str
-        tolerance: float
-        classes_to_wireframe: str
+
+    def get_active_drawing(self) -> Union[ifcopenshell.entity_instance, None]:
+        drawing_id = self.active_drawing_id
+        if drawing_id == 0:
+            return None
+        return tool.Ifc.get().by_id(drawing_id)
+
+
+def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    self.update_camera_resolution()
+
+
+def update_camera_type(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    assert isinstance(camera := self.id_data, bpy.types.Camera)
+    camera.type = self.camera_type
+
+
+CameraType = Literal["PERSP", "ORTHO"]
+CAMERA_TYPE_ENUM_ITEMS: dict[CameraType, tuple[str, str]] = {
+    "ORTHO": ("Orthographic", "Most common camera for the drawings, supporting all of the features."),
+    "PERSP": ("Perspective", "The only avilable features for perspective camera: freestyle linework, underlay."),
+}
 
 
 class BIMCameraProperties(PropertyGroup):
@@ -481,7 +496,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="OPENCASCADE",
         name="Linework Mode",
-        update=update_linework_mode,
+        update=get_update_layer_callback("linework_mode", "LineworkMode"),
     )
     fill_mode: EnumProperty(
         items=[
@@ -491,7 +506,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="NONE",
         name="Fill Mode",
-        update=update_fill_mode,
+        update=get_update_layer_callback("fill_mode", "FillMode"),
     )
     cut_mode: EnumProperty(
         items=[
@@ -500,11 +515,32 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="BISECT",
         name="Cut Mode",
-        update=update_cut_mode,
+        update=get_update_layer_callback("cut_mode", "CutMode"),
     )
-    has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
-    has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
-    has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)
+
+    # EPset_Drawing.
+    has_underlay: BoolProperty(
+        name="Underlay",
+        default=False,
+        update=update_has_underlay,
+    )
+    has_linework: BoolProperty(
+        name="Linework",
+        default=True,
+        update=get_update_layer_callback("has_linework", "HasLinework"),
+    )
+    has_annotation: BoolProperty(
+        name="Annotation",
+        default=True,
+        update=get_update_layer_callback("has_annotation", "HasAnnotation"),
+    )
+    target_view: EnumProperty(
+        name="Target View",
+        default="PLAN_VIEW",
+        items=TARGET_VIEW_ITEMS,
+        update=update_target_view_camera,
+    )
+
     representation: StringProperty(name="Representation")
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)
@@ -512,32 +548,126 @@ class BIMCameraProperties(PropertyGroup):
     custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
-    dpi: IntProperty(name="DPI", default=75, update=update_dpi)
-    width: FloatProperty(name="Width", default=50, subtype="DISTANCE")
-    height: FloatProperty(name="Height", default=50, subtype="DISTANCE")
+    dpi: IntProperty(name="DPI", default=75, update=get_update_layer_callback("dpi", "DPI"))
+    width: FloatProperty(name="Width", default=50, subtype="DISTANCE", update=update_width_height)
+    height: FloatProperty(name="Height", default=50, subtype="DISTANCE", update=update_width_height)
+    # Bonsai property is needed to prevent user from using unsupported panoramic camera.
+    camera_type: EnumProperty(
+        name="Camera Type",
+        default="ORTHO",
+        items=[(k, *v) for k, v in CAMERA_TYPE_ENUM_ITEMS.items()],
+        update=update_camera_type,
+    )
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
     filter_mode: StringProperty(name="Filter Mode", default="NONE")
     include_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Include Filter")
     exclude_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Exclude Filter")
-    update_props: BoolProperty(name="Enable Props Auto Update", default=True)
+    update_props: BoolProperty(
+        name="Enable Props Auto Update",
+        description="Update related EPset_Drawing pset on any change in camera properties.",
+        default=True,
+    )
+
+    if TYPE_CHECKING:
+        linework_mode: Literal["OPENCASCADE", "FREESTYLE"]
+        fill_mode: Literal["NONE", "SHAPELY", "SVGFILL"]
+        cut_mode: Literal["BISECT", "OPENCASCADE"]
+
+        has_underlay: bool
+        has_linework: bool
+        has_annotation: bool
+        target_view: TargetView
+
+        representation: str
+        view_name: str
+        diagram_scale: str
+        custom_scale_numerator: str
+        custom_scale_denominator: str
+        raster_x: int
+        raster_y: int
+        dpi: int
+        width: float
+        height: float
+        camera_type: CameraType
+        is_nts: bool
+        active_drawing_style_index: int
+        filter_mode: str
+        include_filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        exclude_filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        update_props: bool
+
+    def get_active_drawing_style(self) -> Union[DrawingStyle, None]:
+        dprops = tool.Drawing.get_document_props()
+        return tool.Blender.get_active_uilist_element(dprops.drawing_styles, self.active_drawing_style_index)
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
     # By checking this, you will know whether or not the camera IFC representation needs to be refreshed
-    def update_representation(self, obj):
+    def update_representation(self, matrix_world: Matrix) -> bool:
+        """Update ``representation`` based on current camera properties and the provided world matrix.
+
+        :return: ``True`` if ``representation`` was updated and
+            representation should also be updated in IFC.
+        """
+        # Matrix is used instead of Object so this works before the Object exists,
+        # allowing all camera initialization to stay encapsulated in `create_camera`.
+        camera = self.id_data
+        assert isinstance(camera, bpy.types.Camera)
+
+        # Rounding is necessary to avoid float garbage differences
+        # forcing unnecessary representation update.
+        def round_(f: float) -> float:
+            return round(f, 6)
+
         representation = json.dumps(
             {
-                "matrix": [list(x) for x in obj.matrix_world],
+                "type": self.camera_type,
+                "matrix": [[round_(v) for v in row] for row in matrix_world],
                 "raster_x": self.raster_x,
                 "raster_y": self.raster_y,
-                "ortho_scale": obj.data.ortho_scale,
-                "clip_end": obj.data.clip_end,
+                "ortho_scale": round_(camera.ortho_scale),
+                "clip_end": round_(camera.clip_end),
             }
         )
         if self.representation != representation:
             self.representation = representation
             return True
         return False
+
+    def update_camera_resolution(self) -> tuple[int, int]:
+        """Update ``camera.ortho_scale``, ``raster_x`` and ``raster_y``
+        based on current ``width`` and ``height`` and diagram scale props.
+
+        :return: tuple[resolution_x, resolution_y]
+        """
+        assert isinstance(camera := self.id_data, bpy.types.Camera)
+        ortho_scale, aspect_ratio = self.get_scale_and_aspect_ratio()
+        aspect_ratio = self.width / self.height
+
+        camera.ortho_scale = ortho_scale
+        diagram_scale = tool.Drawing.get_diagram_scale(camera)
+        scale_ratio = tool.Drawing.get_scale_ratio(diagram_scale["Scale"])
+
+        if self.width > self.height:
+            aspect_ratio = self.height / self.width
+            raster_x = ortho_scale * scale_ratio * self.dpi / 0.0254
+            raster_y = ortho_scale * aspect_ratio * scale_ratio * self.dpi / 0.0254
+        else:
+            aspect_ratio = self.width / self.height
+            raster_x = ortho_scale * aspect_ratio * scale_ratio * self.dpi / 0.0254
+            raster_y = ortho_scale * scale_ratio * self.dpi / 0.0254
+
+        raster_x, raster_y = int(raster_x), int(raster_y)
+        self.raster_x, self.raster_y = raster_x, raster_y
+        return raster_x, raster_y
+
+    def get_scale_and_aspect_ratio(self) -> tuple[float, float]:
+        """
+        :return: A tuple of calculated ortho scale and aspect ratio values.
+        """
+        ortho_scale = max(self.width, self.height)
+        aspect_ratio = self.width / self.height
+        return ortho_scale, aspect_ratio
 
 
 DEFAULT_BOX_ALIGNMENT = [False] * 6 + [True] + [False] * 2
@@ -596,6 +726,12 @@ class LiteralProps(PropertyGroup):
         }
         return text_data
 
+    if TYPE_CHECKING:
+        attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        value: str
+        box_alignment: str
+        ifc_definition_id: int
+
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -621,7 +757,7 @@ class BIMTextProperties(PropertyGroup):
 
     def get_text_edited_data(self) -> dict[str, Any]:
         """should be called only if `is_editing`
-        otherwise should use `DecoratorData.get_ifc_text_data(obj)` instead
+        otherwise should use `DecoratorData.get_text_data(obj)` instead
         because this data could be out of date
         """
         literals_data = []
@@ -645,6 +781,10 @@ def relating_product_poll(self: "BIMAssignedProductProperties", obj: bpy.types.O
 class BIMAssignedProductProperties(PropertyGroup):
     is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object, poll=relating_product_poll)
+
+    if TYPE_CHECKING:
+        is_editing_product: bool
+        relating_product: Union[bpy.types.Object, None]
 
 
 annotation_classes = [

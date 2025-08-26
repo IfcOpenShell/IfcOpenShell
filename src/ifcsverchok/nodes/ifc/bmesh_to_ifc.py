@@ -23,6 +23,7 @@ import bpy
 import ifcopenshell
 import ifcsverchok.helper
 import ifcopenshell.api
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.util.representation
 from ifcsverchok.ifcstore import SvIfcStore
@@ -224,8 +225,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             return
         for obj in SvIfcStore.id_map[self.node_id]["Representations"]:
             for step_id in obj:
-                ifcopenshell.api.run(
-                    "geometry.remove_representation",
+                ifcopenshell.api.geometry.remove_representation(
                     self.file,
                     representation=self.file.by_id(step_id[0]),
                 )
@@ -240,9 +240,8 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         if not context:
             parent = ifcopenshell.util.representation.get_context(self.file, self.context_type)
             if not parent:
-                parent = ifcopenshell.api.run("context.add_context", self.file, context_type=self.context_type)
-            context = ifcopenshell.api.run(
-                "context.add_context",
+                parent = ifcopenshell.api.context.add_context(self.file, context_type=self.context_type)
+            context = ifcopenshell.api.context.add_context(
                 self.file,
                 context_type=self.context_type,
                 context_identifier=self.context_identifier,
@@ -258,8 +257,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
             if "Representations" in SvIfcStore.id_map[self.node_id]:
                 for obj in SvIfcStore.id_map[self.node_id]["Representations"]:
                     for step_id in obj:
-                        ifcopenshell.api.run(
-                            "geometry.remove_representation",
+                        ifcopenshell.api.geometry.remove_representation(
                             self.file,
                             representation=self.file.by_id(step_id),
                         )
@@ -270,10 +268,10 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                     if not self.file.get_inverse(context):
                         if self.file.by_id(context_id).ParentContext:
                             parent = self.file.by_id(context_id).ParentContext
-                        ifcopenshell.api.run("context.remove_context", self.file, context=context)
+                        ifcopenshell.api.context.remove_context(self.file, context=context)
                         if parent:
                             if not self.file.get_inverse(parent):
-                                ifcopenshell.api.run("context.remove_context", self.file, context=parent)
+                                ifcopenshell.api.context.remove_context(self.file, context=parent)
                         SvIfcStore.id_map[self.node_id]["Contexts"].remove(context_id)
             del SvIfcStore.id_map[self.node_id]
             del self.node_dict[hash(self)]

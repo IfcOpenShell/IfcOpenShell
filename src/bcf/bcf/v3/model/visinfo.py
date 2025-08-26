@@ -1,6 +1,10 @@
+import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
+
+
+DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
 
 class BitmapFormat(Enum):
@@ -8,7 +12,7 @@ class BitmapFormat(Enum):
     JPG = "jpg"
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Component:
     originating_system: Optional[str] = field(
         default=None,
@@ -39,7 +43,7 @@ class Component:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Direction:
     x: float = field(
         metadata={
@@ -64,7 +68,7 @@ class Direction:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Point:
     x: float = field(
         metadata={
@@ -89,7 +93,7 @@ class Point:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ViewSetupHints:
     spaces_visible: bool = field(
         default=False,
@@ -114,7 +118,7 @@ class ViewSetupHints:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Bitmap:
     format: BitmapFormat = field(
         metadata={
@@ -162,7 +166,7 @@ class Bitmap:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ClippingPlane:
     location: Point = field(
         metadata={
@@ -180,12 +184,12 @@ class ClippingPlane:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ComponentColoringColorComponents:
     class Meta:
         global_type = False
 
-    component: List[Component] = field(
+    component: list[Component] = field(
         default_factory=list,
         metadata={
             "name": "Component",
@@ -195,9 +199,9 @@ class ComponentColoringColorComponents:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ComponentSelection:
-    component: List[Component] = field(
+    component: list[Component] = field(
         default_factory=list,
         metadata={
             "name": "Component",
@@ -206,12 +210,12 @@ class ComponentSelection:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ComponentVisibilityExceptions:
     class Meta:
         global_type = False
 
-    component: List[Component] = field(
+    component: list[Component] = field(
         default_factory=list,
         metadata={
             "name": "Component",
@@ -220,7 +224,7 @@ class ComponentVisibilityExceptions:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Line:
     start_point: Point = field(
         metadata={
@@ -238,7 +242,7 @@ class Line:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class OrthogonalCamera:
     """
     Attributes
@@ -288,7 +292,7 @@ class OrthogonalCamera:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class PerspectiveCamera:
     """
     Attributes
@@ -344,7 +348,7 @@ class PerspectiveCamera:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ComponentColoringColor:
     class Meta:
         global_type = False
@@ -366,7 +370,7 @@ class ComponentColoringColor:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ComponentVisibility:
     view_setup_hints: Optional[ViewSetupHints] = field(
         default=None,
@@ -391,12 +395,12 @@ class ComponentVisibility:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class VisualizationInfoBitmaps:
     class Meta:
         global_type = False
 
-    bitmap: List[Bitmap] = field(
+    bitmap: list[Bitmap] = field(
         default_factory=list,
         metadata={
             "name": "Bitmap",
@@ -405,12 +409,12 @@ class VisualizationInfoBitmaps:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class VisualizationInfoClippingPlanes:
     class Meta:
         global_type = False
 
-    clipping_plane: List[ClippingPlane] = field(
+    clipping_plane: list[ClippingPlane] = field(
         default_factory=list,
         metadata={
             "name": "ClippingPlane",
@@ -419,12 +423,12 @@ class VisualizationInfoClippingPlanes:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class VisualizationInfoLines:
     class Meta:
         global_type = False
 
-    line: List[Line] = field(
+    line: list[Line] = field(
         default_factory=list,
         metadata={
             "name": "Line",
@@ -433,9 +437,9 @@ class VisualizationInfoLines:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ComponentColoring:
-    color: List[ComponentColoringColor] = field(
+    color: list[ComponentColoringColor] = field(
         default_factory=list,
         metadata={
             "name": "Color",
@@ -444,7 +448,7 @@ class ComponentColoring:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Components:
     selection: Optional[ComponentSelection] = field(
         default=None,
@@ -469,7 +473,7 @@ class Components:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class VisualizationInfo:
     """
     VisualizationInfo documentation.

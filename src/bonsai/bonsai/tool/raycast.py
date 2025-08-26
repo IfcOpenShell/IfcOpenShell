@@ -52,15 +52,44 @@ class Raycast(bonsai.core.tool.Raycast):
             else:  # Usual object
                 obj = dup.object
                 all_objs.append(obj)
-        return all_objs
+
+        visible_objs = []
+        for obj in all_objs:
+            if obj.type in {"MESH", "EMPTY", "CURVE"} and (
+                obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
+            ):  # Check for local view and local collections for this viewport and object
+                visible_objs.append(obj)
+        return visible_objs
 
     @classmethod
-    def get_on_screen_2d_bounding_boxes(cls, context: bpy.types.Context, obj: bpy.types.Object):
+    def get_on_screen_2d_bounding_boxes(
+        cls, context: bpy.types.Context, obj: bpy.types.Object
+    ) -> Union[tuple[bpy.types.Object, list[float]], None]:
+        rv3d = context.region_data
+        assert rv3d
+        view_location = rv3d.view_matrix.inverted().translation
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
 
-        transposed_bbox = []
-        bbox_2d = []
+        transposed_bbox: list[Vector] = []
+        bbox_2d: list[float] = []
+
+        assert context.region
+        assert isinstance(context.space_data, bpy.types.SpaceView3D)
+        assert context.space_data.region_3d
+
+        # Do not include objects too far from camera view
+        if rv3d.view_perspective == "PERSP":
+            threshold = 200
+            min_distance = float("inf")
+            closest_distance: float = None
+            for point in bbox:
+                distance = (view_location - point).length
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_distance = distance
+            if closest_distance > threshold:
+                return None
 
         for v in bbox:
             coord_2d = view3d_utils.location_3d_to_region_2d(context.region, context.space_data.region_3d, v)
@@ -68,18 +97,24 @@ class Raycast(bonsai.core.tool.Raycast):
                 transposed_bbox.append(coord_2d)
 
         region = context.region
-        borders = (region.width, region.height)
+        borders = (0, region.width, 0, region.height)
         for i, axis in enumerate(zip(*transposed_bbox)):
+            axis: tuple[float, ...]
             min_point = min(axis)
             max_point = max(axis)
-            if min_point == max_point:
-                min_point = 0
-            if min_point < borders[i] and max_point > 0:
-                bbox_2d.extend([min_point, max_point])
-            else:
-                return (obj, None)
+            bbox_2d.extend([min_point, max_point])
 
-        return (obj, bbox_2d)
+        if len(bbox_2d) == 0:
+            return None
+        # AABB
+        if (
+            bbox_2d[0] <= borders[1]
+            and bbox_2d[1] >= borders[0]
+            and bbox_2d[2] <= borders[3]
+            and bbox_2d[3] >= borders[2]
+        ):
+            return (obj, bbox_2d)
+        return None
 
     @classmethod
     def intersect_mouse_2d_bounding_box(cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]):
@@ -104,6 +139,7 @@ class Raycast(bonsai.core.tool.Raycast):
     ):
         region = context.region
         rv3d = context.region_data
+        assert rv3d and region
         original_perspective = rv3d.view_perspective
 
         # TODO The raycast was working for orthographic view, but not when you are inside a camera view. This solution feels hacky,
@@ -180,9 +216,7 @@ class Raycast(bonsai.core.tool.Raycast):
         # Makes the snapping point more or less sticky than others
         # It changes the distance and affects how the snapping point are sorted
         # We multiply by the increment snap which is based on the viewport zoom
-        snap_threshold = 10 * tool.Snap.get_increment_snap_value(bpy.context)
-        if face:
-            snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
+        snap_threshold = rv3d.view_distance / 100
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -275,14 +309,15 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
-        snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
+        snap_threshold = rv3d.view_distance / 100
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
         except:
             loc = Vector((0, 0, 0))
 
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline[0]
         polyline_points = polyline_data.polyline_points
         polyline_points = polyline_points[
             : len(polyline_points) - 1
@@ -331,7 +366,7 @@ class Raycast(bonsai.core.tool.Raycast):
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
 
         if tool.Ifc.get():
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            default_container_elevation = tool.Root.get_default_container_elevation()
         else:
             default_container_elevation = 0.0
         intersection = Vector((0, 0, default_container_elevation))
@@ -352,7 +387,7 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
-        snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
+        snap_threshold = rv3d.view_distance / 100
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -386,12 +421,9 @@ class Raycast(bonsai.core.tool.Raycast):
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         objs_to_raycast = []
         for obj, bbox_2d in objs_2d_bbox:
-            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
+            if bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
-                    if (
-                        obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
-                    ):  # Check for local view and local collections for this viewport and object
-                        objs_to_raycast.append(obj)
+                    objs_to_raycast.append(obj)
         return objs_to_raycast
 
     @classmethod
