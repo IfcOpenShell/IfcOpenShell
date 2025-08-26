@@ -199,10 +199,6 @@ void RocksDbSerializer::write_streaming_() {
 			}
 
 			for (const auto* inst : simple_type_instances) {
-				if (type_identities_wrote_as_refs.find(inst->identity()) != type_identities_wrote_as_refs.end()) {
-					// already written as reference, skip
-					continue;
-				}
 				std::string s(sizeof(size_t), ' ');
 				size_t v = inst->declaration().index_in_schema();
 				memcpy(s.data(), &v, sizeof(size_t));
@@ -210,6 +206,12 @@ void RocksDbSerializer::write_streaming_() {
 				storage.db->Put(
 					storage.wopts,
 					(inst->declaration().as_entity() ? "i|" : "t|") + std::to_string(inst->identity()) + "|_", s);
+
+				if (type_identities_wrote_as_refs.find(inst->identity()) != type_identities_wrote_as_refs.end()) {
+					// already written as reference, skip
+					// only applies to the value though, the type declaration still needs to be written
+					continue;
+				}
 
 				auto val = inst->get_attribute_value(0);
 				val.apply_visitor([&](const auto& t) {
