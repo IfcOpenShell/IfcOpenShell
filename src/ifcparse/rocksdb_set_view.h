@@ -215,6 +215,7 @@ public:
 
     size_t erase(const key_type& key) {
         // @todo
+        return 0;
     }
 };
 

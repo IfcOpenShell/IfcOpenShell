@@ -507,8 +507,8 @@ namespace IfcParse {
                             break;
                         }
                     }
-                    return *this;
 #endif
+                    return *this;
                 }
 
                 rocksdb_types_iterator operator++(int) {
