@@ -205,9 +205,11 @@ public:
         mutable value_type cached_value_;
 
         void check_valid() {
+#ifdef WITH_ROCKSDB
             if (!it_ || !it_->Valid() || !it_->key().starts_with(prefix_)) {
                 it_.reset();
             }
+#endif
         }
 
     public:
