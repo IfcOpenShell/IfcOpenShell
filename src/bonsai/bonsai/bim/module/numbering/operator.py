@@ -24,6 +24,7 @@ import json
 import functools as ft
 from bonsai.core.numbering import Settings, LoadSelection, SaveNumber, Numbering, get_id
 
+
 class UndoOperator:
     @staticmethod
     def execute_with_undo(operator, context, method):
@@ -33,11 +34,11 @@ class UndoOperator:
         settings = Settings.to_dict(context.scene.BIMNumberingProperties)
 
         parent_type = LoadSelection.get_parent_type(settings)
-        try: 
+        try:
             elements = ifc_file.by_type(parent_type)
         except RuntimeError:
-            operator.report({'ERROR'}, f"Parent type {parent_type} not found in {ifc_file.schema} schema.")
-            return {'CANCELLED'}
+            operator.report({"ERROR"}, f"Parent type {parent_type} not found in {ifc_file.schema} schema.")
+            return {"CANCELLED"}
 
         if settings.get("pset_name") == "Common":
             SaveNumber.get_pset_common_names(elements)
@@ -54,7 +55,7 @@ class UndoOperator:
         bpy.context.view_layer.objects.active = bpy.context.active_object
 
         return result
-    
+
     @staticmethod
     def rollback(operator, data):
         """Support undo of number assignment"""
@@ -64,9 +65,11 @@ class UndoOperator:
         settings = Settings.to_dict(bpy.context.scene.BIMNumberingProperties)
         for element in ifc_file.by_type(LoadSelection.get_parent_type(settings)):
             old_number = data["old_value"].get(get_id(element), None)
-            rollback_count += int(SaveNumber.save_number(ifc_file, element, old_number, settings, data["new_value"]) or 0)
-        bpy.ops.bim.show_message('EXEC_DEFAULT', message=f"Rollback {rollback_count} numbers.")
-    
+            rollback_count += int(
+                SaveNumber.save_number(ifc_file, element, old_number, settings, data["new_value"]) or 0
+            )
+        bpy.ops.bim.show_message("EXEC_DEFAULT", message=f"Rollback {rollback_count} numbers.")
+
     @staticmethod
     def commit(operator, data):
         """Support redo of number assignment"""
@@ -78,9 +81,12 @@ class UndoOperator:
             element = tool.Ifc.get_entity(obj)
             if element is not None and element.is_a(LoadSelection.get_parent_type(settings)):
                 new_number = data["new_value"].get(obj.name, None)
-                commit_count += int(SaveNumber.save_number(ifc_file, element, new_number, settings, data["old_value"]) or 0)
-        bpy.ops.bim.show_message('EXEC_DEFAULT', message=f"Commit {commit_count} numbers.")
-  
+                commit_count += int(
+                    SaveNumber.save_number(ifc_file, element, new_number, settings, data["old_value"]) or 0
+                )
+        bpy.ops.bim.show_message("EXEC_DEFAULT", message=f"Commit {commit_count} numbers.")
+
+
 class AssignNumbers(bpy.types.Operator):
     bl_idname = "bim.assign_numbers"
     bl_label = "Assign numbers"
@@ -92,9 +98,10 @@ class AssignNumbers(bpy.types.Operator):
 
     def rollback(self, data):
         UndoOperator.rollback(self, data)
-    
+
     def commit(self, data):
         UndoOperator.commit(self, data)
+
 
 class RemoveNumbers(bpy.types.Operator):
     bl_idname = "bim.remove_numbers"
@@ -102,25 +109,26 @@ class RemoveNumbers(bpy.types.Operator):
     bl_description = "Remove numbers from selected objects, from the selected attribute or Pset"
     bl_options = {"REGISTER", "UNDO"}
 
-        
     def execute(self, context):
         return UndoOperator.execute_with_undo(self, context, Numbering.remove_numbers)
 
     def rollback(self, data):
         UndoOperator.rollback(self, data)
-    
+
     def commit(self, data):
         UndoOperator.commit(self, data)
+
 
 class ShowMessage(bpy.types.Operator):
     bl_idname = "bim.show_message"
     bl_label = "Show Message"
     bl_description = "Show a message in the info area"
-    message: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    message: bpy.props.StringProperty()  # pyright: ignore[reportInvalidTypeForm]
 
     def execute(self, context):
-        self.report({'INFO'}, self.message)
-        return {'FINISHED'}
+        self.report({"INFO"}, self.message)
+        return {"FINISHED"}
+
 
 class SaveSettings(bpy.types.Operator):
     bl_idname = "bim.save_settings"
@@ -131,7 +139,8 @@ class SaveSettings(bpy.types.Operator):
         props = context.scene.BIMNumberingProperties
         ifc_file = tool.Ifc.get()
         return Settings.save_settings(self, props, ifc_file)
-    
+
+
 class LoadSettings(bpy.types.Operator):
     bl_idname = "bim.load_settings"
     bl_label = "Load Settings"
@@ -142,6 +151,7 @@ class LoadSettings(bpy.types.Operator):
         ifc_file = tool.Ifc.get()
         return Settings.load_settings(self, props, ifc_file)
 
+
 class DeleteSettings(bpy.types.Operator):
     bl_idname = "bim.delete_settings"
     bl_label = "Delete Settings"
@@ -150,6 +160,7 @@ class DeleteSettings(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMNumberingProperties
         return Settings.delete_settings(self, props)
+
 
 class ClearSettings(bpy.types.Operator):
     bl_idname = "bim.clear_settings"
@@ -160,39 +171,41 @@ class ClearSettings(bpy.types.Operator):
         props = context.scene.BIMNumberingProperties
         return Settings.clear_settings(self, props)
 
+
 class ExportSettings(bpy.types.Operator):
     bl_idname = "bim.export_settings"
     bl_label = "Export Settings"
     bl_description = f"Export the current numbering settings to a JSON file"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH") # pyright: ignore[reportInvalidTypeForm]
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")  # pyright: ignore[reportInvalidTypeForm]
 
     def execute(self, context):
         props = context.scene.BIMNumberingProperties
-        with open(self.filepath, 'w') as f:
+        with open(self.filepath, "w") as f:
             json.dump(Settings.settings_dict(props), f)
-        self.report({'INFO'}, f"Exported settings to {self.filepath}")
-        return {'FINISHED'}
+        self.report({"INFO"}, f"Exported settings to {self.filepath}")
+        return {"FINISHED"}
 
     def invoke(self, context, event):
         self.filepath = "settings.json"
         context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-    
+        return {"RUNNING_MODAL"}
+
+
 class ImportSettings(bpy.types.Operator):
     bl_idname = "bim.import_settings"
     bl_label = "Import Settings"
     bl_description = f"Import numbering settings from a JSON file"
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH") # pyright: ignore[reportInvalidTypeForm]
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")  # pyright: ignore[reportInvalidTypeForm]
 
     def execute(self, context):
         props = context.scene.BIMNumberingProperties
-        with open(self.filepath, 'r') as f:
+        with open(self.filepath, "r") as f:
             settings = json.load(f)
             Settings.read_settings(self, settings, props)
-        self.report({'INFO'}, f"Imported settings from {self.filepath}")
-        return {'FINISHED'}
-    
+        self.report({"INFO"}, f"Imported settings from {self.filepath}")
+        return {"FINISHED"}
+
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
+        return {"RUNNING_MODAL"}

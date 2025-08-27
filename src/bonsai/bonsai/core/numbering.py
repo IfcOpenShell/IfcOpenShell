@@ -32,11 +32,13 @@ import ifcopenshell.util.shape as ifc_shape
 import string
 import json
 
+
 def get_id(element):
     return getattr(element, "GlobalId", element.id())
 
+
 class SaveNumber:
-    
+
     pset_names = [("Custom", "Custom Pset", "")]
     pset_common_names = {}
     ifc_file = None
@@ -60,10 +62,10 @@ class SaveNumber:
             return getattr(element, SaveNumber.get_attribute_name(settings), None)
         if settings.get("save_type") == "Pset":
             pset_name = SaveNumber.get_pset_name(element, settings)
-            if (pset := get_pset(element, pset_name)):
+            if pset := get_pset(element, pset_name):
                 return pset.get(settings.get("property_name"))
         return None
-        
+
     @staticmethod
     def save_number(ifc_file, element, number, settings, numbers_cache=None):
         if element is None:
@@ -77,7 +79,7 @@ class SaveNumber:
             if not hasattr(element, attribute_name):
                 return None
             if attribute_name == "Name" and number is None:
-                number = element.is_a().strip("Ifc") #Reset Name to name of type
+                number = element.is_a().strip("Ifc")  # Reset Name to name of type
             setattr(element, attribute_name, number)
             numbers_cache[get_id(element)] = number
             return 1
@@ -86,10 +88,12 @@ class SaveNumber:
             if not pset_name:
                 return None
             if pset := get_pset(element, pset_name):
-                pset = ifc_file.by_id(pset["id"])  
+                pset = ifc_file.by_id(pset["id"])
             else:
                 pset = ifc_api.run("pset.add_pset", ifc_file, product=element, name=pset_name)
-            ifc_api.run("pset.edit_pset", ifc_file, pset=pset, properties={settings["property_name"]: number}, should_purge=True)
+            ifc_api.run(
+                "pset.edit_pset", ifc_file, pset=pset, properties={settings["property_name"]: number}, should_purge=True
+            )
             if number is None and not pset.HasProperties:
                 ifc_api.run("pset.remove_pset", ifc_file, product=element, pset=pset)
             numbers_cache[get_id(element)] = number
@@ -119,11 +123,15 @@ class SaveNumber:
     @staticmethod
     def update_pset_names(prop, context):
         settings = Settings.to_dict(context.scene.BIMNumberingProperties)
-        pset_names_sets = [set(SaveNumber.pset_qto.get_applicable_names(ifc_type)) for ifc_type in LoadSelection.get_selected_types(settings)]
+        pset_names_sets = [
+            set(SaveNumber.pset_qto.get_applicable_names(ifc_type))
+            for ifc_type in LoadSelection.get_selected_types(settings)
+        ]
         intersection = set.intersection(*pset_names_sets) if pset_names_sets else set()
-        SaveNumber.pset_names = [('Custom Pset', 'Custom Pset', 'Store in custom Pset with selected name'),
-                                 ('Common', 'Pset_Common', 'Store in Pset common of the type, e.g. Pset_WallCommon')] + \
-                                [(name, name, f"Store in Pset called {name}") for name in intersection]
+        SaveNumber.pset_names = [
+            ("Custom Pset", "Custom Pset", "Store in custom Pset with selected name"),
+            ("Common", "Pset_Common", "Store in Pset common of the type, e.g. Pset_WallCommon"),
+        ] + [(name, name, f"Store in Pset called {name}") for name in intersection]
 
     @staticmethod
     def get_pset_common_names(elements):
@@ -138,18 +146,19 @@ class SaveNumber:
                 pset_common_name = name_guess
             elif (name_guess := "Pset_" + ifc_type.strip("Ifc") + "TypeCommon") in pset_names:
                 pset_common_name = name_guess
-            elif common_names := [name for name in pset_names if 'Common' in name]:
+            elif common_names := [name for name in pset_names if "Common" in name]:
                 pset_common_name = common_names[0]
             else:
                 pset_common_name = None
             SaveNumber.pset_common_names[ifc_type] = pset_common_name
+
 
 class LoadSelection:
 
     all_objects = []
     selected_objects = []
     possible_types = []
-    
+
     @staticmethod
     def get_parent_type(settings):
         """Get the parent type from the settings."""
@@ -172,13 +181,13 @@ class LoadSelection:
         if "All" in selected_types:
             selected_types = [type_tuple[0] for type_tuple in LoadSelection.possible_types[1:]]
         return selected_types
-    
+
     @staticmethod
     def load_possible_types(objects, parent_type):
         """Load the available IFC types and their counts from the selected elements."""
         if not objects:
             return [("All", "All", "element")], {"All": 0}
-        
+
         ifc_types = [("All", "All", "element")]
         seen_types = []
         number_counts = {"All": 0}
@@ -187,24 +196,26 @@ class LoadSelection:
             element = tool.Ifc.get_entity(obj)
             if element is None or not element.is_a(parent_type):
                 continue
-            ifc_type = element.is_a() #Starts with "Ifc", which we can strip by starting from index 3 
-        
+            ifc_type = element.is_a()  # Starts with "Ifc", which we can strip by starting from index 3
+
             if ifc_type not in seen_types:
-                seen_types.append(ifc_type) 
-                ifc_types.append((ifc_type, ifc_type[3:], ifc_type[3:].lower())) # Store type as (id, name, name_lower)
+                seen_types.append(ifc_type)
+                ifc_types.append((ifc_type, ifc_type[3:], ifc_type[3:].lower()))  # Store type as (id, name, name_lower)
                 number_counts[ifc_type] = 0
 
             number_counts["All"] += 1
             number_counts[ifc_type] += 1
-                
-        ifc_types.sort(key=lambda ifc_type: ifc_type[0]) 
-        
+
+        ifc_types.sort(key=lambda ifc_type: ifc_type[0])
+
         return ifc_types, number_counts
 
     @staticmethod
     def update_objects(prop, context):
         settings = Settings.to_dict(context.scene.BIMNumberingProperties)
-        ifc_types, number_counts = LoadSelection.load_possible_types(LoadSelection.selected_objects, LoadSelection.get_parent_type(settings))
+        ifc_types, number_counts = LoadSelection.load_possible_types(
+            LoadSelection.selected_objects, LoadSelection.get_parent_type(settings)
+        )
         LoadSelection.possible_types = [(id, name + f": {number_counts[id]}", "") for (id, name, _) in ifc_types]
         NumberFormatting.update_format_preview(prop, context)
         SaveNumber.update_pset_names(prop, context)
@@ -223,11 +234,10 @@ class LoadSelection:
             LoadSelection.update_objects(prop, context)
         return LoadSelection.possible_types
 
+
 class Storeys:
 
-    settings = {"save_type": "Pset",
-                "pset_name": "Pset_Numbering",
-                "property_name": "CustomStoreyNumber"}
+    settings = {"save_type": "Pset", "pset_name": "Pset_Numbering", "property_name": "CustomStoreyNumber"}
 
     @staticmethod
     def get_storeys(settings):
@@ -239,7 +249,13 @@ class Storeys:
             if element is not None and element.is_a("IfcBuildingStorey"):
                 storeys.append(element)
                 storey_locations[element] = ObjectGeometry.get_object_location(obj, settings)
-        storeys.sort(key=ft.cmp_to_key(lambda a, b: ObjectGeometry.cmp_within_precision(storey_locations[a], storey_locations[b], settings, use_dir=False)))
+        storeys.sort(
+            key=ft.cmp_to_key(
+                lambda a, b: ObjectGeometry.cmp_within_precision(
+                    storey_locations[a], storey_locations[b], settings, use_dir=False
+                )
+            )
+        )
         return storeys
 
     @staticmethod
@@ -247,7 +263,7 @@ class Storeys:
         storeys = Storeys.get_storeys(Settings.to_dict(context.scene.BIMNumberingProperties))
         storey = next((storey for storey in storeys if storey.Name == props.custom_storey), None)
         number = SaveNumber.get_number(storey, Storeys.settings)
-        if number is None: # If the number is not set, use the index
+        if number is None:  # If the number is not set, use the index
             number = storeys.index(storey)
         props["_custom_storey_number"] = int(number)
 
@@ -261,7 +277,7 @@ class Storeys:
         storeys = Storeys.get_storeys(Settings.to_dict(props))
         storey = next((storey for storey in storeys if storey.Name == props.custom_storey), None)
         index = storeys.index(storey)
-        if value == index: # If the value is the same as the index, remove the number
+        if value == index:  # If the value is the same as the index, remove the number
             SaveNumber.save_number(ifc_file, storey, None, Storeys.settings)
         else:
             SaveNumber.save_number(ifc_file, storey, str(value), Storeys.settings)
@@ -282,23 +298,45 @@ class Storeys:
                 storey_number = storeys.index(storey) if storey in storeys else None
         return storey_number
 
+
 class NumberFormatting:
 
     format_preview = ""
 
     @staticmethod
-    def format_number(settings, number_values = (0, 0, None), max_number_values=(100, 100, 1), type_name=""):
+    def format_number(settings, number_values=(0, 0, None), max_number_values=(100, 100, 1), type_name=""):
         """Return the formatted number for the given element, type and storey number"""
         format = settings.get("format", None)
         if format is None:
             return format
         if "{E}" in format:
-            format = format.replace("{E}", NumberingSystems.to_numbering_string(settings.get("initial_element_number", 0) + number_values[0], settings.get("element_numbering"), max_number_values[0]))
+            format = format.replace(
+                "{E}",
+                NumberingSystems.to_numbering_string(
+                    settings.get("initial_element_number", 0) + number_values[0],
+                    settings.get("element_numbering"),
+                    max_number_values[0],
+                ),
+            )
         if "{T}" in format:
-            format = format.replace("{T}", NumberingSystems.to_numbering_string(settings.get("initial_type_number", 0) + number_values[1], settings.get("type_numbering"), max_number_values[1]))
+            format = format.replace(
+                "{T}",
+                NumberingSystems.to_numbering_string(
+                    settings.get("initial_type_number", 0) + number_values[1],
+                    settings.get("type_numbering"),
+                    max_number_values[1],
+                ),
+            )
         if "{S}" in format:
             if number_values[2] is not None:
-                format = format.replace("{S}", NumberingSystems.to_numbering_string(settings.get("initial_storey_number", 0) + number_values[2], settings.get("storey_numbering"), max_number_values[2]))
+                format = format.replace(
+                    "{S}",
+                    NumberingSystems.to_numbering_string(
+                        settings.get("initial_storey_number", 0) + number_values[2],
+                        settings.get("storey_numbering"),
+                        max_number_values[2],
+                    ),
+                )
             else:
                 format = format.replace("{S}", "x")
         if "[T]" in format and len(type_name) > 0:
@@ -313,47 +351,52 @@ class NumberFormatting:
     def get_type_name(settings):
         """Return type name used in preview, based on selected types"""
         if not settings.get("selected_types"):
-            #If no types selected, return "Type"
+            # If no types selected, return "Type"
             return "Type"
-        #Get the type name of the selected type, excluding 'IfcElement'
-        types = settings.get("selected_types")  
-        if 'All' in types:
-            types.remove('All')
-        if len(types)>0:
+        # Get the type name of the selected type, excluding 'IfcElement'
+        types = settings.get("selected_types")
+        if "All" in types:
+            types.remove("All")
+        if len(types) > 0:
             return str(list(types)[0][3:])
-        #If all selected, return type name of one of the selected types
+        # If all selected, return type name of one of the selected types
         all_types = LoadSelection.possible_types
         if len(all_types) > 1:
             return str(all_types[1][0][3:])
-        #If none selected, return "Type"
+        # If none selected, return "Type"
         return "Type"
 
     @staticmethod
     def get_max_numbers(settings, type_name):
         """Return number of selected elements used in preview, based on selected types"""
         max_element, max_type, max_storey = 0, 0, 0
-        if settings.get("storey_numbering") == 'number_ext':
+        if settings.get("storey_numbering") == "number_ext":
             max_storey = len(Storeys.get_storeys(settings))
-        if settings.get("element_numbering") == 'number_ext' or settings.get("type_numbering") == 'number_ext':
+        if settings.get("element_numbering") == "number_ext" or settings.get("type_numbering") == "number_ext":
             if not settings.get("selected_types"):
                 return max_element, max_type, max_storey
-            type_counts = {type_tuple[0]: int(''.join([c for c in type_tuple[1] if c.isdigit()])) \
-                           for type_tuple in LoadSelection.possible_types}
+            type_counts = {
+                type_tuple[0]: int("".join([c for c in type_tuple[1] if c.isdigit()]))
+                for type_tuple in LoadSelection.possible_types
+            }
             if "All" in settings.get("selected_types"):
                 max_element = type_counts.get("All", 0)
             else:
                 max_element = sum(type_counts.get(t, 0) for t in LoadSelection.get_selected_types(settings))
-            max_type = type_counts.get('Ifc' + type_name, max_element)
+            max_type = type_counts.get("Ifc" + type_name, max_element)
         return max_element, max_type, max_storey
 
     @staticmethod
     def update_format_preview(prop, context):
         settings = Settings.to_dict(context.scene.BIMNumberingProperties)
         type_name = NumberFormatting.get_type_name(settings)
-        NumberFormatting.format_preview = NumberFormatting.format_number(settings, (0, 0, 0), NumberFormatting.get_max_numbers(settings, type_name), type_name)
+        NumberFormatting.format_preview = NumberFormatting.format_number(
+            settings, (0, 0, 0), NumberFormatting.get_max_numbers(settings, type_name), type_name
+        )
+
 
 class NumberingSystems:
-    
+
     @staticmethod
     def to_number(i):
         """Convert a number to a string."""
@@ -378,26 +421,26 @@ class NumberingSystems:
             return "0"
         if i < 0:
             return "(" + NumberingSystems.to_letter(-i, upper) + ")"
-        
+
         num2alphadict = dict(zip(range(1, 27), string.ascii_uppercase if upper else string.ascii_lowercase))
         res = ""
-        numloops = (i-1) // 26
-        
+        numloops = (i - 1) // 26
+
         if numloops > 0:
             res = res + NumberingSystems.to_letter(numloops, upper)
-            
+
         remainder = i % 26
         if remainder == 0:
             remainder += 26
         return res + num2alphadict[remainder]
-    
+
     @staticmethod
     def get_numberings():
         return {
             "number": NumberingSystems.to_number,
             "number_ext": NumberingSystems.to_number_ext,
             "lower_letter": NumberingSystems.to_letter,
-            "upper_letter": lambda x: NumberingSystems.to_letter(x, True)
+            "upper_letter": lambda x: NumberingSystems.to_letter(x, True),
         }
 
     def to_numbering_string(i, numbering_system, max_number):
@@ -415,6 +458,7 @@ class NumberingSystems:
         numbers = [NumberingSystems.to_numbering_string(i, numbering_system, 10) for i in range(initial, initial + 3)]
         return "{0}, {1}, {2}, ...".format(*numbers)
 
+
 class ObjectGeometry:
     @staticmethod
     def get_object_location(obj, settings):
@@ -428,14 +472,17 @@ class ObjectGeometry:
         elif settings.get("location_type") == "BOUNDING_BOX":
             bbox_vector = Vector((0, 0, 0))
             # Determine the coordinates based on the direction and axis order
-            direction = (int(settings.get("x_direction")), int(settings.get("y_direction")), int(settings.get("z_direction")))
+            direction = (
+                int(settings.get("x_direction")),
+                int(settings.get("y_direction")),
+                int(settings.get("z_direction")),
+            )
             for i in range(3):
                 if direction[i] == -1:
                     bbox_vector[i] = max(v[i] for v in bbox_vectors)
                 else:
                     bbox_vector[i] = min(v[i] for v in bbox_vectors)
             return bbox_vector
-        
 
     @staticmethod
     def get_object_dimensions(obj):
@@ -455,13 +502,22 @@ class ObjectGeometry:
     @staticmethod
     def cmp_within_precision(a, b, settings, use_dir=True):
         """Compare two vectors within a given precision."""
-        direction = (int(settings.get("x_direction", 1)), int(settings.get("y_direction", 1)), int(settings.get("z_direction", 1))) if use_dir else (1, 1, 1)
+        direction = (
+            (
+                int(settings.get("x_direction", 1)),
+                int(settings.get("y_direction", 1)),
+                int(settings.get("z_direction", 1)),
+            )
+            if use_dir
+            else (1, 1, 1)
+        )
         for axis in settings.get("axis_order", "XYZ"):
             idx = "XYZ".index(axis)
             diff = (a[idx] - b[idx]) * direction[idx]
             if 1000 * abs(diff) > settings.get("precision", [0, 0, 0])[idx]:
                 return 1 if diff > 0 else -1
         return 0
+
 
 class ElementGeometry:
     @staticmethod
@@ -474,9 +530,13 @@ class ElementGeometry:
         verts = ifc_shape.get_shape_vertices(shape, shape.geometry)
         if settings.get("location_type") == "CENTER":
             return np.mean(verts, axis=0)
-        
+
         elif settings.get("location_type") == "BOUNDING_BOX":
-            direction = (int(settings.get("x_direction", 1)), int(settings.get("y_direction", 1)), int(settings.get("z_direction", 1)))
+            direction = (
+                int(settings.get("x_direction", 1)),
+                int(settings.get("y_direction", 1)),
+                int(settings.get("z_direction", 1)),
+            )
             bbox_min = np.min(verts, axis=0)
             bbox_max = np.max(verts, axis=0)
             bbox_vector = np.zeros(3)
@@ -486,7 +546,6 @@ class ElementGeometry:
                 else:
                     bbox_vector[i] = bbox_min[i]
             return bbox_vector
-        
 
     @staticmethod
     def get_element_dimensions(element):
@@ -500,20 +559,21 @@ class ElementGeometry:
         bbox_max = np.max(verts, axis=0)
         return bbox_max - bbox_min
 
+
 class Settings:
 
     pset_name = "Pset_NumberingSettings"
 
     settings_names = None
-    
+
     def import_settings(filepath):
         """Import settings from a JSON file, e.g. as exported from the UI"""
-        with open(filepath, 'r') as file:
+        with open(filepath, "r") as file:
             settings = json.load(file)
         return settings
 
     def default_settings():
-        """"Return a default dictionary of settings for numbering elements."""
+        """ "Return a default dictionary of settings for numbering elements."""
         return {
             "x_direction": 1,
             "y_direction": 1,
@@ -532,9 +592,9 @@ class Settings:
             "attribute_name": "Tag",
             "pset_name": "Common",
             "custom_pset_name": "Pset_Numbering",
-            "property_name": "Number"
-            }
-    
+            "property_name": "Number",
+        }
+
     @staticmethod
     def to_dict(props):
         """Convert the properties to a dictionary for saving."""
@@ -564,8 +624,8 @@ class Settings:
             "custom_pset_name": props.custom_pset_name,
             "property_name": props.property_name,
             "remove_toggle": props.remove_toggle,
-            "check_duplicates_toggle": props.check_duplicates_toggle
-            }
+            "check_duplicates_toggle": props.check_duplicates_toggle,
+        }
 
     @staticmethod
     def save_settings(operator, props, ifc_file):
@@ -574,19 +634,24 @@ class Settings:
         project = ifc_file.by_type("IfcProject")[0]
         settings_name = props.settings_name.strip()
         if not settings_name:
-            operator.report({'ERROR'}, "Please enter a name for the settings.")
-            return {'CANCELLED'}
+            operator.report({"ERROR"}, "Please enter a name for the settings.")
+            return {"CANCELLED"}
         if pset_settings := get_pset(project, Settings.pset_name):
             pset_settings = ifc_file.by_id(pset_settings["id"])
         else:
             pset_settings = ifc_api.run("pset.add_pset", ifc_file, product=project, name=Settings.pset_name)
         if not pset_settings:
-            operator.report({'ERROR'}, "Could not create property set")
-            return {'CANCELLED'}
-        ifc_api.run("pset.edit_pset", ifc_file, pset=pset_settings, properties={settings_name: json.dumps(Settings.to_dict(props))})
+            operator.report({"ERROR"}, "Could not create property set")
+            return {"CANCELLED"}
+        ifc_api.run(
+            "pset.edit_pset",
+            ifc_file,
+            pset=pset_settings,
+            properties={settings_name: json.dumps(Settings.to_dict(props))},
+        )
         Settings.settings_names.add(settings_name)
-        operator.report({'INFO'}, f"Saved settings '{settings_name}' to IFCProject element")
-        return {'FINISHED'}
+        operator.report({"INFO"}, f"Saved settings '{settings_name}' to IFCProject element")
+        return {"FINISHED"}
 
     @staticmethod
     def read_settings(operator, settings, props):
@@ -597,7 +662,7 @@ class Settings:
             try:
                 setattr(props, key, value)
             except Exception as e:
-                operator.report({'ERROR'}, f"Failed to set property {key} to {value}. Error: {e}")
+                operator.report({"ERROR"}, f"Failed to set property {key} to {value}. Error: {e}")
 
     @staticmethod
     def get_settings_names():
@@ -616,44 +681,48 @@ class Settings:
         # Load selected settings by name
         settings_name = props.saved_settings
         if settings_name == "NONE":
-            operator.report({'WARNING'}, "No saved settings to load.")
-            return {'CANCELLED'}
+            operator.report({"WARNING"}, "No saved settings to load.")
+            return {"CANCELLED"}
         if pset_settings := get_pset(ifc_file.by_type("IfcProject")[0], Settings.pset_name):
             settings = pset_settings.get(settings_name, None)
             if settings is None:
-                operator.report({'WARNING'}, f"Settings '{settings_name}' not found.")
-                return {'CANCELLED'}
+                operator.report({"WARNING"}, f"Settings '{settings_name}' not found.")
+                return {"CANCELLED"}
             settings = json.loads(settings)
             Settings.read_settings(operator, settings, props)
-            operator.report({'INFO'}, f"Loaded settings '{settings_name}' from IFCProject element")
-            return {'FINISHED'}
+            operator.report({"INFO"}, f"Loaded settings '{settings_name}' from IFCProject element")
+            return {"FINISHED"}
         else:
-            operator.report({'WARNING'}, "No settings found")
-            return {'CANCELLED'}
-    
+            operator.report({"WARNING"}, "No settings found")
+            return {"CANCELLED"}
+
     @staticmethod
     def delete_settings(operator, props):
         ifc_file = tool.Ifc.get()
         settings_name = props.saved_settings
         if settings_name == "NONE":
-            operator.report({'WARNING'}, "No saved settings to delete.")
-            return {'CANCELLED'}
+            operator.report({"WARNING"}, "No saved settings to delete.")
+            return {"CANCELLED"}
         if pset_settings := get_pset(ifc_file.by_type("IfcProject")[0], Settings.pset_name):
             if settings_name in pset_settings:
                 pset_settings = ifc_file.by_id(pset_settings["id"])
-                ifc_api.run("pset.edit_pset", ifc_file, pset=pset_settings, properties={settings_name: None}, should_purge=True)
+                ifc_api.run(
+                    "pset.edit_pset", ifc_file, pset=pset_settings, properties={settings_name: None}, should_purge=True
+                )
                 Settings.settings_names.remove(settings_name)
-                operator.report({'INFO'}, f"Deleted settings '{settings_name}' from IFCProject element")
+                operator.report({"INFO"}, f"Deleted settings '{settings_name}' from IFCProject element")
 
                 if not pset_settings.HasProperties:
-                    ifc_api.run("pset.remove_pset", ifc_file, product=ifc_file.by_type("IfcProject")[0], pset=pset_settings)
-                return {'FINISHED'}
+                    ifc_api.run(
+                        "pset.remove_pset", ifc_file, product=ifc_file.by_type("IfcProject")[0], pset=pset_settings
+                    )
+                return {"FINISHED"}
             else:
-                operator.report({'WARNING'}, f"Settings '{settings_name}' not found.")
-                return {'CANCELLED'}
+                operator.report({"WARNING"}, f"Settings '{settings_name}' not found.")
+                return {"CANCELLED"}
         else:
-            operator.report({'WARNING'}, "No settings found")
-            return {'CANCELLED'}
+            operator.report({"WARNING"}, "No settings found")
+            return {"CANCELLED"}
 
     @staticmethod
     def clear_settings(operator, props):
@@ -662,45 +731,73 @@ class Settings:
         if pset_settings := get_pset(project, Settings.pset_name):
             pset_settings = ifc_file.by_id(pset_settings["id"])
             ifc_api.run("pset.remove_pset", ifc_file, product=project, pset=pset_settings)
-            operator.report({'INFO'}, f"Cleared settings from IFCProject element")
+            operator.report({"INFO"}, f"Cleared settings from IFCProject element")
             Settings.settings_names = set()
-            return {'FINISHED'}
+            return {"FINISHED"}
         else:
-            operator.report({'WARNING'}, "No settings found")
-            return {'CANCELLED'}
+            operator.report({"WARNING"}, "No settings found")
+            return {"CANCELLED"}
+
 
 class Numbering:
 
     @staticmethod
-    def number_elements(elements, ifc_file, settings, elements_locations = None, elements_dimensions = None, storeys = None, numbers_cache = {}, storeys_numbers={}, report=None, remove_count=None):
+    def number_elements(
+        elements,
+        ifc_file,
+        settings,
+        elements_locations=None,
+        elements_dimensions=None,
+        storeys=None,
+        numbers_cache={},
+        storeys_numbers={},
+        report=None,
+        remove_count=None,
+    ):
         """Number elements in the IFC file with the provided settings. If element locations or dimensions are specified, these are used for sorting.
         Providing numbers_cache, a dictionary with element-> currently saved number, speeds up execution.
         If storeys_numbers is provided, as a dictionary storey->number, this is used for assigning storey numbers."""
         if report is None:
+
             def report(report_type, message):
                 if report_type == {"INFO"}:
                     print("INFO: ", message)
                 if report_type == {"WARNING"}:
                     raise Exception(message)
+
         if storeys is None:
             storeys = []
 
         number_count = 0
 
         if elements_dimensions:
-            elements.sort(key=ft.cmp_to_key(lambda a, b: ObjectGeometry.cmp_within_precision(elements_dimensions[a], elements_dimensions[b], settings, use_dir=False)))
+            elements.sort(
+                key=ft.cmp_to_key(
+                    lambda a, b: ObjectGeometry.cmp_within_precision(
+                        elements_dimensions[a], elements_dimensions[b], settings, use_dir=False
+                    )
+                )
+            )
         if elements_locations:
-            elements.sort(key=ft.cmp_to_key(lambda a, b: ObjectGeometry.cmp_within_precision(elements_locations[a], elements_locations[b], settings)))
+            elements.sort(
+                key=ft.cmp_to_key(
+                    lambda a, b: ObjectGeometry.cmp_within_precision(
+                        elements_locations[a], elements_locations[b], settings
+                    )
+                )
+            )
 
         selected_types = LoadSelection.get_selected_types(settings)
 
         if not selected_types:
             selected_types = list(set(element.is_a() for element in elements))
 
-        elements_by_type = [[element for element in elements if element.is_a() == ifc_type] for ifc_type in selected_types]
+        elements_by_type = [
+            [element for element in elements if element.is_a() == ifc_type] for ifc_type in selected_types
+        ]
 
         failed_types = set()
-        for (element_number, element) in enumerate(elements):
+        for element_number, element in enumerate(elements):
 
             type_index = selected_types.index(element.is_a())
             type_elements = elements_by_type[type_index]
@@ -711,29 +808,42 @@ class Numbering:
                 storey_number = Storeys.get_storey_number(element, storeys, settings, storeys_numbers)
                 if storey_number is None and "{S}" in settings.get("format"):
                     if report is not None:
-                        report({'WARNING'}, f"Element {getattr(element, 'Name', '')} of type {element.is_a()} with ID {get_id(element)} is not contained in any storey.")
+                        report(
+                            {"WARNING"},
+                            f"Element {getattr(element, 'Name', '')} of type {element.is_a()} with ID {get_id(element)} is not contained in any storey.",
+                        )
                     else:
-                        raise Exception(f"Element {getattr(element, 'Name', '')} of type {element.is_a()} with ID {get_id(element)} is not contained in any storey.")
+                        raise Exception(
+                            f"Element {getattr(element, 'Name', '')} of type {element.is_a()} with ID {get_id(element)} is not contained in any storey."
+                        )
             else:
                 storey_number = None
-            
-            number = NumberFormatting.format_number(settings, (element_number, type_number, storey_number), (len(elements), len(type_elements), len(storeys)), type_name)
+
+            number = NumberFormatting.format_number(
+                settings,
+                (element_number, type_number, storey_number),
+                (len(elements), len(type_elements), len(storeys)),
+                type_name,
+            )
             count = SaveNumber.save_number(ifc_file, element, number, settings, numbers_cache)
             if count is None:
-                report({'WARNING'}, f"Failed to save number for element {getattr(element, 'Name', '')} of type {element.is_a()} with ID {get_id(element)}.")
+                report(
+                    {"WARNING"},
+                    f"Failed to save number for element {getattr(element, 'Name', '')} of type {element.is_a()} with ID {get_id(element)}.",
+                )
                 failed_types.add(element.is_a())
             else:
                 number_count += count
 
         if failed_types:
-            report({'WARNING'}, f"Failed to renumber the following types: {failed_types}")
+            report({"WARNING"}, f"Failed to renumber the following types: {failed_types}")
 
         if settings.get("remove_toggle") and remove_count is not None:
-            report({'INFO'}, f"Renumbered {number_count} objects, removed number from {remove_count} objects.")
+            report({"INFO"}, f"Renumbered {number_count} objects, removed number from {remove_count} objects.")
         else:
-            report({'INFO'}, f"Renumbered {number_count} objects.")
+            report({"INFO"}, f"Renumbered {number_count} objects.")
 
-        return {'FINISHED'}, number_count
+        return {"FINISHED"}, number_count
 
     @staticmethod
     def assign_numbers(operator, settings, numbers_cache):
@@ -744,8 +854,9 @@ class Numbering:
 
         if settings.get("remove_toggle"):
             for obj in bpy.context.scene.objects:
-                if (settings.get("selected_toggle") and obj not in bpy.context.selected_objects) or \
-                (settings.get("visible_toggle") and not obj.visible_get()):
+                if (settings.get("selected_toggle") and obj not in bpy.context.selected_objects) or (
+                    settings.get("visible_toggle") and not obj.visible_get()
+                ):
                     element = tool.Ifc.get_entity(obj)
                     if element is not None and element.is_a(LoadSelection.get_parent_type(settings)):
                         count_diff = SaveNumber.remove_number(ifc_file, element, settings, numbers_cache)
@@ -754,16 +865,18 @@ class Numbering:
         objects = LoadSelection.load_selected_objects(settings)
 
         if not objects:
-            operator.report({'WARNING'}, f"No objects selected or available for numbering, removed {remove_count} existing numbers.")
-            return {'CANCELLED'}
-        
+            operator.report(
+                {"WARNING"}, f"No objects selected or available for numbering, removed {remove_count} existing numbers."
+            )
+            return {"CANCELLED"}
+
         selected_types = LoadSelection.get_selected_types(settings)
         possible_types = [tupl[0] for tupl in LoadSelection.possible_types]
-        
+
         selected_elements = []
         elements_locations = {}
         elements_dimensions = {}
-        for obj in objects: 
+        for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if element is None:
                 continue
@@ -773,19 +886,25 @@ class Numbering:
                 elements_dimensions[element] = ObjectGeometry.get_object_dimensions(obj)
             elif settings.get("remove_toggle") and element.is_a() in possible_types:
                 remove_count += SaveNumber.remove_number(ifc_file, element, settings, numbers_cache)
-        
+
         if not selected_elements:
-            operator.report({'WARNING'}, f"No elements selected or available for numbering, removed {remove_count} existing numbers.")
+            operator.report(
+                {"WARNING"},
+                f"No elements selected or available for numbering, removed {remove_count} existing numbers.",
+            )
 
         storeys = Storeys.get_storeys(settings)
-        res, _  = Numbering.number_elements(selected_elements, 
-                                            ifc_file, settings, 
-                                            elements_locations, 
-                                            elements_dimensions,  
-                                            storeys, 
-                                            numbers_cache,
-                                            report = operator.report,
-                                            remove_count=remove_count)
+        res, _ = Numbering.number_elements(
+            selected_elements,
+            ifc_file,
+            settings,
+            elements_locations,
+            elements_dimensions,
+            storeys,
+            numbers_cache,
+            report=operator.report,
+            remove_count=remove_count,
+        )
 
         if settings.get("check_duplicates_toggle"):
             numbers = []
@@ -795,8 +914,8 @@ class Numbering:
                     continue
                 number = SaveNumber.get_number(element, settings, numbers_cache)
                 if number in numbers:
-                    operator.report({'WARNING'}, f"The model contains duplicate numbers")
-                    return {'FINISHED'}
+                    operator.report({"WARNING"}, f"The model contains duplicate numbers")
+                    return {"FINISHED"}
                 if number is not None:
                     numbers.append(number)
 
@@ -805,7 +924,7 @@ class Numbering:
     def remove_numbers(self, settings, numbers_cache):
         """Remove numbers from selected objects"""
         ifc_file = tool.Ifc.get()
-        
+
         remove_count = 0
 
         objects = bpy.context.selected_objects if settings.get("selected_toggle") else bpy.context.scene.objects
@@ -813,9 +932,9 @@ class Numbering:
             objects = [obj for obj in objects if obj.visible_get()]
 
         if not objects:
-            self.report({'WARNING'}, f"No objects selected or available for removal.")
-            return {'CANCELLED'}
-            
+            self.report({"WARNING"}, f"No objects selected or available for removal.")
+            return {"CANCELLED"}
+
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if element is not None and element.is_a(LoadSelection.get_parent_type(settings)):
@@ -823,8 +942,8 @@ class Numbering:
                 numbers_cache[get_id(element)] = None
 
         if remove_count == 0:
-            self.report({'WARNING'}, f"No elements selected or available for removal.")
-            return {'CANCELLED'}
-        
-        self.report({'INFO'}, f"Removed {remove_count} existing numbers.")
-        return {'FINISHED'}
+            self.report({"WARNING"}, f"No elements selected or available for removal.")
+            return {"CANCELLED"}
+
+        self.report({"INFO"}, f"Removed {remove_count} existing numbers.")
+        return {"FINISHED"}

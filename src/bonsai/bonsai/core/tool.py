@@ -610,7 +610,6 @@ class Nest:
 @interface
 class Numbering:
     def get_numbering_props(cls): pass
-    def get_project(cls): pass    
 
 @interface
 class Patch:

@@ -26,6 +26,7 @@ from functools import partial
 
 from bonsai.bim.module.numbering.data import NumberingData
 
+
 class NumberingTool(WorkSpaceTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
@@ -43,6 +44,7 @@ class NumberingTool(WorkSpaceTool):
     def draw_settings(context, layout, ws_tool):
         # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
         NumberingToolUI.draw(context, layout)
+
 
 class NumberingToolUI:
 

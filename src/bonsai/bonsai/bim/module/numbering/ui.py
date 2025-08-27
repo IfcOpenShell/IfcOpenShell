@@ -21,6 +21,7 @@ import bonsai.tool as tool
 from bonsai.core.numbering import NumberFormatting
 from bonsai.bim.module.numbering.data import NumberingData
 
+
 class BIM_PT_Numbering(Panel):
     bl_label = "Numbering settings"
     bl_space_type = "VIEW_3D"
@@ -31,14 +32,14 @@ class BIM_PT_Numbering(Panel):
     def poll(cls, context):
         return context.workspace.tools.from_space_view3d_mode(context.mode).idname == "bim.numbering_tool"
 
-    def draw(cls,  context):
+    def draw(cls, context):
         assert (layout := cls.layout)
 
         if not NumberingData.is_loaded:
             NumberingData.load()
-        
+
         props = tool.Numbering.get_numbering_props()
-        
+
         cls.draw_selection(layout, props)
         cls.draw_numbering_order(layout, props)
         cls.draw_numbering_systems(layout, props)
@@ -47,7 +48,7 @@ class BIM_PT_Numbering(Panel):
         cls.draw_settings(layout, props)
 
     @classmethod
-    def draw_selection(cls, layout, props):  
+    def draw_selection(cls, layout, props):
         box = layout.box()
         box.alignment = "EXPAND"
         box.label(text="Elements to number")
@@ -79,7 +80,7 @@ class BIM_PT_Numbering(Panel):
         grid.prop(props, "precision", index=1, text="Y")
         grid.prop(props, "precision", index=2, text="Z")
 
-        # Axis order and reference point 
+        # Axis order and reference point
         grid = box.grid_flow(row_major=True, align=True, columns=4)
         grid.label(text="Order:")
         grid.prop(props, "axis_order", text="")
@@ -142,7 +143,7 @@ class BIM_PT_Numbering(Panel):
         box.prop(props, "remove_toggle")
         box.prop(props, "check_duplicates_toggle")
 
-    @classmethod   
+    @classmethod
     def draw_settings(cls, layout, props):
         box = layout.box()
         box.alignment = "EXPAND"

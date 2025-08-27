@@ -32,17 +32,12 @@ class NumberingData:
         cls.is_loaded = True
         cls.data["poll"] = cls.poll()
         if cls.data["poll"]:
-            cls.data.update(
-                {
-                    "has_project": cls.has_project(),
-                    "project": cls.project()
-                }
-            )
+            cls.data.update({"has_project": cls.has_project(), "project": cls.project()})
 
     @classmethod
     def poll(cls):
         return cls.has_project()
-    
+
     @classmethod
     def has_project(cls):
         return bool(tool.Ifc.get())

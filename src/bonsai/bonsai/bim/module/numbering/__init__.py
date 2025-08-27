@@ -30,8 +30,9 @@ classes = (
     operator.ImportSettings,
     operator.ExportSettings,
     operator.ShowMessage,
-    ui.BIM_PT_Numbering
+    ui.BIM_PT_Numbering,
 )
+
 
 def register():
     if not bpy.app.background:

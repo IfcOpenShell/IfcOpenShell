@@ -32,7 +32,6 @@
 from __future__ import annotations
 
 import bpy
-import ifcopenshell
 import bonsai.core.tool
 import bonsai.tool as tool
 from typing import TYPE_CHECKING
@@ -41,42 +40,8 @@ if TYPE_CHECKING:
     from bonsai.bim.module.numbering.prop import BIMNumberingProperties
 
 
-# There is always one class in each tool file, which implements the interface
-# defined by `core/tool.py`.
 class Numbering(bonsai.core.tool.Numbering):
     @classmethod
     def get_numbering_props(cls) -> BIMNumberingProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMNumberingProperties  # pyright: ignore[reportAttributeAccessIssue]
-
-    @classmethod
-    def clear_name_field(cls) -> None:
-        # In this concrete implementation, we see that "clear name field"
-        # actually translates to "set this Blender string property to empty
-        # string". In this case, it's pretty simple - but even simple scenarios
-        # like these are important to implement in the tool, as it makes the
-        # pseudocode easier to read in the core, and makes it easier to test
-        # implementations separately from control flow. It also makes it easy to
-        # refactor and share functions, where every tool function is captured by
-        # a function name that describes its intention.
-        props = cls.get_numbering_props()
-        props.name = ""
-
-    @classmethod
-    def get_project(cls) -> ifcopenshell.entity_instance:
-        return tool.Ifc.get().by_type("IfcProject")[0]
-
-    @classmethod
-    def hide_user_hints(cls) -> None:
-        props = cls.get_numbering_props()
-        props.show_hints = False
-
-    @classmethod
-    def set_message(cls, message) -> None:
-        props = cls.get_numbering_props()
-        props.message = message
-
-    @classmethod
-    def show_user_hints(cls) -> None:
-        props = cls.get_numbering_props()
-        props.show_hints = True
