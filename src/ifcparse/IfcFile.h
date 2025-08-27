@@ -236,13 +236,13 @@ private:
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order
-    auto begin() const {
+    IfcParse::IfcFile::entity_by_id_t::iterator begin() const {
         return byid_.begin();
     }
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order
-    auto end() const {
+    IfcParse::IfcFile::entity_by_id_t::iterator end() const {
         return byid_.end();
     }
 
