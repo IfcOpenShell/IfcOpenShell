@@ -41,11 +41,12 @@ Used environment variables:
     - ``BUILD_DIR`` - build directory. By default will use "build" folder in IfcOpenShell repository.
     - ``DEPS_DIR`` - dependencies directory. By default will create automatic folder in build directory.
     - ``BUILD_CFG`` - build configuration, 'RelWithDebInfo' by default.
-"""
+    - ``USE_CURRENT_PYTHON_VERSION`` - use current python config instead of compile from source
+    - ``IFCOS_NUM_BUILD_PROCS`` - number of concurrent processes defaults to available cores + 1
+    - ``NO_CLEAN`` - do not clean build directories but continue working on current build (installed dependencies are never cleared)
+    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (IFC2X3; IFC4; IFC4X3_ADD2) - to be supplied as 2x3;4
 
 
-###############################################################################
-#                                                                             #
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
 # Prerequisites for this script to function correctly:                        #
@@ -78,7 +79,9 @@ Used environment variables:
 #          $ yum install git gcc gcc-c++ autoconf bison make cmake            #
 #            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
 #            automake patch                                                   #
-###############################################################################
+
+"""
+
 import logging
 import os
 import re
@@ -133,9 +136,7 @@ MPFR_VERSION = "3.1.6"  # latest is 4.1.0
 CGAL_VERSION = "5.6.x-branch"
 USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
-# this is a 3y old version due to conda-forge's python-rocksdb depending on v6,
-# but actually utility is limited as we need the merge operator to read data
-ROCKSDB_VERSION = "6.29.5"
+ROCKSDB_VERSION = "9.11.2"
 
 # binaries
 cp = "cp"
@@ -987,6 +988,11 @@ if "rocksdb" in targets:
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/usd-{ROCKSDB_VERSION}",
             f"-DFAIL_ON_WARNINGS=Off",
             f"-DWITH_TESTS=OFF",
+            f"-DWITH_TOOLS=OFF",
+            f"-DWITH_GFLAGS=OFF",
+            f"-DWITH_BENCHMARK_TOOLS=OFF",
+            f"-DWITH_CORE_TOOLS=OFF",
+            f"-DROCKSDB_BUILD_SHARED=Off",
         ],
         download_url="https://github.com/facebook/rocksdb",
         download_name="rocksdb",
@@ -1024,6 +1030,10 @@ if "wasm" in flags:
     # Boost is built by the build script so should not be found
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
+
+
+if schemas := os.environ.get("IFCOS_SCHEMAS"):
+    cmake_args.append(f"-DSCHEMA_VERSIONS={schemas}")
 
 if "cgal" in targets:
     cmake_args.extend(
