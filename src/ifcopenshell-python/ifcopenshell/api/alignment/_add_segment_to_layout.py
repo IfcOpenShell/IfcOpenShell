@@ -89,7 +89,8 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
         # update the zero length layout segment
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
 
-        zero_length_segment = layout.IsNestedBy[0].RelatedObjects[-1]
+        segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout)
+        zero_length_segment = segment_nest.RelatedObjects[-1]
         # DesignParameters.StartPoint for IfcAlignmentHorizontalSegment is automatically updated when the
         # geometric representation is updated because the semantic and geometric data use the same IfcPoint.
         # This is not the case of IfcAlignmentVerticalSegment and IfcAlignmentCantSegment. For these
@@ -136,7 +137,8 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
             start_dist_along = segment.DesignParameters.StartDistAlong + segment.DesignParameters.HorizontalLength
             zero_length_segment.DesignParameters.StartDistAlong = start_dist_along
 
-        end_referent = zero_length_segment.IsNestedBy[0].RelatedObjects[0]
+        referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,layout)
+        end_referent = referent_nest.RelatedObjects[-1]
         end_referent.Name = f"{_get_segment_start_point_label(zero_length_segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,start_station+start_dist_along)})"
 
         # update the referent's geometric representation's location
@@ -173,12 +175,12 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
 
         # get the previous segment. Working from the end of the basis curve, -1 is zero length segment
         # -2 is the newly added segment, so -3 is the segment occuring just before the newly added segment
-        segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout)
         prev_segment = segment_nest.RelatedObjects[-3] if 2 < len(segment_nest.RelatedObjects) else None
         name = f"{_get_segment_start_point_label(prev_segment,segment)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
         referent = ifcopenshell.api.alignment.add_stationing_referent(
-            file, segment, distance_along=dist_along, station=station, name=name
+            file, layout, distance_along=dist_along, station=station, name=name, positioned_product=segment
         )
+        ifcopenshell.api.nest.reorder_nesting(file,referent,-1,-1)
 
         if len(curve.Segments) == 2 and layout.is_a("IfcAlignmentHorizontal"):
             # this is the first real segment in the horizontal alignment
