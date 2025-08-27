@@ -137,13 +137,11 @@ def create_as_polyline(
         Name=name,
     )
 
-    # _create_layout(file,alignment,points)
-
     _create_polyline_representation(file, alignment, points)
 
     # define stationing
     name = ifcopenshell.util.alignment.station_as_string(file, start_station)
-    referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name)
+    referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name, alignment)
     ifcopenshell.api.nest.reorder_nesting(file, referent, -1, 0)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
