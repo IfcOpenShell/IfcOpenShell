@@ -21,12 +21,11 @@ import ifcopenshell.api.alignment
 import ifcopenshell.util.element
 from ifcopenshell import entity_instance
 
-
 def get_alignment_station(file: ifcopenshell.file, alignment: entity_instance) -> float:
     """
     Returns the start station of the alignment. If the alignment is nested by an IfcReferent
     the referent is checked for PredefinedType of STATION and an occurance of Pset_Stationing.Station,
-    otherwise start station is taken to be 0.0.
+    otherwise returns 0.0.
     """
 
     if not alignment.is_a("IfcAlignment"):
