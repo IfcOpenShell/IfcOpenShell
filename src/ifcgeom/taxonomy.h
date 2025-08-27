@@ -1217,6 +1217,9 @@ typedef item const* ptr;
 
 				sweep_along_curve(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv) {}
 
+			    // New constructor for fixed reference swept area solid
+			    sweep_along_curve(matrix4::ptr m, face::ptr profile, item::ptr directrix) : sweep(m, profile), surface(nullptr), curve(directrix) { }
+
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SWEEP_ALONG_CURVE), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());
 					return boost::hash<decltype(v)>{}(v);

@@ -204,6 +204,15 @@ def test_simple_sweep_1(test_dir):
     assert occ_shape is not None
     assert ifc_sz == pytest.approx((1.1, 0.1, 0.89578254))
 
+def test_simple_sweep_2(test_dir):
+    ifc_file_path = test_dir / "input_temp/simple_sweep_2.ifc"
+    ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
+    occ_shape = load_ifc_occ_shape(ifc_file_path)
+    assert occ_shape is not None
+    assert ifc_sz == pytest.approx((1.800000679914902, 0.9243618756667757, 2.0958492522636902))
+    assert ifc_mn == pytest.approx((-100.1, -50.0, 197.9041507477363))
+    assert ifc_mx == pytest.approx((-98.29999932008509, -49.075638124333224, 200.0))
+
 def test_pipe_12d(test_dir):
     ifc_file_path = test_dir / "input_temp/pipe.ifc"
     ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
