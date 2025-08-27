@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import prop, operator, workspace
+from . import prop, operator, ui, workspace
 
 classes = (
     prop.BIMNumberingProperties,
@@ -29,7 +29,8 @@ classes = (
     operator.ClearSettings,
     operator.ImportSettings,
     operator.ExportSettings,
-    operator.ShowMessage
+    operator.ShowMessage,
+    ui.BIM_PT_Numbering
 )
 
 def register():

@@ -22,17 +22,27 @@ import bonsai.tool as tool
 def refresh():
     NumberingData.is_loaded = False
 
+
 class NumberingData:
     data = {}
     is_loaded = False
+
     @classmethod
     def load(cls):
-        cls.data = {
-            "has_project": cls.has_project(),
-            "project": cls.project(),
-        }
         cls.is_loaded = True
+        cls.data["poll"] = cls.poll()
+        if cls.data["poll"]:
+            cls.data.update(
+                {
+                    "has_project": cls.has_project(),
+                    "project": cls.project()
+                }
+            )
 
+    @classmethod
+    def poll(cls):
+        return cls.has_project()
+    
     @classmethod
     def has_project(cls):
         return bool(tool.Ifc.get())

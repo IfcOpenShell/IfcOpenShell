@@ -10,8 +10,7 @@ from bpy.props import (
     BoolProperty,
     IntVectorProperty
 )
-from .util import Settings, LoadSelection, NumberFormatting, NumberingSystems, SaveNumber, Storeys
-
+from bonsai.core.numbering import Settings, LoadSelection, NumberFormatting, NumberingSystems, SaveNumber, Storeys
     
 class BIMNumberingProperties(PropertyGroup):
     settings_name: StringProperty(
@@ -33,14 +32,14 @@ class BIMNumberingProperties(PropertyGroup):
     ) # pyright: ignore[reportInvalidTypeForm]
 
     selected_toggle: BoolProperty(
-        name="Selected only",
+        name="Selected Only",
         description="Only number selected objects",
         default=False,
         update=NumberFormatting.update_format_preview
     ) # pyright: ignore[reportInvalidTypeForm]
 
     visible_toggle: BoolProperty(
-        name="Visible only",
+        name="Visible Only",
         description="Only number visible objects",
         default=False,
         update=NumberFormatting.update_format_preview
@@ -71,7 +70,7 @@ class BIMNumberingProperties(PropertyGroup):
         SaveNumber.update_pset_names(self, context) 
 
     selected_types: EnumProperty(
-        name="Selected types",
+        name="Selected Types",
         description="Select which types of elements to number",
         items= LoadSelection.get_possible_types,
         options={'ENUM_FLAG'},
@@ -109,7 +108,7 @@ class BIMNumberingProperties(PropertyGroup):
     ) # pyright: ignore[reportInvalidTypeForm]
 
     axis_order: EnumProperty(
-        name="Axis order",
+        name="Axis Order",
         description="Order of axes in numbering elements",
         items=[
             ("XYZ", "X, Y, Z", "Number elements in X, Y, Z order"),
@@ -123,7 +122,7 @@ class BIMNumberingProperties(PropertyGroup):
     ) # pyright: ignore[reportInvalidTypeForm]
 
     location_type: EnumProperty(
-        name="Reference location",
+        name="Reference Location",
         description="Location to use for sorting elements",
         items=[
             ("CENTER", "Center", "Use object center for sorting"),
@@ -203,7 +202,7 @@ class BIMNumberingProperties(PropertyGroup):
     ) # pyright: ignore[reportInvalidTypeForm]
 
     custom_storey_number: IntProperty(
-        name = "Storey number",
+        name = "Storey Number",
         description = f"Set custom storey number for selected storey, stored in {Storeys.settings['pset_name']} in the IFC element",
         get = Storeys.get_custom_storey_number,
         set = Storeys.set_custom_storey_number
@@ -223,7 +222,7 @@ class BIMNumberingProperties(PropertyGroup):
     ) # pyright: ignore[reportInvalidTypeForm]
 
     save_type : EnumProperty(
-        name="Type of number storage",
+        name="Type of Number Storage",
         items = [("Attribute", "Attribute", "Store number in an attribute of the IFC element"),
                  ("Pset", "Pset", "Store number in a Pset of the IFC element")
         ],
@@ -232,7 +231,7 @@ class BIMNumberingProperties(PropertyGroup):
     ) # pyright: ignore[reportInvalidTypeForm]
 
     attribute_name : EnumProperty(
-        name="Attribute name",
+        name="Attribute Name",
         description="Name of the attribute to store the number",
         items = [("Tag", "Tag", "Store number in IFC Tag attribute"),
                  ("Name", "Name", "Store number in IFC Name attribute"),
@@ -244,7 +243,7 @@ class BIMNumberingProperties(PropertyGroup):
     ) # pyright: ignore[reportInvalidTypeForm]
 
     attribute_name_other : StringProperty(
-        name="Other attribute name",
+        name="Other Attribute Name",
         description="Name of the other attribute to store the number",
         default="Tag"
     ) # pyright: ignore[reportInvalidTypeForm]
@@ -253,31 +252,31 @@ class BIMNumberingProperties(PropertyGroup):
         return SaveNumber.pset_names
     
     pset_name : EnumProperty(
-        name="Pset name",
+        name="Pset Name",
         description="Name of the Pset to store the number",
         items = get_pset_names
     ) # pyright: ignore[reportInvalidTypeForm]
 
     property_name : StringProperty(
-        name="Property name",
+        name="Property Name",
         description="Name of the property to store the number",
         default="Number"
     ) # pyright: ignore[reportInvalidTypeForm]
 
     custom_pset_name : StringProperty(
-        name="Custom Pset name",
+        name="Custom Pset Name",
         description="Name of the custom Pset to store the number",
         default="Pset_Numbering"
     ) # pyright: ignore[reportInvalidTypeForm]
 
     remove_toggle: BoolProperty(
-        name="Remove numbers from unselected objects",
+        name="Remove Numbers from Unselected Objects",
         description="Remove numbers from unselected objects in the scene",
         default=True
     ) # pyright: ignore[reportInvalidTypeForm]
 
     check_duplicates_toggle: BoolProperty(
-        name="Check for duplicate numbers",
+        name="Check for Duplicate Numbers",
         description="Check for duplicate numbers in all objects in the scene",
         default=True
     ) # pyright: ignore[reportInvalidTypeForm]
