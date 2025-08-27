@@ -66,13 +66,28 @@ jobs:
           swig libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
           libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
-          libhdf5-dev libcgal-dev libeigen3-dev \
-          librocksdb-dev
+          libhdf5-dev libcgal-dev libeigen3-dev
           
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
         with:
           key: ${GITHUB_WORKFLOW}
+
+      # rocksdb on debian distros misses RTTI?
+      - name: build rocksdb
+        run: |
+          git clone https://github.com/facebook/rocksdb --branch v9.11.2
+          cd rocksdb
+          mkdir build && cd build
+          cmake -DFAIL_ON_WARNINGS=Off \
+            -DWITH_TESTS=OFF \
+            -DWITH_TOOLS=OFF \
+            -DWITH_GFLAGS=OFF \
+            -DWITH_BENCHMARK_TOOLS=OFF \
+            -DWITH_CORE_TOOLS=OFF \
+            -DROCKSDB_BUILD_SHARED=Off \
+            ..
+          sudo make -j$(nproc) install
 
       - name: Build ifcopenshell
         run: |
