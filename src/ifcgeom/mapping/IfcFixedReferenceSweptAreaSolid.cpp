@@ -121,7 +121,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
         }
         // TODO: Implement handling for non-alignment curves using sweep_along_curve
         auto sweep = taxonomy::make<taxonomy::sweep_along_curve>(
-            matrix, // matrix4::ptr - no transformation needed
+            matrix,  // matrix4::ptr - no transformation needed
             profile, // face::ptr - the profile to sweep
             dir      // item::ptr curve - the directrix curve
         );
