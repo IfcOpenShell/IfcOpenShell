@@ -16,13 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import os
 import bonsai.tool as tool
 from bpy.types import WorkSpaceTool
-import bpy.ops
-
-from functools import partial
 
 from bonsai.bim.module.numbering.data import NumberingData
 
@@ -37,8 +33,8 @@ class NumberingTool(WorkSpaceTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.numbering")
     bl_widget = None
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
-        ("bim.assign_numbers", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
-        ("bim.remove_numbers", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
+        ("bim.assign_numbers", {"type": "A", "value": "PRESS", "shift": True}, {}),
+        ("bim.remove_numbers", {"type": "R", "value": "PRESS", "shift": True}, {}),
     )
 
     def draw_settings(context, layout, ws_tool):

@@ -21,8 +21,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
 import json
-import functools as ft
-from bonsai.core.numbering import Settings, LoadSelection, SaveNumber, Numbering, get_id
+from bonsai.tool.numbering import Numbering, Settings, LoadSelection, SaveNumber
 
 
 class UndoOperator:
@@ -43,7 +42,7 @@ class UndoOperator:
         if settings.get("pset_name") == "Common":
             SaveNumber.get_pset_common_names(elements)
 
-        old_numbers = {get_id(element): SaveNumber.get_number(element, settings) for element in elements}
+        old_numbers = {SaveNumber.get_id(element): SaveNumber.get_number(element, settings) for element in elements}
         new_numbers = old_numbers.copy()
 
         result = method(operator, settings, new_numbers)
@@ -64,7 +63,7 @@ class UndoOperator:
         rollback_count = 0
         settings = Settings.to_dict(bpy.context.scene.BIMNumberingProperties)
         for element in ifc_file.by_type(LoadSelection.get_parent_type(settings)):
-            old_number = data["old_value"].get(get_id(element), None)
+            old_number = data["old_value"].get(SaveNumber.get_id(element), None)
             rollback_count += int(
                 SaveNumber.save_number(ifc_file, element, old_number, settings, data["new_value"]) or 0
             )
@@ -181,7 +180,7 @@ class ExportSettings(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMNumberingProperties
         with open(self.filepath, "w") as f:
-            json.dump(Settings.settings_dict(props), f)
+            json.dump(Settings.to_dict(props), f)
         self.report({"INFO"}, f"Exported settings to {self.filepath}")
         return {"FINISHED"}
 

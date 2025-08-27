@@ -610,6 +610,9 @@ class Nest:
 @interface
 class Numbering:
     def get_numbering_props(cls): pass
+    def number_elements(elements, ifc_file, settings, elements_locations=None, elements_dimensions=None, storeys=None, numbers_cache={}, storeys_numbers={}, report=None, remove_count=None): pass
+    def assign_numbers(operator, settings, numbers_cache): pass
+    def remove_numbers(operator, settings, numbers_cache): pass
 
 @interface
 class Patch:

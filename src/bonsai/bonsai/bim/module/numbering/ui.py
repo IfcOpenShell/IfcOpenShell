@@ -18,7 +18,7 @@
 
 from bpy.types import Panel
 import bonsai.tool as tool
-from bonsai.core.numbering import NumberFormatting
+from bonsai.tool.numbering import NumberFormatting
 from bonsai.bim.module.numbering.data import NumberingData
 
 
