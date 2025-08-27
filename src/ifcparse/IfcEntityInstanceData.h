@@ -298,22 +298,22 @@ struct AttributeValue {
     
     AttributeValue()
         : index_(0)
-        , array_((const in_memory_attribute_storage*)nullptr)
         , storage_model_(0)
+        , array_((const in_memory_attribute_storage*)nullptr)
     {}
 
     AttributeValue(const in_memory_attribute_storage* arr, uint8_t index)
         : index_(index)
-        , array_(arr)
         , storage_model_(0)
+        , array_(arr)
     {}
 
     AttributeValue(IfcParse::impl::rocks_db_file_storage* db, size_t instance_name, uint8_t entity_or_type, uint8_t index)
         : index_(index)
-        , array_(db)
         , storage_model_(1)
-        , instance_name_(instance_name)
         , entity_or_type_(entity_or_type)
+        , instance_name_(instance_name)
+        , array_(db)
     {}
 
     operator int() const;
