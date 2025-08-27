@@ -358,11 +358,11 @@ class NumberFormatting:
         if "All" in types:
             types.remove("All")
         if len(types) > 0:
-            return str(list(types)[0][3:])
+            return next(iter(types))[3:]
         # If all selected, return type name of one of the selected types
         all_types = LoadSelection.possible_types
         if len(all_types) > 1:
-            return str(all_types[1][0][3:])
+            return all_types[1][0][3:]
         # If none selected, return "Type"
         return "Type"
 
@@ -492,8 +492,8 @@ class ObjectGeometry:
         coords = [mat @ Vector(corner) for corner in obj.bound_box]
 
         # Compute min and max coordinates
-        min_corner = Vector((min(v[i] for v in coords) for i in range(3)))
-        max_corner = Vector((max(v[i] for v in coords) for i in range(3)))
+        min_corner = Vector(min(v[i] for v in coords) for i in range(3))
+        max_corner = Vector(max(v[i] for v in coords) for i in range(3))
 
         # Dimensions in global space
         dimensions = max_corner - min_corner
