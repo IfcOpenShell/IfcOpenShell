@@ -1343,7 +1343,9 @@ IfcFile::IfcFile(const std::string& fn, bool mmap) {
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s);
 }
 #else
-IfcFile::IfcFile(const std::string& path, filetype ty) {
+IfcFile::IfcFile(const std::string& path, filetype ty)
+    : schema_(nullptr)
+{
     // @todo allow for rocksdb from path
     if (ty == FT_AUTODETECT) {
         ty = guess_file_type(path);
@@ -1355,9 +1357,12 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
         std::get<impl::in_memory_file_storage>(storage_).file = this;
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
 
-        // @todo unify these names, it's already confusing enough as it stands
-        byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
-        byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
+        if (std::get<impl::in_memory_file_storage>(storage_).good_) {
+            // @todo unify these names, it's already confusing enough as it stands
+            byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
+            byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
+			byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
+        }
         // byidentity_ = decltype(byidentity_)(&std::get<impl::in_memory_file_storage>(storage_).byidentity_);
     } else if (ty == FT_ROCKSDB) {
         // @todo this can only be used for databases that already exist, because otherwise there is no way to specify the schema
@@ -1366,6 +1371,7 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
 
         byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
+		byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
         // byidentity_ = decltype(byidentity_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_cache_);
     } else {
         throw std::runtime_error("Unsupported file format");
@@ -1376,21 +1382,27 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
 }
 #endif
 
-IfcFile::IfcFile(std::istream& stream, int length) {
+IfcFile::IfcFile(std::istream& stream, int length)
+    : schema_(nullptr)
+{
     IfcSpfStream s(stream, length);
     storage_.emplace<1>();
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 }
 
-IfcFile::IfcFile(void* data, int length) {
+IfcFile::IfcFile(void* data, int length)
+    : schema_(nullptr)
+{
     IfcSpfStream s(data, length);
     storage_.emplace<1>();
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 }
 
-IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
+IfcFile::IfcFile(IfcParse::IfcSpfStream* s)
+    : schema_(nullptr)
+{
     storage_.emplace<1>();
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_);
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
@@ -1463,7 +1475,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
         }
     }
 
-    if (schema == 0) {
+    if (schema == nullptr) {
         Logger::Message(Logger::LOG_ERROR, "No support for file schema encountered (" + boost::algorithm::join(schemas, ", ") + ")");
         return;
     }
