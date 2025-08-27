@@ -1031,8 +1031,8 @@ if "wasm" in flags:
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
 
-
-if schemas := os.environ.get("IFCOS_SCHEMAS"):
+schemas = os.environ.get("IFCOS_SCHEMAS")
+if schemas:
     cmake_args.append(f"-DSCHEMA_VERSIONS={schemas}")
 
 if "cgal" in targets:
