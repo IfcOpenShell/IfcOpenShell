@@ -123,11 +123,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
         auto sweep = taxonomy::make<taxonomy::sweep_along_curve>(
             matrix,  // matrix4::ptr - no transformation needed
             profile, // face::ptr - the profile to sweep
-            dir      // item::ptr curve - the directrix curve
-        );
-
-        // Set the fixed reference direction for the sweep
-        sweep->direction = ref; // The fixed reference direction
+            dir,     // item::ptr curve - the directrix curve
+            ref);
 
         return sweep;
     }
