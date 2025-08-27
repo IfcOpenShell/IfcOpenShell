@@ -187,6 +187,13 @@ public:
     using type_iterator = variant_iterator<impl::in_memory_file_storage::type_iterator, impl::rocks_db_file_storage::rocksdb_types_iterator>;
     using storage_t = std::variant<std::monostate, impl::in_memory_file_storage, impl::rocks_db_file_storage>;
 
+    typedef VariantMap<impl::in_memory_file_storage::entity_instance_by_guid_t, impl::rocks_db_file_storage::entity_instance_by_guid_t> entity_instance_by_guid_t;
+    entity_instance_by_guid_t byguid_;
+    typedef VariantMap<impl::in_memory_file_storage::entity_instance_by_name_t, impl::rocks_db_file_storage::entity_instance_by_name_t> entity_by_id_t;
+    entity_by_id_t byid_;
+    typedef VariantMap<impl::in_memory_file_storage::entities_by_ref_t, impl::rocks_db_file_storage::entities_by_ref_t> entities_by_ref_t;
+    entities_by_ref_t byref_excl_;
+
     bool check_existance_before_adding = true;
     bool calculate_unit_factors = true;
     bool instantiate_typed_instances = true;
@@ -236,13 +243,13 @@ private:
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order
-    IfcParse::IfcFile::entity_by_id_t::iterator begin() const {
+    entity_by_id_t::iterator begin() const {
         return byid_.begin();
     }
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order
-    IfcParse::IfcFile::entity_by_id_t::iterator end() const {
+    entity_by_id_t::iterator end() const {
         return byid_.end();
     }
 
@@ -352,13 +359,6 @@ private:
 
     void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
     void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
-
-    typedef VariantMap<impl::in_memory_file_storage::entity_instance_by_guid_t, impl::rocks_db_file_storage::entity_instance_by_guid_t> entity_instance_by_guid_t;
-    entity_instance_by_guid_t byguid_;
-    typedef VariantMap<impl::in_memory_file_storage::entity_instance_by_name_t, impl::rocks_db_file_storage::entity_instance_by_name_t> entity_by_id_t;
-    entity_by_id_t byid_;
-    typedef VariantMap<impl::in_memory_file_storage::entities_by_ref_t, impl::rocks_db_file_storage::entities_by_ref_t> entities_by_ref_t;
-    entities_by_ref_t byref_excl_;
 
     entity_instance_by_guid_t internal_guid_map() { return byguid_; };
 
