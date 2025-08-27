@@ -86,6 +86,7 @@ jobs:
             -DWITH_BENCHMARK_TOOLS=OFF \
             -DWITH_CORE_TOOLS=OFF \
             -DROCKSDB_BUILD_SHARED=Off \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=On \
             ..
           sudo make -j$(nproc) install
 

@@ -191,7 +191,8 @@ TOOLSET = None
 if platform.system() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
     TOOLSET = "10.9" if USE_OCCT else "10.6"
-
+    # /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/arm64/10.9/build/rocksdb/cache/clock_cache.cc:732:14: error: aligned allocation function of type 'void *(std::size_t, std::align_val_t)' is only available on macOS 10.13 or newer
+    TOOLSET = "10.13"
 
 IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
 
