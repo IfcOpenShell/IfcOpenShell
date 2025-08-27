@@ -405,8 +405,6 @@ namespace impl {
 
 } // namespace IfcParse
 
-
-
 template <typename T>
 T* IfcParse::impl::in_memory_file_storage::create() {
     IfcUtil::IfcBaseClass* inst = nullptr;
@@ -421,19 +419,6 @@ T* IfcParse::impl::in_memory_file_storage::create() {
     return file->addEntity(inst)->as<T>();
 }
 
-IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::create(const IfcParse::declaration* decl) {
-    IfcUtil::IfcBaseClass* inst = nullptr;
-    if (auto* ent = decl->as_entity()) {
-        inst = file->schema()->instantiate(decl, in_memory_attribute_storage(ent->attribute_count()));
-    } else if (decl->as_type_declaration() != nullptr) {
-        inst = file->schema()->instantiate(decl, in_memory_attribute_storage(1));
-    } else {
-        throw std::runtime_error("Requires and entity or type declaration");
-    }
-    inst->file_ = file;
-    return file->addEntity(inst);
-}
-
 template <typename T>
 T* IfcParse::impl::rocks_db_file_storage::create() {
     if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<typename T::Class>>, IfcParse::entity> || std::is_same_v<std::decay_t<std::invoke_result_t<typename T::Class>>, IfcParse::type_declaration>) {
@@ -442,16 +427,6 @@ T* IfcParse::impl::rocks_db_file_storage::create() {
         return file->addEntity(inst)->template as<T>();
     } else {
         static_assert(dependent_false_v<T>, "Requires and entity or type declaration");
-    }
-}
-
-IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl) {
-    if (decl->as_entity() || decl->as_type_declaration()) {
-        auto* inst = file->schema()->instantiate(decl, rocks_db_attribute_storage{});
-        inst->file_ = file;
-        return file->addEntity(inst);
-    } else {
-        throw std::runtime_error("Requires and entity or type declaration");
     }
 }
 

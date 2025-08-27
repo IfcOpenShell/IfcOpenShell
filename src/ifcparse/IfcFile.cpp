@@ -663,3 +663,26 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
 
     return return_value;
 }
+
+IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl) {
+    if (decl->as_entity() || decl->as_type_declaration()) {
+        auto* inst = file->schema()->instantiate(decl, rocks_db_attribute_storage{});
+        inst->file_ = file;
+        return file->addEntity(inst);
+    } else {
+        throw std::runtime_error("Requires and entity or type declaration");
+    }
+}
+
+IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::create(const IfcParse::declaration* decl) {
+    IfcUtil::IfcBaseClass* inst = nullptr;
+    if (auto* ent = decl->as_entity()) {
+        inst = file->schema()->instantiate(decl, in_memory_attribute_storage(ent->attribute_count()));
+    } else if (decl->as_type_declaration() != nullptr) {
+        inst = file->schema()->instantiate(decl, in_memory_attribute_storage(1));
+    } else {
+        throw std::runtime_error("Requires and entity or type declaration");
+    }
+    inst->file_ = file;
+    return file->addEntity(inst);
+}
