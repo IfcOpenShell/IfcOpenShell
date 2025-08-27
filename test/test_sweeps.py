@@ -3,7 +3,6 @@ from typing import List, Sequence, Tuple
 
 import ifcopenshell
 import pytest
-from OCC.Core.BRep import BRep_Tool
 from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Compound
 
 
@@ -25,6 +24,7 @@ def _size_from_bbox(mn, mx):
 def _triples(flat: Sequence[float]) -> List[Tuple[float, float, float]]:
     return [(float(flat[i]), float(flat[i + 1]), float(flat[i + 2])) for i in range(0, len(flat), 3)]
 
+
 def _is_swept_shape(occ_shape: TopoDS_Shape) -> bool:
     """Analyze if the given OpenCASCADE shape represents a swept shape using topology exploration."""
     try:
@@ -33,7 +33,12 @@ def _is_swept_shape(occ_shape: TopoDS_Shape) -> bool:
         from OCC.Core.BRep_Tool import BRep_Tool
         from OCC.Core.GeomLProp_SLProps import GeomLProp_SLProps
         from OCC.Core.BRepAdaptor_Surface import BRepAdaptor_Surface
-        from OCC.Core.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_SurfaceOfExtrusion, GeomAbs_SurfaceOfRevolution
+        from OCC.Core.GeomAbs import (
+            GeomAbs_Cylinder,
+            GeomAbs_Plane,
+            GeomAbs_SurfaceOfExtrusion,
+            GeomAbs_SurfaceOfRevolution,
+        )
         from OCC.Core.gp import gp_Vec
         import math
     except ImportError as e:
@@ -150,7 +155,7 @@ def load_ifc_occ_shape(ifc_path: str) -> TopoDS_Shape:
 
     # Extract the OpenCASCADE TopoDS_Shape from the result
     # The create_shape function returns an object with an occ_shape attribute when using opencascade
-    if hasattr(shape_result, 'geometry') and shape_result.geometry:
+    if hasattr(shape_result, "geometry") and shape_result.geometry:
         occ_shape = shape_result.geometry
         if isinstance(occ_shape, TopoDS_Compound):
             json_data = occ_shape.DumpJson()
@@ -194,15 +199,21 @@ def load_ifc_mesh_bbox(ifc_path: str):
     mn, mx = _bbox_from_vertices(verts)
     return mn, mx, _size_from_bbox(mn, mx)
 
+
 @pytest.fixture
 def test_dir():
     return pathlib.Path(__file__).parent.resolve().absolute()
+
+
 def test_simple_sweep_1(test_dir):
     ifc_file_path = test_dir / "input_temp/simple_sweep_1.ifc"
     ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
     occ_shape = load_ifc_occ_shape(ifc_file_path)
     assert occ_shape is not None
     assert ifc_sz == pytest.approx((1.1, 0.1, 0.89578254))
+    assert ifc_mn == pytest.approx((-1.0, -1.3877787807814457e-17, 0.0))
+    assert ifc_mx == pytest.approx((0.10000000000000002, 0.1, 0.8957825463853046))
+
 
 def test_simple_sweep_2(test_dir):
     ifc_file_path = test_dir / "input_temp/simple_sweep_2.ifc"
@@ -212,6 +223,7 @@ def test_simple_sweep_2(test_dir):
     assert ifc_sz == pytest.approx((1.800000679914902, 0.9243618756667757, 2.0958492522636902))
     assert ifc_mn == pytest.approx((-100.1, -50.0, 197.9041507477363))
     assert ifc_mx == pytest.approx((-98.29999932008509, -49.075638124333224, 200.0))
+
 
 def test_pipe_12d(test_dir):
     ifc_file_path = test_dir / "input_temp/pipe.ifc"
