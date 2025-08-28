@@ -167,10 +167,26 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select an IFC file that can be used as a library"
+    bl_description = (
+        "Select an IFC file that can be used as a library.\n\nALT+click to reload the current loaded library file."
+    )
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     append_all: bpy.props.BoolProperty(default=False)
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+
+    reload_previous_file = False
+
+    def invoke(self, context, event):
+        if event.alt:
+            old_filepath = IfcStore.library_path
+            if not old_filepath:
+                self.report({"ERROR"}, "No library file loaded to reload.")
+                return {"CANCELLED"}
+            self.filepath = old_filepath
+            self.reload_previous_file = True
+            return self.execute(context)
+
+        return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -201,6 +217,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         if self.append_all:
             bpy.ops.bim.append_entire_library()
         ProjectLibraryData.load()
+        self.report({"INFO"}, f"Loaded library from {filepath}.")
         return {"FINISHED"}
 
     def rollback(self, data):
