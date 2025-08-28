@@ -55,6 +55,10 @@ private:
 %ignore IfcParse::IfcSpfHeader::IfcSpfHeader(IfcSpfLexer*);
 %ignore IfcParse::IfcSpfHeader::lexer;
 %ignore IfcParse::IfcSpfHeader::stream;
+%ignore IfcParse::IfcSpfHeader::file_description;
+%ignore IfcParse::IfcSpfHeader::file_name;
+%ignore IfcParse::IfcSpfHeader::file_schema;
+
 %ignore IfcParse::HeaderEntity::is;
 
 %ignore IfcParse::IfcFile::type_iterator;
@@ -569,11 +573,23 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 };
 
 %extend IfcParse::IfcSpfHeader {
+	// Cast to base class pointers for SWIG, because
+	// it has no idea about the schema definitions.
+	IfcUtil::IfcBaseClass* file_description_py() {
+		return $self->file_description();
+	}
+	IfcUtil::IfcBaseClass* file_name_py() {
+		return $self->file_name();
+	}
+	IfcUtil::IfcBaseClass* file_schema_py() {
+		return $self->file_schema();
+	}
+
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        file_description = property(file_description)
-        file_name = property(file_name)
-        file_schema = property(file_schema)
+        file_description = property(file_description_py)
+        file_name = property(file_name_py)
+        file_schema = property(file_schema_py)
 	%}
 };
 
