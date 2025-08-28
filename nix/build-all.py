@@ -986,7 +986,7 @@ if "rocksdb" in targets:
         name=f"rocksdb-{ROCKSDB_VERSION}",
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/usd-{ROCKSDB_VERSION}",
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}",
             f"-DFAIL_ON_WARNINGS=Off",
             f"-DWITH_TESTS=OFF",
             f"-DWITH_TOOLS=OFF",
