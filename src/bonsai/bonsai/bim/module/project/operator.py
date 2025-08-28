@@ -223,6 +223,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
 class RefreshLibrary(bpy.types.Operator):
     bl_idname = "bim.refresh_library"
     bl_label = "Refresh Library"
+    bl_description = "Refresh the library browser"
     bl_options = {"UNDO"}
 
     def execute(self, context):
