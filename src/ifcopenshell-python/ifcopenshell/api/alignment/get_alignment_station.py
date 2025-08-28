@@ -21,6 +21,7 @@ import ifcopenshell.api.alignment
 import ifcopenshell.util.element
 from ifcopenshell import entity_instance
 
+
 def get_alignment_station(file: ifcopenshell.file, alignment: entity_instance) -> float:
     """
     Returns the start station of the alignment. If the alignment is nested by an IfcReferent

@@ -137,7 +137,7 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
             start_dist_along = segment.DesignParameters.StartDistAlong + segment.DesignParameters.HorizontalLength
             zero_length_segment.DesignParameters.StartDistAlong = start_dist_along
 
-        referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,layout)
+        referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, layout)
         end_referent = referent_nest.RelatedObjects[-1]
         end_referent.Name = f"{_get_segment_start_point_label(zero_length_segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,start_station+start_dist_along)})"
 
@@ -180,13 +180,13 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
         referent = ifcopenshell.api.alignment.add_stationing_referent(
             file, layout, distance_along=dist_along, station=station, name=name, positioned_product=segment
         )
-        ifcopenshell.api.nest.reorder_nesting(file,referent,-1,-1)
+        ifcopenshell.api.nest.reorder_nesting(file, referent, -1, -1)
 
         if len(curve.Segments) == 2 and layout.is_a("IfcAlignmentHorizontal"):
             # this is the first real segment in the horizontal alignment
             # update the location of the alignment's stationing referent
             alignment = ifcopenshell.api.alignment.get_alignment(layout)
-            ref_nest = ifcopenshell.api.alignment.get_referent_nest(file,alignment)
+            ref_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
             stationing_referent = ref_nest.RelatedObjects[0]
             p = curve_evaluator.evaluate(
                 stationing_referent.ObjectPlacement.RelativePlacement.Location.DistanceAlong.wrappedValue

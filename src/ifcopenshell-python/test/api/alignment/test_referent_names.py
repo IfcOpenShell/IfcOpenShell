@@ -98,7 +98,7 @@ def callback_alignment():
 
 def test_with_default_names(default_names_alignment):
     hlayout = ifcopenshell.api.alignment.get_horizontal_layout(default_names_alignment)
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None,hlayout)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, hlayout)
 
     assert "P.O.B." in referent_nest.RelatedObjects[0].Name
     assert "P.C." in referent_nest.RelatedObjects[1].Name
@@ -106,7 +106,7 @@ def test_with_default_names(default_names_alignment):
     assert "P.O.E." in referent_nest.RelatedObjects[-1].Name
 
     vlayout = ifcopenshell.api.alignment.get_vertical_layout(default_names_alignment)
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None,vlayout)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, vlayout)
 
     assert "V.P.O.B." in referent_nest.RelatedObjects[0].Name
     assert "P.V.C." in referent_nest.RelatedObjects[1].Name
@@ -116,7 +116,7 @@ def test_with_default_names(default_names_alignment):
 
 def test_with_callbacks(callback_alignment):
     hlayout = ifcopenshell.api.alignment.get_horizontal_layout(callback_alignment)
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None,hlayout)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, hlayout)
 
     assert "A" in referent_nest.RelatedObjects[0].Name
     assert "Q" in referent_nest.RelatedObjects[1].Name
@@ -124,10 +124,9 @@ def test_with_callbacks(callback_alignment):
     assert "Z" in referent_nest.RelatedObjects[-1].Name
 
     vlayout = ifcopenshell.api.alignment.get_vertical_layout(callback_alignment)
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None,vlayout)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, vlayout)
 
     assert "a" in referent_nest.RelatedObjects[0].Name
     assert "q" in referent_nest.RelatedObjects[1].Name
     assert "q" in referent_nest.RelatedObjects[2].Name
     assert "z" in referent_nest.RelatedObjects[-1].Name
-

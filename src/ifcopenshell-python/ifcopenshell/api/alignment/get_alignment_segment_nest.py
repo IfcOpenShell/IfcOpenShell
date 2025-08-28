@@ -19,6 +19,7 @@
 import ifcopenshell
 from ifcopenshell import entity_instance
 
+
 def get_alignment_segment_nest(layout: entity_instance) -> entity_instance:
     """
     Searches for the IfcRelNest that contains IfcAlignmentSegment

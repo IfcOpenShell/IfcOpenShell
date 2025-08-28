@@ -37,15 +37,15 @@ def create(
     start_station: float = 0.0,
 ) -> entity_instance:
     """
-    Creates a new alignment with a horizontal layout. Optionally, vertical and cant layouts can be created as well. 
-    The geometric representations are created as well, unless they are explicitly excluded. 
-    Zero length segments are added at the end of the layouts and geometric representations. 
+    Creates a new alignment with a horizontal layout. Optionally, vertical and cant layouts can be created as well.
+    The geometric representations are created as well, unless they are explicitly excluded.
+    Zero length segments are added at the end of the layouts and geometric representations.
     The alignment is automatically aggreated to the project if it exists.
 
     Use get_horizontal_layout(alignment), get_vertical_layout(alignment) and get_cant_layout(alignment) to get the
      corresponding IfcAlignmentHorizontal, IfcAlignmentVertical, and IfcAlignmentCant layout entities.
 
-    If the alignment has Viennese Bend transition curves, create the segments in the cant layout before the horizontal layout using create_layout_segment(). 
+    If the alignment has Viennese Bend transition curves, create the segments in the cant layout before the horizontal layout using create_layout_segment().
     The horizontal geometry in the Viennese Bend transition curves depends on the Viennese Bend cant parameters. create_layout_segment() automatically creates
     the geometric representation from the semantic definition. The horizontal segment geometric representation will fail if the cant segment is not defined.
 
@@ -86,8 +86,9 @@ def create(
     if include_geometry:
         # define stationing
         name = ifcopenshell.util.alignment.station_as_string(file, start_station)
-        referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name, alignment)
-
+        referent = ifcopenshell.api.alignment.add_stationing_referent(
+            file, alignment, 0.0, start_station, name, alignment
+        )
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]

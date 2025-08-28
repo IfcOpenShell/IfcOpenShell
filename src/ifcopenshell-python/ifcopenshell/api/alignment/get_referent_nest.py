@@ -19,7 +19,8 @@
 import ifcopenshell
 from ifcopenshell import entity_instance
 
-def get_referent_nest(file: ifcopenshell.file,entity: entity_instance) -> entity_instance:
+
+def get_referent_nest(file: ifcopenshell.file, entity: entity_instance) -> entity_instance:
     """
     Searches for the IfcRelNest that contains IfcReferent. If one is not found, a empty IfcRelNests is created.
 
@@ -32,5 +33,5 @@ def get_referent_nest(file: ifcopenshell.file,entity: entity_instance) -> entity
             if related_object.is_a("IfcReferent"):
                 return nest
 
-    nest = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(),RelatingObject=entity,RelatedObjects=[])
+    nest = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(), RelatingObject=entity, RelatedObjects=[])
     return nest

@@ -60,7 +60,7 @@ def create_layout_segment(
     # returned and used when defining the next segment
     alignment = ifcopenshell.api.alignment.get_alignment(layout)
     curve = ifcopenshell.api.alignment.get_curve(alignment)
-    
+
     if curve:
         if layout.is_a("IfcAlignmentHorizontal"):
             if curve.is_a("IfcGradientCurve"):
