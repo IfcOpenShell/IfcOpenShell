@@ -995,6 +995,7 @@ if "rocksdb" in targets:
             f"-DWITH_CORE_TOOLS=OFF",
             f"-DROCKSDB_BUILD_SHARED=Off",
             f"-DCMAKE_POSITION_INDEPENDENT_CODE=On",
+            f"-DUSE_RTTI=On",
         ],
         download_url="https://github.com/facebook/rocksdb",
         download_name="rocksdb",
