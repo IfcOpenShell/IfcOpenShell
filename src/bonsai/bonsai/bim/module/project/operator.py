@@ -506,6 +506,7 @@ class SaveLibraryFile(bpy.types.Operator):
 
     def execute(self, context):
         IfcStore.library_file.write(IfcStore.library_path)
+        self.report({"INFO"}, f"Library saved to {IfcStore.library_path}")
         return {"FINISHED"}
 
 
