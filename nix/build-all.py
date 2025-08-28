@@ -562,10 +562,16 @@ def build_dependency(
         sp.run(shell, shell=True, check=True, cwd=extract_dir)
 
     if mode == "ctest":
-        run(
-            ["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"],
-            cwd=extract_dir,
-        )
+        try:
+            run(
+                ["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"],
+                cwd=extract_dir,
+            )
+        except Exception as e:
+            print("-" * 70)
+            print(open(os.path.join(extract_dir, 'hdf5.log')))
+            print("-" * 70)
+            raise e
         run([tar, "-xf", kwargs["ctest_result"] + ".tar.gz"], cwd=os.path.join(extract_dir, "build"))
         shutil.copytree(
             os.path.join(extract_dir, "build", kwargs["ctest_result"], kwargs["ctest_result_path"]),
