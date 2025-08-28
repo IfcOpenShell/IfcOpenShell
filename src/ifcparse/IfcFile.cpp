@@ -225,7 +225,7 @@ namespace {
     }
 }
 
-IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index) {
+IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count) {
     std::vector<const IfcParse::parameter_type*> parameter_types;
     std::unique_ptr<IfcParse::named_type> transient_named_type;
 
@@ -257,9 +257,11 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
         return IfcEntityInstanceData(in_memory_attribute_storage(0));
     }
 
-    in_memory_attribute_storage storage(decl != nullptr
+    in_memory_attribute_storage storage(coerce_attribute_count
+        ? (decl != nullptr
         ? (std::min)(parameter_types.size(), tokens_.size())
-        : tokens_.size()
+        : tokens_.size())
+		: tokens_.size()
     );
 
     auto it = tokens_.begin();
@@ -635,7 +637,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
                 Logger::Status(ss.str(), false);
             }
 
-            auto data = ps.construct(current_id, references_to_resolve_, entity_type, boost::none, -1);
+            auto data = ps.construct(current_id, references_to_resolve_, entity_type, boost::none, -1, coerce_attribute_count);
 
             return_value.emplace(
                 (size_t)current_id,

@@ -96,6 +96,10 @@ void RocksDbSerializer::write_streaming_() {
 
 	IfcParse::InstanceStreamer streamer(input_filename);
 
+	// We do not want to coerce attribute counts here, because we want
+	// to store exactly what is in the file for validation purposes
+	streamer.coerce_attribute_count = false;
+
 	while (streamer) {
 		auto inst = streamer.read_instance();
 		if (inst) {

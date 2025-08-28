@@ -184,7 +184,7 @@ namespace IfcParse {
 
         void push(IfcUtil::IfcBaseClass* inst);
 
-        IfcEntityInstanceData construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index);
+        IfcEntityInstanceData construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count=true);
     };
 
     namespace impl {
