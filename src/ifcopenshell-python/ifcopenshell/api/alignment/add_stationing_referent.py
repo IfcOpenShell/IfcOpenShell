@@ -34,7 +34,7 @@ def add_stationing_referent(
     distance_along: float,
     station: float,
     name: str,
-    positioned_product: entity_instance
+    positioned_product: entity_instance,
 ) -> entity_instance:
     """
     Adds an IfcReferent to the element with the Pset_Stationing property set.
@@ -44,7 +44,7 @@ def add_stationing_referent(
     :param distance_along: distance along the alignment curve
     :param station: station value
     :param name: name to assign to IfcReferent.Name, typically a stringized version of the station value
-    :param positioned_product: the product whose position is informed by the referent 
+    :param positioned_product: the product whose position is informed by the referent
     :return: referent
 
     Example:
@@ -144,7 +144,7 @@ def add_stationing_referent(
     pset_stationing = ifcopenshell.api.pset.add_pset(file, product=referent, name="Pset_Stationing")
     ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties={"Station": station})
 
-    nest = ifcopenshell.api.alignment.get_referent_nest(file,element)
+    nest = ifcopenshell.api.alignment.get_referent_nest(file, element)
     nest.RelatedObjects += (referent,)
 
     if len(referent.Positions) == 0:

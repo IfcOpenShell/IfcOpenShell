@@ -18,6 +18,7 @@
 
 from ifcopenshell import entity_instance
 
+
 def get_alignment(layout: entity_instance) -> entity_instance:
     """
     Returns the alignment that nests this layout

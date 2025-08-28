@@ -46,12 +46,12 @@ def test_horizontal_layout_by_pi_method():
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 2
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,alignment)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
     layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
     assert referent_nest.RelatedObjects[0].is_a("IfcReferent")
     assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
     segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout_nest.RelatedObjects[0])
-    assert (len(segment_nest.RelatedObjects) == 3)  # segments in horizontal layout
+    assert len(segment_nest.RelatedObjects) == 3  # segments in horizontal layout
 
 
 test_horizontal_layout_by_pi_method()

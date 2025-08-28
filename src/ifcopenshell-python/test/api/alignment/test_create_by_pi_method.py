@@ -49,19 +49,19 @@ def test_create_by_pi_method():
     assert len(alignment.IsNestedBy) == 2
 
     layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
-    assert (len(layout_nest.RelatedObjects) == 2)
+    assert len(layout_nest.RelatedObjects) == 2
 
     horizontal_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     horizontal_segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal_layout)
-    assert (len(horizontal_segment_nest.RelatedObjects) == 8)
-    horizontal_referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,horizontal_layout)
-    assert (len(horizontal_referent_nest.RelatedObjects) == 8)
+    assert len(horizontal_segment_nest.RelatedObjects) == 8
+    horizontal_referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, horizontal_layout)
+    assert len(horizontal_referent_nest.RelatedObjects) == 8
 
     vertical_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
     vertical_segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(vertical_layout)
-    assert (len(vertical_segment_nest.RelatedObjects) == 10)
-    vertical_referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,vertical_layout)
-    assert (len(vertical_referent_nest.RelatedObjects) == 10)
+    assert len(vertical_segment_nest.RelatedObjects) == 10
+    vertical_referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, vertical_layout)
+    assert len(vertical_referent_nest.RelatedObjects) == 10
 
 
 test_create_by_pi_method()

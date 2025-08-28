@@ -29,7 +29,7 @@ def test_create_no_geometry():
     ifcopenshell.api.unit.assign_unit(file, units=[length])
 
     # creates an IfcAlignment with an IfcAlignmentHorizontal layout containing only the zero length segment
-    ali = ifcopenshell.api.alignment.create(file, "A1", include_vertical=True,include_geometry=False)
+    ali = ifcopenshell.api.alignment.create(file, "A1", include_vertical=True, include_geometry=False)
 
     # append a segment to the horizontal layout
     horizontal_alignment = ifcopenshell.api.alignment.get_horizontal_layout(ali)

@@ -19,11 +19,12 @@
 import ifcopenshell
 from ifcopenshell import entity_instance
 
+
 def get_alignment_layout_nest(alignment: entity_instance) -> entity_instance:
     """
     Searches for the IfcRelNest that contains IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
 
-    :param alignment: the alignment 
+    :param alignment: the alignment
     :return: Returns the IfcRelNests containing the alignment layout
     """
     layout_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]

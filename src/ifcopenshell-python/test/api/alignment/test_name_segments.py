@@ -55,4 +55,5 @@ def test_name_segments():
             assert f"Q{i}" == segment.Name
             i += 1
 
+
 test_name_segments()

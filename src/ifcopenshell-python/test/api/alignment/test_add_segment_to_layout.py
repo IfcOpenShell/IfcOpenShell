@@ -68,10 +68,10 @@ def test_add_segment_to_layout():
     _add_segment_to_layout(file, horizontal_alignment, alignment_segment)
 
     assert len(horizontal_alignment.IsNestedBy) == 2
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,horizontal_alignment)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, horizontal_alignment)
     segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal_alignment)
-    assert (len(segment_nest.RelatedObjects) == 2)
-    assert (len(referent_nest.RelatedObjects) == 2)
+    assert len(segment_nest.RelatedObjects) == 2
+    assert len(referent_nest.RelatedObjects) == 2
 
 
 test_add_segment_to_layout()

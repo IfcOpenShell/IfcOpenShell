@@ -163,10 +163,11 @@ def print_composite_curve_deep(curve):
         print(" " * 4, segment.Placement.Location)
         print(" " * 4, segment.Placement.RefDirection)
 
+
 def print_positioned_products(file: ifcopenshell.file):
     referents = file.by_type("IfcReferent")
     for referent in referents:
         print(referent)
         for rel in referent.Positions:
             for product in rel.RelatedProducts:
-                print(" " * 2,product)
+                print(" " * 2, product)
