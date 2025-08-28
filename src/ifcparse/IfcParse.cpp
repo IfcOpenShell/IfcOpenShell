@@ -2049,12 +2049,12 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         }, storage_);
     }
 
-    /*
-    // @todo not needed anymore, because these are now calculated by using baseclass::set() ?
+    // @todo verify whether this is still needed. If instances are created directly on the file
+    // with create() (which is a necessity for using rocksdb storage) then it should be sufficient
+    // to register inverses only on attribute updates.
     if ((ty->as_entity() != nullptr)) {
         build_inverses_(new_entity);
     }
-    */
 
     return new_entity;
 }
