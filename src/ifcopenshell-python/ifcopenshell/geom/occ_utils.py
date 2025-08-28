@@ -226,7 +226,7 @@ def serialize_shape(shape):
     shapes.SetFormatNb(2)
 
     shapes.Add(shape)
-    
+
     # Check if WriteToString method exists and has the correct signature
     # In PythonOCC >= 7.8.0, WriteToString signature changed and requires additional arguments
     if hasattr(shapes, "WriteToString"):
@@ -240,7 +240,7 @@ def serialize_shape(shape):
         except (ValueError, TypeError):
             # If signature inspection fails, fall through to Write() method
             pass
-    
+
     # Fall back to Write() method for newer PythonOCC versions (>= 7.8.0)
     # or when WriteToString is not available/compatible
     return shapes.Write()
