@@ -976,7 +976,7 @@ namespace {
             data_ << "." << i.value() << ".";
         }
         void operator()(const IfcUtil::IfcBaseClass* const& i) {
-            if (i->declaration().as_entity() == nullptr) {
+            if (i->declaration().as_entity() == nullptr || i->declaration().schema() == &Header_section_schema::get_schema()) {
                 i->toString(data_, upper_);
             } else {
                 data_ << "#" << i->id();
@@ -2714,7 +2714,7 @@ AttributeValue IfcUtil::IfcBaseClass::get_attribute_value(size_t index) const {
 void IfcUtil::IfcBaseClass::toString(std::ostream& out, bool upper) const
 {
     const auto *ent = declaration().as_entity();
-    if (ent != nullptr) {
+    if (ent != nullptr && declaration().schema() != &Header_section_schema::get_schema()) {
         out << "#" << as<IfcUtil::IfcBaseEntity>()->id() << "=";
     }
     if (upper) {
