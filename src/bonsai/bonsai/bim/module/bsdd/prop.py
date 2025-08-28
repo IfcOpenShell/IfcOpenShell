@@ -42,6 +42,8 @@ def get_active_dictionary(self: "BIMBSDDProperties", context: object) -> tool.Bl
 
 
 def update_is_active(self: "BSDDDictionary", context: bpy.types.Context) -> None:
+    tool.Bsdd.save_active_bsdd_to_ifc()
+
     BSDDData.data["active_dictionary"] = BSDDData.active_dictionary()
     if ClassificationsData.is_loaded:
         props = tool.Classification.get_classification_props()

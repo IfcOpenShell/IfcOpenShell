@@ -86,8 +86,8 @@ class SheetsData:
             project = tool.Ifc.get().by_type("IfcProject")[0]
             titleblocks_dir = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
             if not titleblocks_dir:
-                props = tool.Drawing.get_document_props()
-                titleblocks_dir = props.titleblocks_dir
+                prefs = tool.Blender.get_addon_preferences()
+                titleblocks_dir = prefs.doc.titleblocks_dir
             titleblocks_dir = tool.Ifc.resolve_uri(titleblocks_dir)
             if os.path.exists(titleblocks_dir):
                 files.extend([str(f.stem) for f in Path(titleblocks_dir).glob("*.svg")])

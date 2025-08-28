@@ -71,11 +71,14 @@ class AggregateData:
     @classmethod
     def total_linked_aggregate(cls) -> Union[int, None]:
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        aggregate = ifcopenshell.util.element.get_aggregate(element)
-        if not aggregate:
-            return
         if not element:
             return
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
+        parts = ifcopenshell.util.element.get_parts(element)
+        if not aggregate and not parts:
+            return
+        if parts:
+            aggregate = element
 
         product_linked_agg_group = next(
             (

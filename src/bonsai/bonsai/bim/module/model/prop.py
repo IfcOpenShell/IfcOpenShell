@@ -83,6 +83,8 @@ def update_relating_type_id(self: "BIMModelProperties", context: bpy.types.Conte
 
 def update_type_page(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
+    AuthoringData.data["next_page"] = AuthoringData.next_page()
+    AuthoringData.data["prev_page"] = AuthoringData.prev_page()
     bpy.ops.bim.load_type_thumbnails()
     self["type_page"] = min(self["type_page"], AuthoringData.data["total_pages"])
     self["type_page"] = max(self["type_page"], 1)
@@ -115,36 +117,10 @@ def update_slab_direction_decorator(self: "BIMModelProperties", context: bpy.typ
 
 
 def update_measure_xyz(self: "BIMModelProperties", context: bpy.types.Context) -> None:
-    area_3d = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
-    space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None) if area_3d else None
-    scene = context.scene
-
     if self.show_bounding_box:
         BoundingBoxDecorator.install(context)
-        # Save previous state if not already saved
-        if not self.prev_transform_orientation_slot_type:
-            self.prev_transform_orientation_slot_type = scene.transform_orientation_slots[1].type
-        if not self.prev_show_gizmo_object_translate and space_3d:
-            self.prev_show_gizmo_object_translate = space_3d.show_gizmo_object_translate
-        # Set new state
-        if space_3d:
-            if len(context.selected_objects) == 1:
-                scene.transform_orientation_slots[1].type = "LOCAL"
-            else:
-                scene.transform_orientation_slots[1].type = "GLOBAL"
-            space_3d.show_gizmo_object_translate = True
     else:
         BoundingBoxDecorator.uninstall()
-        # Restore previous state
-        if space_3d:
-            prev_orientation = self.prev_transform_orientation_slot_type
-            if prev_orientation:
-                scene.transform_orientation_slots[1].type = prev_orientation
-                self.prev_transform_orientation_slot_type = ""
-            prev_gizmo = self.prev_show_gizmo_object_translate
-            if prev_gizmo is not None:
-                space_3d.show_gizmo_object_translate = prev_gizmo
-                self.prev_show_gizmo_object_translate = False
 
 
 def update_cut_decorator(self: "BIMModelProperties", context: bpy.types.Context) -> None:
@@ -191,14 +167,6 @@ class BIMModelProperties(PropertyGroup):
     menu_relating_type_id: bpy.props.IntProperty()
     icon_id: bpy.props.IntProperty()
     updating: bpy.props.BoolProperty(default=False)
-    occurrence_name_style: bpy.props.EnumProperty(
-        items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
-        name="Occurrence Name Style",
-    )
-    occurrence_name_function: bpy.props.StringProperty(
-        name="Occurrence Name Function",
-        description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
-    )
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
     extrusion_depth: bpy.props.FloatProperty(name="Extrusion Depth", min=0.001, default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
@@ -305,8 +273,6 @@ class BIMModelProperties(PropertyGroup):
         menu_relating_type_id: int
         icon_id: int
         updating: bool
-        occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
-        occurrence_name_function: str
         extrusion_depth: float
         cardinal_point: Literal[
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"
@@ -330,6 +296,13 @@ class BIMModelProperties(PropertyGroup):
         offset: float
         show_wall_axis: bool
         show_slab_direction: bool
+
+        prev_transform_orientation_slot_type: str
+        prev_show_gizmo_object_translate: bool
+
+        show_bounding_box: bool
+        show_cut_decorator: bool
+        show_cut_decorator_fill: bool
 
 
 class BIMArrayProperties(PropertyGroup):
@@ -1165,6 +1138,13 @@ class SnapMousePoint(PropertyGroup):
     snap_type: bpy.props.StringProperty(name="Snap Type")
     snap_object: bpy.props.StringProperty(name="Object Name")
 
+    if TYPE_CHECKING:
+        x: float
+        y: float
+        z: float
+        snap_type: str
+        snap_object: str
+
 
 class PolylinePoint(PropertyGroup):
     x: bpy.props.FloatProperty(name="X")
@@ -1174,6 +1154,14 @@ class PolylinePoint(PropertyGroup):
     angle: bpy.props.StringProperty(name="Angle")
     position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
 
+    if TYPE_CHECKING:
+        x: float
+        y: float
+        z: float
+        dim: str
+        angle: str
+        position: tuple[float, float, float]
+
 
 class Polyline(PropertyGroup):
     id: bpy.props.StringProperty(name="Id")
@@ -1182,6 +1170,13 @@ class Polyline(PropertyGroup):
     area: bpy.props.StringProperty(name="Measured Area")
     total_length: bpy.props.StringProperty(name="Total Length")
 
+    if TYPE_CHECKING:
+        id: str
+        polyline_points: bpy.types.bpy_prop_collection_idprop[PolylinePoint]
+        measurement_type: str
+        area: str
+        total_length: str
+
 
 class BIMPolylineProperties(PropertyGroup):
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
@@ -1189,16 +1184,31 @@ class BIMPolylineProperties(PropertyGroup):
     insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
     measurement_polyline: bpy.props.CollectionProperty(type=Polyline)
 
+    if TYPE_CHECKING:
+        snap_mouse_point: bpy.types.bpy_prop_collection_idprop[SnapMousePoint]
+        snap_mouse_ref: bpy.types.bpy_prop_collection_idprop[SnapMousePoint]
+        insertion_polyline: bpy.types.bpy_prop_collection_idprop[Polyline]
+        measurement_polyline: bpy.types.bpy_prop_collection_idprop[Polyline]
+
 
 class ProductPreviewItem(PropertyGroup):
     value_3d: bpy.props.FloatVectorProperty()
     value_2d: bpy.props.FloatVectorProperty(size=2)
+
+    if TYPE_CHECKING:
+        value_3d: tuple[float, float, float]
+        value_2d: tuple[float, float]
 
 
 class BIMProductPreviewProperties(PropertyGroup):
     verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
     edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
     tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
+
+    if TYPE_CHECKING:
+        verts: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
+        edges: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
+        tris: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
 
 
 def update_is_editing(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:

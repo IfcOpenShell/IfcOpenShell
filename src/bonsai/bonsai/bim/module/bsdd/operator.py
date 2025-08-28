@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
-
+import textwrap
 import bpy
 import bsdd
 import bonsai.tool as tool
@@ -85,6 +85,14 @@ class AddBSDDProperties(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        props = tool.Bsdd.get_bsdd_props()
+        if not props.selected_properties:
+            cls.poll_message_set("No properties selected to add.")
+            return False
+        return True
+
     def _execute(self, context):
         self.file = tool.Ifc.get()
         bprops = tool.Bsdd.get_bsdd_props()
@@ -93,10 +101,9 @@ class AddBSDDProperties(bpy.types.Operator, tool.Ifc.Operator):
         for selected_property in bprops.selected_properties:
             psets.setdefault(selected_property.metadata, {})[selected_property.name] = selected_property.get_value()
 
-        props = tool.Pset.get_pset_props(self.obj, self.obj_type)
         ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
+        assert ifc_definition_id
         element = tool.Ifc.get().by_id(ifc_definition_id)
-        properties = {}
 
         current_psets = ifcopenshell.util.element.get_psets(element, verbose=True)
         for pset_name, properties in psets.items():
@@ -105,3 +112,35 @@ class AddBSDDProperties(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name=pset_name)
             ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties=properties)
+
+
+class BIM_OT_show_bsdd_description(bpy.types.Operator):
+    bl_idname = "bim.show_bsdd_description"
+    bl_label = "bSDD Description"
+    url: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def draw(self, context):
+        WIDTH = 80
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=WIDTH)
+        result = tool.Bsdd.get_bsdd_property(self.url)
+        description = result.get("description") or ""
+        definition = result.get("definition") or ""
+        if description != definition:
+            text = wrapper.wrap(f"Description : {description}")
+            text.append("-" * (WIDTH - 15))
+            text += wrapper.wrap(f"Definition : {definition}")
+        else:
+            text = wrapper.wrap(f"Description : {description}")
+        for line in text:
+            layout.label(text=line)
+        if self.url:
+            url_op = layout.operator("bim.open_uri", icon="URL", text="Online bSDD Documentation")
+            url_op.uri = self.url

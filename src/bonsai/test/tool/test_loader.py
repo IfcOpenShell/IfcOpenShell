@@ -18,7 +18,9 @@
 
 import bpy
 import bmesh
+import json
 import ifcopenshell
+import ifcopenshell.api.library
 import ifcopenshell.api.style
 import ifcopenshell.util.schema
 import bonsai.core.tool
@@ -527,22 +529,20 @@ class TestSetupActiveBsddClassification(NewFile):
         props.export_schema = schema_
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
-        name = "CCI Construction"
+        data: tool.Bsdd.BSDDJsonData = {"name": "CCI Construction", "description": ""}
         base_uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
-        if schema == "IFC2X3":
-            uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-BDC"
-            classification = ifc_file.create_entity("IfcClassification", Name=name)
-            ifc_file.create_entity("IfcClassificationReference", Location=uri, ReferencedSource=classification)
-        else:
-            attr_name = "Specification" if schema == "IFC4X3" else "Location"
-            classification = ifc_file.create_entity("IfcClassification", Name=name)
-            setattr(classification, attr_name, base_uri)
+
+        library = ifcopenshell.api.library.add_library(ifc_file, "BBIM_Active_bSDD")
+        reference = ifcopenshell.api.library.add_reference(ifc_file, library)
+        reference.Location = base_uri
+        reference.Name = json.dumps(data)
         filepath = "test/files/temp/test.ifc"
         ifc_file.write(filepath)
         bpy.ops.bim.load_project(filepath=filepath)
-        props = tool.Bsdd.get_bsdd_props()
-        assert props.active_domain == name
-        assert props.active_uri == base_uri
+        props = tool.Classification.get_classification_props()
+
+        # No errors means this uri present in the enum.
+        props.classification_source = base_uri
 
     def test_set_load_and_set_active_bsdd_ifc2x3(self):
         self.run_test("IFC2X3")

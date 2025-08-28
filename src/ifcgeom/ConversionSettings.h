@@ -364,6 +364,12 @@ namespace ifcopenshell {
 				static constexpr int defaultvalue = 16;
 			};
 
+			struct CgalSmoothAngleDegrees : public SettingBase<CgalSmoothAngleDegrees, double> {
+				static constexpr const char* const name = "cgal-smooth-angle-degrees";
+				static constexpr const char* const description = "Angle in degrees under which adjacent facets will have averaged vertex normals in CGAL output. NB irrespective of original IFC geometry types. Defaults to -1 to disable smoothing.";
+				static constexpr double defaultvalue = -1.;
+			};
+
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
 				static constexpr const char* const description =
@@ -640,7 +646,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset>
 		>
 		{};
 }

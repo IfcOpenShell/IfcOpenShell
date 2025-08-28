@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.profile
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
@@ -52,6 +53,7 @@ class Profile(bonsai.core.tool.Profile):
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(settings, profile)
 
+        assert isinstance(shape, W.Triangulation)
         verts = ifcopenshell.util.shape.get_vertices(shape)
         if verts.size == 0:
             raise RuntimeError(f"Profile shape has no vertices, it probably is invalid: '{profile}'.")
@@ -223,6 +225,7 @@ class Profile(bonsai.core.tool.Profile):
         """Set default profile attributes to keep profile valid."""
         class_match = False
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        # We're using for-loop as classes may not match exactly.
         for ifc_class, params in cls.DEFAULT_PROFILE_ATTRS.items():
             if profile.is_a(ifc_class):
                 class_match = True

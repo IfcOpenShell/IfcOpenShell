@@ -22,6 +22,8 @@ import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from collections.abc import Sequence
 import math
 
+from ifcopenshell.api.alignment._get_cant_segment import _get_cant_segment
+
 
 def _get_curve_factor(design_parameters: entity_instance) -> float:
     start_radius = design_parameters.StartRadiusOfCurvature
@@ -36,6 +38,9 @@ def _map_line(file: ifcopenshell.file, design_parameters: entity_instance) -> Se
     start_point = design_parameters.StartPoint
     start_direction = design_parameters.StartDirection
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
 
@@ -77,6 +82,9 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
+
     transition = "DISCONTINUOUS"
 
     parent_curve = file.createIfcCircle(
@@ -107,6 +115,9 @@ def _map_clothoid(file: ifcopenshell.file, design_parameters: entity_instance) -
     start_radius = design_parameters.StartRadiusOfCurvature
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
 
@@ -146,6 +157,9 @@ def _map_cubic(file: ifcopenshell.file, design_parameters: entity_instance) -> S
     start_radius = design_parameters.StartRadiusOfCurvature
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
 
@@ -196,6 +210,9 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
     start_radius = design_parameters.StartRadiusOfCurvature
     end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
     f = _get_curve_factor(design_parameters)
@@ -260,8 +277,15 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
         Transition=transition,
         Placement=file.create_entity(
             type="IfcAxis2Placement2D",
-            Location=file.createIfcCartesianPoint((x1, y1)),
-            RefDirection=file.createIfcDirection((math.cos(angle1), math.sin(angle1))),
+            Location=file.createIfcCartesianPoint(
+                (
+                    start_point.Coordinates[0] + x1 * math.cos(start_direction) - y1 * math.sin(start_direction),
+                    start_point.Coordinates[1] + x1 * math.sin(start_direction) + y1 * math.cos(start_direction),
+                )
+            ),
+            RefDirection=file.createIfcDirection(
+                (math.cos(start_direction + angle1), math.sin(start_direction + angle1))
+            ),
         ),
         SegmentStart=file.createIfcLengthMeasure(length / 2),
         SegmentLength=file.createIfcLengthMeasure(length / 2),
@@ -276,6 +300,9 @@ def _map_bloss_curve(file: ifcopenshell.file, design_parameters: entity_instance
     start_direction = design_parameters.StartDirection
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
     f = _get_curve_factor(design_parameters)
@@ -321,6 +348,9 @@ def _map_cosine_curve(file: ifcopenshell.file, design_parameters: entity_instanc
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
+
     transition = "DISCONTINUOUS"
 
     f = _get_curve_factor(design_parameters)
@@ -361,6 +391,9 @@ def _map_sine_curve(file: ifcopenshell.file, design_parameters: entity_instance)
     start_radius = design_parameters.StartRadiusOfCurvature
     length = design_parameters.SegmentLength
 
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
+
     transition = "DISCONTINUOUS"
 
     f = _get_curve_factor(design_parameters)
@@ -397,11 +430,94 @@ def _map_sine_curve(file: ifcopenshell.file, design_parameters: entity_instance)
     return (curve_segment, None)
 
 
-def _map_viennese_bend(file: ifcopenshell.file, design_parameters: entity_instance) -> Sequence[entity_instance]:
-    raise NotImplementedError("VIENNESEBEND not implemented")
+def _map_viennese_bend(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
+    design_parameters = segment.DesignParameters
+
+    start_point = design_parameters.StartPoint
+    start_direction = design_parameters.StartDirection
+    start_radius = design_parameters.StartRadiusOfCurvature
+    length = design_parameters.SegmentLength
+    gravity_centerline_height = (
+        design_parameters.GravityCenterLineHeight if design_parameters.GravityCenterLineHeight != None else 0.0
+    )
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    start_direction *= angle_unit_scale
+
+    transition = "DISCONTINUOUS"
+
+    cant_segment = _get_cant_segment(segment)
+    if cant_segment:
+        start_cant_left = cant_segment.DesignParameters.StartCantLeft
+        end_cant_left = cant_segment.DesignParameters.EndCantLeft if cant_segment.DesignParameters.EndCantLeft else 0.0
+        start_cant_right = cant_segment.DesignParameters.StartCantRight
+        end_cant_right = (
+            cant_segment.DesignParameters.EndCantRight if cant_segment.DesignParameters.EndCantRight else 0.0
+        )
+        cant_layout = cant_segment.Nests[0].RelatingObject
+        rail_head_distance = cant_layout.RailHeadDistance
+    else:
+        start_cant_left = 0.0
+        end_cant_left = 0.0
+        start_cant_right = 0.0
+        end_cant_right = 0.0
+        rail_head_distance = 1.0
+
+    cant_angle_start = (start_cant_right - start_cant_left) / rail_head_distance if rail_head_distance else 0.0
+    cant_angle_end = (end_cant_right - end_cant_left) / rail_head_distance if rail_head_distance else 0.0
+
+    cant_factor = -420.0 * (gravity_centerline_height / length) * (cant_angle_end - cant_angle_start)
+
+    f = _get_curve_factor(design_parameters)
+
+    a0 = length / start_radius if start_radius != 0.0 else 0.0  # constant term
+    a1 = 0.0  # linear term
+    a2 = 1.0 * cant_factor  # quadratic term
+    a3 = -4.0 * cant_factor  # cubic term
+    a4 = 5.0 * cant_factor + 35.0 * f  # quartic term
+    a5 = -2.0 * cant_factor - 84.0 * f  # quintic term
+    a6 = 70.0 * f  # sextic term
+    a7 = -20.0 * f  # septic term
+
+    A0 = length * math.pow(math.fabs(a0), -1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
+    A1 = length * math.pow(math.fabs(a1), -1.0 / 2.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
+    A2 = length * math.pow(math.fabs(a2), -1.0 / 3.0) * (a2 / math.fabs(a2)) if a2 != 0.0 else 0.0
+    A3 = length * math.pow(math.fabs(a3), -1.0 / 4.0) * (a3 / math.fabs(a3)) if a3 != 0.0 else 0.0
+    A4 = length * math.pow(math.fabs(a4), -1.0 / 5.0) * (a4 / math.fabs(a4)) if a4 != 0.0 else 0.0
+    A5 = length * math.pow(math.fabs(a5), -1.0 / 6.0) * (a5 / math.fabs(a5)) if a5 != 0.0 else 0.0
+    A6 = length * math.pow(math.fabs(a6), -1.0 / 7.0) * (a6 / math.fabs(a6)) if a6 != 0.0 else 0.0
+    A7 = length * math.pow(math.fabs(a7), -1.0 / 8.0) * (a7 / math.fabs(a7)) if a7 != 0.0 else 0.0
+
+    parent_curve = file.createIfcSeventhOrderPolynomialSpiral(
+        Position=file.createIfcAxis2Placement2D(
+            Location=file.createIfcCartesianPoint((0.0, 0.0)), RefDirection=file.createIfcDirection((1.0, 0.0))
+        ),
+        SepticTerm=A7,
+        SexticTerm=A6 if A6 != 0.0 else None,
+        QuinticTerm=A5 if A5 != 0.0 else None,
+        QuarticTerm=A4 if A4 != 0.0 else None,
+        CubicTerm=A3 if A3 != 0.0 else None,
+        QuadraticTerm=A2 if A2 != 0.0 else None,
+        LinearTerm=A1 if A1 != 0.0 else None,
+        ConstantTerm=A0 if A0 != 0.0 else None,
+    )
+
+    curve_segment = file.create_entity(
+        type="IfcCurveSegment",
+        Transition=transition,
+        Placement=file.create_entity(
+            type="IfcAxis2Placement2D",
+            Location=start_point,
+            RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction))),
+        ),
+        SegmentStart=file.createIfcLengthMeasure(0.0),
+        SegmentLength=file.createIfcLengthMeasure(length),
+        ParentCurve=parent_curve,
+    )
+    return (curve_segment, None)
 
 
-def __map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
+def _map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
     """
     Creates IfcCurveSegment entities for the represention of the supplied IfcAlignmentHorizontalSegment business logic entity instance.
     A pair of entities is returned because a single business logic segment of type HELMERTCURVE maps to two representaiton entities.
@@ -430,7 +546,7 @@ def __map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_
     elif predefined_type == "SINECURVE":
         result = _map_sine_curve(file, segment.DesignParameters)
     elif predefined_type == "VIENNESEBEND":
-        result = _map_viennese_bend(file, segment.DesignParameters)
+        result = _map_viennese_bend(file, segment)
     else:
         raise TypeError(f"Unexpected predefined type: '{predefined_type}'.")
 

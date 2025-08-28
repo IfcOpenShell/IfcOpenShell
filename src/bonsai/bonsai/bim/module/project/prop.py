@@ -225,6 +225,7 @@ class Link(PropertyGroup):
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
+    include_in_drawings: BoolProperty(name="Include in Drawings", default=True, options=set())
     empty_handle: PointerProperty(
         name="Empty Object Handle",
         description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
@@ -237,6 +238,7 @@ class Link(PropertyGroup):
         is_selectable: bool
         is_wireframe: bool
         is_hidden: bool
+        include_in_drawings: bool
         empty_handle: Union[bpy.types.Object, None]
 
 
@@ -309,7 +311,14 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    should_cache: BoolProperty(name="Cache", default=False)
+    should_cache: BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Cache",
+        description=(
+            "Cache loaded geometry to .h5 file in your cache directory (see in preferences) "
+            "for faster imports and geometry reloads."
+        ),
+        default=False,
+    )
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(
@@ -405,8 +414,12 @@ class BIMProjectProperties(PropertyGroup):
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
-    clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
+    clipping_planes_active_index: bpy.props.IntProperty(min=0, default=0, max=5)
     edited_objs: bpy.props.CollectionProperty(type=EditedObj)
+
+    @property
+    def active_clipping_plane(self) -> ObjProperty | None:
+        return tool.Blender.get_active_uilist_element(self.clipping_planes, self.clipping_planes_active_index)
 
     @property
     def clipping_planes_objs(self) -> list[bpy.types.Object]:
@@ -486,7 +499,7 @@ class BIMProjectProperties(PropertyGroup):
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
         clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]
-        clipping_planes_active: int
+        clipping_planes_active_index: int
         edited_objs: bpy.types.bpy_prop_collection_idprop[EditedObj]
 
     def get_active_library_breadcrumb(self) -> Union[LibraryBreadcrumb, None]:
@@ -494,9 +507,18 @@ class BIMProjectProperties(PropertyGroup):
             return self.library_breadcrumb[-1]
         return None
 
-    def get_loaded_links(self) -> Generator[Link, None, None]:
+    def get_loaded_links(self) -> Generator[Link]:
         for link in self.links:
             if not link.is_loaded:
+                continue
+            yield link
+
+    def get_loaded_links_for_drawings(self) -> Generator[Link]:
+        props = tool.Drawing.get_document_props()
+        if not props.should_draw_linked_projects:
+            return
+        for link in self.get_loaded_links():
+            if not link.include_in_drawings:
                 continue
             yield link
 

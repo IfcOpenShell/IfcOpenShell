@@ -51,7 +51,7 @@ import bonsai.bim.export_ifc
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData
-from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict
+from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict, get_args
 from lxml import etree
 from math import radians
 from mathutils import Vector, Color, Matrix
@@ -334,7 +334,15 @@ class CreateDrawing(bpy.types.Operator):
                 annotation_svg = None
 
                 with profile("Generate underlay"):
-                    underlay_svg = self.generate_underlay(context)
+                    if ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
+                        drawing_style = self.cprops.get_active_drawing_style()
+                        if not drawing_style:
+                            self.report(
+                                {"ERROR"},
+                                f"Failed to create drawing '{self.drawing.Name}' - drawing has underlay but there's no active drawing underlay style.",
+                            )
+                            return {"FINISHED"}
+                        underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
                     if tool.Drawing.is_camera_orthographic():
@@ -874,10 +882,11 @@ class CreateDrawing(bpy.types.Operator):
         cached_linework -= edited_guids
 
         bim_props = tool.Blender.get_bim_props()
+        prefs = tool.Blender.get_addon_preferences()
         files = {bim_props.ifc_file: tool.Ifc.get()}
 
         props = tool.Project.get_project_props()
-        for link in props.get_loaded_links():
+        for link in props.get_loaded_links_for_drawings():
             files[link.name] = self.get_linked_file(link)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
@@ -890,7 +899,7 @@ class CreateDrawing(bpy.types.Operator):
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
-            ifc_cache_path = os.path.join(bim_props.cache_dir, f"{ifc_hash}.h5")
+            ifc_cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
 
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
@@ -1299,7 +1308,7 @@ class CreateDrawing(bpy.types.Operator):
             return tool.Ifc.get().by_guid(guid)
         except RuntimeError:
             props = tool.Project.get_project_props()
-            for link in props.get_loaded_links():
+            for link in props.get_loaded_links_for_drawings():
                 ifc_file = self.get_linked_file(link)
                 try:
                     return ifc_file.by_guid(guid)
@@ -1315,7 +1324,7 @@ class CreateDrawing(bpy.types.Operator):
             return tool.Ifc.get().by_id(step_id)
         except RuntimeError:
             props = tool.Project.get_project_props()
-            for link in props.get_loaded_links():
+            for link in props.get_loaded_links_for_drawings():
                 ifc_file = self.get_linked_file(link)
                 try:
                     return ifc_file.by_id(step_id)
@@ -1848,8 +1857,8 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         props = tool.Drawing.get_document_props()
         # Won't be visible in UI anyway.
-        bim_props = tool.Blender.get_bim_props()
-        if not props.sheets or not bim_props.data_dir:
+        prefs = tool.Blender.get_addon_preferences()
+        if not props.sheets or not prefs.data_dir:
             return False
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
@@ -1954,8 +1963,8 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         if not tool.Drawing.get_active_sheet_item(is_sheet=True):
             cls.poll_message_set("No sheet selected.")
             return False
-        bim_props = tool.Blender.get_bim_props()
-        return props.sheets and bim_props.data_dir
+        prefs = tool.Blender.get_addon_preferences()
+        return props.sheets and prefs.data_dir
 
     def invoke(self, context, event):
         # opening all sheets on shift+click
@@ -2148,6 +2157,8 @@ class ActivateModel(bpy.types.Operator):
     )
 
     def execute(self, context):
+        start_time = time.time()
+
         dprops = tool.Drawing.get_document_props()
         dprops.active_drawing_id = 0
         model_props = tool.Model.get_model_props()
@@ -2174,26 +2185,55 @@ class ActivateModel(bpy.types.Operator):
 
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
-                bpy.ops.object.hide_view_clear()
+                bpy.ops.object.hide_view_clear(select=False)
                 bpy.ops.bim.activate_status_filters(only_if_enabled=True)
 
-        for obj in context.visible_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            model = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            if model:
+        elements = {e for obj in context.visible_objects if (e := tool.Ifc.get_entity(obj))}
+
+        def refine_elements(
+            elements_mutable: set[ifcopenshell.entity_instance],
+        ) -> dict[ifcopenshell.entity_instance, tuple[ifcopenshell.entity_instance, bpy.types.Object]]:
+            """
+            :return: element -> (representation, obj)
+            """
+            # TODO: in the future reimport_element_representations should have an option
+            # not recalculate elements completely, but get the from cache, to speed up the process further.
+            refined_elements: dict[
+                ifcopenshell.entity_instance, tuple[ifcopenshell.entity_instance, bpy.types.Object]
+            ] = {}
+            elements = elements_mutable
+            while elements:
+                element = elements.pop()
+                model = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                if not model:
+                    continue
+                assert isinstance(obj := tool.Ifc.get_object(element), bpy.types.Object)
                 current_representation = tool.Geometry.get_active_representation(obj)
-                if current_representation != model:
-                    bonsai.core.geometry.switch_representation(
-                        tool.Ifc,
-                        tool.Geometry,
-                        obj=obj,
-                        representation=model,
-                        should_reload=False,
-                        is_global=True,
-                        should_sync_changes_first=True,
-                    )
+                if current_representation == model:
+                    continue
+
+                # reimport_element_representations automatically reloads all elements sharing representation.
+                # So we should avoid reloading same elements twice.
+                resolved_model = ifcopenshell.util.representation.resolve_representation(model)
+                elements_sharing_representation = ifcopenshell.util.element.get_elements_by_representation(
+                    ifc_file, resolved_model
+                )
+
+                refined_elements[element] = (model, obj)
+                elements = elements - elements_sharing_representation
+            return refined_elements
+
+        refined_elements = refine_elements(elements)
+        for _, (model, obj) in refined_elements.items():
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=model,
+                should_reload=False,
+                is_global=True,
+                should_sync_changes_first=True,
+            )
 
         # restore visibility after hide_view_clear()
         for obj, hide_status in visibility_status.items():
@@ -2201,6 +2241,11 @@ class ActivateModel(bpy.types.Operator):
 
         tool.Blender.update_viewport()
         bonsai.bim.handler.refresh_ui_data()
+
+        operator_time = time.time() - start_time
+        if operator_time > 10:
+            self.report({"INFO"}, f"{self.bl_label} was finished in {operator_time:.2f} seconds.")
+
         return {"FINISHED"}
 
 
@@ -2741,8 +2786,8 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         if not props.schedules:
             cls.poll_message_set("No schedule selected.")
             return False
-        bim_props = tool.Blender.get_bim_props()
-        return props.schedules and props.sheets and bim_props.data_dir
+        prefs = tool.Blender.get_addon_preferences()
+        return props.schedules and props.sheets and prefs.data_dir
 
     def _execute(self, context):
         props = tool.Drawing.get_document_props()
@@ -3354,50 +3399,51 @@ class DisableEditingDrawings(bpy.types.Operator, tool.Ifc.Operator):
         core.disable_editing_drawings(tool.Drawing)
 
 
-class ExpandTargetView(bpy.types.Operator):
-    bl_idname = "bim.expand_target_view"
-    bl_label = "Expand Target View"
-    bl_description = "\nSHIFT+CLICK to expand all view categories"
+ToggleOption = Literal["EXPAND", "CONTRACT"]
 
+
+class ToggleTargetView(bpy.types.Operator):
+    bl_idname = "bim.toggle_target_view"
+    bl_label = "Toggle Target View"
     bl_options = {"REGISTER", "UNDO"}
-    target_view: bpy.props.StringProperty()
-    expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
+
+    target_view: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    toggle_all: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(i, i, "") for i in get_args(ToggleOption)]
+    )
+
+    if TYPE_CHECKING:
+        target_view: str
+        toggle_all: bool
+        option: ToggleOption
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        option: ToggleOption = properties.option
+        if option == "EXPAND":
+            return "Expand target view.\n\nSHIFT+CLICK to expand all view categories."
+        else:
+            return "Contract target view.\n\nSHIFT+CLICK to contract all view categories."
 
     def invoke(self, context, event):
-        # Expanding all categories on shift+click.
+        # Toggling all categories on shift+click.
         # Make sure to use SKIP_SAVE on property, otherwise it might get stuck (copied from #4771).
         if event.type == "LEFTMOUSE" and event.shift:
-            self.expand_all = True
+            self.toggle_all = True
         return self.execute(context)
 
     def execute(self, context):
         props = tool.Drawing.get_document_props()
-        for drawing in [d for d in props.drawings if self.expand_all or d.target_view == self.target_view]:
-            drawing.is_expanded = True
-        core.load_drawings(tool.Drawing)
-        return {"FINISHED"}
-
-
-class ContractTargetView(bpy.types.Operator):
-    bl_idname = "bim.contract_target_view"
-    bl_label = "Contract Target View"
-    bl_description = "\n\nSHIFT+CLICK to hide all view categories"
-
-    bl_options = {"REGISTER", "UNDO"}
-    target_view: bpy.props.StringProperty()
-    contract_all: bpy.props.BoolProperty(name="Contract All", default=False, options={"SKIP_SAVE"})
-
-    def invoke(self, context, event):
-        # Contracting all categories on shift+click.
-        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck (copied from #4771).
-        if event.type == "LEFTMOUSE" and event.shift:
-            self.contract_all = True
-        return self.execute(context)
-
-    def execute(self, context):
-        props = tool.Drawing.get_document_props()
-        for drawing in [d for d in props.drawings if self.contract_all or d.target_view == self.target_view]:
-            drawing.is_expanded = False
+        expanded = self.option == "EXPAND"
+        for drawing in props.drawings:
+            if drawing.is_drawing:
+                continue
+            if self.toggle_all or drawing.target_view == self.target_view:
+                drawing.is_expanded = expanded
         core.load_drawings(tool.Drawing)
         return {"FINISHED"}
 
@@ -3689,7 +3735,7 @@ class OpenDocumentationWebUi(bpy.types.Operator):
     bl_description = "Open the documentation web UI page"
 
     def execute(self, context):
-        if not context.scene.WebProperties.is_connected:
+        if not tool.Web.get_web_props().is_connected:
             bpy.ops.bim.connect_websocket_server(page="documentation")
         else:
             bpy.ops.bim.open_web_browser(page="documentation")

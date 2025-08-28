@@ -24,7 +24,7 @@ import numpy as np
 from ifcopenshell import entity_instance
 
 from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
-from ifcopenshell.api.alignment._map_alignment_horizontal_segment import __map_alignment_horizontal_segment
+from ifcopenshell.api.alignment._map_alignment_horizontal_segment import _map_alignment_horizontal_segment
 from ifcopenshell.api.alignment._map_alignment_vertical_segment import _map_alignment_vertical_segment
 from ifcopenshell.api.alignment._map_alignment_cant_segment import _map_alignment_cant_segment
 
@@ -47,47 +47,51 @@ def _add_curve_segment_to_composite_curve(
         composite_curve.Segments += (curve_segment,)
         assert len(curve_segment.UsingCurves) == 1
     else:
-        # get the segment before the zero length segment
-        prev_segment = (
-            composite_curve.Segments[-2]
-            if composite_curve.Segments != None and 1 < len(composite_curve.Segments)
+        zero_length_segment = (
+            composite_curve.Segments[-1]
+            if ifcopenshell.api.alignment.has_zero_length_segment(composite_curve)
             else None
         )
+        prev_segment = None
+
+        if zero_length_segment and 1 < len(composite_curve.Segments):
+            prev_segment = composite_curve.Segments[-2]
+        elif zero_length_segment == None:
+            prev_segment = composite_curve.Segments[-1]
 
         curve_segment.Transition = "CONTINUOUS"
 
-        # must add the new segment to the curve before updating the transition code
-        # add the new segment before the zero length segment
-        zero_length_segment = composite_curve.Segments[-1]
-
-        if prev_segment:
-            segments = composite_curve.Segments[0:-1]
+        segments = composite_curve.Segments[0:-1]
+        if zero_length_segment:
             segments += (
                 curve_segment,
                 zero_length_segment,
             )
             composite_curve.Segments = []
             composite_curve.Segments += segments
-            _update_curve_segment_transition_code(prev_segment, curve_segment)
         else:
-            composite_curve.Segments = (curve_segment, zero_length_segment)
+            composite_curve.Segments += (curve_segment,)
 
-        settings = ifcopenshell.geom.settings()
-        segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment.wrapped_data)
-        segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
-        e = segment_evaluator.evaluate(segment_fn.end())
-        end = np.array(e)
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
-        x = float(end[0, 3]) / unit_scale
-        y = float(end[1, 3]) / unit_scale
-        dx = float(end[0, 0])
-        dy = float(end[1, 0])
+        if prev_segment:
+            _update_curve_segment_transition_code(prev_segment, curve_segment)
 
-        # assume IfcAxis2Placement2D
-        zero_length_segment.Placement.Location.Coordinates = (x, y)
-        zero_length_segment.Placement.RefDirection.DirectionRatios = (dx, dy)
+        if zero_length_segment:
+            settings = ifcopenshell.geom.settings()
+            segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment.wrapped_data)
+            segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
+            e = segment_evaluator.evaluate(segment_fn.end())
+            end = np.array(e)
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+            x = float(end[0, 3]) / unit_scale
+            y = float(end[1, 3]) / unit_scale
+            dx = float(end[0, 0])
+            dy = float(end[1, 0])
 
-        _update_curve_segment_transition_code(curve_segment, zero_length_segment)
+            # assume IfcAxis2Placement2D
+            zero_length_segment.Placement.Location.Coordinates = (x, y)
+            zero_length_segment.Placement.RefDirection.DirectionRatios = (dx, dy)
+
+            _update_curve_segment_transition_code(curve_segment, zero_length_segment)
 
 
 def _add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, curve: entity_instance) -> None:
@@ -119,7 +123,7 @@ def _add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, cur
 
     # map the IfcAlignmentSegment to an IfcCurveSegment (or two in the case of helmert curves)
     if segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
-        mapped_segments = __map_alignment_horizontal_segment(file, segment)
+        mapped_segments = _map_alignment_horizontal_segment(file, segment)
     elif segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
         mapped_segments = _map_alignment_vertical_segment(file, segment)
     elif segment.DesignParameters.is_a("IfcAlignmentCantSegment"):

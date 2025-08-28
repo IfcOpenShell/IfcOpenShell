@@ -121,7 +121,14 @@ class CoveringToolUI:
         if AuthoringData.data["ifc_classes"]:
             row = cls.layout.row(align=True)
             row.label(text="", icon="FILE_3D")
-            prop_with_search(row, cls.props, "relating_type_id", text="")
+            prop_with_search(
+                row,
+                cls.props,
+                "relating_type_id",
+                text="",
+                enable_relating_type_suggestions=True,
+                search_threshold=0,
+            )
             row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
         else:
             row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")

@@ -86,14 +86,14 @@ target_link_libraries(${targetName}
     ${IFCOPENSHELL_LIBRARIES}
     ${OPENCASCADE_LIBRARIES}
     ${OPENSCENEGRAPH_LIBRARIES}
-    Qt${QT_VERSION}::Core 
-    Qt${QT_VERSION}::Gui 
-    Qt${QT_VERSION}::OpenGL 
-    Qt${QT_VERSION}::OpenGLWidgets 
+    Qt${QT_VERSION}::Core
+    Qt${QT_VERSION}::Gui
+    Qt${QT_VERSION}::OpenGL
+    Qt${QT_VERSION}::OpenGLWidgets
     Qt${QT_VERSION}::Widgets
 )
 
-target_include_directories(${targetName} PUBLIC 
+target_include_directories(${targetName} PUBLIC
     ${QT_DIR}/include
     ${OPENSCENEGRAPH_INCLUDE_DIRS}
 )

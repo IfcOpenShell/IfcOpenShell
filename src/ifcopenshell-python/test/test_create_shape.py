@@ -16,7 +16,9 @@ from typing import get_args
 class TestGeomSettings:
     def test_settings(self):
         settings = ifcopenshell.geom.settings()
-        assert set(get_args(ifcopenshell.geom.SETTING)) == set(settings.setting_names())
+        assert set(get_args(ifcopenshell.geom.SETTING)) == set(
+            settings.setting_names()
+        ), "Also need to update IfcPython.i, if new settings were added/removed."
 
         assert "use-python-opencascade" in settings.setting_names()
         assert settings.get(settings.USE_PYTHON_OPENCASCADE) is False
@@ -38,7 +40,9 @@ class TestGeomSettings:
 
     def test_serializer_settings(self):
         settings = ifcopenshell.geom.serializer_settings()
-        assert set(get_args(ifcopenshell.geom.SERIALIZER_SETTING)) == set(settings.setting_names())
+        assert set(get_args(ifcopenshell.geom.SERIALIZER_SETTING)) == set(
+            settings.setting_names()
+        ), "Also need to update IfcPython.i, if new settings were added/removed."
 
         # Only for settings.
         assert "use-python-opencascade" not in settings.setting_names()

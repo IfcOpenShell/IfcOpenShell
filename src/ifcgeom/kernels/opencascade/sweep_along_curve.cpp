@@ -110,7 +110,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	
 	Handle(Geom_Surface) surface;
 	if (scs->surface) {
-		convert_surface(scs->surface);
+		surface = convert_surface(scs->surface);
 	}	
 
 	gp_Trsf directrix;

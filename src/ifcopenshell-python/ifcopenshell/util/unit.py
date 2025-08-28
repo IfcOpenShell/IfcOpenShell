@@ -691,6 +691,14 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
     :returns: The scale factor
     """
+    if (
+        unit_type
+        not in ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
+        .declaration_by_name("IfcUnitEnum")
+        .enumeration_items()
+    ):
+        raise ValueError(f"Unit type {unit_type!r} does not name a valid type")
+
     # Currently we assume that all ifc projects must have IfcProject.
     if not (projects := ifc_file.by_type("IfcProject")) or not (units := projects[0].UnitsInContext):
         return 1

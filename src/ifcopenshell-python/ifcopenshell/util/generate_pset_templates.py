@@ -18,7 +18,7 @@
 
 RUN_FROM_DEV_REPO = False
 
-import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.unit
 import ifcopenshell.api.project
 import ifcopenshell.guid
@@ -28,6 +28,7 @@ import sys
 from pathlib import Path
 from lxml import etree
 from itertools import chain
+from typing import cast
 
 
 if not RUN_FROM_DEV_REPO:
@@ -128,11 +129,17 @@ class PsetTemplatesGenerator:
         self.units = dict()
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.ifc_file.schema_identifier)
 
-        self.ifc_derived_unit_enum = (
-            schema.declaration_by_name("IfcDerivedUnitEnum").as_enumeration_type().enumeration_items()
-        )
-        self.ifc_unit_enum = schema.declaration_by_name("IfcUnitEnum").as_enumeration_type().enumeration_items()
-        select_types = schema.declaration_by_name("IfcValue").select_list()
+        derived_unit_enum = schema.declaration_by_name("IfcDerivedUnitEnum").as_enumeration_type()
+        assert derived_unit_enum
+        self.ifc_derived_unit_enum = derived_unit_enum.enumeration_items()
+
+        ifc_unit_enum = schema.declaration_by_name("IfcUnitEnum").as_enumeration_type()
+        assert ifc_unit_enum
+        self.ifc_unit_enum = ifc_unit_enum.enumeration_items()
+
+        value_select = schema.declaration_by_name("IfcValue").as_select_type()
+        assert value_select
+        select_types = cast(tuple[W.select_type, ...], value_select.select_list())
         self.ifc_value_types = [t.name() for t in chain(*[select_type.select_list() for select_type in select_types])]
 
         project = self.ifc_entity("IfcProject", Name=project_name, GlobalId=ifcopenshell.guid.new())

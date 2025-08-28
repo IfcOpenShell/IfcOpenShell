@@ -23,6 +23,7 @@ import bpy
 import bmesh
 import logging
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
@@ -38,7 +39,7 @@ from ifcopenshell.util.shape_builder import np_to_4d
 from math import atan, radians
 from mathutils import Vector, Matrix
 from pathlib import Path
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, cast
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -640,7 +641,10 @@ class Loader(bonsai.core.tool.Loader):
     ) -> bool:
         limit = cls.settings.distance_limit
         limit = limit if is_meters else (limit / cls.unit_scale)
-        coords = getattr(point, "Coordinates", point)
+        if isinstance(point, ifcopenshell.entity_instance):
+            coords = cast(tuple[float, ...], point.Coordinates)
+        else:
+            coords = point
         return any(abs(c) > limit for c in coords)
 
     @classmethod
@@ -811,7 +815,7 @@ class Loader(bonsai.core.tool.Loader):
         cls,
         element: ifcopenshell.entity_instance,
         representation: ifcopenshell.entity_instance,
-        shape: ifcopenshell.geom.ShapeElementType,
+        shape: W.TriangulationElement,
     ) -> bpy.types.Camera:
         """Create camera data.
 
@@ -965,7 +969,7 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def convert_geometry_to_mesh(
         cls,
-        geometry: ifcopenshell.geom.ShapeType,
+        geometry: W.Triangulation,
         mesh: bpy.types.Mesh,
         verts: Optional[npt.NDArray[np.float64]] = None,
         *,

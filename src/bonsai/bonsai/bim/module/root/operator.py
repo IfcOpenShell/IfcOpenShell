@@ -18,6 +18,7 @@
 
 import bpy
 import bmesh
+import idprop
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -180,12 +181,16 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Assign the IFC Class to the selected non-ifc objects."
+    bl_description = (
+        "Assign the IFC Class to the selected non-ifc objects.\n\n"
+        + "ALT+CLICK to also convert object's custom properties to custom Pset."
+    )
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
     userdefined_type: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
+    props_to_pset: bpy.props.BoolProperty(options={"SKIP_SAVE"})
 
     # TODO: is never used?
     should_add_representation: bpy.props.BoolProperty(default=True)
@@ -211,6 +216,10 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
             cls.poll_message_set(f"Can only assign class in OBJECT mode, not in {context.mode} mode.")
             return False
         return True
+
+    def invoke(self, context, event):
+        self.props_to_pset = event.alt
+        return self.execute(context)
 
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
@@ -360,6 +369,19 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 elif obj.data is not None:
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
 
+            # Accomodate existing importers to Blender from other formats that set custom props
+            if self.props_to_pset:
+                custom_props = {}
+                for k, v in obj.items():
+                    if type(v) in [bool, int, float, str]:
+                        custom_props[k] = v
+                    elif type(v) is idprop.types.IDPropertyArray:
+                        for idx in range(len(v)):
+                            custom_props["{}.{}".format(k, idx + 1)] = v[idx]
+
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_ImportedBlenderProps")
+                ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=custom_props)
+
         # TODO: reload representation might lead to the object being replaced by object of the other type.
         # We probably should track it somehow and keep the original selection.
 
@@ -467,6 +489,14 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     ifc_product: bpy.props.StringProperty(options={"SKIP_SAVE"})
     ifc_class: bpy.props.StringProperty(options={"SKIP_SAVE"})
     skip_dialog: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        # Exposed to Shift-A menu.
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        return True
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
@@ -583,7 +613,40 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
-            item = builder.extrude(curve, magnitude=0.5 / unit_scale)
+
+            if not (
+                props.ifc_product == "IfcFeatureElement"
+                and props.ifc_class == "IfcOpeningElement"
+                and props.featured_obj
+            ):
+                item = builder.extrude(curve, magnitude=0.5 / unit_scale)
+            else:
+                featured_element = tool.Ifc.get_entity(props.featured_obj)
+                usage = ifcopenshell.util.element.get_material(featured_element) if featured_element else None
+
+                if usage and usage.is_a("IfcMaterialLayerSetUsage"):
+                    wall_matrix = props.featured_obj.matrix_world
+
+                    profile = builder.profile(curve)
+                    local_x = wall_matrix.to_3x3() @ Vector((1, 0, 0))
+                    local_y = wall_matrix.to_3x3() @ Vector((0, 1, 0))
+                    local_z = wall_matrix.to_3x3() @ Vector((0, 0, 1))
+                    direction_sense = getattr(usage, "DirectionSense", "POSITIVE")
+
+                    if usage.LayerSetDirection == "AXIS2":
+                        z_axis = tuple(local_y) if direction_sense == "POSITIVE" else tuple(-local_y)
+                    elif usage.LayerSetDirection == "AXIS3":
+                        z_axis = tuple(local_z) if direction_sense == "POSITIVE" else tuple(-local_z)
+
+                    item = builder.extrude(
+                        profile,
+                        magnitude=0.5 / unit_scale,
+                        position_x_axis=tuple(local_x),
+                        position_z_axis=z_axis,
+                    )
+                else:
+                    item = builder.extrude(curve, magnitude=0.5 / unit_scale)
+
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
             bonsai.core.geometry.switch_representation(

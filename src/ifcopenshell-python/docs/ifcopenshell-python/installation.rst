@@ -42,6 +42,8 @@ ZIP packages
    +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
    | Python 3.12 | :ios_python_url:`py312-linux64` | :ios_python_url:`py312-win64` | :ios_python_url:`py312-macos64` | :ios_python_url:`py312-macosm164` |
    +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.13 | :ios_python_url:`py313-linux64` | :ios_python_url:`py313-win64` | :ios_python_url:`py313-macos64` | :ios_python_url:`py313-macosm164` |
+   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
 
 2. Unzip the downloaded file and copy the ``ifcopenshell`` directory into your
    Python path. If you're not sure where your Python path is, run the following
@@ -195,7 +197,7 @@ the IfcOpenShell utilities.
 Bonsai is available either as a stable build or a daily build.
 
 1. Install Bonsai by following the `Bonsai installation documentation
-   <https://docs.bonsaibim.org/guides/installation.html>`_.
+   <https://docs.bonsaibim.org/quickstart/installation.html>`_.
 
 2. Launch Blender. On the top left of the Viewport panel, click the **Editor
    Type** icon to change the viewport into a **Python Console**.

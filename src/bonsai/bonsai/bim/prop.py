@@ -19,7 +19,6 @@
 import os
 import bpy
 import json
-import platformdirs
 import ifcopenshell
 import ifcopenshell.util.pset
 import ifcopenshell.util.unit
@@ -126,20 +125,6 @@ def update_schema_dir(self: "BIMProperties", context: bpy.types.Context) -> None
 
     bim_props = tool.Blender.get_bim_props()
     bonsai.bim.schema.ifc.schema_dir = bim_props.schema_dir
-
-
-def update_data_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
-    import bonsai.bim.schema
-
-    bim_props = tool.Blender.get_bim_props()
-    bonsai.bim.schema.ifc.data_dir = bim_props.data_dir
-
-
-def update_cache_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
-    import bonsai.bim.schema
-
-    bim_props = tool.Blender.get_bim_props()
-    bonsai.bim.schema.ifc.cache_dir = bim_props.cache_dir
 
 
 def update_section_color(self: "BIMProperties", context: bpy.types.Context) -> None:
@@ -289,7 +274,18 @@ def get_display_name(self: "Attribute") -> str:
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file", "list[string]"]
-AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE", "LOGICAL", "URI"]
+AttributeSpecialType = Literal[
+    "",
+    "DATE",
+    "DATETIME",
+    "LENGTH",
+    "AREA",
+    "VOLUME",
+    "FORCE",
+    "LOGICAL",
+    "URI",
+    "DURATION",
+]
 
 
 class Attribute(PropertyGroup):
@@ -459,6 +455,23 @@ class Attribute(PropertyGroup):
         setattr(self, self.get_value_name(), value)
 
 
+class ISODuration(PropertyGroup):
+    years: IntProperty(name="Years", default=0)
+    months: IntProperty(name="Months", default=0)
+    days: IntProperty(name="Days", default=0)
+    hours: IntProperty(name="Hours", default=0)
+    minutes: IntProperty(name="Minutes", default=0)
+    seconds: IntProperty(name="Seconds", default=0)
+
+    if TYPE_CHECKING:
+        years: int
+        months: int
+        days: int
+        hours: int
+        minutes: int
+        seconds: int
+
+
 def get_tab(
     self: "Union[BIMAreaProperties, BIMTabProperties]", context: bpy.types.Context
 ) -> list[tuple[str, str, str, str, int]]:
@@ -521,16 +534,7 @@ class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
     )
-    data_dir: StringProperty(
-        default=(platformdirs.user_data_path("bonsai", roaming=True, ensure_exists=True) / "data").__str__(),
-        name="Data Directory",
-        update=update_data_dir,
-    )
-    cache_dir: StringProperty(
-        default=platformdirs.user_cache_dir("bonsai"), name="Cache Directory", update=update_cache_dir
-    )
     has_blend_warning: BoolProperty(name="Has Blend Warning", default=False)
-    pset_dir: StringProperty(default=os.path.join("psets") + os.path.sep, name="Default Psets Directory")
     ifc_file: StringProperty(name="IFC File")
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
@@ -586,8 +590,6 @@ class BIMProperties(PropertyGroup):
     if TYPE_CHECKING:
         is_dirty: bool
         schema_dir: str
-        data_dir: str
-        cache_dir: str
         has_blend_warning: bool
         pset_dir: str
         ifc_file: str

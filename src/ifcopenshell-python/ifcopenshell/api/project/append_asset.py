@@ -40,6 +40,7 @@ APPENDABLE_ASSET = Literal[
     "IfcPresentationStyle",
 ]
 APPENDABLE_ASSET_TYPES = get_args(APPENDABLE_ASSET)
+MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
 
 
 def append_asset(
@@ -261,6 +262,15 @@ class Usecase:
         elif element.is_a("IfcMaterial"):
             name = element.Name
             return next((e for e in self.file.by_type("IfcMaterial") if e.Name == name), None)
+
+        elif element in MATERIAL_SETS:
+            ifc_class = element.is_a()
+            name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
+            material_set_name = getattr(element, name_attr)
+            if material_set_name is None:
+                return
+            return next((e for e in self.file.by_type(ifc_class) if getattr(e, name_attr) == material_set_name), None)
+
         elif element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
             if profile_name is None:
@@ -462,7 +472,16 @@ class Usecase:
         for i, attribute in enumerate(element):
             new_attribute = None
             if isinstance(attribute, ifcopenshell.entity_instance):
-                if not self.is_another_asset(attribute):
+                # Void and projection relationships are special because they
+                # are "dependent" relationships, so we always consider them.
+                # We do _not_ whitelist (i.e. in is_another_asset)
+                # IfcFeatureElement because you can have things like
+                # IfcRelAssociatesClassification to openings! We only ever want
+                # to consider IfcFeatureElements in IfcRelVoidsElements and
+                # IfcRelProjectsElements.
+                if element.is_a() in ("IfcRelVoidsElement", "IfcRelProjectsElement") or not self.is_another_asset(
+                    attribute
+                ):
                     new_attribute = self.add_element(attribute)
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
                 new_attribute = []
@@ -489,9 +508,6 @@ class Usecase:
     def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
         """Is IFC entity from inverse attribute is another asset to append that should be skipped."""
         if element == self.settings["element"]:
-            return False
-        elif element.is_a("IfcFeatureElement"):
-            # Feature elements match the target class but aren't considered "assets"
             return False
         elif element.is_a("IfcRoot") and self.by_guid(element.GlobalId) is not None:
             return False
@@ -643,6 +659,17 @@ class Usecase:
             if existing_material is not None:
                 reuse_identities[element_identity] = existing_material
                 return existing_material
+
+        elif ifc_class in MATERIAL_SETS:
+            name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
+            material_set_name = getattr(element, name_attr)
+            if material_set_name is not None:
+                existing_material_set = next(
+                    (e for e in ifc_file.by_type(ifc_class) if getattr(e, name_attr) == material_set_name), None
+                )
+                if existing_material_set is not None:
+                    reuse_identities[element_identity] = existing_material_set
+                    return existing_material_set
 
         elif element.is_a("IfcPresentationStyle"):
             style_name = element.Name

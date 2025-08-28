@@ -131,6 +131,7 @@ class CostSchedulesData:
             cls._load_cost_values(cost_item, data)
             cls._load_nesting_index(cost_item, data)
             cls._load_assigned_cost_rate(cost_item, data)
+            cls._load_parent_cost_schedule(cost_item, data)
             results[cost_item.id()] = data
         return results
 
@@ -181,6 +182,10 @@ class CostSchedulesData:
     @classmethod
     def _load_assigned_cost_rate(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
         data["AssignedCostRate"] = tool.Cost.get_assigned_rate_cost_item(cost_item)
+
+    @classmethod
+    def _load_parent_cost_schedule(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
+        data["ParentCostSchedule"] = tool.Cost.get_cost_schedule(cost_item)
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
@@ -369,13 +374,13 @@ class CostItemQuantitiesData:
         cls.is_loaded = True
 
     @classmethod
-    def product_quantity_names(cls):
-        elements = tool.Spatial.get_selected_products()
+    def product_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        elements = list(tool.Spatial.get_selected_products())
         names = ifcopenshell.util.cost.get_product_quantity_names(elements)
         return [(n, n, "") for n in names]
 
     @classmethod
-    def process_quantity_names(cls):
+    def process_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         props = tool.Sequence.get_work_schedule_props()
         active_task_index = props.active_task_index
         tprops = tool.Sequence.get_task_tree_props()
@@ -391,14 +396,11 @@ class CostItemQuantitiesData:
         return [(n, n, "") for n in names if n != "id"]
 
     @classmethod
-    def resource_quantity_names(cls):
-        active_resource_index = bpy.context.scene.BIMResourceProperties.active_resource_index
-        total_resources = len(bpy.context.scene.BIMResourceTreeProperties.resources)
-        if not total_resources or active_resource_index >= total_resources:
+    def resource_quantity_names(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        active_resource = tool.Resource.get_resource_props().active_resource
+        if not active_resource:
             return []
-        ifc_definition_id = bpy.context.scene.BIMResourceTreeProperties.resources[
-            active_resource_index
-        ].ifc_definition_id
+        ifc_definition_id = active_resource.ifc_definition_id
         element = tool.Ifc.get().by_id(ifc_definition_id)
         names = set()
         qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True)

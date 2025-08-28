@@ -219,12 +219,12 @@ def refresh_ui_data():
         except AttributeError:
             pass
 
-    if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
-        tool.Ifc.get().clear_cache()
+    if isinstance(ifc_file := tool.Ifc.get(), ifcopenshell.sqlite):
+        ifc_file.clear_cache()
 
     props = tool.Drawing.get_document_props()
     props.should_draw_decorations = props.should_draw_decorations
-    if bpy.context.scene.WebProperties.is_connected:
+    if tool.Web.get_web_props().is_connected:
         tool.Web.send_webui_data()
 
 
@@ -417,3 +417,5 @@ def load_post(scene):
         scene.tool_settings.use_snap = True
         # Match default Bonsai snaps
         scene.tool_settings.snap_elements_base = {"EDGE", "EDGE_PERPENDICULAR", "VERTEX", "EDGE_MIDPOINT", "FACE"}
+
+    tool.Blender.sync_old_preferences()

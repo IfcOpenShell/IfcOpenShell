@@ -88,7 +88,8 @@ class DumbSlabGenerator:
             return self.derive_from_cursor()
 
     def derive_from_polyline(self):
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         self.location = Vector((polyline_points[0].x, polyline_points[0].y, self.container_obj.location.z))
         self.polyline = [tuple(Vector((p.x, p.y, 0.0)) - self.location) for p in polyline_points]

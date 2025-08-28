@@ -29,6 +29,7 @@ from bonsai.bim.module.sequence.data import (
     SequenceData,
     TaskICOMData,
     AnimationColorSchemeData,
+    StatusData,
 )
 from typing import Any, Optional, TYPE_CHECKING
 
@@ -59,16 +60,25 @@ class BIM_PT_status(Panel):
             row.operator("bim.enable_status_filters", icon="GREASEPENCIL")
             return
 
+        if not StatusData.is_loaded:
+            StatusData.load()
+
         row = self.layout.row(align=True)
-        row.label(text="Statuses found in the project:")
+        row.label(text="Elements Statuses:")
         row.operator("bim.activate_status_filters", icon="FILE_REFRESH", text="")
         row.operator("bim.disable_status_filters", icon="CANCEL", text="")
 
+        box = self.layout.box()
         for status in self.props.statuses:
-            row = self.layout.row(align=True)
+            row = box.row(align=True)
             row.label(text=status.name)
+            if status.name in StatusData.data["statuses_with_elements"]:
+                row.label(text="", icon="ASSET_MANAGER")
             row.prop(status, "is_visible", text="", emboss=False, icon="HIDE_OFF" if status.is_visible else "HIDE_ON")
-            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").name = status.name
+            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").status = status.name
+            row.operator("bim.assign_status", icon="BRUSH_DATA", text="").status = status.name
+
+        # TODO: also add a prop to add custom userdefined status.
 
 
 class BIM_PT_work_plans(Panel):
@@ -174,6 +184,7 @@ class BIM_PT_work_schedules(Panel):
             else:
                 row.label(text="No Work Schedules found.", icon="TEXT")
             row.operator("bim.add_work_schedule", text="", icon="ADD")
+            row.operator("bim.import_work_schedule_csv", text="", icon="IMPORT")
 
         for work_schedule_id, work_schedule in SequenceData.data["work_schedules"].items():
             self.draw_work_schedule_ui(work_schedule_id, work_schedule)
@@ -190,7 +201,8 @@ class BIM_PT_work_schedules(Panel):
                     icon="LINENUMBERS_ON",
                 )
                 if self.props.editing_type == "WORK_SCHEDULE":
-                    row.operator("bim.edit_work_schedule", text="Apply", icon="CHECKMARK")
+                    row.operator("bim.edit_work_schedule", text="", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_work_schedule", text="", icon="CANCEL")
                 elif self.props.editing_type == "TASKS":
                     grid = self.layout.grid_flow(columns=2, even_columns=True)
                     col = grid.column()
@@ -237,13 +249,15 @@ class BIM_PT_work_schedules(Panel):
                 )
                 col2 = grid.column()
                 row = col2.row(align=True)
-                row.operator("bim.enable_editing_work_schedule_tasks", text="Tasks", icon="ACTION").work_schedule = (
+                row.alignment = "RIGHT"
+                row.operator("bim.enable_editing_work_schedule_tasks", text="", icon="ACTION").work_schedule = (
                     work_schedule_id
                 )
-                row.operator(
-                    "bim.enable_editing_work_schedule", text="Attributes", icon="GREASEPENCIL"
-                ).work_schedule = work_schedule_id
-                row.operator("bim.remove_work_schedule", text="Delete", icon="X").work_schedule = work_schedule_id
+                row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL").work_schedule = (
+                    work_schedule_id
+                )
+                row.operator("bim.copy_work_schedule", text="", icon="DUPLICATE").work_schedule = work_schedule_id
+                row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
             if self.props.active_work_schedule_id == work_schedule_id:
                 if self.props.editing_type == "WORK_SCHEDULE":
                     self.draw_editable_work_schedule_ui()
@@ -571,7 +585,12 @@ class BIM_PT_animation_tools(Panel):
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         if AnimationColorSchemeData.data["saved_color_schemes"]:
-            row.prop(self.animation_props, "saved_color_schemes", text="Color Scheme", icon="SEQUENCE_COLOR_04")
+            row.prop(
+                self.animation_props,
+                "saved_color_schemes",
+                text="Color Scheme",
+                icon=tool.Blender.SEQUENCE_COLOR_SCHEME_ICON,
+            )
         else:
             row.label(text="No Color Scheme Saved", icon="INFO")
         op = row.operator("bim.visualise_work_schedule_date_range", text="Create Animation", icon="OUTLINER_OB_CAMERA")
@@ -611,7 +630,9 @@ class BIM_PT_animation_Color_Scheme(Panel):
         self.animation_props = tool.Sequence.get_animation_props()
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        row.operator("bim.load_default_animation_color_scheme", text="Load default", icon="SEQUENCE_COLOR_04")
+        row.operator(
+            "bim.load_default_animation_color_scheme", text="Load default", icon=tool.Blender.SEQUENCE_COLOR_SCHEME_ICON
+        )
         if AnimationColorSchemeData.data["saved_color_schemes"]:
             row.operator("bim.load_animation_color_scheme", text="Load Scheme", icon="IMPORT")
         row.operator("bim.save_animation_color_scheme", text="Save Scheme", icon="EXPORT")
@@ -1010,11 +1031,13 @@ class BIM_PT_work_calendars(Panel):
         file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
+    layout: bpy.types.UILayout
+
     def draw(self, context):
         if not SequenceData.is_loaded:
             SequenceData.load()
 
-        self.props = context.scene.BIMWorkCalendarProperties
+        self.props = tool.Sequence.get_work_calendar_props()
         row = self.layout.row()
         if SequenceData.data["has_work_calendars"]:
             row.label(

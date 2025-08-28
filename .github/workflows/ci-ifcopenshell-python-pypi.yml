@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py39, py310, py311, py312]
+        pyver: [py39, py310, py311, py312, py313]
         config:
           - {
             name: "Windows 64bit",
@@ -61,7 +61,7 @@ jobs:
           cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
-        uses: ortega2247/pypi-upload-action@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}

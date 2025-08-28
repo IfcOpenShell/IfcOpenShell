@@ -28,7 +28,7 @@ jobs:
           cd src/ifc5d &&
           make dist IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
-        uses: ortega2247/pypi-upload-action@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}

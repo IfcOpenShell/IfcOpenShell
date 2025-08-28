@@ -122,7 +122,7 @@ struct gradient_fn_evaluator : public fn_evaluator {
         // Put curvature back into the solution matrix
         // curvature for vertical is in column 0, need it to be in column 1
         // so it doesn't add to curvature for horizontal
-        std::swap(vertical_curvature(3, 0), vertical_curvature(3, 1));
+        std::swap(vertical_curvature(0), vertical_curvature(1));
         m.row(3) = horizontal_curvature + vertical_curvature;
 
         return m;

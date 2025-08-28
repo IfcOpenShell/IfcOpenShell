@@ -9,19 +9,11 @@ This chapter covers the essential aspects of working with Industry Foundation Cl
 
       .. container:: card
 
-         :doc:`understanding_ifc`
+         :doc:`understanding_ifc/index`
             An introduction to IFC standards, schemas, and concepts.
             This section explains the structure of IFC data, key spatial objects, and the role of organizations
             like buildingSMART in maintaining IFC standards. It also covers IfcOpenShell and the broader ecosystem
             of open standards in the AEC industry.
-
-
-      .. container:: card
-
-         :doc:`importing_viewing_models`
-            A guide on how to import existing IFC models into Bonsai and navigate them effectively.
-            This section includes techniques for inspecting and querying IFC data within the Bonsai environment.
-
 
       .. container:: card
 
@@ -55,6 +47,10 @@ This chapter covers the essential aspects of working with Industry Foundation Cl
       :hidden:
       :maxdepth: 2
 
-      georeferencing
+      starting_new_project
+      understanding_ifc/index
+      basic_modeling/index
+      advanced_modeling/index
       git_support
       other_addons
+

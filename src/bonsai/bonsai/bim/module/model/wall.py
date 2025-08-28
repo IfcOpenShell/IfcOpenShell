@@ -163,7 +163,8 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
         # Point related to the mouse
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         angle = atan2(direcion.y, direcion.x)
@@ -214,13 +215,14 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
                 if result:
                     self.report({"WARNING"}, result)
 
-            snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+            polyline_props = tool.Model.get_polyline_props()
+            snap_prop = polyline_props.snap_mouse_point[0]
             snap_obj = bpy.data.objects.get(snap_prop.snap_object)
             if snap_obj and tool.Ifc.get_entity(snap_obj).is_a("IfcWall"):
                 tool.Blender.set_active_object(snap_obj)
                 ExtendWallsToWall._execute(self, context)
             else:
-                point = context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points[1]
+                point = polyline_props.insertion_polyline[0].polyline_points[1]
                 core.extend_walls(
                     tool.Ifc,
                     tool.Blender,
@@ -439,6 +441,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
         x_angle = 0 if tool.Cad.is_x(self.x_angle, pi, tolerance=0.001) else self.x_angle
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
         for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
@@ -464,16 +467,15 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     existing_x_angle = obj.rotation_euler.x
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
-                    # Reset the transformation and returns to the original points with 0 degrees
-                    extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * abs(cos(existing_x_angle)))
-                        for p in extrusion.SweptArea.OuterCurve.Points.CoordList
-                    ]
 
-                    # Apply the transformation for the new x_angle
-                    extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * abs(1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
-                    ]
+                    coord_list = builder.get_polyline_coords(extrusion.SweptArea.OuterCurve)
+                    coord_list = [
+                        (p[0], p[1] * abs(cos(existing_x_angle))) for p in coord_list
+                    ]  # Reset the transformation and returns to the original points with 0 degrees
+                    coord_list = [
+                        (p[0], p[1] * abs(1 / cos(x_angle))) for p in coord_list
+                    ]  # Apply the transformation for the new x_angle
+                    builder.set_polyline_coords(extrusion.SweptArea.OuterCurve, coord_list)
 
                     # The extrusion direction calculated previously default to the positive direction
                     # Here we set the extrusion direction to negative if that's the case
@@ -867,7 +869,8 @@ class DumbWallGenerator:
             return self.derive_from_cursor()
 
     def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         is_polyline_closed = False
         if len(polyline_points) > 3:
@@ -892,7 +895,8 @@ class DumbWallGenerator:
         elevation = self.container_obj.location.z
         representation = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
         extrusion = tool.Model.get_extrusion(representation)
-        polyline_points = extrusion.SweptArea.OuterCurve.Points.CoordList
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        polyline_points = builder.get_polyline_coords(extrusion.SweptArea.OuterCurve)
         polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
         polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
         if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):

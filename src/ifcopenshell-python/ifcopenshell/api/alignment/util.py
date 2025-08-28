@@ -29,7 +29,7 @@ import ifcopenshell.template
 from ifcopenshell import entity_instance
 from ifcopenshell import ifcopenshell_wrapper
 import ifcopenshell.util
-import ifcopenshell.util.stationing
+import ifcopenshell.util.alignment
 
 
 def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np.ndarray:
@@ -137,7 +137,7 @@ def print_alignment_deep(alignment, indent=0):
 
     for agg in alignment.IsDecomposedBy:
         for child in agg.RelatedObjects:
-            print_alignmen_deep(child, indent + 2)
+            print_alignment_deep(child, indent + 2)
 
 
 def print_composite_curve(curve):
@@ -162,3 +162,12 @@ def print_composite_curve_deep(curve):
         print(" " * 4, segment.Placement)
         print(" " * 4, segment.Placement.Location)
         print(" " * 4, segment.Placement.RefDirection)
+
+
+def print_positioned_products(file: ifcopenshell.file):
+    referents = file.by_type("IfcReferent")
+    for referent in referents:
+        print(referent)
+        for rel in referent.Positions:
+            for product in rel.RelatedProducts:
+                print(" " * 2, product)

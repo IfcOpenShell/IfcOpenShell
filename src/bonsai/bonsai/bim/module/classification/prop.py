@@ -19,7 +19,7 @@
 import bpy
 import bonsai.tool as tool
 from bonsai.bim.prop import Attribute
-from bonsai.bim.module.classification.data import ClassificationsData, ClassificationReferencesData
+from bonsai.bim.module.classification.data import ClassificationsData, ObjectClassificationsData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -43,9 +43,9 @@ def get_available_classifications(
 
 
 def get_classifications(self, context):
-    if not ClassificationReferencesData.is_loaded:
-        ClassificationReferencesData.load()
-    return ClassificationReferencesData.data["classifications"]
+    if not ObjectClassificationsData.is_loaded:
+        ObjectClassificationsData.load()
+    return ObjectClassificationsData.data["classifications"]
 
 
 def get_classification_source(

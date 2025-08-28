@@ -4,8 +4,9 @@ import ifcopenshell.util.element
 import ifcopenshell.geom
 import multiprocessing
 from typing import NamedTuple
+import ifcopenshell.ifcopenshell_wrapper as W
 
-# python standalone_drawer.py model.ifc guid_of_drawing guids,of,bad,elements output.svg
+# W.turn_on_detailed_logging()
 
 
 class LineworkContexts(NamedTuple):
@@ -15,6 +16,13 @@ class LineworkContexts(NamedTuple):
 
 class Drawer:
     def execute(self):
+        if len(sys.argv) < 4:
+            print(f"Expected 3 or 4 arguments, got {len(sys.argv) - 1}. Example usage:")
+            print(
+                "python standalone_drawer.py drawing.ifc drawing_guid [drawing_element_guid1,drawing_element_guid2,drawing_element_guid3] output.svg"
+            )
+            exit(1)
+
         ifc: ifcopenshell.file
         ifc = ifcopenshell.open(sys.argv[1])
         self.camera_element = ifc.by_guid(sys.argv[2])
@@ -22,7 +30,10 @@ class Drawer:
         # Get all representation contexts to see what we're dealing with.
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         contexts = self.get_linework_contexts(ifc, target_view)
-        drawing_elements = set([ifc.by_guid(g) for g in sys.argv[3].split(",")])
+        if len(sys.argv) == 6:
+            drawing_elements = set([ifc.by_guid(g) for g in sys.argv[3].split(",")])
+        else:
+            drawing_elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcFeatureElement"))
 
         self.setup_serialiser(ifc, target_view)
 
@@ -47,7 +58,7 @@ class Drawer:
         results = self.svg_buffer.get_value()
         print("results", results)
 
-        with open(sys.argv[4], "w") as svg:
+        with open(sys.argv[-1], "w") as svg:
             svg.write(results)
 
     def get_linework_contexts(self, ifc, target_view) -> LineworkContexts:

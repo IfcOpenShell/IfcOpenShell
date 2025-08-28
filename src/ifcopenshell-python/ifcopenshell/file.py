@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import re
 import numbers
+import time
 import zipfile
 import functools
 import ifcopenshell
@@ -242,8 +243,9 @@ class Transaction:
                 pass
 
 
-file_dict: dict[int, weakref.ReferenceType[file]] = {}
-"""Mapping of internal IfcFile pointer addressed to existing ``ifcopenshell.file``.
+file_dict: dict[int, tuple[weakref.ReferenceType[file], int]] = {}
+"""Mapping of internal IfcFile pointer address to existing ``ifcopenshell.file``
+and the timestamp when it was created.
 
 Needed only to quickly access related from ``entity_instance`` it's ``file``.
 """
@@ -354,7 +356,21 @@ class file:
         self.future = []
         self.transaction: Optional[Transaction] = None
 
-        file_dict[self.wrapped_data.file_pointer()] = weakref.ref(self)
+        # we store a tuple of C++ file pointer address and creation time stamp so that
+        # when memory addresses get recycled we do not run into collisions when the
+        # address is used as a cache key.
+        file_dict[self.wrapped_data.file_pointer()] = (weakref.ref(self), time.monotonic_ns())
+
+    @property
+    def identifier(self) -> tuple[int, int]:
+        """Pair of C++ file pointer address and creation time stamp to uniquely identify a file
+        over the life time of ifcopenshell module that should be mostly safe except in pathological
+        cases
+
+        Returns:
+            tuple[int, int]: Pair of C++ file pointer address and creation time stamp
+        """
+        return (self.wrapped_data.file_pointer(), file_dict[self.wrapped_data.file_pointer()][1])
 
     def __del__(self) -> None:
         # Avoid infinite recursion if file is failed to initialize
@@ -772,7 +788,7 @@ class file:
 
     @staticmethod
     def from_pointer(address: int) -> file:
-        assert (f := file_dict[address]()) is not None
+        assert (f := file_dict[address][0]()) is not None
         return f
 
     def to_string(self) -> str:

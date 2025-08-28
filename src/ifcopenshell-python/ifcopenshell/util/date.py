@@ -39,35 +39,39 @@ def timedelta2duration(timedelta):
 
 
 def ifc2datetime(element: Union[str, int, ifcopenshell.entity_instance]):
-    if isinstance(element, str) and "P" in element[0:2]:  # IfcDuration
-        duration = parse_duration(element)
-        if isinstance(duration, datetime.timedelta):
-            return timedelta2duration(duration)
-        return duration
-    elif isinstance(element, str) and len(element) > 3 and element[2] == ":":  # IfcTime
-        return datetime.time.fromisoformat(element)
-    elif isinstance(element, str) and ":" in element:  # IfcDateTime
-        return datetime.datetime.fromisoformat(element)
-    elif isinstance(element, str):  # IfcDate
-        return datetime.date.fromisoformat(element)
+    if isinstance(element, str):
+        if "P" in element[0:2]:  # IfcDuration
+            duration = parse_duration(element)
+            if isinstance(duration, datetime.timedelta):
+                return timedelta2duration(duration)
+            return duration
+        elif len(element) > 3 and element[2] == ":":  # IfcTime
+            return datetime.time.fromisoformat(element)
+        elif ":" in element:  # IfcDateTime
+            return datetime.datetime.fromisoformat(element)
+        else:  # IfcDate
+            return datetime.date.fromisoformat(element)
+
     elif isinstance(element, int):  # IfcTimeStamp
         return datetime.datetime.fromtimestamp(element)
-    elif element.is_a("IfcDateAndTime"):
-        return datetime.datetime(
-            element.DateComponent.YearComponent,
-            element.DateComponent.MonthComponent,
-            element.DateComponent.DayComponent,
-            element.TimeComponent.HourComponent,
-            element.TimeComponent.MinuteComponent,
-            int(element.TimeComponent.SecondComponent),
-            # TODO: implement TimeComponent timezone
-        )
-    elif element.is_a("IfcCalendarDate"):
-        return datetime.date(
-            element.YearComponent,
-            element.MonthComponent,
-            element.DayComponent,
-        )
+
+    elif isinstance(element, ifcopenshell.entity_instance):
+        if element.is_a("IfcDateAndTime"):
+            return datetime.datetime(
+                element.DateComponent.YearComponent,
+                element.DateComponent.MonthComponent,
+                element.DateComponent.DayComponent,
+                element.TimeComponent.HourComponent,
+                element.TimeComponent.MinuteComponent,
+                int(element.TimeComponent.SecondComponent),
+                # TODO: implement TimeComponent timezone
+            )
+        elif element.is_a("IfcCalendarDate"):
+            return datetime.date(
+                element.YearComponent,
+                element.MonthComponent,
+                element.DayComponent,
+            )
 
 
 def readable_ifc_duration(duration: str) -> str:

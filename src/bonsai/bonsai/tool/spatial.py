@@ -561,8 +561,8 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def get_active_container(cls) -> Union[ifcopenshell.entity_instance, None]:
         props = cls.get_spatial_props()
-        if props.active_container_index < len(props.containers):
-            container = tool.Ifc.get().by_id(props.containers[props.active_container_index].ifc_definition_id)
+        if active_container := props.active_container:
+            container = tool.Ifc.get().by_id(active_container.ifc_definition_id)
             return container
 
     @classmethod

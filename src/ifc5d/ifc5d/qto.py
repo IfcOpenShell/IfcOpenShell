@@ -23,6 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
@@ -358,16 +359,17 @@ class IfcOpenShell(QtoCalculator):
                 y = item.SweptArea.YDim
                 z = item.Depth
                 return max([x, y, z])
-            elif item.SweptArea.is_a("IfcCircleProfileDef"):
-                return item.Depth
             elif item.SweptArea.is_a("IfcParameterizedProfileDef"):
                 return item.Depth
+            settings = ifcopenshell.geom.settings()
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             try:
                 area_shape = ifcopenshell.geom.create_shape(settings, item.SweptArea)
-            except:
+            except RuntimeError:
                 return
-            x = ifcopenshell.util.shape.get_x(area_shape.geometry) / cls.unit_scale
-            y = ifcopenshell.util.shape.get_y(area_shape.geometry) / cls.unit_scale
+            assert isinstance(area_shape, W.Triangulation)
+            x = ifcopenshell.util.shape.get_x(area_shape) / cls.unit_scale
+            y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
             z = item.Depth
             return max([x, y, z])
 

@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py39, py310, py311, py312]
+        pyver: [py39, py310, py311, py312, py313]
         config:
           - {
             name: "Windows 64bit",

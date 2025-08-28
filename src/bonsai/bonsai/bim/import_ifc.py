@@ -231,7 +231,8 @@ class IfcImporter:
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
-        classes_to_wireframe_str = tool.Drawing.get_document_props().classes_to_wireframe
+        prefs = tool.Blender.get_addon_preferences()
+        classes_to_wireframe_str = prefs.doc.classes_to_wireframe
         self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:
@@ -883,7 +884,8 @@ class IfcImporter:
         for material in self.material_creator.materials.values():
             bpy.data.materials.remove(material)
 
-    def add_project_to_scene(self):
+    def add_project_to_scene(self) -> None:
+        assert bpy.context.scene
         try:
             bpy.context.scene.collection.children.link(self.project["blender"])
         except:
@@ -908,6 +910,7 @@ class IfcImporter:
         bpy.ops.mesh.normals_make_consistent()
         bpy.ops.object.editmode_toggle()
 
+        assert bpy.context.view_layer
         bpy.context.view_layer.objects.active = last_obj
         IfcStore.edited_objs.clear()
 
@@ -926,6 +929,7 @@ class IfcImporter:
         if not (assignment := self.file.by_type("IfcProject")[0].UnitsInContext):
             return  # Geometry is optional in IFC
         props = tool.Blender.get_bim_props()
+        assert bpy.context.scene
         for unit in assignment.Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
@@ -1064,11 +1068,11 @@ class IfcImporter:
     def create_mesh(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        shape: Union[W.Triangulation, W.TriangulationElement],
         cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
     ) -> Union[bpy.types.Mesh, None]:
         try:
-            if isinstance(shape, ifcopenshell.geom.ShapeElementType):
+            if isinstance(shape, W.TriangulationElement):
                 # shape is ShapeElementType
                 geometry = shape.geometry
             else:
@@ -1176,8 +1180,12 @@ class IfcImporter:
 
 
 class IfcImportSettings:
+    """
+    Initialize only using `IfcImportSettings.factory()`.
+    """
+
     input_file: Union[str, None] = None
-    logger: Union[logging.Logger, None] = None
+    logger: logging.Logger
 
     def __init__(self):
         self.diff_file = None
@@ -1214,6 +1222,7 @@ class IfcImportSettings:
         context=None, input_file: Optional[str] = None, logger: Optional[logging.Logger] = None
     ) -> IfcImportSettings:
         scene_diff = tool.Blender.get_diff_props()
+        prefs = tool.Blender.get_addon_preferences()
         props = tool.Project.get_project_props()
         settings = IfcImportSettings()
         settings.input_file = input_file
@@ -1226,7 +1235,7 @@ class IfcImportSettings:
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_load_geometry = props.should_load_geometry
         settings.should_clean_mesh = props.should_clean_mesh
-        settings.should_cache = props.should_cache
+        settings.should_cache = prefs.should_always_cache or props.should_cache
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.void_limit = props.void_limit

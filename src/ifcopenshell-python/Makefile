@@ -27,6 +27,7 @@ SED:=sed -i '' -e
 endif
 endif
 
+# TODO: we should simplify this at some point...
 ifeq ($(PYVERSION), py39)
 PYNUMBER:=39
 endif
@@ -38,6 +39,12 @@ PYNUMBER:=311
 endif
 ifeq ($(PYVERSION), py312)
 PYNUMBER:=312
+endif
+ifeq ($(PYVERSION), py313)
+PYNUMBER:=313
+endif
+ifndef PYNUMBER
+$(error Unsupported PYVERSION '$(PYVERSION)')
 endif
 
 # We actually do support glibc 2.28-2.30 (see #5636)
@@ -55,11 +62,13 @@ ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
 
-IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.8.3-d7cf803-$(PLATFORM).zip
-IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.3-d7cf803-$(PLATFORM).zip
+BINARY_VERSION:=0.8.4
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-358395c-$(PLATFORM).zip
+IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-358395c-$(PLATFORM).zip
 
 .PHONY: build-urls
 build-urls:
+	@echo "You can provide one of the 4 platforms (linux64, macos64, macosm164, win64) using 'PLATFORM=xxx'."
 	@echo ${IOS_URL}
 	@echo ${IFCCONVERT_URL}
 

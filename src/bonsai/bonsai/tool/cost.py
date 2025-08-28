@@ -846,10 +846,18 @@ class Cost(bonsai.core.tool.Cost):
             return "Could not open file location"
 
     @classmethod
-    def export_cost_schedules_to_pdf(cls, filepath: str, cost_schedule: ifcopenshell.entity_instance, options: dict):
+    def export_cost_schedules_to_pdf(
+        cls, filepath: str, cost_schedule: ifcopenshell.entity_instance, options: dict, force_schedule_type: str = ""
+    ):
         from ifc5d.ifc5Dspreadsheet import Ifc5DPdfWriter
 
-        writer = Ifc5DPdfWriter(file=tool.Ifc.get(), output=filepath, cost_schedule=cost_schedule, options=options)
+        writer = Ifc5DPdfWriter(
+            file=tool.Ifc.get(),
+            output=filepath,
+            cost_schedule=cost_schedule,
+            options=options,
+            force_schedule_type=force_schedule_type,
+        )
         writer.write()
 
     @classmethod
@@ -1077,8 +1085,8 @@ class Cost(bonsai.core.tool.Cost):
             return {"id": unit.id(), "name": unit.Currency}
 
     @classmethod
-    def generate_cost_schedule_browser(cls, cost_chedule) -> None:
-        if not bpy.context.scene.WebProperties.is_connected:
+    def generate_cost_schedule_browser(cls, cost_chedule: ifcopenshell.entity_instance) -> None:
+        if not tool.Web.get_web_props().is_connected:
             bpy.ops.bim.connect_websocket_server(page="costing")
         tool.Web.load_cost_schedule_web_ui(cost_chedule)
 
@@ -1106,3 +1114,9 @@ class Cost(bonsai.core.tool.Cost):
         if results["quantity_type"] == "IfcQuantityCount":
             results["unit_symbol"] = "U"
         return results
+
+    @classmethod
+    def copy_cost_schedule(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
+        ifc_file = tool.Ifc.get()
+        new_schedule = ifcopenshell.api.cost.copy_cost_schedule(ifc_file, cost_schedule=cost_schedule)
+        new_schedule.Name = (cost_schedule.Name or "Unnamed") + " Copy"

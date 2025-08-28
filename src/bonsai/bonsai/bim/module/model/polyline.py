@@ -92,7 +92,8 @@ def get_wall_preview_data(context, relating_type):
 
     # Verts
     polyline_vertices = []
-    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_props = tool.Model.get_polyline_props()
+    polyline_data = polyline_props.insertion_polyline
     polyline_points = polyline_data[0].polyline_points if polyline_data else []
     if len(polyline_points) < 2:
         data = []
@@ -212,7 +213,8 @@ def get_slab_preview_data(context, relating_type):
     data["verts"] = []
     # Verts
     polyline_vertices = []
-    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_props = tool.Model.get_polyline_props()
+    polyline_data = polyline_props.insertion_polyline
     polyline_points = polyline_data[0].polyline_points if polyline_data else []
     if len(polyline_points) < 3:
         data = []
@@ -340,7 +342,8 @@ def get_vertical_profile_preview_data(
     tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
 
     # Calculate rotation, mouse position, angle and cardinal point
-    snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+    polyline_props = tool.Model.get_polyline_props()
+    snap_prop = polyline_props.snap_mouse_point[0]
     mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
     data = {}
 
@@ -371,7 +374,9 @@ def get_vertical_profile_preview_data(
     return data
 
 
-def get_horizontal_profile_preview_data(context, relating_type):
+def get_horizontal_profile_preview_data(
+    context: bpy.types.Context, relating_type: ifcopenshell.entity_instance
+) -> dict[str, Any]:
     material = ifcopenshell.util.element.get_material(relating_type)
     try:
         profile_curve = material.MaterialProfiles[0].Profile
@@ -382,10 +387,11 @@ def get_horizontal_profile_preview_data(context, relating_type):
     cardinal_point = model_props.cardinal_point
 
     polyline_verts = []
-    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_props = tool.Model.get_polyline_props()
+    polyline_data = polyline_props.insertion_polyline
     polyline_points = polyline_data[0].polyline_points if polyline_data else []
     if len(polyline_points) < 2:
-        return
+        return {}
     for point in polyline_points:
         polyline_verts.append(Vector((point.x, point.y, point.z)))
     polyline_edges = [(i, i + 1) for i in range(len(polyline_verts) - 1)]
@@ -397,7 +403,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
 
     verts = shape.verts
     if not verts:
-        raise RuntimeError(f"Profile shape has no vertices, it probably is invalid: '{profile}'.")
+        raise RuntimeError(f"Profile shape has no vertices, it probably is invalid: '{profile_curve}'.")
 
     edges = shape.edges
 
@@ -433,7 +439,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
         case "9":
             grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
 
-    data = {}
+    data: dict[str, Any] = {}
     data["verts"] = []
     data["edges"] = []
     data["tris"] = []
@@ -528,14 +534,28 @@ def get_generic_product_preview_data(context, relating_type):
         rl = float(model_props.rl2)
     else:
         rl = 0
-    snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+    polyline_props = tool.Model.get_polyline_props()
+    snap_prop = polyline_props.snap_mouse_point[0]
     default_container_elevation = tool.Root.get_default_container_elevation()
     mouse_point = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
     snap_obj = bpy.data.objects.get(snap_prop.snap_object)
     snap_element = tool.Ifc.get_entity(snap_obj)
     rot_mat = Quaternion()
-    if snap_element and snap_element.is_a("IfcWall"):
-        rot_mat = snap_obj.matrix_world.to_quaternion()
+    if relating_type.is_a() in ["IfcDoorType", "IfcWindowType"] and snap_element and snap_element.is_a("IfcWall"):
+        layers = tool.Model.get_material_layer_parameters(snap_element)
+        axes = tool.Model.get_wall_axis(snap_obj, layers=layers)
+        axis_base = axes["base"]
+        axis_side = axes["side"]
+        point_on_base_axis = tool.Cad.point_on_edge(mouse_point, axis_base)
+        point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
+        if (point_on_base_axis - mouse_point).length_squared <= (point_on_side_axis - mouse_point).length_squared:
+            # mouse is snapped to the base axis, the preview looks exactly like the placed door / window
+            rot_mat = snap_obj.matrix_world.to_quaternion()
+        else:
+            # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
+            rot_mat = snap_obj.matrix_world.to_quaternion() @ Quaternion(Vector((0, 0, 1)), radians(180))
+
+        mouse_point.z = snap_obj.matrix_world.translation.z
 
     obj_type = tool.Ifc.get_object(relating_type)
     if obj_type.data:
@@ -644,7 +664,8 @@ class PolylineOperator:
 
     def choose_plane(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = True) -> None:
         def get_plane_origin():
-            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+            polyline_props = tool.Model.get_polyline_props()
+            polyline_data = polyline_props.insertion_polyline
             polyline_points = polyline_data[0].polyline_points if polyline_data else []
             if len(polyline_points) > 0:
                 reference_point = polyline_points[-1]
@@ -822,7 +843,8 @@ class PolylineOperator:
 
         if event.value == "PRESS" and event.type == "C":
             # Get the first point coordinates to close the polyline
-            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+            polyline_props = tool.Model.get_polyline_props()
+            polyline_data = polyline_props.insertion_polyline
             polyline_points = polyline_data[0].polyline_points if polyline_data else []
             if len(polyline_points) > 2:
                 first_point = polyline_points[0]
@@ -830,7 +852,7 @@ class PolylineOperator:
                 if not (
                     first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z
                 ):
-                    mouse_point = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+                    mouse_point = polyline_props.snap_mouse_point[0]
                     mouse_point.x = first_point.x
                     mouse_point.y = first_point.y
                     if self.input_ui.get_number_value("Z") is not None:
@@ -953,7 +975,7 @@ class PolylineOperator:
             data = get_generic_product_preview_data(context, relating_type)
 
         # Update properties so it can be used by the decorator
-        props = context.scene.BIMProductPreviewProperties
+        props = tool.Model.get_product_preview_props()
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()

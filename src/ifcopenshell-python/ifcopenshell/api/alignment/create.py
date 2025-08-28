@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
-import ifcopenshell.util.stationing
+import ifcopenshell.util.alignment
 
 from ifcopenshell import entity_instance
 
@@ -33,24 +33,31 @@ def create(
     name: str,
     include_vertical: bool = False,
     include_cant: bool = False,
+    include_geometry: bool = True,
     start_station: float = 0.0,
 ) -> entity_instance:
     """
-    Creates a new IfcAlignment with an IfcRelNests nesting an IfcReferent (for stationing) and IfcAlignmentHorizontal. The nest relationship can optionally
-    include IfcAlignmentVertical and IfcAlignmentCant. Geometric representations for the alignment layouts (IfcCompositeCurve,
-    IfcGradientCurve, IfcSegmentedReferenceCurve) are created as well.
+    Creates a new alignment with a horizontal layout. Optionally, vertical and cant layouts can be created as well.
+    The geometric representations are created as well, unless they are explicitly excluded.
+    Zero length segments are added at the end of the layouts and geometric representations.
+    The alignment is automatically aggreated to the project if it exists.
 
-    Zero length segments are added at the end.
+    Use get_horizontal_layout(alignment), get_vertical_layout(alignment) and get_cant_layout(alignment) to get the
+     corresponding IfcAlignmentHorizontal, IfcAlignmentVertical, and IfcAlignmentCant layout entities.
 
-    The IfcAlignment is aggreated to IfcProject
+    If the alignment has Viennese Bend transition curves, create the segments in the cant layout before the horizontal layout using create_layout_segment().
+    The horizontal geometry in the Viennese Bend transition curves depends on the Viennese Bend cant parameters. create_layout_segment() automatically creates
+    the geometric representation from the semantic definition. The horizontal segment geometric representation will fail if the cant segment is not defined.
 
-    Use get_horizontal_layout(alignment) to get the IfcAlignmentHorizontal layout.
+    If geometric representations are created, the alignment stationing referent is also created using the start_station value. IfcReferent.ObjectPlacement
+    is required for linear positiion elements and IfcLinearPlacement is defined relative to alignment curve geometry.
 
     :param file:
     :param name: name assigned to IfcAlignment.Name
-    :param include_vertical: If True, IfcAlignmentVertical and IfcGradientCurve are created
-    :param include_cant: If True, IfcAlignmentCant and IfcSegmentedReferenceCurve are created
-    :param start_station: station value at the start of the alignment
+    :param include_vertical: If True, IfcAlignmentVertical is created. IfcGradientCurve is created if include_geometry is True
+    :param include_cant: If True, IfcAlignmentCant is created. IfcSegmentedReferenceCurve is created if include_geometry is True
+    :param include_geometry: If True, the geometric representations are added
+    :param start_station: station value at the start of the alignment.
     :return: Returns an IfcAlignment
     """
     alignment = file.createIfcAlignment(
@@ -70,15 +77,18 @@ def create(
 
     ifcopenshell.api.nest.assign_object(file, related_objects=alignment_layouts, relating_object=alignment)
 
-    _create_geometric_representation(file, alignment)
+    if include_geometry:
+        _create_geometric_representation(file, alignment)
 
     for layout in alignment_layouts:
         _add_zero_length_segment(file, layout)
 
-    # define stationing
-    name = ifcopenshell.util.stationing.station_as_string(file, start_station)
-    referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name)
-    ifcopenshell.api.nest.reorder_nesting(file, referent, -1, 0)
+    if include_geometry:
+        # define stationing
+        name = ifcopenshell.util.alignment.station_as_string(file, start_station)
+        referent = ifcopenshell.api.alignment.add_stationing_referent(
+            file, alignment, 0.0, start_station, name, alignment
+        )
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]

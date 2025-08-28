@@ -28,6 +28,6 @@ from .bearing2dd import bearing2dd
 __all__ = [
     "add_survey_point",
     "assign_survey_point",
-    "edit_survey_point",
     "bearing2dd",
+    "edit_survey_point",
 ]

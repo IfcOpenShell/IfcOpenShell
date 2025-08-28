@@ -18,22 +18,26 @@
 
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
-import os
+import types
+
+from collections import Counter
+from functools import cache
 
 import bpy
-import json
 import time
 import calendar
-import isodate
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
+import bonsai.bim.schema
 import bonsai.core.sequence as core
 import bonsai.tool as tool
-import bonsai.bim.module.sequence.helper as helper
-import ifcopenshell.util.sequence
-import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from typing import get_args, TYPE_CHECKING, assert_never
+from typing import Union, get_args, TYPE_CHECKING, assert_never
+
+if TYPE_CHECKING:
+    from bpy.stub_internal.rna_enums import OperatorReturnItems
 
 
 class EnableStatusFilters(bpy.types.Operator):
@@ -48,25 +52,33 @@ class EnableStatusFilters(bpy.types.Operator):
 
         props.statuses.clear()
 
-        statuses = set()
+        statuses_used: Counter[str] = Counter()
+        user_defined_statuses: set[str] = set()
         for element in tool.Ifc.get().by_type("IfcPropertyEnumeratedValue"):
             if element.Name == "Status":
-                if element.PartOfPset and isinstance(element.EnumerationValues, tuple):
+                enum_values = element.EnumerationValues
+                if element.PartOfPset and isinstance(enum_values, tuple):
                     pset = element.PartOfPset[0]
-                    if pset.Name.startswith("Pset_") and pset.Name.endswith("Common"):
-                        statuses.update(element.EnumerationValues)
-                    elif pset.Name == "EPset_Status":  # Our secret sauce
-                        statuses.update(element.EnumerationValues)
+                    pset_name: str = pset.Name
+                    if pset_name.startswith("Pset_") and pset_name.endswith("Common"):
+                        statuses_used.update([s.wrappedValue for s in enum_values])
+                    elif pset_name == "EPset_Status":  # Our secret sauce
+                        statuses_used.update([s.wrappedValue for s in enum_values])
             elif element.Name == "UserDefinedStatus":
-                statuses.add(element.NominalValue)
+                status: str = element.NominalValue.wrappedValue
+                statuses_used[element.NominalValue.wrappedValue] += 1
+                user_defined_statuses.add(status)
 
-        statuses = ["No Status"] + sorted([s.wrappedValue for s in statuses])
+        statuses = ["No Status"]
+        statuses.extend(tool.Sequence.ELEMENT_STATUSES)
+        statuses.extend(user_defined_statuses)
 
         for status in statuses:
             new = props.statuses.add()
             new.name = status
             if new.name in hidden_statuses:
                 new.is_visible = False
+            new.has_elements = bool(statuses_used[status])
 
         visible_statuses = {s.name for s in props.statuses if s.is_visible}
         tool.Sequence.set_visibility_by_status(visible_statuses)
@@ -124,17 +136,138 @@ class SelectStatusFilter(bpy.types.Operator):
     bl_label = "Select Status Filter"
     bl_description = "Select elements with currently selected status"
     bl_options = {"REGISTER", "UNDO"}
-    name: bpy.props.StringProperty()
 
-    def execute(self, context):
-        query = f"IfcProduct, /Pset_.*Common/.Status={self.name} + IfcProduct, EPset_Status.Status={self.name}"
-        if self.name == "No Status":
-            query = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
-        for element in ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query):
+    status: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        status: tool.Sequence.ElementStatusUI
+
+    def execute(self, context) -> set["OperatorReturnItems"]:
+        for element in tool.Sequence.get_elements_by_status(self.status):
             obj = tool.Ifc.get_object(element)
-            if obj:
+            if isinstance(obj, bpy.types.Object):
                 obj.select_set(True)
         return {"FINISHED"}
+
+
+class AssignStatus(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_status"
+    bl_label = "Assign Status"
+    bl_description = "Assign status to the selected elements.\n\nAlt+CLICK to unassign the status."
+    bl_options = {"REGISTER", "UNDO"}
+
+    should_override_previous_status: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Override Previous Status",
+        description=(
+            "Whether assigning new status should override previous one.\n\n"
+            "IFC allows storing multiple statuses for the same element. "
+            "This option can be disabled to take advantage of that."
+        ),
+        default=True,
+    )
+    status: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    should_unassign_status: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        options={"SKIP_SAVE"},
+    )
+
+    if TYPE_CHECKING:
+        should_override_previous_status: bool
+        status: str
+        should_unassign_status: bool
+
+    def invoke(self, context, event):
+        self.should_unassign_status = event.alt
+        return self.execute(context)
+
+    def _execute(self, context):
+        # TODO: UserDefinedStatus
+        if self.status not in tool.Sequence.ELEMENT_STATUSES:
+            self.report({"ERROR"}, "Assigning user defined statuses or 'No Status' is not yet supported.")
+            return {"CANCELLED"}
+
+        EPSET_NAME = "EPset_Status"
+        elements_changed = 0
+        ifc_file = tool.Ifc.get()
+
+        @cache
+        def get_common_pset_name(element: ifcopenshell.entity_instance) -> Union[str, None]:
+            templates = bonsai.bim.schema.ifc.psetqto.get_applicable(
+                element.is_a(),
+                pset_only=True,
+                schema=tool.Ifc.get_schema(),
+            )
+            for template in templates:
+                template_name = template.Name
+                if template_name.startswith("Pset_") and template_name.endswith("Common"):
+                    return template_name
+
+        for obj in tool.Blender.get_selected_objects():
+            if not (element := tool.Ifc.get_entity(obj)) or not element.is_a("IfcProduct"):
+                continue
+
+            psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+            common_pset_name = get_common_pset_name(element)
+
+            existing_psets = [
+                pset_name for pset_name in psets if pset_name == EPSET_NAME or pset_name == common_pset_name
+            ]
+            assert len(existing_psets) < 3
+            # Common pset comes first.
+            existing_psets.sort(key=lambda x: x == EPSET_NAME)
+
+            if not existing_psets:
+                if self.should_unassign_status:
+                    continue
+                pset_name = common_pset_name or EPSET_NAME
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, element, pset_name)
+                ifcopenshell.api.pset.edit_pset(ifc_file, pset, properties={"Status": [self.status]})
+                elements_changed += 1
+                continue
+
+            pset_changed = False
+            for pset_i, pset_name in enumerate(existing_psets):
+                pset_data = psets[pset_name]
+                # None is kind of theoretical.
+                status_data: Union[list[str], None, types.EllipsisType]
+                status_data = pset_data.get("Status", ...)
+
+                if self.should_unassign_status:
+                    if status_data is ... or not status_data:
+                        continue
+                    # Already unassigned.
+                    if self.status not in status_data:
+                        continue
+                    status_data.remove(self.status)
+
+                else:
+                    if status_data is None or status_data is ...:
+                        status_data = [self.status]
+                    elif self.status in status_data:
+                        # Already assigned.
+                        continue
+                    else:
+                        if self.should_override_previous_status:
+                            status_data = [self.status]
+                        else:
+                            status_data.append(self.status)
+
+                if pset_i > 0:
+                    # Try to maintain status in just 1 pset.
+                    if not self.should_unassign_status:
+                        status_data.remove(self.status)
+
+                ifcopenshell.api.pset.edit_pset(
+                    ifc_file, pset=ifc_file.by_id(pset_data["id"]), properties={"Status": status_data}
+                )
+                pset_changed = True
+            elements_changed += pset_changed
+
+        self.report(
+            {"INFO"},
+            f"Status '{self.status}' "
+            f"{'un' * self.should_unassign_status}assigned {'from' if self.should_unassign_status else 'to'} "
+            f"{elements_changed} elements.",
+        )
 
 
 class AddWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
@@ -269,6 +402,7 @@ class EditWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_work_schedule"
     bl_label = "Remove Work Schedule"
+    back_reference = "Remove provided work schedule."
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
@@ -276,9 +410,24 @@ class RemoveWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_work_schedule(tool.Ifc, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
 
 
+class CopyWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_work_schedule"
+    bl_label = "Copy Work Schedule"
+    bl_description = "Create a duplicate of the provided work schedule."
+    bl_options = {"REGISTER", "UNDO"}
+    work_schedule: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        work_schedule: int
+
+    def _execute(self, context):
+        core.copy_work_schedule(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
+
+
 class EnableEditingWorkSchedule(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_schedule"
     bl_label = "Enable Editing Work Schedule"
+    bl_description = "Enable editing work schedule attributes."
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
@@ -290,6 +439,7 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
 class EnableEditingWorkScheduleTasks(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_schedule_tasks"
     bl_label = "Enable Editing Work Schedule Tasks"
+    bl_description = "Enable editing work scheduke tasks."
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
@@ -629,10 +779,11 @@ class EditWorkCalendar(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_calendar_props()
         core.edit_work_calendar(
             tool.Ifc,
             tool.Sequence,
-            work_calendar=tool.Ifc.get().by_id(context.scene.BIMWorkCalendarProperties.active_work_calendar_id),
+            work_calendar=tool.Ifc.get().by_id(props.active_work_calendar_id),
         )
 
 
@@ -667,9 +818,9 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
-    bl_idname = "bim.import_csv"
-    bl_label = "Import CSV"
+class ImportWorkScheduleCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
+    bl_idname = "bim.import_work_schedule_csv"
+    bl_label = "Import Work Schedule CSV"
     bl_description = "Import work schedule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
@@ -692,7 +843,7 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         csv2ifc.csv = self.filepath
         csv2ifc.file = self.file
         csv2ifc.execute()
-        self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
 class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):

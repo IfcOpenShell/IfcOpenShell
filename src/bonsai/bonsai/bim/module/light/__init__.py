@@ -25,20 +25,7 @@ from pathlib import Path
 import importlib
 import importlib.util
 import traceback
-
-# There are unresolved problems with pyradiance import that we couldn't narrow down.
-# So import is optional not to make it a showstopper for random users,
-# who don't even need pyradiance.
-# See #6633.
-try:
-    import pyradiance
-except ImportError as e:
-    print(traceback.format_exc())
-    print(
-        "PyRadiance is not available. Pyradiance Rendering functionality will be disabled. "
-        "See above for more detailed import traceback."
-    )
-    pyradiance = None
+import pyradiance
 
 
 def get_pyradiance_path():

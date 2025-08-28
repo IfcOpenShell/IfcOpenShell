@@ -124,59 +124,93 @@
 
 
 
-#let arrange_summary_row(row) = {
+#let arrange_summary_row(row, options) = {
   let name = strong(upper(row.at("Name")))
   let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
   let total = if row.at("RateSubtotal") == "" {0.0} else {float(row.at("RateSubtotal"))}
-  if row.at("TotalPrice") != "0.0" {
+  if row.at("ItemIsASum") == "True" {   
     if row.at("Index") == "1" {
       // ROOT COST
       (
-        row.at("Hierarchy"),
+        strong[#row.at("Hierarchy")],
         name,
         [],
-        strong[#format-decimal(float(row.at("TotalPrice")), places: 2)]        
+        if options.at("should_print_rates") {
+          strong[#format-decimal(float(row.at("TotalPrice")), places: 2)]
+        } else {
+        }
       )
     } else {
-      // SUB CATEGORY
+      // SUB-SECTION
       ( 
         row.at("Hierarchy"),
         table.cell(inset: (left: int(row.at("Index"))*2.5mm))[#upper(row.at("Name"))],
-        format-decimal(float(row.at("TotalPrice")), places: 2),
+        if options.at("should_print_rates") {
+          format-decimal(float(row.at("TotalPrice")), places: 2)
+        } else {
+          []
+        }
+          ,
         [],
       )
     }
+  } else {
+    ()
   }
 }
 
 
 
-#let arrange_bill_of_quantity_row(row) = {
-  if row.at("TotalPrice") != "0.0" {
-    // CATEGORY
-    let name = strong(upper(row.at("Name")))
-    let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
-    let total_price = format-decimal(float(row.at("TotalPrice", default: "0.0")), places: 2)
-  
-    (
-      [], [], [], [], [], [], [], [], [],
-    )
-    (
-      table.cell(..root-cost-cell-style)[#row.at("Hierarchy")],
-      table.cell(..root-cost-cell-style)[#strong(upper(row.at("Name"))) #linebreak() #row.at("Description", default:"")],
-      table.cell(..root-cost-cell-style)[],      
-      table.cell(..root-cost-cell-style)[],
-      table.cell(..root-cost-cell-style)[],
-      table.cell(..root-cost-cell-style)[],
-      table.cell(..root-cost-cell-style)[],
-      table.cell(..root-cost-cell-style)[],
-      table.cell(..root-cost-cell-style)[#strong(total_price)],
-    ) 
+#let arrange_bill_of_quantity_row(row, options) = {
+  if row.at("ItemIsASum") == "True" {
+    // SECTION (Parent Cost Item)
+    if options.at("nested_structure_depth") == 0 or int(row.at("Index")) <= options.at("nested_structure_depth") {
+      let name = strong(upper(row.at("Name")))
+      let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
+      let total_price = format-decimal(float(row.at("TotalPrice", default: "0.0")), places: 2)
+    
+      (
+        [], [], [], [], [], [], [], [], [],
+      )
+      (
+        table.cell(..root-cost-cell-style)[#row.at("Hierarchy")],
+        table.cell(..root-cost-cell-style)[#strong(upper(row.at("Name"))) #linebreak() #row.at("Description", default:"")],
+        table.cell(..root-cost-cell-style)[],      
+        table.cell(..root-cost-cell-style)[],
+        table.cell(..root-cost-cell-style)[],
+        table.cell(..root-cost-cell-style)[],
+        table.cell(..root-cost-cell-style)[],
+        table.cell(..root-cost-cell-style)[],
+        if options.at("should_print_rates") == true {
+          table.cell(..root-cost-cell-style)[#strong(total_price)]
+        } else{
+          table.cell(..root-cost-cell-style)[]
+        },
+      ) 
+    } else {
+      ()
+    }
     
   } else {
     // COST ITEM
-    let name = strong(upper(row.at("Name")))
-    let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
+    let name = "" 
+    if row.at("Name") == "" {
+      name = strong(upper("Unnamed Cost Item"))
+    } else {
+      name = strong(upper(row.at("Name")))
+    }
+    let identification = ""
+    if options.at("should_print_cost_ids") == true and row.at("Identification") != "" {
+      identification = linebreak() + row.at("Identification")
+    } else {
+      identification = ""
+    }
+    let description = "" 
+    if options.at("should_print_description") == true and row.at("Description") != "" {
+      description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
+    } else {
+      description = ""
+    }
     let unit = table.cell(align: right)[Sum #unit_map.at(row.at("Unit"), default: "")]
     let quant = if row.at("Quantity") == "" {0.0} else {
       format-decimal(float(row.at("Quantity")))}
@@ -187,7 +221,7 @@
     
     (
       row.at("Hierarchy"),
-      if row.at("Identification") == "" {name + linebreak() + description} else {name + linebreak() + row.at("Identification") +  linebreak() + description},
+      name + identification + description,
       [],
       [],
       [],
@@ -196,30 +230,61 @@
       [],
       [],
     )
-    (
-      [],
-      unit,
-      [],
-      [],
-      [],
-      [],
-      table.cell(..total-cell-style, align: right + bottom)[#quant],
-      table.cell(..total-cell-style, align: right + bottom)[#rate],
-      table.cell(..total-cell-style, align: right + bottom)[#total],
-    )
-    
+    if row.at("Quantities") != "" and options.at("should_print_each_quantity") {
+      let json_str = row.at("Quantities")
+      let quantites = json.decode(json_str)
+      for quantity in quantites {
+            (
+            [],
+            if quantity.at(0) == "Unnamed" {[quantity]} else {quantity.at(0)},
+            [],
+            [],
+            [],
+            [],
+            format-decimal(quantity.at(1)),
+            [],
+            [],
+        )
+      }
+    }
+    if options.at("should_print_rates") == true {
+      (
+        [],
+        unit,
+        [],
+        [],
+        [],
+        [],
+        table.cell(..total-cell-style, align: right + bottom)[#quant],
+        table.cell(..total-cell-style, align: right + bottom)[#rate],
+        table.cell(..total-cell-style, align: right + bottom)[#total],
+      )
+    } else {
+      (
+        [],
+        unit,
+        [],
+        [],
+        [],
+        [],
+        table.cell(..total-cell-style, align: right + bottom)[#quant],
+        [.................],
+        [.......................],
+      )
+    }
   }
 }
 
 
 
 
-#let arrange_schedule_of_rates_row(row) = {
+#let arrange_schedule_of_rates_row(row, options) = {
   let name = strong(upper(row.at("Name")))
   let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
   let unit = table.cell(align: right)[#unit_map.at(row.at("Unit"), default: "")]
   let rate = if row.at("RateSubtotal") == "" {0.0} else {
       format-decimal(float(row.at("RateSubtotal")))}
+  if row.at("ItemIsASum") == "True" {return ()} //skip sections in schedule of rates
   (
     row.at("Identification"),
     if row.at("Identification") == "" {name + linebreak() + description} else {name + linebreak() + description},
@@ -241,11 +306,11 @@
     path, 
     delimiter: ",", 
     type: "PRICEDBILLOFQUANTITIES",    
-    should_hide_rates: false
+    options: ()
   ) = {
   if type == "PRICEDBILLOFQUANTITIES" or type == "UNPRICEDBILLOFQUANTITIES"{
     let data = csv(path, delimiter: delimiter, row-type: dictionary)
-    let new_rows = data.map(arrange_bill_of_quantity_row)
+    let new_rows = data.map(item => arrange_bill_of_quantity_row(item, options))
    
     table(
       columns: (18mm,1fr, 12mm,12mm,12mm,12mm, 20mm, 20mm, 25mm),
@@ -253,10 +318,11 @@
       stroke: none,
       ..new_rows.flatten()
     )
+
   } else if type == "SCHEDULEOFRATES" {
     // REMEMBER TO CHECK IF THE ROW IS UNIQUE
     let data = csv(path, delimiter: delimiter, row-type: dictionary)
-    let new_rows = data.map(arrange_schedule_of_rates_row)
+    let new_rows = data.map(item => arrange_schedule_of_rates_row(item, options))
    
     table(
       columns: (30mm,130mm, 25mm),
@@ -271,12 +337,13 @@
 
 #let create-summary(
     path, 
-    delimiter: ","
+    delimiter: ",",
+    options
   ) = {
   let data = csv(path, delimiter: delimiter, row-type: dictionary)
-  let new_rows = data.map(arrange_summary_row)
-  let general_total = data.filter(row => row.at("Index") == "1") 
-   .map(row => float(row.at("TotalPrice")))
+  let new_rows = data.map(item => arrange_summary_row(item, options))
+  let general_total = data.filter(row => row.at("ItemIsASum") == "False") 
+   .map(row => float(row.at("RateSubtotal", default: 0.0))*float(row.at("Quantity", default: 0.0)))
    .sum(default: 0.00)
   
   set text(size: 10pt)
@@ -301,25 +368,92 @@
   align: (center, right, center, right),
   inset: 1mm,
   fill: gray.transparentize(70%),
-  [], strong[GENERAL TOTAL:], [],[#strong(format-decimal(general_total, places: 2))]
+  [], strong[GENERAL TOTAL:], [],
+  if options.at("should_print_rates"){[#strong(format-decimal(general_total, places: 2))]
+  } else {
+    []
+  }
 )
 }
 
 
 
+#let create-cover(
+  title,
+  schedule_name,
+  schedule_description,
+  schedule_type,    
+) = {
+  set page(
+    numbering: none,
+    margin: (top: 35mm, left: 20mm, right: 10mm),
+    background: place( top + left, dx: 15mm, dy: 25mm,
+      table(
+        columns: 185mm,
+        rows: 254mm,
+        align: (center, left, center),
+        stroke: 1pt        
+      ) 
+    ),
+    footer: [
+    #set text(size: 7pt, fill: gray)
+    #align(right)[#linebreak()powered by IfcOpenShell]
+    ]
+  )
+  set text(font: template_fonts, size: 12pt)
+  place( bottom + left, dx: 0mm, dy: -10mm,
+    grid(
+      columns: (30mm, 135mm),
+      gutter: 2em,
+      align: top + left,
+      [Title:], [*#title*],
+      [Schedule:],[*#schedule_name*],
+      [Schedule Type:], [#schedule_type],
+      if schedule_description != "" {[Description:]},
+      if schedule_description != "" {[#schedule_description]},
+      [],[],
+      [#datetime.today().display("[day]/[month]/[year]")],[Signed],
+      [],[.................................],
+    )
+  )
+  
+    
+}
+
+
+
 #let project(
+  
   schedule_path: "",
   title: "", 
-  schedule_name: "", 
+  schedule_name: "",
+  schedule_description: "",
   schedule_type: "",
-  cover_page: bool, 
-  root_items_to_new_page: bool,
-  should_hide_rates: false,
-  summary: bool, 
-  body) = {
-  // Set the document's basic properties.
-  //set document(schedule: schedule_name, title: title)
-   
+  project_currency: str,
+  nested_structure_depth: int,
+  parent_to_new_page_up_to_depth: int,
+  show_only_parents: bool,
+  should_print_cover: bool,
+  should_print_cost_ids: bool,
+  should_print_description: bool,
+  should_print_each_quantity: bool,
+  should_print_each_cost_value: bool,
+  should_print_rates: bool,
+  should_print_summary: bool,
+  
+  body) = {   
+  
+  if should_print_cover {
+    create-cover(
+      title,
+      schedule_name,
+      schedule_description,
+      schedule_type      
+    )
+    pagebreak()
+    counter(page).update(n => n - 1)
+  }
+  
   set page(
     margin: (left: 15mm, right: 10mm, top: 35mm, bottom: 20mm),
     numbering: "1/1",
@@ -350,18 +484,39 @@
   )
   
   set text(font: template_fonts, size: 8pt, lang: "en");
+
+  let options = (
+    "nested_structure_depth": nested_structure_depth,
+    "parent_to_new_page_up_to_depth": parent_to_new_page_up_to_depth,
+    "show_only_parents": show_only_parents,
+    "should_print_cost_ids": should_print_cost_ids,
+    "should_print_description": should_print_description,
+    "should_print_each_quantity": should_print_each_quantity,
+    "should_print_each_cost_value": should_print_each_cost_value,
+    "should_print_rates": should_print_rates,
+  )
   
-  if schedule_type == "PRICEDBILLOFQUANTITIES" {
-    create-schedule(schedule_path, type: "PRICEDBILLOFQUANTITIES", should_hide_rates: should_hide_rates)
-  } else if schedule_type == "UNPRICEDBILLOFQUANTITIES" {
-    create-schedule(schedule_path, type: "PRICEDBILLOFQUANTITIES", should_hide_rates: true)
+  if schedule_type == "UNPRICEDBILLOFQUANTITIES" {
+    create-schedule(
+      schedule_path, 
+      type: "PRICEDBILLOFQUANTITIES", 
+     options: options
+    )
   } else if schedule_type == "SCHEDULEOFRATES" {
-    create-schedule(schedule_path, type: "SCHEDULEOFRATES", should_hide_rates: true)
+    create-schedule(
+      schedule_path, 
+      type: "SCHEDULEOFRATES", 
+      options: options
+    )
   } else {
-    create-schedule(schedule_path, type: "PRICEDBILLOFQUANTITIES", should_hide_rates: should_hide_rates)
+    create-schedule(
+      schedule_path, 
+      type: "PRICEDBILLOFQUANTITIES",
+      options: options
+    )
   }
     
-  if summary == true {
+  if should_print_summary and schedule_type != "SCHEDULEOFRATES"{
     pagebreak()
     set text(font: template_fonts, size: 8pt, lang: "en");
     set page(
@@ -370,6 +525,6 @@
         format_table.at("SUMMARY")
     )
   )
-    create-summary(schedule_path)
+    create-summary(schedule_path, options)
   }
 }

@@ -39,15 +39,16 @@ def get_layout_curve(layout: entity_instance) -> entity_instance:
     alignment = ifcopenshell.api.alignment.get_alignment(layout)
 
     curve = ifcopenshell.api.alignment.get_curve(alignment)
-    if layout.is_a("IfcAlignmentHorizontal"):
-        # Layout is horizontal so get the IfcCompositeCurve
-        if curve.is_a("IfcGradientCurve"):
-            curve = curve.BaseCurve
-        elif curve.is_a("IfcSegmentedReferenceCurve"):
-            curve = curve.BaseCurve.BaseCurve
-    elif layout.is_a("IfcAlignmentVertical"):
-        # Layout is vertical so get the IfcGradientCurve
-        if curve.is_a("IfcSegmentedReferenceCurve"):
-            curve = curve.BaseCurve
+    if curve:
+        if layout.is_a("IfcAlignmentHorizontal"):
+            # Layout is horizontal so get the IfcCompositeCurve
+            if curve.is_a("IfcGradientCurve"):
+                curve = curve.BaseCurve
+            elif curve.is_a("IfcSegmentedReferenceCurve"):
+                curve = curve.BaseCurve.BaseCurve
+        elif layout.is_a("IfcAlignmentVertical"):
+            # Layout is vertical so get the IfcGradientCurve
+            if curve.is_a("IfcSegmentedReferenceCurve"):
+                curve = curve.BaseCurve
 
     return curve

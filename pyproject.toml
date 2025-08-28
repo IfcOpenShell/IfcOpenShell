@@ -1,6 +1,9 @@
 [tool.black]
 line-length = 120
-include = "src/.*.pyi?$"
+include = '''
+    src/.*.pyi?$
+    |nix/.*.pyi?$
+'''
 extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/*
     |src/ifcopenshell-python/ifcopenshell/mvd/*
@@ -45,6 +48,7 @@ select = [
     "FA",          # future annotations
     "UP",          # pyupgrade
     "RUF015",      # next() > list_comprehension[0]
+    "RUF022",      # sort __all__
 ]
 ignore = [
     "FA100", # Conflicts with Blender using annotations for props definitions.

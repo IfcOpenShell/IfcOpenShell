@@ -82,6 +82,20 @@ class RemoveCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_cost_schedule(tool.Ifc, tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
+class CopyCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_cost_schedule"
+    bl_label = "Copy Cost Schedule"
+    bl_description = "Create a duplicate of the provided cost schedule."
+    bl_options = {"REGISTER", "UNDO"}
+    cost_schedule: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        cost_schedule: int
+
+    def _execute(self, context):
+        core.copy_cost_schedule(tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+
+
 class EnableEditingCostSchedule(bpy.types.Operator):
     bl_idname = "bim.enable_editing_cost_schedule_attributes"
     bl_label = "Enable Editing Cost Schedule"
@@ -687,6 +701,7 @@ class ShowAssignedCostRate(bpy.types.Operator):
     bl_idname = "bim.show_assigned_cost_rate"
     bl_label = "Info about the assigned cost item rate"
     bl_options = {"REGISTER"}
+    parent_cost_schedule_name: bpy.props.StringProperty()
     assigned_rate_identification: bpy.props.StringProperty()
     assigned_rate_name: bpy.props.StringProperty()
     assigned_rate_description: bpy.props.StringProperty()
@@ -703,6 +718,7 @@ class ShowAssignedCostRate(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         wrapper = textwrap.TextWrapper(width=80)
+        layout.label(text=f"COST SCHEDULE: {self.parent_cost_schedule_name}")
         layout.label(text=f"ID: {self.assigned_rate_identification}")
         layout.label(text=f"Name: {self.assigned_rate_name}")
         layout.label(text="Description:")
@@ -871,10 +887,81 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         items=get_cost_schedules_enum_items,
     )
 
+    nested_structure_depth: bpy.props.IntProperty(
+        name="Nested structure depth: ",
+        description="Define till which level of the structure the parent cost items are displayed.\n0: display the full structure.",
+        default=0,
+        min=0,
+        max=9,
+    )
+    parent_to_new_page_up_to_depth: bpy.props.IntProperty(
+        name="Parents to new page up to depth: ",
+        description="Define till which level of the structure the parent is printed to a new page.\n0: no parent is split to a new page.",
+        default=0,
+        min=0,
+        max=9,
+    )
+    show_only_parents: bpy.props.BoolProperty(
+        name="Show only parent cost items",
+        description="Hide cost items and show only container costs",
+        default=False,
+    )
+    should_print_cover: bpy.props.BoolProperty(
+        name="Cover page",
+        description="Create a cover page with project data",
+        default=False,
+    )
+    should_print_description: bpy.props.BoolProperty(
+        name="Full Cost Items Description",
+        description="Export the full description if present",
+        default=True,
+    )
+    should_print_cost_ids: bpy.props.BoolProperty(
+        name="Print Cost Identification",
+        description="Print Cost Identification under Cost Name if present",
+        default=True,
+    )
+    should_print_each_quantity: bpy.props.BoolProperty(
+        name="Show each quantity",
+        description="Export the full list of quantities",
+        default=False,
+    )
+    should_print_each_cost_value: bpy.props.BoolProperty(
+        name="Show each cost value",
+        description="Export the full list of cost values\nassociated with each cost item\nin the schedule of rates",
+        default=False,
+    )
+    should_print_rates: bpy.props.BoolProperty(
+        name="Rates and totals",
+        description="Print rates and totals for each voice",
+        default=True,
+    )
     should_print_summary: bpy.props.BoolProperty(
-        name="Should print summary",
+        name="Final Summary",
         description="Print summary at the end of the document",
         default=True,
+    )
+    force_schedule_type: bpy.props.EnumProperty(
+        name="Output type",
+        description='Force the output to this type.\n"Auto" defaults to selected cost schedule Predefined Type',
+        items=[
+            (
+                "AUTO",
+                "By PredefinedType",
+                "Uses Cost Schedule Predefined Type",
+            ),
+            (
+                "PRICEDBILLOFQUANTITIES",
+                "Priced Bill of Quantities",
+                "Forces the output as a priced bill of quantities",
+            ),
+            (
+                "SCHEDULEOFRATES",
+                "Schedule of Rates",
+                "Forces the output as a schedule of rates",
+            ),
+        ],
+        default="AUTO",
     )
 
     def draw(self, context):
@@ -884,8 +971,18 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         box.prop(self, "cost_schedules_enum", text="")
         layout.separator()
         box = layout.box()
-        box.label(text="Export properties:")
+        box.label(text="Nested cost structure:")
+        box.prop(self, "nested_structure_depth")
+        layout.separator()
+        box = layout.box()
+        box.label(text="PDF Document properties:")
+        box.prop(self, "should_print_cover")
+        box.prop(self, "should_print_cost_ids")
+        box.prop(self, "should_print_description")
+        box.prop(self, "should_print_each_quantity")
+        box.prop(self, "should_print_rates")
         box.prop(self, "should_print_summary")
+        box.prop(self, "force_schedule_type")
 
     @classmethod
     def poll(cls, context):
@@ -920,9 +1017,25 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
         file = tool.Ifc.get()
         self.props = tool.Cost.get_cost_props()
         cost_schedule = file.by_id(int(self.cost_schedules_enum))
-        options = {"should_print_summary": self.should_print_summary}
+        options = {
+            "nested_structure_depth": self.nested_structure_depth,
+            "parent_to_new_page_up_to_depth": self.parent_to_new_page_up_to_depth,
+            "show_only_parents": self.show_only_parents,
+            "should_print_cover": self.should_print_cover,
+            "should_print_cost_ids": self.should_print_cost_ids,
+            "should_print_description": self.should_print_description,
+            "should_print_each_quantity": self.should_print_each_quantity,
+            "should_print_each_cost_value": self.should_print_each_cost_value,
+            "should_print_rates": self.should_print_rates,
+            "should_print_summary": self.should_print_summary,
+        }
+
         core.export_cost_schedules_to_pdf(
-            tool.Cost, filepath=self.filepath, cost_schedule=cost_schedule, options=options
+            tool.Cost,
+            filepath=self.filepath,
+            cost_schedule=cost_schedule,
+            options=options,
+            force_schedule_type=self.force_schedule_type,
         )
         return {"FINISHED"}
 

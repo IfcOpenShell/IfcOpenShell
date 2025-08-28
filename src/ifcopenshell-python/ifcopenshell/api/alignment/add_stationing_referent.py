@@ -34,6 +34,7 @@ def add_stationing_referent(
     distance_along: float,
     station: float,
     name: str,
+    positioned_product: entity_instance,
 ) -> entity_instance:
     """
     Adds an IfcReferent to the element with the Pset_Stationing property set.
@@ -43,6 +44,7 @@ def add_stationing_referent(
     :param distance_along: distance along the alignment curve
     :param station: station value
     :param name: name to assign to IfcReferent.Name, typically a stringized version of the station value
+    :param positioned_product: the product whose position is informed by the referent
     :return: referent
 
     Example:
@@ -54,9 +56,17 @@ def add_stationing_referent(
     """
     alignment = element
 
+    layout_types = [
+        "IfcAlignmentHorizontal",
+        "IfcAlignmentVertical",
+        "IfcAlignmentCant",
+    ]
+
     if element.is_a("IfcAlignmentSegment"):
         layout = element.Nests[0].RelatingObject
         alignment = ifcopenshell.api.alignment.get_alignment(layout)
+    elif element.is_a() in layout_types:
+        alignment = ifcopenshell.api.alignment.get_alignment(element)
 
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
 
@@ -86,6 +96,10 @@ def add_stationing_referent(
 
             settings = ifcopenshell.geom.settings()
             fn = ifcopenshell_wrapper.map_shape(settings, basis_curve.wrapped_data)
+
+            if basis_curve.is_a("IfcPolyline") or basis_curve.is_a("IfcIndexedPolyCurve"):
+                fn = ifcopenshell_wrapper.convert_loop_to_function_item(fn)
+
             evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, fn)
             p = evaluator.evaluate(distance_along * unit_scale)
             p = np.array(p)
@@ -129,17 +143,19 @@ def add_stationing_referent(
     )
     pset_stationing = ifcopenshell.api.pset.add_pset(file, product=referent, name="Pset_Stationing")
     ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties={"Station": station})
-    ifcopenshell.api.nest.assign_object(file, related_objects=[referent], relating_object=element)
 
-    if len(alignment.Positions) == 0:
+    nest = ifcopenshell.api.alignment.get_referent_nest(file, element)
+    nest.RelatedObjects += (referent,)
+
+    if len(referent.Positions) == 0:
         rel_positions = file.createIfcRelPositions(
             GlobalId=ifcopenshell.guid.new(),
-            RelatingPositioningElement=alignment,
+            RelatingPositioningElement=referent,
             RelatedProducts=[
-                referent,
+                positioned_product,
             ],
         )
     else:
-        alignment.Positions[0].RelatedProducts += (referent,)
+        referent.Positions[0].RelatedProducts += (positioned_product,)
 
     return referent

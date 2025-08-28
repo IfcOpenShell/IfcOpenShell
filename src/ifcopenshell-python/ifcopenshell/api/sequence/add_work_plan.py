@@ -19,7 +19,7 @@
 import ifcopenshell.api.root
 import ifcopenshell.api.project
 import ifcopenshell.api.owner.settings
-import ifcopenshell.util.date
+import ifcopenshell.api.sequence
 from datetime import datetime, time
 from typing import Optional, Union
 
@@ -65,16 +65,17 @@ def add_work_plan(
         predefined_type=predefined_type,
         name=name,
     )
-    work_plan.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+    work_plan.CreationDate = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
     user = ifcopenshell.api.owner.settings.get_user(file)
     if user:
         work_plan.Creators = [user.ThePerson]
-    work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(start_time, "IfcDateTime")
+    work_plan.StartTime = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
 
-    context = file.by_type("IfcContext")[0]
-    ifcopenshell.api.project.assign_declaration(
-        file,
-        definitions=[work_plan],
-        relating_context=context,
-    )
+    if file.schema != "IFC2X3":
+        context = file.by_type("IfcContext")[0]
+        ifcopenshell.api.project.assign_declaration(
+            file,
+            definitions=[work_plan],
+            relating_context=context,
+        )
     return work_plan

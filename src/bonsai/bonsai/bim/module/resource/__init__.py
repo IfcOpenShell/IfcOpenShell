@@ -59,7 +59,6 @@ classes = (
     prop.Resource,
     prop.BIMResourceProperties,
     prop.BIMResourceTreeProperties,
-    prop.ISODuration,
     prop.BIMResourceProductivity,
     ui.BIM_PT_resources,
     ui.BIM_UL_resources,

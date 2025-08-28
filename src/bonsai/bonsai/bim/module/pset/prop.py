@@ -24,7 +24,12 @@ import ifcopenshell.util.doc
 import ifcopenshell.util.element
 import bonsai.tool as tool
 from bonsai.bim.prop import Attribute, StrProperty
-from bonsai.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
+from bonsai.bim.module.pset.data import (
+    AddEditCustomPropertiesData,
+    ObjectPsetsData,
+    MaterialPsetsData,
+    PsetsGeneralData,
+)
 from bonsai.bim.module.material.data import ObjectMaterialData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -81,23 +86,18 @@ def get_pset_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Bl
         results = get_profile_pset_names(self, context)
     elif prop_type == "WorkSchedulePsetProperties":
         results = get_work_schedule_pset_names(self, context)
+    elif prop_type == "ZonePsetProperties":
+        results = get_zone_pset_names(self, context)
+
+    if not PsetsGeneralData.is_loaded:
+        PsetsGeneralData.load()
 
     items: list[tool.Blender.BLENDER_ENUM_ITEM]
     items = [("BBIM_CUSTOM", "Custom Pset", "Create a property set without using a template.")]
-    bprops = tool.Bsdd.get_bsdd_props()
-    dictionaries = [(d.uri, f"bSDD: {d.name}", "") for d in bprops.dictionaries if d.is_active]
-    if dictionaries:
-        items.extend(
-            [
-                None,
-                (
-                    "BBIM_BSDD",
-                    "All Data Dictionaries",
-                    "Manage properties from all active buildingSMART Data Dictionaries",
-                ),
-            ]
-        )
-        items.extend(dictionaries)
+    bsdd_items = PsetsGeneralData.data["bsdd_enum_items"]
+    if bsdd_items:
+        items.append(None)
+        items.extend(bsdd_items)
     items.append(None)
     items.extend(results)
     return items
@@ -115,7 +115,7 @@ def get_material_pset_names(self: "PsetProperties", context: object) -> tool.Ble
     return MaterialPsetsData.data["pset_name"]
 
 
-def get_material_set_pset_names(self: "PsetProperties", context: object):
+def get_material_set_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     if not ObjectMaterialData.is_loaded:
         ObjectMaterialData.load()
@@ -128,12 +128,14 @@ def get_material_set_pset_names(self: "PsetProperties", context: object):
     return psetnames[ifc_class]
 
 
-def get_material_set_item_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+def get_material_set_item_pset_names(
+    self: "PsetProperties", context: bpy.types.Context
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
     obj = context.active_object
     assert obj
     omprops = tool.Material.get_object_material_props(obj)
-    if not omprops.active_material_set_item_id:
+    if not (ifc_definition_id := omprops.active_material_set_item_id):
         return []
     ifc_class = tool.Ifc.get().by_id(ifc_definition_id).is_a()
     if ifc_class not in psetnames:
@@ -151,22 +153,22 @@ def get_task_qto_names(self: "PsetProperties", context: object) -> tool.Blender.
     return qtonames[ifc_class]
 
 
-def get_resource_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+def get_resource_pset_names(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global psetnames
-    rprops = context.scene.BIMResourceProperties
-    rtprops = context.scene.BIMResourceTreeProperties
-    ifc_class = tool.Ifc.get().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
+    active_resource = tool.Resource.get_resource_props().active_resource
+    assert active_resource
+    ifc_class = tool.Ifc.get().by_id(active_resource.ifc_definition_id).is_a()
     if ifc_class not in psetnames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return psetnames[ifc_class]
 
 
-def get_resource_qto_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+def get_resource_qto_names(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     global qtonames
-    rprops = context.scene.BIMResourceProperties
-    rtprops = context.scene.BIMResourceTreeProperties
-    ifc_class = tool.Ifc.get().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
+    active_resource = tool.Resource.get_resource_props().active_resource
+    assert active_resource
+    ifc_class = tool.Ifc.get().by_id(active_resource.ifc_definition_id).is_a()
     if ifc_class not in qtonames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True, schema=tool.Ifc.get_schema())
         qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)
@@ -210,6 +212,15 @@ def get_work_schedule_pset_names(self: "PsetProperties", context: object) -> too
     return psetnames[ifc_class]
 
 
+def get_zone_pset_names(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    global psetnames
+    ifc_class = "IfcZone"
+    if ifc_class not in psetnames:
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
+        psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
+    return psetnames[ifc_class]
+
+
 # TODO: unsafe?
 def get_qto_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     pset_type = repr(self)
@@ -223,7 +234,9 @@ def get_qto_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Ble
         results = get_resource_qto_names(self, context)
     elif prop_type == "GroupPsetProperties":
         results = get_group_qto_names(self, context)
-    return [("BBIM_CUSTOM", "Custom Qto", "Create a quantity set without using a template."), None] + results
+    else:
+        assert False
+    return [("BBIM_CUSTOM", "Custom Qto", "Create a quantity set without using a template."), None] + list(results)
 
 
 def get_object_qto_name(self: "PsetProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:

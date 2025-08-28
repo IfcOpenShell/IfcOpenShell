@@ -170,12 +170,15 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	}
 
 	if (brep.begin() != brep.end()) {
+#ifdef IFOPSH_WITH_OPENCASCADE
 		if (std::dynamic_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(brep.begin()->Shape())) {
 			ConversionResultShape* shape = brep.as_compound();
 			ifcopenshell::geometry::taxonomy::matrix4 identity;
 			shape->Serialize(identity, brep_data_);
 			delete shape;
-		} else {
+		} else
+#endif
+		{
 			for (auto it = brep.begin(); it != brep.end(); ++it) {
 				std::string part;
 				it->Shape()->Serialize(*it->Placement(), part);
@@ -187,7 +190,21 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 			}
 		}
 	}
+}
 
+namespace {
+	bool is_non_uniform(const Eigen::Matrix4d& M, double eps = 1e-6)
+	{
+		Eigen::Matrix3d L = M.block<3, 3>(0, 0);
+		double sx = L.col(0).norm();
+		double sy = L.col(1).norm();
+		double sz = L.col(2).norm();
+		return !(
+			std::abs(sx - sy) < eps &&
+			std::abs(sx - sz) < eps &&
+			std::abs(sy - sz) < eps
+		);
+	}
 }
 
 IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool force_meters) const {
@@ -199,17 +216,35 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 	for (auto it = begin(); it != end(); ++it) {
 		const TopoDS_Shape& s = *std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape());
 
-		// @todo, check
 		gp_GTrsf trsf;
 		if (it->Placement()->components_) {
-			gp_Trsf tr;
 			const auto& m = it->Placement()->ccomponents();
-			trsf.SetVectorialPart(gp_Mat(
-				m(0, 0), m(0, 1), m(0, 2),
-				m(1, 0), m(1, 1), m(1, 2),
-				m(2, 0), m(2, 1), m(2, 2)
-			));
-			trsf.SetTranslationPart(gp_XYZ(m(0, 3), m(1, 3), m(2, 3)));
+			// This is either a bug or very finicky, but this appears to be the only
+			// way to get the transformation metadata to line up.
+			//
+			// - If gp_GTrsf.form is other, applying the transformation will result in
+			//   a conversion to b-spline surfaces for about everything, which impacts
+			//   performance and breaks detection of view volume in the svg serializer,
+			//   which would be the case when setting the SetVectorialPart() block
+			//   unconditionally.
+			//   (calling SetForm() afterwards to detect CompoundTrsf over Other would
+			//      set Scale to zero (bug?))
+			if (is_non_uniform(m)) {
+				trsf.SetVectorialPart(gp_Mat(
+					m(0, 0), m(0, 1), m(0, 2),
+					m(1, 0), m(1, 1), m(1, 2),
+					m(2, 0), m(2, 1), m(2, 2)
+				));
+				trsf.SetTranslationPart(gp_XYZ(m(0, 3), m(1, 3), m(2, 3)));
+			} else {
+				gp_Trsf tr;
+				tr.SetValues(
+					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+					m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+				);
+				trsf = tr;
+			}
 		}
 
 		if (!force_meters && settings().get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
@@ -222,7 +257,7 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 		builder.Add(compound, moved_shape);
 	}
 
-	return new ifcopenshell::geometry::OpenCascadeShape(compound);
+	return new ifcopenshell::geometry::OpenCascadeShape(std::move(compound));
 #else
         throw std::runtime_error("Not available without Open Cascade");
 #endif

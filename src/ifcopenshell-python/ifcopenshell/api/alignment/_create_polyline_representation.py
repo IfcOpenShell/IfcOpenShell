@@ -26,7 +26,7 @@ from collections.abc import Sequence
 
 
 def _create_polyline_representation(
-    file: ifcopenshell.file, alignment: entity_instance, points: Sequence[Sequence[float]]
+    file: ifcopenshell.file, alignment: entity_instance, points: Sequence[entity_instance]
 ) -> None:
     """
     Create geometric representation for the alignment based on an IfcPolyline
@@ -40,19 +40,29 @@ def _create_polyline_representation(
 
     axis_geom_subcontext = ifcopenshell.api.alignment.get_axis_subcontext(file)
 
-    placement = file.createIfcLocalPlacement(
-        PlacementRelTo=None,
-        RelativePlacement=file.createIfcAxis2Placement3D(
-            Location=file.createIfcCartesianPoint(Coordinates=(0.0, 0.0, 0.0))
-        ),
-    )
+    if points[0].Dim == 3:
+        placement = file.createIfcLocalPlacement(
+            PlacementRelTo=None,
+            RelativePlacement=file.createIfcAxis2Placement3D(
+                Location=file.createIfcCartesianPoint(Coordinates=(0.0, 0.0, 0.0))
+            ),
+        )
+        representation_type = "Curve3D"
+    else:
+        placement = file.createIfcLocalPlacement(
+            PlacementRelTo=None,
+            RelativePlacement=file.createIfcAxis2Placement2D(
+                Location=file.createIfcCartesianPoint(Coordinates=(0.0, 0.0))
+            ),
+        )
+        representation_type = "Curve2D"
 
     curve = file.createIfcPolyLine(Points=points)
 
     representation = file.createIfcShapeRepresentation(
         ContextOfItems=axis_geom_subcontext,
         RepresentationIdentifier="Axis",
-        RepresentationType="Curve3D",
+        RepresentationType=representation_type,
         Items=(curve,),
     )
 

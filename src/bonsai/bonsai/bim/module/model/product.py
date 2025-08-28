@@ -38,6 +38,7 @@ import bonsai.core.aggregate
 import bonsai.core.type
 import bonsai.core.root
 import bonsai.core.geometry
+import bonsai.core.model as core
 import bonsai.core.spatial
 from . import wall, slab, profile, mep
 from bonsai.bim.ifc import IfcStore
@@ -179,7 +180,8 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         # TODO: when this workflow matures a bit, recode it so it doesn't rely on selection and cursor
         # Select snapped object so we can insert doors and windows
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
         snap_obj = bpy.data.objects.get(snap_prop.snap_object)
         if snap_obj:
             try:
@@ -192,7 +194,7 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             except:
                 pass
 
-        point = context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points[0]
+        point = polyline_props.insertion_polyline[0].polyline_points[0]
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
         tool.Polyline.clear_polyline()
 
@@ -544,7 +546,10 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_type_page"
     bl_label = "Change Type Page"
     bl_options = {"REGISTER"}
-    page: bpy.props.IntProperty()
+    page: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        page: int
 
     def _execute(self, context):
         props = tool.Model.get_model_props()
@@ -564,6 +569,7 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
         props.relating_type_id = str(self.relating_type)
 
 
+# TODO: not exposed to UI.
 class AlignProduct(bpy.types.Operator):
     bl_idname = "bim.align_product"
     bl_label = "Align Product"

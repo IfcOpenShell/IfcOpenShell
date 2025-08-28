@@ -106,7 +106,8 @@ class Polyline(bonsai.core.tool.Polyline):
         cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState, should_round: bool = False
     ) -> None:
 
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         if len(polyline_data) > 0:
             polyline_data = polyline_data[0]
             polyline_points = polyline_data.polyline_points
@@ -123,7 +124,7 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             default_container_elevation = 0
 
-        mouse_point = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        mouse_point = polyline_props.snap_mouse_point[0]
 
         if last_point_data:
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
@@ -202,8 +203,9 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def calculate_area(cls, context: bpy.types.Context, input_ui: PolylineUI) -> Union[PolylineUI, None]:
+        polyline_props = tool.Model.get_polyline_props()
         try:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_data = polyline_props.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
         except:
             return input_ui
@@ -251,9 +253,10 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def calculate_x_y_and_z(cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState) -> None:
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         if len(polyline_data) > 0:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_data = polyline_props.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
             if len(polyline_points) > 0:
                 last_point_data = polyline_points[len(polyline_points) - 1]
@@ -269,7 +272,7 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             default_container_elevation = 0
 
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        snap_prop = polyline_props.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         if tool_state.is_input_on:
@@ -474,8 +477,8 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             unit_scale = tool.Blender.get_unit_scale()
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            dprops = tool.Drawing.get_document_props()
-            precision = dprops.imperial_precision
+            prefs = tool.Blender.get_addon_preferences()
+            precision = prefs.doc.imperial_precision
             if is_area:
                 unit_scale = 1
         else:
@@ -501,11 +504,13 @@ class Polyline(bonsai.core.tool.Polyline):
         d = input_ui.get_formatted_value("D")
         a = input_ui.get_formatted_value("A")
 
-        snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_vertex = polyline_props.snap_mouse_point[0]
         if tool_state and tool_state.use_default_container:
             z = tool.Root.get_default_container_elevation()
 
         # Lock one dimension when in plane method
+        assert tool_state
         if tool_state.plane_origin:
             if tool_state.plane_method == "XY":
                 z = tool_state.plane_origin.z
@@ -519,9 +524,9 @@ class Polyline(bonsai.core.tool.Polyline):
             y = snap_vertex.y
             z = snap_vertex.z
 
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_data = polyline_props.insertion_polyline
         if not polyline_data:
-            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline.add()
+            polyline_data = polyline_props.insertion_polyline.add()
         else:
             polyline_data = polyline_data[0]
         polyline_points = polyline_data.polyline_points
@@ -560,20 +565,23 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def clear_polyline(cls) -> None:
-        bpy.context.scene.BIMPolylineProperties.insertion_polyline.clear()
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_props.insertion_polyline.clear()
 
     @classmethod
     def remove_last_polyline_point(cls) -> None:
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         polyline_points.remove(len(polyline_points) - 1)
 
     @classmethod
     def move_polyline_to_measure(cls, context: bpy.types.Context, input_ui: PolylineUI) -> None:
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
-        measurement_data = bpy.context.scene.BIMPolylineProperties.measurement_polyline.add()
-        measurement_type = bpy.context.scene.MeasureToolSettings.measurement_type
+        measurement_data = polyline_props.measurement_polyline.add()
+        measurement_type = tool.Project.get_measure_tool_settings().measurement_type
         measurement_data.measurement_type = measurement_type
         if measurement_type == "AREA" and len(polyline_points) < 3:
             return

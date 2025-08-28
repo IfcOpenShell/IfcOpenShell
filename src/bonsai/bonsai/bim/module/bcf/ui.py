@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import bonsai.tool as tool
 from . import bcfstore
 from bpy.types import Panel
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.bcf.prop import BcfTopic, BCFProperties
 
 
 class BIM_PT_bcf(Panel):
@@ -33,6 +38,7 @@ class BIM_PT_bcf(Panel):
     bl_parent_id = "BIM_PT_tab_collaboration"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
@@ -125,6 +131,7 @@ class BIM_PT_bcf_metadata(Panel):
         # without adding them to specific topic.
         # Currently we just handle it the same way as in v2
         # documents are accessed and managed from topics.
+        assert self.layout
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
@@ -139,6 +146,7 @@ class BIM_PT_bcf_metadata(Panel):
         bcf_v3 = bcf_verison.startswith("3")
 
         topic = props.active_topic
+        assert topic
         bcf_topic = bcfxml.topics[topic.name]
 
         layout.label(text="Header Files:")
@@ -303,6 +311,7 @@ class BIM_PT_bcf_comments(Panel):
         row.prop(props, "comment_text_width")
 
         topic = props.active_topic
+        assert topic
         for comment in topic.comments:
             box = self.layout.box()
 
@@ -341,3 +350,20 @@ class BIM_PT_bcf_comments(Panel):
         row.prop(props, "has_related_viewpoint")
         row = layout.row()
         row.operator("bim.add_bcf_comment")
+
+
+class BIM_UL_topics(bpy.types.UIList):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BCFProperties,
+        item: BcfTopic,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
+        if item:
+            layout.prop(item, "title", text="", emboss=False)
+        else:
+            layout.label(text="", translate=False)

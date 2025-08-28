@@ -64,7 +64,11 @@ class TransactionStep(TypedDict):
 
 class IfcStore:
     path: str = ""
+    """Should be set only using ``tool.Ifc.set_path``."""
+
     file: Optional[ifcopenshell.file] = None
+    """Should be set only using ``tool.Ifc.set``."""
+
     schema: Optional[ifcopenshell.ifcopenshell_wrapper.schema_definition] = None
     cache: Optional[ifcopenshell.ifcopenshell_wrapper.HdfSerializer] = None
     cache_path: Optional[str] = None
@@ -112,6 +116,7 @@ class IfcStore:
             if IfcStore.path:
                 try:
                     IfcStore.load_file(IfcStore.path)
+                    tool.Ifc.after_file_loaded()
                 except Exception as e:
                     print(f"Failed to load file {IfcStore.path}. Error details: {e}")
         return IfcStore.file
@@ -124,13 +129,25 @@ class IfcStore:
             IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
 
     @staticmethod
+    def generate_cache_path() -> str:
+        """Generate cache path based on the active file and it's path."""
+        assert IfcStore.file
+        ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
+        ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
+        prefs = tool.Blender.get_addon_preferences()
+        cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
+        return cache_path
+
+    @staticmethod
     def get_cache() -> ifcopenshell.geom.serializers.hdf5 | None:
+        """Get existing cache for the current file or create a new one.
+
+        .h5 cache name reflects IFC filepath and it's current header's timestamp.
+        """
         if IfcStore.cache is None and IfcStore.path:
-            props = tool.Blender.get_bim_props()
-            ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
-            ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-            os.makedirs(props.cache_dir, exist_ok=True)
-            IfcStore.cache_path = os.path.join(props.cache_dir, f"{ifc_hash}.h5")
+            cache_path = IfcStore.generate_cache_path()
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            IfcStore.cache_path = cache_path
             cache_path = Path(IfcStore.cache_path)
             cache_settings = ifcopenshell.geom.settings()
             serializer_settings = ifcopenshell.geom.serializer_settings()
@@ -164,14 +181,11 @@ class IfcStore:
 
     @staticmethod
     def update_cache() -> None:
+        """Update cache filename after timestamp was updated."""
         if not IfcStore.cache:
             return
         assert IfcStore.cache_path
-        assert IfcStore.file
-        ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
-        ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-        props = tool.Blender.get_bim_props()
-        new_cache_path = os.path.join(props.cache_dir, f"{ifc_hash}.h5")
+        new_cache_path = IfcStore.generate_cache_path()
         IfcStore.cache = None
         try:
             shutil.move(IfcStore.cache_path, new_cache_path)
@@ -201,6 +215,7 @@ class IfcStore:
             IfcStore.file = ifcopenshell.open(path, should_stream=True)
         else:
             IfcStore.file = ifcopenshell.open(path)
+        tool.Ifc.after_file_loaded()
 
     @staticmethod
     def get_schema() -> ifcopenshell.ifcopenshell_wrapper.schema_definition:
@@ -445,8 +460,11 @@ class IfcStore:
 
         return callback
 
-    @staticmethod
+    modal_in_progress = False
+
+    @classmethod
     def execute_ifc_operator(
+        cls,
         operator: tool.Ifc.Operator,
         context: bpy.types.Context,
         event=None,
@@ -456,16 +474,33 @@ class IfcStore:
         props = tool.Blender.get_bim_props()
         props.is_dirty = True
         # Modals don't nest, and Blender handles the loop that continuously calls modal()
-        is_top_level_operator = not bool(IfcStore.current_transaction) or (method == "MODAL")
+        # So for modal operators we emulate nesting - first modal call is starting transaction
+        # and modal call with FINISHED/CANCELLED result finishes it.
+
+        # Example call chain for modal operators:
+        # Operator1.execute called
+        # -> Operator.execute called nested Operator2
+        #    -> Operator2.execute returned RUNNING_MODAL
+        #    -> Operator2.execute is finished
+        # -> Operator1.execute is finished
+        # -> Operator2.modal is called and returned PASS_THROUGH (going to another modal loop)
+        # -> Operator2.modal is finished
+        # -> Operator2.modal called again and last two steps repeat until FINISHED or CANCELLED
+        is_top_level_operator = not bool(IfcStore.current_transaction) and not cls.modal_in_progress
 
         if is_top_level_operator:
             IfcStore.begin_transaction(operator)
-            if tool.Ifc.get():
-                tool.Ifc.get().begin_transaction()
+            if ifc_file := tool.Ifc.get():
+                assert (
+                    ifc_file.transaction is None
+                ), "Trying to override existing transaction, possible IFC undo data loss."
+                ifc_file.begin_transaction()
             if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
                 BrickStore.begin_transaction()
             # This empty transaction ensures that each operator has at least one transaction
             IfcStore.add_transaction_operation(operator, rollback=lambda data: True, commit=lambda data: True)
+            if method == "MODAL":
+                cls.modal_in_progress = True
         else:
             operator.transaction_key = IfcStore.current_transaction
 
@@ -482,6 +517,9 @@ class IfcStore:
                     BrickStore.end_transaction()
                 IfcStore.end_transaction(operator)
                 bonsai.bim.handler.refresh_ui_data()
+
+                if method == "MODAL":
+                    cls.modal_in_progress = False
 
         try:
             if method == "EXECUTE":
@@ -503,8 +541,10 @@ class IfcStore:
 
         if method == "MODAL":
             if result == {"FINISHED"}:
+                is_top_level_operator = True
                 end_top_level_operator()
             elif result == {"CANCELLED"}:
+                is_top_level_operator = True
                 # Please read the docs: https://docs.blender.org/api/current/bpy.types.Operator.html
                 # > "when an operator returns {'CANCELLED'}, no undo step will be created".
                 # This means that if your modal edits IFC data, then the user

@@ -41,6 +41,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import bonsai.bim.handler
 import bonsai.bim.helper
@@ -153,7 +154,6 @@ class CreateProject(bpy.types.Operator):
         core.create_project(
             tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
         )
-        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):
@@ -1071,7 +1071,6 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = tool.Project.get_project_props()
         self.file = tool.Ifc.get()
-        bonsai.bim.schema.reload(self.file.schema_identifier)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")
@@ -1106,7 +1105,6 @@ class LoadProjectElements(bpy.types.Operator):
         props = tool.Project.get_project_props()
         props.is_loading = False
 
-        tool.Project.load_pset_templates()
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
@@ -1886,44 +1884,34 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         print("Finished", time.time() - start)
         return {"FINISHED"}
 
-    def process_occurrence(self, shape: ShapeElementType) -> None:
+    def process_occurrence(self, shape: W.TriangulationElement) -> None:
         element = self.file.by_id(shape.id)
-        faces: tuple[int, ...] = shape.geometry.faces
-        verts: tuple[float, ...] = shape.geometry.verts
-        materials: tuple[W.style, ...] = shape.geometry.materials
-        material_ids: tuple[int, ...] = shape.geometry.material_ids
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)
 
-        mesh = self.meshes.get(shape.geometry.id, None)
+        geometry = shape.geometry
+        mesh = self.meshes.get(geometry.id, None)
         if not mesh:
-            mesh = bpy.data.meshes.new("Mesh")
+            verts = ifcopenshell.util.shape.get_vertices(geometry)
+            material_ids = geometry.material_ids
+            mesh = tool.Loader.create_mesh_from_shape(geometry, mesh)
 
-            geometry = shape.geometry
             gprops = tool.Georeference.get_georeference_props()
-            if (
-                gprops.has_blender_offset
-                and geometry.verts
-                and tool.Loader.is_point_far_away(
-                    (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
-                )
-            ):
+            if gprops.has_blender_offset and verts.size and tool.Loader.is_point_far_away(verts[0], is_meters=True):
+                vert: np.ndarray = verts[0]
                 # Shift geometry close to the origin based off that first vert it found
-                verts_array = np.array(geometry.verts)
-                offset = np.array([-geometry.verts[0], -geometry.verts[1], -geometry.verts[2]])
-                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-                verts = offset_verts.tolist()
+                offset = ifcopenshell.util.shape_builder.np_translation_matrix(-vert)
+                mat = offset @ mat
 
                 mesh["has_cartesian_point_offset"] = True
-                mesh["cartesian_point_offset"] = f"{geometry.verts[0]},{geometry.verts[1]},{geometry.verts[2]}"
+                mesh["cartesian_point_offset"] = ",".join(vert.astype(str))
             else:
-                verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            material_to_slot = {}
+            material_to_slot: dict[int, int] = {}
             max_slot_index = 0
 
-            for i, material in enumerate(materials):
+            for i, material in enumerate(geometry.materials):
                 alpha = 1.0
                 if material.has_transparency and material.transparency > 0:
                     alpha = 1.0 - material.transparency
@@ -1946,11 +1934,10 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
 
             material_index = np.array([(material_to_slot[i] if i != -1 else 0) for i in material_ids], dtype="I")
 
-            mesh = tool.Loader.create_mesh_from_shape(geometry, mesh)
             mesh.polygons.foreach_set("material_index", material_index)
             mesh.update()
 
-            self.meshes[shape.geometry.id] = mesh
+            self.meshes[geometry.id] = mesh
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, mat)
@@ -2635,11 +2622,11 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         single_mode = False
-
+        polyline_props = tool.Model.get_polyline_props()
         if (
             self.measure_type == "SINGLE"
-            and context.scene.BIMPolylineProperties.insertion_polyline
-            and len(context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points) >= 2
+            and polyline_props.insertion_polyline
+            and len(polyline_props.insertion_polyline[0].polyline_points) >= 2
         ):
             single_mode = True
 
@@ -2662,19 +2649,19 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_inserting_polyline(context, event)
 
         # Add measurement type to the insertion polyline
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_data = polyline_props.insertion_polyline
         if not polyline_data:
             pass
         else:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
-            measurement_type = bpy.context.scene.MeasureToolSettings.measurement_type
+            polyline_data = polyline_props.insertion_polyline[0]
+            measurement_type = tool.Project.get_measure_tool_settings().measurement_type
             if not polyline_data.measurement_type:
                 polyline_data.measurement_type = measurement_type
 
         tool.Polyline.calculate_area(context, self.input_ui)
 
         if event.type == "E":
-            context.scene.BIMPolylineProperties.measurement_polyline.clear()
+            polyline_props.measurement_polyline.clear()
             MeasureDecorator.uninstall()
             tool.Blender.update_viewport()
 
@@ -2737,6 +2724,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
             return {"PASS_THROUGH"}
 
         self.handle_mouse_move(context, event)
+        polyline_props = tool.Model.get_polyline_props()
 
         if event.value == "PRESS" and event.type == "LEFTMOUSE":
             tool.Blender.update_viewport()
@@ -2747,7 +2735,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
                     self.clicked_faces.append(obj.data.polygons[face_index])
                     self.total_area += obj.data.polygons[face_index].area
                     self.input_ui.set_value("AREA", self.total_area)
-                    polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline.add()
+                    polyline_data = polyline_props.insertion_polyline.add()
                     polyline_data.id = obj.name + str(face_index)
                     for v_id in obj.data.polygons[face_index].vertices:
                         vertex = obj.matrix_world @ obj.data.vertices[v_id].co
@@ -2765,14 +2753,14 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
                     self.clicked_faces.remove(obj.data.polygons[face_index])
                     self.total_area -= obj.data.polygons[face_index].area
                     self.input_ui.set_value("AREA", self.total_area)
-                    polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+                    polyline_data = polyline_props.insertion_polyline
                     for i, polyline in enumerate(polyline_data):
                         if polyline.id == obj.name + str(face_index):
                             polyline_data.remove(i)
             tool.Blender.update_viewport()
 
         if event.value == "RELEASE" and event.type in {"ESC", "RIGHTMOUSE"}:
-            bpy.context.scene.BIMPolylineProperties.insertion_polyline.clear()
+            polyline_props.insertion_polyline.clear()
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             FaceAreaDecorator.uninstall()
@@ -2796,10 +2784,12 @@ class ClearMeasurement(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.scene.BIMPolylineProperties.measurement_polyline) > 0
+        polyline_props = tool.Model.get_polyline_props()
+        return len(polyline_props.measurement_polyline) > 0
 
     def execute(self, context):
-        context.scene.BIMPolylineProperties.measurement_polyline.clear()
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_props.measurement_polyline.clear()
         MeasureDecorator.uninstall()
         tool.Blender.update_viewport()
         return {"FINISHED"}

@@ -646,6 +646,8 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			view_box_3d_.emplace();
 			BRepBndLib::AddOBB(compound_unmirrored, *view_box_3d_, false, false, false);
 #endif
+		} else {
+			Logger::Error("Failed to box or edge from drawing annotation");
 		}
 
 		std::vector<string_property> props;

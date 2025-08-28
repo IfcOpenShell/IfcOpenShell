@@ -139,5 +139,5 @@ Next Steps
 - Start defining spaces and zones within your building.
 
 .. seealso::
-  - :doc:`/users/user_interface/property_editor/scene_editor/project_overview/project_info`
-  - :doc:`/users/user_interface/topbar`
+  - :doc:`/reference/project_overview/project_info`
+  - :doc:`/reference/general/topbar`

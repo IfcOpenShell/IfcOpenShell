@@ -26,12 +26,14 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def import_bsdd_classes(bsdd: type[tool.Bsdd], obj, obj_type) -> int:
-    return bsdd.import_classes(obj, obj_type)
+def import_bsdd_classes(bsdd: type[tool.Bsdd], obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> None:
+    bsdd.import_classes(obj, obj_type)
+    # Preload properties UIList for newly loaded bsdd class.
+    bsdd.import_class_properties()
 
 
-def search_bsdd_properties(bsdd: type[tool.Bsdd], keyword: str, obj, obj_type) -> int:
-    return bsdd.import_properties(obj, obj_type, keyword)
+def search_bsdd_properties(bsdd: type[tool.Bsdd], keyword: str, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> None:
+    bsdd.import_properties(obj, obj_type, keyword)
 
 
 def load_bsdd(bsdd: type[tool.Bsdd]) -> None:

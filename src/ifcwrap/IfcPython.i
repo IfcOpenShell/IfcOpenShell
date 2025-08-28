@@ -94,6 +94,7 @@
 %ignore loop_to_function_item_upgrade_impl;
 
 // settings, can this done more generally?
+// GeometrySerializer.h
 %ignore UseElementNames;
 %ignore UseElementGuids;
 %ignore UseElementStepIds;
@@ -103,6 +104,7 @@
 %ignore FloatingPointDigits;
 %ignore BaseUri;
 %ignore WktUseSection;
+// ConversionSettings.h
 %ignore MesherLinearDeflection;
 %ignore MesherAngularDeflection;
 %ignore ReorientShells;
@@ -137,14 +139,25 @@
 %ignore SiteLocalPlacement;
 %ignore BuildingLocalPlacement;
 %ignore NoParallelMapping;
+%ignore PermissiveShapeReuse;
 %ignore ForceSpaceTransparency;
 %ignore CircleSegments;
+%ignore CgalSmoothAngleDegrees;
 %ignore KeepBoundingBoxes;
 %ignore SurfaceColour;
-%ignore PiecewiseStepType;
-%ignore PiecewiseStepParam;
+%ignore ComputeCurvature;
+%ignore FunctionStepType;
+%ignore FunctionStepParam;
 %ignore ModelOffset;
 %ignore ModelRotation;
+%ignore TriangulationType;
+%ignore CgalEmitOriginalEdges;
+%ignore OcctNoCleanTriangulation;
+%ignore CacheShapes;
+%ignore DeferProcessingFirstElement;
+%ignore MaxOffset;
+%ignore MaxOffsetDeviation;
+%ignore ApplyOffset;
 
 // Triangulated representation helper struct
 %ignore EdgeKey;

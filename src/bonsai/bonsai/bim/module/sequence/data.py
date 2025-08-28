@@ -32,6 +32,7 @@ def refresh():
     TaskICOMData.is_loaded = False
     WorkScheduleData.is_loaded = False
     AnimationColorSchemeData.is_loaded = False
+    StatusData.is_loaded = False
 
 
 class SequenceData:
@@ -386,12 +387,11 @@ class TaskICOMData:
         cls.is_loaded = True
 
     @classmethod
-    def can_active_resource_be_assigned(cls):
-        resource_props = bpy.context.scene.BIMResourceProperties
-        resource_tprops = bpy.context.scene.BIMResourceTreeProperties
-        total_resources = len(resource_tprops.resources)
-        if total_resources and resource_props.active_resource_index < total_resources:
-            resource_id = resource_tprops.resources[resource_props.active_resource_index].ifc_definition_id
+    def can_active_resource_be_assigned(cls) -> bool:
+        props = tool.Resource.get_resource_props()
+        active_resource = props.active_resource
+        if active_resource:
+            resource_id = active_resource.ifc_definition_id
             return not tool.Ifc.get().by_id(resource_id).is_a("IfcCrewResource")
         return False
 
@@ -422,3 +422,25 @@ class AnimationColorSchemeData:
             except:
                 pass
         return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
+
+
+class StatusData:
+    data: dict[str, Any] = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls) -> None:
+        cls.is_loaded = True
+        cls.data = {
+            "statuses_with_elements": cls.statuses_with_elements(),
+        }
+
+    @classmethod
+    def statuses_with_elements(cls) -> set[str]:
+        statuses = ["No Status"]
+        statuses.extend(tool.Sequence.ELEMENT_STATUSES)
+        statuses_used: set[str] = set()
+        for status in statuses:
+            if tool.Sequence.get_elements_by_status(status):
+                statuses_used.add(status)
+        return statuses_used

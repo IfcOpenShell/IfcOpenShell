@@ -18,13 +18,9 @@
 
 import bpy
 import json
-from bpy.types import Context, OperatorProperties
 import ifcopenshell.api
 import ifcopenshell.api.pset
-import ifcopenshell.util.attribute
 import ifcopenshell.util.element
-import ifcopenshell.util.pset
-import ifcopenshell.util.unit
 import bonsai.bim.schema
 import bonsai.tool as tool
 import bonsai.core.pset as core
@@ -240,21 +236,31 @@ class AddQto(bpy.types.Operator, tool.Ifc.Operator):
 class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_property_to_selection"
     bl_label = "Copy Property To Selection"
-    name: bpy.props.StringProperty()
+    bl_options = {"REGISTER", "UNDO"}
+
+    name: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        name: str
 
     def _execute(self, context):
-        pset_id = context.active_object.PsetProperties.active_pset_id
+        assert (obj := context.active_object)
+        props = tool.Pset.get_pset_props(obj.name, "Object")
+        pset_id = props.active_pset_id
         if pset_id:
             is_pset = tool.Ifc.get().by_id(pset_id).is_a("IfcPropertySet")
         else:
-            is_pset = context.active_object.PsetProperties.active_pset_type == "PSET"
-        pset_name = context.active_object.PsetProperties.active_pset_name
-        prop = context.active_object.PsetProperties.properties.get(self.name)
+            is_pset = props.active_pset_type == "PSET"
+        pset_name = props.active_pset_name
+        prop = props.properties[self.name]
         if prop.value_type == "IfcPropertySingleValue":
             prop_value = prop.metadata.get_value()
         elif prop.value_type == "IfcPropertyEnumeratedValue":
             value_name = prop.metadata.get_value_name()
             prop_value = [e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected]
+        else:
+            self.report({"ERROR"}, f"Unsupport value type: '{prop.value_type}'.")
+            return {"CANCELLED"}
 
         for obj in tool.Blender.get_selected_objects():
             core.copy_property_to_selection(

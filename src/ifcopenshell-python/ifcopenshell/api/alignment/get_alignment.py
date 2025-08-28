@@ -16,16 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.util
 from ifcopenshell import entity_instance
-from collections.abc import Sequence
-
-import ifcopenshell.util.representation
 
 
 def get_alignment(layout: entity_instance) -> entity_instance:
     """
     Returns the alignment that nests this layout
     """
-    return layout.Nests[0].RelatingObject if 0 < len(layout.Nests) else None
+    alignment = None
+    for nest in layout.Nests:
+        if nest.RelatingObject.is_a("IfcAlignment"):
+            alignment = nest.RelatingObject
+            break
+
+    return alignment

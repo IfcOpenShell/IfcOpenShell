@@ -237,16 +237,14 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
 
     Example: bulk copy a wall to multiple storeys
 
-    1. Select one or more 3D elements in the viewport
-    2. Select one or more spatial containers in the viewport
-    3. Press this button
-    4. The copied elements will have a new position relative to the destination containers
+    The copied elements will have a new position relative to the destination containers
 
     Copying containers to other containers currently is not supported."""
 
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
     bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
 
     def _execute(self, context):
         objs = tool.Spatial.get_selected_objects_without_containers()
@@ -254,7 +252,9 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, "No non-spatial objects are selected.")
             return
 
-        containers = tool.Spatial.get_selected_containers()
+        # TODO: make a multi-select in the spatial decomposition panel to support multiple containers
+        # containers = tool.Spatial.get_selected_containers()
+        containers = [tool.Ifc.get().by_id(self.container)]
         # Track decompositions so they can be recreated after the operation
         relationships = tool.Root.get_decomposition_relationships(objs)
         old_to_new = {}

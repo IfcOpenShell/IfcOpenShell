@@ -38,6 +38,8 @@ class BIM_PT_cost_schedules(Panel):
     bl_parent_id = "BIM_PT_tab_cost"
     bl_options = {"HIDE_HEADER"}
 
+    layout: bpy.types.UILayout
+
     @classmethod
     def poll(cls, context):
         file = tool.Ifc.get()
@@ -127,6 +129,7 @@ class BIM_PT_cost_schedules(Panel):
             row.operator("bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL").cost_schedule = (
                 cost_schedule["id"]
             )
+            row.operator("bim.copy_cost_schedule", text="", icon="DUPLICATE").cost_schedule = cost_schedule["id"]
             row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
         if self.props.active_cost_schedule_id == cost_schedule["id"]:
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
@@ -138,13 +141,13 @@ class BIM_PT_cost_schedules(Panel):
                     self.draw_currency_ui()
                 self.draw_editable_cost_item_ui()
 
-    def draw_column_ui(self):
+    def draw_column_ui(self) -> None:
         row = self.layout.row(align=True)
         row.prop(self.props, "cost_column", text="")
         row.operator("bim.add_cost_column", text="", icon="ADD").name = self.props.cost_column
         self.layout.template_list("BIM_UL_cost_columns", "", self.props, "columns", self.props, "active_column_index")
 
-    def draw_currency_ui(self):
+    def draw_currency_ui(self) -> None:
         row = self.layout.row(align=True)
         if CostSchedulesData.data["currency"]:
             text = "Currency used: {}".format(CostSchedulesData.data["currency"]["name"])
@@ -161,7 +164,7 @@ class BIM_PT_cost_schedules(Panel):
     def draw_editable_cost_schedule_ui(self):
         bonsai.bim.helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
-    def draw_editable_cost_item_ui(self):
+    def draw_editable_cost_item_ui(self) -> None:
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         ifc_definition_id = None
@@ -217,7 +220,7 @@ class BIM_PT_cost_schedules(Panel):
             elif self.props.cost_item_editing_type == "VALUES":
                 self.draw_editable_cost_item_values_ui()
 
-    def draw_editable_cost_item_attributes_ui(self):
+    def draw_editable_cost_item_attributes_ui(self) -> None:
         bonsai.bim.helper.draw_attributes(self.props.cost_item_attributes, self.layout)
 
     def draw_editable_cost_item_quantities_ui(self, cost_item: dict[str, Any]):
@@ -393,7 +396,7 @@ class BIM_PT_cost_item_types(Panel):
         op.cost_item = cost_item.ifc_definition_id
 
         rtprops = context.scene.BIMResourceTreeProperties
-        rprops = context.scene.BIMResourceProperties
+        rprops = tool.Resource.get_resource_props()
         if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):
             if has_quantity_names:
                 op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
@@ -552,9 +555,8 @@ class BIM_PT_cost_item_quantities(Panel):
         op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
         op.cost_item = cost_item.ifc_definition_id
 
-        rtprops = context.scene.BIMResourceTreeProperties
-        rprops = context.scene.BIMResourceProperties
-        if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):
+        active_resource = tool.Resource.get_resource_props().active_resource
+        if active_resource:
             if has_quantity_names:
                 op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
                 op.related_object_type = "RESOURCE"
@@ -732,6 +734,9 @@ class BIM_UL_cost_items_trait:
         if cost_item["AssignedCostRate"] is not None:
             op = row.operator("bim.show_assigned_cost_rate", text="", emboss=False, icon="ZOOM_IN")
             identification = cost_item["AssignedCostRate"].Identification
+            op.parent_cost_schedule_name = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()][
+                "ParentCostSchedule"
+            ].Name
             op.assigned_rate_identification = identification if identification is not None else "XXX"
             op.assigned_rate_name = cost_item["AssignedCostRate"].Name or ""
             op.assigned_rate_description = cost_item["AssignedCostRate"].Description or ""

@@ -37,6 +37,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -102,6 +103,10 @@ class Geometry(bonsai.core.tool.Geometry):
         if getattr(old_data, "is_editmode", None):
             raise Exception("user_remap is not supported for meshes in EDIT mode")
         old_data.user_remap(new_data)
+
+    @classmethod
+    def get_cache(cls) -> Union[ifcopenshell.geom.serializers.hdf5, None]:
+        return IfcStore.get_cache()
 
     @classmethod
     def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
@@ -879,6 +884,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
+                assert isinstance(shape, W.TriangulationElement)
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
                     # It's possible that there will be multiple shapes for the same context,
@@ -2302,3 +2308,19 @@ class Geometry(bonsai.core.tool.Geometry):
     def name_item_object(cls, obj: bpy.types.Object, item: ifcopenshell.entity_instance) -> None:
         assert (data := obj.data)
         obj.name = data.name = f"Item/{item.is_a()}/{item.id()}"
+
+    @classmethod
+    def get_selected_objects_with_representations(cls) -> set[bpy.types.Object]:
+        objects: set[bpy.types.Object] = set()
+        props = tool.Geometry.get_geometry_props()
+        for obj in tool.Blender.get_selected_objects():
+            if not obj.data:
+                continue
+            if not tool.Ifc.get_entity(obj):
+                if tool.Geometry.is_representation_item(obj):
+                    assert (obj := props.representation_obj)
+                    objects.add(obj)
+                    continue
+                continue
+            objects.add(obj)
+        return objects

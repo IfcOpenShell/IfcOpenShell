@@ -59,6 +59,7 @@ if TYPE_CHECKING:
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
+    from bonsai.bim.module.covetool.prop import CoveToolProperties
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
     from bonsai.bim.module.fm.prop import BIMFMProperties
@@ -85,6 +86,9 @@ class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
+    SEQUENCE_COLOR_SCHEME_ICON: Literal["STRIP_COLOR_03"] = (  # pyright: ignore[reportAssignmentType]
+        "STRIP_COLOR_03" if bpy.app.version >= (4, 4, 0) else "SEQUENCE_COLOR_04"
+    )
 
     BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]
     """
@@ -246,9 +250,9 @@ class Blender(bonsai.core.tool.Blender):
             cost_props = tool.Cost.get_cost_props()
             return cost_props.cost_items[cost_props.active_cost_item_index].ifc_definition_id
         elif obj_type == "Resource":
-            return context.scene.BIMResourceTreeProperties.resources[
-                context.scene.BIMResourceProperties.active_resource_index
-            ].ifc_definition_id
+            active_resource = tool.Resource.get_resource_props().active_resource
+            assert active_resource
+            return active_resource.ifc_definition_id
         elif obj_type == "Profile":
             props = tool.Profile.get_profile_props()
             return props.profiles[props.active_profile_index].ifc_definition_id
@@ -259,6 +263,10 @@ class Blender(bonsai.core.tool.Blender):
             props = tool.Blender.get_group_props()
             assert (active_group := props.active_group)
             return active_group.ifc_definition_id
+        elif obj_type == "Zone":
+            props = tool.System.get_zone_props()
+            assert (active_zone := props.active_zone)
+            return active_zone.ifc_definition_id
         assert_never(obj_type)
 
     @classmethod
@@ -592,7 +600,7 @@ class Blender(bonsai.core.tool.Blender):
         return op, row
 
     @classmethod
-    def get_object_bounding_box(cls, obj: bpy.types.Object) -> dict:
+    def get_object_bounding_box(cls, obj: bpy.types.Object) -> dict[str, Union[tuple[float, float, float], Vector]]:
         """Returns dict with local min and max x, y, z values for the object.
 
         Careful with using this method for objects in EDIT mode because
@@ -1551,6 +1559,51 @@ class Blender(bonsai.core.tool.Blender):
         return repr(bpy_struct)
 
     @classmethod
+    def resolve_data_path_to_data_attr(cls, data_path: str) -> tuple[bpy.types.bpy_struct, str]:
+        """
+        :param data_path: Non-full data path to attribute.
+        Examples:
+            - `preferences.prop_group.string_prop` (`preferences` would mean addon preferences)
+            - `scene.string_prop` (`scene` can be any member of `Context`)
+
+        :return: Resolved tuple of Blender Struct and property name.
+        Examples:
+            - `(preferences.prop_group, "string_prop)`
+            - `(scene, "string_prop)`
+
+        """
+        # Get data to modify.
+        base_path, _, data_path_ = data_path.partition(".")
+        if base_path == "preferences":
+            data = tool.Blender.get_addon_preferences()
+            data_path = data_path_
+        else:
+            data = bpy.context
+
+        # Get property group if available.
+        base_path, _, attr = data_path.rpartition(".")
+        if base_path:
+            data = data.path_resolve(base_path)
+        return data, attr
+
+    @classmethod
+    @contextlib.contextmanager
+    def preserve_prop_value(cls, bpy_object: bpy.types.bpy_struct, prop_name: str):
+        if bpy_object.is_property_set(prop_name):
+            prop_value = getattr(bpy_object, prop_name)
+        else:
+            prop_value = ...
+        try:
+            yield
+        except:
+            raise
+        finally:
+            if prop_value is ...:
+                bpy_object.property_unset(prop_name)
+                return
+            setattr(bpy_object, prop_name, prop_value)
+
+    @classmethod
     def set_prop_from_path(cls, bpy_object: bpy.types.bpy_struct, prop_path: str, value: Any) -> None:
         """Set `data_block` property value using path from `path_from_id`."""
 
@@ -1618,7 +1671,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_user_data_dir(cls) -> Path:
-        props = cls.get_bim_props()
+        props = cls.get_addon_preferences()
         return Path(props.data_dir)
 
     @classmethod
@@ -1730,6 +1783,11 @@ class Blender(bonsai.core.tool.Blender):
     def get_fm_props(cls) -> BIMFMProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMFMProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_covetool_props(cls) -> CoveToolProperties:
+        assert (scene := bpy.context.scene)
+        return scene.CoveToolProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
@@ -1865,3 +1923,59 @@ class Blender(bonsai.core.tool.Blender):
 
         # Remove file if crash didn't happened.
         path.unlink()
+
+    @classmethod
+    def sync_old_preferences(cls) -> None:
+        # Added on 25.07.15.
+        # TODO: deprecate later.
+        settings_remap = {
+            "scene.BIMBSDDProperties.load_preview_dictionaries": "preferences.bsdd_load_preview_dictionaries",
+            "scene.BIMBSDDProperties.load_inactive_dictionaries": "preferences.bsdd_load_inactive_dictionaries",
+            "scene.BIMBSDDProperties.load_test_dictionaries": "preferences.bsdd_load_test_dictionaries",
+            "scene.BIMProjectProperties.should_disable_undo_on_save": "preferences.should_disable_undo_on_save",
+            "scene.BIMProjectProperties.should_stream": "preferences.should_stream",
+            "scene.BIMModelProperties.occurrence_name_style": "preferences.occurrence_name_style",
+            "scene.BIMModelProperties.occurrence_name_function": "preferences.occurrence_name_function",
+            "scene.BIMProperties.pset_dir": "preferences.pset_dir",
+            "scene.BIMProperties.data_dir": "preferences.data_dir",
+            "scene.BIMProperties.cache_dir": "preferences.cache_dir",
+            "scene.DocProperties.sheets_dir": "preferences.doc.sheets_dir",
+            "scene.DocProperties.layouts_dir": "preferences.doc.layouts_dir",
+            "scene.DocProperties.titleblocks_dir": "preferences.doc.titleblocks_dir",
+            "scene.DocProperties.drawings_dir": "preferences.doc.drawings_dir",
+            "scene.DocProperties.stylesheet_path": "preferences.doc.stylesheet_path",
+            "scene.DocProperties.schedules_stylesheet_path": "preferences.doc.schedules_stylesheet_path",
+            "scene.DocProperties.markers_path": "preferences.doc.markers_path",
+            "scene.DocProperties.symbols_path": "preferences.doc.symbols_path",
+            "scene.DocProperties.patterns_path": "preferences.doc.patterns_path",
+            "scene.DocProperties.shadingstyles_path": "preferences.doc.shadingstyles_path",
+            "scene.DocProperties.shadingstyle_default": "preferences.doc.shadingstyle_default",
+            "scene.DocProperties.drawing_font": "preferences.doc.drawing_font",
+            "scene.DocProperties.magic_font_scale": "preferences.doc.magic_font_scale",
+            "scene.DocProperties.imperial_precision": "preferences.doc.imperial_precision",
+            "scene.DocProperties.tolerance": "preferences.doc.tolerance",
+            "scene.DocProperties.classes_to_wireframe": "preferences.doc.classes_to_wireframe",
+            "scene.DocProperties.classes_no_cut": "preferences.doc.classes_no_cut",
+        }
+
+        props_updated = False
+        for old_path, path in settings_remap.items():
+            data, attr = cls.resolve_data_path_to_data_attr(path)
+            # User already overridden the value.
+            if data.is_property_set(attr):
+                continue
+
+            data_old, attr_old = cls.resolve_data_path_to_data_attr(old_path)
+            # User was only using default value previously.
+            if attr_old not in data_old:
+                continue
+
+            old_value = data_old[attr_old]
+            print(f"Updating {path} based on previous value from {old_path} - '{old_value}'.")
+            setattr(data, attr, old_value)
+            props_updated = True
+
+        # Doesn't seem to save on exit if edited from Python API, so we do it manually.
+        assert bpy.context.preferences
+        if props_updated and bpy.context.preferences.use_preferences_save:
+            bpy.ops.wm.save_userpref()

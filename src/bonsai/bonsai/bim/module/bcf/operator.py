@@ -1208,9 +1208,11 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         self.file = tool.Ifc.get()
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+        assert context.scene
 
         props = tool.Bcf.get_bcf_props()
         blender_topic = props.active_topic
+        assert blender_topic
         topic = bcfxml.topics[blender_topic.name]
         if self.viewpoint_guid:
             viewpoint_guid = self.viewpoint_guid
@@ -1234,6 +1236,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         cam_height = context.scene.render.resolution_y
         cam_aspect = cam_width / cam_height
 
+        assert isinstance(obj.data, bpy.types.Camera)
         obj.data.background_images.clear()
         if viewpoint.snapshot:
             obj.data.show_background_images = True
@@ -1273,7 +1276,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if tool.Bcf.get_viewpoint_bitmaps(viewpoint):
             self.create_bitmaps(bcfxml, viewpoint, topic)
 
-        self.setup_camera(viewpoint, obj, cam_aspect, context)
+        self.setup_camera(viewpoint, obj, cam_aspect, context, cam_height, cam_width)
         return {"FINISHED"}
 
     def setup_camera(
@@ -1282,6 +1285,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         obj: bpy.types.Object,
         cam_aspect: float,
         context: bpy.types.Context,
+        cam_height: float,
+        cam_width: float,
     ) -> None:
         assert isinstance(obj.data, bpy.types.Camera)
         if viewpoint.visualization_info.orthogonal_camera:

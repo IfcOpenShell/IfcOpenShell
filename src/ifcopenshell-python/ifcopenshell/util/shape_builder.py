@@ -157,6 +157,20 @@ def np_angle_signed(a: VectorType, b: VectorType) -> float:
     return np.arctan2(det, dot)
 
 
+def np_translation_matrix(vector: VectorType) -> npt.NDArray[np.float64]:
+    """Get translation matrix.
+
+    Designed to be similar to mathutils Matrix.Rotation but to use numpy.
+
+    :param vector: 3D translation vector.
+    :return: An 4x4 identity matrix with a translation
+    """
+    eye = np.eye(4, dtype=np.float64)
+    M_TRANSLATION = (slice(0, 3), 3)
+    eye[M_TRANSLATION] = vector
+    return eye
+
+
 def np_rotation_matrix(
     angle: float, size: int, axis: Optional[Union[Literal["X", "Y", "Z"], VectorType]] = None
 ) -> np.ndarray:
@@ -1132,7 +1146,7 @@ class ShapeBuilder:
         if polyline.is_a("IfcIndexedPolyCurve"):
             coords = np.array(polyline.Points.CoordList)
         elif polyline.is_a("IfcPolyline"):
-            coords = np.array(p.Coordinates for p in polyline.Points)
+            coords = np.array(tuple(p.Coordinates for p in polyline.Points))
         else:
             raise Exception(f"Unsupported polyline type: {polyline.is_a()}")
         return coords
@@ -1390,7 +1404,7 @@ class ShapeBuilder:
         return self.file.createIfcTriangulatedFaceSet(Coordinates=ifc_points, CoordIndex=ifc_faces)
 
     def polygonal_face_set(
-        self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]
+        self, points: SequenceOfVectors, faces: Sequence[Union[Sequence[int], Sequence[Sequence[int]]]]
     ) -> ifcopenshell.entity_instance:
         """
         Generate an IfcPolygonalFaceSet
@@ -1399,10 +1413,33 @@ class ShapeBuilder:
 
         :param points: list of 3d coordinates
         :param faces: list of faces consisted of point indices (points indices starting from 0)
+                      in case of multiple sequences per face, the subsequent ones are inner voids
         :return: IfcPolygonalFaceSet
         """
+
+        def is_sequence_of_ints(x):
+            return isinstance(x, Sequence) and not isinstance(x, (str, bytes)) and all(isinstance(el, int) for el in x)
+
+        def is_sequence_of_sequence_of_ints(x):
+            return (
+                isinstance(x, Sequence) and not isinstance(x, (str, bytes)) and all(is_sequence_of_ints(el) for el in x)
+            )
+
+        def incr(face):
+            return [i + 1 for i in face]
+
+        if not all(is_sequence_of_ints(f) or is_sequence_of_sequence_of_ints(f) for f in faces):
+            raise ValueError("Expected a sequence of int or sequence of sequence of int for each face")
+
         ifc_points = self.file.createIfcCartesianPointList3D(ifc_safe_vector_type(points))
-        ifc_faces = [self.file.createIfcIndexedPolygonalFace([i + 1 for i in face]) for face in faces]
+        ifc_faces = [
+            (
+                self.file.createIfcIndexedPolygonalFace(incr(face))
+                if is_sequence_of_ints(face)
+                else self.file.createIfcIndexedPolygonalFaceWithVoids(incr(face[0]), list(map(incr, face[1:])))
+            )
+            for face in faces
+        ]
         return self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
 
     def extrude_face_set(

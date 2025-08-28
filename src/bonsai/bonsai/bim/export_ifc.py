@@ -139,6 +139,10 @@ class IfcExporter:
 
 
 class IfcExportSettings:
+    """
+    Initialize only using `IfcExportSettings.factory()`.
+    """
+
     def __init__(self):
         self.logger: Logger = None
         self.output_file: str = None

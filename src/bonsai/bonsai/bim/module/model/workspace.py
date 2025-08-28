@@ -72,6 +72,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "B", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_B")]}),
         ("bim.hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
+        ("bim.hotkey", {"type": "E", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_E")]}),
         ("bim.hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
@@ -654,7 +655,18 @@ class CreateObjectUI:
         row = box.row(align=True)
         thumbnail: int = AuthoringData.type_thumbnails.get(relating_type_data["id"], 0)
         row.template_icon(icon_value=thumbnail)
-        row.operator("bim.launch_type_manager", text=relating_type_data["name"], emboss=False)
+        row_ = prop_with_search(
+            row,
+            cls.props,
+            "relating_type_id",
+            text="",
+            button_kwargs={"emboss": False},
+            emboss=True,
+            enable_relating_type_suggestions=True,
+            search_threshold=0,
+        )
+        # Limit width because names can get really long.
+        row_.ui_units_x = 10.0
         row.operator(
             "bim.launch_type_manager",
             icon=tool.Blender.TYPE_MANAGER_ICON,
@@ -836,6 +848,10 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
+                row, "Extend Height", "C_E", "Extend wall height to 3D cursor Z position", ui_context
+            )
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(
                 row, "Trim", "S_T", "Connects and trims two non-parallel elements into a joint", ui_context
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
@@ -875,7 +891,10 @@ class EditObjectUI:
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Extend", "S_E", "", ui_context)
-
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(
+                row, "Extend Height", "C_E", "Extend wall height to 3D cursor Z position", ui_context
+            )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             if AuthoringData.data["active_class"] in (
                 "IfcCableCarrierSegment",
@@ -1413,6 +1432,48 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.edit_openings(apply_all=True)
         else:
             bpy.ops.bim.show_openings()
+
+    def hotkey_C_E(self):
+        if not bpy.context.selected_objects:
+            return
+
+        cursor_z = bpy.context.scene.cursor.location.z
+        layer2_objects = []
+        layer2_bases = []
+
+        for obj in bpy.context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and tool.Model.get_usage_type(element) == "LAYER2":
+                obj_base_z = obj.matrix_world.translation.z
+                layer2_objects.append(obj)
+                layer2_bases.append(obj_base_z)
+
+        if not layer2_objects:
+            self.report({"ERROR"}, "No LAYER2 objects selected")
+            return
+
+        if layer2_bases and len(set(layer2_bases)) > 1:
+            min_base = min(layer2_bases)
+            max_base = max(layer2_bases)
+            self.report(
+                {"ERROR"},
+                f"Selected LAYER2 objects have different base heights ({min_base:.3f}m to {max_base:.3f}m). All objects must be at the exact same base level.",
+            )
+            return
+
+        common_base = layer2_bases[0]
+        new_height = cursor_z - common_base
+
+        if new_height > 0:
+            props = tool.Model.get_model_props()
+            props.extrusion_depth = new_height
+            bpy.ops.bim.change_extrusion_depth(depth=new_height)
+            self.report({"INFO"}, f"Extended {len(layer2_objects)} LAYER2 object(s) to z: {cursor_z:.2f}m")
+        else:
+            self.report(
+                {"ERROR"},
+                f"Negative height not allowed. Cursor ({cursor_z:.2f}m) must be above object base ({common_base:.2f}m)",
+            )
 
 
 custom_icon_previews = None

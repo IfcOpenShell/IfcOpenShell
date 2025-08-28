@@ -381,7 +381,7 @@ class PolylineDecorator:
 
         start = self.polyline_points[0]
         if len(self.polyline_points) == 1:
-            end = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+            end = tool.Model.get_polyline_props().snap_mouse_point[0]
         else:
             end = self.polyline_points[1]
 
@@ -632,14 +632,16 @@ class PolylineDecorator:
             self.draw_batch("LINES", polyline_verts, self.decorator_color_special, polyline_edges)
 
     def get_polylines_data(self, context):
-        self.measure_type = context.scene.MeasureToolSettings.measurement_type
-        self.polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        self.measure_data = context.scene.BIMPolylineProperties.measurement_polyline
+        self.measure_type = tool.Project.get_measure_tool_settings().measurement_type
+        polyline_props = tool.Model.get_polyline_props()
+        self.polyline_data = polyline_props.insertion_polyline
+        self.measure_data = polyline_props.measurement_polyline
 
     def select_and_draw_measurements_text(self, context):
         self.get_polylines_data(context)
         if self.polyline_data:
-            self.polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_props = tool.Model.get_polyline_props()
+            self.polyline_data = polyline_props.insertion_polyline[0]
             self.polyline_points = self.polyline_data.polyline_points
             self.draw_measurements_text(context)
 
@@ -653,7 +655,8 @@ class PolylineDecorator:
     def select_and_draw_measurements_poly(self, context):
         self.get_polylines_data(context)
         if self.polyline_data:
-            self.polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_props = tool.Model.get_polyline_props()
+            self.polyline_data = polyline_props.insertion_polyline[0]
             self.polyline_points = self.polyline_data.polyline_points
             self.draw_measurements_poly(context)
 
@@ -676,11 +679,12 @@ class PolylineDecorator:
         region = context.region
         rv3d = region.data
 
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         try:
-            snap_prop = context.scene.BIMPolylineProperties.snap_mouse_ref[0]
+            snap_prop = polyline_props.snap_mouse_ref[0]
             mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
         except:
             pass
@@ -742,7 +746,8 @@ class PolylineDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         gpu.state.point_size_set(6)
 
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
         # Point related to the mouse
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
 
@@ -815,9 +820,10 @@ class PolylineDecorator:
                     self.draw_batch("LINES", axis2, highlight_color(axis_color2), [(0, 1)])
 
         # Create polyline with selected points
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         if polyline_data:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_data = polyline_props.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
         else:
             polyline_points = []
@@ -887,7 +893,7 @@ class ProductDecorator:
 
     @classmethod
     def uninstall(cls):
-        props = bpy.context.scene.BIMProductPreviewProperties  # updated by model/polyline.py
+        props = tool.Model.get_product_preview_props()  # updated by model/polyline.py
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()
@@ -906,9 +912,9 @@ class ProductDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def get_product_preview_data(self, context):
-        props = context.scene.BIMProductPreviewProperties
-        data = {}
+    def get_product_preview_data(self, context) -> dict[str, Any]:
+        props = tool.Model.get_product_preview_props()
+        data: dict[str, Any] = {}
         data["verts"] = [(*v.value_3d,) for v in props.verts]
         data["edges"] = [(int(e.value_2d[0]), int(e.value_2d[1])) for e in props.edges]
         data["tris"] = [(int(t.value_3d[0]), int(t.value_3d[1]), int(t.value_3d[2])) for t in props.tris]
@@ -927,7 +933,8 @@ class ProductDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         self.line_shader.uniform_float("lineWidth", 2.0)
         decorator_color = self.addon_prefs.decorator_color_special
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
 
         self.relating_type = None
@@ -1114,7 +1121,8 @@ class FaceAreaDecorator:
         gpu.state.blend_set("ALPHA")
         decorator_color = self.addon_prefs.decorator_color_special
 
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
         for i, polyline in enumerate(polyline_data):
             vertices = []
             for point in polyline.polyline_points:
@@ -1170,11 +1178,9 @@ class BoundingBoxDecorator:
         if not objects:
             return None, None, None
         if len(objects) == 1:
-            bpy.context.scene.transform_orientation_slots[1].type = "LOCAL"
             obj = objects[0]
             corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
         else:
-            bpy.context.scene.transform_orientation_slots[1].type = "GLOBAL"
             all_corners = []
             for obj in objects:
                 if hasattr(obj, "bound_box"):

@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.alignment
 import ifcopenshell.util.element
 from ifcopenshell import entity_instance
 
@@ -25,17 +26,22 @@ def get_alignment_station(file: ifcopenshell.file, alignment: entity_instance) -
     """
     Returns the start station of the alignment. If the alignment is nested by an IfcReferent
     the referent is checked for PredefinedType of STATION and an occurance of Pset_Stationing.Station,
-    otherwise start station is taken to be 0.0.
+    otherwise returns 0.0.
     """
 
     if not alignment.is_a("IfcAlignment"):
         raise TypeError(f"Expected entity type to be IfcAlignment, instead received {alignment.is_a()}")
 
     start_station = 0.0
-    components = ifcopenshell.util.element.get_components(alignment)
-    for c in components:
-        if c.is_a("IfcReferent") and ifcopenshell.util.element.get_predefined_type(c) == "STATION":
-            start_station = ifcopenshell.util.element.get_pset(c, name="Pset_Stationing", prop="Station")
-            break
+
+    parent_alignment = ifcopenshell.api.alignment.get_parent_alignment(alignment)
+    if parent_alignment:
+        start_station = ifcopenshell.api.alignment.get_alignment_station(file, parent_alignment)
+    else:
+        components = ifcopenshell.util.element.get_components(alignment)
+        for c in components:
+            if c.is_a("IfcReferent") and ifcopenshell.util.element.get_predefined_type(c) == "STATION":
+                start_station = ifcopenshell.util.element.get_pset(c, name="Pset_Stationing", prop="Station")
+                break
 
     return start_station

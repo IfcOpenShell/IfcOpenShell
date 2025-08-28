@@ -30,6 +30,8 @@
 # property. Properties are stored in the .blend file, so when your user closes
 # their Blender session, and reopens it, things are how they left it.
 
+from typing import TYPE_CHECKING
+
 import bpy
 from bpy.types import PropertyGroup
 
@@ -60,3 +62,11 @@ class BIMDemoProperties(PropertyGroup):
     message: StringProperty(name="Message")
     show_hints: BoolProperty(name="Show Hints", default=False)
     webui_message: StringProperty(name="Web UI Message", default="Hello, Web UI!")
+
+    # Type checking block is needed
+    # as type checker can't understand Blender props types by default.
+    if TYPE_CHECKING:
+        name: str
+        message: str
+        show_hints: bool
+        webui_message: str

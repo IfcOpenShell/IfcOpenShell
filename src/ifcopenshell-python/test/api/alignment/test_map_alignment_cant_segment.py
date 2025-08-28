@@ -1606,6 +1606,294 @@ def _SineCurve_100_0__inf__300_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(None)
 
 
+def _VienneseBend_100_0_300_1000_1_Meter(file):
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=100.0,
+        StartCantLeft=0.0,
+        EndCantLeft=0.0,
+        StartCantRight=0.1,
+        EndCantRight=0.03,
+        PredefinedType="VIENNESEBEND",
+    )
+
+    alignment_segment = file.createIfcAlignmentSegment(
+        GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
+    )
+
+    mapped_segments = _map_alignment_cant_segment(file, alignment_segment, 1.5)
+    mapped_segment = mapped_segments[0]
+    assert len(mapped_segments) == 2
+    assert "DISCONTINUOUS" == mapped_segment.Transition
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((0.0, 0.05, 0.0))
+    assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0, 0.0))
+    assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(100.0)
+    assert mapped_segment.ParentCurve.is_a("IfcSeventhOrderPolynomialSpiral")
+    assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
+    assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0))
+    assert mapped_segment.ParentCurve.SepticTerm == pytest.approx(185.93568367635672)
+    assert mapped_segment.ParentCurve.SexticTerm == pytest.approx(-169.87095595653895)
+    assert mapped_segment.ParentCurve.QuinticTerm == pytest.approx(180.0012184608678)
+    assert mapped_segment.ParentCurve.QuarticTerm == pytest.approx(-241.1974890085123)
+    assert mapped_segment.ParentCurve.CubicTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(200000.0)
+
+
+def _VienneseBend_100_0__300__1000_1_Meter(file):
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=100.0,
+        StartCantLeft=0.1,
+        EndCantLeft=0.03,
+        StartCantRight=0.0,
+        EndCantRight=0.0,
+        PredefinedType="VIENNESEBEND",
+    )
+
+    alignment_segment = file.createIfcAlignmentSegment(
+        GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
+    )
+
+    mapped_segments = _map_alignment_cant_segment(file, alignment_segment, 1.5)
+    mapped_segment = mapped_segments[0]
+    assert len(mapped_segments) == 2
+    assert "DISCONTINUOUS" == mapped_segment.Transition
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((0.0, 0.05, 0.0))
+    assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0, 0.0))
+    assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(100.0)
+    assert mapped_segment.ParentCurve.is_a("IfcSeventhOrderPolynomialSpiral")
+    assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
+    assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0))
+    assert mapped_segment.ParentCurve.SepticTerm == pytest.approx(185.93568367635672)
+    assert mapped_segment.ParentCurve.SexticTerm == pytest.approx(-169.87095595653895)
+    assert mapped_segment.ParentCurve.QuinticTerm == pytest.approx(180.0012184608678)
+    assert mapped_segment.ParentCurve.QuarticTerm == pytest.approx(-241.1974890085123)
+    assert mapped_segment.ParentCurve.CubicTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(200000.0)
+
+
+def _VienneseBend_100_0_300_inf_1_Meter(file):
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=100.0,
+        StartCantLeft=0.0,
+        EndCantLeft=0.0,
+        StartCantRight=0.1,
+        EndCantRight=0.0,
+        PredefinedType="VIENNESEBEND",
+    )
+
+    alignment_segment = file.createIfcAlignmentSegment(
+        GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
+    )
+
+    mapped_segments = _map_alignment_cant_segment(file, alignment_segment, 1.5)
+    mapped_segment = mapped_segments[0]
+    assert len(mapped_segments) == 2
+    assert "DISCONTINUOUS" == mapped_segment.Transition
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((0.0, 0.05, 0.0))
+    assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0, 0.0))
+    assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(100.0)
+    assert mapped_segment.ParentCurve.is_a("IfcSeventhOrderPolynomialSpiral")
+    assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
+    assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0))
+    assert mapped_segment.ParentCurve.SepticTerm == pytest.approx(177.82794100389228)
+    assert mapped_segment.ParentCurve.SexticTerm == pytest.approx(-161.4322423756691)
+    assert mapped_segment.ParentCurve.QuinticTerm == pytest.approx(169.6127328157867)
+    assert mapped_segment.ParentCurve.QuarticTerm == pytest.approx(-224.5910214113641)
+    assert mapped_segment.ParentCurve.CubicTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(200000.0)
+
+
+def _VienneseBend_100_0__300__inf_1_Meter(file):
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=100.0,
+        StartCantLeft=0.1,
+        EndCantLeft=0.0,
+        StartCantRight=0.0,
+        EndCantRight=0.0,
+        PredefinedType="VIENNESEBEND",
+    )
+
+    alignment_segment = file.createIfcAlignmentSegment(
+        GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
+    )
+
+    mapped_segments = _map_alignment_cant_segment(file, alignment_segment, 1.5)
+    mapped_segment = mapped_segments[0]
+    assert len(mapped_segments) == 2
+    assert "DISCONTINUOUS" == mapped_segment.Transition
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((0.0, 0.05, 0.0))
+    assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0, 0.0))
+    assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(100.0)
+    assert mapped_segment.ParentCurve.is_a("IfcSeventhOrderPolynomialSpiral")
+    assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
+    assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0))
+    assert mapped_segment.ParentCurve.SepticTerm == pytest.approx(177.82794100389228)
+    assert mapped_segment.ParentCurve.SexticTerm == pytest.approx(-161.4322423756691)
+    assert mapped_segment.ParentCurve.QuinticTerm == pytest.approx(169.6127328157867)
+    assert mapped_segment.ParentCurve.QuarticTerm == pytest.approx(-224.5910214113641)
+    assert mapped_segment.ParentCurve.CubicTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(200000.0)
+
+
+def _VienneseBend_100_0_1000_300_1_Meter(file):
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=100.0,
+        StartCantLeft=0.0,
+        EndCantLeft=0.0,
+        StartCantRight=0.03,
+        EndCantRight=0.1,
+        PredefinedType="VIENNESEBEND",
+    )
+
+    alignment_segment = file.createIfcAlignmentSegment(
+        GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
+    )
+
+    mapped_segments = _map_alignment_cant_segment(file, alignment_segment, 1.5)
+    mapped_segment = mapped_segments[0]
+    assert len(mapped_segments) == 2
+    assert "DISCONTINUOUS" == mapped_segment.Transition
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((0.0, 0.015, 0.0))
+    assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0, 0.0))
+    assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(100.0)
+    assert mapped_segment.ParentCurve.is_a("IfcSeventhOrderPolynomialSpiral")
+    assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
+    assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0))
+    assert mapped_segment.ParentCurve.SepticTerm == pytest.approx(-185.93568367635672)
+    assert mapped_segment.ParentCurve.SexticTerm == pytest.approx(169.87095595653895)
+    assert mapped_segment.ParentCurve.QuinticTerm == pytest.approx(-180.0012184608678)
+    assert mapped_segment.ParentCurve.QuarticTerm == pytest.approx(241.1974890085123)
+    assert mapped_segment.ParentCurve.CubicTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(666666.666666667)
+
+
+def _VienneseBend_100_0__1000__300_1_Meter(file):
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=100.0,
+        StartCantLeft=0.03,
+        EndCantLeft=0.1,
+        StartCantRight=0.0,
+        EndCantRight=0.0,
+        PredefinedType="VIENNESEBEND",
+    )
+
+    alignment_segment = file.createIfcAlignmentSegment(
+        GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
+    )
+
+    mapped_segments = _map_alignment_cant_segment(file, alignment_segment, 1.5)
+    mapped_segment = mapped_segments[0]
+    assert len(mapped_segments) == 2
+    assert "DISCONTINUOUS" == mapped_segment.Transition
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((0.0, 0.015, 0.0))
+    assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0, 0.0))
+    assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(100.0)
+    assert mapped_segment.ParentCurve.is_a("IfcSeventhOrderPolynomialSpiral")
+    assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
+    assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0))
+    assert mapped_segment.ParentCurve.SepticTerm == pytest.approx(-185.93568367635672)
+    assert mapped_segment.ParentCurve.SexticTerm == pytest.approx(169.87095595653895)
+    assert mapped_segment.ParentCurve.QuinticTerm == pytest.approx(-180.0012184608678)
+    assert mapped_segment.ParentCurve.QuarticTerm == pytest.approx(241.1974890085123)
+    assert mapped_segment.ParentCurve.CubicTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(666666.666666667)
+
+
+def _VienneseBend_100_0_inf_300_1_Meter(file):
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=100.0,
+        StartCantLeft=0.0,
+        EndCantLeft=0.0,
+        StartCantRight=0.0,
+        EndCantRight=0.1,
+        PredefinedType="VIENNESEBEND",
+    )
+
+    alignment_segment = file.createIfcAlignmentSegment(
+        GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
+    )
+
+    mapped_segments = _map_alignment_cant_segment(file, alignment_segment, 1.5)
+    mapped_segment = mapped_segments[0]
+    assert len(mapped_segments) == 2
+    assert "DISCONTINUOUS" == mapped_segment.Transition
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((0.0, 0.0, 0.0))
+    assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0, 0.0))
+    assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(100.0)
+    assert mapped_segment.ParentCurve.is_a("IfcSeventhOrderPolynomialSpiral")
+    assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
+    assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0))
+    assert mapped_segment.ParentCurve.SepticTerm == pytest.approx(-177.82794100389228)
+    assert mapped_segment.ParentCurve.SexticTerm == pytest.approx(161.4322423756691)
+    assert mapped_segment.ParentCurve.QuinticTerm == pytest.approx(-169.6127328157867)
+    assert mapped_segment.ParentCurve.QuarticTerm == pytest.approx(224.5910214113641)
+    assert mapped_segment.ParentCurve.CubicTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(None)
+
+
+def _VienneseBend_100_0__inf__300_1_Meter(file):
+    design_parameters = file.createIfcAlignmentCantSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=100.0,
+        StartCantLeft=0.0,
+        EndCantLeft=0.1,
+        StartCantRight=0.0,
+        EndCantRight=0.0,
+        PredefinedType="VIENNESEBEND",
+    )
+
+    alignment_segment = file.createIfcAlignmentSegment(
+        GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
+    )
+
+    mapped_segments = _map_alignment_cant_segment(file, alignment_segment, 1.5)
+    mapped_segment = mapped_segments[0]
+    assert len(mapped_segments) == 2
+    assert "DISCONTINUOUS" == mapped_segment.Transition
+    assert mapped_segment.Placement.Location.Coordinates == pytest.approx((0.0, 0.0, 0.0))
+    assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0, 0.0))
+    assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(100.0)
+    assert mapped_segment.ParentCurve.is_a("IfcSeventhOrderPolynomialSpiral")
+    assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
+    assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx((1.0, 0.0))
+    assert mapped_segment.ParentCurve.SepticTerm == pytest.approx(-177.82794100389228)
+    assert mapped_segment.ParentCurve.SexticTerm == pytest.approx(161.4322423756691)
+    assert mapped_segment.ParentCurve.QuinticTerm == pytest.approx(-169.6127328157867)
+    assert mapped_segment.ParentCurve.QuarticTerm == pytest.approx(224.5910214113641)
+    assert mapped_segment.ParentCurve.CubicTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(None)
+    assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(None)
+
+
 def test_map_alignment_cant_segment():
     file = ifcopenshell.file(schema="IFC4X3")
     _BlossCurve_100_0_300_1000_1_Meter(file)
@@ -1656,5 +1944,14 @@ def test_map_alignment_cant_segment():
     _SineCurve_100_0__1000__300_1_Meter(file)
     _SineCurve_100_0_inf_300_1_Meter(file)
     _SineCurve_100_0__inf__300_1_Meter(file)
+    _VienneseBend_100_0_300_1000_1_Meter(file)
+    _VienneseBend_100_0__300__1000_1_Meter(file)
+    _VienneseBend_100_0_300_inf_1_Meter(file)
+    _VienneseBend_100_0__300__inf_1_Meter(file)
+    _VienneseBend_100_0_1000_300_1_Meter(file)
+    _VienneseBend_100_0__1000__300_1_Meter(file)
+    _VienneseBend_100_0_inf_300_1_Meter(file)
+    _VienneseBend_100_0__inf__300_1_Meter(file)
 
-    # VIENESSE BEND NOT IMPLEMENTED
+
+test_map_alignment_cant_segment()

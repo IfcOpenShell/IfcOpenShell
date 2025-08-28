@@ -27,6 +27,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 import bonsai.tool as tool
+from types import EllipsisType
 from typing import Optional, Any, Union, TYPE_CHECKING
 from collections.abc import Callable, Iterable
 
@@ -56,7 +57,7 @@ def draw_attributes(
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
     *,
-    enable_search: bool = False,
+    enable_search: Union[bool, EllipsisType] = ...,
 ) -> None:
     """Draw editable UI for prop.Attributes.
 
@@ -65,6 +66,13 @@ def draw_attributes(
     on it first
 
     :param enable_search: Add search button to string, integer, and float attributes
+        Possible values:
+
+        - ``...`` (default value) -
+            add search if possible. If it's not possible, there will be no warnings or errors.
+        - ``True`` - always add search, if it's not possible it will result in errors.
+        - ``False`` - never add search.
+
     """
     for attribute in props:
         row = layout.row(align=True)
@@ -79,7 +87,7 @@ def draw_attribute(
     attribute: bonsai.bim.prop.Attribute,
     layout: bpy.types.UILayout,
     copy_operator: Optional[str] = None,
-    enable_search: bool = False,
+    enable_search: Union[bool, EllipsisType] = ...,
 ) -> None:
     value_name = attribute.get_value_name(display_only=True)
 
@@ -103,7 +111,7 @@ def draw_attribute(
         op = layout.operator("bim.attribute_add_subitem", icon="ADD", text="")
         op.data_path = data_path
 
-    elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
+    elif attribute.special_type == "DURATION":
         props = tool.Sequence.get_work_schedule_props()
         for item in props.durations_attributes:
             if item.name == attribute.name:
@@ -131,7 +139,9 @@ def draw_attribute(
         op.target_prop = attribute.path_from_id("string_value")
         op.include_time = attribute.special_type == "DATETIME"
 
-    if enable_search and attribute.data_type in ("string", "integer", "float"):
+    if attribute.data_type in ("string", "integer", "float") and (
+        enable_search is True or (enable_search is ... and attribute.ifc_class)
+    ):
         op = layout.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
         op.attribute_name = attribute.name
         op.attribute_ifc_class = attribute.ifc_class
@@ -350,22 +360,35 @@ def prop_with_search(
     prop_name: str,
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
+    *,
+    enable_relating_type_suggestions: bool = False,
+    search_threshold: int = 10,
+    button_kwargs: Union[dict[str, Any], None] = None,
     **kwargs: Any,
 ) -> bpy.types.UILayout:
     """
+    Draw a row with enum prop and enum search operator.
+
+    Search operator appears only in case if there's more than `search_threshold` items in enum.
+
+    :arg button_kwargs: kwargs to pass to ``UILayout.operator()``.
+    :arg kwargs: kwargs to pass to ``UILayout.prop()``.
+    :arg enable_relating_type_suggestions: Enable additional suggestions for relating type properties.
+    :arg search_threshold: Minimum number of enum items required to show search button.
     :return: Added row.
     """
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
     try:
-        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > 10:
+        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > search_threshold:
             # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
             row.context_pointer_set(name="data", data=data)
-            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM", **(button_kwargs or {}))
             op.prop_name = prop_name
             op.should_click_ok = should_click_ok
             op.original_operator_path = original_operator_path or ""
+            op.enable_relating_type_suggestions = enable_relating_type_suggestions
     except TypeError:  # Prop is not iterable
         pass
     return row

@@ -48,7 +48,7 @@ class BIM_PT_materials(Panel):
             MaterialsData.load()
 
         self.props = tool.Material.get_material_props()
-        material = tool.Material.get_active_material_item()
+        material = self.props.active_material
         material_id = material.ifc_definition_id if material else None
 
         row = self.layout.row(align=True)

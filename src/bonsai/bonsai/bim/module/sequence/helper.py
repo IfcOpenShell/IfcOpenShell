@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import isodate
+import bpy
 from dateutil import parser
 import ifcopenshell.util.date
 from datetime import timedelta, datetime
-from typing import Union
+from typing import Union, Any
+
+from bonsai.bim.prop import ISODuration
 
 
 def parse_datetime(value):
@@ -44,8 +49,8 @@ def canonicalise_time(time: Union[datetime, None]) -> str:
     return time.strftime("%d/%m/%y")
 
 
-def parse_duration_as_blender_props(dt, simplify=True):
-    if simplify:
+def parse_duration_as_blender_props(dt: Union[Any, str]) -> dict[str, int]:
+    if True:
         if isinstance(dt, str):
             dt = ifcopenshell.util.date.ifc2datetime(dt)
 
@@ -65,13 +70,17 @@ def parse_duration_as_blender_props(dt, simplify=True):
         }
 
 
-def blender_props_to_iso_duration(durations_attributes, duration_type, prop_name):
+def blender_props_to_iso_duration(
+    durations_attributes: bpy.types.bpy_prop_collection_idprop[ISODuration],
+    duration_type: Union[str, None],
+    prop_name: str,
+) -> Union[str, None]:
     duration_props = None
     for collection in durations_attributes:
         if collection.name == prop_name:
             duration_props = collection
             break
-    if duration_props and not duration_type or duration_type == "ELAPSEDTIME":
+    if duration_props and (not duration_type or duration_type == "ELAPSEDTIME"):
         duration_string = "P{}Y{}M{}DT{}H{}M{}S".format(
             duration_props.years if duration_props.years else 0,
             duration_props.months if duration_props.months else 0,

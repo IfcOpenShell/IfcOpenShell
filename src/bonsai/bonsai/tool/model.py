@@ -30,6 +30,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.pset
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -49,7 +50,7 @@ from bonsai.bim import import_ifc
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
-from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict
+from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict, assert_never
 from collections.abc import Iterable, Sequence
 
 T = TypeVar("T")
@@ -65,6 +66,8 @@ if TYPE_CHECKING:
         BIMStairProperties,
         BIMRailingProperties,
         BIMExternalParametricGeometryProperties,
+        BIMPolylineProperties,
+        BIMProductPreviewProperties,
     )
 
 
@@ -100,6 +103,16 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_epg_props(cls, obj: bpy.types.Object) -> BIMExternalParametricGeometryProperties:
         return obj.BIMExternalParametricGeometryProperties
+
+    @classmethod
+    def get_polyline_props(cls) -> BIMPolylineProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMPolylineProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_product_preview_props(cls) -> BIMProductPreviewProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMProductPreviewProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -275,17 +288,19 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def generate_occurrence_name(cls, element_type: ifcopenshell.entity_instance, ifc_class: str) -> str:
-        props = cls.get_model_props()
-        if props.occurrence_name_style == "CLASS":
+        prefs = tool.Blender.get_addon_preferences()
+        if prefs.occurrence_name_style == "CLASS":
             return ifc_class[3:]
-        elif props.occurrence_name_style == "TYPE":
+        elif prefs.occurrence_name_style == "TYPE":
             return element_type.Name or "Unnamed"
-        elif props.occurrence_name_style == "CUSTOM":
+        elif prefs.occurrence_name_style == "CUSTOM":
             try:
                 # Power users gonna power
-                return eval(props.occurrence_name_function) or "Instance"
+                return eval(prefs.occurrence_name_function) or "Instance"
             except:
                 return "Instance"
+        else:
+            assert_never(prefs.occurrence_name_style)
 
     @classmethod
     def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -767,7 +782,9 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
-    def get_wall_axis(cls, obj: bpy.types.Object, layers: Optional[dict[str, Any]] = None) -> dict[str, list[Vector]]:
+    def get_wall_axis(
+        cls, obj: bpy.types.Object, layers: Optional[MaterialLayerParameters] = None
+    ) -> dict[str, list[Vector]]:
         """Each item of a resulting dictionary is a list of 2 2D vectors."""
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
@@ -1850,6 +1867,7 @@ class Model(bonsai.core.tool.Model):
         polygons = {}
         for curve in curves:
             geometry = ifcopenshell.geom.create_shape(settings, curve)
+            assert isinstance(geometry, W.Triangulation)
             v = ifcopenshell.util.shape.get_vertices(geometry, is_2d=True)
             v = np.round(v, 4)  # Round to nearest 0.1mm, otherwise things like circles don't polygonise reliably
             edges = ifcopenshell.util.shape.get_edges(geometry)

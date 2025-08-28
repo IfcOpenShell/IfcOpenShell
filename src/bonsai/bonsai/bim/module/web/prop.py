@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,6 +32,21 @@ from bpy.props import (
 
 
 class WebProperties(PropertyGroup):
-    webserver_port: IntProperty(name="Webserver Port", min=0, max=65535)
-    is_running: BoolProperty(name="Webserver Running Status", default=False)
-    is_connected: BoolProperty(name="Connection Status", default=False)
+    webserver_port: IntProperty(  # pyright: ignore[reportRedeclaration]
+        name="Webserver Port",
+        min=0,
+        max=65535,
+    )
+    is_running: BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Webserver Running Status",
+        default=False,
+    )
+    is_connected: BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Connection Status",
+        default=False,
+    )
+
+    if TYPE_CHECKING:
+        webserver_port: int
+        is_running: bool
+        is_connected: bool

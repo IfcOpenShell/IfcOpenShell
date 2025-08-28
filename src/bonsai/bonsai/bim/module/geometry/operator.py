@@ -22,6 +22,7 @@ import bmesh
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
+import ifcopenshell.api.drawing
 import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
@@ -51,6 +52,7 @@ from mathutils import Vector, Matrix, Quaternion
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from collections.abc import Sequence
 from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never, NamedTuple
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
@@ -1192,16 +1194,20 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                     obj = tool.Ifc.get_object(part)
                     obj.select_set(True)
 
-        def add_linked_aggregate_pset(part, index):
-            pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
+        def add_linked_aggregate_pset(element, index):
+            pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
+            if index == 0:
+                properties = {"Index": index, "Name": element.Name, "Aggregate_Index": 0}
+            else:
+                properties = {"Index": index}
 
             if not pset:
-                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=part, name=self.pset_name)
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name=self.pset_name)
 
                 ifcopenshell.api.pset.edit_pset(
                     ifc_file,
                     pset=pset,
-                    properties={"Index": index},
+                    properties=properties,
                 )
 
                 index += 1
@@ -1233,18 +1239,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                     )
 
-                    number = len(group_elements) - 1
-                    number = f"{number:02d}"
+                    pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
                     new_obj = tool.Ifc.get_object(new[0])
-                    pattern1 = r"_\d"
-                    if re.findall(pattern1, new_obj.name):
-                        split_name = new_obj.name.split("_")
-                        new_obj.name = split_name[0] + "_" + number
-                        continue
-                    pattern2 = r"\.\d{3}"
-                    if re.findall(pattern2, new_obj.name):
-                        split_name = new_obj.name.split(".")
-                        new_obj.name = split_name[0] + "_" + number
+                    new_obj.name = pset["Name"] + "_" + str(pset["Aggregate_Index"])
 
         def get_max_index(parts):
             psets = [ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate") for p in parts]
@@ -1257,16 +1254,6 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
         def copy_linked_aggregate_data(old_to_new):
             for old, new in old_to_new.items():
-                pset = ifcopenshell.util.element.get_pset(old, "BBIM_Linked_Aggregate")
-                if pset:
-                    new_pset = ifcopenshell.api.pset.add_pset(ifc_file, product=new[0], name=self.pset_name)
-
-                    ifcopenshell.api.pset.edit_pset(
-                        ifc_file,
-                        pset=new_pset,
-                        properties={"Index": pset["Index"]},
-                    )
-
                 if new[0].is_a("IfcElementAssembly"):
                     linked_aggregate_group = [
                         r.RelatingGroup
@@ -1275,6 +1262,31 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                     ]
                     ifcopenshell.api.group.assign_group(ifc_file, group=linked_aggregate_group[0], products=new)
+
+                    group_elements: list[ifcopenshell.entity_instance] = next(
+                        r.RelatedObjects
+                        for r in getattr(new[0], "HasAssignments", []) or []
+                        if r.is_a("IfcRelAssignsToGroup")
+                        if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                    )
+
+                pset = ifcopenshell.util.element.get_pset(old, "BBIM_Linked_Aggregate")
+                if pset:
+                    new_pset = ifcopenshell.api.pset.add_pset(ifc_file, product=new[0], name=self.pset_name)
+                    if pset["Index"] == 0:
+                        properties = {
+                            "Index": pset["Index"],
+                            "Name": pset["Name"],
+                            "Aggregate_Index": len(group_elements) - 1,
+                        }
+                    else:
+                        properties = {"Index": pset["Index"]}
+
+                    ifcopenshell.api.pset.edit_pset(
+                        ifc_file,
+                        pset=new_pset,
+                        properties=properties,
+                    )
 
         def get_location_from_3d_cursor(old_to_new, aggregate):
             base_obj = tool.Ifc.get_object(aggregate)
@@ -1315,6 +1327,10 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         if location_from_3d_cursor:
             get_location_from_3d_cursor(old_to_new, selected_element)
 
+        bpy.ops.object.select_all(action="DESELECT")
+        new_aggregate = old_to_new[selected_element][0]
+        tool.Blender.set_active_object(tool.Ifc.get_object(new_aggregate))
+
         bonsai.bim.handler.refresh_ui_data()
 
         return old_to_new
@@ -1353,7 +1369,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
         self.pset_name = "BBIM_Linked_Aggregate"
         refresh_start_time = time()
         old_to_new = {}
-        original_names: dict[int, dict[int, str]] = {}
+        original_data: dict[int, dict[int, str]] = {}
 
         def delete_objects(element: ifcopenshell.entity_instance) -> None:
             """Remove IfcElementAssembly and it's parts."""
@@ -1368,25 +1384,56 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
 
-        def get_original_names(element: ifcopenshell.entity_instance) -> dict[int, dict[int, str]]:
+        def get_assignments(element: ifcopenshell.entity_instance) -> Sequence[ifcopenshell.entity_instance]:
+            annotations = []
+            inverse = list(tool.Ifc.get().get_inverse(element))
+            assignments = [a for a in inverse if a.is_a("IfcRelAssignsToProduct")]
+            if not assignments:
+                pass
+            else:
+                for assignment in assignments:
+                    annotations = assignment.RelatedObjects
+            return annotations
+
+        def assign_to_annotations(obj: bpy.types.Object, assignments: Sequence[ifcopenshell.entity_instance]) -> None:
+            ifc_file = tool.Ifc.get()
+            for assignment in assignments:
+                product = tool.Ifc.get_entity(obj)
+                annotation = tool.Ifc.get_object(assignment)
+                if annotation:
+                    bonsai.core.drawing.edit_assigned_product(tool.Ifc, tool.Drawing, obj=annotation, product=product)
+                else:
+                    existing_product = tool.Drawing.get_assigned_product(assignment)
+                    if existing_product != product:
+                        if existing_product:
+                            ifcopenshell.api.drawing.unassign_product(
+                                ifc_file, relating_product=existing_product, related_object=assignment
+                            )
+                        if product:
+                            ifcopenshell.api.drawing.assign_product(
+                                ifc_file, relating_product=product, related_object=assignment
+                            )
+                tool.Blender.update_viewport()
+
+        def get_original_data(element: ifcopenshell.entity_instance) -> dict[int, dict[int, str]]:
             group = next(
                 r.RelatingGroup
                 for r in getattr(element, "HasAssignments", []) or []
                 if r.is_a("IfcRelAssignsToGroup")
                 if self.group_name in r.RelatingGroup.Name
             ).id()
-            original_names[group] = {}
+            original_data[group] = {}
 
             pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
             index = pset["Index"]
-            original_names[group][index] = tool.Ifc.get_object(element).name
+            annotations = get_assignments(element)
+            original_data[group][index] = {"Name": str(pset["Aggregate_Index"]), "Assignment": annotations}
 
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
-                        # TODO: missing assignment.
-                        original_names | get_original_names(part)
+                        original_data | get_original_data(part)
                     else:
                         try:
                             pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
@@ -1394,11 +1441,15 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                             continue
                         if pset:
                             index = pset["Index"]
-                            original_names[group][index] = tool.Ifc.get_object(part).name
+                            annotations = get_assignments(part)
+                            original_data[group][index] = {
+                                "Name": tool.Ifc.get_object(part).name,
+                                "Assignment": annotations,
+                            }
 
-            return original_names
+            return original_data
 
-        def set_original_name(obj: bpy.types.Object, original_names: dict[int, dict[int, str]]) -> None:
+        def set_original_data(obj: bpy.types.Object, original_data: dict[int, dict[int, str]]) -> None:
             element = tool.Ifc.get_entity(obj)
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if ifcopenshell.util.element.get_parts(
@@ -1406,24 +1457,40 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             ):  # if element has parts it means it is the base of and aggregate or sub-aggregate
                 aggregate = element
 
-            group = [
+            group = next(
                 r.RelatingGroup
                 for r in getattr(aggregate, "HasAssignments", []) or []
                 if r.is_a("IfcRelAssignsToGroup")
                 if self.group_name in r.RelatingGroup.Name
-            ]
+            ).id()
             if not group:
                 return
-
-            group = group[0].id()
 
             pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
             index = pset["Index"]
 
-            try:
-                obj.name = original_names[group][index]
-            except:
-                return
+            if index == 0:
+                obj.name = pset["Name"]
+                ifc_file = tool.Ifc.get()
+                ifcopenshell.api.pset.edit_pset(
+                    ifc_file,
+                    ifc_file.by_id(pset["id"]),
+                    properties={"Aggregate_Index": int(original_data[group][index]["Name"])},
+                )
+                assignments = original_data[group][index]["Assignment"]
+                if assignments:
+                    assign_to_annotations(obj, assignments)
+            else:
+                try:
+                    obj.name = original_data[group][index]["Name"]
+                except:
+                    pass
+                try:
+                    assignments = original_data[group][index]["Assignment"]
+                except:
+                    assignments = []
+                if assignments:
+                    assign_to_annotations(obj, assignments)
 
         def get_element_assembly(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
             if element.is_a("IfcElementAssembly"):
@@ -1521,6 +1588,9 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 base_instance = active_element
                 instances_to_refresh = elements
 
+            base_pset = ifcopenshell.util.element.get_pset(base_instance, self.pset_name)
+            base_obj = tool.Ifc.get_object(base_instance)
+            base_obj.name = base_pset["Name"] + "_" + str(base_pset["Aggregate_Index"])
             for element in instances_to_refresh:
                 if element.GlobalId == base_instance.GlobalId:
                     continue
@@ -1529,7 +1599,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
                 selected_matrix, duplicate_matrix = get_original_matrix(element, base_instance)
 
-                original_names = get_original_names(element)
+                original_data = get_original_data(element)
 
                 delete_objects(element)
 
@@ -1557,7 +1627,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
                 for old, new in old_to_new.items():
                     new_obj = tool.Ifc.get_object(new[0])
-                    set_original_name(new_obj, original_names)
+                    set_original_data(new_obj, original_data)
 
         bonsai.bim.handler.refresh_ui_data()
 
@@ -2058,7 +2128,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
     def has_aggregates(self, objs):
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
-            if not element:
+            if not element or element.is_a("IfcSpatialElement"):
                 continue
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             parts = ifcopenshell.util.element.get_parts(element)
@@ -2369,11 +2439,14 @@ class FlipObject(bpy.types.Operator):
 class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_representation_items"
     bl_label = "Enable Editing Representation Items"
+    bl_description = "Enable editing representation items for all selected objects."
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = tool.Geometry.get_active_or_representation_obj()
+        for obj in tool.Geometry.get_selected_objects_with_representations():
+            self.process_obj(obj)
 
+    def process_obj(self, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_object_geometry_props(obj)
         props.is_editing = True
 
@@ -2451,12 +2524,13 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_representation_items"
     bl_label = "Disable Editing Representation Items"
+    bl_description = "Disable editing representation items for all selected objects"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = tool.Geometry.get_active_or_representation_obj()
-        assert obj
-        tool.Geometry.get_object_geometry_props(obj).is_editing = False
+        for obj in tool.Geometry.get_selected_objects_with_representations():
+            props = tool.Geometry.get_object_geometry_props(obj)
+            props.is_editing = False
 
 
 class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -3439,23 +3513,23 @@ class UnassignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 class CreateInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_instance"
     bl_label = "IFC Create Instance"
-    bl_description = "Create an instance of the type associated with the selected object"
+    bl_description = "Create an instance of the type associated with the active object."
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        if not context.selected_objects or len(context.selected_objects) > 1:
-            self.report({"ERROR"}, "Select exactly one object to create an instance of its type")
-            return {"CANCELLED"}
+    @classmethod
+    def poll(cls, context):
+        if not (obj := context.active_object) or not tool.Ifc.get_entity(obj):
+            cls.poll_message_set("Active object is not an IFC element.")
+            return False
+        return True
 
-        active_obj = context.active_object
-        element = tool.Ifc.get_entity(active_obj)
-        if not element:
-            self.report({"ERROR"}, "Selected object is not an IFC element")
-            return {"CANCELLED"}
+    def _execute(self, context):
+        assert (obj := context.active_object)
+        assert (element := tool.Ifc.get_entity(obj))
 
         relating_type = ifcopenshell.util.element.get_type(element)
         if not relating_type:
-            self.report({"ERROR"}, "Selected object has no associated type")
+            self.report({"ERROR"}, "Active object has no associated type")
             return {"CANCELLED"}
 
         try:
