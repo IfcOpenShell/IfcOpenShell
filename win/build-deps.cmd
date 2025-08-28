@@ -20,6 +20,9 @@
 :: This batch file expects CMake generator as %1 and build configuration type as %2. If not provided,
 :: a deduced generator will be used for %1 and BUILD_CFG_DEFAULT for %2 (both set in vs-cfg.cmd)
 :: Optionally a build type (Build/Rebuild/Clean) can be passed as %3.
+::
+:: Example usage (all arguments are optional):
+:: build-deps.cmd vs2022-x64 RelWithDebInfo Build
 
 @echo off
 echo.
