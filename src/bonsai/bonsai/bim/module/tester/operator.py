@@ -22,6 +22,13 @@ import time
 import tempfile
 import webbrowser
 import traceback
+import subprocess
+import socket
+import sys
+import threading
+import asyncio
+import socketio
+from aiohttp import web
 import ifctester
 import ifctester.ids
 import ifctester.reporter
@@ -31,6 +38,145 @@ import bonsai.bim.handler
 from bpy_extras.io_utils import ExportHelper
 from pathlib import Path
 from typing import Union
+
+# Global variables to track server processes/threads
+webapp_process = None
+websocket_server_thread = None
+websocket_app = None
+websocket_runner = None
+
+
+class IfcTesterWebSocketServer:
+    def __init__(self, port):
+        self.port = port
+        self.sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="aiohttp")
+        self.app = web.Application()
+        self.sio.attach(self.app)
+        self.runner = None
+        self.site = None
+        
+        # Register namespace
+        self.sio.register_namespace(IfcTesterNamespace("/ifctester"))
+        
+        # Add health check route
+        self.app.router.add_get("/health", self.health_check)
+    
+    async def health_check(self, request):
+        return web.Response(text="OK", content_type="text/plain")
+    
+    async def start_server(self):
+        self.runner = web.AppRunner(self.app)
+        await self.runner.setup()
+        self.site = web.TCPSite(self.runner, "127.0.0.1", self.port)
+        await self.site.start()
+        print(f"IfcTester Websocket server started on 127.0.0.1:{self.port}")
+    
+    async def stop_server(self):
+        if self.site:
+            await self.site.stop()
+        if self.runner:
+            await self.runner.cleanup()
+
+
+class IfcTesterNamespace(socketio.AsyncNamespace):
+    def __init__(self, namespace):
+        super().__init__(namespace)
+
+    async def on_connect(self, sid, environ):
+        print(f"IfcTester webapp client connected: {sid}")
+        await self.emit("status", {"connected": True}, room=sid)
+
+    async def on_disconnect(self, sid):
+        print(f"IfcTester webapp client disconnected: {sid}")
+
+    async def on_audit_ids(self, sid, data):
+        request_id = None
+        try:
+            request_id = data.get("id")
+            ids_string = data.get("ids")
+            
+            if not request_id:
+                await self.emit("error", {
+                    "error": "No request ID provided"
+                }, room=sid)
+                return
+                
+            if not ids_string:
+                await self.emit("error", {
+                    "id": request_id,
+                    "error": "No IDS XML string provided"
+                }, room=sid)
+                return
+
+            print(f"Processing IDS audit request {request_id}")
+
+            # Check if IFC is loaded in Bonsai
+            ifc = tool.Ifc.get()
+            if not ifc:
+                await self.emit("error", {
+                    "id": request_id,
+                    "error": "No IFC model is currently loaded in Bonsai"
+                }, room=sid)
+                return
+
+            # Parse IDS from string
+            try:
+                ids = ifctester.ids.from_string(ids_string)
+            except Exception as e:
+                await self.emit("error", {
+                    "id": request_id,
+                    "error": f"Failed to parse IDS XML: {str(e)}"
+                }, room=sid)
+                return
+
+            # Validate IFC against IDS
+            try:
+                ids.validate(ifc)
+            except Exception as e:
+                await self.emit("error", {
+                    "id": request_id,
+                    "error": f"Validation failed: {str(e)}"
+                }, room=sid)
+                return
+
+            # Generate reports
+            try:
+                # JSON report
+                json_reporter = ifctester.reporter.Json(ids)
+                json_reporter.report()
+                json_report = json_reporter.to_string()
+
+                # HTML report
+                html_reporter = ifctester.reporter.Html(ids)
+                html_reporter.report()
+                html_report = html_reporter.to_string()
+
+                # Send results back
+                await self.emit("audit_result", {
+                    "id": request_id,
+                    "json_report": json_report,
+                    "html_report": html_report
+                }, room=sid)
+                
+                print(f"Successfully processed IDS audit request {request_id}")
+
+            except Exception as e:
+                await self.emit("error", {
+                    "id": request_id,
+                    "error": f"Failed to generate reports: {str(e)}"
+                }, room=sid)
+
+        except Exception as e:
+            print(f"Error processing audit request: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            await self.emit("error", {
+                "id": request_id,
+                "error": f"Internal server error: {str(e)}"
+            }, room=sid)
+
+    async def on_ping(self, sid, data):
+        await self.emit("pong", {"timestamp": data.get("timestamp")}, room=sid)
 
 
 class ExecuteIfcTester(bpy.types.Operator):
@@ -122,6 +268,177 @@ class ExecuteIfcTester(bpy.types.Operator):
                 new_spec.name = spec["name"]
                 new_spec.description = spec["description"]
                 new_spec.status = spec["status"]
+
+
+class StartIfcTesterWebapp(bpy.types.Operator):
+    bl_idname = "bim.start_ifc_tester_webapp"
+    bl_label = "Start IfcTester Webapp"
+    bl_description = "Start the IfcTester webapp server and open it in the default browser"
+
+    def execute(self, context):
+        global webapp_process, websocket_server_thread, websocket_app
+        
+        props = tool.Tester.get_tester_props()
+        
+        if webapp_process is not None or websocket_server_thread is not None:
+            self.report({"WARNING"}, "IfcTester webapp is already running")
+            return {"CANCELLED"}
+
+        try:
+            import ifctester.webapp.serve
+        except ImportError:
+            self.report({"ERROR"}, "IfcTester webapp not available. Please ensure the latest version of ifctester is installed.")
+            return {"CANCELLED"}
+
+        webapp_port = self.find_free_port()
+        websocket_port = self.find_free_port()
+        
+        # Get the path to the serve.py module
+        webapp_serve_path = ifctester.webapp.serve.__file__
+        
+        try:
+            # Start the websocket server in a thread
+            websocket_app = IfcTesterWebSocketServer(websocket_port)
+            
+            def run_websocket_server():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(websocket_app.start_server())
+                    loop.run_forever()
+                except Exception as e:
+                    print(f"WebSocket server error: {e}")
+                finally:
+                    loop.close()
+            
+            websocket_server_thread = threading.Thread(target=run_websocket_server, daemon=True)
+            websocket_server_thread.start()
+            
+            # Start the Flask server as subprocess
+            webapp_process = subprocess.Popen([
+                sys.executable, webapp_serve_path,
+                "--host", "127.0.0.1",
+                "--port", str(webapp_port)
+            ])
+            
+            # Update properties
+            props.webapp_server_port = webapp_port
+            props.websocket_server_port = websocket_port
+            props.webapp_is_running = True
+            
+            # Wait a moment for servers to start, then open browser
+            def delayed_open_browser():
+                import time
+                time.sleep(1.5)
+                webbrowser.open(f"http://127.0.0.1:{webapp_port}?bonsai_server={websocket_port}")
+            
+            browser_thread = threading.Thread(target=delayed_open_browser, daemon=True)
+            browser_thread.start()
+            
+            self.report({"INFO"}, f"IfcTester webapp started at http://127.0.0.1:{webapp_port} (Websocket: {websocket_port})")
+            return {"FINISHED"}
+            
+        except Exception as e:
+            # Clean up on error
+            if webapp_process:
+                webapp_process.terminate()
+                webapp_process = None
+            if websocket_server_thread and websocket_app:
+                # The websocket server will be cleaned up when the thread ends
+                websocket_server_thread = None
+                websocket_app = None
+            
+            self.report({"ERROR"}, f"Failed to start servers: {str(e)}")
+            return {"CANCELLED"}
+
+    def find_free_port(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('', 0))
+            s.listen(1)
+            port = s.getsockname()[1]
+        return port
+
+
+class StopIfcTesterWebapp(bpy.types.Operator):
+    bl_idname = "bim.stop_ifc_tester_webapp"
+    bl_label = "Stop IfcTester Webapp"
+    bl_description = "Stop the IfcTester webapp server"
+
+    def execute(self, context):
+        global webapp_process, websocket_server_thread, websocket_app
+        
+        props = tool.Tester.get_tester_props()
+        
+        if webapp_process is None and websocket_server_thread is None:
+            self.report({"WARNING"}, "No IfcTester servers are running")
+            return {"CANCELLED"}
+
+        errors = []
+        
+        # Stop webapp server
+        if webapp_process:
+            try:
+                webapp_process.terminate()
+                webapp_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                webapp_process.kill()
+            except Exception as e:
+                errors.append(f"Error stopping webapp server: {str(e)}")
+            finally:
+                webapp_process = None
+        
+        # Stop websocket server
+        if websocket_app and websocket_server_thread:
+            try:
+                # Create a new event loop to properly shutdown the server
+                def shutdown_websocket():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        loop.run_until_complete(websocket_app.stop_server())
+                    except Exception as e:
+                        errors.append(f"Error stopping websocket server: {str(e)}")
+                    finally:
+                        loop.close()
+                
+                # Run shutdown in a separate thread to avoid blocking
+                shutdown_thread = threading.Thread(target=shutdown_websocket)
+                shutdown_thread.start()
+                shutdown_thread.join(timeout=5)  # Wait up to 5 seconds
+                
+            except Exception as e:
+                errors.append(f"Error during websocket shutdown: {str(e)}")
+            finally:
+                websocket_app = None
+                websocket_server_thread = None
+        
+        # Update properties
+        props.webapp_server_port = 0
+        props.websocket_server_port = 0
+        props.webapp_is_running = False
+        
+        if errors:
+            self.report({"WARNING"}, f"IfcTester webapp and server stopped with errors: {'; '.join(errors)}")
+        else:
+            self.report({"INFO"}, "IfcTester webapp and server stopped")
+        
+        return {"FINISHED"}
+
+
+class OpenIfcTesterWebapp(bpy.types.Operator):
+    bl_idname = "bim.open_ifc_tester_webapp"
+    bl_label = "Open IfcTester Webapp"
+    bl_description = "Open the IfcTester webapp in the default browser"
+
+    def execute(self, context):
+        props = tool.Tester.get_tester_props()
+        
+        if not props.webapp_is_running:
+            self.report({"ERROR"}, "IfcTester webapp is not running. Please start it first.")
+            return {"CANCELLED"}
+        
+        webbrowser.open(f"http://127.0.0.1:{props.webapp_server_port}?bonsai_server={props.websocket_server_port}")
+        return {"FINISHED"}
 
 
 class SelectRequirement(bpy.types.Operator):
