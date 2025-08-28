@@ -101,6 +101,8 @@ private:
     int yielded_header_instances_ = 0;
 
 public:
+	bool coerce_attribute_count = true;
+
     operator bool() const {
         return good_ && !lexer_->stream->eof;
     }
