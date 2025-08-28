@@ -9,7 +9,12 @@ platforms = ["win-64", "linux-64", "osx-64"]
 common = { features = ["common"], no-default-feature = true }
 prod = { features = ["prod", "common"], no-default-feature = true }
 dev = { features = ["dev", "common"], no-default-feature = true }
-#tests = { features = ["tests", "common"], no-default-feature = true }
+lint = { features = ["lint"], no-default-feature = true }
+tests = { features = ["tests", "common"], no-default-feature = true }
+
+[feature.lint.dependencies]
+ruff = "*"
+black = "*"
 
 [feature.common.dependencies]
 # Build deps
@@ -34,17 +39,16 @@ nlohmann_json = "*"
 zlib = "*"
 pythonocc-core = "*"
 
-#[feature.tests.dependencies]
-# tests
+[feature.tests.dependencies]
 pytest = "*"
-#shapely = "*"
-#tabulate = "*"
-#isodate = "*"
-#python-dateutil = "*"
-#xmlschema = "*"
-#xsdata = "*"
-#lxml = "*"
-#networkx = "*"
+shapely = "*"
+tabulate = "*"
+isodate = "*"
+python-dateutil = "*"
+xmlschema = "*"
+xsdata = "*"
+lxml = "*"
+networkx = "*"
 
 [feature.common.target.win-64.dependencies]
 vs2022_win-64 = "*"
@@ -61,13 +65,19 @@ build-release = { cmd = ["cmake", "--build", "build/win-release", "--config", "R
 [feature.dev.target.win-64.tasks]
 configure-debug = { cmd = ["cmake", "--preset", "win-debug", "-B", "build/win-debug", "cmake"], description = "Configure the project", depends-on=["init-submodules"], outputs=["build/win-debug/CMakeCache.txt"] }
 build-debug = { cmd = ["cmake", "--build", "build/win-debug", "--config", "Debug"], description = "Build the project", depends-on = ["configure-debug"] }
-
 install-debug = { cmd = ["cmake", "--install", "build/win-debug", "--config", "Debug"], description = "Install the project" } # Optionally Install files to your desired env using --prefix
 
 vsdebug = { cmd = ["python"], description = "Run a python script with vs debugger attached" }
 
-#[feature.tests.target.win-64.tasks]
-test = { cmd = "pytest test/test_sweeps.py"}
+[feature.tests.tasks]
+configure-test = { cmd = ["cmake", "--preset", "win-test", "-B", "build/win-test", "cmake"], description = "Configure the project", depends-on=["init-submodules"], outputs=["build/win-test/CMakeCache.txt"] }
+build-test = { cmd = ["cmake", "--build", "build/win-test", "--config", "Release"], description = "Build the project", depends-on = ["configure-test"], outputs=["build/win-test/IfcGeom.lib"] }
+install-test = { cmd = ["cmake", "--install", "build/win-test", "--config", "Release"], description = "Install the project", depends-on = ["build-test"] } # Optionally Install files to your desired env using --prefix
+
+test = { cmd = "pytest .", cwd="src/ifcopenshell-python/test", depends-on=["install-test"], env = {PYTHONPATH="$PIXI_PROJECT_ROOT/src/ifcpatch"}}
+
+[feature.lint.tasks]
+lint = { cmd = "ruff check && black --diff --check ."}
 
 [feature.common.target.win-64.activation]
 #scripts = ["cmake/activate.bat"]
