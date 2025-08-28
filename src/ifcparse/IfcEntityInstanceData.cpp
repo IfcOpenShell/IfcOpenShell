@@ -282,27 +282,65 @@ bool impl::serialize(std::string& val, const aggregate_of_instance::ptr& t)
 
 bool impl::serialize(std::string& val, const aggregate_of_aggregate_of_instance::ptr& t)
 {
-    // @todo
-    return false;
+    std::ostringstream oss;
+	oss.put(TypeEncoder::encode_type<aggregate_of_aggregate_of_instance::ptr>());
+    
+	// size of outer aggregate
+    auto write_size = [&oss](size_t sz) {
+        std::string size_str;
+        size_str.resize(sizeof(size_t));
+        memcpy(size_str.data(), &sz, sizeof(size_t));
+        oss.write(size_str.data(), size_str.size());
+    };
+
+	write_size(t->size());
+
+    for (auto it = t->begin(); it != t->end(); ++it) {
+		// size of inner aggregate
+        write_size(it->size());
+
+        // values
+        for (auto jt = it->begin(); jt != it->end(); ++jt) {
+            char c = (*jt)->declaration().as_entity() ? 'i' : 't';
+            oss.put(c);
+            size_t iden = (*jt)->id() ? (*jt)->id() : (*jt)->identity();
+            std::string iden_str;
+            iden_str.resize(sizeof(size_t));
+            memcpy(iden_str.data(), &iden, sizeof(size_t));
+            oss.write(iden_str.data(), iden_str.size());
+		}
+    }
+
+	val = oss.str();
+
+    return true;
 }
 
 bool impl::serialize(std::string& val, const Blank& t)
 {
+    val.resize(1);
+    val[0] = TypeEncoder::encode_type<Blank>();
     return true;
 }
 
 bool impl::serialize(std::string& val, const Derived& t)
 {
+    val.resize(1);
+    val[0] = TypeEncoder::encode_type<Derived>();
     return true;
 }
 
 bool impl::serialize(std::string& val, const empty_aggregate_t& t)
 {
+    val.resize(1);
+    val[0] = TypeEncoder::encode_type<empty_aggregate_t>();
     return false;
 }
 
 bool impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t& t)
 {
+    val.resize(1);
+    val[0] = TypeEncoder::encode_type<empty_aggregate_of_aggregate_t>();
     return false;
 }
 
@@ -318,7 +356,10 @@ bool impl::serialize(std::string& val, const boost::logic::tribool& t)
 
 bool impl::serialize(std::string& val, const boost::dynamic_bitset<>& t)
 {
-    return false;
+    std::string tmp;
+    boost::to_string(t, tmp);
+	val = std::string(TypeEncoder::encode_type<boost::dynamic_bitset<>>(), 1) + tmp;
+    return true;
 }
 
 bool impl::deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, boost::logic::tribool& t) {
@@ -346,7 +387,6 @@ bool impl::deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string
 
 bool impl::deserialize(IfcParse::impl::rocks_db_file_storage* storage, const std::string& val, aggregate_of_instance::ptr& t) {
     t.reset(new aggregate_of_instance);
-    // val[0] = TypeEncoder::encode_type<EnumerationReference>();
     auto n = (val.size() - 1) / (sizeof(size_t) + 1);
     for (int i = 0; i < n; ++i) {
         auto ptr = val.data() + 1 + (sizeof(size_t) + 1) * i;
@@ -359,14 +399,50 @@ bool impl::deserialize(IfcParse::impl::rocks_db_file_storage* storage, const std
         } else if (tt == 't') {
             t->push(storage->assert_existance(v, IfcParse::impl::rocks_db_file_storage::typedecl_ref));
         } else {
-            throw std::runtime_error("");
+			return false;
         }
     }
     return true;
 }
 
-bool impl::deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, aggregate_of_aggregate_of_instance::ptr& t) {
-    return false;
+bool impl::deserialize(IfcParse::impl::rocks_db_file_storage* storage, const std::string& val, aggregate_of_aggregate_of_instance::ptr& t) {
+	t.reset(new aggregate_of_aggregate_of_instance);
+	char const* ptr = val.data() + 1;
+
+	size_t outer_size;
+	memcpy(&outer_size, ptr, sizeof(size_t));
+	ptr += sizeof(size_t);
+
+    while (ptr < val.data() + val.size()) {
+		size_t inner_size;
+		memcpy(&inner_size, ptr, sizeof(size_t));
+		ptr += sizeof(size_t);
+        
+        if (ptr + inner_size * (sizeof(size_t) + 1) > val.data() + val.size()) {
+			return false;
+		}
+
+        std::vector<IfcUtil::IfcBaseClass*> inner;
+		inner.reserve(inner_size);
+
+        for (size_t i = 0; i < inner_size; ++i) {
+            auto tt = *ptr;
+            ptr++;
+            size_t v;
+            memcpy(&v, ptr, sizeof(size_t));
+            ptr += sizeof(size_t);
+            if (tt == 'i') {
+                inner.push_back(storage->assert_existance(v, IfcParse::impl::rocks_db_file_storage::entityinstance_ref));
+            } else if (tt == 't') {
+                inner.push_back(storage->assert_existance(v, IfcParse::impl::rocks_db_file_storage::typedecl_ref));
+            } else {
+                return false;
+            }
+        }
+
+		t->push(inner);
+    }
+    return true;
 }
 
 template<typename T>
