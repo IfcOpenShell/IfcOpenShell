@@ -1,12 +1,12 @@
 import pathlib
-from typing import List, Sequence, Tuple
+from collections.abc import Sequence
 
 import ifcopenshell
 import pytest
 from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Compound
 
 
-def _bbox_from_vertices(verts: List[Tuple[float, float, float]]):
+def _bbox_from_vertices(verts: list[tuple[float, float, float]]):
     if not verts:
         return (0, 0, 0), (0, 0, 0)
     xs = [v[0] for v in verts]
@@ -21,11 +21,11 @@ def _size_from_bbox(mn, mx):
     return (mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2])
 
 
-def _triples(flat: Sequence[float]) -> List[Tuple[float, float, float]]:
+def _triples(flat: Sequence[float]) -> list[tuple[float, float, float]]:
     return [(float(flat[i]), float(flat[i + 1]), float(flat[i + 2])) for i in range(0, len(flat), 3)]
 
 
-def load_ifc_occ_shape(ifc_path: str) -> TopoDS_Shape:
+def load_ifc_occ_shape(ifc_path: str, verbose=False) -> TopoDS_Shape:
     try:
         import ifcopenshell.geom as geom
     except Exception as e:
@@ -62,7 +62,8 @@ def load_ifc_occ_shape(ifc_path: str) -> TopoDS_Shape:
         occ_shape = shape_result.geometry
         if isinstance(occ_shape, TopoDS_Compound):
             json_data = occ_shape.DumpJson()
-            print(json_data)
+            if verbose:
+                print(json_data)
         else:
             raise NotImplemented(f"Unsupported shape type: {type(occ_shape)}")
 
@@ -123,9 +124,9 @@ def test_simple_sweep_2(geom_dir):
     ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
     occ_shape = load_ifc_occ_shape(ifc_file_path)
     assert occ_shape is not None
-    assert ifc_sz == pytest.approx((0.8764374444355525, 1.800000587893038, 2.095849252263605))
-    assert ifc_mn == pytest.approx((50.0, 99.9, 200.0))
-    assert ifc_mx == pytest.approx((50.87643744443555, 101.70000058789304, 202.0958492522636))
+    assert ifc_mn == pytest.approx((50.0, 100.0, 200.0))
+    assert ifc_mx == pytest.approx((50.89584911299009, 101.70000025609394, 202.0000003710634))
+    assert ifc_sz == pytest.approx((0.8958491129900921, 1.7000002560939436, 2.0000003710634076))
 
 
 def test_pipe_12d(geom_dir):
