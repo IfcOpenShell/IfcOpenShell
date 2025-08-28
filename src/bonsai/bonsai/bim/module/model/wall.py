@@ -469,8 +469,12 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
 
                     coord_list = builder.get_polyline_coords(extrusion.SweptArea.OuterCurve)
-                    coord_list = [(p[0], p[1] * abs(cos(existing_x_angle))) for p in coord_list] # Reset the transformation and returns to the original points with 0 degrees
-                    coord_list = [(p[0], p[1] * abs(1 / cos(x_angle))) for p in coord_list] # Apply the transformation for the new x_angle
+                    coord_list = [
+                        (p[0], p[1] * abs(cos(existing_x_angle))) for p in coord_list
+                    ]  # Reset the transformation and returns to the original points with 0 degrees
+                    coord_list = [
+                        (p[0], p[1] * abs(1 / cos(x_angle))) for p in coord_list
+                    ]  # Apply the transformation for the new x_angle
                     builder.set_polyline_coords(extrusion.SweptArea.OuterCurve, coord_list)
 
                     # The extrusion direction calculated previously default to the positive direction

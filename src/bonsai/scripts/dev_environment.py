@@ -50,7 +50,6 @@ else:
     raise RuntimeError("Unsupported platform")
 
 
-
 BONSAI_PATH_CANDIDATES = (
     # Installed from Bonsai Unstalble Repo.
     BLENDER_PATH / r"extensions/raw_githubusercontent_com/bonsai",
