@@ -774,6 +774,45 @@ class AddProjectLibrary(bpy.types.Operator):
         IfcStore.library_file.redo()
 
 
+class RemoveProjectLibrary(bpy.types.Operator):
+    bl_idname = "bim.remove_project_library"
+    bl_label = "Remove Project Library"
+    bl_description = "Remove the currently selected IfcProjectLibrary."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.begin_transaction(self)
+        library_file = IfcStore.library_file
+        assert library_file
+        library_file.begin_transaction()
+        result = self._execute(context)
+        library_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
+        props = tool.Project.get_project_props()
+        library_file = IfcStore.library_file
+        assert library_file
+
+        project_library = library_file.by_id(int(props.selected_project_library))
+        tool.Project.remove_project_library(project_library)
+
+        ProjectLibraryData.load()  # Update enum.
+        enum_len = len(ProjectLibraryData.data["project_libraries_enum"])
+        if props.is_property_set("selected_project_library"):
+            props["selected_project_library"] = min(enum_len - 1, props["selected_project_library"])
+        bpy.ops.bim.refresh_library()
+        return {"FINISHED"}
+
+    def rollback(self, data):
+        IfcStore.library_file.undo()
+
+    def commit(self, data):
+        IfcStore.library_file.redo()
+
+
 class EnableEditingHeader(bpy.types.Operator):
     bl_idname = "bim.enable_editing_header"
     bl_label = "Enable Editing Header"
