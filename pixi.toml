@@ -1,6 +1,6 @@
 [project]
 name = "IfcOpenShell"
-version = "0.8.2"
+version = "0.8.4"
 description = "IfcOpenShell is a library to support the IFC file format"
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64"]
@@ -37,6 +37,7 @@ mpfr = "*"
 gmp = "*"
 nlohmann_json = "*"
 zlib = "*"
+# Not strictly necessary
 pythonocc-core = "*"
 
 [feature.tests.dependencies]
@@ -59,18 +60,18 @@ vs2022_win-64 = "*"
 init-submodules = { cmd = "git submodule update --init --recursive", outputs =["$PIXI_PROJECT_ROOT/src/svgfill/3rdparty/svgpp/*"]}
 
 [feature.prod.target.win-64.tasks]
-configure-release = { cmd = ["cmake", "--preset", "win-release", "-B", "build/win-release", "cmake"], description = "Configure the project", depends-on=["init-submodules"] }
+configure-release = { cmd = ["cmake", "--preset", "win-release", "-B", "build/win-release", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }] }
 build-release = { cmd = ["cmake", "--build", "build/win-release", "--config", "Release"], description = "Build the project" }
 
 [feature.dev.target.win-64.tasks]
-configure-debug = { cmd = ["cmake", "--preset", "win-debug", "-B", "build/win-debug", "cmake"], description = "Configure the project", depends-on=["init-submodules"], outputs=["build/win-debug/CMakeCache.txt"] }
+configure-debug = { cmd = ["cmake", "--preset", "win-debug", "-B", "build/win-debug", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }], outputs=["build/win-debug/CMakeCache.txt"] }
 build-debug = { cmd = ["cmake", "--build", "build/win-debug", "--config", "Debug"], description = "Build the project", depends-on = ["configure-debug"] }
 install-debug = { cmd = ["cmake", "--install", "build/win-debug", "--config", "Debug"], description = "Install the project" } # Optionally Install files to your desired env using --prefix
 
 vsdebug = { cmd = ["python"], description = "Run a python script with vs debugger attached" }
 
 [feature.tests.tasks]
-configure-test = { cmd = ["cmake", "--preset", "win-test", "-B", "build/win-test", "cmake"], description = "Configure the project", depends-on=["init-submodules"], outputs=["build/win-test/CMakeCache.txt"] }
+configure-test = { cmd = ["cmake", "--preset", "win-test", "-B", "build/win-test", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }], outputs=["build/win-test/CMakeCache.txt"] }
 build-test = { cmd = ["cmake", "--build", "build/win-test", "--config", "Release"], description = "Build the project", depends-on = ["configure-test"], outputs=["build/win-test/IfcGeom.lib"] }
 install-test = { cmd = ["cmake", "--install", "build/win-test", "--config", "Release"], description = "Install the project", depends-on = ["build-test"] } # Optionally Install files to your desired env using --prefix
 
