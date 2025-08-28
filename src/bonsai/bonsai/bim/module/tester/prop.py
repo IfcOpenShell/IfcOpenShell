@@ -77,6 +77,9 @@ class IfcTesterProperties(PropertyGroup):
     failed_entities: CollectionProperty(name="FailedEntities", type=FailedEntities)
     has_entities: BoolProperty(default=False, name="")
     n_entities: IntProperty(name="", default=0)
+    webapp_server_port: IntProperty(name="Webapp Server Port", default=0)
+    webapp_is_running: BoolProperty(default=False, name="Webapp Is Running", options=set())
+    websocket_server_port: IntProperty(name="WebSocket Server Port", default=0)
 
     if TYPE_CHECKING:
         specs: MultipleFileSelect
@@ -92,3 +95,6 @@ class IfcTesterProperties(PropertyGroup):
         failed_entities: bpy.types.bpy_prop_collection_idprop[FailedEntities]
         has_entities: bool
         n_entities: int
+        webapp_server_port: int
+        webapp_is_running: bool
+        websocket_server_port: int

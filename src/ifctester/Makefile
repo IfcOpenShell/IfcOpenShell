@@ -50,6 +50,7 @@ webapp-prepare: webapp-build
 	rm -rf $(PACKAGE_NAME)/webapp/www/*
 	mkdir -p $(PACKAGE_NAME)/webapp/www
 	cp -r $(WEBAPP_BUILD_DIR)/* $(PACKAGE_NAME)/webapp/www/
+	cp $(WEBAPP_DIR)/__init__.py $(PACKAGE_NAME)/webapp/__init__.py
 	cp $(WEBAPP_DIR)/serve.py $(PACKAGE_NAME)/webapp/serve.py
 
 .PHONY: test
