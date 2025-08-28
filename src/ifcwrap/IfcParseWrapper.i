@@ -357,7 +357,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
         return oss.str();
 	}
 
-	std::string to_string(bool valid_spf) const {
+	std::string to_string(bool valid_spf = true) const {
 		std::ostringstream oss;
 		$self->toString(oss, valid_spf);
         return oss.str();
