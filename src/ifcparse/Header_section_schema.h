@@ -74,12 +74,12 @@ public:
     void setpreprocessor_version(std::string v);
     std::string originating_system() const;
     void setoriginating_system(std::string v);
-    std::string authorisation() const;
-    void setauthorisation(std::string v);
+    std::string authorization() const;
+    void setauthorization(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
     file_name (IfcEntityInstanceData&& e);
-    file_name (std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorisation);
+    file_name (std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization);
     typedef aggregate_of< file_name > list;
 };
 

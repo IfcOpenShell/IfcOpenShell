@@ -793,3 +793,9 @@ class file:
 
     def to_string(self) -> str:
         return self.wrapped_data.to_string()
+
+    @property
+    def header(self):
+        h = self.wrapped_data.header()
+        object.__setattr__(h, "file_ref", lambda inst: entity_instance.wrap_value(inst, file=self))
+        return h

@@ -55,14 +55,14 @@ std::string Header_section_schema::file_name::preprocessor_version() const {  st
 void Header_section_schema::file_name::setpreprocessor_version(std::string v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
 std::string Header_section_schema::file_name::originating_system() const {  std::string v = get_attribute_value(5); return v; }
 void Header_section_schema::file_name::setoriginating_system(std::string v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
-std::string Header_section_schema::file_name::authorisation() const {  std::string v = get_attribute_value(6); return v; }
-void Header_section_schema::file_name::setauthorisation(std::string v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
+std::string Header_section_schema::file_name::authorization() const {  std::string v = get_attribute_value(6); return v; }
+void Header_section_schema::file_name::setauthorization(std::string v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
 
 
 const IfcParse::entity& Header_section_schema::file_name::declaration() const { return *((IfcParse::entity*)HEADER_SECTION_SCHEMA_types[1]); }
 const IfcParse::entity& Header_section_schema::file_name::Class() { return *((IfcParse::entity*)HEADER_SECTION_SCHEMA_types[1]); }
 Header_section_schema::file_name::file_name(IfcEntityInstanceData&& e) : IfcUtil::IfcBaseEntity(std::move(e)) { }
-Header_section_schema::file_name::file_name(std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorisation) : IfcUtil::IfcBaseEntity(IfcEntityInstanceData(in_memory_attribute_storage(7))) { set_attribute_value(0, (v1_name));set_attribute_value(1, (v2_time_stamp));set_attribute_value(2, (v3_author));set_attribute_value(3, (v4_organization));set_attribute_value(4, (v5_preprocessor_version));set_attribute_value(5, (v6_originating_system));set_attribute_value(6, (v7_authorisation));; populate_derived(); }
+Header_section_schema::file_name::file_name(std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization) : IfcUtil::IfcBaseEntity(IfcEntityInstanceData(in_memory_attribute_storage(7))) { set_attribute_value(0, (v1_name));set_attribute_value(1, (v2_time_stamp));set_attribute_value(2, (v3_author));set_attribute_value(3, (v4_organization));set_attribute_value(4, (v5_preprocessor_version));set_attribute_value(5, (v6_originating_system));set_attribute_value(6, (v7_authorization));; populate_derived(); }
 
 // Function implementations for file_schema
 std::vector< std::string > /*[1:?]*/ Header_section_schema::file_schema::schema_identifiers() const {  std::vector< std::string > /*[1:?]*/ v = get_attribute_value(0); return v; }

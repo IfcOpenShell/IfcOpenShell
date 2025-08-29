@@ -624,7 +624,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     }
     try {
 		// @nb inconsistent spelling
-        header.put("file_name.authorization", file->header().file_name()->authorisation());
+        header.put("file_name.authorization", file->header().file_name()->authorization());
     }
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;

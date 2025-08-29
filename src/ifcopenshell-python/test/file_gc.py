@@ -111,7 +111,7 @@ def test_bug_2486_a():
 
 def test_bug_2486_b():
     file = ifcopenshell.template.create()
-    file.wrapped_data.header.file_name.name = "myfile.ifc"
+    file.header.file_name.name = "myfile.ifc"
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ class HEADER_SECTION_SCHEMA_instance_factory : public IfcParse::instance_factory
 
 IfcParse::schema_definition* HEADER_SECTION_SCHEMA_populate_schema() {
 
-const std::string strings[] = {"schema_name"s,"time_stamp_text"s,"file_description"s,"file_name"s,"file_schema"s,"description"s,"implementation_level"s,"name"s,"time_stamp"s,"author"s,"organization"s,"preprocessor_version"s,"originating_system"s,"authorisation"s,"schema_identifiers"s,"HEADER_SECTION_SCHEMA"s};
+const std::string strings[] = {"schema_name"s,"time_stamp_text"s,"file_description"s,"file_name"s,"file_schema"s,"description"s,"implementation_level"s,"name"s,"time_stamp"s,"author"s,"organization"s,"preprocessor_version"s,"originating_system"s,"authorization"s,"schema_identifiers"s,"HEADER_SECTION_SCHEMA"s};
 
     HEADER_SECTION_SCHEMA_types[3] = new type_declaration(strings[0], 3, new simple_type(simple_type::string_type));
     HEADER_SECTION_SCHEMA_types[4] = new type_declaration(strings[1], 4, new simple_type(simple_type::string_type));
