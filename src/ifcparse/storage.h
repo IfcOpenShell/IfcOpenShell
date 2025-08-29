@@ -211,7 +211,7 @@ namespace IfcParse {
             typedef std::map<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage() : tokens(nullptr), file(nullptr), schema(nullptr) {}
+            in_memory_file_storage(IfcParse::IfcFile* f = nullptr) : tokens(nullptr), file(f), schema(nullptr) {}
             in_memory_file_storage(const in_memory_file_storage&) = delete;
             in_memory_file_storage(const in_memory_file_storage&&) = delete;
 

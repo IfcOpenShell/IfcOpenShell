@@ -1352,9 +1352,7 @@ IfcFile::IfcFile(const std::string& path, filetype ty)
     }
     if (ty == FT_IFCSPF) {
         IfcSpfStream s(path);
-        storage_.emplace<1>(); // impl::in_memory_file_storage{};
-        // @todo assign in constructor
-        std::get<impl::in_memory_file_storage>(storage_).file = this;
+        storage_.emplace<1>(this);
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
 
         if (std::get<impl::in_memory_file_storage>(storage_).good_) {
@@ -1376,9 +1374,7 @@ IfcFile::IfcFile(const std::string& path, filetype ty)
     } else {
         throw std::runtime_error("Unsupported file format");
     }
-    if (schema_) {
-        ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
-    }
+    ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 }
 #endif
 
@@ -1386,26 +1382,38 @@ IfcFile::IfcFile(std::istream& stream, int length)
     : schema_(nullptr)
 {
     IfcSpfStream s(stream, length);
-    storage_.emplace<1>();
+    storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
-    ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
+    ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
+
+    byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
+    byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
+    byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
 }
 
 IfcFile::IfcFile(void* data, int length)
     : schema_(nullptr)
 {
     IfcSpfStream s(data, length);
-    storage_.emplace<1>();
+    storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
-    ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
+    ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
+
+    byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
+    byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
+    byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
 }
 
 IfcFile::IfcFile(IfcParse::IfcSpfStream* s)
     : schema_(nullptr)
 {
-    storage_.emplace<1>();
+    storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_);
-    ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
+    ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
+
+    byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
+    byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
+    byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
 }
 
 IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const std::string& path)
@@ -1418,8 +1426,7 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
         ty = guess_file_type(path);
     }
     if (ty == FT_IFCSPF) {
-        storage_.emplace<1>();
-        std::get<impl::in_memory_file_storage>(storage_).file = this;
+        storage_.emplace<1>(this);
 
         byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
