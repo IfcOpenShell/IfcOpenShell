@@ -85,7 +85,7 @@ jobs:
       - name: Package .zip archives
         run: |
           VERSION=v`cat VERSION`
-          cd ./build/`uname`/*/10.9/install/ifcopenshell
+          cd ./build/`uname`/*/10.15/install/ifcopenshell
           mkdir ~/output
 
           ls -d python-* | while read py_version; do
