@@ -1247,6 +1247,9 @@ if "IfcOpenShell-Python" in targets:
 
             module_dir = compile_python_wrapper(python_version, python_library, python_include, python_executable)
             assert module_dir
+            # Not sure why, but added after reading this in the logs
+            # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
+            run(["mkdir", "-p", os.path.join(DEPS_DIR, "install", "ifcopenshell")])
             run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")])
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
