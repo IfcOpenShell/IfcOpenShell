@@ -1123,11 +1123,11 @@ if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(expl
     logger.info("\rConfiguring executables...")
 
     exec_args = [
-        "-DBUILD_IFCGEOM=" + OFF_ON["IfcGeom" in targets],
-        "-DBUILD_GEOMSERVER=" + OFF_ON["IfcGeomServer" in targets],
-        "-DBUILD_CONVERT=" + OFF_ON["IfcConvert" in targets],
-        "-DBUILD_IFCPYTHON=" "OFF",
-        "-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
+        f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
+        f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
+        f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
+        f"-DBUILD_IFCPYTHON=OFF",
+        f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
     ]
 
     run_cmake("", exec_args + cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
@@ -1249,6 +1249,7 @@ if "IfcOpenShell-Python" in targets:
             assert module_dir
             # Not sure why, but added after reading this in the logs
             # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
+            # D'oh this was just due to a missing f-string f but doesn't hurt to keep it in.
             run(["mkdir", "-p", os.path.join(DEPS_DIR, "install", "ifcopenshell")])
             run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")])
 
