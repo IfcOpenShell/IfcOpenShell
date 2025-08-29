@@ -2161,6 +2161,8 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
         }
     }
 
+    process_deletion_inverse(entity);
+
     //byid_.erase(byid_.find(id));
     byid_.erase(id);
 
