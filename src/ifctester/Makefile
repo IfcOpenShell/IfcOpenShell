@@ -20,7 +20,7 @@ PACKAGE_NAME:=ifctester
 include ../common.mk
 
 NODE_ENV ?= production
-WEBAPP_DIR := webapp-next
+WEBAPP_DIR := webapp
 WEBAPP_BUILD_DIR := $(WEBAPP_DIR)/dist
 
 .PHONY: webapp-dev
