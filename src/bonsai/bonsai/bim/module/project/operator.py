@@ -167,10 +167,26 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select an IFC file that can be used as a library"
+    bl_description = (
+        "Select an IFC file that can be used as a library.\n\nALT+click to reload the current loaded library file."
+    )
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     append_all: bpy.props.BoolProperty(default=False)
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+
+    reload_previous_file = False
+
+    def invoke(self, context, event):
+        if event.alt:
+            old_filepath = IfcStore.library_path
+            if not old_filepath:
+                self.report({"ERROR"}, "No library file loaded to reload.")
+                return {"CANCELLED"}
+            self.filepath = old_filepath
+            self.reload_previous_file = True
+            return self.execute(context)
+
+        return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -201,6 +217,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         if self.append_all:
             bpy.ops.bim.append_entire_library()
         ProjectLibraryData.load()
+        self.report({"INFO"}, f"Loaded library from {filepath}.")
         return {"FINISHED"}
 
     def rollback(self, data):
@@ -223,6 +240,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
 class RefreshLibrary(bpy.types.Operator):
     bl_idname = "bim.refresh_library"
     bl_label = "Refresh Library"
+    bl_description = "Refresh the library browser"
     bl_options = {"UNDO"}
 
     def execute(self, context):
@@ -506,6 +524,7 @@ class SaveLibraryFile(bpy.types.Operator):
 
     def execute(self, context):
         IfcStore.library_file.write(IfcStore.library_path)
+        self.report({"INFO"}, f"Library saved to {IfcStore.library_path}")
         return {"FINISHED"}
 
 
@@ -765,6 +784,45 @@ class AddProjectLibrary(bpy.types.Operator):
         ProjectLibraryData.load()  # Update enum.
         props.selected_project_library = str(project_library.id())
         props.is_editing_project_library = True
+        return {"FINISHED"}
+
+    def rollback(self, data):
+        IfcStore.library_file.undo()
+
+    def commit(self, data):
+        IfcStore.library_file.redo()
+
+
+class RemoveProjectLibrary(bpy.types.Operator):
+    bl_idname = "bim.remove_project_library"
+    bl_label = "Remove Project Library"
+    bl_description = "Remove the currently selected IfcProjectLibrary."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.begin_transaction(self)
+        library_file = IfcStore.library_file
+        assert library_file
+        library_file.begin_transaction()
+        result = self._execute(context)
+        library_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
+        props = tool.Project.get_project_props()
+        library_file = IfcStore.library_file
+        assert library_file
+
+        project_library = library_file.by_id(int(props.selected_project_library))
+        tool.Project.remove_project_library(project_library)
+
+        ProjectLibraryData.load()  # Update enum.
+        enum_len = len(ProjectLibraryData.data["project_libraries_enum"])
+        if props.is_property_set("selected_project_library"):
+            props["selected_project_library"] = min(enum_len - 1, props["selected_project_library"])
+        bpy.ops.bim.refresh_library()
         return {"FINISHED"}
 
     def rollback(self, data):

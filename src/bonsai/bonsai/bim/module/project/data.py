@@ -29,6 +29,7 @@ from typing import Union, Any
 def refresh():
     ProjectData.is_loaded = False
     LinksData.is_loaded = False
+    ProjectLibraryData.is_loaded = False
 
 
 class ProjectData:

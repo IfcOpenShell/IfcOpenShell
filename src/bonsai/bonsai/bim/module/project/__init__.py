@@ -55,6 +55,7 @@ classes = (
     operator.RefreshClippingPlanes,
     operator.RefreshLibrary,
     operator.ReloadLink,
+    operator.RemoveProjectLibrary,
     operator.RevertProject,
     operator.RewindLibrary,
     operator.SaveLibraryFile,
