@@ -1423,12 +1423,16 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
 
         byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
+        byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
+
         // byidentity_ = decltype(byidentity_)(&std::get<impl::in_memory_file_storage>(storage_).byidentity_);
     } else if (ty == FT_ROCKSDB) {
         storage_.emplace<2>(path, this);
 
         byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
+        byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
+
         // byidentity_ = decltype(byidentity_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_cache_);
     } else {
         throw std::runtime_error("Unsupported file format");
