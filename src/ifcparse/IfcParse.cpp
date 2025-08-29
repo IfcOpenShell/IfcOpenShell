@@ -1386,9 +1386,9 @@ IfcFile::IfcFile(std::istream& stream, int length)
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
-    byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
-    byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
-    byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
+    byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
+    byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
+    byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
 }
 
 IfcFile::IfcFile(void* data, int length)
@@ -1399,9 +1399,9 @@ IfcFile::IfcFile(void* data, int length)
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
-    byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
-    byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
-    byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
+    byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
+    byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
+    byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
 }
 
 IfcFile::IfcFile(IfcParse::IfcSpfStream* s)
@@ -1411,9 +1411,9 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s)
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_);
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
-    byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
-    byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
-    byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
+    byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
+    byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
+    byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
 }
 
 IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const std::string& path)
