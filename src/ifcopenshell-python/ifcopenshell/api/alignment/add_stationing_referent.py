@@ -105,22 +105,22 @@ def add_stationing_referent(
             ay = float(p[1, 2])
             az = float(p[2, 2])
         else:
-            x = 0.
-            y = 0.
-            z = 0.
-            rx = 1.
-            ry = 0.
-            rz = 0.
-            ax = 0.
-            ay = 0.
-            az = 1.
+            x = 0.0
+            y = 0.0
+            z = 0.0
+            rx = 1.0
+            ry = 0.0
+            rz = 0.0
+            ax = 0.0
+            ay = 0.0
+            az = 1.0
 
         object_placement.CartesianPosition = file.createIfcAxis2Placement3D(
             Location=file.createIfcCartesianPoint((x, y, z)),
             Axis=file.createIfcDirection((ax, ay, az)),
             RefDirection=file.createIfcDirection((rx, ry, rz)),
         )
-            
+
     # this commented out code is what you would do to add a geometric representation of the referent
     # the example is a circle. a better way would be to pass a representation into the function
     #    representation = file.create_entity(
@@ -146,7 +146,9 @@ def add_stationing_referent(
     nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
     nest.RelatedObjects += (referent,)
 
-    nest.RelatedObjects = sorted(nest.RelatedObjects,key=lambda x: ifcopenshell.util.element.get_pset(x, name="Pset_Stationing", prop="Station"))
+    nest.RelatedObjects = sorted(
+        nest.RelatedObjects, key=lambda x: ifcopenshell.util.element.get_pset(x, name="Pset_Stationing", prop="Station")
+    )
 
     if len(referent.Positions) == 0:
         rel_positions = file.createIfcRelPositions(

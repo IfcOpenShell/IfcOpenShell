@@ -179,7 +179,6 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
         referent = ifcopenshell.api.alignment.add_stationing_referent(
             file, alignment, distance_along=dist_along, station=station, name=name, positioned_product=segment
         )
-        ifcopenshell.api.nest.reorder_nesting(file, referent, -1, -1)
 
         if len(curve.Segments) == 2 and layout.is_a("IfcAlignmentHorizontal"):
             # this is the first real segment in the horizontal alignment

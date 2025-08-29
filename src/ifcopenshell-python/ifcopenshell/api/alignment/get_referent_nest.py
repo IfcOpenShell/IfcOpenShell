@@ -29,10 +29,8 @@ def get_referent_nest(file: ifcopenshell.file, alignment: entity_instance) -> en
     :return: Returns the IfcRelNests.
     """
     if not alignment.is_a("IfcAlignment"):
-        raise TypeError(
-            f"Expected IfcAlignment, instead received {alignment.is_a()}"
-        )   
-     
+        raise TypeError(f"Expected IfcAlignment, instead received {alignment.is_a()}")
+
     for nest in alignment.IsNestedBy:
         for related_object in nest.RelatedObjects:
             if related_object.is_a("IfcReferent"):
