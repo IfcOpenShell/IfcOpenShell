@@ -58,11 +58,15 @@ def test_vertical_layout_by_pi_method():
     ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method(file, vlayout, vpoints, lengths)
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
+
     assert len(alignment.IsNestedBy) == 2
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+
     layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
-    assert len(referent_nest.RelatedObjects) == 1
     assert len(layout_nest.RelatedObjects) == 2
+
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+    assert len(referent_nest.RelatedObjects) == 6
+
     segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(vlayout)
     assert len(segment_nest.RelatedObjects) == 3
 

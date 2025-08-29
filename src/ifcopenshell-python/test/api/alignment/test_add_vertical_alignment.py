@@ -33,9 +33,13 @@ def test_add_vertical_alignment():
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 2  # nests for layout and referents
-    assert len(alignment.IsNestedBy[0].RelatedObjects) == 1
-    assert ifcopenshell.api.alignment.get_referent_nest(file, alignment).RelatedObjects[0].is_a("IfcReferent")
-    assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcAlignmentHorizontal")
+    layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
+    assert len(layout_nest.RelatedObjects) == 1
+    assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,alignment)
+    assert len(referent_nest.RelatedObjects) == 2
+    assert referent_nest.RelatedObjects[0].is_a("IfcReferent")
+
     curve = ifcopenshell.api.alignment.get_curve(alignment)
     assert curve.is_a("IfcCompositeCurve")
 
@@ -43,9 +47,10 @@ def test_add_vertical_alignment():
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 2
-    assert len(alignment.IsNestedBy[0].RelatedObjects) == 2
-    assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcAlignmentHorizontal")
-    assert alignment.IsNestedBy[0].RelatedObjects[1].is_a("IfcAlignmentVertical")
+    assert len(layout_nest.RelatedObjects) == 2
+    assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
+    assert layout_nest.RelatedObjects[1].is_a("IfcAlignmentVertical")
+
     curve = ifcopenshell.api.alignment.get_curve(alignment)
     assert curve.is_a("IfcGradientCurve")
 
@@ -57,13 +62,14 @@ def test_add_vertical_alignment():
 
     for child_alignment in alignment.IsDecomposedBy[0].RelatedObjects:
         assert child_alignment.is_a("IfcAlignment")
-        assert len(child_alignment.IsNestedBy) == 1  # one nesting relationship for the IfcAlignmentVertical
-        assert len(child_alignment.IsNestedBy[0].RelatedObjects) == 1  # The IfcAlignmentVertical
-        assert child_alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcAlignmentVertical")
+        assert len(child_alignment.IsNestedBy) == 2
+        child_layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(child_alignment)
+        assert len(child_layout_nest.RelatedObjects) == 1  # The IfcAlignmentVertical
+        assert child_layout_nest.RelatedObjects[0].is_a("IfcAlignmentVertical")
 
     assert len(alignment.IsNestedBy) == 2
-    assert len(alignment.IsNestedBy[0].RelatedObjects) == 1
-    assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcAlignmentHorizontal")
+    assert len(layout_nest.RelatedObjects) == 1
+    assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
 
 
 test_add_vertical_alignment()

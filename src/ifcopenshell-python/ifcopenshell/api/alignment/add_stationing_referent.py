@@ -30,18 +30,17 @@ import numpy as np
 
 def add_stationing_referent(
     file: ifcopenshell.file,
-    element: entity_instance,
+    alignment: entity_instance,
     distance_along: float,
     station: float,
     name: str,
     positioned_product: entity_instance,
 ) -> entity_instance:
     """
-    Adds an IfcReferent to the element with the Pset_Stationing property set.
-    If element is an IfcAlignment, IfcReferent.PredefinedType is set to "STATION", otherwise "POSITION"
+    Adds an IfcReferent to the alignment with the Pset_Stationing property set.
 
-    :param element: the element to receive the referent, expected to be an IfcAlignment or IfcAlignmentSegment
-    :param distance_along: distance along the alignment curve
+    :param alignment: the alignment to receive the referent
+    :param distance_along: distance along the alignment basis curve
     :param station: station value
     :param name: name to assign to IfcReferent.Name, typically a stringized version of the station value
     :param positioned_product: the product whose position is informed by the referent
@@ -52,21 +51,8 @@ def add_stationing_referent(
     .. code:: python
 
         alignment = model.by_type("IfcAlignment")[0]
-        ifcopenshell.api.alignment.add_stationing_referent(model,entity=alignment,distance_along=0.0,station=100.0)
+        ifcopenshell.api.alignment.add_stationing_referent(model,alignment=alignment,distance_along=0.0,station=100.0)
     """
-    alignment = element
-
-    layout_types = [
-        "IfcAlignmentHorizontal",
-        "IfcAlignmentVertical",
-        "IfcAlignmentCant",
-    ]
-
-    if element.is_a("IfcAlignmentSegment"):
-        layout = element.Nests[0].RelatingObject
-        alignment = ifcopenshell.api.alignment.get_alignment(layout)
-    elif element.is_a() in layout_types:
-        alignment = ifcopenshell.api.alignment.get_alignment(element)
 
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
 
@@ -86,6 +72,8 @@ def add_stationing_referent(
         )
 
         is_valid_curve = True
+        if basis_curve.is_a("IfcCompositeCurve") and len(basis_curve.Segments) == 0:
+            is_valid_curve = False
         if basis_curve.is_a("IfcPolyline") and len(basis_curve.Points) < 2:
             is_valid_curve = False
         elif basis_curve.is_a("IfcIndexedPolyCurve") and len(basis_curve.Points.CoordList) < 2:
@@ -101,6 +89,7 @@ def add_stationing_referent(
                 fn = ifcopenshell_wrapper.convert_loop_to_function_item(fn)
 
             evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, fn)
+
             p = evaluator.evaluate(distance_along * unit_scale)
             p = np.array(p)
 
@@ -115,12 +104,23 @@ def add_stationing_referent(
             ax = float(p[0, 2])
             ay = float(p[1, 2])
             az = float(p[2, 2])
+        else:
+            x = 0.
+            y = 0.
+            z = 0.
+            rx = 1.
+            ry = 0.
+            rz = 0.
+            ax = 0.
+            ay = 0.
+            az = 1.
 
-            object_placement.CartesianPosition = file.createIfcAxis2Placement3D(
-                Location=file.createIfcCartesianPoint((x, y, z)),
-                Axis=file.createIfcDirection((ax, ay, az)),
-                RefDirection=file.createIfcDirection((rx, ry, rz)),
-            )
+        object_placement.CartesianPosition = file.createIfcAxis2Placement3D(
+            Location=file.createIfcCartesianPoint((x, y, z)),
+            Axis=file.createIfcDirection((ax, ay, az)),
+            RefDirection=file.createIfcDirection((rx, ry, rz)),
+        )
+            
     # this commented out code is what you would do to add a geometric representation of the referent
     # the example is a circle. a better way would be to pass a representation into the function
     #    representation = file.create_entity(
@@ -130,7 +130,6 @@ def add_stationing_referent(
     #    )
 
     # create referent for the station
-    predefined_type = "STATION" if element.is_a("IfcAlignment") else "POSITION"
     referent = file.createIfcReferent(
         GlobalId=ifcopenshell.guid.new(),
         OwnerHistory=None,
@@ -139,13 +138,15 @@ def add_stationing_referent(
         ObjectType=None,
         ObjectPlacement=object_placement,
         Representation=representation,
-        PredefinedType=predefined_type,
+        PredefinedType="STATION",
     )
     pset_stationing = ifcopenshell.api.pset.add_pset(file, product=referent, name="Pset_Stationing")
     ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties={"Station": station})
 
-    nest = ifcopenshell.api.alignment.get_referent_nest(file, element)
+    nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
     nest.RelatedObjects += (referent,)
+
+    nest.RelatedObjects = sorted(nest.RelatedObjects,key=lambda x: ifcopenshell.util.element.get_pset(x, name="Pset_Stationing", prop="Station"))
 
     if len(referent.Positions) == 0:
         rel_positions = file.createIfcRelPositions(

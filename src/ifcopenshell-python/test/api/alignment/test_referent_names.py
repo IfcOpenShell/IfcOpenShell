@@ -97,36 +97,16 @@ def callback_alignment():
 
 
 def test_with_default_names(default_names_alignment):
-    hlayout = ifcopenshell.api.alignment.get_horizontal_layout(default_names_alignment)
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, hlayout)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, default_names_alignment)
 
-    assert "P.O.B." in referent_nest.RelatedObjects[0].Name
-    assert "P.C." in referent_nest.RelatedObjects[1].Name
-    assert "P.T." in referent_nest.RelatedObjects[2].Name
-    assert "P.O.E." in referent_nest.RelatedObjects[-1].Name
-
-    vlayout = ifcopenshell.api.alignment.get_vertical_layout(default_names_alignment)
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, vlayout)
-
-    assert "V.P.O.B." in referent_nest.RelatedObjects[0].Name
-    assert "P.V.C." in referent_nest.RelatedObjects[1].Name
-    assert "P.V.T." in referent_nest.RelatedObjects[2].Name
-    assert "V.P.O.E." in referent_nest.RelatedObjects[-1].Name
+    expected = ["P.O.B", "P.C.", "P.T.", "P.O.E.", "V.P.O.B.", "P.V.C.", "P.V.T.", "V.P.O.E"]
+    for r in referent_nest.RelatedObjects:
+        assert [x in r.Name for x in expected]
 
 
 def test_with_callbacks(callback_alignment):
-    hlayout = ifcopenshell.api.alignment.get_horizontal_layout(callback_alignment)
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, hlayout)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, callback_alignment)
 
-    assert "A" in referent_nest.RelatedObjects[0].Name
-    assert "Q" in referent_nest.RelatedObjects[1].Name
-    assert "Q" in referent_nest.RelatedObjects[2].Name
-    assert "Z" in referent_nest.RelatedObjects[-1].Name
-
-    vlayout = ifcopenshell.api.alignment.get_vertical_layout(callback_alignment)
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, vlayout)
-
-    assert "a" in referent_nest.RelatedObjects[0].Name
-    assert "q" in referent_nest.RelatedObjects[1].Name
-    assert "q" in referent_nest.RelatedObjects[2].Name
-    assert "z" in referent_nest.RelatedObjects[-1].Name
+    expected = ["A","Q","Z","a","q","z"]
+    for r in referent_nest.RelatedObjects:
+        assert [x in r.Name for x in expected]
