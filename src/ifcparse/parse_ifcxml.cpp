@@ -344,7 +344,7 @@ static void process_characters(void* user, const xmlChar* character, int len) {
         } else if (tagname == "originating_system") {
             header.file_name()->setoriginating_system(txt);
         } else if (tagname == "authorization") {
-            header.file_name()->setauthorisation(txt);
+            header.file_name()->setauthorization(txt);
         } else if (tagname == "documentation") {
             header.file_description()->setdescription({txt});
         } else {

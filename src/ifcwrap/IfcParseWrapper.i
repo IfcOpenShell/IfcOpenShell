@@ -229,9 +229,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 
 	%pythoncode %{
-        # Hide the getters with read-only property implementations
-        header = property(header)
-        schema = property(schema_name)
+		schema = property(schema_name)
 	%}
 }
 
@@ -587,9 +585,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        file_description = property(file_description_py)
-        file_name = property(file_name_py)
-        file_schema = property(file_schema_py)
+		# self.file_ref is set in ifcopenshell.file.header()
+        file_description = property(lambda self: self.file_ref(self.file_description_py()))
+        file_name = property(lambda self: self.file_ref(self.file_name_py()))
+        file_schema = property(lambda self: self.file_ref(self.file_schema_py()))
 	%}
 };
 

@@ -2590,7 +2590,7 @@ void IfcFile::setDefaultHeaderValues() {
     header().file_name()->setorganization(string_vector);
     header().file_name()->setpreprocessor_version("IfcOpenShell " IFCOPENSHELL_VERSION);
     header().file_name()->setoriginating_system("IfcOpenShell " IFCOPENSHELL_VERSION);
-    header().file_name()->setauthorisation(empty_string);
+    header().file_name()->setauthorization(empty_string);
 
     header().file_schema()->setschema_identifiers(schema_identifiers);
 }
