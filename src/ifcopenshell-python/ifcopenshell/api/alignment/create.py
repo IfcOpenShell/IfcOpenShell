@@ -79,16 +79,14 @@ def create(
 
     if include_geometry:
         _create_geometric_representation(file, alignment)
-
-    for layout in alignment_layouts:
-        _add_zero_length_segment(file, layout)
-
-    if include_geometry:
-        # define stationing
+        
         name = ifcopenshell.util.alignment.station_as_string(file, start_station)
         referent = ifcopenshell.api.alignment.add_stationing_referent(
             file, alignment, 0.0, start_station, name, alignment
         )
+
+    for layout in alignment_layouts:
+        _add_zero_length_segment(file, layout)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]

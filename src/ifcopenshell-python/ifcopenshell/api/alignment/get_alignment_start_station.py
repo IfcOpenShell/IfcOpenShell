@@ -22,10 +22,10 @@ import ifcopenshell.util.element
 from ifcopenshell import entity_instance
 
 
-def get_alignment_station(file: ifcopenshell.file, alignment: entity_instance) -> float:
+def get_alignment_start_station(file: ifcopenshell.file, alignment: entity_instance) -> float:
     """
-    Returns the start station of the alignment. If the alignment is nested by an IfcReferent
-    the referent is checked for PredefinedType of STATION and an occurance of Pset_Stationing.Station,
+    Returns the start station of the alignment. The starting station is defined by the first nested IfcReferent.
+    This is interpreted to mean the first IfcReferent with an occurance of Pset_Stationing.Station,
     otherwise returns 0.0.
     """
 
@@ -36,12 +36,13 @@ def get_alignment_station(file: ifcopenshell.file, alignment: entity_instance) -
 
     parent_alignment = ifcopenshell.api.alignment.get_parent_alignment(alignment)
     if parent_alignment:
-        start_station = ifcopenshell.api.alignment.get_alignment_station(file, parent_alignment)
+        start_station = ifcopenshell.api.alignment.get_alignment_start_station(file, parent_alignment)
     else:
         components = ifcopenshell.util.element.get_components(alignment)
         for c in components:
-            if c.is_a("IfcReferent") and ifcopenshell.util.element.get_predefined_type(c) == "STATION":
+            if c.is_a("IfcReferent"):
                 start_station = ifcopenshell.util.element.get_pset(c, name="Pset_Stationing", prop="Station")
-                break
+                if not start_station == None:
+                    break
 
     return start_station

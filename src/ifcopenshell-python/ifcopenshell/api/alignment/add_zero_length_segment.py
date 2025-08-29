@@ -231,8 +231,9 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
 
         if include_referent:
             alignment = ifcopenshell.api.alignment.get_alignment(layout)
-            station = ifcopenshell.api.alignment.get_alignment_station(file, alignment)
+            station = ifcopenshell.api.alignment.get_alignment_start_station(file, alignment)
             name = f"{_get_segment_start_point_label(zero_length_curve_segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
-            ifcopenshell.api.alignment.add_stationing_referent(file, zero_length_curve_segment, 0.0, station, name=name)
+            referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, station, name, zero_length_curve_segment)
+            referent.Description = f"Positions zero length segment {zero_length_curve_segment.id()}"
 
     return True
