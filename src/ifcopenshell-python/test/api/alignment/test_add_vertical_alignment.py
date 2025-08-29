@@ -36,7 +36,7 @@ def test_add_vertical_alignment():
     layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
     assert len(layout_nest.RelatedObjects) == 1
     assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,alignment)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
     assert len(referent_nest.RelatedObjects) == 2
     assert referent_nest.RelatedObjects[0].is_a("IfcReferent")
 

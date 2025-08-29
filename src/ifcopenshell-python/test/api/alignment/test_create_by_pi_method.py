@@ -51,7 +51,7 @@ def test_create_by_pi_method():
     layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
     assert len(layout_nest.RelatedObjects) == 2
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file,alignment)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
     assert len(referent_nest.RelatedObjects) == 19
 
     horizontal_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)

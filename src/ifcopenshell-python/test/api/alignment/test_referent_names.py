@@ -107,6 +107,6 @@ def test_with_default_names(default_names_alignment):
 def test_with_callbacks(callback_alignment):
     referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, callback_alignment)
 
-    expected = ["A","Q","Z","a","q","z"]
+    expected = ["A", "Q", "Z", "a", "q", "z"]
     for r in referent_nest.RelatedObjects:
         assert [x in r.Name for x in expected]
