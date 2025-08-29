@@ -102,8 +102,22 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
         OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    SET_TARGET_PROPERTIES(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES SUFFIX ${PYTHON_EXTENSION_SUFFIX})
+
+    # On Windows there is '_d' prefix for debug builds - e.g. `_d.cp311-win_amd64.pyd`.
+    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        set_target_properties(
+            ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES
+            SUFFIX ${PYTHON_EXTENSION_SUFFIX}
+            DEBUG_POSTFIX "_d"
+        )
+    else()
+        set_target_properties(
+            ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES
+            SUFFIX ${PYTHON_EXTENSION_SUFFIX}
+        )
     endif()
+    endif(NOT WASM_BUILD)
+
     if (PYTHON_MODULE_INSTALL_DIR)
 	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
     else()
