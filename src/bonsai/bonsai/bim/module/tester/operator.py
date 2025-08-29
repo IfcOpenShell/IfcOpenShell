@@ -39,7 +39,6 @@ from bpy_extras.io_utils import ExportHelper
 from pathlib import Path
 from typing import Union
 
-# Global variables to track server processes/threads
 webapp_process = None
 websocket_server_thread = None
 websocket_app = None
@@ -54,6 +53,8 @@ class IfcTesterWebSocketServer:
         self.sio.attach(self.app)
         self.runner = None
         self.site = None
+        self.loop = None
+        self.shutdown_event = None
         
         # Register namespace
         self.sio.register_namespace(IfcTesterNamespace("/ifctester"))
@@ -65,17 +66,57 @@ class IfcTesterWebSocketServer:
         return web.Response(text="OK", content_type="text/plain")
     
     async def start_server(self):
+        self.loop = asyncio.get_event_loop()
+        self.shutdown_event = asyncio.Event()
+        
         self.runner = web.AppRunner(self.app)
         await self.runner.setup()
         self.site = web.TCPSite(self.runner, "127.0.0.1", self.port)
         await self.site.start()
-        print(f"IfcTester Websocket server started on 127.0.0.1:{self.port}")
+        print(f"IfcTester WebSocket server started on 127.0.0.1:{self.port}")
+        
+        try:
+            # Wait for shutdown signal
+            await self.shutdown_event.wait()
+        except asyncio.CancelledError:
+            print("WebSocket server received cancellation")
+        finally:
+            await self._cleanup()
     
-    async def stop_server(self):
-        if self.site:
-            await self.site.stop()
-        if self.runner:
-            await self.runner.cleanup()
+    async def _cleanup(self):
+        try:
+            # Disconnect all clients
+            print("Shutting down SocketIO...")
+            
+            try:
+                await self.sio.shutdown()
+            except Exception as e:
+                print(f"Error shutting down socketio: {e}")
+            
+            # Stop the web server
+            if self.site:
+                print("Stopping web server...")
+                await asyncio.wait_for(self.site.stop(), timeout=2.0)
+                self.site = None
+                
+            # Clean up the runner
+            if self.runner:
+                print("Cleaning up runner...")
+                await asyncio.wait_for(self.runner.cleanup(), timeout=2.0)
+                self.runner = None
+                
+            print("IfcTester WebSocket server stopped")
+        except asyncio.TimeoutError:
+            print("Websocket server cleanup timed out, forcing shutdown")
+        except Exception as e:
+            print(f"Error during websocket cleanup: {e}")
+    
+    def stop_server(self):
+        if self.loop and self.shutdown_event and not self.shutdown_event.is_set():
+            try:
+                self.loop.call_soon_threadsafe(self.shutdown_event.set)
+            except Exception as e:
+                print(f"Error sending shutdown signal: {e}")
 
 
 class IfcTesterNamespace(socketio.AsyncNamespace):
@@ -305,7 +346,6 @@ class StartIfcTesterWebapp(bpy.types.Operator):
                 asyncio.set_event_loop(loop)
                 try:
                     loop.run_until_complete(websocket_app.start_server())
-                    loop.run_forever()
                 except Exception as e:
                     print(f"WebSocket server error: {e}")
                 finally:
@@ -390,22 +430,14 @@ class StopIfcTesterWebapp(bpy.types.Operator):
         # Stop websocket server
         if websocket_app and websocket_server_thread:
             try:
-                # Create a new event loop to properly shutdown the server
-                def shutdown_websocket():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        loop.run_until_complete(websocket_app.stop_server())
-                    except Exception as e:
-                        errors.append(f"Error stopping websocket server: {str(e)}")
-                    finally:
-                        loop.close()
+                print("Stopping WebSocket server...")
                 
-                # Run shutdown in a separate thread to avoid blocking
-                shutdown_thread = threading.Thread(target=shutdown_websocket)
-                shutdown_thread.start()
-                shutdown_thread.join(timeout=5)  # Wait up to 5 seconds
+                # Signal shutdown using thread-safe method
+                websocket_app.stop_server()
                 
+                # Wait for the websocket thread to finish
+                websocket_server_thread.join(timeout=5)
+                    
             except Exception as e:
                 errors.append(f"Error during websocket shutdown: {str(e)}")
             finally:
