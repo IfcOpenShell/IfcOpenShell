@@ -2471,7 +2471,20 @@ std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
                 }
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
-            // @todo
+            // @todo no lower/upper_bounds() implemented yet
+            auto prefix = "v|" + std::to_string(instance_id) + "|";
+            auto it = x.db->NewIterator(rocksdb::ReadOptions());
+            it->Seek(prefix);
+            while (it->Valid() && it->key().starts_with(prefix)) {
+                std::vector<uint32_t> vals(it->value().size() / sizeof(uint32_t));
+                memcpy(vals.data(), it->value().data(), it->value().size());
+                auto tuple = key_from_string<std::tuple<int, int, int>>(it->key().ToString().substr(2));
+                for (auto& i : vals) {
+                    mapping[i].push_back(std::get<2>(tuple));
+                }
+                it->Next();
+            }
+
         }
     }, storage_);
 
