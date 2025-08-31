@@ -406,6 +406,7 @@ class BIM_PT_project_library(Panel):
 
         if library_is_selected and not props.is_editing_project_library:
             row.prop(props, "is_editing_project_library", text="", icon="GREASEPENCIL")
+            row.operator("bim.remove_project_library", text="", icon="X")
 
         row.prop(self.props, "show_library_tree", text="", icon="OUTLINER")
 

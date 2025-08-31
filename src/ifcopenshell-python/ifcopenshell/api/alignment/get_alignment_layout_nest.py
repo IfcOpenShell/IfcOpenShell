@@ -16,17 +16,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 from ifcopenshell import entity_instance
 
 
-def get_alignment(layout: entity_instance) -> entity_instance:
+def get_alignment_layout_nest(alignment: entity_instance) -> entity_instance:
     """
-    Returns the alignment that nests this layout
-    """
-    alignment = None
-    for nest in layout.Nests:
-        if nest.RelatingObject.is_a("IfcAlignment"):
-            alignment = nest.RelatingObject
-            break
+    Searches for the IfcRelNest that contains IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
 
-    return alignment
+    :param alignment: the alignment
+    :return: Returns the IfcRelNests containing the alignment layout
+    """
+    layout_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]
+
+    for nest in alignment.IsNestedBy:
+        for related_object in nest.RelatedObjects:
+            if related_object.is_a() in layout_types:
+                return nest
+
+    return None

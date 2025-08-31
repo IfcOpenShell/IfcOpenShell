@@ -203,8 +203,8 @@ class Unit(bonsai.core.tool.Unit):
 
     @classmethod
     def format_value(cls, value: float) -> str:
-        precision = tool.Ifc.get().by_type("IfcGeometricRepresentationContext")[0].Precision
-        if precision:
+        context = next(iter(tool.Ifc.get().by_type("IfcGeometricRepresentationContext")), None)
+        if context and (precision := context.Precision):
             decimal_places = math.ceil(math.log10(1 / precision))
         else:
             precision = 1e-5

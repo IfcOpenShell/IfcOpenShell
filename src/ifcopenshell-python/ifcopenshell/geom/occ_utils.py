@@ -18,6 +18,7 @@
 
 
 from __future__ import annotations
+import inspect
 import random
 import operator
 import warnings
@@ -225,10 +226,24 @@ def serialize_shape(shape):
     shapes.SetFormatNb(2)
 
     shapes.Add(shape)
+
+    # Check if WriteToString method exists and has the correct signature
+    # In PythonOCC >= 7.8.0, WriteToString signature changed and requires additional arguments
     if hasattr(shapes, "WriteToString"):
-        return shapes.WriteToString()
-    else:
-        return shapes.Write()
+        try:
+            # Try to get the method signature
+            sig = inspect.signature(shapes.WriteToString)
+            # If WriteToString has no parameters (just self), use it
+            # This works for PythonOCC < 7.8.0
+            if len(sig.parameters) == 0:
+                return shapes.WriteToString()
+        except (ValueError, TypeError):
+            # If signature inspection fails, fall through to Write() method
+            pass
+
+    # Fall back to Write() method for newer PythonOCC versions (>= 7.8.0)
+    # or when WriteToString is not available/compatible
+    return shapes.Write()
 
 
 def create_shape_from_serialization(
