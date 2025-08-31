@@ -1,0 +1,114 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "shared",
+      "generator": "Ninja",
+      "hidden": true,
+      "cacheVariables": {
+        "BUILD_IFCPYTHON": "ON",
+        "BUILD_IFCGEOM": "ON",
+        "COLLADA_SUPPORT": "OFF",
+        "BUILD_EXAMPLES": "OFF",
+        "BUILD_GEOMSERVER": "OFF",
+        "GLTF_SUPPORT": "ON",
+        "BUILD_CONVERT": "ON",
+        "BUILD_IFCMAX": "OFF",
+        "IFCXML_SUPPORT": "ON",
+        "HDF5_SUPPORT": "ON",
+        "SCHEMA_VERSIONS": "4x3_add2",
+        "CITYJSON_SUPPORT": "OFF",
+        "CMAKE_GENERATOR_PLATFORM": "",
+        "CMAKE_GENERATOR_TOOLSET": ""
+      }
+    },
+    {
+      "name": "win-shared",
+      "inherits": [
+        "shared"
+      ],
+      "hidden": true,
+      "environment": {
+        "CONDA_BUILD": "ON",
+        "CONDA_PY": "312"
+      },
+      "cacheVariables": {
+        "Boost_USE_STATIC_LIBS": "OFF",
+        "CMAKE_INSTALL_PREFIX": "$env{LIBRARY_PREFIX}",
+        "PYTHON_EXECUTABLE": "$env{PREFIX}/python.exe",
+        "PYTHON_INCLUDE_DIR": "$env{PREFIX}/include",
+        "PYTHON_LIBRARY": "$env{PREFIX}/libs/python$env{CONDA_PY}.lib",
+        "CMAKE_FIND_ROOT_PATH": "$env{LIBRARY_PREFIX}",
+        "CMAKE_PREFIX_PATH": "$env{LIBRARY_PREFIX}",
+        "LIBXML2_LIBRARIES": "$env{LIBRARY_PREFIX}/lib/libxml2.lib",
+        "OCC_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include/opencascade",
+        "OCC_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "CGAL_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "EIGEN_DIR": "$env{LIBRARY_PREFIX}/include/eigen3",
+        "JSON_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "GMP_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "GMP_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "MPFR_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "Boost_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "Boost_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "HDF5_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "HDF5_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "ZLIB_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include"
+      }
+    },
+    {
+      "name": "win-release",
+      "inherits": [
+        "win-shared"
+      ],
+      "hidden": false,
+      "warnings": {
+        "dev": false
+      },
+      "environment": {
+        "PREFIX": "${sourceDir}/../.pixi/envs/prod",
+        "LIBRARY_PREFIX": "${sourceDir}/../.pixi/envs/prod/Library"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "win-debug",
+      "inherits": [
+        "win-shared"
+      ],
+      "hidden": false,
+      "binaryDir": "${sourceDir}/../build/win-debug",
+      "warnings": {
+        "dev": false
+      },
+      "environment": {
+        "PREFIX": "${sourceDir}/../.pixi/envs/dev",
+        "LIBRARY_PREFIX": "${sourceDir}/../.pixi/envs/dev/Library"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "win-test",
+      "inherits": [
+        "win-shared"
+      ],
+      "hidden": false,
+      "binaryDir": "${sourceDir}/../build/win-test",
+      "warnings": {
+        "dev": false
+      },
+      "environment": {
+        "PREFIX": "${sourceDir}/../.pixi/envs/tests",
+        "LIBRARY_PREFIX": "${sourceDir}/../.pixi/envs/tests/Library"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SCHEMA_VERSIONS": "2x3;4;4x3_add2"
+      }
+    }
+  ]
+}

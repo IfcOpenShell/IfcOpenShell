@@ -21,7 +21,7 @@ import pytest
 import ifcopenshell
 
 
-TEST_FILE_DIR = Path("../../test/input/")
+TEST_FILE_DIR = Path(__file__).parent / "../../../test/input/"
 
 
 class TestOpen:
