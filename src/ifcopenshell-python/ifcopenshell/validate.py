@@ -119,7 +119,7 @@ simple_type_python_mapping = {
 
 
 def annotate_inst_attr_pos(
-    inst: Union[ifcopenshell.entity_instance, W.HeaderEntity],
+    inst: ifcopenshell.entity_instance,
     pos: Union[int, tuple[int, ...]],
     entity_str: str = "",
 ) -> str:
@@ -616,9 +616,9 @@ def validate_guid(guid: str) -> Union[str, None]:
 def to_string_header_entity(header_entity):
     """Recreate IFC header string representation, like FILE_NAME(...)"""
 
-    # Prefer native .toString() if available (native IfcOpenShell wrapper)
-    if isinstance(header_entity, W.HeaderEntity):
-        return header_entity.toString()
+    # Prefer native .to_string() if available (native IfcOpenShell wrapper)
+    if isinstance(header_entity, ifcopenshell.entity_instance):
+        return header_entity.to_string(True)
     elif hasattr(header_entity, "_fields"):
         values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
         return f"{type(header_entity).__name__.upper()}({','.join(values)})"
@@ -629,12 +629,15 @@ def to_string_header_entity(header_entity):
 def validate_ifc_header(
     f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file], logger: Union[Logger, json_logger]
 ) -> None:
-    header: Union[W.IfcSpfHeader, types.SimpleNamespace] = f.header
+    # @todo now that we have the header schema compiled into ifcopenshell, and the 
+    # header instances being conventional entity instances, this specific logic should
+    # not be necessary anymore.
+    header: Union[ifcopenshell.entity_instance, types.SimpleNamespace] = f.header
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
     def log_error(
-        header_entity: Union[W.HeaderEntity, tuple], name: str, index: int, expected_type: str, provided_type: str
+        header_entity: Union[ifcopenshell.entity_instance, tuple], name: str, index: int, expected_type: str, provided_type: str
     ) -> None:
         logger.error(
             (
@@ -649,7 +652,7 @@ def validate_ifc_header(
             provided_type,
         )
 
-    def validate_attribute(header_entity: W.HeaderEntity, name: str, index: int, *, aggregate: bool = False) -> None:
+    def validate_attribute(header_entity: ifcopenshell.entity_instance, name: str, index: int, *, aggregate: bool = False) -> None:
         try:
             value = getattr(header_entity, name)
         except RuntimeError as _:
