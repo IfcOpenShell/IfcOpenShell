@@ -882,8 +882,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				auto attr_type = *dit
 					? IfcUtil::Argument_DERIVED
 					: IfcUtil::from_parameter_type((*it)->type_of_attribute());
-				auto value_cpp = v->get_attribute_value(std::distance(attrs.begin(), it));
-				auto value_py = convert_cpp_attribute_to_python(value_cpp, include_identifier);
+				auto value_py = convert_cpp_attribute_to_python(v, std::distance(attrs.begin(), it), include_identifier);
 				PyDict_SetItem(d, name_py, value_py);
 				Py_DECREF(name_py);
 				Py_DECREF(value_py);
@@ -899,8 +898,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		} else {
 			const std::string& name_cpp = "wrappedValue";
 			auto name_py = pythonize(name_cpp);
-			auto value_cpp = v->get_attribute_value(0);
-			auto value_py = convert_cpp_attribute_to_python(value_cpp, include_identifier);
+			auto value_py = convert_cpp_attribute_to_python(v, 0, include_identifier);
 			PyDict_SetItem(d, name_py, value_py);
 			Py_DECREF(name_py);
 			Py_DECREF(value_py);
