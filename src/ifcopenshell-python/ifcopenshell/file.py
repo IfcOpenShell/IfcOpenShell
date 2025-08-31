@@ -338,14 +338,14 @@ class file:
                 from . import Error, SchemaError
 
                 exc, msg = {
-                    READ_ERROR: (IOError, "Unable to open file for reading"),
-                    NO_HEADER: (Error, "Unable to parse IFC SPF header"),
-                    UNSUPPORTED_SCHEMA: (
+                    READ_ERROR: lambda: (IOError, "Unable to open file for reading"),
+                    NO_HEADER: lambda: (Error, "Unable to parse IFC SPF header"),
+                    UNSUPPORTED_SCHEMA: lambda: (
                         SchemaError,
                         "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
                     ),
-                    INVALID_SYNTAX: (Error, "Syntax error during parse, check logs"),
-                }[f.good().value()]
+                    INVALID_SYNTAX: lambda: (Error, "Syntax error during parse, check logs"),
+                }[f.good().value()]()
                 raise exc(msg)
             self.wrapped_data = f
         else:
