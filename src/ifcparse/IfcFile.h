@@ -46,6 +46,7 @@ namespace {
         virtual bool FullMergeV2(const MergeOperator::MergeOperationInput& merge_in,
             MergeOperator::MergeOperationOutput* merge_out) const {
             // Log(InfoLogLevel::INFO_LEVEL, merge_in.logger, "FullMergeV2 new_value size:%ld", merge_out->new_value.size());
+            merge_out->new_value.clear();
             if (merge_in.existing_value) {
                 merge_out->new_value.append(merge_in.existing_value->data(), merge_in.existing_value->size());
             }
