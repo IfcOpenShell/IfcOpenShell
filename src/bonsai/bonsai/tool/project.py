@@ -21,6 +21,7 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.core.aggregate
@@ -398,3 +399,41 @@ class Project(bonsai.core.tool.Project):
         if library_element.is_a("IfcProfileDef"):
             return "ProfileName"
         return "Name"
+
+    # TODO: Move to ifcopenshell.api and add tests.
+    @classmethod
+    def remove_project_library(cls, project_library: ifcopenshell.entity_instance) -> None:
+        ifc_file = project_library.file
+        roots_to_remove = {project_library}
+        rels_to_clean_up: set[ifcopenshell.entity_instance] = set()
+        queue = [project_library]
+        while queue:
+            current = queue.pop()
+            inverses = ifc_file.get_inverse(current)
+            rels_to_clean_up.update(i for i in inverses if i.is_a() in ("IfcRelNests", "IfcRelDeclares"))
+
+            children = ifcopenshell.util.element.get_components(current)
+            queue.extend(children)
+            roots_to_remove.update(children)
+
+        def remove_root(root: ifcopenshell.entity_instance) -> None:
+            history = root.OwnerHistory
+            ifc_file.remove(root)
+            if history:
+                ifcopenshell.util.element.remove_deep2(ifc_file, history)
+
+        for root in roots_to_remove:
+            remove_root(root)
+
+        # Clean up invalidated rels.
+        for rel in rels_to_clean_up:
+            if rel.is_a("IfcRelDeclares"):
+                # Project library was either assigned to Project or some types were assigned to it.
+                if not rel.RelatingContext or not rel.RelatedDefinitions:
+                    remove_root(rel)
+            elif rel.is_a("IfcRelNests"):
+                # Project library was either parent or child to other project libraries.
+                if not rel.RelatingObject or not rel.RelatedObjects:
+                    remove_root(rel)
+            else:
+                assert False, f"Shouldn't be here, {rel}"

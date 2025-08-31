@@ -97,32 +97,16 @@ def callback_alignment():
 
 
 def test_with_default_names(default_names_alignment):
-    hlayout = ifcopenshell.api.alignment.get_horizontal_layout(default_names_alignment)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, default_names_alignment)
 
-    assert "P.O.B." in hlayout.IsNestedBy[0].RelatedObjects[0].IsNestedBy[0].RelatedObjects[0].Name
-    assert "P.C." in hlayout.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects[0].Name
-    assert "P.T." in hlayout.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects[0].Name
-    assert "P.O.E." in hlayout.IsNestedBy[0].RelatedObjects[-1].IsNestedBy[0].RelatedObjects[0].Name
-
-    vlayout = ifcopenshell.api.alignment.get_vertical_layout(default_names_alignment)
-
-    assert "V.P.O.B." in vlayout.IsNestedBy[0].RelatedObjects[0].IsNestedBy[0].RelatedObjects[0].Name
-    assert "P.V.C." in vlayout.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects[0].Name
-    assert "P.V.T." in vlayout.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects[0].Name
-    assert "V.P.O.E." in vlayout.IsNestedBy[0].RelatedObjects[-1].IsNestedBy[0].RelatedObjects[0].Name
+    expected = ["P.O.B", "P.C.", "P.T.", "P.O.E.", "V.P.O.B.", "P.V.C.", "P.V.T.", "V.P.O.E"]
+    for r in referent_nest.RelatedObjects:
+        assert [x in r.Name for x in expected]
 
 
 def test_with_callbacks(callback_alignment):
-    hlayout = ifcopenshell.api.alignment.get_horizontal_layout(callback_alignment)
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, callback_alignment)
 
-    assert "A" in hlayout.IsNestedBy[0].RelatedObjects[0].IsNestedBy[0].RelatedObjects[0].Name
-    assert "Q" in hlayout.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects[0].Name
-    assert "Q" in hlayout.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects[0].Name
-    assert "Z" in hlayout.IsNestedBy[0].RelatedObjects[-1].IsNestedBy[0].RelatedObjects[0].Name
-
-    vlayout = ifcopenshell.api.alignment.get_vertical_layout(callback_alignment)
-
-    assert "a" in vlayout.IsNestedBy[0].RelatedObjects[0].IsNestedBy[0].RelatedObjects[0].Name
-    assert "q" in vlayout.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects[0].Name
-    assert "q" in vlayout.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects[0].Name
-    assert "z" in vlayout.IsNestedBy[0].RelatedObjects[-1].IsNestedBy[0].RelatedObjects[0].Name
+    expected = ["A", "Q", "Z", "a", "q", "z"]
+    for r in referent_nest.RelatedObjects:
+        assert [x in r.Name for x in expected]

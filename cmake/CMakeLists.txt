@@ -578,7 +578,18 @@ if(BUILD_IFCGEOM)
     endif(WITH_OPENCASCADE)
 endif(BUILD_IFCGEOM)
 
-if(COLLADA_SUPPORT)
+if(COLLADA_SUPPORT AND (NOT OPENCOLLADA_INCLUDE_DIR AND NOT OPENCOLLADA_LIBRARY_DIR))
+    # If package is found, automatically sets
+    # OPENCOLLADA_INCLUDE_DIRS and OPENCOLLADA_LIBRARIES (list of targets, not paths).
+    find_package(OpenCOLLADA CONFIG)
+    if(OpenCOLLADA_DIR)
+        message(STATUS "Found OpenCOLLADA: '${OpenCOLLADA_DIR}'.")
+        set(OPENCOLLADA_FOUND TRUE)
+    else()
+        message(STATUS "OpenCOLLADA package not found, falling back to manual search.")
+    endif()
+endif()
+if(COLLADA_SUPPORT AND NOT OpenCOLLADA_DIR)
     # Find OpenCOLLADA
     if("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
         message(STATUS "No OpenCOLLADA include directory specified")
@@ -611,8 +622,7 @@ if(COLLADA_SUPPORT)
 
     if(COLLADASWStreamWriter_h)
         message(STATUS "OpenCOLLADA header files found")
-        add_definitions(-DWITH_OPENCOLLADA)
-        set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_OPENCOLLADA)
+        set(OPENCOLLADA_FOUND TRUE)
 
         set(OPENCOLLADA_LIBRARY_NAMES
             GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
@@ -660,7 +670,12 @@ if(COLLADA_SUPPORT)
         message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA headers. "
             "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
     endif()
-endif(COLLADA_SUPPORT)
+endif(COLLADA_SUPPORT AND NOT OpenCOLLADA_DIR)
+if(COLLADA_SUPPORT AND OPENCOLLADA_FOUND)
+    add_definitions(-DWITH_OPENCOLLADA)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_OPENCOLLADA)
+endif()
+
 
 if(HDF5_SUPPORT)
     if("${HDF5_INCLUDE_DIR}" STREQUAL "")

@@ -21,25 +21,22 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
-from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
-
-def test_add_segment_to_layout():
-    file = ifcopenshell.file(schema="IFC4X3")
+def test_create_no_geometry():
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
-    geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
-    axis_model_representation_subcontext = ifcopenshell.api.context.add_context(
-        file,
-        context_type="Model",
-        context_identifier="Axis",
-        target_view="MODEL_VIEW",
-        parent=geometric_representation_context,
-    )
 
-    alignment = ifcopenshell.api.alignment.create(file, "")
-    horizontal_alignment = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    # creates an IfcAlignment with an IfcAlignmentHorizontal layout containing only the zero length segment
+    ali = ifcopenshell.api.alignment.create(file, "A1", include_vertical=True, include_geometry=False)
+
+    # append a segment to the horizontal layout
+    horizontal_alignment = ifcopenshell.api.alignment.get_horizontal_layout(ali)
+    vertical_alignment = ifcopenshell.api.alignment.get_vertical_layout(ali)
+
+    curve = ifcopenshell.api.alignment.get_curve(ali)
+    assert curve == None
 
     design_parameters = file.create_entity(
         type="IfcAlignmentHorizontalSegment",
@@ -53,25 +50,19 @@ def test_add_segment_to_layout():
         GravityCenterLineHeight=None,
         PredefinedType="LINE",
     )
-    alignment_segment = file.create_entity(
-        type="IfcAlignmentSegment",
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        Description=None,
-        ObjectType=None,
-        ObjectPlacement=None,
-        Representation=None,
-        DesignParameters=design_parameters,
+    end = ifcopenshell.api.alignment.create_layout_segment(file, horizontal_alignment, design_parameters)
+    assert end == None
+
+    design_parameters = file.createIfcAlignmentVerticalSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=50.0,
+        StartHeight=20.0,
+        StartGradient=1.0 / 100.0,
+        EndGradient=1.0 / 100.0,
+        PredefinedType="CONSTANTGRADIENT",
     )
-
-    _add_segment_to_layout(file, horizontal_alignment, alignment_segment)
-
-    assert len(horizontal_alignment.IsNestedBy) == 1
-    segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal_alignment)
-    assert len(segment_nest.RelatedObjects) == 2
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    assert len(referent_nest.RelatedObjects) == 3
+    end = ifcopenshell.api.alignment.create_layout_segment(file, vertical_alignment, design_parameters)
+    assert end == None
 
 
-test_add_segment_to_layout()
+test_create_no_geometry()
