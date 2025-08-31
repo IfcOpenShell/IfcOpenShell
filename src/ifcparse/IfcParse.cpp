@@ -1089,8 +1089,14 @@ void IfcEntityInstanceData::toString(void* storage, const IfcParse::declaration*
 
     StringBuilderVisitor vis(ss, upper);
 
-    // @todo perhaps IfcEntityInstanceData::size() can be removed now?
-    for (size_t i = 0; i < (decl && decl->as_entity() ? decl->as_entity()->attribute_count() : 1); ++i) {
+    // In almost all cases, storage is initialized with the size of the schema declaration,
+    // apparently except in case of header entities and invalid in-line type declarations.
+    auto size = (decl && decl->as_entity() ? decl->as_entity()->attribute_count() : 1);
+    if (storage_) {
+        size = (std::min)(size, storage_->size());
+    }
+
+    for (size_t i = 0; i < size; ++i) {
         if (i != 0) {
             ss << ",";
         }
@@ -1355,7 +1361,7 @@ IfcFile::IfcFile(const std::string& path, filetype ty)
         storage_.emplace<1>(this);
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
 
-        if (std::get<impl::in_memory_file_storage>(storage_).good_) {
+        if (good_ = std::get<impl::in_memory_file_storage>(storage_).good_) {
             // @todo unify these names, it's already confusing enough as it stands
             byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
             byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
@@ -1372,7 +1378,9 @@ IfcFile::IfcFile(const std::string& path, filetype ty)
 		byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
         // byidentity_ = decltype(byidentity_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_cache_);
     } else {
-        throw std::runtime_error("Unsupported file format");
+        storage_.emplace<0>();
+        good_ = file_open_status::READ_ERROR;
+        // throw std::runtime_error("Unsupported file format");
     }
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 }
@@ -2094,7 +2102,16 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
         throw IfcParse::IfcException("Instance not part of this file");
     }
 
-    aggregate_of_instance::ptr references = instances_by_reference(id);
+    if (batch_mode_) {
+        batch_deletion_ids_.push_back(id);
+    } else {
+        process_deletion_(entity);
+    }
+}
+
+void IfcFile::process_deletion_(IfcUtil::IfcBaseClass* entity) {
+
+    aggregate_of_instance::ptr references = instances_by_reference(entity->id());
 
     // Alter entity instances with INVERSE relations to the entity being
     // deleted. This is necessary to maintain a valid IFC file, because
@@ -2170,21 +2187,11 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 
     process_deletion_inverse(entity);
 
-    //byid_.erase(byid_.find(id));
-    byid_.erase(id);
+    byid_.erase(entity->id());
 
     const IfcParse::declaration* ty = &entity->declaration();
 
-    {
-        remove_type_ref(entity);
-        /*auto it = bytype_excl_.find(ty);
-        if (it != bytype_excl_.end()) {
-            it->second->remove(entity);
-            if (it->second->size() == 0) {
-                bytype_excl_.erase(ty);
-            }
-        }*/
-    }
+    remove_type_ref(entity);
 
     // entity_file_map is in place to prevent duplicate definitions with usage of add().
     // Upon deletion the pairs need to be erased.
@@ -2680,6 +2687,14 @@ void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
     };
 
     apply_individual_instance_visitor(inst).apply(fn);
+}
+
+void IfcParse::IfcFile::unbatch() {
+    for (auto& id : batch_deletion_ids_) {
+        process_deletion_(instance_by_id(id));
+    }
+    batch_mode_ = false;
+    batch_deletion_ids_.clear();
 }
 
 void IfcParse::IfcFile::build_inverses() {

@@ -225,7 +225,7 @@ private:
         batch_deletion_ids_t;
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
-    void process_deletion_();
+    void process_deletion_(IfcUtil::IfcBaseClass* entity);
 
   public:
 #ifdef USE_MMAP
@@ -394,6 +394,11 @@ private:
             }
         }, storage_);
     }
+
+    void batch() {
+        batch_mode_ = true; 
+    }
+    void unbatch();
 };
 
 #ifdef WITH_IFCXML
