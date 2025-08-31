@@ -729,7 +729,7 @@ void IfcParse::impl::in_memory_file_storage::load(unsigned entity_instance_name,
                     context.push(simple_type_instance);
                     simple_type_instance->file_ = file;
                 } catch (IfcException& e) {
-                    Logger::Message(Logger::LOG_ERROR, e.what());
+                    Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.startPos));
                     // #4070 We didn't actually capture an aggregate entry, undo length increment.
                     return_value--;
                 }
