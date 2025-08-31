@@ -17,107 +17,119 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "mapping.h"
 #include "../function_item_evaluator.h"
+#include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcFixedReferenceSweptAreaSolid
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid* inst) {
-	auto dir = map(inst->Directrix());
-	auto ref = taxonomy::cast<taxonomy::direction3>(map(inst->FixedReference()));
-	auto profile = taxonomy::cast<taxonomy::face>(map(inst->SweptArea()));
+    auto dir = map(inst->Directrix());
+    auto ref = taxonomy::cast<taxonomy::direction3>(map(inst->FixedReference()));
+    auto profile = taxonomy::cast<taxonomy::face>(map(inst->SweptArea()));
 
-	auto loft = taxonomy::make<taxonomy::loft>();
-	// @todo intialize as default
-	loft->axis = nullptr;
-
-	// @todo currently only the case is handled where directrix returns a piecewise_function
-	if (auto fn = taxonomy::dcast<taxonomy::function_item>(dir)) {
-      function_item_evaluator evaluator(settings_,fn);
-		double start = 0;
-      double end = fn->length();
-	  // IfcPointByDistanceExpression is introduced in rc2, the code below doesn't work on rc1 because startparam is optional<double>
-#if defined(SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid) && defined(SCHEMA_HAS_IfcPointByDistanceExpression)
-		// IfcDirectrixCurveSweptAreaSolid introduced in 4.3 changed attribute type
-		// from optional IfcParamValue to optional IfcCurveMeasureSelect.
-		// Invocation of mapping on pre-4.3 models can never result in a piecewise_function.
-		if (inst->StartParam() && inst->StartParam()->as<IfcSchema::IfcLengthMeasure>()) {
-			double s = *inst->StartParam()->as<IfcSchema::IfcLengthMeasure>();
-			if (s > start) {
-				start = s;
-			}
-		}
-		if (inst->EndParam() && inst->EndParam()->as<IfcSchema::IfcLengthMeasure>()) {
-			double e = *inst->EndParam()->as<IfcSchema::IfcLengthMeasure>();
-			if (e < end) {
-				end = e;
-			}
-		}
+    auto loft = taxonomy::make<taxonomy::loft>();
+    // @todo intialize as default
+    loft->axis = nullptr;
+    // Check if this instance has alignment elements
+    // @todo currently only the case is handled where directrix returns a piecewise_function
+    if (auto fn = std::dynamic_pointer_cast<taxonomy::function_item>(dir)) {
+        function_item_evaluator evaluator(settings_, fn);
+        double start = 0;
+        double end = fn->length();
+#ifdef SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid
+        // IfcDirectrixCurveSweptAreaSolid introduced in 4.3 changed attribute type
+        // from optional IfcParamValue to optional IfcCurveMeasureSelect.
+        // Invocation of mapping on pre-4.3 models can never result in a piecewise_function.
+        if (inst->StartParam() && inst->StartParam()->as<IfcSchema::IfcLengthMeasure>()) {
+            double s = *inst->StartParam()->as<IfcSchema::IfcLengthMeasure>();
+            if (s > start) {
+                start = s;
+            }
+        }
+        if (inst->EndParam() && inst->EndParam()->as<IfcSchema::IfcLengthMeasure>()) {
+            double e = *inst->EndParam()->as<IfcSchema::IfcLengthMeasure>();
+            if (e < end) {
+                end = e;
+            }
+        }
 #endif
-      auto evaluation_points = evaluator.evaluation_points();
-      for (const auto& dist_along : evaluation_points) {
-          auto m4 = evaluator.evaluate(dist_along);
-			
-			/*
-			std::stringstream ss;
-			ss << m4;
-			auto s = ss.str();
-			std::wcout << s.c_str() << std::endl;
+        auto evaluation_points = evaluator.evaluation_points();
+        for (const auto& dist_along : evaluation_points) {
+            auto m4 = evaluator.evaluate(dist_along);
+
+            /*
+            std::stringstream ss;
+            ss << m4;
+            auto s = ss.str();
+            std::wcout << s.c_str() << std::endl;
             std::wcout << "determinant: " << m4.determinant() << std::endl;
-			*/
+            */
 
-			Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
-			bool is_directrix_derived = false;
-			
+            Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
+            bool is_directrix_derived = false;
+
 #ifdef SCHEMA_HAS_IfcDirectrixDerivedReferenceSweptAreaSolid
-			if (inst->as<IfcSchema::IfcDirectrixDerivedReferenceSweptAreaSolid>()) {
-				is_directrix_derived = true;
-			}
+            if (inst->as<IfcSchema::IfcDirectrixDerivedReferenceSweptAreaSolid>()) {
+                is_directrix_derived = true;
+            }
 #endif
-			auto pos = m4.col(3).head<3>();
+            auto pos = m4.col(3).head<3>();
 
-			if (is_directrix_derived) {
-				m4b.col(0).head<3>() = m4.col(1).head<3>();
-				m4b.col(1).head<3>() = m4.col(0).head<3>().cross(m4.col(1).head<3>());
-				m4b.col(2).head<3>() = m4.col(0).head<3>();
-				m4b.col(3).head<3>() = pos;
-			} else {
-				Eigen::Vector3d tangent = m4.col(0).head<3>().normalized();
-				Eigen::Vector3d proj = (ref->components() - tangent * tangent.dot(ref->components()));
-				proj.normalize();
-				auto ref = proj.cross(tangent);
+            if (is_directrix_derived) {
+                m4b.col(0).head<3>() = m4.col(1).head<3>();
+                m4b.col(1).head<3>() = m4.col(0).head<3>().cross(m4.col(1).head<3>());
+                m4b.col(2).head<3>() = m4.col(0).head<3>();
+                m4b.col(3).head<3>() = pos;
+            } else {
+                Eigen::Vector3d tangent = m4.col(0).head<3>().normalized();
+                Eigen::Vector3d proj = (ref->components() - tangent * tangent.dot(ref->components()));
+                proj.normalize();
+                auto ref = proj.cross(tangent);
 
-				m4b.col(0).head<3>() = proj;
-				m4b.col(1).head<3>() = ref;
-				m4b.col(2).head<3>() = tangent;
-				m4b.col(3).head<3>() = pos;
+                m4b.col(0).head<3>() = proj;
+                m4b.col(1).head<3>() = ref;
+                m4b.col(2).head<3>() = tangent;
+                m4b.col(3).head<3>() = pos;
 
-				/*
-				Eigen::JacobiSVD<decltype(m4b)> svd(m4b);
-				auto condition_number = svd.singularValues()(0)
-					/ svd.singularValues()(svd.singularValues().size() - 1);
-				if (condition_number > 1.e10) {
-					Logger::Error("Non-invertible matrix at " + std::to_string(distalong) + " conversion will likely fail.");
-				}
-				*/
-			}
+                /*
+                Eigen::JacobiSVD<decltype(m4b)> svd(m4b);
+                auto condition_number = svd.singularValues()(0)
+                    / svd.singularValues()(svd.singularValues().size() - 1);
+                if (condition_number > 1.e10) {
+                    Logger::Error("Non-invertible matrix at " + std::to_string(distalong) + " conversion will likely fail.");
+                }
+                */
+            }
 
-			// @todo taxonomy::clone() does not actually clone. That's really confusing.
-			// loft->children.push_back(taxonomy::clone(profile));
-			loft->children.push_back(taxonomy::face::ptr(profile->clone_()));
-			loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
-			
-			if (profile->matrix) {
-				loft->children.back()->matrix->components() = (m4b * profile->matrix->ccomponents()).eval();
-			} else {
-				loft->children.back()->matrix->components() = m4b;
-			}
-		}
-	}
+            // @todo taxonomy::clone() does not actually clone. That's really confusing.
+            // loft->children.push_back(taxonomy::clone(profile));
+            loft->children.push_back(taxonomy::face::ptr(profile->clone_()));
+            loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
 
-	return loft;
+            if (profile->matrix) {
+                loft->children.back()->matrix->components() = (m4b * profile->matrix->ccomponents()).eval();
+            } else {
+                loft->children.back()->matrix->components() = m4b;
+            }
+        }
+    } else {
+        taxonomy::matrix4::ptr matrix;
+        if (inst->Position() != nullptr) {
+            matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+        }
+        // TODO: Implement handling for non-alignment curves using sweep_along_curve
+        auto sweep = taxonomy::make<taxonomy::sweep_along_curve>(
+            matrix,  // matrix4::ptr - no transformation needed
+            profile, // face::ptr - the profile to sweep
+            dir,     // item::ptr curve - the directrix curve
+            ref);
+
+        return sweep;
+    }
+
+    return loft;
 }
 
 #endif

@@ -1210,11 +1210,15 @@ typedef item const* ptr;
 
 				item::ptr surface;
 				item::ptr curve;
+                direction3::ptr direction = nullptr;
 
 				virtual sweep_along_curve* clone_() const { return new sweep_along_curve(*this); }
 				virtual kinds kind() const { return SWEEP_ALONG_CURVE; }
 
-				sweep_along_curve(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv) {}
+				sweep_along_curve(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv), direction(nullptr) {}
+
+			    // New constructor for fixed reference swept area solid
+			    sweep_along_curve(matrix4::ptr m, face::ptr profile, item::ptr directrix, direction3::ptr ref) : sweep(m, profile), surface(nullptr), curve(directrix), direction(ref) { }
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SWEEP_ALONG_CURVE), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());
