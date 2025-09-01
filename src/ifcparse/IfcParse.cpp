@@ -2324,7 +2324,7 @@ aggregate_of_instance::ptr IfcFile::instances_by_reference(int t) {
         else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo no lower/upper_bounds() implemented yet
             auto prefix = "v|" + std::to_string(t) + "|";
-            auto it = x.db->NewIterator(rocksdb::ReadOptions());
+            auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
             it->Seek(prefix);
             while (it->Valid() && it->key().starts_with(prefix)) {
                 std::vector<uint32_t> vals(it->value().size() / sizeof(uint32_t));
@@ -2477,7 +2477,7 @@ std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo no lower/upper_bounds() implemented yet
             auto prefix = "v|" + std::to_string(instance_id) + "|";
-            auto it = x.db->NewIterator(rocksdb::ReadOptions());
+            auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
             it->Seek(prefix);
             while (it->Valid() && it->key().starts_with(prefix)) {
                 std::vector<uint32_t> vals(it->value().size() / sizeof(uint32_t));
@@ -2549,7 +2549,7 @@ aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::
                 if (attribute_index == -1) {
                     // @todo no lower/upper_bounds() implemented yet
                     auto prefix = "v|" + std::to_string(instance_id) + "|" + std::to_string(ent->index_in_schema()) + "|";
-                    auto it = x.db->NewIterator(rocksdb::ReadOptions());
+                    auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
                     it->Seek(prefix);
                     while (it->Valid() && it->key().starts_with(prefix)) {
                         std::vector<uint32_t> vals(it->value().size() / sizeof(uint32_t));

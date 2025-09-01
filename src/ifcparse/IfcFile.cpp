@@ -463,7 +463,7 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
     {
         // compute next prefix that does not start with v|{id}|
         auto prefix = "v|" + std::to_string(id) + "|";
-        auto it = db->NewIterator(rocksdb::ReadOptions());
+        auto it = std::unique_ptr<rocksdb::Iterator>(db->NewIterator(rocksdb::ReadOptions()));
         it->Seek(prefix);
         while (it->Valid()) {
             it->Next();
@@ -493,7 +493,7 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
 
             {
                 auto prefix = "v|" + std::to_string(name) + "|";
-                auto it = db->NewIterator(rocksdb::ReadOptions());
+                auto it = std::unique_ptr<rocksdb::Iterator>(db->NewIterator(rocksdb::ReadOptions()));
                 it->Seek(prefix);
                 while (it->Valid() && it->key().starts_with(prefix)) {
                     std::string s = it->value().ToString();
