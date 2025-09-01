@@ -252,18 +252,34 @@ class ReferenceUI:
 
     def draw_reference_ui(self, reference: dict[str, Any]) -> None:
         row = self.layout.row(align=True)
+
+        split = row.split(factor=0.3)
+        col1 = split.column()
+        split = split.split(factor=0.3)
+        col2 = split.column()
+        split = split.split(factor=0.7)
+        col3 = split.column()
+        col4 = split.column()
+
+        if reference.get("ClassificationSystemName"):
+            col1.label(text=reference["ClassificationSystemName"], icon="OUTLINER_COLLECTION")
+        else:
+            col1.label(text="")
+
         if self.file.schema == "IFC2X3":
             name = reference["ItemReference"] or "No Identification"
         else:
             name = reference["Identification"] or "No Identification"
-        row.label(text=name, icon="ASSET_MANAGER")
-        row.label(text=reference["Name"] or "")
+        col2.label(text=name, icon="ASSET_MANAGER")
+        col3.label(text=reference["Name"] or "")
+
+        button_row = col4.row(align=True)
         if reference["Location"]:
-            row.operator("bim.open_uri", icon="URL", text="").uri = reference["Location"]
+            button_row.operator("bim.open_uri", icon="URL", text="").uri = reference["Location"]
         if not self.props.active_reference_id:
-            op = row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
+            op = button_row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
             op.reference = reference["id"]
-        op = row.operator("bim.remove_classification_reference", text="", icon="X")
+        op = button_row.operator("bim.remove_classification_reference", text="", icon="X")
         op.reference = reference["id"]
         op.obj = self.obj
         op.obj_type = self.data.obj_type
