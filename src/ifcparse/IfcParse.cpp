@@ -1351,6 +1351,7 @@ IfcFile::IfcFile(const std::string& fn, bool mmap) {
 #else
 IfcFile::IfcFile(const std::string& path, filetype ty)
     : schema_(nullptr)
+    , max_id_(0)
 {
     // @todo allow for rocksdb from path
     if (ty == FT_AUTODETECT) {
@@ -1388,6 +1389,7 @@ IfcFile::IfcFile(const std::string& path, filetype ty)
 
 IfcFile::IfcFile(std::istream& stream, int length)
     : schema_(nullptr)
+    , max_id_(0)
 {
     IfcSpfStream s(stream, length);
     storage_.emplace<1>(this);
@@ -1401,6 +1403,7 @@ IfcFile::IfcFile(std::istream& stream, int length)
 
 IfcFile::IfcFile(void* data, int length)
     : schema_(nullptr)
+    , max_id_(0)
 {
     IfcSpfStream s(data, length);
     storage_.emplace<1>(this);
@@ -1414,6 +1417,7 @@ IfcFile::IfcFile(void* data, int length)
 
 IfcFile::IfcFile(IfcParse::IfcSpfStream* s)
     : schema_(nullptr)
+    , max_id_(0)
 {
     storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_);
