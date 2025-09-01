@@ -200,7 +200,7 @@ def disable_editing_references(drawing: type[tool.Drawing]) -> None:
 
 
 def add_document(
-    ifc: type[tool.Ifc], drawing: type[tool.Drawing], document_type: type[tool.Drawing].DOCUMENT_TYPE, uri: str
+    ifc: type[tool.Ifc], drawing: type[tool.Drawing], document_type: tool.Drawing.DOCUMENT_TYPE, uri: str
 ) -> None:
     document = ifc.run("document.add_information")
     reference = ifc.run("document.add_reference", information=document)
@@ -217,7 +217,7 @@ def add_document(
 def remove_document(
     ifc: type[tool.Ifc],
     drawing: type[tool.Drawing],
-    document_type: type[tool.Drawing].DOCUMENT_TYPE,
+    document_type: tool.Drawing.DOCUMENT_TYPE,
     document: ifcopenshell.entity_instance,
 ) -> None:
     ifc.run("document.remove_information", information=document)

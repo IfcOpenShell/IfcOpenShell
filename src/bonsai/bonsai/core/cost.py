@@ -173,7 +173,7 @@ def assign_cost_item_quantity(
     ifc: type[tool.Ifc],
     cost: type[tool.Cost],
     cost_item: ifcopenshell.entity_instance,
-    related_object_type: type[tool.Cost].RELATED_OBJECT_TYPE,
+    related_object_type: tool.Cost.RELATED_OBJECT_TYPE,
     prop_name: str,
 ) -> bool:
     products = cost.get_products(related_object_type)

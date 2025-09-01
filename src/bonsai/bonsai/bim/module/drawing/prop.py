@@ -729,7 +729,7 @@ class LiteralProps(PropertyGroup):
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         value: str
-        box_alignment: str
+        box_alignment: tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool]
         ifc_definition_id: int
 
 
