@@ -505,7 +505,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def export_text_literal_attributes(cls, obj: bpy.types.Object) -> list[dict[str, Any]]:
-        literals = []
+        literals: list[dict[str, Any]] = []
         props = tool.Drawing.get_text_props(obj)
         for literal_props in props.literals:
             literal_data = bonsai.bim.helper.export_attributes(literal_props.attributes)
@@ -755,6 +755,7 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def synchronise_ifc_and_text_attributes(cls, obj: bpy.types.Object) -> None:
         literals = cls.get_text_literal(obj, return_list=True)
+        assert isinstance(literals, list)
         literals_attributes = cls.export_text_literal_attributes(obj)
         props = cls.get_text_props(obj)
         defined_ifc_ids = [l.ifc_definition_id for l in props.literals]
