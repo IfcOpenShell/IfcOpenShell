@@ -104,6 +104,17 @@ class ReferencesData:
         if element:
             for reference in ifcopenshell.util.classification.get_references(element):
                 data = reference.get_info()
+
+                if reference.ReferencedSource:
+                    if reference.ReferencedSource.is_a("IfcClassification"):
+                        data["ClassificationSystemName"] = reference.ReferencedSource.Name
+                    elif reference.ReferencedSource.is_a("IfcClassificationReference"):
+                        current = reference.ReferencedSource
+                        while current.ReferencedSource and current.ReferencedSource.is_a("IfcClassificationReference"):
+                            current = current.ReferencedSource
+                        if current.ReferencedSource and current.ReferencedSource.is_a("IfcClassification"):
+                            data["ClassificationSystemName"] = current.ReferencedSource.Name
+
                 del data["ReferencedSource"]
                 results.append(data)
         return results
