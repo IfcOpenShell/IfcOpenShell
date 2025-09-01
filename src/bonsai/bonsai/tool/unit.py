@@ -365,24 +365,22 @@ class Unit(bonsai.core.tool.Unit):
             unit = bim_props.volume_unit
         elif unit_type == "MASSUNIT":
             unit = bim_props.mass_unit
-            if unit == "KILOGRAM":
-                return "KILO"
-            elif unit == "GRAM":
+            if unit == "GRAM":
                 return None
+            elif unit == "KILOGRAM":
+                return "KILO"
             elif unit == "TON":
                 return "MEGA"
             elif unit in ["POUND", "OUNCE"]:
                 return "CONVERSION"
             else:
                 return None
-
         elif unit_type == "TIMEUNIT":
             unit = bim_props.time_unit
             if unit == "SECOND":
                 return None
             else:
                 return "CONVERSION"
-
         else:
             assert_never(unit_type)
         if "/" in unit:

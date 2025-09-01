@@ -61,7 +61,11 @@ def add_conversion_based_unit(
     dimensions = ifcopenshell.util.unit.named_dimensions[unit_type]
     exponents = file.createIfcDimensionalExponents(*dimensions)
     si_name = ifcopenshell.util.unit.si_type_names[unit_type]
-    si_unit = file.createIfcSIUnit(UnitType=unit_type, Name=si_name)
+
+    if unit_type == "MASSUNIT":
+        si_unit = file.createIfcSIUnit(UnitType=unit_type, Name=si_name, Prefix="KILO")
+    else:
+        si_unit = file.createIfcSIUnit(UnitType=unit_type, Name=si_name)
 
     conversion_real = ifcopenshell.util.unit.si_conversions.get(name, 1)
     value_component = file.create_entity("IfcReal", **{"wrappedValue": conversion_real})
