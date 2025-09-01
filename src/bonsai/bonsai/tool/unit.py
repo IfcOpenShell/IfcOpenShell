@@ -266,7 +266,7 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
 
 
 class Unit(bonsai.core.tool.Unit):
-    UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT"]
+    UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT", "MASSUNIT", "TIMEUNIT"]
 
     @staticmethod
     def format_distance(meters: float, use_imperial: bool = None, **kwargs) -> str:
@@ -343,6 +343,10 @@ class Unit(bonsai.core.tool.Unit):
             return bim_props.area_unit
         elif unit_type == "VOLUMEUNIT":
             return bim_props.volume_unit
+        elif unit_type == "MASSUNIT":
+            return bim_props.mass_unit
+        elif unit_type == "TIMEUNIT":
+            return bim_props.time_unit
         else:
             assert_never(unit_type)
 
@@ -359,6 +363,26 @@ class Unit(bonsai.core.tool.Unit):
             unit = bim_props.area_unit
         elif unit_type == "VOLUMEUNIT":
             unit = bim_props.volume_unit
+        elif unit_type == "MASSUNIT":
+            unit = bim_props.mass_unit
+            if unit == "KILOGRAM":
+                return "KILO"
+            elif unit == "GRAM":
+                return None
+            elif unit == "TON":
+                return "MEGA"
+            elif unit in ["POUND", "OUNCE"]:
+                return "CONVERSION"
+            else:
+                return None
+
+        elif unit_type == "TIMEUNIT":
+            unit = bim_props.time_unit
+            if unit == "SECOND":
+                return None
+            else:
+                return "CONVERSION"
+
         else:
             assert_never(unit_type)
         if "/" in unit:

@@ -98,6 +98,8 @@ class NewProject(bpy.types.Operator):
             bpy.context.scene.unit_settings.length_unit = "METERS"
             bim_props.area_unit = "SQUARE_METRE"
             bim_props.volume_unit = "CUBIC_METRE"
+            bim_props.mass_unit = "KILOGRAM"
+            bim_props.time_unit = "SECOND"
             pprops.template_file = "0"
         elif self.preset == "metric_mm":
             pprops.export_schema = "IFC4"
@@ -105,6 +107,8 @@ class NewProject(bpy.types.Operator):
             bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
             bim_props.area_unit = "SQUARE_METRE"
             bim_props.volume_unit = "CUBIC_METRE"
+            bim_props.mass_unit = "KILOGRAM"
+            bim_props.time_unit = "SECOND"
             pprops.template_file = "0"
         elif self.preset == "imperial_ft":
             pprops.export_schema = "IFC4"
@@ -112,6 +116,8 @@ class NewProject(bpy.types.Operator):
             bpy.context.scene.unit_settings.length_unit = "FEET"
             bim_props.area_unit = "square foot"
             bim_props.volume_unit = "cubic foot"
+            bim_props.mass_unit = "POUND"
+            bim_props.time_unit = "SECOND"
             pprops.template_file = "0"
         elif self.preset == "demo":
             pprops.export_schema = "IFC4"
@@ -119,6 +125,8 @@ class NewProject(bpy.types.Operator):
             bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
             bim_props.area_unit = "SQUARE_METRE"
             bim_props.volume_unit = "CUBIC_METRE"
+            bim_props.mass_unit = "KILOGRAM"
+            bim_props.time_unit = "SECOND"
             pprops.template_file = "IFC4 Demo Template.ifc"
 
         if self.preset != "wizard":

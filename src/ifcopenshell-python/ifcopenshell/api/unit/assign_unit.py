@@ -27,6 +27,8 @@ def assign_unit(
     length: Optional[dict] = None,
     area: Optional[dict] = None,
     volume: Optional[dict] = None,
+    mass: Optional[dict] = None,
+    time: Optional[dict] = None,
 ) -> ifcopenshell.entity_instance:
     """Assign default project units
 
@@ -51,9 +53,11 @@ def assign_unit(
         # You need a project before you can assign units.
         ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
 
-        # Millimeters and square meters
+        # Millimeters, square meters, kilograms, and seconds
         length = ifcopenshell.api.unit.add_si_unit(model, unit_type="LENGTHUNIT", prefix="MILLI")
         area = ifcopenshell.api.unit.add_si_unit(model, unit_type="AREAUNIT")
+        mass = ifcopenshell.api.unit.add_si_unit(model, unit_type="MASSUNIT", prefix="KILO")
+        time = ifcopenshell.api.unit.add_si_unit(model, unit_type="TIMEUNIT")
 
         # Make it our default units, if we are doing a metric building
         ifcopenshell.api.unit.assign_unit(model, units=[length, area])
@@ -71,6 +75,8 @@ def assign_unit(
     usecase.settings["length"] = length or {"is_metric": True, "raw": "MILLIMETERS"}
     usecase.settings["area"] = area or {"is_metric": True, "raw": "METERS"}
     usecase.settings["volume"] = volume or {"is_metric": True, "raw": "METERS"}
+    usecase.settings["mass"] = mass or {"is_metric": True, "raw": "KILOGRAM"}
+    usecase.settings["time"] = time or {"is_metric": True, "raw": "SECOND"}
     return usecase.execute()
 
 
@@ -116,7 +122,45 @@ class Usecase:
             units.add(unit)
         unit_assignment.Units = list(units)
 
+    def create_time_conversion_unit(self, name: str, factor: float) -> ifcopenshell.entity_instance:
+        """Create a conversion-based time unit"""
+        dimensional_exponents = self.file.createIfcDimensionalExponents(0, 0, 1, 0, 0, 0, 0)
+        si_unit = self.file.createIfcSIUnit(None, "TIMEUNIT", None, "SECOND")
+        value_component = self.file.create_entity("IfcReal", **{"wrappedValue": factor})
+        conversion_factor = self.file.createIfcMeasureWithUnit(value_component, si_unit)
+        return self.file.createIfcConversionBasedUnit(dimensional_exponents, "TIMEUNIT", name, conversion_factor)
+
+    def create_mass_conversion_unit(self, name: str, factor: float) -> ifcopenshell.entity_instance:
+        """Create a conversion-based mass unit"""
+        dimensional_exponents = self.file.createIfcDimensionalExponents(0, 1, 0, 0, 0, 0, 0)  # Mass dimension
+        si_unit = self.file.createIfcSIUnit(None, "MASSUNIT", "KILO", "GRAM")
+        value_component = self.file.create_entity("IfcReal", **{"wrappedValue": factor})
+        conversion_factor = self.file.createIfcMeasureWithUnit(value_component, si_unit)
+        return self.file.createIfcConversionBasedUnit(dimensional_exponents, "MASSUNIT", name, conversion_factor)
+
     def create_metric_unit(self, unit_type: str, data: dict) -> ifcopenshell.entity_instance:
+        if unit_type == "mass":
+            if data["raw"] == "KILOGRAM":
+                return self.file.createIfcSIUnit(None, "MASSUNIT", "KILO", "GRAM")
+            elif data["raw"] == "GRAM":
+                return self.file.createIfcSIUnit(None, "MASSUNIT", None, "GRAM")
+            elif data["raw"] == "TON":
+                return self.file.createIfcSIUnit(None, "MASSUNIT", "MEGA", "GRAM")
+            else:
+                return self.file.createIfcSIUnit(None, "MASSUNIT", "KILO", "GRAM")
+
+        elif unit_type == "time":
+            if data["raw"] == "SECOND":
+                return self.file.createIfcSIUnit(None, "TIMEUNIT", None, "SECOND")
+            elif data["raw"] == "MINUTE":
+                return self.create_time_conversion_unit("minute", 60.0)
+            elif data["raw"] == "HOUR":
+                return self.create_time_conversion_unit("hour", 3600.0)
+            elif data["raw"] == "DAY":
+                return self.create_time_conversion_unit("day", 86400.0)
+            else:
+                return self.file.createIfcSIUnit(None, "TIMEUNIT", None, "SECOND")
+
         type_prefix = ""
         if unit_type == "area":
             type_prefix = "SQUARE_"
@@ -139,6 +183,26 @@ class Usecase:
         elif unit_type == "volume":
             dimensional_exponents = self.file.createIfcDimensionalExponents(3, 0, 0, 0, 0, 0, 0)
             name_prefix = "cubic"
+        elif unit_type == "mass":
+            if data["raw"] == "POUND":
+                return self.create_mass_conversion_unit("pound", 0.45359237)
+            elif data["raw"] == "OUNCE":
+                return self.create_mass_conversion_unit("ounce", 0.0283495)
+            else:
+                return self.create_mass_conversion_unit("pound", 0.45359237)
+
+        elif unit_type == "time":
+            if data["raw"] == "SECOND":
+                return self.file.createIfcSIUnit(None, "TIMEUNIT", None, "SECOND")
+            elif data["raw"] == "MINUTE":
+                return self.create_time_conversion_unit("minute", 60.0)
+            elif data["raw"] == "HOUR":
+                return self.create_time_conversion_unit("hour", 3600.0)
+            elif data["raw"] == "DAY":
+                return self.create_time_conversion_unit("day", 86400.0)
+            else:
+                return self.file.createIfcSIUnit(None, "TIMEUNIT", None, "SECOND")
+
         si_unit = self.file.createIfcSIUnit(
             None,
             "{}UNIT".format(unit_type.upper()),

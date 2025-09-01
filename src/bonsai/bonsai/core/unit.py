@@ -34,14 +34,29 @@ def assign_scene_units(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> None:
         areaunit = ifc.run("unit.add_si_unit", unit_type="AREAUNIT", prefix=prefix)
         prefix = unit.get_scene_unit_si_prefix("VOLUMEUNIT")
         volumeunit = ifc.run("unit.add_si_unit", unit_type="VOLUMEUNIT", prefix=prefix)
+
+        prefix = unit.get_scene_unit_si_prefix("MASSUNIT")
+        if prefix == "CONVERSION":
+            mass_unit_name = unit.get_scene_unit_name("MASSUNIT")
+            massunit = ifc.run("unit.add_conversion_based_unit", name=mass_unit_name.lower())
+        else:
+            massunit = ifc.run("unit.add_si_unit", unit_type="MASSUNIT", prefix=prefix)
+
+        prefix = unit.get_scene_unit_si_prefix("TIMEUNIT")
+        if prefix == "CONVERSION":
+            time_unit_name = unit.get_scene_unit_name("TIMEUNIT")
+            timeunit = ifc.run("unit.add_conversion_based_unit", name=time_unit_name.lower())
+        else:
+            timeunit = ifc.run("unit.add_si_unit", unit_type="TIMEUNIT", prefix=prefix)
     else:
         lengthunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("LENGTHUNIT"))
         areaunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("AREAUNIT"))
         volumeunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("VOLUMEUNIT"))
+        massunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("MASSUNIT"))
+        timeunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("TIMEUNIT"))
 
     planeangleunit = ifc.run("unit.add_conversion_based_unit", name="degree")
-
-    ifc.run("unit.assign_unit", units=[lengthunit, areaunit, volumeunit, planeangleunit])
+    ifc.run("unit.assign_unit", units=[lengthunit, areaunit, volumeunit, planeangleunit, massunit, timeunit])
 
 
 def assign_unit(ifc: type[tool.Ifc], unit_tool: type[tool.Unit], unit: ifcopenshell.entity_instance) -> None:
