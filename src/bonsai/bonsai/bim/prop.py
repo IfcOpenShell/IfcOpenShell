@@ -590,7 +590,7 @@ class BIMProperties(PropertyGroup):
         items=[
             ("KILOGRAM", "Kilogram", "Kilograms"),
             ("GRAM", "Gram", "Grams"),
-            ("POUND", "Pound (Mass)", "Pounds"),
+            ("POUND", "Pound", "Pounds"),
             ("OUNCE", "Ounce", "Ounces"),
             ("TON", "Ton", "Metric Tons"),
         ],

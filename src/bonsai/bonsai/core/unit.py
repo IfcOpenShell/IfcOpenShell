@@ -52,8 +52,13 @@ def assign_scene_units(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> None:
         lengthunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("LENGTHUNIT"))
         areaunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("AREAUNIT"))
         volumeunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("VOLUMEUNIT"))
-        massunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("MASSUNIT"))
-        timeunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("TIMEUNIT"))
+        massunit = ifc.run("unit.add_conversion_based_unit", name=unit.get_scene_unit_name("MASSUNIT").lower())
+
+        time_unit_name = unit.get_scene_unit_name("TIMEUNIT")
+        if time_unit_name == "SECOND":
+            timeunit = ifc.run("unit.add_si_unit", unit_type="TIMEUNIT", prefix=None)
+        else:
+            timeunit = ifc.run("unit.add_conversion_based_unit", name=time_unit_name.lower())
 
     planeangleunit = ifc.run("unit.add_conversion_based_unit", name="degree")
     ifc.run("unit.assign_unit", units=[lengthunit, areaunit, volumeunit, planeangleunit, massunit, timeunit])
