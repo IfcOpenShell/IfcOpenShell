@@ -586,7 +586,28 @@ class BIMProperties(PropertyGroup):
         ],
         name="IFC Volume Unit",
     )
+    mass_unit: EnumProperty(
+        items=[
+            ("KILOGRAM", "Kilogram", "Kilograms"),
+            ("GRAM", "Gram", "Grams"),
+            ("POUND", "Pound (Mass)", "Pounds"),
+            ("OUNCE", "Ounce", "Ounces"),
+            ("TON", "Ton", "Metric Tons"),
+        ],
+        name="Mass Unit",
+        default="KILOGRAM",
+    )
 
+    time_unit: EnumProperty(
+        items=[
+            ("SECOND", "Second", "Seconds"),
+            ("MINUTE", "Minutes", "Minutes"),
+            ("HOUR", "Hour", "Hours"),
+            ("DAY", "Day", "Days"),
+        ],
+        name="Time Unit",
+        default="HOUR",
+    )
     if TYPE_CHECKING:
         is_dirty: bool
         schema_dir: str
@@ -599,6 +620,8 @@ class BIMProperties(PropertyGroup):
         section_line_decorator_width: float
         area_unit: str
         volume_unit: str
+        mass_unit: str
+        time_unit: str
 
 
 class IfcParameter(PropertyGroup):

@@ -356,6 +356,10 @@ class BIM_PT_new_project_wizard(Panel):
         row.prop(props, "area_unit", text="Area Unit")
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
+        row = self.layout.row()
+        row.prop(props, "mass_unit", text="Mass Unit")
+        row = self.layout.row()
+        row.prop(props, "time_unit", text="Time Unit")
         prop_with_search(self.layout, pprops, "template_file", text="Template")
 
         row = self.layout.row()
