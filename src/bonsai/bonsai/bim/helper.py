@@ -296,7 +296,13 @@ def add_attribute_enum_items_descriptions(
         new_enum_description.name = description
 
 
-def add_attribute_description(attribute_blender: bonsai.bim.prop.Attribute, attribute_ifc=None):
+def add_attribute_description(
+    attribute_blender: bonsai.bim.prop.Attribute,
+    attribute_ifc: Union[ifcopenshell.entity_instance, None] = None,
+) -> None:
+    """
+    :param attribute_ifc: IFC Entity to use as a fallback source of description (using "Description" attribute).
+    """
     if not attribute_blender.name:
         return
     version = tool.Ifc.get_schema()

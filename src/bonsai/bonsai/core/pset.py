@@ -87,7 +87,7 @@ def enable_pset_editing(
         has_template = False
 
     if pset:
-        pset_tool.import_pset_from_existing(pset, props)
+        pset_tool.import_pset_from_existing(pset, props, pset_template)
         pset_tool.set_active_pset(props, pset, has_template)
     else:
         pset_tool.enable_proposed_pset(props, pset_name, pset_type, has_template)
