@@ -1186,15 +1186,6 @@ class Drawing(bonsai.core.tool.Drawing):
         props.should_draw_decorations = True
 
     @classmethod
-    def update_text_value(cls, obj: bpy.types.Object) -> None:
-        props = cls.get_text_props(obj)
-        literals = cls.get_text_literal(obj, return_list=True)
-        cls.import_text_attributes(obj)
-        for i, literal in enumerate(literals):
-            product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
-            props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
-
-    @classmethod
     def update_text_size_pset(cls, obj: bpy.types.Object) -> None:
         """updates pset `EPset_Annotation.Classes` value
         based on current font size from `obj.BIMTextProperties.font_size`
