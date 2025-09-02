@@ -3084,6 +3084,7 @@ class RemoveTextLiteral(bpy.types.Operator):
         assert obj
         props = tool.Drawing.get_text_props(obj)
         props.literals.remove(self.literal_prop_id)
+        tool.Blender.update_viewport()
         return {"FINISHED"}
 
 
@@ -3101,6 +3102,7 @@ class OrderTextLiteralUp(bpy.types.Operator):
         assert obj
         props = tool.Drawing.get_text_props(obj)
         props.literals.move(self.literal_prop_id, self.literal_prop_id - 1)
+        tool.Blender.update_viewport()
         return {"FINISHED"}
 
 
@@ -3118,6 +3120,7 @@ class OrderTextLiteralDown(bpy.types.Operator):
         assert obj
         props = tool.Drawing.get_text_props(obj)
         props.literals.move(self.literal_prop_id, self.literal_prop_id + 1)
+        tool.Blender.update_viewport()
         return {"FINISHED"}
 
 
