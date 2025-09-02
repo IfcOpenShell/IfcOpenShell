@@ -3066,7 +3066,6 @@ class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
 
         # force update this object's font size for viewport display
         DecoratorData.data.pop(obj.name, None)
-        tool.Drawing.update_text_value(obj)
         tool.Blender.update_viewport()
 
 

@@ -286,9 +286,6 @@ class Drawing(bonsai.core.tool.Drawing):
                 ifc_file, relating_product=related_entity, related_object=obj_entity
             )
 
-        if object_type == "TEXT":
-            tool.Drawing.update_text_value(obj)
-
     @classmethod
     def is_annotation_object_type(
         cls, element: ifcopenshell.entity_instance, object_types: Union[str, Sequence[str]]
@@ -437,6 +434,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def disable_editing_text(cls, obj: bpy.types.Object) -> None:
         props = tool.Drawing.get_text_props(obj)
         props.is_editing = False
+        props.literals.clear()
 
     @classmethod
     def disable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:

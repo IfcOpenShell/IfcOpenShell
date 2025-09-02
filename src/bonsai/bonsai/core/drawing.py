@@ -40,7 +40,6 @@ def edit_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_size_pset(obj)
     drawing.update_newline_at(obj)
-    drawing.update_text_value(obj)
     drawing.disable_editing_text(obj)
 
 
@@ -67,8 +66,6 @@ def edit_assigned_product(
             ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
         if product:
             ifc.run("drawing.assign_product", relating_product=product, related_object=element)
-        if drawing.is_annotation_object_type(element, ("TEXT", "TEXT_LEADER")):
-            drawing.update_text_value(obj)
 
     drawing.disable_editing_assigned_product(obj)
 
