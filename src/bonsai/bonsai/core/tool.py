@@ -397,7 +397,6 @@ class Drawing:
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
     def update_newline_at(cls, obj): pass
     def update_text_size_pset(cls, obj): pass
-    def update_text_value(cls, obj): pass
 
 
 @interface
