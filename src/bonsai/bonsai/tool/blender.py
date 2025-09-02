@@ -1568,8 +1568,8 @@ class Blender(bonsai.core.tool.Blender):
 
         :return: Resolved tuple of Blender Struct and property name.
         Examples:
-            - `(preferences.prop_group, "string_prop)`
-            - `(scene, "string_prop)`
+            - `(preferences.prop_group, "string_prop")`
+            - `(scene, "string_prop")`
 
         """
         # Get data to modify.
