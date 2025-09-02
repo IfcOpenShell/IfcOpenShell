@@ -37,6 +37,7 @@ import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
 from bonsai.bim.prop import Attribute
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties
+from bonsai.bim.module.pset.prop import IfcProperty
 from typing import Optional, TYPE_CHECKING, Literal
 from natsort import natsorted
 
@@ -1424,6 +1425,17 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
 
     if isinstance(prop_struct, Attribute):
         attr = prop_struct
+
+        # Hacky way to get Attribute containing description for enumerated values.
+        pset_enum_identifier = ".enumerated_value.enumerated_values["
+        attr_path = prop_struct.path_from_id()
+        if pset_enum_identifier in attr_path:
+            attr_path = attr_path.partition(pset_enum_identifier)[0]
+            assert (data_block := prop_struct.id_data)
+            attr = data_block.path_resolve(attr_path)
+            assert isinstance(attr, IfcProperty)
+            attr = attr.metadata
+
         description = attr.description
         ifc_class = attr.ifc_class
         if ifc_class:
