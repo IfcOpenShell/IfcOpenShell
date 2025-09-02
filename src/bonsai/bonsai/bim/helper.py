@@ -556,6 +556,7 @@ def draw_filter(
             elif ifc_filter.type == "query":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")
+                row.prop(ifc_filter, "comparison", text="")
                 row.prop(ifc_filter, "value", text="")
             elif ifc_filter.type == "instance":
                 row = box.row(align=True)

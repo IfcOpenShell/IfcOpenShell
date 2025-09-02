@@ -121,7 +121,8 @@ class Search(bonsai.core.tool.Search):
                     filter_group_query.append(f"parent{comparison}{value}")
                 elif ifc_filter.type == "query":
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
+                    comparison = ifc_filter.comparison or "="
+                    value = cls.wrap_value(ifc_filter, ifc_filter.value)
                     filter_group_query.append(f"query:{keys}{comparison}{value}")
             query.append(", ".join(filter_group_query))
         return " + ".join(query)
