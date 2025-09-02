@@ -267,12 +267,6 @@ def update_titleblocks(self, context):
 def update_should_draw_decorations(self, context: bpy.types.Context) -> None:
     if self.should_draw_decorations:
         # TODO: design a proper text variable templating renderer
-        collection = tool.Blender.get_object_bim_props(context.scene.camera).collection
-        for obj in collection.objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                continue
-            tool.Drawing.update_text_value(obj)
         refresh_drawing_data()
         if bpy.app.background:
             return
@@ -709,16 +703,12 @@ class LiteralProps(PropertyGroup):
         return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
 
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    # Current text value with evaluated expressions stored in `value`.
-    # The original (Literal) value stored in `attributes['Literal']`
-    # and can be accessed with `get_text()`
-    value: StringProperty(name="Value", default="TEXT")
     box_alignment: BoolVectorProperty(
         name="Box alignment", size=9, set=set_box_alignment, get=get_box_alignment, default=DEFAULT_BOX_ALIGNMENT
     )
     ifc_definition_id: IntProperty(name="IFC definition ID", default=0)
 
-    def get_literal_edited_data(self):
+    def get_literal_edited_data(self) -> dict[str, str]:
         text_data = {
             "CurrentValue": self.attributes["Literal"].string_value,
             "Literal": self.attributes["Literal"].string_value,

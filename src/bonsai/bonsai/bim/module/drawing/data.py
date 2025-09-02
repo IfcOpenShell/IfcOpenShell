@@ -332,7 +332,7 @@ class DecoratorData:
         returns font size in mm for current ifc text object"""
         element = tool.Ifc.get_entity(obj)
         assert element
-        props = tool.Drawing.get_text_props(obj)
+
         # getting font size
         pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
         # use `regular` as default
@@ -353,20 +353,17 @@ class DecoratorData:
         newline_at = pset_data.get("Newline_At", 0)
 
         # other attributes
-        props_literals = props.literals
-        props_literals_n = len(props.literals)
         literals = tool.Drawing.get_text_literal(obj, return_list=True)
-        literals_data = []
-        for i, literal in enumerate(literals):
+        assert isinstance(literals, list)
+        literals_data: list[dict[str, Any]] = []
+        product = tool.Drawing.get_assigned_product(element) or element
+        for literal in literals:
+            literal_value = literal.Literal
             literal_data = {
-                "Literal": literal.Literal,
+                "Literal": literal_value,
                 "BoxAlignment": literal.BoxAlignment,
+                "CurrentValue": tool.Drawing.replace_text_literal_variables(literal_value, product),
             }
-            if i < props_literals_n:
-                literal_data["CurrentValue"] = props_literals[i].value
-            else:
-                literal_data["CurrentValue"] = literal.Literal
-
             literals_data.append(literal_data)
 
         return {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}

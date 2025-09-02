@@ -38,7 +38,6 @@ class TestEditText:
         drawing.synchronise_ifc_and_text_attributes("obj").should_be_called()
         drawing.update_text_size_pset("obj").should_be_called()
         drawing.update_newline_at("obj").should_be_called()
-        drawing.update_text_value("obj").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
         subject.edit_text(drawing, obj="obj")
 
@@ -65,7 +64,6 @@ class TestEditAssignedProduct:
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
         drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(True)
-        drawing.update_text_value("obj").should_be_called()
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
