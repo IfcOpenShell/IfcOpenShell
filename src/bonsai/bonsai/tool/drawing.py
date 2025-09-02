@@ -737,32 +737,24 @@ class Drawing(bonsai.core.tool.Drawing):
         return props.is_editing_sheets
 
     @classmethod
-    def remove_literal_from_annotation(cls, obj: bpy.types.Object, literal: ifcopenshell.entity_instance) -> None:
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return
-
-        rep = cls.get_annotation_representation(element)
-        if not rep:
-            return
-
-        ifc_file = tool.Ifc.get()
-        rep.Items = [l for l in rep.Items if l != literal]
-        ifcopenshell.util.element.remove_deep2(ifc_file, literal)
-
-    @classmethod
     def synchronise_ifc_and_text_attributes(cls, obj: bpy.types.Object) -> None:
-        literals = cls.get_text_literal(obj, return_list=True)
-        assert isinstance(literals, list)
+        assert (element := tool.Ifc.get_entity(obj))
+        assert (rep := cls.get_annotation_representation(element))
+
+        old_literals = cls.get_text_literal(obj, return_list=True)
+        assert isinstance(old_literals, list)
         literals_attributes = cls.export_text_literal_attributes(obj)
         props = cls.get_text_props(obj)
         defined_ifc_ids = [l.ifc_definition_id for l in props.literals]
         ifc_file = tool.Ifc.get()
 
+        added_literals: list[ifcopenshell.entity_instance] = []
+        new_literals: list[ifcopenshell.entity_instance] = []
         for ifc_definition_id, attributes in zip(defined_ifc_ids, literals_attributes):
             # making sure all literals from text edit exist in ifc
             if ifc_definition_id == 0:
-                literal = cls.add_literal_to_annotation(obj, **attributes)
+                literal = cls.add_literal(**attributes)
+                added_literals.append(literal)
             else:
                 literal = ifc_file.by_id(ifc_definition_id)
                 ifcopenshell.api.drawing.edit_text_literal(
@@ -770,38 +762,35 @@ class Drawing(bonsai.core.tool.Drawing):
                     text_literal=literal,
                     attributes=attributes,
                 )
+            new_literals.append(literal)
 
-        # remove from ifc the literals that were removed during the edit
-        for literal in literals:
-            if literal.id() not in defined_ifc_ids:
-                cls.remove_literal_from_annotation(obj, literal)
+        removed_literals = set(old_literals) - set(new_literals)
+
+        # Add new literals and keep the order as defined in text props.
+        items = [i for i in rep.Items if i not in removed_literals] + added_literals
+        items.sort(key=lambda x: new_literals.index(x) if x in new_literals else -1)
+        rep.Items = items
+
+        # Remove from ifc the literals that were removed during the edit.
+        for literal in removed_literals:
+            ifcopenshell.util.element.remove_deep2(ifc_file, literal)
 
     @classmethod
-    def add_literal_to_annotation(
-        cls, obj: bpy.types.Object, Literal: str = "Literal", Path: str = "RIGHT", BoxAlignment: str = "bottom-left"
-    ) -> Union[ifcopenshell.entity_instance, None]:
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return
-
-        rep = cls.get_annotation_representation(element)
-
-        if not rep:
-            return
-
+    def add_literal(cls, **attributes: str) -> ifcopenshell.entity_instance:
         ifc_file = tool.Ifc.get()
-
         origin = ifc_file.createIfcAxis2Placement3D(
             ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
             ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
             ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
         )
-
-        ifc_literal = ifc_file.createIfcTextLiteralWithExtent(
-            Literal, origin, Path, ifc_file.createIfcPlanarExtent(1000, 1000), BoxAlignment
+        ifc_literal = ifc_file.create_entity(
+            "IfcTextLiteralWithExtent",
+            attributes.get("Literal", "Literal"),
+            origin,
+            attributes.get("Path", "RIGHT"),
+            ifc_file.create_entity("IfcPlanarExtent", 1000, 1000),
+            attributes.get("BoxAlignment", "bottom-left"),
         )
-
-        rep.Items = rep.Items + (ifc_literal,)
         return ifc_literal
 
     @classmethod
