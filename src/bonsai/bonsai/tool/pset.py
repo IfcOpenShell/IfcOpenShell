@@ -210,6 +210,7 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.name = prop.Name
                 metadata.is_null = len(simple_prop.enumerated_value.enumerated_values) == 0
                 metadata.is_optional = True
+                process_prop_description(metadata)
                 enum_reference = prop.EnumerationReference
                 selected_enum_items = [v.wrappedValue for v in (prop.EnumerationValues or ())]
 
@@ -297,6 +298,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
         metadata.special_type = "URI" if prop_template.PrimaryMeasureType == "IfcURIReference" else ""
+        bonsai.bim.helper.add_attribute_description(metadata, prop_template)
 
         # Cute hack to abuse the metadata to find the Blender data_type
         metadata.set_value(enum_items[0])
