@@ -50,8 +50,9 @@ def dms2dd(degrees: int, minutes: int, seconds: int, us: int = 0) -> float:
     :param us: The microseconds component
     :return: The angle in decimal degrees.
     """
-    assert abs(degrees + minutes + seconds + us) == abs(degrees) + abs(minutes) + abs(seconds) + abs(us)
-
+    all_positive_or_zero = degrees >= 0 and minutes >= 0 and seconds >= 0 and us >= 0
+    all_negative_or_zero = degrees <= 0 and minutes <= 0 and seconds <= 0 and us <= 0
+    assert all_positive_or_zero or all_negative_or_zero
     return degrees + minutes / 60.0 + seconds / 3600.0 + us / 3600000000.0
 
 
@@ -65,30 +66,28 @@ def dd2dms(dd: float, use_us: bool = False) -> Union[tuple[int, int, int, int], 
         3 values: integer number of degrees, integer number of minutes, and a float number for seconds
     :note: the tuple follows the format of IfcCompoundPlaneAngleMeasure. Namely all of its components are either positive or negative.
     """
-    sign = -1 if dd < 0 else 1
-
-    dd_decimal = Decimal(str(abs(dd)))
+    dd_decimal = Decimal(str(dd))
 
     degrees = int(dd_decimal)
     degrees_decimal = Decimal(degrees)
 
     fractional_part = dd_decimal - degrees_decimal
 
-    minutes_decimal = fractional_part * Decimal("60")
+    minutes_decimal = fractional_part * Decimal(60)
     minutes = int(minutes_decimal)
     minutes_decimal_int = Decimal(minutes)
 
-    seconds_decimal = (minutes_decimal - minutes_decimal_int) * Decimal("60")
+    seconds_decimal = (minutes_decimal - minutes_decimal_int) * Decimal(60)
 
     if use_us:
         seconds = int(seconds_decimal)
         seconds_decimal_int = Decimal(seconds)
-        microseconds_decimal = (seconds_decimal - seconds_decimal_int) * Decimal("1000000")
-        microseconds = int(microseconds_decimal.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
-        return (sign * degrees, sign * minutes, sign * seconds, sign * microseconds)
+        microseconds_decimal = (seconds_decimal - seconds_decimal_int) * Decimal(1000000)
+        microseconds = int(microseconds_decimal.quantize(Decimal(1), rounding=ROUND_HALF_UP))
+        return (degrees, minutes, seconds, microseconds)
     else:
         seconds_float = float(seconds_decimal)
-        return (sign * degrees, sign * minutes, sign * seconds_float)
+        return (degrees, minutes, seconds_float)
 
 
 def xyz2enh(
