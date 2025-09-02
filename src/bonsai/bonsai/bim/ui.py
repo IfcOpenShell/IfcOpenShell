@@ -1438,6 +1438,7 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
 
         description = attr.description
         ifc_class = attr.ifc_class
+        url = ""
         if ifc_class:
             try:
                 url = get_entity_doc(version, ifc_class).get("spec_url", "")
