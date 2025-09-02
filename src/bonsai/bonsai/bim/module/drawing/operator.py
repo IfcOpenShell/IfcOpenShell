@@ -2971,47 +2971,9 @@ class EditTextPopup(bpy.types.Operator):
     first_run: bpy.props.BoolProperty(default=True)
 
     def draw(self, context):
-        # shares most of the code with BIM_PT_text.draw()
-        # need to keep them in sync or move to some common function
-        # NOTE: that `popup_active_attribute` is used here when it's not used in `BIM_PT_text.draw()`
+        from bonsai.bim.module.drawing.ui import BIM_PT_text
 
-        assert self.layout
-        obj = context.active_object
-        assert obj
-        props = tool.Drawing.get_text_props(obj)
-
-        row = self.layout.row(align=True)
-        row.operator("bim.add_text_literal", icon="ADD", text="Add Literal")
-
-        row = self.layout.row(align=True)
-        row.prop(props, "font_size")
-
-        for i, literal_props in enumerate(props.literals):
-            box = self.layout.box()
-            row = self.layout.row(align=True)
-
-            row = box.row(align=True)
-            row.label(text=f"Literal[{i}]:")
-            row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
-
-            # skip BoxAlignment since we're going to format it ourselves
-            attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
-            bonsai.bim.helper.draw_attributes(attributes, box, popup_active_attribute=attributes[0])
-
-            row = box.row(align=True)
-            cols = [row.column(align=True) for i in range(3)]
-            for i in range(9):
-                cols[i % 3].prop(
-                    literal_props,
-                    "box_alignment",
-                    text="",
-                    index=i,
-                    icon="RADIOBUT_ON" if literal_props.box_alignment[i] else "RADIOBUT_OFF",
-                )
-
-            col = row.column(align=True)
-            col.label(text="    Text box alignment:")
-            col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
+        BIM_PT_text.draw_text_editing_ui(self, context, popup_mode=True)
 
     def cancel(self, context):
         # disable editing when dialog is closed
