@@ -26,6 +26,8 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import locale
+import bonsai.tool as tool #i need that because there are useful tool there
+import bonsai.core as core #i need that because there is useful core function
 from pathlib import Path
 from typing import Union, Optional, TypedDict
 from typing_extensions import NotRequired
@@ -46,6 +48,17 @@ class CsvHeader(TypedDict):
     Quantity: NotRequired[int]
     Property: NotRequired[int]
     Query: NotRequired[int]
+
+    # Assigning rates
+    __annotations__ = {
+        "Rate cost schedule": NotRequired[str],
+        "RateID": NotRequired[str],
+    }
+
+
+#    # Assigning rates
+#    "Rate cost schedule": NotRequired[str]
+#    "RateID" : NotRequired[str]
 
 
 # Currently we assume that if column is not part of the main header,
@@ -98,6 +111,7 @@ class Csv2Ifc:
     units: dict[str, ifcopenshell.entity_instance]
     categories: dict[str, int]
     has_categories: bool
+    has_rates: bool
 
     def __init__(
         self,
@@ -152,7 +166,10 @@ class Csv2Ifc:
                 # parse header
                 if not self.headers:
                     self.has_categories = True
+                    self.has_rates = False
                     self.headers = {col: i for i, col in enumerate(row) if col}
+                    if "Rate cost schedule" in self.headers and "RateID" in self.headers:
+                        self.has_rates = True
                     if "Value" in self.headers:
                         self.has_categories = False
                     else:
@@ -219,6 +236,15 @@ class Csv2Ifc:
             assert "Value" in self.headers
             cost_values = row[self.headers["Value"]]
             cost_values = float(cost_values) if cost_values else None
+
+        if self.has_rates:
+            cost_rate = {
+                "Schedule" : row[(self.headers["Rate cost schedule"])] if "Rate cost schedule" in self.headers else None,
+                "RateID" : row[(self.headers["RateID"])] if "RateID" in self.headers else None,
+            }
+        else:
+            cost_rate = None
+
         return {
             "Identification": str(identification) if identification else None,
             "Name": str(name) if name else None,
@@ -228,6 +254,7 @@ class Csv2Ifc:
             "Property": property_name,
             "Query": query,
             "children": [],
+            "CostRate": cost_rate,
         }
 
     def create_ifc(self) -> None:
@@ -296,6 +323,37 @@ class Csv2Ifc:
                         unit_component = self.create_unit(cost_item["Unit"])
 
                 cost_value.UnitBasis = self.file.createIfcMeasureWithUnit(value_component, unit_component)
+
+        if self.has_rates:
+            cost_rate = cost_item["CostRate"]
+            assert isinstance(cost_rate, dict)
+
+            if cost_rate.get("Schedule") and cost_rate.get("RateID"):
+            #if cost_rate["Schedule"] is not "":
+                schedules = self.file.by_type("IfcCostSchedule")
+                for schedule in schedules:
+                    if schedule.Name == cost_rate["Schedule"]:
+                        rate_cost_schedule = schedule
+                        break
+
+                if rate_cost_schedule:
+                    items = list(tool.Cost.get_schedule_cost_items(rate_cost_schedule))
+                    rate_cost_item = None
+                    for item in items:
+                        if item.Identification == cost_rate["RateID"]:
+                            rate_cost_item = item
+                            break
+                    if rate_cost_item:
+                        core.cost.assign_cost_value(
+                            tool.Ifc,
+                            tool.Cost,
+                            cost_item=cost_item["ifc"],
+                            cost_rate=rate_cost_item
+                        )
+                    else:
+                        print(f"No cost item found with RateID={cost_rate['RateID']}")
+                else:
+                    print(f"No cost schedule found with Name={cost_rate['Schedule']}")
 
         quantity = None
         quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["Unit"])
