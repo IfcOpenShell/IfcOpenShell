@@ -35,7 +35,7 @@
 #include <iterator>
 #include <map>
 
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
 #include <rocksdb/merge_operator.h>
 
 namespace {
@@ -232,7 +232,7 @@ private:
 #ifdef USE_MMAP
     IfcFile(const std::string& path, bool mmap = false);
 #else
-    IfcFile(const std::string& path, filetype ty=FT_AUTODETECT);
+    IfcFile(const std::string& path, filetype ty=FT_AUTODETECT, bool readonly=false);
 #endif
     IfcFile(std::istream& stream, int length);
     IfcFile(void* data, int length);

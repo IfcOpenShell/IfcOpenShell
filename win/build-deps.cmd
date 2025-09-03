@@ -608,22 +608,40 @@ IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
 )
 call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
 
+:zstd
+set DEPENDENCY_NAME=zstd
+set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%
+call :GitCloneAndCheckoutRevision https://github.com/facebook/zstd "%DEPENDENCY_DIR%" v1.5.7
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"\build\cmake
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\zstd" -DZSTD_BUILD_STATIC=ON -DZSTD_BUILD_SHARED=OFF
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\build\cmake\%BUILD_DIR%\zstd.sln" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\build\cmake\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 :rocksdb
 set DEPENDENCY_NAME=rocksdb
 set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%
+cd %DEPS_DIR%
 call :GitCloneAndCheckoutRevision https://github.com/facebook/rocksdb "%DEPENDENCY_DIR%" v9.11.2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
+:: see rocksdb\thirdparty.inc
+set ZSTD_INCLUDE=%INSTALL_DIR%\zstd\include
+set ZSTD_LIB_DEBUG=%INSTALL_DIR%\zstd\lib\zstd_static.lib
+set ZSTD_LIB_RELEASE=%INSTALL_DIR%\zstd\lib\zstd_static.lib
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^
                -DROCKSDB_INSTALL_ON_WINDOWS=On ^
                -DFAIL_ON_WARNINGS=Off ^
-               -DWITH_TESTS=OFF
+               -DWITH_TESTS=OFF ^
+               -DWITH_ZSTD=On
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\rocksdb.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-
 
 :: :tbb
 :: set DEPENDENCY_NAME=tbb

@@ -25,7 +25,7 @@
 #include "aggregate_of_instance.h"
 #include "IfcSchema.h"
 
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
 
 #pragma push_macro("Handle")
 #undef Handle
@@ -165,7 +165,7 @@ namespace IfcParse {
     }
 }
 
-#if WITH_ROCKSDB
+#if IFOPSH_WITH_ROCKSDB
 
 namespace impl {
 
@@ -393,7 +393,7 @@ struct AttributeValue {
 
 struct rocks_db_attribute_storage {
 public:
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
     // @todo void* is obviously very ugly here
     template<typename T>
     void set(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, const T& value);
@@ -449,7 +449,7 @@ class IFC_PARSE_API IfcEntityInstanceData {
         if (storage_) {
             storage_->set(index, value);
         }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         else {
             rocks_db_attribute_storage{}.set(storage, decl, identity, index, value);
         }
@@ -461,7 +461,7 @@ class IFC_PARSE_API IfcEntityInstanceData {
         if (storage_) {
             return storage_->has<T>(index);
         }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         else {
             return rocks_db_attribute_storage{}.has<T>(storage, decl, identity, index);
         }
@@ -473,7 +473,7 @@ class IFC_PARSE_API IfcEntityInstanceData {
         if (storage_) {
             return storage_->apply_visitor(std::forward<Visitor>(visitor), index);
         }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         else {
             return rocks_db_attribute_storage{}.apply_visitor(storage, decl, identity, index, std::forward<Visitor>(visitor));
         }

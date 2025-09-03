@@ -1,6 +1,6 @@
 #ifndef ROCKSDBSERIALIZER_H
 #define ROCKSDBSERIALIZER_H
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
 
 #include "../serializers/serializers_api.h"
 #include "../ifcgeom/Serializer.h"

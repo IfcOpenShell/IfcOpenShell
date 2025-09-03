@@ -1,4 +1,4 @@
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
 
 #include "RocksDbSerializer.h"
 

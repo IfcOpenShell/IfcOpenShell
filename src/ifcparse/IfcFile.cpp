@@ -1,6 +1,8 @@
 #include "IfcFile.h"
 #include "IfcLogger.h"
 
+#include <rocksdb/table.h>
+
 IfcParse::parse_context::~parse_context() {
     for (auto& t : tokens_) {
         std::visit([](auto& v) {
@@ -346,7 +348,7 @@ IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::value_type const&
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
     if (r == IfcParse::impl::rocks_db_file_storage::entityinstance_ref) {
         auto it = instance_cache_.find(number);
         if (it != instance_cache_.end()) {
@@ -397,26 +399,53 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
 }
 
 namespace {
-    rocksdb::DB* init_db(const std::string& filepath) {
+    rocksdb::DB* init_db(const std::string& filepath, bool readonly) {
         rocksdb::DB* db = nullptr;
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
+        
         rocksdb::Options options;
         // options.disable_auto_compactions = true;
         options.create_if_missing = true;
         options.merge_operator.reset(new ConcatenateIdMergeOperator());
-        rocksdb::Status status = rocksdb::DB::Open(options, filepath, &db);
-        if (!status.ok()) {
-            throw std::runtime_error(status.ToString());
+        options.compression = rocksdb::kZSTD;
+
+        rocksdb::BlockBasedTableOptions tbo;
+
+        /*
+        tbo.block_size = 16 * 1024;
+        tbo.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10 /*bits/key/, false));
+        tbo.partition_filters = true;
+        tbo.index_type = rocksdb::BlockBasedTableOptions::kHashSearch;
+        tbo.cache_index_and_filter_blocks = true;
+        tbo.cache_index_and_filter_blocks_with_high_priority = true;
+        tbo.pin_top_level_index_and_filter = true;
+        */
+
+        auto block_cache = rocksdb::NewLRUCache(1ULL << 30);
+        tbo.block_cache = block_cache;
+
+        // rocksdb::CreateDBStatistics();
+
+        options.table_factory.reset(rocksdb::NewBlockBasedTableFactory(tbo));
+
+        rocksdb::Status status;
+        if (readonly) {
+            status = rocksdb::DB::OpenForReadOnly(options, filepath, &db);
+        } else {
+            status = rocksdb::DB::Open(options, filepath, &db);
         }
-#endif // WITH_ROCKSDB#
+        if (!status.ok()) {
+            return nullptr;
+        }
+#endif // IFOPSH_WITH_ROCKSDB#
         return db;
     }
 }
 
 // @todo naming
-IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* ffile)
+IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* ffile, bool readonly)
     : file(ffile)
-    , db(init_db(filepath))
+    , db(init_db(filepath, readonly))
     , byguid_internal_(db, "g|")
     , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
     , instance_ids_(db, "i|")
@@ -431,7 +460,7 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
 
 IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
 {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
     rocksdb::FlushOptions flush_options;
     flush_options.allow_write_stall = true;
     flush_options.wait = true; // Wait until flush completes.
@@ -457,7 +486,7 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::instance_by_id(int
 
 void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::IfcBaseClass* inst)
 {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
     auto id = inst->id();
 
     {
