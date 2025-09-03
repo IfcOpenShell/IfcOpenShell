@@ -26,8 +26,8 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import locale
-import bonsai.tool as tool #i need that because there are useful tool there
-import bonsai.core as core #i need that because there is useful core function
+import bonsai.tool as tool  # i need that because there are useful tool there
+import bonsai.core as core  # i need that because there is useful core function
 from pathlib import Path
 from typing import Union, Optional, TypedDict
 from typing_extensions import NotRequired
@@ -239,8 +239,8 @@ class Csv2Ifc:
 
         if self.has_rates:
             cost_rate = {
-                "Schedule" : row[(self.headers["Rate cost schedule"])] if "Rate cost schedule" in self.headers else None,
-                "RateID" : row[(self.headers["RateID"])] if "RateID" in self.headers else None,
+                "Schedule": row[(self.headers["Rate cost schedule"])] if "Rate cost schedule" in self.headers else None,
+                "RateID": row[(self.headers["RateID"])] if "RateID" in self.headers else None,
             }
         else:
             cost_rate = None
@@ -329,7 +329,7 @@ class Csv2Ifc:
             assert isinstance(cost_rate, dict)
 
             if cost_rate.get("Schedule") and cost_rate.get("RateID"):
-            #if cost_rate["Schedule"] is not "":
+                # if cost_rate["Schedule"] is not "":
                 schedules = self.file.by_type("IfcCostSchedule")
                 for schedule in schedules:
                     if schedule.Name == cost_rate["Schedule"]:
@@ -345,10 +345,7 @@ class Csv2Ifc:
                             break
                     if rate_cost_item:
                         core.cost.assign_cost_value(
-                            tool.Ifc,
-                            tool.Cost,
-                            cost_item=cost_item["ifc"],
-                            cost_rate=rate_cost_item
+                            tool.Ifc, tool.Cost, cost_item=cost_item["ifc"], cost_rate=rate_cost_item
                         )
                     else:
                         print(f"No cost item found with RateID={cost_rate['RateID']}")
