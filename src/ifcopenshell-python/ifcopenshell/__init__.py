@@ -132,7 +132,7 @@ def open(
     path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: bool
 ) -> Union[file, sqlite, stream]: ...
 def open(
-    path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False
+    path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False, readonly: bool = False
 ) -> Union[file, sqlite, stream]:
     """Loads an IFC dataset from a filepath
 
@@ -179,7 +179,7 @@ def open(
         return sqlite(path)
     if should_stream:
         return stream(path)
-    f = ifcopenshell_wrapper.open(str(path.absolute()))
+    f = ifcopenshell_wrapper.open(str(path.absolute()), readonly)
     return file(f)
 
 

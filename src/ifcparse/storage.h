@@ -1,7 +1,7 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
-#ifndef WITH_ROCKSDB
+#ifndef IFOPSH_WITH_ROCKSDB
 
 namespace rocksdb {
     class DB {};
@@ -357,7 +357,7 @@ namespace IfcParse {
             entities_by_ref_t byref_excl_;
 
             // @todo naming
-            rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* file);
+            rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* file, bool readonly=false);
             ~rocks_db_file_storage();
 
             bool read_schema(const IfcParse::schema_definition*& schema);
@@ -449,7 +449,7 @@ namespace IfcParse {
                 static constexpr char prefix_[] = "t|";
 
                 boost::optional<size_t> read_id_() const {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
                     auto sv = state_->key().ToStringView();
                     auto ii = sv.find("|", 2);
                     if (ii != decltype(sv)::npos) {
@@ -479,7 +479,7 @@ namespace IfcParse {
                 rocksdb_types_iterator(const rocks_db_file_storage* fs)
                     : storage_(fs)
                 {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
                     state_ = fs->db->NewIterator(rocksdb::ReadOptions());
                     state_->Seek(prefix_);
                     if (!state_->Valid() || !state_->key().starts_with(prefix_)) {
@@ -490,7 +490,7 @@ namespace IfcParse {
                 }
 
                 rocksdb_types_iterator& operator++() {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
                     if (!state_) {
                         return *this;
                     }

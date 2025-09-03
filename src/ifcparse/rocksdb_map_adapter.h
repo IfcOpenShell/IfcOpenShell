@@ -20,7 +20,7 @@
 #ifndef ROCKSDB_MAP_ADAPTER_H
 #define ROCKSDB_MAP_ADAPTER_H
 
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #endif
@@ -205,7 +205,7 @@ public:
         mutable value_type cached_value_;
 
         void check_valid() {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
             if (!it_ || !it_->Valid() || !it_->key().starts_with(prefix_)) {
                 it_.reset();
             }
@@ -225,7 +225,7 @@ public:
         iterator(const iterator& other)
             : db_(other.db_), prefix_(other.prefix_), codec_(other.codec_)
         {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
             if (other.it_) {
                 std::string curr = other.it_->key().ToString();
                 it_.reset(db_->NewIterator(rocksdb::ReadOptions{}));
@@ -237,7 +237,7 @@ public:
         }
 
         iterator& operator=(const iterator& other) {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
             if (this != &other) {
                 db_ = other.db_;
                 prefix_ = other.prefix_;
@@ -257,7 +257,7 @@ public:
         }
 
         value_type operator*() const {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
             std::string full_key = it_->key().ToString();
             std::string key_without_prefix = full_key.substr(prefix_.size());
             std::string value_str = it_->value().ToString();
@@ -274,7 +274,7 @@ public:
         }
 
         iterator& operator++() {
-#if WITH_ROCKSDB
+#if IFOPSH_WITH_ROCKSDB
             if (it_) {
                 it_->Next();
                 check_valid();
@@ -290,7 +290,7 @@ public:
         }
 
         bool operator==(const iterator& other) const {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
             if (!it_ && !other.it_) return true;
             if (it_ && other.it_)
                 return it_->key().ToString() == other.it_->key().ToString();
@@ -304,7 +304,7 @@ public:
     };
 
     iterator begin() const {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         auto iter = std::unique_ptr<rocksdb::Iterator>(db_->NewIterator(rocksdb::ReadOptions{}));
         iter->Seek(prefix_);
         if (iter->Valid() && iter->key().starts_with(prefix_)) {
@@ -319,7 +319,7 @@ public:
     }
 
     iterator find(const key_type& key) const {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         std::string key_str = key_to_string(key);
         std::string full_key = prefix_ + key_str;
         auto iter = std::unique_ptr<rocksdb::Iterator>(db_->NewIterator(rocksdb::ReadOptions{}));
@@ -331,7 +331,7 @@ public:
     }
 
     size_t erase(const key_type& key) {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         std::string key_str = key_to_string(key);
         std::string full_key = prefix_ + key_str;
         rocksdb::Status s = db_->Delete(rocksdb::WriteOptions{}, full_key);
@@ -342,7 +342,7 @@ public:
     }
 
     std::pair<iterator, bool> insert(const value_type& val) {
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         std::string key_str = key_to_string(val.first);
         std::string full_key = prefix_ + key_str;
         std::string existing;

@@ -36,7 +36,7 @@ namespace {
         if (storage_model_ == 0) {
             return array_.storage_ptr->get<T>(index_);
         }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         else {
             T val;
             if constexpr (
@@ -59,7 +59,7 @@ namespace {
         if (storage_model_ == 0) {
             return array_.storage_ptr->has<T>(index_);
         }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         else {
             std::string str;
             array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
@@ -78,7 +78,7 @@ namespace {
         if (storage_model_ == 0) {
             return array_.storage_ptr->index(index_);
         }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         else {
             std::string str;
             if (!array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str).ok()) {
@@ -121,7 +121,7 @@ AttributeValue::operator std::string() const
         if (storage_model_ == 0) {
             return dispatch_get_<EnumerationReference>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_).value();
         }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
         else {
             std::string str;
             array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
@@ -141,7 +141,7 @@ AttributeValue::operator EnumerationReference() const
     if (storage_model_ == 0) {
         return dispatch_get_<EnumerationReference>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
     }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
     else {
         std::string str;
         array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
@@ -164,7 +164,7 @@ AttributeValue::operator IfcUtil::IfcBaseClass* () const
     if (storage_model_ == 0) {
         return dispatch_get_<IfcUtil::IfcBaseClass*>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
     }
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
     else {
         std::string str;
         array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
@@ -237,7 +237,7 @@ IfcUtil::ArgumentType AttributeValue::type() const
     return static_cast<IfcUtil::ArgumentType>(dispatch_index_(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_));
 }
 
-#ifdef WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
 
 bool impl::serialize(std::string& val, const IfcUtil::IfcBaseClass* t)
 {

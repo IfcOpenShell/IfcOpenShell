@@ -633,10 +633,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %newobject parse_ifcxml;
 
 %inline %{
-	IfcParse::IfcFile* open(const std::string& fn) {
+	IfcParse::IfcFile* open(const std::string& fn, bool readonly=false) {
 		IfcParse::IfcFile* f;
 		Py_BEGIN_ALLOW_THREADS;
-		f = new IfcParse::IfcFile(fn);
+		f = new IfcParse::IfcFile(fn, IfcParse::FT_AUTODETECT, readonly);
 		Py_END_ALLOW_THREADS;
 		return f;
 	}

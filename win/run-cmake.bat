@@ -156,16 +156,18 @@ echo.
 set CMAKELISTS_DIR=..\cmake
 :: Delete CMakeCache.txt if command-line options were provided for this batch script.
 if not (%1)==() if exist CMakeCache.txt. del /Q CMakeCache.txt
-call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
+echo "Running CMake for %PROJECT_NAME%."
 
 IF NOT "%VS_TOOLSET_HOST%"=="" (
     cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% ^
               -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=ON ^
+              -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
               -DCMAKE_PREFIX_PATH="%HDF5_INSTALL_DIR%;%OPENCOLLADA_INSTALL_DIR%;%SWIG_INSTALL_DIR%" ^
               -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
 ) ELSE (
     cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% ^
               -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=ON ^
+              -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
               -DCMAKE_PREFIX_PATH="%HDF5_INSTALL_DIR%;%OPENCOLLADA_INSTALL_DIR%;%SWIG_INSTALL_DIR%" ^
               -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
 )
