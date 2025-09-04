@@ -255,6 +255,175 @@ NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 
+import struct
+
+
+def consume_buffer(val, inner):
+    while val:
+        s = struct.unpack("@q", val[:8])[0]
+        val = val[8:]
+        yield inner(val[0:s])
+        val = val[s:]
+
+
+binary_deserializers = (
+    lambda __, _: None,
+    lambda __, _: None,
+    lambda __, val: struct.unpack("@i", val)[0],
+    lambda __, val: val[0] == 1,
+    # @todo 3 state
+    lambda __, val: val[0] == 1,
+    lambda __, val: struct.unpack("@d", val)[0],
+    lambda __, val: val.decode("utf-8"),
+    lambda __, val: val.decode("utf-8"),
+    lambda storage, val: ifcopenshell_wrapper.schema_by_name(storage.schema)
+    .declarations()[struct.unpack("@q", val[:8])[0]]
+    .enumeration_items()[struct.unpack("@q", val[8:])[0]],
+    lambda storage, val: storage.by_id((val[0] == "i", struct.unpack("@q", val[1:])[0])),
+    lambda __, _: (),
+    lambda __, val: struct.unpack("@" + "i" * (len(val) // 4), val),
+    lambda __, val: struct.unpack("@" + "d" * (len(val) // 8), val),
+    lambda __, val: tuple(consume_buffer(val, lambda inner: inner.decode("utf-8"))),
+    lambda __, val: tuple(consume_buffer(val, lambda inner: inner.decode("utf-8"))),
+    lambda storage, val: tuple(
+        storage.by_id((val[i * 9] == "i", struct.unpack("@q", val[i * 9 + 1 : i * 9 + 9])[0]))
+        for i in range(len(val) // 9)
+    ),
+    lambda __, _: ((),),
+    lambda __, val: tuple(
+        consume_buffer(val, lambda inner: struct.unpack("@" + "i" * (len(inner) // struct.calcsize("@i")), inner))
+    ),
+    lambda __, val: tuple(
+        consume_buffer(val, lambda inner: struct.unpack("@" + "d" * (len(inner) // struct.calcsize("@d")), inner))
+    ),
+    lambda storage, val: tuple(
+        consume_buffer(
+            val,
+            lambda inner: tuple(
+                storage.by_id((inner[i * 9] == "i", struct.unpack("@q", inner[i * 9 + 1 : i * 9 + 9])[0]))
+                for i in range(len(inner) // 9)
+            ),
+        )
+    ),
+)
+
+
+class rocksdb_lazy_instance:
+    def _transform_value(self, val: bytes) -> Any:
+        if not val:
+            return None
+        # ord('A') is 65
+        return binary_deserializers[val[0] - 65](self.storage, val[1:])
+
+    def __init__(self, storage, name):
+        self.storage = storage
+        self.name = name
+
+    def is_a(self):
+        if self.name.startswith("h|"):
+            return self.name[2:]
+        idx = struct.unpack("@q", self.storage.read(f"{self.name}|_"))[0]
+        return ifcopenshell_wrapper.schema_by_name(self.storage.schema).declarations()[idx].name()
+
+    def __getattr__(self, name):
+        attributes = (
+            ifcopenshell_wrapper.schema_by_name(self.storage.schema)
+            .declaration_by_name(self.is_a())
+            .as_entity()
+            .all_attributes()
+        )
+        if idx := next((i + 1 for i, n in enumerate(a.name() for a in attributes) if n == name), None):
+            return self[idx - 1]
+
+    def __getitem__(self, index):
+        return self._transform_value(self.storage.read(f"{self.name}|{index}"))
+
+    def __len__(self):
+        return (
+            max(
+                map(
+                    int,
+                    filter(
+                        lambda s: s.isdigit(),
+                        (k.split(b"|")[2] for k, v in self.storage.prefix(f"{self.name}|").items()),
+                    ),
+                ),
+                default=-1,
+            )
+            + 1
+        )
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self[i]
+
+    def __repr__(self):
+        pre = f"#{self.name[2:]}=" if self.name.startswith("i|") else ""
+
+        def val_repr(val):
+            if isinstance(val, rocksdb_lazy_instance):
+                if val.name[0] == "i":
+                    return f"#{val.name[2:]}"
+                else:
+                    return repr(val)
+            elif isinstance(val, (tuple, list)):
+                return f'({",".join(map(val_repr, val))})'
+            elif val is None:
+                return "$"
+            else:
+                return repr(val)
+
+        return f'{pre}{self.is_a()}({",".join(map(val_repr, self))})'
+
+    def id(self):
+        if self.name.startswith("i|"):
+            return int(self.name[2:])
+
+    def __bool__(self):
+        return len(self) > 0
+
+
+class rocksdb_file_storage:
+    def __init__(self, file, prefix=""):
+        self.file = file
+        self._prefix = prefix
+
+    def items(self):
+        it = self.file.wrapped_data.key_value_store_iter(self._prefix)
+        while it and it.valid():
+            yield it.key(), it.value()
+            it.next()
+
+    def read(self, key):
+        return self.file.wrapped_data.key_value_store_query(key)
+
+    def by_id(self, name):
+        if isinstance(name, tuple):
+            inst = rocksdb_lazy_instance(self, f'{"i" if name[0] else "t"}|{name[1]}')
+        else:
+            inst = rocksdb_lazy_instance(self, f"i|{name}")
+        if not inst:
+            raise KeyError(f"Instance with name {name} not found in file")
+        return inst
+
+    __getitem__ = by_id
+
+    def __iter__(self):
+        previous = None
+        for k, v in self.items():
+            if k.startswith(b"i|"):
+                name = int(k[2:].split(b"|")[0])
+                if name != previous:
+                    previous = name
+                    yield rocksdb_lazy_instance(self, f"i|{name}")
+
+    def prefix(self, prefix):
+        return rocksdb_file_storage(self.file, self._prefix + prefix)
+
+    @functools.cached_property
+    def schema(self):
+        return rocksdb_lazy_instance(self, f"h|file_schema")[0][0]
+
 
 class file:
     """Base class for containing IFC files.
@@ -799,3 +968,12 @@ class file:
         h = self.wrapped_data.header()
         object.__setattr__(h, "file_ref", lambda inst: entity_instance.wrap_value(inst, file=self))
         return h
+
+    @property
+    def storage(self) -> Optional[rocksdb_file_storage]:
+        """
+        Returns:
+            Optional[rocksdb_file_storage]: underlying key-value store interface when opened as a RocksDB-backed file
+        """
+        if self.wrapped_data.storage_mode() == 1:
+            return rocksdb_file_storage(self)
