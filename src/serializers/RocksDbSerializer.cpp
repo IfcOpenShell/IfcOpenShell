@@ -58,7 +58,7 @@ namespace {
 		for (auto it = t.begin(); it != t.end(); ++it) {
 			*ptr = it->index() == 0 ? 'i' : 't';
 			ptr++;
-			size_t iden;
+			size_t iden = 0;
 			if (auto* name = std::get_if<IfcParse::InstanceReference>(&*it)) {
 				iden = *name;
 			} else if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(&*it)) {
