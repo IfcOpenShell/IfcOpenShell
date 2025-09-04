@@ -463,6 +463,10 @@ class IfcImporter:
         return False
 
     def calculate_model_offset(self) -> None:
+        # TODO:
+        if isinstance(self.file, ifcopenshell.sqlite):
+            print("WARNING. Calculating model offset for IFCSQLite is not supported.")
+            return
         props = tool.Georeference.get_georeference_props()
         if self.ifc_import_settings.false_origin_mode == "MANUAL":
             tool.Loader.set_manual_blender_offset(self.file)
@@ -516,6 +520,10 @@ class IfcImporter:
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement))
 
     def create_element_types(self):
+        # TODO:
+        if isinstance(self.file, ifcopenshell.sqlite):
+            print("WARNING. Loading element types from IFCSQLite is not supported.")
+            return
         for element_type in self.element_types:
             if not element_type:
                 continue
