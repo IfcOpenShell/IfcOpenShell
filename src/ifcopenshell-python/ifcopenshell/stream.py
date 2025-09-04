@@ -107,9 +107,9 @@ try:
             # common.INT doesn't support negative integers.
             grammar = r"""
                 start: "#" NUMBER "=" TYPE "(" args ")" ";"
-    
+
                 args: arg ("," arg)*
-    
+
                 arg: STRING        -> string
                     | FLOAT        -> float
                     | IFCINT       -> ifcint
@@ -119,21 +119,21 @@ try:
                     | REFERENCE    -> reference
                     | list         -> list
                     | inline_type  -> inline_type
-    
+
                 list: "(" arg? ("," arg)* ")"
                 inline_type: TYPE "(" arg ")"
                 REFERENCE: "#" /[0-9]+/
-    
+
                 TYPE: CNAME
                 NUMBER: INT
-    
+
                 STRING: "'" /([^']|'')*/ "'"
                 IFCINT: /-?[0-9]+/
                 FLOAT: /-?[0-9]+\.[0-9]*([Ee]-?[0-9]+)?/
                 NULL: "$"
                 DERIVED: "*"
                 ENUM: "." CNAME "."
-    
+
                 %import common.INT
                 %import common.CNAME
             """
