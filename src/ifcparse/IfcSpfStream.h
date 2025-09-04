@@ -76,6 +76,8 @@ class IFC_PARSE_API IfcSpfStream {
     bool is_eof_at(unsigned int) const;
     void increment_at(unsigned int&);
     char peek_at(unsigned int);
+
+	operator bool() const { return valid && !eof; }
 };
 } // namespace IfcParse
 
