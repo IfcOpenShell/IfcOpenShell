@@ -88,7 +88,6 @@ try:
 
     class stream(file):
         def __init__(self, filepath: str):
-            self.wrapped_data = None
             self.history_size = 64
             self.history = []
             self.future = []
@@ -287,6 +286,12 @@ try:
         def __del__(self) -> None:
             # Override to avoid clean up unrelated to stream file.
             pass
+
+        def wrapped_data(self) -> NoReturn:
+            class_name = str(type(self))
+            raise Exception(
+                f"No `wrapped_data` for {class_name}. `ifcopenshell.{class_name}` is probably confused with `ifcopenshell.file`."
+            )
 
         @property
         def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:

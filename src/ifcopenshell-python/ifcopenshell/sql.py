@@ -51,7 +51,6 @@ class sqlite(file):
         if not Path(filepath).exists():
             raise FileNotFoundError(f"File doesn't exist: {filepath}")
 
-        self.wrapped_data = None
         self.history_size = 64
         self.history = []
         self.future = []
@@ -269,6 +268,12 @@ class sqlite(file):
     def __del__(self) -> None:
         # Override to avoid clean up data unrelated to sqlite file.
         pass
+
+    def wrapped_data(self) -> NoReturn:
+        class_name = str(type(self))
+        raise Exception(
+            f"No `wrapped_data` for {class_name}. `ifcopenshell.{class_name}` is probably confused with `ifcopenshell.file`."
+        )
 
     @property
     def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
