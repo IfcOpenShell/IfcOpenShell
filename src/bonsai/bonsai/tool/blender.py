@@ -56,7 +56,7 @@ from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 if TYPE_CHECKING:
     from sun_position.properties import SunPosProperties
     import bpy.stub_internal.rna_enums as rna_enums
-    from bonsai.bim.prop import BIMProperties, BIMObjectProperties
+    from bonsai.bim.prop import BIMProperties, BIMObjectProperties, BIMSnapProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
     from bonsai.bim.module.covetool.prop import CoveToolProperties

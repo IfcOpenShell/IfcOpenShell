@@ -1552,7 +1552,7 @@ class BIM_PT_snappping(Panel):
         return context.mode == "OBJECT"
 
     def draw(self, context):
-        prop = context.scene.BIMSnapProperties
+        prop = tool.Snap.get_snap_props()
         layout = self.layout
         col = layout.column(align=True)
         col.prop(prop, "vertex", toggle=True, icon="SNAP_VERTEX")
@@ -1560,7 +1560,7 @@ class BIM_PT_snappping(Panel):
         col.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
         col.prop(prop, "edge_intersection", toggle=True, icon="SNAP_GRID")
         col.prop(prop, "face", toggle=True, icon="SNAP_FACE")
-        groups = context.scene.BIMSnapGroups
+        groups = tool.Snap.get_snap_groups()
         row = layout.row(align=True)
         row.label(text="Bonsai Target Selection")
         row = layout.row(align=True)
