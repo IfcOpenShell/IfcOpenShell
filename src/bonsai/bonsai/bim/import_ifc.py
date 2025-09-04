@@ -631,15 +631,13 @@ class IfcImporter:
             verts = geometry["verts"]
             mesh["has_cartesian_point_offset"] = False
 
-            if geometry["faces"]:
+            if geometry["faces"].size:
                 mesh = tool.Loader.create_mesh_from_shape(
                     mesh=mesh, faces=geometry["faces"].reshape(-1, 3), verts=verts.reshape(-1, 3)
                 )
             else:
-                e = geometry["edges"]
-                v = verts
-                vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+                vertices = verts.reshape(-1, 3).tolist()
+                edges = geometry["edges"].reshape(-1, 2).tolist()
                 mesh.from_pydata(vertices, edges, [])
 
             mesh["ios_materials"] = geometry["materials"]

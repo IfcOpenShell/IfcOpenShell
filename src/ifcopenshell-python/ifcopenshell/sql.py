@@ -246,18 +246,19 @@ class sqlite(file):
         geometry = {}
         for row in rows:
             if row["geometry"] and row["geometry"] not in geometry:
+                # Same data types as in ifcopenshell.util.shape.
                 geometry[row["geometry"]] = {
-                    "verts": np.frombuffer(row["verts"]).tolist() if row["verts"] else [],
-                    "edges": np.frombuffer(row["edges"], dtype=np.int64).tolist() if row["edges"] else [],
-                    "faces": np.frombuffer(row["faces"], dtype=np.int64).tolist() if row["faces"] else [],
+                    "verts": np.frombuffer(row["verts"], dtype="d") if row["verts"] else np.empty(0, dtype="d"),
+                    "edges": np.frombuffer(row["edges"], dtype="i") if row["edges"] else np.empty(0, dtype="i"),
+                    "faces": np.frombuffer(row["faces"], dtype="i") if row["faces"] else np.empty(0, dtype="i"),
                     "material_ids": (
-                        np.frombuffer(row["material_ids"], dtype=np.int64).tolist() if row["material_ids"] else []
+                        np.frombuffer(row["material_ids"], dtype="i") if row["material_ids"] else np.empty(0, dtype="i")
                     ),
                     "materials": json.loads(row["materials"]) if row["materials"] else [],
                 }
             shapes[row["ifc_id"]] = {
                 "co": [row["x"], row["y"], row["z"]],
-                "matrix": np.copy(np.frombuffer(row["matrix"]).reshape((4, 4))),
+                "matrix": np.copy(np.frombuffer(row["matrix"], dtype="d").reshape((4, 4))),
                 "geometry": row["geometry"],
             }
         ids_without_geometry = set(ids) - set(shapes.keys())
