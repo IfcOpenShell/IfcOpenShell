@@ -40,6 +40,7 @@ from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.decorator import ProfileDecorator
 from bonsai.bim.module.boundary.decorator import BoundaryDecorator
+from ifcopenshell.util.shape_builder import ShapeBuilder
 import bonsai.core
 import bonsai.core.geometry
 from typing import Union, Optional
@@ -1058,15 +1059,11 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         tool.Model.unit_scale = self.unit_scale
+        builder = ShapeBuilder(tool.Ifc.get())
 
         surface = tool.Ifc.get().createIfcCurveBoundedPlane()
-        surface.BasisSurface = tool.Ifc.get().createIfcPlane(
-            tool.Ifc.get().createIfcAxis2Placement3D(
-                tool.Ifc.get().createIfcCartesianPoint([o / self.unit_scale for o in p1]),
-                tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
-                tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
-            )
-        )
+        placement = builder.create_axis2_placement_3d([o / self.unit_scale for o in p1], z_axis, x_axis)
+        surface.BasisSurface = tool.Ifc.get().create_entity("IfcPlane", placement)
 
         if tool.Ifc.get().schema != "IFC2X3":
             points = [tool.Model.convert_si_to_unit(list(co)) for co in polygon.exterior.coords]

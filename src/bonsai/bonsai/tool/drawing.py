@@ -58,6 +58,7 @@ from fractions import Fraction
 from typing import Optional, Union, Any, Literal, TYPE_CHECKING, NamedTuple
 from collections.abc import Iterable, Sequence
 from pathlib import Path
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import (
@@ -778,11 +779,8 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def add_literal(cls, **attributes: str) -> ifcopenshell.entity_instance:
         ifc_file = tool.Ifc.get()
-        origin = ifc_file.createIfcAxis2Placement3D(
-            ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
-            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
-            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
-        )
+        builder = ShapeBuilder(ifc_file)
+        origin = builder.create_axis2_placement_3d()
         ifc_literal = ifc_file.create_entity(
             "IfcTextLiteralWithExtent",
             attributes.get("Literal", "Literal"),
