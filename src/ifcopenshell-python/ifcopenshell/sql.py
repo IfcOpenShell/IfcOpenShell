@@ -37,8 +37,6 @@ except ImportError as e:
 
 
 class sqlite(file):
-    schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4"
-
     def __init__(self, filepath: str):
         """
         Open existing sqlite IFC database.
@@ -81,7 +79,7 @@ class sqlite(file):
         except:
             assert False, "SQLite schema not supported."
 
-        self.schema = row[1]
+        self._schema = row[1]
         self.ifc_schema = ifcopenshell.schema_by_name(self.schema)
 
         self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map")
@@ -271,6 +269,15 @@ class sqlite(file):
     def __del__(self) -> None:
         # Override to avoid clean up data unrelated to sqlite file.
         pass
+
+    @property
+    def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
+        return self._schema
+
+    @property
+    def schema_identifier(self) -> str:
+        # The best option we've got for mimicing `file.schema_identifier`.
+        return self._schema
 
 
 class sqlite_entity(entity_instance):
