@@ -449,6 +449,10 @@ class sqlite_entity(entity_instance):
         info.update(self.sqlite_wrapper.attribute_cache)
         return info
 
+    @property
+    def file(self) -> sqlite:
+        return self.sqlite_wrapper.file
+
 
 class sqlite_wrapper:
     def __init__(self, id: int, ifc_class: str, file: sqlite):
