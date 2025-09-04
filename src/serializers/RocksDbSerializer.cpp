@@ -72,8 +72,42 @@ namespace {
 
 	bool serialize(std::string& val, const std::vector<std::vector<IfcParse::reference_or_simple_type>>& t)
 	{
-		// @todo
-		return false;
+		std::ostringstream oss;
+		oss.put(TypeEncoder::encode_type<aggregate_of_aggregate_of_instance::ptr>());
+
+		auto write_size = [&oss](size_t sz) {
+			std::string size_str;
+			size_str.resize(sizeof(size_t));
+			memcpy(size_str.data(), &sz, sizeof(size_t));
+			oss.write(size_str.data(), size_str.size());
+		};
+
+		// write_size(t.size());
+
+		for (auto it = t.begin(); it != t.end(); ++it) {
+			// size of inner aggregate
+			write_size(it->size() * 9);
+
+			// values
+			for (auto jt = it->begin(); jt != it->end(); ++jt) {
+				char c = jt->index() == 0 ? 'i' : 't';
+				oss.put(c);
+				size_t iden = 0;
+				if (auto* name = std::get_if<IfcParse::InstanceReference>(&*jt)) {
+					iden = *name;
+				} else if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(&*jt)) {
+					iden = (*inst)->identity();
+				}
+				std::string iden_str;
+				iden_str.resize(sizeof(size_t));
+				memcpy(iden_str.data(), &iden, sizeof(size_t));
+				oss.write(iden_str.data(), iden_str.size());
+			}
+		}
+
+		val = oss.str();
+
+		return true;
 	}
 }
 

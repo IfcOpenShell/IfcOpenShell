@@ -285,7 +285,6 @@ bool impl::serialize(std::string& val, const aggregate_of_aggregate_of_instance:
     std::ostringstream oss;
 	oss.put(TypeEncoder::encode_type<aggregate_of_aggregate_of_instance::ptr>());
     
-	// size of outer aggregate
     auto write_size = [&oss](size_t sz) {
         std::string size_str;
         size_str.resize(sizeof(size_t));
@@ -293,11 +292,11 @@ bool impl::serialize(std::string& val, const aggregate_of_aggregate_of_instance:
         oss.write(size_str.data(), size_str.size());
     };
 
-	write_size(t->size());
+	// write_size(t->size());
 
     for (auto it = t->begin(); it != t->end(); ++it) {
 		// size of inner aggregate
-        write_size(it->size());
+        write_size(it->size() * 9);
 
         // values
         for (auto jt = it->begin(); jt != it->end(); ++jt) {
@@ -409,9 +408,9 @@ bool impl::deserialize(IfcParse::impl::rocks_db_file_storage* storage, const std
 	t.reset(new aggregate_of_aggregate_of_instance);
 	char const* ptr = val.data() + 1;
 
-	size_t outer_size;
-	memcpy(&outer_size, ptr, sizeof(size_t));
-	ptr += sizeof(size_t);
+	// size_t outer_size;
+	// memcpy(&outer_size, ptr, sizeof(size_t));
+	// ptr += sizeof(size_t);
 
     while (ptr < val.data() + val.size()) {
 		size_t inner_size;
