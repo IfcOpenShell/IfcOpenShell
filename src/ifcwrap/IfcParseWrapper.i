@@ -137,6 +137,50 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 }
 %}
 
+%inline %{
+#include <memory>
+#include <string>
+#include <rocksdb/db.h>
+#include <rocksdb/slice.h>
+#include <Python.h>
+
+class RocksDBPrefixIterator {
+public:
+    RocksDBPrefixIterator(const IfcParse::impl::rocks_db_file_storage* storage,
+                          const std::string& prefix)
+        : it_(storage->db->NewIterator(storage->ropts)), prefix_(prefix)
+    {
+        it_->Seek(prefix_);
+    }
+
+    bool valid() const {
+        if (!it_ || !it_->Valid()) return false;
+        const rocksdb::Slice k = it_->key();
+        const rocksdb::Slice p(prefix_);
+        return k.starts_with(p);
+    }
+
+    void next() {
+        if (it_) it_->Next();
+    }
+
+    PyObject* key() const {
+        if (!valid()) { Py_RETURN_NONE; }
+        const rocksdb::Slice k = it_->key();
+        return PyBytes_FromStringAndSize(k.data(), static_cast<Py_ssize_t>(k.size()));
+    }
+
+    PyObject* value() const {
+        if (!valid()) { Py_RETURN_NONE; }
+        const rocksdb::Slice v = it_->value();
+        return PyBytes_FromStringAndSize(v.data(), static_cast<Py_ssize_t>(v.size()));
+    }
+private:
+    std::unique_ptr<rocksdb::Iterator> it_;
+    std::string prefix_;
+};
+%}
+
 %extend IfcParse::IfcFile {
 	// Use to correlate to entity_instance.file_pointer, so that we
 	// can trace file ownership of instances on the python side.
@@ -209,6 +253,30 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	std::string schema_name() const {
 		if ($self->schema() == 0) return "";
 		return $self->schema()->name();
+	}
+
+	int storage_mode() const {
+		return std::visit([](auto& m) -> int {
+			if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
+				return 0;
+			} else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+				return 1;
+			}
+			return -1;
+		}, $self->storage_);
+	}
+
+	RocksDBPrefixIterator* key_value_store_iter(const std::string& prefix) const {
+        auto* storage = std::visit([](auto& m) -> IfcParse::impl::rocks_db_file_storage const * {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+                return &m;
+            }
+            return nullptr;
+        }, $self->storage_);
+		if (!storage) {
+			nullptr;
+		}
+		return new RocksDBPrefixIterator(storage, prefix);
 	}
 
 	PyObject* key_value_store_query(const std::string& key) const {
