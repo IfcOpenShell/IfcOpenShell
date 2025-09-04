@@ -19,6 +19,7 @@
 from __future__ import annotations
 import bpy
 import os
+import ifcopenshell
 import bonsai.bim
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search, draw_attributes
@@ -259,10 +260,10 @@ class BIM_PT_project(Panel):
     def draw_editable_file_info(self, context):
         pprops = self.props
 
-        if tool.Ifc.get():
+        if ifc_file := tool.Ifc.get():
             row = self.layout.row(align=True)
             row.label(text="IFC Schema", icon="FILE_CACHE")
-            row.label(text=tool.Ifc.get().schema)
+            row.label(text=ifc_file.schema)
 
             if pprops.is_editing:
                 row = self.layout.row(align=True)
@@ -283,7 +284,10 @@ class BIM_PT_project(Panel):
             else:
                 row = self.layout.row(align=True)
                 row.label(text="IFC MVD", icon="FILE_HIDDEN")
-                mvd = "".join(tool.Ifc.get().wrapped_data.header.file_description.description)
+                if isinstance(ifc_file, ifcopenshell.sqlite):
+                    mvd = ifc_file.mvd_str
+                else:
+                    mvd = "".join(ifc_file.wrapped_data.header.file_description.description)
                 if "[" in mvd:
                     mvd = mvd.split("[")[1][0:-1]
                 row.label(text=mvd)

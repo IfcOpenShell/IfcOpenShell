@@ -37,6 +37,9 @@ except ImportError as e:
 
 
 class sqlite(file):
+    mvd_str: str
+    """As in `header.file_description.description`."""
+
     def __init__(self, filepath: str):
         """
         Open existing sqlite IFC database.
@@ -79,6 +82,7 @@ class sqlite(file):
             assert False, "SQLite schema not supported."
 
         self._schema = row[1]
+        self.mvd_str = row[2]
         self.ifc_schema = ifcopenshell.schema_by_name(self.schema)
 
         self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map")
