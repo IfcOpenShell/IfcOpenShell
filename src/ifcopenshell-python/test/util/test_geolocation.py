@@ -468,3 +468,29 @@ class TestAngle2YAxis(test.bootstrap.IFC4):
         assert np.allclose(subject.angle2yaxis(45), (-a, a))
         assert np.allclose(subject.angle2yaxis(-135), (a, -a))
         assert np.allclose(subject.angle2yaxis(135), (-a, -a))
+
+
+class TestDMS2DDandDD2DMS(test.bootstrap.IFC4):
+    def test_dms2dd_and_dd2dms(self):
+        test_cases_3tuple = [
+            (35.41, (35, 24, 36.0)),
+            (-116.89, (-116, -53, -24.0)),
+        ]
+        test_cases_4tuple = [
+            (40.431389, (40, 25, 53, 400)),
+            (-4.248056, (-4, -14, -53, -1600)),
+            (-35.401389, (-35, -24, -5, -400)),
+            (148.981667, (148, 58, 54, 1200)),
+        ]
+
+        for dd, dms in test_cases_3tuple:
+            d, m, s = subject.dd2dms(dd)
+            assert (d, m, s) == dms
+            dd_converted = subject.dms2dd(dms[0], dms[1], dms[2])
+            assert dd_converted == dd
+
+        for dd, dms in test_cases_4tuple:
+            d, m, s, us = subject.dd2dms(dd, use_us=True)
+            assert (d, m, s, us) == dms
+            dd_converted = subject.dms2dd(dms[0], dms[1], dms[2], dms[3])
+            assert dd_converted == dd
