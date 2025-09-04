@@ -28,6 +28,7 @@ import bonsai.tool as tool
 from math import pi, pow
 from mathutils import Vector, Matrix, geometry
 from typing import Union, Any, TypeVar, Optional
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 T = TypeVar("T")
 
@@ -35,6 +36,7 @@ T = TypeVar("T")
 class Helper:
     def __init__(self, file: ifcopenshell.file):
         self.file = file
+        self.builder = ShapeBuilder(file)
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
     # We can detect a rectangular extrusion by picking any face, then find an
@@ -340,8 +342,10 @@ class Helper:
     def create_extruded_area_solid(
         self, mesh: bpy.types.Mesh, extrusion_indices: list[int], profile_def: dict[str, Any]
     ) -> ifcopenshell.entity_instance:
-        position = self.create_ifc_axis_2_placement_3d(
-            profile_def["curve_ucs"]["center"], profile_def["curve_ucs"]["z_axis"], profile_def["curve_ucs"]["x_axis"]
+        position = self.builder.create_axis2_placement_3d(
+            self.convert_si_to_unit(profile_def["curve_ucs"]["center"]),
+            profile_def["curve_ucs"]["z_axis"],
+            profile_def["curve_ucs"]["x_axis"],
         )
         direction = self.get_extrusion_direction(mesh, extrusion_indices, profile_def["curve_ucs"])
         unit_direction = direction.normalized()
@@ -504,13 +508,4 @@ class Helper:
     def create_ifc_axis_2_placement_2d(self, point: Vector, forward: Vector) -> ifcopenshell.entity_instance:
         return self.file.createIfcAxis2Placement2D(
             self.create_cartesian_point(point.x, point.y), self.file.createIfcDirection((forward.x, forward.y))
-        )
-
-    def create_ifc_axis_2_placement_3d(
-        self, point: Vector, up: Vector, forward: Vector
-    ) -> ifcopenshell.entity_instance:
-        return self.file.createIfcAxis2Placement3D(
-            self.create_cartesian_point(point.x, point.y, point.z),
-            self.file.createIfcDirection((up.x, up.y, up.z)),
-            self.file.createIfcDirection((forward.x, forward.y, forward.z)),
         )
