@@ -137,18 +137,20 @@ public:
         , progress_(0)
     {
         good_ = file_open_status::NO_HEADER;
-        header_ = new IfcParse::IfcSpfHeader(lexer_);
-        if (header_->tryRead() && header_->file_schema()->schema_identifiers().size() == 1) {
-            try {
-                schema_ = IfcParse::schema_by_name(header_->file_schema()->schema_identifiers().front());
-                good_ = file_open_status::SUCCESS;
-            } catch (const IfcParse::IfcException&) {
+        if (*stream_) {
+            header_ = new IfcParse::IfcSpfHeader(lexer_);
+            if (header_->tryRead() && header_->file_schema()->schema_identifiers().size() == 1) {
+                try {
+                    schema_ = IfcParse::schema_by_name(header_->file_schema()->schema_identifiers().front());
+                    good_ = file_open_status::SUCCESS;
+                } catch (const IfcParse::IfcException&) {
+                }
             }
+            storage_.file = nullptr;
+            storage_.schema = schema_;
+            storage_.tokens = lexer_;
+            storage_.references_to_resolve = &references_to_resolve_;
         }
-        storage_.file = nullptr;
-        storage_.schema = schema_;
-        storage_.tokens = lexer_;
-        storage_.references_to_resolve = &references_to_resolve_;
     }
 
     InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer)
