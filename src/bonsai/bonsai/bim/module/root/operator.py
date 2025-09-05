@@ -203,6 +203,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         predefined_type: str
         userdefined_type: str
         context_id: int
+        props_to_pset: bool
         should_add_representation: bool
         ifc_representation_class: str
 
