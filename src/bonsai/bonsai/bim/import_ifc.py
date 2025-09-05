@@ -220,7 +220,6 @@ class IfcImporter:
         self.element_types: set[ifcopenshell.entity_instance] = set()
         self.spatial_elements: set[ifcopenshell.entity_instance] = set()
         self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
-        self.mesh_shapes = {}
         self.time = 0
         self.unit_scale = 1.0
         # ifc definition ids to blender elements mapping
