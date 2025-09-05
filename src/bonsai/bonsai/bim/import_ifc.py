@@ -219,7 +219,6 @@ class IfcImporter:
         self.gross_elements: set[ifcopenshell.entity_instance] = set()
         self.element_types: set[ifcopenshell.entity_instance] = set()
         self.spatial_elements: set[ifcopenshell.entity_instance] = set()
-        self.type_products = {}
         self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
         self.mesh_shapes = {}
         self.time = 0
@@ -553,7 +552,6 @@ class IfcImporter:
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh, False)
-        self.type_products[element.GlobalId] = obj
 
     def create_native_elements(self):
         if not self.ifc_import_settings.should_load_geometry:
