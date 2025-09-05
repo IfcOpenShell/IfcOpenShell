@@ -25,9 +25,8 @@ import ifcopenshell.api.root
 import ifcopenshell.util.unit
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
+import ifcopenshell.util.cost
 import locale
-import bonsai.tool as tool  # i need that because there are useful tool there
-import bonsai.core as core  # i need that because there is useful core function
 from pathlib import Path
 from typing import Union, Optional, TypedDict
 from typing_extensions import NotRequired
@@ -337,16 +336,24 @@ class Csv2Ifc:
                         break
 
                 if rate_cost_schedule:
-                    items = list(tool.Cost.get_schedule_cost_items(rate_cost_schedule))
+                    items = list(ifcopenshell.util.cost.get_schedule_cost_items(rate_cost_schedule))
                     rate_cost_item = None
                     for item in items:
                         if item.Identification == cost_rate["RateID"]:
                             rate_cost_item = item
                             break
                     if rate_cost_item:
-                        core.cost.assign_cost_value(
-                            tool.Ifc, tool.Cost, cost_item=cost_item["ifc"], cost_rate=rate_cost_item
-                        )
+                        #next 9 lines are the same as core.cost.assign_cost_value
+                        ifcopenshell.api.cost.assign_cost_value(self.file, cost_item=cost_item["ifc"], cost_rate=rate_cost_item)
+                        existing_cost_rate=None
+                        for assignment in cost_item["ifc"].HasAssignments:
+                            if assignment.RelatingControl.is_a() == "IfcCostItem":
+                                existing_cost_rate=assignment.RelatingControl
+                        if existing_cost_rate is None:
+                            ifcopenshell.api.control.assign_control(self.file, relating_control=rate_cost_item, related_object=cost_item["ifc"])
+                        else:
+                            ifcopenshell.api.control.unassign_control(self.file, relating_control=existing_cost_rate, related_object=cost_item["ifc"])
+                            ifcopenshell.api.control.assign_control(self.file, relating_control=rate_cost_item, related_object=cost_item["ifc"])
                     else:
                         print(f"No cost item found with RateID={cost_rate['RateID']}")
                 else:
