@@ -344,9 +344,9 @@ class Unit(bonsai.core.tool.Unit):
         elif unit_type == "VOLUMEUNIT":
             return bim_props.volume_unit
         elif unit_type == "MASSUNIT":
-            return bim_props.mass_unit
+            return bim_props.mass_unit.lower()
         elif unit_type == "TIMEUNIT":
-            return bim_props.time_unit
+            return bim_props.time_unit.lower()
         else:
             assert_never(unit_type)
 
@@ -369,7 +369,7 @@ class Unit(bonsai.core.tool.Unit):
                 return None
             elif unit == "KILOGRAM":
                 return "KILO"
-            elif unit == "TON":
+            elif unit == "TONNE":
                 return "MEGA"
             elif unit in ["POUND", "OUNCE"]:
                 return "CONVERSION"

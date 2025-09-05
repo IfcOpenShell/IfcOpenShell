@@ -135,6 +135,35 @@ class TestGetSceneUnitName(NewFile):
         bpy.context.scene.unit_settings.system = "NONE"
         assert subject.get_scene_unit_name("LENGTHUNIT") == "foot"
 
+    def test_getting_mass_unit_names(self):
+        """Test getting mass unit names for different systems"""
+        assert bpy.context.scene
+        props = tool.Blender.get_bim_props()
+        props.mass_unit = "GRAM"
+        assert subject.get_scene_unit_name("MASSUNIT") == "gram"
+        props.mass_unit = "KILOGRAM"
+        assert subject.get_scene_unit_name("MASSUNIT") == "kilogram"
+        props.mass_unit = "POUND"
+        assert subject.get_scene_unit_name("MASSUNIT") == "pound"
+        props.mass_unit = "OUNCE"
+        assert subject.get_scene_unit_name("MASSUNIT") == "ounce"
+        props.mass_unit = "TONNE"
+        assert subject.get_scene_unit_name("MASSUNIT") == "tonne"
+
+    def test_getting_time_unit_names(self):
+        """Test getting time unit names for different systems"""
+        assert bpy.context.scene
+        props = tool.Blender.get_bim_props()
+
+        props.time_unit = "SECOND"
+        assert subject.get_scene_unit_name("TIMEUNIT") == "second"
+        props.time_unit = "MINUTE"
+        assert subject.get_scene_unit_name("TIMEUNIT") == "minute"
+        props.time_unit = "HOUR"
+        assert subject.get_scene_unit_name("TIMEUNIT") == "hour"
+        props.time_unit = "DAY"
+        assert subject.get_scene_unit_name("TIMEUNIT") == "day"
+
 
 class TestGetSceneUnitSIPrefix:
     def test_run(self):
@@ -161,6 +190,30 @@ class TestGetSceneUnitSIPrefix:
         assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") is None
         props.volume_unit = "MILLI/CUBIC_METRE"
         assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") == "MILLI"
+
+    def test_mass_and_time_unit_prefixes(self):
+        assert bpy.context.scene
+        props = tool.Blender.get_bim_props()
+
+        props.mass_unit = "KILOGRAM"
+        assert subject.get_scene_unit_si_prefix("MASSUNIT") == "KILO"
+        props.mass_unit = "GRAM"
+        assert subject.get_scene_unit_si_prefix("MASSUNIT") is None
+        props.mass_unit = "POUND"
+        assert subject.get_scene_unit_si_prefix("MASSUNIT") == "CONVERSION"
+        props.mass_unit = "OUNCE"
+        assert subject.get_scene_unit_si_prefix("MASSUNIT") == "CONVERSION"
+        props.mass_unit = "TONNE"
+        assert subject.get_scene_unit_si_prefix("MASSUNIT") == "MEGA"
+
+        props.time_unit = "SECOND"
+        assert subject.get_scene_unit_si_prefix("TIMEUNIT") is None
+        props.time_unit = "MINUTE"
+        assert subject.get_scene_unit_si_prefix("TIMEUNIT") == "CONVERSION"
+        props.time_unit = "HOUR"
+        assert subject.get_scene_unit_si_prefix("TIMEUNIT") == "CONVERSION"
+        props.time_unit = "DAY"
+        assert subject.get_scene_unit_si_prefix("TIMEUNIT") == "CONVERSION"
 
 
 class TestImportUnitAttributes(NewFile):
@@ -297,6 +350,96 @@ class TestImportUnits(NewFile):
         assert props.units[5].is_assigned is False
         assert props.units[5].unit_type == unit6.UnitType
         assert props.units[5].ifc_class == unit6.is_a()
+
+    def test_importing_mass_and_time_units(self):
+        """Test importing mass and time conversion based units"""
+        ifc = ifcopenshell.api.project.create_file()
+        tool.Ifc.set(ifc)
+
+        tonne_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="tonne")
+        pound_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="pound")
+        ounce_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="ounce")
+
+        minute_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="minute")
+        hour_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="hour")
+        day_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="day")
+
+        kg_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="MASSUNIT", prefix="KILO")
+        gram_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="MASSUNIT")
+        second_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="TIMEUNIT")
+
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[tonne_unit, minute_unit, kg_unit])
+
+        subject.import_units()
+        props = tool.Unit.get_unit_props()
+
+        assert len(props.units) == 15
+
+        unit_ids = [u.ifc_definition_id for u in props.units]
+        assert tonne_unit.id() in unit_ids
+        assert pound_unit.id() in unit_ids
+        assert ounce_unit.id() in unit_ids
+        assert minute_unit.id() in unit_ids
+        assert hour_unit.id() in unit_ids
+        assert day_unit.id() in unit_ids
+        assert kg_unit.id() in unit_ids
+        assert gram_unit.id() in unit_ids
+        assert second_unit.id() in unit_ids
+
+        tonne_prop = next(u for u in props.units if u.ifc_definition_id == tonne_unit.id())
+        assert tonne_prop.name == "tonne"
+        assert tonne_prop.unit_type == "MASSUNIT"
+        assert tonne_prop.is_assigned is True
+        assert tonne_prop.ifc_class == "IfcConversionBasedUnit"
+
+        pound_prop = next(u for u in props.units if u.ifc_definition_id == pound_unit.id())
+        assert pound_prop.name == "pound"
+        assert pound_prop.unit_type == "MASSUNIT"
+        assert pound_prop.is_assigned is False
+        assert pound_prop.ifc_class == "IfcConversionBasedUnit"
+
+        ounce_prop = next(u for u in props.units if u.ifc_definition_id == ounce_unit.id())
+        assert ounce_prop.name == "ounce"
+        assert ounce_prop.unit_type == "MASSUNIT"
+        assert ounce_prop.is_assigned is False
+        assert ounce_prop.ifc_class == "IfcConversionBasedUnit"
+
+        kg_prop = next(u for u in props.units if u.ifc_definition_id == kg_unit.id())
+        assert kg_prop.name == "KILOGRAM"
+        assert kg_prop.unit_type == "MASSUNIT"
+        assert kg_prop.is_assigned is True
+        assert kg_prop.ifc_class == "IfcSIUnit"
+
+        gram_prop = next(u for u in props.units if u.ifc_definition_id == gram_unit.id())
+        assert gram_prop.name == "GRAM"
+        assert gram_prop.unit_type == "MASSUNIT"
+        assert gram_prop.is_assigned is False
+        assert gram_prop.ifc_class == "IfcSIUnit"
+
+        minute_prop = next(u for u in props.units if u.ifc_definition_id == minute_unit.id())
+        assert minute_prop.name == "minute"
+        assert minute_prop.unit_type == "TIMEUNIT"
+        assert minute_prop.is_assigned is True
+        assert minute_prop.ifc_class == "IfcConversionBasedUnit"
+
+        hour_prop = next(u for u in props.units if u.ifc_definition_id == hour_unit.id())
+        assert hour_prop.name == "hour"
+        assert hour_prop.unit_type == "TIMEUNIT"
+        assert hour_prop.is_assigned is False
+        assert hour_prop.ifc_class == "IfcConversionBasedUnit"
+
+        day_prop = next(u for u in props.units if u.ifc_definition_id == day_unit.id())
+        assert day_prop.name == "day"
+        assert day_prop.unit_type == "TIMEUNIT"
+        assert day_prop.is_assigned is False
+        assert day_prop.ifc_class == "IfcConversionBasedUnit"
+
+        second_prop = next(u for u in props.units if u.ifc_definition_id == second_unit.id())
+        assert second_prop.name == "SECOND"
+        assert second_prop.unit_type == "TIMEUNIT"
+        assert second_prop.is_assigned is False
+        assert second_prop.ifc_class == "IfcSIUnit"
 
 
 class TestIsSceneUnitMetric(NewFile):
