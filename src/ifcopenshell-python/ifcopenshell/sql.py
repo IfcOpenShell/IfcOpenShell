@@ -18,11 +18,13 @@
 from __future__ import annotations
 import re
 import json
+import numpy as np
+import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
 from pathlib import Path
-from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING
+from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING, TypedDict
 from . import ifcopenshell_wrapper
 from .file import file
 from .entity_instance import entity_instance
@@ -34,6 +36,30 @@ try:
     import sqlite3
 except ImportError as e:
     print(f"No SQL support: {e}")
+
+
+class GeometryCache(TypedDict):
+    shapes: dict[int, GeometryCacheShape]
+    geometry: dict[str, GeometryCacheGeometry]
+
+
+class GeometryCacheShape(TypedDict):
+    co: list[float]
+    """Object location."""
+    matrix: npt.NDArray[np.float64]
+    geometry: Union[str, None]
+    """Element's geometry id (same value as in ``Representation.id``).
+
+    Is set to ``None` when no geometry is available for the element.
+    """
+
+
+class GeometryCacheGeometry(TypedDict):
+    verts: npt.NDArray[np.float64]
+    edges: npt.NDArray[np.int32]
+    faces: npt.NDArray[np.int32]
+    material_ids: npt.NDArray[np.int32]
+    materials: list[int]
 
 
 class sqlite(file):
@@ -235,15 +261,15 @@ class sqlite(file):
             return True
         return False
 
-    def get_geometry(self, ids: list[int]) -> dict[str, dict]:
+    def get_geometry(self, ids: list[int]) -> GeometryCache:
         import numpy as np
 
         ids_csv = ",".join(map(str, ids))
         query = f"SELECT ifc_id, x, y, z, matrix, geometry, verts, edges, faces, material_ids, materials FROM shape LEFT JOIN geometry ON shape.geometry = geometry.id WHERE `ifc_id` IN ({ids_csv})"
         self.cursor.execute(query)
         rows = self.cursor.fetchall()
-        shapes = {}
-        geometry = {}
+        shapes: dict[int, GeometryCacheShape] = {}
+        geometry: dict[str, GeometryCacheGeometry] = {}
         for row in rows:
             if row["geometry"] and row["geometry"] not in geometry:
                 # Same data types as in ifcopenshell.util.shape.

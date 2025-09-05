@@ -140,7 +140,7 @@ class Patcher(ifcpatch.BasePatcher):
         self.should_skip_geometry_data = should_skip_geometry_data
 
     geometry_rows: dict[str, tuple[str, bytes, bytes, bytes, bytes, str]]
-    shape_rows: dict[int, tuple[int, list[float], list[float], list[float], bytes, str]]
+    shape_rows: dict[int, tuple[int, float, float, float, bytes, Union[str, None]]]
 
     def get_output(self) -> Union[str, None]:
         """Return resulting database filepath for sqlite and ``None`` for mysql."""
@@ -576,7 +576,7 @@ class Patcher(ifcpatch.BasePatcher):
                 if element.id() not in self.shape_rows and (placement := getattr(element, "ObjectPlacement", None)):
                     m = ifcopenshell.util.placement.get_local_placement(placement)
                     x, y, z = m[:, 3][0:3].tolist()
-                    self.shape_rows[element.id()] = [element.id(), x, y, z, m.tobytes(), None]
+                    self.shape_rows[element.id()] = (element.id(), x, y, z, m.tobytes(), None)
 
         if self.sql_type == "sqlite":
             if rows:
