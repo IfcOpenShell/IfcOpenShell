@@ -525,8 +525,6 @@ class IfcImporter:
             print("WARNING. Loading element types from IFCSQLite is not supported.")
             return
         for element_type in self.element_types:
-            if not element_type:
-                continue
             self.create_element_type(element_type)
 
     def create_element_type(self, element: ifcopenshell.entity_instance) -> None:
