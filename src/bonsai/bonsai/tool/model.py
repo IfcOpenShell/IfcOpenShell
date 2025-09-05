@@ -1085,6 +1085,9 @@ class Model(bonsai.core.tool.Model):
             # No need to preview to update, Blender will do it in background,
             # `preview.icon_id` doesn't change after `asset_generate_preview()`.
             obj.asset_generate_preview()
+        # Avoid issues with sqlite files.
+        elif type(tool.Ifc.get()) is not ifcopenshell.file:
+            return
         else:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             size = 128
