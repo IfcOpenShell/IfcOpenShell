@@ -592,7 +592,7 @@ class BIMProperties(PropertyGroup):
             ("GRAM", "Gram", "Grams"),
             ("POUND", "Pound", "Pounds"),
             ("OUNCE", "Ounce", "Ounces"),
-            ("TON", "Ton", "Metric Tons"),
+            ("TONNE", "Tonne", "Metric Tons"),
         ],
         name="Mass Unit",
         default="KILOGRAM",
@@ -601,7 +601,7 @@ class BIMProperties(PropertyGroup):
     time_unit: EnumProperty(
         items=[
             ("SECOND", "Second", "Seconds"),
-            ("MINUTE", "Minutes", "Minutes"),
+            ("MINUTE", "Minute", "Minutes"),
             ("HOUR", "Hour", "Hours"),
             ("DAY", "Day", "Days"),
         ],

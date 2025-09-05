@@ -32,7 +32,7 @@ def add_conversion_based_unit(
     function. You can choose from one of: inch, foot, yard, mile, square
     inch, square foot, square yard, acre, square mile, cubic inch, cubic
     foot, cubic yard, litre, fluid ounce UK, fluid ounce US, pint UK, pint
-    US, gallon UK, gallon US, degree, ounce, pound, ton UK, ton US, lbf,
+    US, gallon UK, gallon US, degree, ounce, pound, ton UK, ton US, tonne, lbf,
     kip, psi, ksi, minute, hour, day, btu, and fahrenheit.
 
     :param name: A converted name chosen from the list above.
