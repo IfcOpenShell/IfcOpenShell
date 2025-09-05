@@ -691,6 +691,29 @@ class Blender(bonsai.core.tool.Blender):
             active_object.select_set(True)
 
     @classmethod
+    def validate_object_selection(
+        cls,
+        context: bpy.types.Context,
+        active_object: Union[bpy.types.Object, None] = None,
+        selected_objects: Sequence[bpy.types.Object] = (),
+    ) -> tuple[bpy.types.Context, Union[bpy.types.Object, None], list[bpy.types.Object]]:
+        """Validate object selection and return only valid objects.
+
+        Can be used before ``set_objects_selection`` to avoid errors
+        trying to select or set as active already removed objects
+        or objects that are not in the current view layer (their collection is unchecked).
+        """
+        assert context.view_layer
+        view_layer_objects = set(context.view_layer.objects)
+
+        new_selected_objects = [o for o in selected_objects if cls.is_valid_data_block(o) and o in view_layer_objects]
+
+        if active_object and (not cls.is_valid_data_block(active_object) or active_object not in view_layer_objects):
+            active_object = None
+
+        return context, active_object, new_selected_objects
+
+    @classmethod
     def clear_objects_selection(cls) -> None:
         """Clear objects selection and active object."""
         bpy.ops.object.select_all(action="DESELECT")
