@@ -20,18 +20,21 @@ import ifcopenshell
 from ifcopenshell import entity_instance
 
 
-def get_referent_nest(file: ifcopenshell.file, entity: entity_instance) -> entity_instance:
+def get_referent_nest(file: ifcopenshell.file, alignment: entity_instance) -> entity_instance:
     """
     Searches for the IfcRelNest that contains IfcReferent. If one is not found, a empty IfcRelNests is created.
 
     :param file:
-    :param entity: any entity that is the parent in a nesting relationship, but intended to be IfcAlignment, IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
+    :param alignment: The IfcAlignment which hosts IfcReferent
     :return: Returns the IfcRelNests.
     """
-    for nest in entity.IsNestedBy:
+    if not alignment.is_a("IfcAlignment"):
+        raise TypeError(f"Expected IfcAlignment, instead received {alignment.is_a()}")
+
+    for nest in alignment.IsNestedBy:
         for related_object in nest.RelatedObjects:
             if related_object.is_a("IfcReferent"):
                 return nest
 
-    nest = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(), RelatingObject=entity, RelatedObjects=[])
+    nest = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=[])
     return nest

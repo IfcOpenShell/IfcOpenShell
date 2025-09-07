@@ -20,6 +20,9 @@
 :: This batch file expects CMake generator as %1 and build configuration type as %2. If not provided,
 :: a deduced generator will be used for %1 and BUILD_CFG_DEFAULT for %2 (both set in vs-cfg.cmd)
 :: Optionally a build type (Build/Rebuild/Clean) can be passed as %3.
+::
+:: Example usage (all arguments are optional):
+:: build-deps.cmd vs2022-x64 RelWithDebInfo Build
 
 @echo off
 echo.
@@ -534,21 +537,38 @@ IF EXIST "%INSTALL_DIR%\swigwin" (
     goto :cgal
 )
 
-set SWIG_VERSION=3.0.12
-set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
-set DEPENDENCY_DIR=N/A
-set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
-call :DownloadFile https://github.com/aothms/swigwin-3.0.12/raw/refs/heads/main/swigwin-3.0.12.zip "%DEPS_DIR%" %SWIG_ZIP%
+
+:: Install bizon dependency for SWIG.
+set DEPENDENCY_NAME=win_flex_bison
+set WIN_FLEX_BIZON=win_flex_bison-2.5.25
+set WIN_FLEX_BIZON_ZIP=%WIN_FLEX_BIZON%.zip
+call :DownloadFile https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/%WIN_FLEX_BIZON_ZIP% "%DEPS_DIR%" %WIN_FLEX_BIZON_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %SWIG_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
+echo test %WIN_FLEX_BIZON%
+call :ExtractArchive %WIN_FLEX_BIZON_ZIP% "%DEPS_DIR%\%WIN_FLEX_BIZON%" "%DEPS_DIR%\%WIN_FLEX_BIZON%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
-    pushd "%DEPS_DIR%"
-    ren swigwin-%SWIG_VERSION% swigwin
-    popd
-)
-IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
+
+set SWIG_VERSION=4.1.0
+set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
+set DEPENDENCY_DIR=%DEPS_DIR%\swig-%SWIG_VERSION%
+set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
+call :DownloadFile https://github.com/swig/swig/archive/refs/tags/v%SWIG_VERSION%.zip "%DEPS_DIR%" swig-%SWIG_VERSION%.zip
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+call :ExtractArchive swig-%SWIG_VERSION%.zip "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\swigwin" ^
+               -DWITH_PCRE=OFF ^
+               -DBISON_EXECUTABLE="%DEPS_DIR%\%WIN_FLEX_BIZON%\win_bison.exe"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\swig.sln" Release
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" Release
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+robocopy "%INSTALL_DIR%\swigwin\bin" "%INSTALL_DIR%\swigwin" /move /e
 
 :cgal
 

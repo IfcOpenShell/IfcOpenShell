@@ -50,8 +50,20 @@ def _move_vertical_layout_to_child_alignment(
     # nest the vertical layout onto the child alignment
     ifcopenshell.api.nest.assign_object(file, related_objects=[vertical_layout], relating_object=child_alignment)
 
-    # aggreage the child alignment to the parent alignment
+    # aggregate the child alignment to the parent alignment
     ifcopenshell.api.aggregate.assign_object(file, products=[child_alignment], relating_object=parent_alignment)
+
+    # move all referents positioning segments of the vertical layout to the referent nest of the child alignment
+    child_referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, child_alignment)
+    parent_referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, parent_alignment)
+    for referent in parent_referent_nest.RelatedObjects:
+        for product in referent.Positions[0].RelatedProducts:
+            if product.is_a("IfcAlignmentSegment") and product.Nests[0].RelatingObject == vertical_layout:
+                # ifcopenshell.api.nest.change_nest(file,referent,child_alignment) - this doesn't work because referent is assigned to child_alignment.IsNestedBy[0].RelatedObjects
+                # and it needs to be assigned to child_alignment.IsNestedBy[1].RelatedObjects
+                # move the referent manually - unassign it and add it to the child alignment's referent nest
+                ifcopenshell.api.nest.unassign_object(file, [referent])
+                child_referent_nest.RelatedObjects += (referent,)
 
     # if the parent alignment has a representation, move the Axis/Curve3D represention to the child alignment
     base_curve = ifcopenshell.api.alignment.get_basis_curve(parent_alignment)

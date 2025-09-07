@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import re
 import csv
@@ -23,7 +24,7 @@ import importlib
 import ifcopenshell.util.selector
 from pathlib import Path
 from collections import defaultdict
-from typing import Literal, Union, Any, Callable
+from typing import Literal, Union, Any, Callable, TYPE_CHECKING
 
 try:
     from openpyxl import Workbook
@@ -45,6 +46,9 @@ try:
     import pandas as pd
 except:
     pass  # No Pandas support
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 __version__ = version = "0.0.0"
 

@@ -203,6 +203,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         predefined_type: str
         userdefined_type: str
         context_id: int
+        props_to_pset: bool
         should_add_representation: bool
         ifc_representation_class: str
 
@@ -385,13 +386,8 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         # TODO: reload representation might lead to the object being replaced by object of the other type.
         # We probably should track it somehow and keep the original selection.
 
-        # Validation selection.
-        new_selected_objects = list(filter(tool.Blender.is_valid_data_block, current_selection[2]))
-        active_object = current_selection[1]
-        if active_object and not tool.Blender.is_valid_data_block(active_object):
-            active_object = None
-        current_selection = (current_selection[0], active_object, new_selected_objects)
-
+        # Validate selection and reapply it.
+        current_selection = tool.Blender.validate_object_selection(*current_selection)
         tool.Blender.set_objects_selection(*current_selection)
 
 

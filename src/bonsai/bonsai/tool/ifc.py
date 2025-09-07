@@ -86,8 +86,8 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def get_schema(cls) -> ifcopenshell.util.schema.IFC_SCHEMA:
-        if IfcStore.get_file():
-            return IfcStore.get_file().schema
+        if ifc_file := IfcStore.get_file():
+            return ifc_file.schema
 
     @classmethod
     def clear_history(cls) -> None:

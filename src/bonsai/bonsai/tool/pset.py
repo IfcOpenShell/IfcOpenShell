@@ -30,6 +30,7 @@ from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
 
 
 if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.pset.prop import (
         PsetProperties,
         GlobalPsetProperties,
@@ -171,14 +172,32 @@ class Pset(bonsai.core.tool.Pset):
         return special_type
 
     @classmethod
-    def import_pset_from_existing(cls, pset: ifcopenshell.entity_instance, props: PsetProperties) -> None:
-        pset_props = []
+    def import_pset_from_existing(
+        cls,
+        pset: ifcopenshell.entity_instance,
+        props: PsetProperties,
+        pset_template: Union[ifcopenshell.entity_instance, None],
+    ) -> None:
+        """
+        :param pset_template: Pset Template to use as a source for descriptions.
+        """
+        pset_props: tuple[ifcopenshell.entity_instance, ...] = ()
         if pset.is_a("IfcElementQuantity"):
             pset_props = pset.Quantities
         elif pset.is_a("IfcPropertySet"):
             pset_props = pset.HasProperties
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             pset_props = pset.Properties
+
+        prop_templates: dict[str, ifcopenshell.entity_instance] = {}
+        if pset_template:
+            prop_templates = {prop.Name: prop for prop in pset_template.HasPropertyTemplates}
+
+        def process_prop_description(metadata: Attribute) -> None:
+            prop_name = metadata.name
+            if prop_name not in prop_templates:
+                return
+            bonsai.bim.helper.add_attribute_description(metadata, prop_templates[prop_name])
 
         for prop in sorted(pset_props, key=lambda p: p.Name):
             if props.properties.get(prop.Name):
@@ -191,6 +210,7 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.name = prop.Name
                 metadata.is_null = len(simple_prop.enumerated_value.enumerated_values) == 0
                 metadata.is_optional = True
+                process_prop_description(metadata)
                 enum_reference = prop.EnumerationReference
                 selected_enum_items = [v.wrappedValue for v in (prop.EnumerationValues or ())]
 
@@ -230,6 +250,7 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.is_optional = True
                 metadata.special_type = cls.get_special_type_for_prop(prop)
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
+                process_prop_description(metadata)
 
     @classmethod
     def get_prop_template_primitive_type(cls, prop_template: ifcopenshell.entity_instance) -> str:
@@ -277,6 +298,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
         metadata.special_type = "URI" if prop_template.PrimaryMeasureType == "IfcURIReference" else ""
+        bonsai.bim.helper.add_attribute_description(metadata, prop_template)
 
         # Cute hack to abuse the metadata to find the Blender data_type
         metadata.set_value(enum_items[0])
@@ -333,7 +355,7 @@ class Pset(bonsai.core.tool.Pset):
 
         # For every prop we first ensure that existing prop value type matches the template value type
         # to prevent data loss and error casting data.
-        # Property will be added later by import_pset_from_existing.
+        # Existing property will be added later by import_pset_from_existing.
         for prop_template in sorted(pset_template.HasPropertyTemplates, key=lambda p: p.Name):
             if (
                 not prop_template.is_a("IfcSimplePropertyTemplate")

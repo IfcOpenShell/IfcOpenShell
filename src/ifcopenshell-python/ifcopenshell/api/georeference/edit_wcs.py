@@ -18,9 +18,9 @@
 
 import ifcopenshell
 import ifcopenshell.util.element
-import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 import numpy as np
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from math import sin, cos, radians
 
 
@@ -62,6 +62,7 @@ def edit_wcs(
         ifcopenshell.api.georeference.edit_wcs(model)
     """
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+    builder = ShapeBuilder(file)
     if np.isclose(rotation, 0):
         xaxis_x = 1.0
         xaxis_y = 0.0
@@ -74,14 +75,10 @@ def edit_wcs(
         old_wcs = context.WorldCoordinateSystem
         if context.CoordinateSpaceDimension == 3:
             if is_si:
-                point = file.createIfcCartesianPoint((x / unit_scale, y / unit_scale, z / unit_scale))
+                xyz = (x / unit_scale, y / unit_scale, z / unit_scale)
             else:
-                point = file.createIfcCartesianPoint((x, y, z))
-            placement = file.createIfcAxis2Placement3D(
-                point,
-                file.createIfcDirection((0.0, 0.0, 1.0)),
-                file.createIfcDirection((xaxis_x, xaxis_y, 0.0)),
-            )
+                xyz = (x, y, z)
+            placement = builder.create_axis2_placement_3d(xyz, (0.0, 0.0, 1.0), (xaxis_x, xaxis_y, 0.0))
         elif context.CoordinateSpaceDimension == 2:
             if is_si:
                 point = file.createIfcCartesianPoint((x / unit_scale, y / unit_scale))

@@ -62,7 +62,7 @@ from .distance_along_from_station import distance_along_from_station
 from .get_alignment import get_alignment
 from .get_alignment_layout_nest import get_alignment_layout_nest
 from .get_alignment_segment_nest import get_alignment_segment_nest
-from .get_alignment_station import get_alignment_station
+from .get_alignment_start_station import get_alignment_start_station
 from .get_curve_segment_transition_code import get_curve_segment_transition_code
 from .get_layout_segments import get_layout_segments
 from .get_horizontal_layout import get_horizontal_layout
@@ -103,7 +103,7 @@ __all__ = [
     "get_alignment_layout_nest",
     "get_alignment_layouts",
     "get_alignment_segment_nest",
-    "get_alignment_station",
+    "get_alignment_start_station",
     "get_axis_subcontext",
     "get_basis_curve",
     "get_cant_layout",

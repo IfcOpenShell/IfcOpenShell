@@ -219,9 +219,7 @@ class IfcImporter:
         self.gross_elements: set[ifcopenshell.entity_instance] = set()
         self.element_types: set[ifcopenshell.entity_instance] = set()
         self.spatial_elements: set[ifcopenshell.entity_instance] = set()
-        self.type_products = {}
         self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
-        self.mesh_shapes = {}
         self.time = 0
         self.unit_scale = 1.0
         # ifc definition ids to blender elements mapping
@@ -463,6 +461,10 @@ class IfcImporter:
         return False
 
     def calculate_model_offset(self) -> None:
+        # TODO:
+        if isinstance(self.file, ifcopenshell.sqlite):
+            print("WARNING. Calculating model offset for IFCSQLite is not supported.")
+            return
         props = tool.Georeference.get_georeference_props()
         if self.ifc_import_settings.false_origin_mode == "MANUAL":
             tool.Loader.set_manual_blender_offset(self.file)
@@ -516,10 +518,51 @@ class IfcImporter:
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement))
 
     def create_element_types(self):
+        # TODO:
+        if isinstance(self.file, ifcopenshell.sqlite):
+            self.create_element_types_sqlite(self.element_types)
+            return
         for element_type in self.element_types:
-            if not element_type:
-                continue
             self.create_element_type(element_type)
+
+    def create_element_types_sqlite(self, element_types: set[ifcopenshell.entity_instance]) -> None:
+        assert isinstance(self.file, ifcopenshell.sqlite)
+        geometry_cache = self.file.get_geometry([e.id() for e in element_types])
+        geometry_meshes: dict[str, bpy.types.Mesh] = {}
+        for geometry_id, geometry in geometry_cache["geometry"].items():
+            verts = geometry["verts"]
+            fake_geometry = type("Geometry", (), {"id": geometry_id})
+            mesh_name = tool.Loader.get_mesh_name_from_shape(fake_geometry)  # pyright: ignore[reportArgumentType]
+            mesh = bpy.data.meshes.new(mesh_name)
+
+            if geometry["faces"].size:
+                mesh = tool.Loader.create_mesh_from_shape(
+                    mesh=mesh, faces=geometry["faces"].reshape(-1, 3), verts=verts.reshape(-1, 3)
+                )
+            else:
+                vertices = verts.reshape(-1, 3).tolist()
+                edges = geometry["edges"].reshape(-1, 2).tolist()
+                mesh.from_pydata(vertices, edges, [])
+            tool.Loader.link_mesh(fake_geometry, mesh)  # pyright: ignore[reportArgumentType]
+
+            mesh["ios_materials"] = geometry["materials"]
+            mesh["ios_material_ids"] = geometry["material_ids"]
+            self.meshes[mesh_name] = mesh
+            geometry_meshes[geometry_id] = mesh
+
+        shapes = geometry_cache["shapes"]
+        for element in element_types:
+            # Allow missing element types to accomodate older ifcsqlite files
+            # that didn't store element types geometry.
+            shape = shapes.get(element.id())
+            if shape:
+                geometry_id = shapes[element.id()]["geometry"]
+            else:
+                geometry_id = None
+            mesh = None if geometry_id is None else geometry_meshes[geometry_id]
+            obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
+            self.link_element(element, obj)
+            self.material_creator.create(element, obj, mesh, False)
 
     def create_element_type(self, element: ifcopenshell.entity_instance) -> None:
         self.ifc_import_settings.logger.info("Creating object %s", element)
@@ -547,7 +590,6 @@ class IfcImporter:
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
         self.material_creator.create(element, obj, mesh, False)
-        self.type_products[element.GlobalId] = obj
 
     def create_native_elements(self):
         if not self.ifc_import_settings.should_load_geometry:
@@ -631,15 +673,13 @@ class IfcImporter:
             verts = geometry["verts"]
             mesh["has_cartesian_point_offset"] = False
 
-            if geometry["faces"]:
+            if geometry["faces"].size:
                 mesh = tool.Loader.create_mesh_from_shape(
                     mesh=mesh, faces=geometry["faces"].reshape(-1, 3), verts=verts.reshape(-1, 3)
                 )
             else:
-                e = geometry["edges"]
-                v = verts
-                vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+                vertices = verts.reshape(-1, 3).tolist()
+                edges = geometry["edges"].reshape(-1, 2).tolist()
                 mesh.from_pydata(vertices, edges, [])
 
             mesh["ios_materials"] = geometry["materials"]

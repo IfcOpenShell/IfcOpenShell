@@ -620,8 +620,11 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
                 self.import_type_from_ifc(element_type, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
-        elif element.is_a("IfcPresentationStyle"):
+        elif element.is_a("IfcSurfaceStyle"):
             self.import_presentation_style_from_ifc(element, context)
+        else:
+            # E.g. other IfcPresentationStyles.
+            pass
 
         try:
             props = tool.Project.get_project_props()

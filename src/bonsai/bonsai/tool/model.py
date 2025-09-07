@@ -238,6 +238,8 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def export_surface(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+        ifc_file = tool.Ifc.get()
+        builder = ShapeBuilder(ifc_file)
         p1, p2, p3 = [v.co.copy() for v in obj.data.vertices[0:3]]
 
         edge1 = p2 - p1
@@ -271,13 +273,8 @@ class Model(bonsai.core.tool.Model):
         cls.bm.edges.ensure_lookup_table()
 
         surface = tool.Ifc.get().createIfcCurveBoundedPlane()
-        surface.BasisSurface = tool.Ifc.get().createIfcPlane(
-            tool.Ifc.get().createIfcAxis2Placement3D(
-                tool.Ifc.get().createIfcCartesianPoint([o / cls.unit_scale for o in p1]),
-                tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
-                tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
-            )
-        )
+        placement = builder.create_axis2_placement_3d([o / cls.unit_scale for o in p1], z_axis, x_axis)
+        surface.BasisSurface = ifc_file.create_entity("IfcPlane", placement)
 
         surface.OuterBoundary = tool.Ifc.get().add(profile_def.OuterCurve)
         if profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
@@ -1088,6 +1085,9 @@ class Model(bonsai.core.tool.Model):
             # No need to preview to update, Blender will do it in background,
             # `preview.icon_id` doesn't change after `asset_generate_preview()`.
             obj.asset_generate_preview()
+        # Avoid issues with sqlite files.
+        elif type(tool.Ifc.get()) is not ifcopenshell.file:
+            return
         else:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             size = 128
@@ -2124,13 +2124,8 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, position: Vector) -> None:
         ifc_file = tool.Ifc.get()
-
-        new_position = ifc_file.createIfcAxis2Placement3D(
-            ifc_file.createIfcCartesianPoint(position),
-            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
-            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
-        )
-
+        builder = ShapeBuilder(ifc_file)
+        new_position = builder.create_axis2_placement_3d(position)
         extrusion.Position = new_position
 
     @classmethod

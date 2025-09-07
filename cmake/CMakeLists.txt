@@ -368,7 +368,19 @@ if(NOT MINIMAL_BUILD)
     # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
     clear_wasm_sysroot()
     if(IFCXML_SUPPORT)
-        find_package(LibXml2 REQUIRED)
+        if((NOT LIBXML2_INCLUDE_DIR AND NOT LIBXML2_LIBRARIES))
+            find_package(LibXml2 CONFIG REQUIRED)
+            message(STATUS "Found LibXml2 config: ${LibXml2_DIR}")
+            get_target_property(LIBXML2_INCLUDE_DIR LibXml2::LibXml2 INTERFACE_INCLUDE_DIRECTORIES)
+            get_target_property(_libxml2_debug LibXml2::LibXml2 IMPORTED_LOCATION_DEBUG)
+            get_target_property(_libxml2_release LibXml2::LibXml2 IMPORTED_LOCATION_RELEASE)
+            set(LIBXML2_LIBRARIES
+                optimized ${_libxml2_release}
+                debug     ${_libxml2_debug}
+            )
+        else()
+            find_package(LibXml2 REQUIRED)
+        endif()
     endif()
     restore_wasm_sysroot()
 endif()
@@ -379,7 +391,7 @@ if(IFCXML_SUPPORT)
 endif()
 
 if(BUILD_IFCGEOM)
-    if(MSVC)
+    if(MSVC AND NOT LibXml2_DIR)
         add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
     endif()
 
@@ -538,7 +550,18 @@ if(BUILD_IFCGEOM)
     endif(WITH_OPENCASCADE)
 endif(BUILD_IFCGEOM)
 
-if(COLLADA_SUPPORT)
+if(COLLADA_SUPPORT AND (NOT OPENCOLLADA_INCLUDE_DIR AND NOT OPENCOLLADA_LIBRARY_DIR))
+    # If package is found, automatically sets
+    # OPENCOLLADA_INCLUDE_DIRS and OPENCOLLADA_LIBRARIES (list of targets, not paths).
+    find_package(OpenCOLLADA CONFIG)
+    if(OpenCOLLADA_DIR)
+        message(STATUS "Found OpenCOLLADA: '${OpenCOLLADA_DIR}'.")
+        set(OPENCOLLADA_FOUND TRUE)
+    else()
+        message(STATUS "OpenCOLLADA package not found, falling back to manual search.")
+    endif()
+endif()
+if(COLLADA_SUPPORT AND NOT OpenCOLLADA_DIR)
     # Find OpenCOLLADA
     if("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
         message(STATUS "No OpenCOLLADA include directory specified")
@@ -571,8 +594,7 @@ if(COLLADA_SUPPORT)
 
     if(COLLADASWStreamWriter_h)
         message(STATUS "OpenCOLLADA header files found")
-        add_definitions(-DWITH_OPENCOLLADA)
-        set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_OPENCOLLADA)
+        set(OPENCOLLADA_FOUND TRUE)
 
         set(OPENCOLLADA_LIBRARY_NAMES
             GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
@@ -620,7 +642,12 @@ if(COLLADA_SUPPORT)
         message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA headers. "
             "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
     endif()
-endif(COLLADA_SUPPORT)
+endif(COLLADA_SUPPORT AND NOT OpenCOLLADA_DIR)
+if(COLLADA_SUPPORT AND OPENCOLLADA_FOUND)
+    add_definitions(-DWITH_OPENCOLLADA)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_OPENCOLLADA)
+endif()
+
 
 if(HDF5_SUPPORT)
     if("${HDF5_INCLUDE_DIR}" STREQUAL "")
@@ -1001,6 +1028,9 @@ set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
+if(LibXml2_DIR)
+    target_compile_definitions(IfcParse PRIVATE ${LIBXML2_DEFINITIONS})
+endif()
 if(WASM_BUILD)
     target_link_libraries(IfcParse ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
 else()
