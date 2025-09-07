@@ -36,26 +36,26 @@ pyodide-download:
 		echo "Pyodide directory already exists at $(PYODIDE_DIR), skipping download"; \
 	else \
 		echo "Downloading and preparing Pyodide $(PYODIDE_VERSION)..."; \
-		mkdir -p $(PYODIDE_DIR); \
-		curl -L -o /tmp/pyodide-$(PYODIDE_VERSION).tar.bz2 $(PYODIDE_URL); \
-		cd /tmp && tar -xjf pyodide-$(PYODIDE_VERSION).tar.bz2; \
-		cp /tmp/pyodide/pyodide.asm.js $(PYODIDE_DIR)/; \
-		cp /tmp/pyodide/pyodide.asm.wasm $(PYODIDE_DIR)/; \
-		cp /tmp/pyodide/pyodide.mjs $(PYODIDE_DIR)/; \
-		cp /tmp/pyodide/pyodide.mjs.map $(PYODIDE_DIR)/; \
-		cp /tmp/pyodide/python_stdlib.zip $(PYODIDE_DIR)/; \
-		cp /tmp/pyodide/pyodide-lock.json $(PYODIDE_DIR)/; \
-		cp /tmp/pyodide/certifi-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/charset_normalizer-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/idna-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/micropip-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/numpy-*-cp313-cp313-pyodide_2025_0_wasm32.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/python_dateutil-*-py2.py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/requests-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/shapely-*-cp313-cp313-pyodide_2025_0_wasm32.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/six-*-py2.py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/typing_extensions-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		cp /tmp/pyodide/urllib3-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		mkdir -p $(PYODIDE_DIR)/tmp; \
+		curl -L -o $(PYODIDE_DIR)/tmp/pyodide-$(PYODIDE_VERSION).tar.bz2 $(PYODIDE_URL); \
+		cd $(PYODIDE_DIR)/tmp && tar -xjf pyodide-$(PYODIDE_VERSION).tar.bz2 && cd -; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/pyodide.asm.js $(PYODIDE_DIR)/; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/pyodide.asm.wasm $(PYODIDE_DIR)/; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/pyodide.mjs $(PYODIDE_DIR)/; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/pyodide.mjs.map $(PYODIDE_DIR)/; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/python_stdlib.zip $(PYODIDE_DIR)/; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/pyodide-lock.json $(PYODIDE_DIR)/; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/certifi-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/charset_normalizer-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/idna-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/micropip-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/numpy-*-cp313-cp313-pyodide_2025_0_wasm32.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/python_dateutil-*-py2.py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/requests-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/shapely-*-cp313-cp313-pyodide_2025_0_wasm32.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/six-*-py2.py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/typing_extensions-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
+		cp $(PYODIDE_DIR)/tmp/pyodide/urllib3-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
 		rm -rf /tmp/pyodide; \
 		rm -f /tmp/pyodide-$(PYODIDE_VERSION).tar.bz2; \
 		echo "Pyodide $(PYODIDE_VERSION) prepared in $(PYODIDE_DIR)"; \
