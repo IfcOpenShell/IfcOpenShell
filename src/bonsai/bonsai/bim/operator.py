@@ -1057,7 +1057,10 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
         self.layout.context_pointer_set(name="data", data=self.data)
         # NOTE: activate_init don't work with prop_search, so cannot activate field for typing,
         # though it would fit perfectly.
-        self.layout.prop_search(self, "dummy_name", self, "collection_names")
+        if self.dummy_name:
+            self.layout.label(text=f"Current: {self.dummy_name}")
+        
+        self.layout.prop_search(self, "dummy_name", self, "collection_names", text=self.prop_name)
 
     def execute(self, context):
         return {"FINISHED"}
