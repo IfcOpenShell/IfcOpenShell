@@ -22,11 +22,12 @@ from flask import Flask, send_from_directory, send_file
 
 app = Flask(__name__)
 
+
 def get_static_folder():
     base_dir = os.path.dirname(__file__)
-    dist_dir = os.path.join(base_dir, 'dist')
-    www_dir = os.path.join(base_dir, 'www')
-    
+    dist_dir = os.path.join(base_dir, "dist")
+    www_dir = os.path.join(base_dir, "www")
+
     if os.path.exists(dist_dir) and os.path.isdir(dist_dir):
         return dist_dir
     elif os.path.exists(www_dir) and os.path.isdir(www_dir):
@@ -34,36 +35,42 @@ def get_static_folder():
     else:
         return dist_dir
 
+
 STATIC_FOLDER = get_static_folder()
 
-@app.route('/')
-def index():
-    return send_file(os.path.join(STATIC_FOLDER, 'index.html'))
 
-@app.route('/<path:filename>')
+@app.route("/")
+def index():
+    return send_file(os.path.join(STATIC_FOLDER, "index.html"))
+
+
+@app.route("/<path:filename>")
 def static_files(filename):
     return send_from_directory(STATIC_FOLDER, filename)
 
-@app.route('/assets/<path:filename>')
+
+@app.route("/assets/<path:filename>")
 def assets(filename):
-    return send_from_directory(os.path.join(STATIC_FOLDER, 'assets'), filename)
+    return send_from_directory(os.path.join(STATIC_FOLDER, "assets"), filename)
+
 
 @app.errorhandler(404)
 def not_found(error):
-    return send_file(os.path.join(STATIC_FOLDER, 'index.html'))
+    return send_file(os.path.join(STATIC_FOLDER, "index.html"))
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Start IfcTester webapp')
-    parser.add_argument('--host', default='127.0.0.1', help='Host to bind to (default: 127.0.0.1)')
-    parser.add_argument('--port', type=int, default=5000, help='Port to bind to (default: 5000)')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    parser.add_argument('--dist-dir', default=STATIC_FOLDER, help='Directory containing built files')
-    
+    parser = argparse.ArgumentParser(description="Start IfcTester webapp")
+    parser.add_argument("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
+    parser.add_argument("--port", type=int, default=5000, help="Port to bind to (default: 5000)")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    parser.add_argument("--dist-dir", default=STATIC_FOLDER, help="Directory containing built files")
+
     args = parser.parse_args()
-    
+
     STATIC_FOLDER = args.dist_dir
-    
+
     print(f"Serving IfcTester webapp from: {STATIC_FOLDER}")
     print(f"Server running at: http://{args.host}:{args.port}")
-    
+
     app.run(host=args.host, port=args.port, debug=args.debug)

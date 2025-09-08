@@ -1059,7 +1059,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
         # though it would fit perfectly.
         if self.dummy_name:
             self.layout.label(text=f"Current: {self.dummy_name}")
-        
+
         self.layout.prop_search(self, "dummy_name", self, "collection_names", text=self.prop_name)
 
     def execute(self, context):

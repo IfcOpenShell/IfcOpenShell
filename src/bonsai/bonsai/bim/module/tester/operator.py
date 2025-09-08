@@ -55,26 +55,26 @@ class IfcTesterWebSocketServer:
         self.site = None
         self.loop = None
         self.shutdown_event = None
-        
+
         # Register namespace
         self.sio.register_namespace(IfcTesterNamespace("/ifctester"))
-        
+
         # Add health check route
         self.app.router.add_get("/health", self.health_check)
-    
+
     async def health_check(self, request):
         return web.Response(text="OK", content_type="text/plain")
-    
+
     async def start_server(self):
         self.loop = asyncio.get_event_loop()
         self.shutdown_event = asyncio.Event()
-        
+
         self.runner = web.AppRunner(self.app)
         await self.runner.setup()
         self.site = web.TCPSite(self.runner, "127.0.0.1", self.port)
         await self.site.start()
         print(f"IfcTester WebSocket server started on 127.0.0.1:{self.port}")
-        
+
         try:
             # Wait for shutdown signal
             await self.shutdown_event.wait()
@@ -82,35 +82,35 @@ class IfcTesterWebSocketServer:
             print("WebSocket server received cancellation")
         finally:
             await self._cleanup()
-    
+
     async def _cleanup(self):
         try:
             # Disconnect all clients
             print("Shutting down SocketIO...")
-            
+
             try:
                 await self.sio.shutdown()
             except Exception as e:
                 print(f"Error shutting down socketio: {e}")
-            
+
             # Stop the web server
             if self.site:
                 print("Stopping web server...")
                 await asyncio.wait_for(self.site.stop(), timeout=2.0)
                 self.site = None
-                
+
             # Clean up the runner
             if self.runner:
                 print("Cleaning up runner...")
                 await asyncio.wait_for(self.runner.cleanup(), timeout=2.0)
                 self.runner = None
-                
+
             print("IfcTester WebSocket server stopped")
         except asyncio.TimeoutError:
             print("Websocket server cleanup timed out, forcing shutdown")
         except Exception as e:
             print(f"Error during websocket cleanup: {e}")
-    
+
     def stop_server(self):
         if self.loop and self.shutdown_event and not self.shutdown_event.is_set():
             try:
@@ -135,18 +135,13 @@ class IfcTesterNamespace(socketio.AsyncNamespace):
         try:
             request_id = data.get("id")
             ids_string = data.get("ids")
-            
+
             if not request_id:
-                await self.emit("error", {
-                    "error": "No request ID provided"
-                }, room=sid)
+                await self.emit("error", {"error": "No request ID provided"}, room=sid)
                 return
-                
+
             if not ids_string:
-                await self.emit("error", {
-                    "id": request_id,
-                    "error": "No IDS XML string provided"
-                }, room=sid)
+                await self.emit("error", {"id": request_id, "error": "No IDS XML string provided"}, room=sid)
                 return
 
             print(f"Processing IDS audit request {request_id}")
@@ -154,30 +149,23 @@ class IfcTesterNamespace(socketio.AsyncNamespace):
             # Check if IFC is loaded in Bonsai
             ifc = tool.Ifc.get()
             if not ifc:
-                await self.emit("error", {
-                    "id": request_id,
-                    "error": "No IFC model is currently loaded in Bonsai"
-                }, room=sid)
+                await self.emit(
+                    "error", {"id": request_id, "error": "No IFC model is currently loaded in Bonsai"}, room=sid
+                )
                 return
 
             # Parse IDS from string
             try:
                 ids = ifctester.ids.from_string(ids_string)
             except Exception as e:
-                await self.emit("error", {
-                    "id": request_id,
-                    "error": f"Failed to parse IDS XML: {str(e)}"
-                }, room=sid)
+                await self.emit("error", {"id": request_id, "error": f"Failed to parse IDS XML: {str(e)}"}, room=sid)
                 return
 
             # Validate IFC against IDS
             try:
                 ids.validate(ifc)
             except Exception as e:
-                await self.emit("error", {
-                    "id": request_id,
-                    "error": f"Validation failed: {str(e)}"
-                }, room=sid)
+                await self.emit("error", {"id": request_id, "error": f"Validation failed: {str(e)}"}, room=sid)
                 return
 
             # Generate reports
@@ -193,28 +181,21 @@ class IfcTesterNamespace(socketio.AsyncNamespace):
                 html_report = html_reporter.to_string()
 
                 # Send results back
-                await self.emit("audit_result", {
-                    "id": request_id,
-                    "json_report": json_report,
-                    "html_report": html_report
-                }, room=sid)
-                
+                await self.emit(
+                    "audit_result", {"id": request_id, "json_report": json_report, "html_report": html_report}, room=sid
+                )
+
                 print(f"Successfully processed IDS audit request {request_id}")
 
             except Exception as e:
-                await self.emit("error", {
-                    "id": request_id,
-                    "error": f"Failed to generate reports: {str(e)}"
-                }, room=sid)
+                await self.emit("error", {"id": request_id, "error": f"Failed to generate reports: {str(e)}"}, room=sid)
 
         except Exception as e:
             print(f"Error processing audit request: {str(e)}")
             import traceback
+
             print(traceback.format_exc())
-            await self.emit("error", {
-                "id": request_id,
-                "error": f"Internal server error: {str(e)}"
-            }, room=sid)
+            await self.emit("error", {"id": request_id, "error": f"Internal server error: {str(e)}"}, room=sid)
 
     async def on_ping(self, sid, data):
         await self.emit("pong", {"timestamp": data.get("timestamp")}, room=sid)
@@ -318,9 +299,9 @@ class StartIfcTesterWebapp(bpy.types.Operator):
 
     def execute(self, context):
         global webapp_process, websocket_server_thread, websocket_app
-        
+
         props = tool.Tester.get_tester_props()
-        
+
         if webapp_process is not None or websocket_server_thread is not None:
             self.report({"WARNING"}, "IfcTester webapp is already running")
             return {"CANCELLED"}
@@ -328,19 +309,21 @@ class StartIfcTesterWebapp(bpy.types.Operator):
         try:
             import ifctester.webapp.serve
         except ImportError:
-            self.report({"ERROR"}, "IfcTester webapp not available. Please ensure the latest version of ifctester is installed.")
+            self.report(
+                {"ERROR"}, "IfcTester webapp not available. Please ensure the latest version of ifctester is installed."
+            )
             return {"CANCELLED"}
 
         webapp_port = self.find_free_port()
         websocket_port = self.find_free_port()
-        
+
         # Get the path to the serve.py module
         webapp_serve_path = ifctester.webapp.serve.__file__
-        
+
         try:
             # Start the websocket server in a thread
             websocket_app = IfcTesterWebSocketServer(websocket_port)
-            
+
             def run_websocket_server():
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -350,34 +333,35 @@ class StartIfcTesterWebapp(bpy.types.Operator):
                     print(f"WebSocket server error: {e}")
                 finally:
                     loop.close()
-            
+
             websocket_server_thread = threading.Thread(target=run_websocket_server, daemon=True)
             websocket_server_thread.start()
-            
+
             # Start the Flask server as subprocess
-            webapp_process = subprocess.Popen([
-                sys.executable, webapp_serve_path,
-                "--host", "127.0.0.1",
-                "--port", str(webapp_port)
-            ])
-            
+            webapp_process = subprocess.Popen(
+                [sys.executable, webapp_serve_path, "--host", "127.0.0.1", "--port", str(webapp_port)]
+            )
+
             # Update properties
             props.webapp_server_port = webapp_port
             props.websocket_server_port = websocket_port
             props.webapp_is_running = True
-            
+
             # Wait a moment for servers to start, then open browser
             def delayed_open_browser():
                 import time
+
                 time.sleep(1.5)
                 webbrowser.open(f"http://127.0.0.1:{webapp_port}?bonsai_server={websocket_port}")
-            
+
             browser_thread = threading.Thread(target=delayed_open_browser, daemon=True)
             browser_thread.start()
-            
-            self.report({"INFO"}, f"IfcTester webapp started at http://127.0.0.1:{webapp_port} (Websocket: {websocket_port})")
+
+            self.report(
+                {"INFO"}, f"IfcTester webapp started at http://127.0.0.1:{webapp_port} (Websocket: {websocket_port})"
+            )
             return {"FINISHED"}
-            
+
         except Exception as e:
             # Clean up on error
             if webapp_process:
@@ -387,13 +371,13 @@ class StartIfcTesterWebapp(bpy.types.Operator):
                 # The websocket server will be cleaned up when the thread ends
                 websocket_server_thread = None
                 websocket_app = None
-            
+
             self.report({"ERROR"}, f"Failed to start servers: {str(e)}")
             return {"CANCELLED"}
 
     def find_free_port(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('', 0))
+            s.bind(("", 0))
             s.listen(1)
             port = s.getsockname()[1]
         return port
@@ -406,15 +390,15 @@ class StopIfcTesterWebapp(bpy.types.Operator):
 
     def execute(self, context):
         global webapp_process, websocket_server_thread, websocket_app
-        
+
         props = tool.Tester.get_tester_props()
-        
+
         if webapp_process is None and websocket_server_thread is None:
             self.report({"WARNING"}, "No IfcTester servers are running")
             return {"CANCELLED"}
 
         errors = []
-        
+
         # Stop webapp server
         if webapp_process:
             try:
@@ -426,34 +410,34 @@ class StopIfcTesterWebapp(bpy.types.Operator):
                 errors.append(f"Error stopping webapp server: {str(e)}")
             finally:
                 webapp_process = None
-        
+
         # Stop websocket server
         if websocket_app and websocket_server_thread:
             try:
                 print("Stopping WebSocket server...")
-                
+
                 # Signal shutdown using thread-safe method
                 websocket_app.stop_server()
-                
+
                 # Wait for the websocket thread to finish
                 websocket_server_thread.join(timeout=5)
-                    
+
             except Exception as e:
                 errors.append(f"Error during websocket shutdown: {str(e)}")
             finally:
                 websocket_app = None
                 websocket_server_thread = None
-        
+
         # Update properties
         props.webapp_server_port = 0
         props.websocket_server_port = 0
         props.webapp_is_running = False
-        
+
         if errors:
             self.report({"WARNING"}, f"IfcTester webapp and server stopped with errors: {'; '.join(errors)}")
         else:
             self.report({"INFO"}, "IfcTester webapp and server stopped")
-        
+
         return {"FINISHED"}
 
 
@@ -464,11 +448,11 @@ class OpenIfcTesterWebapp(bpy.types.Operator):
 
     def execute(self, context):
         props = tool.Tester.get_tester_props()
-        
+
         if not props.webapp_is_running:
             self.report({"ERROR"}, "IfcTester webapp is not running. Please start it first.")
             return {"CANCELLED"}
-        
+
         webbrowser.open(f"http://127.0.0.1:{props.webapp_server_port}?bonsai_server={props.websocket_server_port}")
         return {"FINISHED"}
 
