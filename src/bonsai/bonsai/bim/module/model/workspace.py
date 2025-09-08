@@ -1453,7 +1453,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         # --- tolerance check ---
-        tolerance = 1e-5 #to provide a little wiggle room
+        tolerance = 1e-5  # to provide a little wiggle room
         if layer2_bases and (max(layer2_bases) - min(layer2_bases)) > tolerance:
             min_base = min(layer2_bases)
             max_base = max(layer2_bases)

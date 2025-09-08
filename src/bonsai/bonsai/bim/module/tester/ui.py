@@ -70,14 +70,14 @@ class BIM_PT_tester(Panel):
 
         row = self.layout.row()
         row.operator("bim.execute_ifc_tester")
-        
+
         self.layout.separator()
-        
+
         # IfcTester Webapp controls
         if props.webapp_is_running:
             row = self.layout.row()
             row.label(text=f"Webapp: {props.webapp_server_port} | Server: {props.websocket_server_port}")
-            
+
             row = self.layout.row(align=True)
             row.operator("bim.stop_ifc_tester_webapp")
             row.operator("bim.open_ifc_tester_webapp", icon="URL", text="")
