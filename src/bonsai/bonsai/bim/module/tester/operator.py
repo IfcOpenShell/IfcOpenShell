@@ -106,7 +106,7 @@ class IfcTesterWebSocketServer:
                 self.runner = None
 
             print("IfcTester WebSocket server stopped")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             print("Websocket server cleanup timed out, forcing shutdown")
         except Exception as e:
             print(f"Error during websocket cleanup: {e}")
