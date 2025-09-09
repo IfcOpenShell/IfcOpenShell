@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.control
+import ifcopenshell.api.cost
 import ifcopenshell.api.profile
 import pytest
 import test.bootstrap
@@ -923,6 +925,23 @@ class TestGetGroupsIFC4(test.bootstrap.IFC4):
 
 
 class TestGetGroupsIFC2X3(test.bootstrap.IFC2X3, TestGetGroupsIFC4):
+    pass
+
+
+class TestGetControls(test.bootstrap.IFC2X3):
+    def test_run(self):
+        model = self.file
+        element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        control = ifcopenshell.api.cost.add_cost_schedule(model)
+        ifcopenshell.api.control.assign_control(model, related_objects=[element], relating_control=control)
+        assert list(subject.get_controls(element)) == [control]
+
+
+class TestGetControlsIFC4(test.bootstrap.IFC4, TestGetControls):
+    pass
+
+
+class TestGetControlsIFC4X3(test.bootstrap.IFC4X3, TestGetControls):
     pass
 
 
