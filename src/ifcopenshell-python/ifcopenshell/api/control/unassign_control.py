@@ -45,7 +45,7 @@ def unassign_control(
         cost_item = ifcopenshell.api.cost.add_cost_item(model,
             cost_schedule=schedule)
         ifcopenshell.api.control.assign_control(model,
-            relating_control=cost_item, related_object=wall)
+            relating_control=cost_item, related_objects=[wall])
 
         # And now let's change our mind
         ifcopenshell.api.control.unassign_control(model,

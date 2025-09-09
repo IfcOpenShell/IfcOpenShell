@@ -135,10 +135,8 @@ def assign_cost_item_type(
         List of found product types.
     """
     product_types = list(spatial.get_selected_product_types())
-    rels = [
-        ifc.run("control.assign_control", relating_control=cost_item, related_object=product_type)
-        for product_type in product_types
-    ]
+    ifc.run("control.assign_control", relating_control=cost_item, related_objects=product_types)
+
     cost.load_cost_item_types(cost_item)
     return product_types
 
@@ -213,10 +211,10 @@ def assign_cost_value(
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
     existing_cost_rate = cost.get_assigned_rate_cost_item(cost_item)
     if existing_cost_rate is None:
-        ifc.run("control.assign_control", relating_control=cost_rate, related_object=cost_item)
+        ifc.run("control.assign_control", relating_control=cost_rate, related_objects=[cost_item])
     else:
         ifc.run("control.unassign_control", relating_control=existing_cost_rate, related_object=cost_item)
-        ifc.run("control.assign_control", relating_control=cost_rate, related_object=cost_item)
+        ifc.run("control.assign_control", relating_control=cost_rate, related_objects=[cost_item])
 
 
 def load_schedule_of_rates(cost: type[tool.Cost], schedule_of_rates: ifcopenshell.entity_instance) -> None:

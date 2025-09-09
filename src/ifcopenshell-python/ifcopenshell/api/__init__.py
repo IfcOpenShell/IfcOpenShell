@@ -53,6 +53,22 @@ pre_listeners: dict[str, dict] = {}
 post_listeners: dict[str, dict] = {}
 
 
+def batching_argument_deprecation(
+    usecase_path: str, settings: dict, prev_argument: str, new_argument: str, replace_usecase: Optional[str] = None
+) -> tuple[str, dict]:
+    if replace_usecase is not None:
+        print(f"WARNING. `{usecase_path}` api method is deprecated and should be replaced with `{replace_usecase}`.")
+
+    if prev_argument in settings:
+        print(
+            f"WARNING. `{prev_argument}` argument is deprecated for API method "
+            f'"{usecase_path}" and should be replaced with `{new_argument}`.'
+        )
+        settings = settings | {new_argument: [settings[prev_argument]]}
+        settings.pop(prev_argument)
+    return (replace_usecase or usecase_path, settings)
+
+
 def renamed_arguments_deprecation(
     usecase_path: str, settings: dict, arguments_remapped: dict[str, str]
 ) -> tuple[str, dict]:
@@ -71,7 +87,11 @@ def renamed_arguments_deprecation(
 # "group.add_group": partial(
 #     renamed_arguments_deprecation, arguments_remapped={"Name": "name", "Description": "description"}
 # ),
-ARGUMENTS_DEPRECATION: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any]]]] = {}
+ARGUMENTS_DEPRECATION: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any]]]] = {
+    "control.assign_control": partial(
+        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
+    ),
+}
 
 
 CACHED_USECASE_CLASSES: dict[str, Callable] = {}
