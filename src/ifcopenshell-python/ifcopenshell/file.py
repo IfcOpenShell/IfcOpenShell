@@ -307,33 +307,34 @@ binary_deserializers = (
     ),
 )
 
+
 @functools.cache
 def attribute_lookup(schema_name, entity_name):
     decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(entity_name)
-    attributes = (
-        decl
-        .as_entity()
-        .all_attributes()
-    )
-    di = {v:k for k, v in enumerate(a.name() for a in attributes)}
+    attributes = decl.as_entity().all_attributes()
+    di = {v: k for k, v in enumerate(a.name() for a in attributes)}
     all_inverses = decl.as_entity().all_inverse_attributes()
     for inv in all_inverses:
+
         def visit(decl):
             yield decl.index_in_schema()
             for ty in decl.subtypes():
                 yield from visit(ty)
+
         attribute_index = inv.entity_reference().attribute_index(inv.attribute_reference())
         entity_indices = list(visit(inv.entity_reference()))
         di[inv.name()] = (entity_indices, attribute_index)
     return di
 
+
 @functools.cache
 def entity_name_lookup(schema_name, index):
     return ifcopenshell_wrapper.schema_by_name(schema_name).declarations()[index].name()
 
+
 class rocksdb_lazy_instance:
     __slots__ = ("storage", "name")
-    
+
     def _transform_value(self, val: bytes) -> Any:
         if not val:
             return None
@@ -356,11 +357,13 @@ class rocksdb_lazy_instance:
         if isinstance(attr, int):
             return self[attr]
         else:
-            entity_indices, attribute_index = attr            
+            entity_indices, attribute_index = attr
+
             def _():
                 for index_in_schema in entity_indices:
-                    buffer = self.storage.read(f'v|{self.name[2:]}|{index_in_schema}|{attribute_index}') or b''
-                    yield from map(self.storage.by_id, struct.unpack('<' + 'I' * (len(buffer) // 4), buffer))
+                    buffer = self.storage.read(f"v|{self.name[2:]}|{index_in_schema}|{attribute_index}") or b""
+                    yield from map(self.storage.by_id, struct.unpack("<" + "I" * (len(buffer) // 4), buffer))
+
             return list(_())
 
     def __getitem__(self, index):
@@ -413,7 +416,7 @@ class rocksdb_lazy_instance:
 
     def __bool__(self):
         return len(self) > 0
-    
+
     @property
     def _comparison_tuple(self):
         return self.storage.file.file_pointer(), self.name
@@ -422,7 +425,7 @@ class rocksdb_lazy_instance:
         if not isinstance(other, rocksdb_lazy_instance):
             return False
         return self._comparison_tuple == other._comparison_tuple
-    
+
     def __hash__(self):
         return hash(self._comparison_tuple)
 
@@ -450,16 +453,19 @@ class rocksdb_file_storage:
             raise KeyError(f"Instance with name {name} not found in file")
         return inst
 
-    def by_type(self, ty:str):
+    def by_type(self, ty: str):
         def visit(decl):
             yield decl.index_in_schema()
             for ty in decl.subtypes():
                 yield from visit(ty)
+
         decl = ifcopenshell_wrapper.schema_by_name(self.schema_identifier).declaration_by_name(ty)
+
         def _():
             for index in visit(decl):
-                buff = self.read(f't|{index}') or b''
-                yield from map(self.by_id, struct.unpack('@' + 'q' * (len(buff) // 8), buff))
+                buff = self.read(f"t|{index}") or b""
+                yield from map(self.by_id, struct.unpack("@" + "q" * (len(buff) // 8), buff))
+
         return list(_())
 
     __getitem__ = by_id
