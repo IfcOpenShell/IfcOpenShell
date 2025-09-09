@@ -1059,14 +1059,17 @@ class Drawing(bonsai.core.tool.Drawing):
         props = cls.get_text_props(obj)
         props.literals.clear()
 
-        for ifc_literal in cls.get_text_literal(obj, return_list=True):
+        ifc_literals = cls.get_text_literal(obj, return_list=True)
+        assert isinstance(ifc_literals, list)
+        for ifc_literal in ifc_literals:
             literal_props = props.literals.add()
             bonsai.bim.helper.import_attributes(ifc_literal, literal_props.attributes)
 
             box_alignment_mask = [False] * 9
             position_string = literal_props.attributes["BoxAlignment"].string_value
             box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
-            literal_props.box_alignment = box_alignment_mask
+
+            literal_props.box_alignment = box_alignment_mask  # pyright: ignore[reportAttributeAccessIssue]
             literal_props.ifc_definition_id = ifc_literal.id()
 
         from bonsai.bim.module.drawing.data import DecoratorData
@@ -1181,19 +1184,22 @@ class Drawing(bonsai.core.tool.Drawing):
 
         props = cls.get_text_props(obj)
         element = tool.Ifc.get_entity(obj)
+        assert element
         # updating text font size in EPset_Annotation.Classes
         font_size = float(props.font_size)
         font_size_str = next((key for key in FONT_SIZES if FONT_SIZES[key] == font_size), None)
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+        assert isinstance(classes, Union[str, None])
         classes_split = classes.split() if classes else []
 
         different_font_sizes = [c for c in classes_split if c in FONT_SIZES and c != font_size_str]
 
-        # we do need to change pset value in ifc
-        # only if there are different font sizes in classes already
+        # We do need to change pset value in ifc,
+        # but only if there are different font sizes in classes already
         # or if the current font size is not present in classes
-        # (except regular font size because it's default)
+        # (except regular font size because it's default).
         if different_font_sizes or (font_size_str not in classes_split and font_size_str != "regular"):
+            assert font_size_str is not None
             classes_split = [c for c in classes_split if c not in FONT_SIZES] + [font_size_str]
             classes = " ".join(classes_split)
 
