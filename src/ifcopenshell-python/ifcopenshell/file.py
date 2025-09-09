@@ -276,22 +276,22 @@ binary_deserializers = (
     lambda __, val: struct.unpack("@d", val)[0],
     lambda __, val: val.decode("utf-8"),
     lambda __, val: val.decode("utf-8"),
-    lambda storage, val: ifcopenshell_wrapper.schema_by_name(storage.schema)
+    lambda storage, val: ifcopenshell_wrapper.schema_by_name(storage.schema_identifier)
     .declarations()[struct.unpack("@q", val[:8])[0]]
     .enumeration_items()[struct.unpack("@q", val[8:])[0]],
-    lambda storage, val: storage.by_id((val[0] == "i", struct.unpack("@q", val[1:])[0])),
+    lambda storage, val: storage.by_id((val[0] == 105, struct.unpack("@q", val[1:])[0])),
     lambda __, _: (),
     lambda __, val: struct.unpack("@" + "i" * (len(val) // 4), val),
     lambda __, val: struct.unpack("@" + "d" * (len(val) // 8), val),
     lambda __, val: tuple(consume_buffer(val, lambda inner: inner.decode("utf-8"))),
     lambda __, val: tuple(consume_buffer(val, lambda inner: inner.decode("utf-8"))),
     lambda storage, val: tuple(
-        storage.by_id((val[i * 9] == "i", struct.unpack("@q", val[i * 9 + 1 : i * 9 + 9])[0]))
+        storage.by_id((val[i * 9] == 105, struct.unpack("@q", val[i * 9 + 1 : i * 9 + 9])[0]))
         for i in range(len(val) // 9)
     ),
     lambda __, _: ((),),
     lambda __, val: tuple(
-        consume_buffer(val, lambda inner: struct.unpack("@" + "i" * (len(inner) // struct.calcsize("@i")), inner))
+        consume_buffer(val, lambda inner: struct.unpack("@" + 105 * (len(inner) // struct.calcsize("@i")), inner))
     ),
     lambda __, val: tuple(
         consume_buffer(val, lambda inner: struct.unpack("@" + "d" * (len(inner) // struct.calcsize("@d")), inner))
@@ -300,15 +300,40 @@ binary_deserializers = (
         consume_buffer(
             val,
             lambda inner: tuple(
-                storage.by_id((inner[i * 9] == "i", struct.unpack("@q", inner[i * 9 + 1 : i * 9 + 9])[0]))
+                storage.by_id((inner[i * 9] == 105, struct.unpack("@q", inner[i * 9 + 1 : i * 9 + 9])[0]))
                 for i in range(len(inner) // 9)
             ),
         )
     ),
 )
 
+@functools.cache
+def attribute_lookup(schema_name, entity_name):
+    decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(entity_name)
+    attributes = (
+        decl
+        .as_entity()
+        .all_attributes()
+    )
+    di = {v:k for k, v in enumerate(a.name() for a in attributes)}
+    all_inverses = decl.as_entity().all_inverse_attributes()
+    for inv in all_inverses:
+        def visit(decl):
+            yield decl.index_in_schema()
+            for ty in decl.subtypes():
+                yield from visit(ty)
+        attribute_index = inv.entity_reference().attribute_index(inv.attribute_reference())
+        entity_indices = list(visit(inv.entity_reference()))
+        di[inv.name()] = (entity_indices, attribute_index)
+    return di
+
+@functools.cache
+def entity_name_lookup(schema_name, index):
+    return ifcopenshell_wrapper.schema_by_name(schema_name).declarations()[index].name()
 
 class rocksdb_lazy_instance:
+    __slots__ = ("storage", "name")
+    
     def _transform_value(self, val: bytes) -> Any:
         if not val:
             return None
@@ -319,25 +344,29 @@ class rocksdb_lazy_instance:
         self.storage = storage
         self.name = name
 
+    @functools.cache
     def is_a(self):
         if self.name.startswith("h|"):
             return self.name[2:]
         idx = struct.unpack("@q", self.storage.read(f"{self.name}|_"))[0]
-        return ifcopenshell_wrapper.schema_by_name(self.storage.schema).declarations()[idx].name()
+        return entity_name_lookup(self.storage.schema_identifier, idx)
 
     def __getattr__(self, name):
-        attributes = (
-            ifcopenshell_wrapper.schema_by_name(self.storage.schema)
-            .declaration_by_name(self.is_a())
-            .as_entity()
-            .all_attributes()
-        )
-        if idx := next((i + 1 for i, n in enumerate(a.name() for a in attributes) if n == name), None):
-            return self[idx - 1]
+        attr = attribute_lookup(self.storage.schema_identifier, self.is_a()).get(name)
+        if isinstance(attr, int):
+            return self[attr]
+        else:
+            entity_indices, attribute_index = attr            
+            def _():
+                for index_in_schema in entity_indices:
+                    buffer = self.storage.read(f'v|{self.name[2:]}|{index_in_schema}|{attribute_index}') or b''
+                    yield from map(self.storage.by_id, struct.unpack('<' + 'I' * (len(buffer) // 4), buffer))
+            return list(_())
 
     def __getitem__(self, index):
         return self._transform_value(self.storage.read(f"{self.name}|{index}"))
 
+    @functools.cache
     def __len__(self):
         return (
             max(
@@ -378,9 +407,24 @@ class rocksdb_lazy_instance:
     def id(self):
         if self.name.startswith("i|"):
             return int(self.name[2:])
+        else:
+            # compatibility with C++
+            return 0
 
     def __bool__(self):
         return len(self) > 0
+    
+    @property
+    def _comparison_tuple(self):
+        return self.storage.file.file_pointer(), self.name
+
+    def __eq__(self, other):
+        if not isinstance(other, rocksdb_lazy_instance):
+            return False
+        return self._comparison_tuple == other._comparison_tuple
+    
+    def __hash__(self):
+        return hash(self._comparison_tuple)
 
 
 class rocksdb_file_storage:
@@ -406,6 +450,18 @@ class rocksdb_file_storage:
             raise KeyError(f"Instance with name {name} not found in file")
         return inst
 
+    def by_type(self, ty:str):
+        def visit(decl):
+            yield decl.index_in_schema()
+            for ty in decl.subtypes():
+                yield from visit(ty)
+        decl = ifcopenshell_wrapper.schema_by_name(self.schema_identifier).declaration_by_name(ty)
+        def _():
+            for index in visit(decl):
+                buff = self.read(f't|{index}') or b''
+                yield from map(self.by_id, struct.unpack('@' + 'q' * (len(buff) // 8), buff))
+        return list(_())
+
     __getitem__ = by_id
 
     def __iter__(self):
@@ -421,8 +477,23 @@ class rocksdb_file_storage:
         return rocksdb_file_storage(self.file, self._prefix + prefix)
 
     @functools.cached_property
-    def schema(self):
+    def schema_identifier(self):
+        """Full IFC schema version: IFC2X3_TC1, IFC4_ADD2, IFC4X3_ADD2, etc."""
         return rocksdb_lazy_instance(self, f"h|file_schema")[0][0]
+
+    @functools.cached_property
+    def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
+        """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
+        prefixes = ("IFC", "X", "_ADD", "_TC")
+        reg = "".join(f"(?P<{s}>{s}\\d+)?" for s in prefixes)
+        match = re.match(reg, self.schema_identifier)
+        version_tuple = tuple(
+            map(
+                lambda pp: int(pp[1][len(pp[0]) :]) if pp[1] else None,
+                ((p, match.group(p)) for p in prefixes),
+            )
+        )
+        return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
 
 
 class file:

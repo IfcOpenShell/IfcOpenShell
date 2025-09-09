@@ -85,7 +85,7 @@ try:
 except Exception:
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
-from .file import file
+from .file import rocksdb_lazy_instance, file
 from . import guid
 from .entity_instance import entity_instance, register_schema_attributes
 from .sql import sqlite, sqlite_entity
