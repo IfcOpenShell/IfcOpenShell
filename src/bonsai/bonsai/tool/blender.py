@@ -1582,6 +1582,11 @@ class Blender(bonsai.core.tool.Blender):
         return repr(bpy_struct)
 
     @classmethod
+    def get_props_attribute_name(cls, props: bpy.types.PropertyGroup) -> str:
+        """E.g. `bpy.data.objects['IfcAnnotation/TEXT'].BIMTextProperties` -> `BIMTextProperties`"""
+        return repr(props).rpartition(".")[-1]
+
+    @classmethod
     def resolve_data_path_to_data_attr(cls, data_path: str) -> tuple[bpy.types.bpy_struct, str]:
         """
         :param data_path: Non-full data path to attribute.

@@ -738,12 +738,43 @@ class BIMTextProperties(PropertyGroup):
         name="Font Size",
     )
     newline_at: IntProperty(name="Newline At")
+    symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Symbol",
+        description="Symbol from symbols.svg to use for this text.",
+        items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
+        default="NO SYMBOL",
+    )
+    custom_symbol: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Custom Symbol",
+        description="Non-default symbol to use for this text.",
+    )
 
     if TYPE_CHECKING:
         is_editing: bool
         literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
         font_size: str
         newline_at: int
+        symbol: Union[str, Literal["NO SYMBOL", "CUSTOM SYMBOL"]]
+        custom_symbol: str
+
+    def get_symbol(self) -> Union[str, None]:
+        if self.symbol == "NO SYMBOL":
+            return None
+        elif self.symbol == "CUSTOM SYMBOL":
+            return self.custom_symbol or None
+        else:
+            return self.symbol
+
+    def set_symbol(self, symbol: Union[str, None]):
+        if not symbol:
+            self.property_unset("symbol")
+            self.property_unset("custom_symbol")
+        elif symbol in tool.Drawing.DEFAULT_SYMBOLS:
+            self.symbol = symbol
+            self.property_unset("custom_symbol")
+        else:
+            self.symbol = "CUSTOM SYMBOL"
+            self.custom_symbol = symbol
 
     def get_text_edited_data(self) -> dict[str, Any]:
         """should be called only if `is_editing`
@@ -758,6 +789,7 @@ class BIMTextProperties(PropertyGroup):
             "Literals": literals_data,
             "FontSize": float(self.font_size),
             "Newline_At": int(self.newline_at),
+            "Symbol": self.get_symbol(),
         }
         return text_data
 
