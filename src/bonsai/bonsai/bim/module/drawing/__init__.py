@@ -62,6 +62,8 @@ classes = (
     operator.EnableEditingElementFilter,
     operator.EnableEditingText,
     operator.ExpandSheet,
+    operator.InsertTextProperty,
+    operator.SelectTextProperty,
     operator.LoadDrawings,
     operator.LoadReferences,
     operator.LoadSchedules,

@@ -604,15 +604,25 @@ class BIM_PT_text(Panel):
             row = box.row(align=True)
             row.label(text=f"Literal[{i}]:")
             if i > 0:
-                row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
+                op = row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="")
+                op.literal_prop_id = i
             if i < len(props.literals) - 1:
-                row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
+                op = row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="")
+                op.literal_prop_id = i
             row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
 
             # skip BoxAlignment since we're going to format it ourselves
             attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
             popup_active_attribute = attributes[0] if popup_mode else None
-            bonsai.bim.helper.draw_attributes(attributes, box, popup_active_attribute=popup_active_attribute)
+
+            for attribute in attributes:
+                if attribute.name == "Literal":
+                    attr_row = box.row(align=True)
+                    bonsai.bim.helper.draw_attribute(attribute, attr_row, popup_active_attribute)
+                    op = attr_row.operator("bim.select_text_property", icon="PROPERTIES", text="")
+                    op.literal_prop_id = i
+                else:
+                    bonsai.bim.helper.draw_attribute(attribute, box, popup_active_attribute)
 
             row = box.row(align=True)
             cols = [row.column(align=True) for i in range(3)]

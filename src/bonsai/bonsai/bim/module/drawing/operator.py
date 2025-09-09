@@ -3704,3 +3704,120 @@ class OpenDocumentationWebUi(bpy.types.Operator):
         else:
             bpy.ops.bim.open_web_browser(page="documentation")
         return {"FINISHED"}
+
+
+class SelectTextProperty(bpy.types.Operator):
+    bl_idname = "bim.select_text_property"
+    bl_label = "Select Text Property"
+    bl_description = "Select a property or quantity from the assigned product to insert into the text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=600)
+
+    def draw(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        assigned_product = tool.Drawing.get_assigned_product(element)
+        if not assigned_product:
+            self.layout.label(text="No product assigned to this annotation", icon="ERROR")
+            return
+
+        psets = ifcopenshell.util.element.get_psets(assigned_product, psets_only=True)
+        qsets = ifcopenshell.util.element.get_psets(assigned_product, qtos_only=True)
+
+        if not psets and not qsets:
+            self.layout.label(text="No properties or quantities found", icon="ERROR")
+            return
+
+        if psets:
+            box = self.layout.box()
+            box.label(text="Property Sets:", icon="PROPERTIES")
+
+            for pset_name, pset_data in psets.items():
+                if pset_name in ["id", "type"]:
+                    continue
+
+                pset_box = box.box()
+                pset_box.label(text=pset_name, icon="FOLDER_REDIRECT")
+
+                for prop_name, prop_value in pset_data.items():
+                    if prop_name in ["id", "type"]:
+                        continue
+
+                    row = pset_box.row()
+                    row.label(text=f"{prop_name}: {prop_value}")
+
+                    op = row.operator("bim.insert_text_property", text="", icon="PLUS")
+                    op.literal_prop_id = self.literal_prop_id
+                    op.property_name = f"{pset_name}.{prop_name}"
+                    op.is_numeric = isinstance(prop_value, (int, float))
+
+        if qsets:
+            box = self.layout.box()
+            box.label(text="Quantity Sets:", icon="SNAP_VOLUME")
+
+            for qset_name, qset_data in qsets.items():
+                if qset_name in ["id", "type"]:
+                    continue
+
+                qset_box = box.box()
+                qset_box.label(text=qset_name, icon="FOLDER_REDIRECT")
+
+                for qty_name, qty_value in qset_data.items():
+                    if qty_name in ["id", "type"]:
+                        continue
+
+                    row = qset_box.row()
+                    row.label(text=f"{qty_name}: {qty_value}")
+
+                    op = row.operator("bim.insert_text_property", text="", icon="PLUS")
+                    op.literal_prop_id = self.literal_prop_id
+                    op.property_name = f"{qset_name}.{qty_name}"
+                    op.is_numeric = isinstance(qty_value, (int, float))
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+
+class InsertTextProperty(bpy.types.Operator):
+    bl_idname = "bim.insert_text_property"
+    bl_label = "Insert Text Property"
+    bl_description = "Insert the selected property into the text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+    property_name: bpy.props.StringProperty()
+    is_numeric: bpy.props.BoolProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        props = tool.Drawing.get_text_props(obj)
+        literal_props = props.literals[self.literal_prop_id]
+        literal_attr = None
+
+        for attr in literal_props.attributes:
+            if attr.name == "Literal":
+                literal_attr = attr
+                break
+
+        if not literal_attr:
+            self.report({"ERROR"}, "Could not find Literal attribute")
+            return {"CANCELLED"}
+
+        if self.is_numeric:
+            expression = f"``round({{{{{self.property_name}}}}},0.01)``"
+        else:
+            expression = f"{{{{{self.property_name}}}}}"
+
+        current_text = literal_attr.string_value
+        if current_text:
+            literal_attr.string_value = current_text + expression
+        else:
+            literal_attr.string_value = expression
+
+        self.report({"INFO"}, f"Inserted property expression: {expression}")
+
+        return {"FINISHED"}
