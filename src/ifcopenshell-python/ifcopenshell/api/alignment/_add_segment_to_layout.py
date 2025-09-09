@@ -91,43 +91,42 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
 
         segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout)
         zero_length_segment = segment_nest.RelatedObjects[-1]
-        # DesignParameters.StartPoint for IfcAlignmentHorizontalSegment is automatically updated when the
-        # geometric representation is updated because the semantic and geometric data use the same IfcPoint.
-        # This is not the case of IfcAlignmentVerticalSegment and IfcAlignmentCantSegment. For these
-        # segment types, the design parameters of the zero length segment must be updated explicitly.
-        if zero_length_segment.DesignParameters.is_a(
-            "IfcAlignmentVerticalSegment"
-        ) or zero_length_segment.DesignParameters.is_a("IfcAlignmentCantSegment"):
-            # get the geometric representation for the new segment
-            mapped_segments = ifcopenshell.api.alignment.get_mapped_segments(segment)
-            mapped_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
+        mapped_segments = ifcopenshell.api.alignment.get_mapped_segments(segment)
+        mapped_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
 
-            # compute the end point matrix
-            settings = ifcopenshell.geom.settings()
-            segment_fn = ifcopenshell_wrapper.map_shape(settings, mapped_segment.wrapped_data)
-            segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
-            e = segment_evaluator.evaluate(segment_fn.end())
-            end = np.array(e)
+        # compute the end point matrix
+        settings = ifcopenshell.geom.settings()
+        segment_fn = ifcopenshell_wrapper.map_shape(settings, mapped_segment.wrapped_data)
+        segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
+        e = segment_evaluator.evaluate(segment_fn.end())
+        end = np.array(e)
 
-            # update the zero length segment semantic representation parameters
-            if zero_length_segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
-                y = float(end[1, 3]) / unit_scale
-                zero_length_segment.DesignParameters.StartHeight = y
-                dx = float(end[0, 0])
-                dy = float(end[1, 0])
-                zero_length_segment.DesignParameters.StartGradient = dy / dx
-                zero_length_segment.DesignParameters.EndGradient = zero_length_segment.DesignParameters.StartGradient
-            else:
-                z = float(end[2, 3]) / unit_scale
-                dx = float(end[0, 1])
-                dy = float(end[1, 1])
-                dz = float(end[2, 1])
-                ds = math.sqrt(dx * dx + dy * dy)
-                slope = dz / ds
-                railhead = layout.RailHeadDistance
+        # update the zero length segment semantic representation parameters
+        if zero_length_segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
+            x = float(end[0, 3]) / unit_scale
+            y = float(end[1, 3]) / unit_scale
+            dx = float(end[0, 0])
+            dy = float(end[1, 0])
+            zero_length_segment.DesignParameters.StartPoint.Coordinates = (x,y)
+            zero_length_segment.DesignParameters.StartDirection = dy / dx
+        elif zero_length_segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
+            y = float(end[1, 3]) / unit_scale
+            zero_length_segment.DesignParameters.StartHeight = y
+            dx = float(end[0, 0])
+            dy = float(end[1, 0])
+            zero_length_segment.DesignParameters.StartGradient = dy / dx
+            zero_length_segment.DesignParameters.EndGradient = zero_length_segment.DesignParameters.StartGradient
+        else:
+            z = float(end[2, 3]) / unit_scale
+            dx = float(end[0, 1])
+            dy = float(end[1, 1])
+            dz = float(end[2, 1])
+            ds = math.sqrt(dx * dx + dy * dy)
+            slope = dz / ds
+            railhead = layout.RailHeadDistance
 
-                zero_length_segment.DesignParameters.StartCantLeft = z + slope * railhead / 2.0
-                zero_length_segment.DesignParameters.StartCantRight = z - slope * railhead / 2.0
+            zero_length_segment.DesignParameters.StartCantLeft = z + slope * railhead / 2.0
+            zero_length_segment.DesignParameters.StartCantRight = z - slope * railhead / 2.0
 
         # updated the referent's name because the referent is now at a new station
         start_dist_along = 0.0
