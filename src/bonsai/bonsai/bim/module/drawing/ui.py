@@ -618,12 +618,12 @@ class BIM_PT_text(Panel):
             row = box.row(align=True)
             row.label(text=f"Literal[{i}]:")
             if i > 0:
-                op = row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="")
-                op.literal_prop_id = i
+                row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
             if i < len(props.literals) - 1:
-                op = row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="")
-                op.literal_prop_id = i
+                row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
             row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
+            op = row.operator("bim.select_text_property", icon="PROPERTIES", text="")
+            op.literal_prop_id = i
 
             # skip BoxAlignment since we're going to format it ourselves
             attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
