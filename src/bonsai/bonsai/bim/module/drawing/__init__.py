@@ -65,6 +65,8 @@ classes = (
     operator.EnableEditingText,
     operator.ExcludeAnnotation,
     operator.ExpandSheet,
+    operator.InsertTextProperty,
+    operator.SelectTextProperty,
     operator.LoadDrawings,
     operator.LoadReferences,
     operator.LoadSchedules,

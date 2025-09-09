@@ -618,42 +618,57 @@ class BIM_PT_text(Panel):
             row = box.row(align=True)
             row.label(text=f"Literal[{i}]:")
             if i > 0:
-                row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
+                op = row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="")
+                op.literal_prop_id = i
             if i < len(props.literals) - 1:
-                row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
+                op = row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="")
+                op.literal_prop_id = i
             row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
 
+            # skip BoxAlignment since we're going to format it ourselves
+            attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
+            popup_active_attribute = attributes[0] if popup_mode else None
+
+            # Handle Literal attribute with enhanced functionality
             if len(literal_props.attributes) > 0 and i < len(props.literal_apply_settings):
-                row = box.row(align=True)
-                row.prop(literal_props.attributes[0], "string_value", text="Literal")
-                row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
-                element = tool.Ifc.get_entity(obj)
-                assigned_element = tool.Drawing.get_assigned_product(element) or element
-                resolved_value = tool.Drawing.replace_text_literal_variables(
-                    literal_props.attributes[0].string_value,
-                    assigned_element,
-                    props.reverse_list,
-                    props.list_separator,
-                )
-                row = box.row(align=True)
-                row.label(text="CurrentValue:")
-                row.label(text=str(resolved_value))
+                literal_attr = next((attr for attr in attributes if attr.name == "Literal"), None)
+                if literal_attr:
+                    row = box.row(align=True)
+                    bonsai.bim.helper.draw_attribute(literal_attr, row, popup_active_attribute)
+                    op = row.operator("bim.select_text_property", icon="PROPERTIES", text="")
+                    op.literal_prop_id = i
+                    row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
+                    
+                    # Show resolved value for literal
+                    element = tool.Ifc.get_entity(obj)
+                    assigned_element = tool.Drawing.get_assigned_product(element) or element
+                    resolved_value = tool.Drawing.replace_text_literal_variables(
+                        literal_attr.string_value,
+                        assigned_element,
+                        props.reverse_list,
+                        props.list_separator,
+                    )
+                    row = box.row(align=True)
+                    row.label(text="CurrentValue:")
+                    row.label(text=str(resolved_value))
 
+            # Handle Path attribute with enhanced functionality
             if len(literal_props.attributes) > 1:
-                attr = literal_props.attributes[1]
-                row = box.row(align=True)
-                if getattr(attr, "data_type", None) == "enum" and getattr(attr, "enum_items", None):
-                    row.prop(attr, "enum_value", text="Path")
-                    select_value = attr.enum_value
-                else:
-                    row.prop(attr, "string_value", text="Path")
-                    select_value = attr.string_value
-                if i < len(props.literal_apply_settings):
-                    row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
+                path_attr = next((attr for attr in attributes if attr.name == "Path"), literal_props.attributes[1] if len(literal_props.attributes) > 1 else None)
+                if path_attr and path_attr.name != "Literal":  # Avoid duplicate handling
+                    row = box.row(align=True)
+                    if getattr(path_attr, "data_type", None) == "enum" and getattr(path_attr, "enum_items", None):
+                        bonsai.bim.helper.draw_attribute(path_attr, row, popup_active_attribute)
+                    else:
+                        bonsai.bim.helper.draw_attribute(path_attr, row, popup_active_attribute)
+                    if i < len(props.literal_apply_settings):
+                        row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
 
-            other_attributes = [a for a in literal_props.attributes[2:] if a.name != "BoxAlignment"]
-            if other_attributes:
-                bonsai.bim.helper.draw_attributes(other_attributes, box)
+            # Handle other attributes using consistent helper approach
+            other_attributes = [a for a in attributes if a.name not in ["Literal", "Path"]]
+            for attribute in other_attributes:
+                bonsai.bim.helper.draw_attribute(attribute, box, popup_active_attribute)
+
 
             row = box.row(align=True)
             cols = [row.column(align=True) for j in range(3)]
