@@ -358,7 +358,7 @@ class Csv2Ifc:
                             )
                         else:
                             ifcopenshell.api.control.unassign_control(
-                                self.file, relating_control=existing_cost_rate, related_object=cost_item["ifc"]
+                                self.file, relating_control=existing_cost_rate, related_objects=[cost_item["ifc"]]
                             )
                             ifcopenshell.api.control.assign_control(
                                 self.file, relating_control=rate_cost_item, related_objects=[cost_item["ifc"]]

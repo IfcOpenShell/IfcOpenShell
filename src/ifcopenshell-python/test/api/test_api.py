@@ -43,3 +43,12 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         control = ifcopenshell.api.cost.add_cost_schedule(model)
         ifcopenshell.api.control.assign_control(model, relating_control=control, related_objects=[element])
         assert list(ifcopenshell.util.element.get_controls(element)) == [control]
+
+    @deprecation_check
+    def test_unassigning_control(self):
+        TestTemporarySupportForDeprecatedAPIArguments.test_assigning_control(self)
+        model = self.file
+        element = model.by_type("IfcWall")[0]
+        control = model.by_type("IfcCostSchedule")[0]
+        ifcopenshell.api.control.unassign_control(model, relating_control=control, related_objects=[element])
+        assert list(ifcopenshell.util.element.get_controls(element)) == []
