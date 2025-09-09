@@ -181,6 +181,8 @@ private:
 };
 %}
 
+%newobject IfcParse::IfcFile::key_value_store_iter;
+
 %extend IfcParse::IfcFile {
 	// Use to correlate to entity_instance.file_pointer, so that we
 	// can trace file ownership of instances on the python side.
