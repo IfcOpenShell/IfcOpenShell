@@ -3711,73 +3711,169 @@ class SelectTextProperty(bpy.types.Operator):
     bl_label = "Select Text Property"
     bl_description = "Select a property or quantity from the assigned product to insert into the text literal"
     bl_options = {"REGISTER", "UNDO"}
-
+    
     literal_prop_id: bpy.props.IntProperty()
-
+    
     def invoke(self, context, event):
         return context.window_manager.invoke_popup(self, width=600)
-
+    
     def draw(self, context):
         obj = context.active_object
+        if not obj:
+            self.layout.label(text="No active object", icon="ERROR")
+            return
+            
         element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            self.layout.label(text="Object is not an annotation", icon="ERROR")
+            return
+            
         assigned_product = tool.Drawing.get_assigned_product(element)
         if not assigned_product:
             self.layout.label(text="No product assigned to this annotation", icon="ERROR")
             return
-
+            
         psets = ifcopenshell.util.element.get_psets(assigned_product, psets_only=True)
         qsets = ifcopenshell.util.element.get_psets(assigned_product, qtos_only=True)
-
-        if not psets and not qsets:
-            self.layout.label(text="No properties or quantities found", icon="ERROR")
+        
+        product_attributes = self.get_product_attributes(assigned_product)
+        
+        type_attributes = {}
+        if hasattr(assigned_product, 'IsTypedBy') and assigned_product.IsTypedBy:
+            relating_type = assigned_product.IsTypedBy[0].RelatingType
+            if relating_type:
+                type_attributes = self.get_type_attributes(relating_type)
+        
+        if not psets and not qsets and not type_attributes and not product_attributes:
+            self.layout.label(text="No properties, quantities, or attributes found", icon="ERROR")
             return
-
+            
+        if product_attributes:
+            box = self.layout.box()
+            box.label(text="Product Attributes:", icon="OBJECT_DATA")
+            
+            for attr_name, attr_value in product_attributes.items():
+                row = box.row()
+                row.label(text=f"{attr_name}: {attr_value}")
+                
+                op = row.operator("bim.insert_text_property", text="", icon="PLUS")
+                op.literal_prop_id = self.literal_prop_id
+                op.property_name = attr_name
+                op.is_numeric = isinstance(attr_value, (int, float))
+        
+        if type_attributes:
+            box = self.layout.box()
+            box.label(text="Type Attributes:", icon="OUTLINER_OB_MESH")
+            
+            for attr_name, attr_value in type_attributes.items():
+                row = box.row()
+                row.label(text=f"{attr_name}: {attr_value}")
+                
+                op = row.operator("bim.insert_text_property", text="", icon="PLUS")
+                op.literal_prop_id = self.literal_prop_id
+                op.property_name = f"type.{attr_name}"
+                op.is_numeric = isinstance(attr_value, (int, float))
+        
         if psets:
             box = self.layout.box()
             box.label(text="Property Sets:", icon="PROPERTIES")
-
+            
             for pset_name, pset_data in psets.items():
                 if pset_name in ["id", "type"]:
                     continue
-
+                    
                 pset_box = box.box()
                 pset_box.label(text=pset_name, icon="FOLDER_REDIRECT")
-
+                
                 for prop_name, prop_value in pset_data.items():
                     if prop_name in ["id", "type"]:
                         continue
-
+                        
                     row = pset_box.row()
                     row.label(text=f"{prop_name}: {prop_value}")
-
+                    
                     op = row.operator("bim.insert_text_property", text="", icon="PLUS")
                     op.literal_prop_id = self.literal_prop_id
                     op.property_name = f"{pset_name}.{prop_name}"
                     op.is_numeric = isinstance(prop_value, (int, float))
-
+        
         if qsets:
             box = self.layout.box()
             box.label(text="Quantity Sets:", icon="SNAP_VOLUME")
-
+            
             for qset_name, qset_data in qsets.items():
                 if qset_name in ["id", "type"]:
                     continue
-
+                    
                 qset_box = box.box()
                 qset_box.label(text=qset_name, icon="FOLDER_REDIRECT")
-
+                
                 for qty_name, qty_value in qset_data.items():
                     if qty_name in ["id", "type"]:
                         continue
-
+                        
                     row = qset_box.row()
                     row.label(text=f"{qty_name}: {qty_value}")
-
+                    
                     op = row.operator("bim.insert_text_property", text="", icon="PLUS")
                     op.literal_prop_id = self.literal_prop_id
                     op.property_name = f"{qset_name}.{qty_name}"
                     op.is_numeric = isinstance(qty_value, (int, float))
-
+    
+    def get_product_attributes(self, product: ifcopenshell.entity_instance, filter_attributes: bool = False) -> dict[str, Any]:
+        product_attributes = {}
+        
+        if filter_attributes:
+            meaningful_attributes = [
+                'Name', 'Description', 'Tag', 'LongName', 'PredefinedType',
+                'OverallHeight', 'OverallWidth', 'Thickness', 'NominalDiameter',
+                'NominalLength', 'CrossSectionArea', 'PerimeterLength'
+            ]
+            
+            for attr_name in meaningful_attributes:
+                if hasattr(product, attr_name):
+                    attr_value = getattr(product, attr_name)
+                    if attr_value is not None and attr_value != '' and attr_value != 'NOTDEFINED':
+                        product_attributes[attr_name] = attr_value
+        else:
+            for attr_name in product.get_info().keys():
+                if attr_name in ('id', 'type', 'GlobalId', 'OwnerHistory', 'ObjectPlacement', 'Representation'):
+                    continue
+                    
+                attr_value = getattr(product, attr_name)
+                if attr_value is not None and attr_value != '' and attr_value != 'NOTDEFINED':
+                    if not hasattr(attr_value, 'is_a'):
+                        product_attributes[attr_name] = attr_value
+        
+        return product_attributes
+    
+    def get_type_attributes(self, relating_type: ifcopenshell.entity_instance, filter_attributes: bool = False) -> dict[str, Any]:
+        type_attributes = {}
+        
+        if filter_attributes:
+            meaningful_attributes = [
+                'Name', 'Description', 'Tag', 'ElementType', 'PredefinedType',
+                'OverallHeight', 'OverallWidth', 'Thickness', 'NominalDiameter',
+                'NominalLength', 'CrossSectionArea', 'PerimeterLength'
+            ]
+            
+            for attr_name in meaningful_attributes:
+                if hasattr(relating_type, attr_name):
+                    attr_value = getattr(relating_type, attr_name)
+                    if attr_value is not None and attr_value != '' and attr_value != 'NOTDEFINED':
+                        type_attributes[attr_name] = attr_value
+        else:
+            for attr_name in relating_type.get_info().keys():
+                if attr_name in ('id', 'type', 'GlobalId', 'OwnerHistory'):
+                    continue
+                    
+                attr_value = getattr(relating_type, attr_name)
+                if attr_value is not None and attr_value != '' and attr_value != 'NOTDEFINED':
+                    if not hasattr(attr_value, 'is_a'):
+                        type_attributes[attr_name] = attr_value
+        
+        return type_attributes
+    
     def execute(self, context):
         return {"FINISHED"}
 
