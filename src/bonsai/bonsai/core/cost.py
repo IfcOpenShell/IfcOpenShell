@@ -154,10 +154,7 @@ def unassign_cost_item_type(
     """
     if not product_types:
         product_types = list(spatial.get_selected_product_types())
-    [
-        ifc.run("control.unassign_control", relating_control=cost_item, related_object=product_type)
-        for product_type in product_types
-    ]
+    ifc.run("control.unassign_control", relating_control=cost_item, related_objects=product_types)
     cost.load_cost_item_types(cost_item)
     return product_types
 
@@ -213,7 +210,7 @@ def assign_cost_value(
     if existing_cost_rate is None:
         ifc.run("control.assign_control", relating_control=cost_rate, related_objects=[cost_item])
     else:
-        ifc.run("control.unassign_control", relating_control=existing_cost_rate, related_object=cost_item)
+        ifc.run("control.unassign_control", relating_control=existing_cost_rate, related_objects=[cost_item])
         ifc.run("control.assign_control", relating_control=cost_rate, related_objects=[cost_item])
 
 

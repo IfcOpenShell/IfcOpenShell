@@ -54,7 +54,7 @@ def remove_work_calendar(file: ifcopenshell.file, work_calendar: ifcopenshell.en
                 ifcopenshell.api.control.unassign_control(
                     file,
                     relating_control=work_calendar,
-                    related_object=related_object,
+                    related_objects=[related_object],
                 )
 
     # Currently in API work times are created already attached
