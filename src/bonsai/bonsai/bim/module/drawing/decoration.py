@@ -601,8 +601,7 @@ class BaseDecorator:
         props = tool.Drawing.get_text_props(obj)
         text_data = DecoratorData.data["text"].get(obj.name, None)
         if props.is_editing:
-            # Still use original `text_data`, because of the "Symbol".
-            text_data = text_data | props.get_text_edited_data()
+            text_data = props.get_text_edited_data()
         literals_data = text_data["Literals"]
         symbol = text_data["Symbol"]
         newline_at = text_data["Newline_At"]

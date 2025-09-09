@@ -39,7 +39,7 @@ def disable_editing_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> 
 def edit_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_size_pset(obj)
-    drawing.update_newline_at(obj)
+    drawing.update_newline_at_and_symbol(obj)
     drawing.disable_editing_text(obj)
 
 

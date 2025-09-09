@@ -110,6 +110,27 @@ class Drawing(bonsai.core.tool.Drawing):
     }
     # fmt: on
 
+    DEFAULT_SYMBOLS = [
+        "rectangle-tag",
+        "triangle-tag",
+        "hexagon-tag",
+        "capsule-tag",
+        "circle-tag",
+        "door-tag",
+        "window-tag",
+        "space-tag",
+        "elevation-arrow",
+        "elevation-tag",
+        "section-arrow",
+        "section-tag",
+        "dot",
+        "setout-tag",
+        "setout-point",
+        "control-point",
+        "traverse-point",
+        "spot-elevation",
+    ]
+
     @classmethod
     def get_document_props(cls) -> DocProperties:
         assert (scene := bpy.context.scene)
@@ -434,8 +455,7 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def disable_editing_text(cls, obj: bpy.types.Object) -> None:
         props = tool.Drawing.get_text_props(obj)
-        props.is_editing = False
-        props.literals.clear()
+        obj.property_unset(tool.Blender.get_props_attribute_name(props))
 
     @classmethod
     def disable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -1077,6 +1097,7 @@ class Drawing(bonsai.core.tool.Drawing):
         text_data = DecoratorData.get_text_data(obj)
         props.font_size = str(text_data["FontSize"])
         props.newline_at = text_data["Newline_At"]
+        props.set_symbol(text_data["Symbol"])
 
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -1214,10 +1235,12 @@ class Drawing(bonsai.core.tool.Drawing):
             )
 
     @classmethod
-    def update_newline_at(cls, obj: bpy.types.Object) -> None:
+    def update_newline_at_and_symbol(cls, obj: bpy.types.Object) -> None:
         props = cls.get_text_props(obj)
         element = tool.Ifc.get_entity(obj)
+        assert element
         newline_at = int(props.newline_at)
+        symbol = props.get_symbol()
         ifc_file = tool.Ifc.get()
         pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
         if not pset:
@@ -1225,7 +1248,10 @@ class Drawing(bonsai.core.tool.Drawing):
         ifcopenshell.api.pset.edit_pset(
             ifc_file,
             pset=pset,
-            properties={"Newline_At": newline_at},
+            properties={
+                "Newline_At": newline_at,
+                "Symbol": symbol,
+            },
         )
 
     # TODO below this point is highly experimental prototype code with no tests

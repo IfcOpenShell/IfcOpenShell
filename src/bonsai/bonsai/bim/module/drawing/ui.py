@@ -591,6 +591,12 @@ class BIM_PT_text(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "newline_at")
 
+        row = self.layout.row(align=True)
+        row.prop(props, "symbol")
+        if props.symbol == "CUSTOM SYMBOL":
+            row = self.layout.row(align=True)
+            row.prop(props, "custom_symbol", text="")
+
         for i, literal_props in enumerate(props.literals):
             box = self.layout.box()
             row = self.layout.row(align=True)
