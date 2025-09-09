@@ -421,6 +421,10 @@ namespace {
         tbo.pin_top_level_index_and_filter = true;
         */
 
+		// 28: 256MB
+		// 29: 512MB
+        // 30: 1GB
+
         auto block_cache = rocksdb::NewLRUCache(1ULL << 30);
         tbo.block_cache = block_cache;
 

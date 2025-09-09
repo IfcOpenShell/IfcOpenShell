@@ -333,23 +333,22 @@ bool impl::serialize(std::string& val, const empty_aggregate_t& t)
 {
     val.resize(1);
     val[0] = TypeEncoder::encode_type<empty_aggregate_t>();
-    return false;
+    return true;
 }
 
 bool impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t& t)
 {
     val.resize(1);
     val[0] = TypeEncoder::encode_type<empty_aggregate_of_aggregate_t>();
-    return false;
+    return true;
 }
 
 bool impl::serialize(std::string& val, const boost::logic::tribool& t)
 {
-    using T = char;
-    T tt = t == boost::logic::indeterminate ? 2 : t ? 1 : 0;
-    val.resize(sizeof(T) + 1);
-    val[0] = TypeEncoder::encode_type<T>();
-    memcpy(val.data() + 1, &tt, sizeof(T));
+    char tt = t == boost::logic::indeterminate ? 2 : t ? 1 : 0;
+    val.resize(sizeof(char) + 1);
+    val[0] = TypeEncoder::encode_type<boost::logic::tribool>();
+    memcpy(val.data() + 1, &tt, sizeof(char));
     return true;
 }
 
