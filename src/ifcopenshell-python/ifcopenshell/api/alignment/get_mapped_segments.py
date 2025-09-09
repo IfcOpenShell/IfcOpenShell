@@ -57,4 +57,4 @@ def get_mapped_segments(layout_segment: entity_instance) -> Sequence[entity_inst
     if segment_count == 1:
         return (curve.Segments[index - segment_count], None)
     else:
-        return (curve.Segments[index - segment_count], curve.Segment[index])
+        return (curve.Segments[index - segment_count], curve.Segments[index])
