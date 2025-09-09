@@ -47,5 +47,5 @@ def copy_work_schedule(
             duplicated_tasks = ifcopenshell.api.sequence.duplicate_task(file, task)[1]
             # All other nested items are not connected to the work schedule explicitly.
             duplicated_task = duplicated_tasks[0]
-            ifcopenshell.api.control.assign_control(file, new_schedule, duplicated_task)
+            ifcopenshell.api.control.assign_control(file, new_schedule, [duplicated_task])
     return new_schedule

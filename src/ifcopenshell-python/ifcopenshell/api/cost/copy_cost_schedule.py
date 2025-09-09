@@ -45,5 +45,5 @@ def copy_cost_schedule(
             if isinstance(duplicated_cost_item, list):
                 # All other nested items are not connected to the cost schedule explicitly.
                 duplicated_cost_item = duplicated_cost_item[0]
-            ifcopenshell.api.control.assign_control(file, new_schedule, duplicated_cost_item)
+            ifcopenshell.api.control.assign_control(file, new_schedule, [duplicated_cost_item])
     return new_schedule

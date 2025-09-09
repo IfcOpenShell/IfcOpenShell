@@ -79,7 +79,7 @@ class Usecase:
             assert isinstance(res, list)
             current, duplicate = res
             ifcopenshell.api.control.assign_control(
-                self.file, relating_control=baseline_work_schedule, related_object=duplicate[0]
+                self.file, relating_control=baseline_work_schedule, related_objects=[duplicate[0]]
             )
             for i, task in enumerate(current):
                 self.create_baseline_reference(task, duplicate[i])

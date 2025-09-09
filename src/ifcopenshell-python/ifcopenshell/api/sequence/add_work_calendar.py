@@ -75,7 +75,7 @@ def add_work_calendar(
         # We associate the calendar with the construction root task. All
         # subtasks underneath the construction work task will also inherit
         # this calendar by default (though you can override them).
-        ifcopenshell.api.control.assign_control(model, relating_control=calendar, related_object=task)
+        ifcopenshell.api.control.assign_control(model, relating_control=calendar, related_objects=[task])
     """
     work_calendar = ifcopenshell.api.root.create_entity(
         file,

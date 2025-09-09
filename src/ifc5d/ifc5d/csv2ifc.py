@@ -20,6 +20,7 @@ from __future__ import annotations
 import csv
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.control
 import ifcopenshell.api.cost
 import ifcopenshell.api.root
 import ifcopenshell.util.unit
@@ -353,14 +354,14 @@ class Csv2Ifc:
                                 existing_cost_rate = assignment.RelatingControl
                         if existing_cost_rate is None:
                             ifcopenshell.api.control.assign_control(
-                                self.file, relating_control=rate_cost_item, related_object=cost_item["ifc"]
+                                self.file, relating_control=rate_cost_item, related_objects=[cost_item["ifc"]]
                             )
                         else:
                             ifcopenshell.api.control.unassign_control(
                                 self.file, relating_control=existing_cost_rate, related_object=cost_item["ifc"]
                             )
                             ifcopenshell.api.control.assign_control(
-                                self.file, relating_control=rate_cost_item, related_object=cost_item["ifc"]
+                                self.file, relating_control=rate_cost_item, related_objects=[cost_item["ifc"]]
                             )
                     else:
                         print(f"No cost item found with RateID={cost_rate['RateID']}")

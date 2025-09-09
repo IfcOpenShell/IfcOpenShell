@@ -57,7 +57,7 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
         concrete = ifcopenshell.api.resource.add_resource(model,
             ifc_class="IfcConstructionMaterialResource", parent_resource=crew)
         ifcopenshell.api.control.assign_control(model,
-            relating_control=item, related_object=concrete)
+            relating_control=item, related_objects=[concrete])
         # ... which has a unit price of 42.0 per m3
         value = ifcopenshell.api.cost.add_cost_value(model, parent=concrete)
         ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
@@ -72,7 +72,7 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
         equipment = ifcopenshell.api.resource.add_resource(model,
             ifc_class="IfcConstructionEquipmentResource", parent_resource=crew)
         ifcopenshell.api.control.assign_control(model,
-            relating_control=item, related_object=equipment)
+            relating_control=item, related_objects=[equipment])
         # ... with a fixed price of 50,000
         value = ifcopenshell.api.cost.add_cost_value(model, parent=concrete)
         ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,

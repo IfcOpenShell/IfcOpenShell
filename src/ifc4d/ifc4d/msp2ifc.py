@@ -263,7 +263,7 @@ class MSP2Ifc:
             ifcopenshell.api.control.assign_control(
                 self.file,
                 relating_control=calendar,
-                related_object=task["ifc"],
+                related_objects=[task["ifc"]],
             )
 
         ifcopenshell.api.sequence.edit_task(
