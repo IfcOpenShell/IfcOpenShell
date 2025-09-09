@@ -624,7 +624,7 @@ class BIM_PT_text(Panel):
             if i < len(props.literals) - 1:
                 row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
             row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
-            op = row.operator("bim.select_text_property", icon="PROPERTIES", text="").literal_prop_id = i
+            row.operator("bim.select_text_property", icon="PROPERTIES", text="").literal_prop_id = i
 
             if len(literal_props.attributes) > 0 and i < len(props.literal_apply_settings):
                 row = box.row(align=True)
