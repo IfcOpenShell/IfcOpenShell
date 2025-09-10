@@ -23,6 +23,7 @@ import bpy
 import json
 import base64
 import ifcopenshell.api.sequence
+import ifcopenshell.util.element
 import pystache
 import mathutils
 import webbrowser
@@ -1879,3 +1880,14 @@ class Sequence(bonsai.core.tool.Sequence):
         ifc_file = tool.Ifc.get()
         new_schedule = ifcopenshell.api.sequence.copy_work_schedule(ifc_file, work_schedule)
         new_schedule.Name = (new_schedule.Name or "Unnamed") + " Copy"
+
+    @classmethod
+    def get_element_status(cls, element: ifcopenshell.entity_instance) -> set[str]:
+        psets = ifcopenshell.util.element.get_psets(element)
+        statuses: set[str] = set()
+        for pset_name, pset_data in psets.items():
+            if pset_name == "EPset_Status" or (pset_name.startswith("Pset_") and pset_name.endswith("Common")):
+                if pset_statuses := pset_data.get("Status", None):
+                    assert isinstance(pset_statuses, list)
+                    statuses.update(pset_statuses)
+        return statuses

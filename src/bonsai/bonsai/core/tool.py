@@ -888,7 +888,6 @@ class Sequence:
     def load_lag_time_attributes(cls, lag_time): pass
     def load_product_related_tasks(cls, product): pass
     def load_rel_sequence_attributes(cls, rel_sequence): pass
-    def load_resources(cls): pass
     def load_task_attributes(cls, task): pass
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass
