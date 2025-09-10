@@ -48,3 +48,24 @@ class TestGetElementStatus(NewFile):
         pset = ifcopenshell.api.pset.add_pset(ifc, element, "EPset_Status")
         ifcopenshell.api.pset.edit_pset(ifc, pset, properties={"Status": ["EXISTING", "TEMPORARY"]})
         assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
+
+
+class TestAssignStatus(NewFile):
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        obj = bpy.data.objects["Cube"]
+        bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        bpy.ops.bim.assign_status(status="NEW")
+        assert subject.get_element_status(element) == {"NEW"}
+
+        bpy.ops.bim.assign_status(status="EXISTING")
+        assert subject.get_element_status(element) == {"EXISTING"}
+
+        bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
+        assert subject.get_element_status(element) == set()
