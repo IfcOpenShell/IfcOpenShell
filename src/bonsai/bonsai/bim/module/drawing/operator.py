@@ -2251,6 +2251,31 @@ class ActivateModel(bpy.types.Operator):
 
 class ActivateDrawingBase(tool.Ifc.Operator):
     # Ifc Operator is necessary, because sync_references may create or remove IFC elements.
+    bl_label = "Activate Drawing"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Activates the selected drawing view.\n\n"
+        + "ALT+CLICK to keep the viewport position.\n\n"
+        + "SHIFT+CLICK to load a quick preview of the drawing view"
+    )
+
+    drawing: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    should_view_from_camera: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Should View From Camera",
+        default=True,
+        options={"SKIP_SAVE"},
+    )
+    use_quick_preview: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Use Quick Preview",
+        description="Just move the camera to the drawing view, without loading anything else.",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+
+    if TYPE_CHECKING:
+        drawing: int
+        should_view_from_camera: bool
+        use_quick_preview: bool
 
     def invoke(self, context, event) -> set["rna_enums.OperatorReturnItems"]:
         if event.type == "LEFTMOUSE" and event.alt:
@@ -2317,10 +2342,6 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
         + "SHIFT+CLICK to load a quick preview of the drawing view"
     )
 
-    drawing: bpy.props.IntProperty()
-    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
-    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
-
 
 class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
     bl_idname = "bim.activate_drawing_from_sheet"
@@ -2331,10 +2352,6 @@ class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
         + "ALT+CLICK to keep the viewport position.\n\n"
         + "SHIFT+CLICK to load a quick preview of the drawing view"
     )
-
-    drawing: bpy.props.IntProperty()
-    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
-    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
