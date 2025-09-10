@@ -18,6 +18,7 @@
 
 import test.bootstrap
 import ifcopenshell.api.unit
+import ifcopenshell.util.unit as subject
 
 
 class TestAddConversionBasedUnitIFC2X3(test.bootstrap.IFC2X3):
@@ -61,3 +62,110 @@ class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBased
         assert si_unit.Prefix is None
         assert si_unit.Name == "KELVIN"
         assert unit.ConversionOffset == -459.67
+
+    def test_adding_mass_units_creates_proper_massunit(self):
+        mass_units = [
+            ("tonne", 1000.0),
+            ("pound", 0.454),
+            ("ounce", 0.02835),
+            ("ton UK", 1016.0469088),
+            ("ton US", 907.18474),
+        ]
+
+        for name, expected_conversion in mass_units:
+            unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name=name)
+
+            assert unit.is_a("IfcConversionBasedUnit")
+            assert unit.UnitType == "MASSUNIT"
+            assert unit.Name == name
+
+            actual_conversion = unit.ConversionFactor.ValueComponent.wrappedValue
+            assert actual_conversion == expected_conversion
+
+            target_unit = unit.ConversionFactor.UnitComponent
+            assert target_unit.is_a("IfcSIUnit")
+            assert target_unit.UnitType == "MASSUNIT"
+            assert target_unit.Name == "GRAM"
+            assert target_unit.Prefix == "KILO"
+
+    def test_adding_time_units_creates_proper_timeunit(self):
+        time_units = [
+            ("minute", 60),
+            ("hour", 3600),
+            ("day", 86400),
+        ]
+
+        for name, expected_conversion in time_units:
+            unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name=name)
+
+            assert unit.is_a("IfcConversionBasedUnit")
+            assert unit.UnitType == "TIMEUNIT"
+            assert unit.Name == name
+
+            actual_conversion = unit.ConversionFactor.ValueComponent.wrappedValue
+            assert actual_conversion == expected_conversion
+
+            target_unit = unit.ConversionFactor.UnitComponent
+            assert target_unit.is_a("IfcSIUnit")
+            assert target_unit.UnitType == "TIMEUNIT"
+            assert target_unit.Name == "SECOND"
+            assert target_unit.Prefix is None
+
+    def test_unknown_units_fall_back_to_userdefined(self):
+        unknown_unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="unknown_unit")
+        assert unknown_unit.UnitType == "USERDEFINED"
+        assert unknown_unit.Name == "unknown_unit"
+
+    def test_mass_units_in_imperial_types(self):
+        expected_mass_units = ["ounce", "pound", "ton UK", "ton US", "tonne"]
+
+        for unit_name in expected_mass_units:
+            assert unit_name in subject.imperial_types
+            assert subject.imperial_types[unit_name] == "MASSUNIT"
+
+    def test_time_units_in_imperial_types(self):
+        expected_time_units = ["minute", "hour", "day"]
+
+        for unit_name in expected_time_units:
+            assert unit_name in subject.imperial_types
+            assert subject.imperial_types[unit_name] == "TIMEUNIT"
+
+    def test_mass_units_have_conversion_factors(self):
+        expected_mass_conversions = {
+            "ounce": 0.02835,
+            "pound": 0.454,
+            "ton UK": 1016.0469088,
+            "ton US": 907.18474,
+            "tonne": 1000.0,
+        }
+
+        for unit_name, expected_factor in expected_mass_conversions.items():
+            assert unit_name in subject.si_conversions
+            assert subject.si_conversions[unit_name] == expected_factor
+
+    def test_time_units_have_conversion_factors(self):
+        expected_time_conversions = {
+            "minute": 60,
+            "hour": 3600,
+            "day": 86400,
+        }
+
+        for unit_name, expected_factor in expected_time_conversions.items():
+            assert unit_name in subject.si_conversions
+            assert subject.si_conversions[unit_name] == expected_factor
+
+    def test_mass_and_time_units_have_symbols(self):
+        expected_symbols = {
+            "ounce": "oz",
+            "pound": "lb",
+            "ton UK": "ton",
+            "ton US": "ton",
+            "tonne": "t",
+            "minute": "min",
+            "hour": "hr",
+            "day": "day",
+        }
+
+        for unit_name, expected_symbol in expected_symbols.items():
+            assert unit_name in subject.unit_symbols
+            assert subject.unit_symbols[unit_name] == expected_symbol
