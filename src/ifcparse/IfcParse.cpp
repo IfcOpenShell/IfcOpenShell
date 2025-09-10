@@ -1442,7 +1442,6 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
     : schema_(schema)
     , ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
     , max_id_(0)
-    , _header(this)
 {
     if (ty == FT_AUTODETECT) {
         ty = guess_file_type(path);
@@ -1466,6 +1465,7 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
     } else {
         throw std::runtime_error("Unsupported file format");
     }
+    _header = IfcSpfHeader(this);
     setDefaultHeaderValues();
 }
 
