@@ -364,12 +364,16 @@ class DecoratorData:
         product = tool.Drawing.get_assigned_product(element) or element
         for literal in literals:
             literal_value = literal.Literal
+            
+            try:
+                current_value = tool.Drawing.replace_text_literal_variables(literal_value, product)
+            except Exception:
+                current_value = literal_value
+            
             literal_data = {
                 "Literal": literal_value,
                 "BoxAlignment": literal.BoxAlignment,
-                "CurrentValue": tool.Drawing.replace_text_literal_variables(
-                    literal_value, product, reverse_list, list_separator
-                ),
+                "CurrentValue": current_value,
             }
             literals_data.append(literal_data)
 
@@ -514,3 +518,130 @@ class AnnotationData:
                 )
 
         return sorted(relating_types, key=lambda x: x["name"])
+
+
+class ElementValuesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+
+    @classmethod
+    def get_available_element_value_keys(cls, element: ifcopenshell.entity_instance) -> dict[str, list[tuple[str, str]]]:
+        """Get all available selector syntax keys for the element following IfcOpenshell selector syntax documentation"""
+        keys = {}
+        
+        basic_keys = []
+        basic_keys.append(("id", f"IFC ID: {element.id()}"))
+        basic_keys.append(("class", f"IFC Class: {element.is_a()}"))
+        
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type and predefined_type != "NOTDEFINED":
+            basic_keys.append(("predefined_type", f"Predefined Type: {predefined_type}"))
+        
+        keys["Basic"] = basic_keys
+        
+        element_attrs = []
+        excluded_attrs = {'id', 'type', 'GlobalId', 'OwnerHistory', 'ObjectPlacement', 'Representation'}
+        
+        for attr_name in element.get_info().keys():
+            if attr_name not in excluded_attrs:
+                attr_value = getattr(element, attr_name, None)
+                if attr_value is not None:
+                    element_attrs.append((attr_name, f"{attr_name}: {attr_value}"))
+        
+        keys["Attributes"] = element_attrs
+        
+        pset_keys = []
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        if psets:
+            for pset_name, props in psets.items():
+                for prop_name, prop_value in props.items():
+                    if isinstance(prop_value, (str, int, float, bool)):
+                        pset_keys.append((f"{pset_name}.{prop_name}", f"{pset_name}.{prop_name}: {prop_value}"))
+        
+        keys["Property Sets"] = pset_keys
+        
+        qset_keys = []
+        qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
+        if qsets:
+            for qset_name, quantities in qsets.items():
+                for qty_name, qty_value in quantities.items():
+                    if isinstance(qty_value, (str, int, float)):
+                        qset_keys.append((f"{qset_name}.{qty_name}", f"{qset_name}.{qty_name}: {qty_value}"))
+        
+        keys["Quantity Sets"] = qset_keys
+        
+        type_keys = []
+        if hasattr(element, 'IsTypedBy') and element.IsTypedBy:
+            element_type = element.IsTypedBy[0].RelatingType
+            if hasattr(element_type, 'Name') and element_type.Name:
+                type_keys.append((f"type.name", f"Type Name: {element_type.Name}"))
+        
+        keys["Type"] = type_keys
+        
+        spatial_keys = []
+        
+        if hasattr(element, 'ContainedInStructure') and element.ContainedInStructure:
+            container = element.ContainedInStructure[0].RelatingStructure
+            if hasattr(container, 'Name') and container.Name:
+                spatial_keys.append((f"container.name", f"Container: {container.Name}"))
+        
+        keys["Spatial"] = spatial_keys
+        
+        parent_keys = []
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        if parent and hasattr(parent, 'Name') and parent.Name:
+            parent_keys.append((f"parent.name", f"Parent: {parent.Name}"))
+        
+        keys["Parent"] = parent_keys
+        
+        classification_keys = []
+        classifications = ifcopenshell.util.classification.get_references(element)
+        if classifications:
+            for i, classification in enumerate(classifications):
+                if hasattr(classification, 'Name') and classification.Name:
+                    classification_keys.append((f"classification[{i}].name", f"Classification: {classification.Name}"))
+        
+        keys["Classification"] = classification_keys
+        
+        group_keys = []
+        system_keys = []
+        zone_keys = []
+        
+        if hasattr(element, 'HasAssignments'):
+            for assignment in element.HasAssignments:
+                if assignment.is_a('IfcRelAssignsToGroup'):
+                    group = assignment.RelatingGroup
+                    if group.is_a('IfcGroup') and not group.is_a('IfcSystem') and not group.is_a('IfcZone') and group.Name:
+                        group_keys.append((f"group.name", f"Group: {group.Name}"))
+                    elif group.is_a('IfcSystem') and group.Name:
+                        system_keys.append((f"system.name", f"System: {group.Name}"))
+                    elif group.is_a('IfcZone') and group.Name:
+                        zone_keys.append((f"zone.name", f"Zone: {group.Name}"))
+        
+        keys["Groups"] = group_keys
+        keys["Systems"] = system_keys
+        keys["Zones"] = zone_keys
+        
+        material_keys = []
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if material:
+            if hasattr(material, 'Name') and material.Name:
+                material_keys.append((f"material.name", f"Material: {material.Name}"))
+        
+        keys["Material"] = material_keys
+        
+        coordinate_keys = []
+        coordinate_keys.append(("x", "X Coordinate"))
+        coordinate_keys.append(("y", "Y Coordinate"))
+        coordinate_keys.append(("z", "Z Coordinate"))
+        coordinate_keys.append(("easting", "Easting"))
+        coordinate_keys.append(("northing", "Northing"))
+        coordinate_keys.append(("elevation", "Elevation"))
+        
+        keys["Coordinates"] = coordinate_keys
+        
+        return keys

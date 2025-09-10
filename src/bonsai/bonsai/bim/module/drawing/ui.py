@@ -28,6 +28,7 @@ from bonsai.bim.module.drawing.data import (
     DrawingsData,
     ElementFiltersData,
     DecoratorData,
+    ElementValuesData,
 )
 from typing import TYPE_CHECKING, Union
 
@@ -548,6 +549,24 @@ class BIM_PT_product_assignments(Panel):
             col.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
             col.enabled = bool(ProductAssignmentsData.data["relating_product"])
 
+def get_category_icon(category_name):
+    """Get appropriate icon for each category"""
+    icons = {
+        "Basic": "OBJECT_DATA",
+        "Attributes": "PROPERTIES",
+        "Property Sets": "PROPERTIES", 
+        "Quantity Sets": "SNAP_VOLUME",
+        "Type": "OUTLINER_OB_MESH",
+        "Spatial": "HOME",
+        "Parent": "FILE_PARENT",
+        "Classification": "BOOKMARKS",
+        "Groups": "GROUP",
+        "Systems": "SYSTEM",
+        "Zones": "MESH_CIRCLE",
+        "Material": "MATERIAL",
+        "Coordinates": "EMPTY_ARROWS",
+    }
+    return icons.get(category_name, "DOT")
 
 class BIM_PT_text(Panel):
     bl_label = "Text"
@@ -561,10 +580,10 @@ class BIM_PT_text(Panel):
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get() or not context.active_object:
-            return
+            return False
         element = tool.Ifc.get_entity(context.active_object)
         if not element:
-            return
+            return False
         return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
 
     def draw_text_editing_ui(
@@ -613,7 +632,6 @@ class BIM_PT_text(Panel):
 
         for i, literal_props in enumerate(props.literals):
             box = self.layout.box()
-            row = self.layout.row(align=True)
 
             row = box.row(align=True)
             row.label(text=f"Literal[{i}]:")
@@ -622,8 +640,96 @@ class BIM_PT_text(Panel):
             if i < len(props.literals) - 1:
                 row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
             row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
-            row.operator("bim.select_text_property", icon="PROPERTIES", text="").literal_prop_id = i
-
+            
+            expand_icon = "DOWNARROW_HLT" if getattr(literal_props, "show_element_values", False) else "RIGHTARROW"
+            op = row.operator("bim.toggle_element_values_panel", icon=expand_icon, text="")
+            op.literal_prop_id = i
+            
+            if getattr(literal_props, "show_element_values", False):
+                values_box = box.box()
+                values_box.label(text="Element Values:", icon="PROPERTIES")
+                
+                element = tool.Ifc.get_entity(obj)
+                assigned_product = tool.Drawing.get_assigned_product(element) if element else None
+                
+                if not assigned_product:
+                    info_row = values_box.row()
+                    info_row.label(text="No product assigned to this annotation", icon="ERROR")
+                    info_row = values_box.row()
+                    info_row.label(text="Assign a product to access element values", icon="INFO")
+                else:
+                    if not ElementValuesData.is_loaded:
+                        ElementValuesData.load()
+                    
+                    available_keys = ElementValuesData.get_available_element_value_keys(assigned_product)
+                    
+                    search_row = values_box.row()
+                    search_row.prop(literal_props, "element_values_filter", text="Search", icon="VIEWZOOM")
+                    
+                    filter_text = getattr(literal_props, "element_values_filter", "").lower()
+                    
+                    expanded_category = getattr(literal_props, "expanded_category", "Basic")
+                    
+                    info_box = values_box.box()
+                    info_box.scale_y = 0.8
+                    info_row = info_box.row()
+                    info_row.label(text="Click category headers to expand (only one at a time)", icon="INFO")
+                    
+                    for category_name, keys in available_keys.items():
+                        filtered_keys = keys
+                        if filter_text:
+                            filtered_keys = [(key, desc) for key, desc in keys if filter_text in desc.lower() or filter_text in key.lower()]
+                        
+                        if filter_text and not filtered_keys:
+                            continue
+                        
+                        header_row = values_box.row()
+                        is_expanded = (expanded_category == category_name)
+                        expand_icon = "TRIA_DOWN" if is_expanded else "TRIA_RIGHT"
+                        category_icon = get_category_icon(category_name)
+                        
+                        op = header_row.operator(
+                            "bim.toggle_element_values_category", 
+                            text=f"{category_name} ({len(filtered_keys)})",
+                            icon=expand_icon,
+                            emboss=False
+                        )
+                        op.category_name = category_name
+                        op.literal_prop_id = i
+                        op.is_currently_expanded = is_expanded
+                        
+                        if is_expanded and filtered_keys:
+                            category_box = values_box.box()
+                            category_box.scale_y = 0.9
+                            
+                            for key, description in filtered_keys:
+                                key_row = category_box.row()
+                                key_row.scale_y = 0.8
+                                
+                                split = key_row.split(factor=0.7, align=True)
+                                split.label(text=description)
+                                
+                                right_row = split.row(align=True)
+                                
+                                all_keys_flat = []
+                                for cat_name, cat_keys in available_keys.items():
+                                    for cat_key, cat_desc in cat_keys:
+                                        all_keys_flat.append(cat_key)
+                                
+                                try:
+                                    value_number = all_keys_flat.index(key) + 1
+                                    right_row.label(text="{{value{}}}".format(value_number))
+                                except ValueError:
+                                    right_row.label(text="")
+                                
+                                insert_op = right_row.operator(
+                                    "bim.insert_formatted_literal_popup",
+                                    text="",
+                                    icon="ADD"
+                                )
+                                insert_op.literal_prop_id = i
+                                insert_op.element_value_key = key
+            
             # skip BoxAlignment since we're going to format it ourselves
             attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
             popup_active_attribute = attributes[0] if popup_mode else None
@@ -634,7 +740,7 @@ class BIM_PT_text(Panel):
                 if literal_attr:
                     row = box.row(align=True)
                     bonsai.bim.helper.draw_attribute(literal_attr, row, popup_active_attribute)
-                    op = row.operator("bim.select_text_property", icon="PROPERTIES", text="")
+                    op = row.operator("bim.select_element_values", icon="PROPERTIES", text="")
                     op.literal_prop_id = i
                     row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
                     
@@ -761,7 +867,6 @@ class BIM_PT_text(Panel):
                     else:
                         click_op.attribute_type = "text"
                     click_op.display_text = str(literal_data[attribute])
-
 
 class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(
