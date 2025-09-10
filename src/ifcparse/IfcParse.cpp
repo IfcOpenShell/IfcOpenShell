@@ -1352,6 +1352,7 @@ IfcFile::IfcFile(const std::string& fn, bool mmap) {
 IfcFile::IfcFile(const std::string& path, filetype ty, bool readonly)
     : schema_(nullptr)
     , max_id_(0)
+    , _header(this)
 {
     // @todo allow for rocksdb from path
     if (ty == FT_AUTODETECT) {
@@ -1441,7 +1442,7 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
     : schema_(schema)
     , ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
     , max_id_(0)
-    , _header(ty == FT_ROCKSDB ? this : nullptr)
+    , _header(this)
 {
     if (ty == FT_AUTODETECT) {
         ty = guess_file_type(path);
@@ -2793,7 +2794,7 @@ AttributeValue IfcEntityInstanceData::get_attribute_value(void* storage, const I
     if (storage_) {
         return AttributeValue(storage_, (uint8_t)index);
     } else {
-        return AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl->as_entity() ? 1 : 0, index);
+        return AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl, index);
     }
 }
 
