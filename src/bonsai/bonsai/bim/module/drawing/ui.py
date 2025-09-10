@@ -28,6 +28,7 @@ from bonsai.bim.module.drawing.data import (
     DrawingsData,
     ElementFiltersData,
     DecoratorData,
+    ElementValuesData,
 )
 from typing import TYPE_CHECKING, Union
 
@@ -550,6 +551,24 @@ class BIM_PT_product_assignments(Panel):
             col.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
             col.enabled = bool(ProductAssignmentsData.data["relating_product"])
 
+def get_category_icon(category_name):
+    """Get appropriate icon for each category"""
+    icons = {
+        "Basic": "OBJECT_DATA",
+        "Attributes": "PROPERTIES",
+        "Property Sets": "PROPERTIES", 
+        "Quantity Sets": "SNAP_VOLUME",
+        "Type": "OUTLINER_OB_MESH",
+        "Spatial": "HOME",
+        "Parent": "FILE_PARENT",
+        "Classification": "BOOKMARKS",
+        "Groups": "GROUP",
+        "Systems": "SYSTEM",
+        "Zones": "MESH_CIRCLE",
+        "Material": "MATERIAL",
+        "Coordinates": "EMPTY_ARROWS",
+    }
+    return icons.get(category_name, "DOT")
 
 class BIM_PT_text(Panel):
     bl_label = "Text"
@@ -563,10 +582,10 @@ class BIM_PT_text(Panel):
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get() or not context.active_object:
-            return
+            return False
         element = tool.Ifc.get_entity(context.active_object)
         if not element:
-            return
+            return False
         return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
 
     def draw_text_editing_ui(
@@ -615,7 +634,6 @@ class BIM_PT_text(Panel):
 
         for i, literal_props in enumerate(props.literals):
             box = self.layout.box()
-            row = self.layout.row(align=True)
 
             row = box.row(align=True)
             row.label(text=f"Literal[{i}]:")

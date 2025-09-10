@@ -725,6 +725,25 @@ class LiteralProps(PropertyGroup):
         }
         return text_data
 
+    show_element_values: bpy.props.BoolProperty(
+        name="Show Element Values",
+        description="Show/hide the element values panel",
+        default=False
+    )
+    
+    expanded_category: bpy.props.StringProperty(
+        name="Expanded Category",
+        description="Currently expanded category in the element values panel",
+        default=""
+    )
+    
+    element_values_filter: bpy.props.StringProperty(
+        name="Element Values Filter",
+        description="Search filter for element values",
+        default=""
+    )
+
+
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         value: str
