@@ -345,7 +345,7 @@ Now let's find out how to interact with GitHub in order to make changes to the B
 
     .. container:: blockbutton
 
-       `Download dev_environment.bat <https://docs.bonsaibim.org/quickstart/ide/windows/dev_environment.bat>`__
+       :download:`Download dev_environment.bat <windows/dev_environment.bat>`
 
     Edit the file to match the paths in your system. In our case we will edit the following lines:
 
