@@ -51,7 +51,7 @@ class CsvHeader(TypedDict):
 
     # Assigning rates
     RateSchedule: NotRequired[str]
-    RateID : NotRequired[str]
+    RateID: NotRequired[str]
 
 
 # Currently we assume that if column is not part of the main header,
