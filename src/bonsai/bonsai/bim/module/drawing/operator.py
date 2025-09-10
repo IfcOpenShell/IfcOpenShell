@@ -2262,6 +2262,7 @@ class ActivateDrawingBase(tool.Ifc.Operator):
     drawing: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
     should_view_from_camera: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Should View From Camera",
+        description="Move view to the activated drawing's camera position.",
         default=True,
         options={"SKIP_SAVE"},
     )
@@ -2298,14 +2299,39 @@ class ActivateDrawingBase(tool.Ifc.Operator):
             return {"FINISHED"}
 
         viewport_position = None
-        if not self.should_view_from_camera:
-            viewport_position = tool.Blender.get_viewport_position()
+
+        v3d_space = tool.Blender.get_view3d_space()
+        assert v3d_space
+        if self.should_view_from_camera:
+            # Since we must switch to drawing camera, undo local camera in viewport.
+            # The code is needed to undo `else` branch from activating other cameras.
+            v3d_space.use_local_camera = False
+        else:
+            # Since we use `scene.camera` to store active drawing,
+            # the only way to preserve previous drawing camera position is making it local.
+            r3d = v3d_space.region_3d
+            assert r3d
+            if r3d.view_perspective == "CAMERA":
+                if v3d_space.use_local_camera:
+                    # Nothing to do, local camera is already set by user.
+                    pass
+                else:
+                    previous_camera = context.scene.camera
+                    if previous_camera:
+                        v3d_space.camera = previous_camera
+                        v3d_space.use_local_camera = True
+            else:
+                viewport_position = tool.Blender.get_viewport_position()
 
         core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
 
         if not self.should_view_from_camera:
-            assert viewport_position
-            tool.Blender.set_viewport_position(viewport_position)
+            if viewport_position is None:
+                # Local camera takes priority over active scene camera,
+                # so nothing to do after drawing view activation.
+                pass
+            else:
+                tool.Blender.set_viewport_position(viewport_position)
 
         dprops.active_drawing_id = self.drawing
         dprops.drawing_styles.clear()
