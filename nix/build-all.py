@@ -137,7 +137,7 @@ CGAL_VERSION = "5.6.x-branch"
 USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
 ROCKSDB_VERSION = "9.11.2"
-
+ZSTD_VERSION = "1.5.7"
 # binaries
 cp = "cp"
 bash = "bash"
@@ -267,7 +267,8 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "cgal": (),
     "eigen": (),
     "freetype": (),
-    "rocksdb": (),
+    "rocksdb": ("zstd"),
+    "zstd": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
@@ -988,6 +989,21 @@ if "usd" in targets:
         revision=f"v{USD_VERSION}",
     )
 
+if "zstd" in targets:
+    build_dependency(
+        name=f"zstd-{ZSTD_VERSION}",
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            f"-DZSTD_BUILD_STATIC=ON",
+            f"-DZSTD_BUILD_SHARED=OFF",
+        ],
+        download_url="https://github.com/facebook/zstd",
+        download_name="zstd",
+        download_tool=download_tool_git,
+        revision=f"v{ZSTD_VERSION}",
+    )
+
 if "rocksdb" in targets:
     build_dependency(
         name=f"rocksdb-{ROCKSDB_VERSION}",
@@ -1003,6 +1019,9 @@ if "rocksdb" in targets:
             f"-DROCKSDB_BUILD_SHARED=Off",
             f"-DCMAKE_POSITION_INDEPENDENT_CODE=On",
             f"-DUSE_RTTI=On",
+            f"-DWITH_ZSTD=On",
+            f"-DZSTD_INCLUDEDIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
+            f"-DZSTD_LIBDIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib",
         ],
         download_url="https://github.com/facebook/rocksdb",
         download_name="rocksdb",
