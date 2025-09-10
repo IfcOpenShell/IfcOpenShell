@@ -427,7 +427,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
 
         filename = f
         try:
-            f = ifcopenshell.open(f)
+            f = ifcopenshell.open(f, readonly=True)
         except ifcopenshell.SchemaError as e:
             current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
             schema_name = str(e).split(" ")[-1].lower()
