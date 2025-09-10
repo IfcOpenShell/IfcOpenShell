@@ -146,7 +146,7 @@ void RocksDbSerializer::write_streaming_() {
 
 			std::vector<IfcUtil::IfcBaseClass*> simple_type_instances;
 
-			for (size_t i = 0; i < decl->as_entity()->attribute_count(); i++) {
+			for (size_t i = 0; i < data.storage_->size(); i++) {
 				auto val = data.get_attribute_value(nullptr, decl, 0, i);
 				val.apply_visitor([&](const auto& t) {
 					using T = std::decay_t<decltype(t)>;
@@ -252,9 +252,11 @@ void RocksDbSerializer::write_streaming_() {
 				}
 
 				auto val = inst->get_attribute_value(0);
-				val.apply_visitor([&](const auto& t) {
-					rocks_db_attribute_storage{}.set(&storage, &inst->declaration(), inst->identity(), 0, t);
-				});
+				if (val.array_.storage_ptr->size() > 0) {
+					val.apply_visitor([&](const auto& t) {
+						rocks_db_attribute_storage{}.set(&storage, &inst->declaration(), inst->identity(), 0, t);
+					});
+				}
 
 				// @nb we also need to delete them
 				delete inst;
