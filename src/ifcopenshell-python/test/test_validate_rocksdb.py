@@ -34,11 +34,21 @@ def test_file(file):
     logger = ifcopenshell.validate.json_logger()
     with tempfile.TemporaryDirectory() as d:
         rocks = os.path.join(d, os.path.basename(file) + ".rdb")
-        ifcopenshell.convert_path_to_rocksdb(file, rocks, errors=os.path.basename(file) + ".json")
+
+        # certain errors such as attribute counts / invalid enumeration literals
+        # are only captured during parsing of SPF as they are not represented in
+        # rocksdb, these errors need to be captured during conversion to rocksdb
+        # but can still be handled ifcopenshell.validate logger.
+        ifcopenshell.get_log()
+        ifcopenshell.ifcopenshell_wrapper.set_log_format_json()
+        ifcopenshell.convert_path_to_rocksdb(file, rocks)
+        log = ifcopenshell.get_log()
+
         try:
             ifcopenshell.validate.validate(rocks, logger)
         except ifcopenshell.SchemaError as e:
             pytest.skip()
+        # ifcopenshell.validate.log_internal_cpp_errors(None, file, logger, log_content=log)
         file = os.path.basename(file)
         if file.startswith("fail-"):
             assert len(logger.statements) > 0
