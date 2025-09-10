@@ -29,7 +29,7 @@ from bonsai.bim.module.drawing.data import (
     ElementFiltersData,
     DecoratorData,
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import DocProperties, Drawing, Sheet
@@ -565,56 +565,77 @@ class BIM_PT_text(Panel):
             return
         return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
 
+    def draw_text_editing_ui(
+        self: Union[bpy.types.Panel, bpy.types.Operator],
+        context: bpy.types.Context,
+        *,
+        popup_mode: bool = False,
+    ) -> None:
+        # The method is also used in EditTextPopup.draw().
+        assert self.layout
+        obj = context.active_object
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
+
+        row = self.layout.row(align=True)
+
+        if popup_mode:
+            row.operator("bim.add_text_literal", icon="ADD", text="Add Literal")
+        else:
+            row.operator("bim.edit_text", icon="CHECKMARK")
+            row.operator("bim.add_text_literal", icon="ADD", text="")
+            row.operator("bim.disable_editing_text", icon="CANCEL", text="")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "font_size")
+        row = self.layout.row(align=True)
+        row.prop(props, "newline_at")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "symbol")
+        if props.symbol == "CUSTOM SYMBOL":
+            row = self.layout.row(align=True)
+            row.prop(props, "custom_symbol", text="")
+
+        for i, literal_props in enumerate(props.literals):
+            box = self.layout.box()
+            row = self.layout.row(align=True)
+
+            row = box.row(align=True)
+            row.label(text=f"Literal[{i}]:")
+            if i > 0:
+                row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
+            if i < len(props.literals) - 1:
+                row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
+            row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
+
+            # skip BoxAlignment since we're going to format it ourselves
+            attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
+            popup_active_attribute = attributes[0] if popup_mode else None
+            bonsai.bim.helper.draw_attributes(attributes, box, popup_active_attribute=popup_active_attribute)
+
+            row = box.row(align=True)
+            cols = [row.column(align=True) for i in range(3)]
+            for i in range(9):
+                cols[i % 3].prop(
+                    literal_props,
+                    "box_alignment",
+                    text="",
+                    index=i,
+                    icon="RADIOBUT_ON" if literal_props.box_alignment[i] else "RADIOBUT_OFF",
+                )
+
+            col = row.column(align=True)
+            col.label(text="    Text box alignment:")
+            col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
+
     def draw(self, context):
         obj = context.active_object
         assert obj
         props = tool.Drawing.get_text_props(obj)
 
         if props.is_editing:
-            # shares most of the code with EditTextPopup.draw()
-            # need to keep them in sync or move to some common function
-
-            row = self.layout.row(align=True)
-            row.operator("bim.edit_text", icon="CHECKMARK")
-            row.operator("bim.add_text_literal", icon="ADD", text="")
-            row.operator("bim.disable_editing_text", icon="CANCEL", text="")
-
-            row = self.layout.row(align=True)
-            row.prop(props, "font_size")
-            row = self.layout.row(align=True)
-            row.prop(props, "newline_at")
-
-            for i, literal_props in enumerate(props.literals):
-                box = self.layout.box()
-                row = self.layout.row(align=True)
-
-                row = box.row(align=True)
-                row.label(text=f"Literal[{i}]:")
-                if i > 0:
-                    row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
-                if i < len(props.literals) - 1:
-                    row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
-                row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
-
-                # skip BoxAlignment since we're going to format it ourselves
-                attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
-                bonsai.bim.helper.draw_attributes(attributes, box)
-
-                row = box.row(align=True)
-                cols = [row.column(align=True) for i in range(3)]
-                for i in range(9):
-                    cols[i % 3].prop(
-                        literal_props,
-                        "box_alignment",
-                        text="",
-                        index=i,
-                        icon="RADIOBUT_ON" if literal_props.box_alignment[i] else "RADIOBUT_OFF",
-                    )
-
-                col = row.column(align=True)
-                col.label(text="    Text box alignment:")
-                col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
-
+            self.draw_text_editing_ui(context)
         else:
             text_data = DecoratorData.get_text_data(obj)
 

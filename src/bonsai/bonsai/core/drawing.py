@@ -39,8 +39,7 @@ def disable_editing_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> 
 def edit_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_size_pset(obj)
-    drawing.update_newline_at(obj)
-    drawing.update_text_value(obj)
+    drawing.update_newline_at_and_symbol(obj)
     drawing.disable_editing_text(obj)
 
 
@@ -67,8 +66,6 @@ def edit_assigned_product(
             ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
         if product:
             ifc.run("drawing.assign_product", relating_product=product, related_object=element)
-        if drawing.is_annotation_object_type(element, ("TEXT", "TEXT_LEADER")):
-            drawing.update_text_value(obj)
 
     drawing.disable_editing_assigned_product(obj)
 
@@ -200,7 +197,7 @@ def disable_editing_references(drawing: type[tool.Drawing]) -> None:
 
 
 def add_document(
-    ifc: type[tool.Ifc], drawing: type[tool.Drawing], document_type: type[tool.Drawing].DOCUMENT_TYPE, uri: str
+    ifc: type[tool.Ifc], drawing: type[tool.Drawing], document_type: tool.Drawing.DOCUMENT_TYPE, uri: str
 ) -> None:
     document = ifc.run("document.add_information")
     reference = ifc.run("document.add_reference", information=document)
@@ -217,7 +214,7 @@ def add_document(
 def remove_document(
     ifc: type[tool.Ifc],
     drawing: type[tool.Drawing],
-    document_type: type[tool.Drawing].DOCUMENT_TYPE,
+    document_type: tool.Drawing.DOCUMENT_TYPE,
     document: ifcopenshell.entity_instance,
 ) -> None:
     ifc.run("document.remove_information", information=document)

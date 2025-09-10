@@ -56,6 +56,7 @@ class ClassificationsData:
             data = element.get_info()
             if tool.Ifc.get().schema == "IFC2X3" and element.EditionDate:
                 data["EditionDate"] = ifcopenshell.util.date.ifc2datetime(data["EditionDate"])
+            data["Name"] = data["Name"] or "Unnamed"
             results.append(data)
         return results
 

@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
@@ -192,21 +191,11 @@ class EnableEditingClassification(bpy.types.Operator):
     classification: bpy.props.IntProperty()
 
     def execute(self, context):
-        def callback(name, prop, data):
-            if name == "ReferenceTokens":
-                geo_props = tool.Georeference.get_georeference_props()
-                new = geo_props.projected_crs.add()
-                new.name = name
-                new.data_type = "string"
-                new.is_null = data[name] is None
-                new.is_optional = True
-                new.string_value = "" if new.is_null else json.dumps(data[name])
-                return True
-
         props = tool.Classification.get_classification_props()
         props.classification_attributes.clear()
         bonsai.bim.helper.import_attributes(
-            tool.Ifc.get().by_id(self.classification), props.classification_attributes, callback
+            tool.Ifc.get().by_id(self.classification),
+            props.classification_attributes,
         )
         props.active_classification_id = self.classification
         return {"FINISHED"}
@@ -248,13 +237,7 @@ class EditClassification(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Classification.get_classification_props()
-
-        def callback(attributes, prop):
-            if prop.name == "ReferenceTokens":
-                attributes[prop.name] = json.loads(prop.string_value)
-                return True
-
-        attributes = bonsai.bim.helper.export_attributes(props.classification_attributes, callback=callback)
+        attributes = bonsai.bim.helper.export_attributes(props.classification_attributes)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.classification.edit_classification(
             ifc_file,

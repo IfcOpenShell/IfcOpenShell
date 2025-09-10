@@ -11,10 +11,12 @@ ifeq ($(OS),Windows_NT)
 PYTHON:=python
 PIP:=pip
 VENV_BIN:=Scripts
-endif
+else
+UNAME_S:=$(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 SED:=sed -i '' -e
 PYTHON:=python3
+endif
 endif
 
 VENV_ACTIVATE:=$(VENV_BIN)/activate

@@ -27,22 +27,32 @@ class TestAssignControl(test.bootstrap.IFC4):
         control = ifcopenshell.api.cost.add_cost_schedule(self.file)
 
         # simple assignment
-        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_object=wall)
+        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_objects=[wall])
+        assert relation
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 1
         assert relation.RelatingControl == control
         assert relation.RelatedObjects == (wall,)
 
         # trying to establish existing relationship
-        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_object=wall)
+        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_objects=[wall])
         assert relation is None
 
         # assigning same control to another object
         wall1 = self.file.createIfcWall()
-        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_object=wall1)
+        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_objects=[wall1])
         assert relation is not None
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 1
         assert relation.RelatingControl == control
         assert set(relation.RelatedObjects) == set((wall, wall1))
+
+    def test_batch_assignment(self):
+        walls = [self.file.createIfcWall() for _ in range(5)]
+        control = ifcopenshell.api.cost.add_cost_schedule(self.file)
+        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_objects=walls)
+        assert relation
+        assert len(self.file.by_type("IfcRelAssignsToControl")) == 1
+        assert relation.RelatingControl == control
+        assert set(relation.RelatedObjects) == set(walls)
 
 
 class TestAssignControlIFC2X3(test.bootstrap.IFC2X3, TestAssignControl):

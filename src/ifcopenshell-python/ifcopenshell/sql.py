@@ -18,11 +18,13 @@
 from __future__ import annotations
 import re
 import json
+import numpy as np
+import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
 from pathlib import Path
-from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING
+from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING, TypedDict
 from . import ifcopenshell_wrapper
 from .file import file
 from .entity_instance import entity_instance
@@ -36,8 +38,33 @@ except ImportError as e:
     print(f"No SQL support: {e}")
 
 
+class GeometryCache(TypedDict):
+    shapes: dict[int, GeometryCacheShape]
+    geometry: dict[str, GeometryCacheGeometry]
+
+
+class GeometryCacheShape(TypedDict):
+    co: list[float]
+    """Object location."""
+    matrix: npt.NDArray[np.float64]
+    geometry: Union[str, None]
+    """Element's geometry id (same value as in ``Representation.id``).
+
+    Is set to ``None` when no geometry is available for the element.
+    """
+
+
+class GeometryCacheGeometry(TypedDict):
+    verts: npt.NDArray[np.float64]
+    edges: npt.NDArray[np.int32]
+    faces: npt.NDArray[np.int32]
+    material_ids: npt.NDArray[np.int32]
+    materials: list[int]
+
+
 class sqlite(file):
-    schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4"
+    mvd_str: str
+    """As in `header.file_description.description`."""
 
     def __init__(self, filepath: str):
         """
@@ -53,7 +80,6 @@ class sqlite(file):
         if not Path(filepath).exists():
             raise FileNotFoundError(f"File doesn't exist: {filepath}")
 
-        self.wrapped_data = None
         self.history_size = 64
         self.history = []
         self.future = []
@@ -81,7 +107,8 @@ class sqlite(file):
         except:
             assert False, "SQLite schema not supported."
 
-        self.schema = row[1]
+        self._schema = row[1]
+        self.mvd_str = row[2]
         self.ifc_schema = ifcopenshell.schema_by_name(self.schema)
 
         self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map")
@@ -234,29 +261,30 @@ class sqlite(file):
             return True
         return False
 
-    def get_geometry(self, ids: list[int]) -> dict[str, dict]:
+    def get_geometry(self, ids: list[int]) -> GeometryCache:
         import numpy as np
 
         ids_csv = ",".join(map(str, ids))
         query = f"SELECT ifc_id, x, y, z, matrix, geometry, verts, edges, faces, material_ids, materials FROM shape LEFT JOIN geometry ON shape.geometry = geometry.id WHERE `ifc_id` IN ({ids_csv})"
         self.cursor.execute(query)
         rows = self.cursor.fetchall()
-        shapes = {}
-        geometry = {}
+        shapes: dict[int, GeometryCacheShape] = {}
+        geometry: dict[str, GeometryCacheGeometry] = {}
         for row in rows:
             if row["geometry"] and row["geometry"] not in geometry:
+                # Same data types as in ifcopenshell.util.shape.
                 geometry[row["geometry"]] = {
-                    "verts": np.frombuffer(row["verts"]).tolist() if row["verts"] else [],
-                    "edges": np.frombuffer(row["edges"], dtype=np.int64).tolist() if row["edges"] else [],
-                    "faces": np.frombuffer(row["faces"], dtype=np.int64).tolist() if row["faces"] else [],
+                    "verts": np.frombuffer(row["verts"], dtype="d") if row["verts"] else np.empty(0, dtype="d"),
+                    "edges": np.frombuffer(row["edges"], dtype="i") if row["edges"] else np.empty(0, dtype="i"),
+                    "faces": np.frombuffer(row["faces"], dtype="i") if row["faces"] else np.empty(0, dtype="i"),
                     "material_ids": (
-                        np.frombuffer(row["material_ids"], dtype=np.int64).tolist() if row["material_ids"] else []
+                        np.frombuffer(row["material_ids"], dtype="i") if row["material_ids"] else np.empty(0, dtype="i")
                     ),
                     "materials": json.loads(row["materials"]) if row["materials"] else [],
                 }
             shapes[row["ifc_id"]] = {
                 "co": [row["x"], row["y"], row["z"]],
-                "matrix": np.copy(np.frombuffer(row["matrix"]).reshape((4, 4))),
+                "matrix": np.copy(np.frombuffer(row["matrix"], dtype="d").reshape((4, 4))),
                 "geometry": row["geometry"],
             }
         ids_without_geometry = set(ids) - set(shapes.keys())
@@ -271,6 +299,21 @@ class sqlite(file):
     def __del__(self) -> None:
         # Override to avoid clean up data unrelated to sqlite file.
         pass
+
+    def wrapped_data(self) -> NoReturn:
+        class_name = str(type(self))
+        raise Exception(
+            f"No `wrapped_data` for {class_name}. `ifcopenshell.{class_name}` is probably confused with `ifcopenshell.file`."
+        )
+
+    @property
+    def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
+        return self._schema
+
+    @property
+    def schema_identifier(self) -> str:
+        # The best option we've got for mimicing `file.schema_identifier`.
+        return self._schema
 
 
 class sqlite_entity(entity_instance):
@@ -448,6 +491,10 @@ class sqlite_entity(entity_instance):
             self.__getitem__(0)  # This will get all attributes
         info.update(self.sqlite_wrapper.attribute_cache)
         return info
+
+    @property
+    def file(self) -> sqlite:
+        return self.sqlite_wrapper.file
 
 
 class sqlite_wrapper:

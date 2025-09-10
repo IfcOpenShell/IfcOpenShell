@@ -122,7 +122,7 @@ class Usecase:
     ) -> ifcopenshell.entity_instance:
         return ifcopenshell.api.control.assign_control(
             self.file,
-            related_object=related_object,
+            related_objects=[related_object],
             relating_control=cost_item,
         )
 

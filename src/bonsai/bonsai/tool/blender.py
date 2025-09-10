@@ -56,7 +56,7 @@ from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 if TYPE_CHECKING:
     from sun_position.properties import SunPosProperties
     import bpy.stub_internal.rna_enums as rna_enums
-    from bonsai.bim.prop import BIMProperties, BIMObjectProperties
+    from bonsai.bim.prop import BIMProperties, BIMObjectProperties, BIMSnapProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
     from bonsai.bim.module.covetool.prop import CoveToolProperties
@@ -689,6 +689,29 @@ class Blender(bonsai.core.tool.Blender):
         context.view_layer.objects.active = active_object
         if active_object:
             active_object.select_set(True)
+
+    @classmethod
+    def validate_object_selection(
+        cls,
+        context: bpy.types.Context,
+        active_object: Union[bpy.types.Object, None] = None,
+        selected_objects: Sequence[bpy.types.Object] = (),
+    ) -> tuple[bpy.types.Context, Union[bpy.types.Object, None], list[bpy.types.Object]]:
+        """Validate object selection and return only valid objects.
+
+        Can be used before ``set_objects_selection`` to avoid errors
+        trying to select or set as active already removed objects
+        or objects that are not in the current view layer (their collection is unchecked).
+        """
+        assert context.view_layer
+        view_layer_objects = set(context.view_layer.objects)
+
+        new_selected_objects = [o for o in selected_objects if cls.is_valid_data_block(o) and o in view_layer_objects]
+
+        if active_object and (not cls.is_valid_data_block(active_object) or active_object not in view_layer_objects):
+            active_object = None
+
+        return context, active_object, new_selected_objects
 
     @classmethod
     def clear_objects_selection(cls) -> None:
@@ -1559,6 +1582,11 @@ class Blender(bonsai.core.tool.Blender):
         return repr(bpy_struct)
 
     @classmethod
+    def get_props_attribute_name(cls, props: bpy.types.PropertyGroup) -> str:
+        """E.g. `bpy.data.objects['IfcAnnotation/TEXT'].BIMTextProperties` -> `BIMTextProperties`"""
+        return repr(props).rpartition(".")[-1]
+
+    @classmethod
     def resolve_data_path_to_data_attr(cls, data_path: str) -> tuple[bpy.types.bpy_struct, str]:
         """
         :param data_path: Non-full data path to attribute.
@@ -1568,8 +1596,8 @@ class Blender(bonsai.core.tool.Blender):
 
         :return: Resolved tuple of Blender Struct and property name.
         Examples:
-            - `(preferences.prop_group, "string_prop)`
-            - `(scene, "string_prop)`
+            - `(preferences.prop_group, "string_prop")`
+            - `(scene, "string_prop")`
 
         """
         # Get data to modify.

@@ -38,7 +38,7 @@ class TestRemoveWorkCalendar(test.bootstrap.IFC4):
 
         # Assign tasks.
         task = ifcopenshell.api.sequence.add_task(self.file)
-        ifcopenshell.api.control.assign_control(self.file, work_calendar, task)
+        ifcopenshell.api.control.assign_control(self.file, work_calendar, [task])
 
         ifcopenshell.api.sequence.remove_work_calendar(self.file, work_calendar)
 

@@ -30,7 +30,7 @@ class TestAddCostItemQuantity(test.bootstrap.IFC4):
         schedule = ifcopenshell.api.cost.add_cost_schedule(self.file)
         item = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.control.assign_control(self.file, relating_control=item, related_object=wall)
+        ifcopenshell.api.control.assign_control(self.file, relating_control=item, related_objects=[wall])
 
         quantities = []
         for quantity_type in quantity_types:

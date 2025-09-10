@@ -21,6 +21,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.placement
 import typing
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class Patcher:
@@ -97,6 +98,7 @@ class Patcher:
         self.ax = None
         self.ay = None
         self.az = None
+        self.builder = ShapeBuilder(file)
 
         try:
             self.ax = float(ax)
@@ -183,15 +185,4 @@ class Patcher:
         z = np.array((m[0][2], m[1][2], m[2][2]))
         o = np.array((m[0][3], m[1][3], m[2][3]))
         object_matrix = ifcopenshell.util.placement.a2p(o, z, x)
-        return self.create_ifc_axis_2_placement_3d(
-            object_matrix[:, 3][0:3],
-            object_matrix[:, 2][0:3],
-            object_matrix[:, 0][0:3],
-        )
-
-    def create_ifc_axis_2_placement_3d(self, point, up, forward):
-        return self.file.createIfcAxis2Placement3D(
-            self.file.createIfcCartesianPoint(point.tolist()),
-            self.file.createIfcDirection(up.tolist()),
-            self.file.createIfcDirection(forward.tolist()),
-        )
+        return self.builder.create_axis2_placement_3d_from_matrix(object_matrix)

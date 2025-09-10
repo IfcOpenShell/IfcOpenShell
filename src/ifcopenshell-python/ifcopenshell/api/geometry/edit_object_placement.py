@@ -22,6 +22,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import Optional, Union, Any
 
 NPArrayOfFloats = npt.NDArray[np.float64]
@@ -74,6 +75,7 @@ class Usecase:
         if not hasattr(self.settings["product"], "ObjectPlacement"):
             return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        self.builder = ShapeBuilder(self.file)
 
         if not self.settings["is_si"]:
             self.convert_matrix_to_si(self.settings["matrix"])
@@ -183,24 +185,11 @@ class Usecase:
         o = np.array((m[0][3], m[1][3], m[2][3]))
         object_matrix = ifcopenshell.util.placement.a2p(o, z, x)
         relative_placement_matrix = np.linalg.inv(relating_object_matrix) @ object_matrix
-        return self.create_ifc_axis_2_placement_3d(
-            relative_placement_matrix[:, 3][0:3],
+        return self.builder.create_axis2_placement_3d(
+            self.convert_si_to_unit(relative_placement_matrix[:, 3][0:3]),
             relative_placement_matrix[:, 2][0:3],
             relative_placement_matrix[:, 0][0:3],
         )
-
-    def create_ifc_axis_2_placement_3d(
-        self, point: NPArrayOfFloats, up: NPArrayOfFloats, forward: NPArrayOfFloats
-    ) -> ifcopenshell.entity_instance:
-        return self.file.createIfcAxis2Placement3D(
-            self.create_cartesian_point(point),
-            self.file.createIfcDirection(up.tolist()),
-            self.file.createIfcDirection(forward.tolist()),
-        )
-
-    def create_cartesian_point(self, co: NPArrayOfFloats) -> ifcopenshell.entity_instance:
-        co = self.convert_si_to_unit(co)
-        return self.file.createIfcCartesianPoint(co.tolist())
 
     def convert_si_to_unit(self, co: NPArrayOfFloats) -> NPArrayOfFloats:
         return co / self.unit_scale

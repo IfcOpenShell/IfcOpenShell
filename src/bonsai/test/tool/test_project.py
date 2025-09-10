@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import contextlib
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
@@ -25,6 +26,8 @@ import ifcopenshell.api.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import tempfile
+import ifcpatch
+from ifcpatch.recipes import Ifc2Sql
 from test.bim.bootstrap import NewFile
 from bonsai.tool.project import Project as subject
 from pathlib import Path
@@ -348,3 +351,51 @@ class TestSaveLinkedModelsToIfc(NewFile):
         assert documents[0].id() == document_id
         assert documents[0].Name == "BBIM_Linked_Models"
         assert len(ifc.by_type("IfcDocumentReference")) == 0
+
+
+class TestLoadingIfcSqlite(NewFile):
+    def test_run(self):
+        filepath = Path("test/files/basic.ifc")
+        ifc_file: ifcopenshell.file
+        ifc_file = ifcopenshell.open(filepath)
+
+        patcher = Ifc2Sql.Patcher(
+            ifc_file,
+            sql_type="SQLite",
+        )
+        patcher.patch()
+        tmp_file = Path(tempfile.mktemp(suffix=".ifcsqlite"))
+        ifcpatch.write(patcher.get_output(), tmp_file)
+
+        elements_with_meshes = [
+            # Types.
+            "IfcSlabType/Slab",
+            "IfcWallType/Wall",
+            # Occurrences.
+            "IfcBeam/Beam",
+            "IfcWall/Wall",
+        ]
+
+        elements_without_meshes = (
+            "IfcProject/My Project",
+            "IfcSite/My Site",
+            "IfcBuilding/My Building",
+            "IfcBuildingStorey/Ground Floor",
+        )
+
+        def clean_up() -> None:
+            if isinstance(ifc_file := tool.Ifc.get(), ifcopenshell.sqlite):
+                ifc_file.db.close()
+            tmp_file.unlink(missing_ok=True)
+
+        with contextlib.ExitStack() as stack:
+            stack.callback(clean_up)
+            bpy.ops.bim.load_project(filepath=tmp_file.as_posix())
+            assert isinstance(tool.Ifc.get(), ifcopenshell.sqlite)
+            for element_name in elements_with_meshes:
+                assert element_name in bpy.data.objects
+                assert bpy.data.objects[element_name].data
+
+            for element_name in elements_without_meshes:
+                assert element_name in bpy.data.objects
+                assert not bpy.data.objects[element_name].data

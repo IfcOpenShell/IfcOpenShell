@@ -78,6 +78,12 @@ SET_PROPERTY(
 		utils/typemaps_in.i
 		utils/typemaps_out.i
 )
+
+# Debug build on Windows add required `_d` suffix to the resulting .pyd file.
+# If we won't override -interface name,
+# swig py wrapper will try to import `_ifcopenshell_wrapper_d` module and would fail.
+set(SWIG_MODULE_ifcopenshell_wrapper_EXTRA_FLAGS "-interface" "_ifcopenshell_wrapper")
+
 swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
 SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")

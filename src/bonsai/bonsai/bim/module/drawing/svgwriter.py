@@ -823,6 +823,7 @@ class SvgWriter:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         element = tool.Ifc.get_entity(text_obj)
+        assert element
         text_literals = tool.Drawing.get_text_literal(text_obj, return_list=True)
         product = tool.Drawing.get_assigned_product(element)
 

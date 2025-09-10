@@ -692,7 +692,8 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     :returns: The scale factor
     """
     if (
-        unit_type
+        type(ifc_file) is ifcopenshell.file
+        and unit_type
         not in ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
         .declaration_by_name("IfcUnitEnum")
         .enumeration_items()

@@ -145,14 +145,20 @@ class TestAssignType(test.bootstrap.IFC4):
         This is because the type will have its own PredefinedType, and the element's PredefinedType
         will conflict with it. (See #7006)
         """
+        is_ifc2x3 = self.file.schema == "IFC2X3"
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
-        element_type.PredefinedType = "MOVABLE"
+        element_type.PredefinedType = "POLYGONAL"
 
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        element.PredefinedType = "USERDEFINED"
+        if not is_ifc2x3:
+            # In IFC2X3, there seems to be no example when both type and occurence have PredefinedType.
+            # So we just ignore it.
+            element.PredefinedType = "USERDEFINED"
         element.ObjectType = "Test"
         ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
-        assert element.PredefinedType is None
+
+        if not is_ifc2x3:
+            assert element.PredefinedType is None
         assert element.ObjectType is None
 
     def test_keep_predefined_type_if_type_assignment_is_notdefined(self):
@@ -160,16 +166,26 @@ class TestAssignType(test.bootstrap.IFC4):
         if an element has a PredefinedType, it will be removed when assigning a type.(See #7006)
         This behavior needs to be blocked if the PredefinedType of the typing Entity is set to "NOTDEFINED". (See #7011)
         """
+        is_ifc2x3 = self.file.schema == "IFC2X3"
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         element_type.PredefinedType = "NOTDEFINED"
 
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        element.PredefinedType = "USERDEFINED"
+        if not is_ifc2x3:
+            # In IFC2X3, there seems to be no example when both type and occurence have PredefinedType.
+            # So we just ignore it.
+            element.PredefinedType = "USERDEFINED"
         element.ObjectType = "Test"
         ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
-        assert element.PredefinedType == "USERDEFINED"
+
+        if not is_ifc2x3:
+            assert element.PredefinedType == "USERDEFINED"
         assert element.ObjectType == "Test"
 
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
+    pass
+
+
+class TestAssignTypeIFC4X3(test.bootstrap.IFC4X3, TestAssignType):
     pass

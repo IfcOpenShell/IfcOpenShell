@@ -19,21 +19,19 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
-from typing import Union
 
 
 def unassign_control(
     file: ifcopenshell.file,
     relating_control: ifcopenshell.entity_instance,
-    related_object: ifcopenshell.entity_instance,
-) -> Union[ifcopenshell.entity_instance, None]:
+    related_objects: list[ifcopenshell.entity_instance],
+) -> None:
     """Unassigns a planning control or constraint to an object
 
     :param relating_control: The IfcControl entity that is creating the
         control or constraint
-    :param related_object: The IfcObjectDefinition that is being controlled
-    :return: If the control still is related to other objects, the
-        IfcRelAssignsToControl is returned, otherwise None.
+    :param related_objects: The list IfcObjectDefinitions that is being controlled
+    :return: None
 
     Example:
 
@@ -45,23 +43,23 @@ def unassign_control(
         cost_item = ifcopenshell.api.cost.add_cost_item(model,
             cost_schedule=schedule)
         ifcopenshell.api.control.assign_control(model,
-            relating_control=cost_item, related_object=wall)
+            relating_control=cost_item, related_objects=[wall])
 
         # And now let's change our mind
         ifcopenshell.api.control.unassign_control(model,
-            relating_control=cost_item, related_object=wall)
+            relating_control=cost_item, related_objects=[wall])
     """
-    for rel in related_object.HasAssignments or []:
-        if not rel.is_a("IfcRelAssignsToControl") or rel.RelatingControl != relating_control:
-            continue
-        if len(rel.RelatedObjects) == 1:
+    related_objects_set = set(related_objects)
+    control_assignments = set(relating_control.Controls)
+    rels = set(rel for obj in related_objects_set for rel in obj.HasAssignments if rel in control_assignments)
+
+    for rel in rels:
+        related_objects_new = set(rel.RelatedObjects) - related_objects_set
+        if related_objects_new:
+            rel.RelatedObjects = list(related_objects_new)
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
+        else:
             history = rel.OwnerHistory
             file.remove(rel)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
-            return
-        related_objects = list(rel.RelatedObjects)
-        related_objects.remove(related_object)
-        rel.RelatedObjects = related_objects
-        ifcopenshell.api.owner.update_owner_history(file, element=rel)
-        return rel

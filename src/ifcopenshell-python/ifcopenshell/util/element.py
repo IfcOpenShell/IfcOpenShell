@@ -1169,6 +1169,25 @@ def get_groups(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
     return groups
 
 
+def get_controls(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance]:
+    """
+    Retrieves the controls of an element.
+
+    :param element: The IFC element
+    :return: Generator of IfcControl elements assigned to the element.
+
+    Example:
+
+    .. code:: python
+
+        task = file.by_type("IfcTask")[0]
+        control = ifcopenshell.util.element.get_controls(task)[0]
+    """
+    for rel in element.HasAssignments:
+        if rel.is_a("IfcRelAssignsToControl"):
+            yield rel.RelatingControl
+
+
 def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """Get the parent in the spatial heirarchy
 

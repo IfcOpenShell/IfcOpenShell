@@ -73,6 +73,7 @@ class BIM_PT_classifications(Panel):
                 self.draw_ui(classification)
 
     def draw_add_manual_ui(self, context):
+        assert self.layout
         if self.props.is_adding:
             bonsai.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
             row = self.layout.row(align=True)
@@ -83,10 +84,12 @@ class BIM_PT_classifications(Panel):
             row.operator("bim.enable_adding_manual_classification", text="Add Classification", icon="ADD")
 
     def draw_add_bsdd_ui(self, context):
+        assert self.layout
         row = self.layout.row()
         row.operator("bim.add_classification_from_bsdd", icon="ADD")
 
     def draw_add_file_ui(self, context):
+        assert self.layout
         if ClassificationsData.data["has_classification_file"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "available_classifications", text="")
@@ -97,13 +100,15 @@ class BIM_PT_classifications(Panel):
             row.label(text="No Active Classification Library")
             row.operator("bim.load_classification_library", text="", icon="IMPORT")
 
-    def draw_editable_ui(self):
+    def draw_editable_ui(self) -> None:
+        assert self.layout
         row = self.layout.row(align=True)
         row.operator("bim.edit_classification", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification", text="", icon="CANCEL")
         bonsai.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
 
-    def draw_ui(self, classification):
+    def draw_ui(self, classification: dict[str, Any]) -> None:
+        assert self.layout
         row = self.layout.row(align=True)
         row.label(text=classification["Name"], icon="ASSET_MANAGER")
         if not self.props.active_classification_id:
