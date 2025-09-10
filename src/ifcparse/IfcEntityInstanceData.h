@@ -286,7 +286,7 @@ namespace impl {
 struct AttributeValue {
     uint8_t index_;
     uint8_t storage_model_ = 0;
-    uint8_t entity_or_type_ = 0;
+    const IfcParse::declaration* entity_or_type_ = 0;
     size_t instance_name_;
     union pointer_type {
         const in_memory_attribute_storage* storage_ptr;
@@ -308,7 +308,7 @@ struct AttributeValue {
         , array_(arr)
     {}
 
-    AttributeValue(IfcParse::impl::rocks_db_file_storage* db, size_t instance_name, uint8_t entity_or_type, uint8_t index)
+    AttributeValue(IfcParse::impl::rocks_db_file_storage* db, size_t instance_name, const IfcParse::declaration* entity_or_type, uint8_t index)
         : index_(index)
         , storage_model_(1)
         , entity_or_type_(entity_or_type)
@@ -404,7 +404,7 @@ public:
     template<typename Visitor>
     auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, Visitor&& visitor) const {
         // @todo do we need visitation on all data/storage/attribute levels?
-        AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl->as_entity() ? 1 : 0, index).apply_visitor(std::forward<Visitor>(visitor));
+        AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl, index).apply_visitor(std::forward<Visitor>(visitor));
     }
 #endif
 };
