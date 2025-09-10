@@ -107,7 +107,7 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
             y = float(end[1, 3]) / unit_scale
             dx = float(end[0, 0])
             dy = float(end[1, 0])
-            zero_length_segment.DesignParameters.StartPoint.Coordinates = (x,y)
+            zero_length_segment.DesignParameters.StartPoint.Coordinates = (x, y)
             zero_length_segment.DesignParameters.StartDirection = dy / dx
         elif zero_length_segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
             y = float(end[1, 3]) / unit_scale
