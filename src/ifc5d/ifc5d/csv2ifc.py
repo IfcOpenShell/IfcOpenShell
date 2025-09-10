@@ -50,15 +50,8 @@ class CsvHeader(TypedDict):
     Query: NotRequired[int]
 
     # Assigning rates
-    __annotations__ = {
-        "Rate cost schedule": NotRequired[str],
-        "RateID": NotRequired[str],
-    }
-
-
-#    # Assigning rates
-#    "Rate cost schedule": NotRequired[str]
-#    "RateID" : NotRequired[str]
+    RateSchedule: NotRequired[str]
+    RateID : NotRequired[str]
 
 
 # Currently we assume that if column is not part of the main header,
@@ -168,7 +161,7 @@ class Csv2Ifc:
                     self.has_categories = True
                     self.has_rates = False
                     self.headers = {col: i for i, col in enumerate(row) if col}
-                    if "Rate cost schedule" in self.headers and "RateID" in self.headers:
+                    if "RateSchedule" in self.headers and "RateID" in self.headers:
                         self.has_rates = True
                     if "Value" in self.headers:
                         self.has_categories = False
@@ -239,7 +232,7 @@ class Csv2Ifc:
 
         if self.has_rates:
             cost_rate = {
-                "Schedule": row[(self.headers["Rate cost schedule"])] if "Rate cost schedule" in self.headers else None,
+                "Schedule": row[(self.headers["RateSchedule"])] if "RateSchedule" in self.headers else None,
                 "RateID": row[(self.headers["RateID"])] if "RateID" in self.headers else None,
             }
         else:
