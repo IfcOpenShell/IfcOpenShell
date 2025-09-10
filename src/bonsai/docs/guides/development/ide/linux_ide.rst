@@ -402,7 +402,7 @@ Now let's find out how to interact with GitHub in order to make changes to the B
 
     .. container:: blockbutton
 
-       `Download dev_environment.sh <https://docs.bonsaibim.org/quickstart/ide/linux/dev_environment.sh>`__
+       :download:`Download dev_environment.sh <linux/dev_environment.sh>`
 
     Edit the file to match the paths in your system. In our case we will edit the following lines:
 
