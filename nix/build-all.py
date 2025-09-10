@@ -470,6 +470,7 @@ def build_dependency(
     pre_compile_subs: "Sequence[tuple[str, str, str]]" = (),
     additional_files: "Union[dict[str, str], None]" = None,
     no_append_name=False,
+    cmake_dir=None,
     **kwargs,
 ) -> None:
     """Handles building of dependencies with different tools (which are
@@ -580,7 +581,7 @@ def build_dependency(
             os.path.join(DEPS_DIR, "install", name),
         )
     elif mode != "bjam":
-        extract_build_dir = os.path.join(extract_dir, "build")
+        extract_build_dir = os.path.join(extract_dir, *([cmake_dir] if cmake_dir else []), "build")
         if os.path.exists(extract_build_dir):
             shutil.rmtree(extract_build_dir)
         os.makedirs(extract_build_dir)
@@ -998,6 +999,7 @@ if "zstd" in targets:
             f"-DZSTD_BUILD_STATIC=ON",
             f"-DZSTD_BUILD_SHARED=OFF",
         ],
+        cmake_dir="build/cmake/",
         download_url="https://github.com/facebook/zstd",
         download_name="zstd",
         download_tool=download_tool_git,
