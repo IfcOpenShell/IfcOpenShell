@@ -24,7 +24,7 @@
     "tailwind-variants": "^1.0.0",
     "tailwindcss": "^4.0.0",
     "tw-animate-css": "^1.3.2",
-    "vite": "^6.3.5"
+    "vite": "^6.3.6"
   },
   "dependencies": {
     "eventemitter3": "^5.0.1",
