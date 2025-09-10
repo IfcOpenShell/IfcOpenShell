@@ -25,6 +25,7 @@ import ifcopenshell.util.unit
 import bonsai.tool as tool
 from pathlib import Path
 from typing import Any, Union
+from natsort import natsorted
 
 
 def refresh():
@@ -480,9 +481,9 @@ class AnnotationData:
             if tool.Drawing.is_annotation_object_type(relating_type, object_type):
                 relating_types.append(relating_type)
 
-        results = [("0", "Untyped", "")]
-        results.extend([(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types])
-        results.sort(key=lambda x: x[1].lower())
+        results = [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types]
+        results = natsorted(results, key=lambda x: x[1])
+        results = [("0", "Untyped", "")] + results
         return results
 
     @classmethod
