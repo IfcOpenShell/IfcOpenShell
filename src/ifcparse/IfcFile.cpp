@@ -2,6 +2,7 @@
 #include "IfcLogger.h"
 
 #include <rocksdb/table.h>
+#include <rocksdb/convenience.h>
 
 IfcParse::parse_context::~parse_context() {
     for (auto& t : tokens_) {
@@ -407,7 +408,8 @@ namespace {
         // options.disable_auto_compactions = true;
         options.create_if_missing = true;
         options.merge_operator.reset(new ConcatenateIdMergeOperator());
-        options.compression = rocksdb::kZSTD;
+        auto vec = rocksdb::GetSupportedCompressions();
+        options.compression = std::find(vec.begin(), vec.end(), rocksdb::kZSTD) != vec.end() ? rocksdb::kZSTD : rocksdb::kNoCompression;
 
         rocksdb::BlockBasedTableOptions tbo;
 
