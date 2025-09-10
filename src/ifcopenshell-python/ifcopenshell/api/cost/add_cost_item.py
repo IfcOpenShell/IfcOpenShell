@@ -59,7 +59,7 @@ def add_cost_item(
     cost_item_ = ifcopenshell.api.root.create_entity(file, ifc_class="IfcCostItem")
 
     if cost_schedule:
-        ifcopenshell.api.control.assign_control(file, cost_schedule, cost_item_)
+        ifcopenshell.api.control.assign_control(file, cost_schedule, [cost_item_])
     elif cost_item:
         ifcopenshell.api.nest.assign_object(file, related_objects=[cost_item_], relating_object=cost_item)
     return cost_item_

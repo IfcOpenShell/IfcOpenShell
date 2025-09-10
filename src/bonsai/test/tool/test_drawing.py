@@ -622,14 +622,103 @@ class TestImportTextAttributes(NewFile):
         item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item])
         element.Representation.Representations = [representation]
-        element.ObjectType = "TEXT"  # TODO: double check if it's valid to set this
+        element.ObjectType = "TEXT"
         tool.Ifc.link(element, obj)
+
         subject.import_text_attributes(obj)
+
         props = tool.Drawing.get_text_props(obj)
+        assert props.font_size == "2.5"
+
         literal_props = props.literals[0]
+        assert literal_props.ifc_definition_id == item.id()
+        assert literal_props.box_alignment[:] == tuple([False] * 6 + [True] + [False] * 2)
         assert literal_props.attributes["Literal"].string_value == "Literal"
         assert literal_props.attributes["Path"].enum_value == "RIGHT"
         assert literal_props.attributes["BoxAlignment"].string_value == "bottom-left"
+
+
+class TestReplaceTextLiteralVariables(NewFile):
+    def test_using_attribute_variables(self):
+        ifc = ifcopenshell.file()
+        wall = ifc.create_entity("IfcWall", Name="Baz")
+        text = "Foo {{Name}} Bar"
+        updated_text = subject.replace_text_literal_variables(text, wall)
+        assert updated_text == "Foo Baz Bar"
+
+    def test_using_property_variables(self):
+        ifc = ifcopenshell.file()
+
+        wall = ifc.createIfcWall()
+        pset = ifcopenshell.api.pset.add_pset(ifc, name="Custom_Pset", product=wall)
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Key": "Baz"})
+        text = "Foo {{Custom_Pset.Key}} Bar"
+
+        updated_text = subject.replace_text_literal_variables(text, wall)
+        assert updated_text == "Foo Baz Bar"
+
+
+class TestEditText(NewFile):
+    def test_change_text_font_size(self):
+        TestGetTextLiteral().test_run()
+        obj = bpy.data.objects["Object"]
+        assert DecoratorData.get_text_data(obj)["FontSize"] == 2.5
+
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            props = tool.Drawing.get_text_props(obj)
+            props.font_size = "7.0"
+            bpy.ops.bim.edit_text()
+        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
+        assert "title" in annotation_classes
+        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
+
+    def test_add_second_literal(self, setup=True):
+        if setup:
+            TestGetTextLiteral().test_run()
+        obj = bpy.data.objects["Object"]
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            bpy.ops.bim.add_text_literal()
+            props = tool.Drawing.get_text_props(obj)
+            literal = props.literals[1]
+            literal.attributes["Literal"].string_value = "test_value"
+            bpy.ops.bim.edit_text()
+
+        ifc = tool.Ifc.get()
+        assert ifc.by_type("IfcTextLiteralWithExtent")[1].Literal == "test_value"
+
+
+class TestDisableTextEditing(NewFile):
+    def test_disable_text_editing(self):
+        # add second literal and change font size to test disable editing keeps those changes.
+        TestEditText.test_change_text_font_size(self)  # Set font size to "7.0".
+        TestEditText.test_add_second_literal(self, setup=False)
+
+        obj = bpy.data.objects["Object"]
+        props = tool.Drawing.get_text_props(obj)
+        assert obj is not None, obj
+        with bpy.context.temp_override(active_object=obj):
+            bpy.ops.bim.enable_editing_text()
+            bpy.ops.bim.remove_text_literal(literal_prop_id=1)
+            props.literals[0].attributes["Literal"].string_value = "changed_value"
+            props.font_size = "2.5"
+            bpy.ops.bim.disable_editing_text()
+
+        ifc = tool.Ifc.get()
+        # Test font size.
+        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
+        assert "title" in annotation_classes
+        text_data = DecoratorData.get_text_data(obj)
+        assert text_data["FontSize"] == 7.0
+
+        # Test second literal is present.
+        assert text_data["Literals"][1]["Literal"] == "test_value"
+        assert ifc.by_type("IfcTextLiteralWithExtent")[1].Literal == "test_value"
+
+        # Test first literal value is unchanged.
+        assert text_data["Literals"][0]["Literal"] == "Literal"
+        assert ifc.by_type("IfcTextLiteralWithExtent")[0].Literal == "Literal"
 
 
 class TestImportAssignedProduct(NewFile):
@@ -773,111 +862,6 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         drawing_data = self.get_sheet_drawing_data(sheet_path)
         assert drawing_data["foreground"] == (30.0, 30.0, 500.0, 500.0)
         assert drawing_data["view-title"] == (30.0, 535.0, 50.22, 10.0)
-
-
-class TestUpdateTextValue(NewFile):
-    def test_updating_arbitrary_strings(self):
-        TestGetTextLiteral().test_run()
-        ifc = tool.Ifc.get()
-
-        obj = bpy.data.objects["Object"]
-        subject.update_text_value(obj)
-        props = tool.Drawing.get_text_props(obj)
-        literal = props.literals[0]
-
-        assert props.font_size == "2.5"
-        assert literal.value == "Literal"
-        assert literal.box_alignment[:] == tuple([False] * 6 + [True] + [False] * 2)
-        assert literal.ifc_definition_id == ifc.by_type("IfcTextLiteralWithExtent")[0].id()
-
-    def test_using_attribute_variables(self):
-        TestGetTextLiteral().test_run()
-
-        obj = bpy.data.objects["Object"]
-        ifc = tool.Ifc.get()
-        wall = ifc.createIfcWall(Name="Baz")
-        label = ifc.by_type("IfcAnnotation")[0]
-        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
-
-        ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Name}} Bar"
-
-        subject.update_text_value(obj)
-        props = tool.Drawing.get_text_props(obj)
-        assert props.literals[0].value == "Foo Baz Bar"
-
-    def test_using_property_variables(self):
-        TestGetTextLiteral().test_run()
-
-        obj = bpy.data.objects["Object"]
-        ifc = tool.Ifc.get()
-        wall = ifc.createIfcWall()
-        pset = ifcopenshell.api.pset.add_pset(ifc, name="Custom_Pset", product=wall)
-        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Key": "Baz"})
-        label = ifc.by_type("IfcAnnotation")[0]
-        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
-
-        ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Custom_Pset.Key}} Bar"
-
-        subject.update_text_value(obj)
-        props = tool.Drawing.get_text_props(obj)
-        assert props.literals[0].value == "Foo Baz Bar"
-
-    def test_update_text_font_size(self):
-        TestGetTextLiteral().test_run()
-        obj = bpy.data.objects["Object"]
-        with bpy.context.temp_override(active_object=obj):
-            bpy.ops.bim.enable_editing_text()
-            props = tool.Drawing.get_text_props(obj)
-            props.font_size = "7.0"
-            bpy.ops.bim.edit_text()
-        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
-        assert "title" in annotation_classes
-        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
-
-    def test_add_second_literal(self, setup=True):
-        if setup:
-            TestGetTextLiteral().test_run()
-        obj = bpy.data.objects["Object"]
-        with bpy.context.temp_override(active_object=obj):
-            bpy.ops.bim.enable_editing_text()
-            bpy.ops.bim.add_text_literal()
-            props = tool.Drawing.get_text_props(obj)
-            literal = props.literals[1]
-            literal.attributes["Literal"].string_value = "test_value"
-            bpy.ops.bim.edit_text()
-
-        ifc = tool.Ifc.get()
-        assert ifc.by_type("IfcTextLiteralWithExtent")[1].Literal == "test_value"
-
-    def test_disable_text_editing(self):
-        # add second literal and change font size to test changing them
-        self.test_update_text_font_size()  # sets font size to "7.0"
-        self.test_add_second_literal(setup=False)
-
-        obj = bpy.data.objects["Object"]
-        props = tool.Drawing.get_text_props(obj)
-        assert obj is not None, obj
-        with bpy.context.temp_override(active_object=obj):
-            bpy.ops.bim.enable_editing_text()
-            bpy.ops.bim.remove_text_literal(literal_prop_id=1)
-            props.literals[0].attributes["Literal"].string_value = "changed_value"
-            props.font_size = "2.5"
-            bpy.ops.bim.disable_editing_text()
-
-        ifc = tool.Ifc.get()
-        # test font size
-        annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
-        assert props.font_size == "7.0"
-        assert "title" in annotation_classes
-        assert DecoratorData.get_text_data(obj)["FontSize"] == 7.0
-
-        # test second literal is present
-        assert props.literals[1].attributes["Literal"].string_value == "test_value"
-        assert ifc.by_type("IfcTextLiteralWithExtent")[1].Literal == "test_value"
-
-        # test first literal value is unchanged
-        assert props.literals[0].attributes["Literal"].string_value == "Literal"
-        assert ifc.by_type("IfcTextLiteralWithExtent")[0].Literal == "Literal"
 
 
 class TestDrawingStyles(NewFile):

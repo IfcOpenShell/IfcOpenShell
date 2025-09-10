@@ -47,15 +47,20 @@ class TestPackageSupportedPlatforms:
         response = conn.getresponse()
         build_html = response.read().decode("utf-8")
 
+        def find_make_var(var_name: str) -> str:
+            line = next(l for l in text.splitlines() if l.startswith(f"{var_name}:="))
+            return line.partition(":=")[2]
+
+        BINARY_VERSION = find_make_var("BINARY_VERSION")
         URL_TYPES = ("IOS_URL", "IFCCONVERT_URL")
+
         missing_urls: set[str] = set()
         for url_type in URL_TYPES:
-            line = next(l for l in text.splitlines() if l.startswith(f"{url_type}:="))
-            _, _, url_template = line.partition(":=")
+            url_template = find_make_var(url_type)
             url_template = url_template.replace("$(", "{").replace(")", "}")
             for platform in SUPPORTED_PLATFORMS:
                 for pyver in SUPPORTED_PY_VERSIONS:
-                    url = url_template.format(PYNUMBER=pyver, PLATFORM=platform)
+                    url = url_template.format(PYNUMBER=pyver, PLATFORM=platform, BINARY_VERSION=BINARY_VERSION)
                     if url not in build_html:
                         missing_urls.add(url)
 

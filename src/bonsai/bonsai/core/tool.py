@@ -307,7 +307,7 @@ class Document:
 @interface
 class Drawing:
     def activate_drawing(cls, camera): pass
-    def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
+    def add_literal(cls, **attributes): pass
     def copy_representation(cls, source, dest): pass
     def create_annotation_context(cls, target_view, object_type=None): pass
     def create_annotation_object(cls, drawing, object_type): pass
@@ -382,7 +382,6 @@ class Drawing:
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def reload_representation(cls, obj, representation): pass
-    def remove_literal_from_annotation(cls, obj, literal): pass
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_type_assign_type(cls, element=None, relating_type=None): pass
@@ -395,9 +394,8 @@ class Drawing:
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
-    def update_newline_at(cls, obj): pass
+    def update_newline_at_and_symbol(cls, obj): pass
     def update_text_size_pset(cls, obj): pass
-    def update_text_value(cls, obj): pass
 
 
 @interface

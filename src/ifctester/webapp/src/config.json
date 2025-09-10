@@ -1,0 +1,8 @@
+{
+    "wasm": {
+        "wheel_url": "/worker/bin/ifcopenshell-0.8.3+bb329af-cp313-cp313-emscripten_4_0_9_wasm32.whl",
+        "odfpy_url": "/worker/bin/odfpy-1.4.2-py2.py3-none-any.whl",
+        "api_py_url": "/worker/api.py",
+        "pyodide_url": "https://cdn.jsdelivr.net/pyodide/v0.28.0/full/pyodide.js"
+    }
+}

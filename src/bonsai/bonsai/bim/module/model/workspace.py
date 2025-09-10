@@ -1452,16 +1452,20 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "No LAYER2 objects selected")
             return
 
-        if layer2_bases and len(set(layer2_bases)) > 1:
+        # --- tolerance check ---
+        tolerance = 1e-5  # to provide a little wiggle room
+        if layer2_bases and (max(layer2_bases) - min(layer2_bases)) > tolerance:
             min_base = min(layer2_bases)
             max_base = max(layer2_bases)
             self.report(
                 {"ERROR"},
-                f"Selected LAYER2 objects have different base heights ({min_base:.3f}m to {max_base:.3f}m). All objects must be at the exact same base level.",
+                f"Selected LAYER2 objects have different base heights ({min_base:.3f}m to {max_base:.3f}m). "
+                f"All objects must be at the exact same base level (tolerance {tolerance}).",
             )
             return
 
-        common_base = layer2_bases[0]
+        # use the mean base as the "common" one to avoid floating-point mismatches
+        common_base = sum(layer2_bases) / len(layer2_bases)
         new_height = cursor_z - common_base
 
         if new_height > 0:

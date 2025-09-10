@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.util.unit
@@ -26,12 +27,25 @@ import math
 import mathutils
 from mathutils import Matrix, Vector
 from lark import Lark, Transformer
-from typing import Union, Any
+from typing import Union, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import BIMSnapGroups, BIMSnapProperties
 
 
 class Snap(bonsai.core.tool.Snap):
     tool_state = None
     snap_plane_method = None
+
+    @classmethod
+    def get_snap_props(cls) -> BIMSnapProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMSnapProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_snap_groups(cls) -> BIMSnapGroups:
+        assert (scene := bpy.context.scene)
+        return scene.BIMSnapGroups  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def set_snap_plane_method(cls, value=True):
@@ -484,7 +498,7 @@ class Snap(bonsai.core.tool.Snap):
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         def filter_snapping_points_by_type(snapping_points):
             options = ["Plane", "Axis"]
-            props = context.scene.BIMSnapProperties
+            props = tool.Snap.get_snap_props()
             for prop in props.__annotations__.keys():
                 if getattr(props, prop):
                     options.append(props.rna_type.properties[prop].name)
@@ -494,7 +508,7 @@ class Snap(bonsai.core.tool.Snap):
 
         def filter_snapping_points_by_group(detected_snaps):
             options = ["Wireframe", "Axis", "Plane"]
-            props = context.scene.BIMSnapGroups
+            props = tool.Snap.get_snap_groups()
             for prop in props.__annotations__.keys():
                 if getattr(props, prop):
                     options.append(props.rna_type.properties[prop].name)

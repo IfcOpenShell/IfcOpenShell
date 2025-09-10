@@ -36,7 +36,8 @@ import bonsai.bim
 import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
 from bonsai.bim.prop import Attribute
-from bonsai.bim.module.bsdd.prop import BIMBSDDProperties
+from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
+from bonsai.bim.module.pset.prop import IfcProperty
 from typing import Optional, TYPE_CHECKING, Literal
 from natsort import natsorted
 
@@ -1424,8 +1425,20 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
 
     if isinstance(prop_struct, Attribute):
         attr = prop_struct
+
+        # Hacky way to get Attribute containing description for enumerated values.
+        pset_enum_identifier = ".enumerated_value.enumerated_values["
+        attr_path = prop_struct.path_from_id()
+        if pset_enum_identifier in attr_path:
+            attr_path = attr_path.partition(pset_enum_identifier)[0]
+            assert (data_block := prop_struct.id_data)
+            attr = data_block.path_resolve(attr_path)
+            assert isinstance(attr, IfcProperty)
+            attr = attr.metadata
+
         description = attr.description
         ifc_class = attr.ifc_class
+        url = ""
         if ifc_class:
             try:
                 url = get_entity_doc(version, ifc_class).get("spec_url", "")
@@ -1445,10 +1458,13 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
         if attr_name:
             op = layout.operator("bim.copy_text_to_clipboard", text="Copy Attribute Name", icon="COPYDOWN")
             op.text = attr_name
-    elif isinstance(prop_struct, BIMBSDDProperties) and hasattr(context, "active_bsdd_property"):
+    elif isinstance(prop_struct, BIMBSDDProperties) and (
+        active_bsdd_property := getattr(context, "active_bsdd_property", None)
+    ):
         # Context Menu for bSDD Properties
+        assert isinstance(active_bsdd_property, BSDDProperty)
         op_description = layout.operator("bim.show_bsdd_description", text="bSDD Description", icon="INFO")
-        op_description.url = context.active_bsdd_property.uri
+        op_description.url = active_bsdd_property.uri
     else:
         # Basically context menu for any Blender property will end up here,
         # and will check 3 types of docs.
@@ -1536,7 +1552,7 @@ class BIM_PT_snappping(Panel):
         return context.mode == "OBJECT"
 
     def draw(self, context):
-        prop = context.scene.BIMSnapProperties
+        prop = tool.Snap.get_snap_props()
         layout = self.layout
         col = layout.column(align=True)
         col.prop(prop, "vertex", toggle=True, icon="SNAP_VERTEX")
@@ -1544,7 +1560,7 @@ class BIM_PT_snappping(Panel):
         col.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
         col.prop(prop, "edge_intersection", toggle=True, icon="SNAP_GRID")
         col.prop(prop, "face", toggle=True, icon="SNAP_FACE")
-        groups = context.scene.BIMSnapGroups
+        groups = tool.Snap.get_snap_groups()
         row = layout.row(align=True)
         row.label(text="Bonsai Target Selection")
         row = layout.row(align=True)

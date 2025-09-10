@@ -33,6 +33,7 @@ import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
@@ -140,7 +141,7 @@ class Patcher(ifcpatch.BasePatcher):
         self.should_skip_geometry_data = should_skip_geometry_data
 
     geometry_rows: dict[str, tuple[str, bytes, bytes, bytes, bytes, str]]
-    shape_rows: dict[int, tuple[int, list[float], list[float], list[float], bytes, str]]
+    shape_rows: dict[int, tuple[int, float, float, float, bytes, Union[str, None]]]
 
     def get_output(self) -> Union[str, None]:
         """Return resulting database filepath for sqlite and ``None`` for mysql."""
@@ -249,29 +250,29 @@ class Patcher(ifcpatch.BasePatcher):
         self.geometry_rows = {}
 
         if self.file.schema in ("IFC2X3", "IFC4"):
-            self.elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
+            elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
         else:
-            self.elements = self.file.by_type("IfcElement")
+            elements = self.file.by_type("IfcElement")
 
         self.settings = ifcopenshell.geom.settings()
         self.settings.set("apply-default-materials", False)
 
-        self.body_contexts = [
+        body_contexts = [
             c.id()
             for c in self.file.by_type("IfcGeometricRepresentationSubContext")
             if c.ContextIdentifier in ["Body", "Facetation"]
         ]
         # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
-        self.body_contexts.extend(
+        body_contexts.extend(
             [
                 c.id()
                 for c in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)
                 if c.ContextType == "Model"
             ]
         )
-        self.settings.set("context-ids", self.body_contexts)
+        self.settings.set("context-ids", body_contexts)
 
-        products = self.elements
+        products = elements
         iterator = ifcopenshell.geom.iterator(self.settings, self.file, multiprocessing.cpu_count(), include=products)
         valid_file = iterator.initialize()
         if not valid_file:
@@ -301,12 +302,7 @@ class Patcher(ifcpatch.BasePatcher):
                 geometry = shape.geometry
                 geometry_id = geometry.id
                 if geometry_id not in self.geometry_rows:
-                    v = geometry.verts_buffer
-                    e = geometry.edges_buffer
-                    f = geometry.faces_buffer
-                    mids = geometry.material_ids_buffer
-                    m = json.dumps([m.instance_id() for m in geometry.materials])
-                    self.geometry_rows[geometry_id] = (geometry_id, v, e, f, mids, m)
+                    self.add_geometry_row(geometry_id, geometry)
                 # Copy required since otherwise it is read-only
                 m = ifcopenshell.util.shape.get_shape_matrix(shape).copy()
                 m[:3, 3] /= self.unit_scale
@@ -314,6 +310,37 @@ class Patcher(ifcpatch.BasePatcher):
                 self.shape_rows[shape_id] = (shape_id, x, y, z, m.tobytes(), geometry_id)
             if not iterator.next():
                 break
+
+        # Process element types geometry.
+        element_types = self.file.by_type("IfcElementType")
+        body_contexts = [self.file.by_id(i) for i in body_contexts]
+        m_bytes = np.eye(4, dtype=np.float64).tobytes()
+        for element_type in element_types:
+            representation = None
+            for context in body_contexts:
+                representation = ifcopenshell.util.representation.get_representation(element_type, context)
+                if representation:
+                    break
+            geometry_id = None
+            if representation:
+                geometry_id_ = str(representation.id())
+                if geometry_id_ in self.geometry_rows:
+                    geometry_id = geometry_id_
+                elif geometry := ifcopenshell.geom.create_shape(self.settings, representation):
+                    geometry_id = geometry_id_
+                    assert isinstance(geometry, W.Triangulation)
+                    self.add_geometry_row(geometry_id, geometry)
+
+            shape_id = element_type.id()
+            self.shape_rows[shape_id] = (shape_id, *(0.0, 0.0, 0.0), m_bytes, geometry_id)
+
+    def add_geometry_row(self, geometry_id: str, geometry: W.Triangulation) -> None:
+        v = geometry.verts_buffer
+        e = geometry.edges_buffer
+        f = geometry.faces_buffer
+        mids = geometry.material_ids_buffer
+        m = json.dumps([m.instance_id() for m in geometry.materials])
+        self.geometry_rows[geometry_id] = (geometry_id, v, e, f, mids, m)
 
     def check_existing_ifc_database(self) -> None:
         if self.sql_type == "sqlite":
@@ -576,7 +603,7 @@ class Patcher(ifcpatch.BasePatcher):
                 if element.id() not in self.shape_rows and (placement := getattr(element, "ObjectPlacement", None)):
                     m = ifcopenshell.util.placement.get_local_placement(placement)
                     x, y, z = m[:, 3][0:3].tolist()
-                    self.shape_rows[element.id()] = [element.id(), x, y, z, m.tobytes(), None]
+                    self.shape_rows[element.id()] = (element.id(), x, y, z, m.tobytes(), None)
 
         if self.sql_type == "sqlite":
             if rows:

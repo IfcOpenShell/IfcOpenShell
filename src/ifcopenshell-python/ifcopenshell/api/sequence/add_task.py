@@ -138,7 +138,7 @@ def add_task(
         task.Identification = identification
     task.IsMilestone = False
     if work_schedule:
-        ifcopenshell.api.control.assign_control(file, work_schedule, task)
+        ifcopenshell.api.control.assign_control(file, work_schedule, [task])
     elif parent_task:
         rel = ifcopenshell.api.nest.assign_object(
             file,

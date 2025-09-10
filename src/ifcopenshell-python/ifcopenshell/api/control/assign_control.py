@@ -25,9 +25,9 @@ from typing import Union
 def assign_control(
     file: ifcopenshell.file,
     relating_control: ifcopenshell.entity_instance,
-    related_object: ifcopenshell.entity_instance,
+    related_objects: list[ifcopenshell.entity_instance],
 ) -> Union[ifcopenshell.entity_instance, None]:
-    """Assigns a planning control or constraint to an object
+    """Assigns a planning control or constraint to a list of objects.
 
     IFC can describe concepts that control other objects. For example, a
     planning calendar controls the availability of working days for
@@ -42,7 +42,7 @@ def assign_control(
 
     :param relating_control: The IfcControl entity that is creating the
         control or constraint
-    :param related_object: The IfcObjectDefinition that is being controlled
+    :param related_objects: The list of IfcObjectDefinition that is being controlled
     :return: The newly created IfcRelAssignsToControl. If relationship already
         existed before and wasn't changed then returns None.
 
@@ -59,7 +59,7 @@ def assign_control(
         # All subtasks will inherit this calendar, so assigning a single
         # calendar to the root task effectively defines a "default" calendar
         ifcopenshell.api.control.assign_control(model,
-            relating_control=calendar, related_object=task)
+            relating_control=calendar, related_objects=[task])
 
         # Another common example might be relating a cost item and a product
         wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
@@ -67,22 +67,33 @@ def assign_control(
         cost_item = ifcopenshell.api.cost.add_cost_item(model,
             cost_schedule=schedule)
         ifcopenshell.api.control.assign_control(model,
-            relating_control=cost_item, related_object=wall)
+            relating_control=cost_item, related_objects=[wall])
     """
-    if related_object.HasAssignments:
-        for assignment in related_object.HasAssignments:
-            if assignment.is_a("IfcRelAssignsToControl") and assignment.RelatingControl == relating_control:
-                return
+    # Filter out already assigned objects.
+    related_objects_set = set(related_objects)
+    objects_to_assign: set[ifcopenshell.entity_instance] = set()
+
+    control_assignments = set(relating_control.Controls)
+    if control_assignments:
+        for obj in related_objects_set:
+            existing_assignment = next((a for a in obj.HasAssignments if a in control_assignments), None)
+            # Skip objects already assigned to this control.
+            if existing_assignment:
+                continue
+            objects_to_assign.add(obj)
+    else:
+        objects_to_assign = related_objects_set
+
+    if not objects_to_assign:
+        return None
 
     controls: Union[ifcopenshell.entity_instance, None]
     controls = next(iter(relating_control.Controls), None)
 
     if controls:
-        if related_object in controls.RelatedObjects:
-            return
-        related_objects = set(controls.RelatedObjects)
-        related_objects.add(related_object)
-        controls.RelatedObjects = list(related_objects)
+        related_objects_new: list[ifcopenshell.entity_instance] = list(controls.RelatedObjects)
+        related_objects_new.extend(objects_to_assign)
+        controls.RelatedObjects = list(related_objects_new)
         ifcopenshell.api.owner.update_owner_history(file, element=controls)
     else:
         controls = file.create_entity(
@@ -90,7 +101,7 @@ def assign_control(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [related_object],
+                "RelatedObjects": list(objects_to_assign),
                 "RelatingControl": relating_control,
             },
         )

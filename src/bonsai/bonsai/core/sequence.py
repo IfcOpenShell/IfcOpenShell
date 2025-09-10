@@ -422,7 +422,7 @@ def edit_task_calendar(
     task: ifcopenshell.entity_instance,
     work_calendar: ifcopenshell.entity_instance,
 ) -> None:
-    ifc.run("control.assign_control", relating_control=work_calendar, related_object=task)
+    ifc.run("control.assign_control", relating_control=work_calendar, related_objects=[task])
     ifc.run("sequence.cascade_schedule", task=task)
     sequence.load_task_properties()
 
@@ -433,7 +433,7 @@ def remove_task_calendar(
     task: ifcopenshell.entity_instance,
     work_calendar: ifcopenshell.entity_instance,
 ) -> None:
-    ifc.run("control.unassign_control", relating_control=work_calendar, related_object=task)
+    ifc.run("control.unassign_control", relating_control=work_calendar, related_objects=[task])
     ifc.run("sequence.cascade_schedule", task=task)
     sequence.load_task_properties()
 
