@@ -1117,6 +1117,9 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
 
         type_elements = []
         for identifier in self.identifiers:
+            # Skip 'Untyped' option for annotation types.
+            if identifier == "0":
+                continue
             element = ifc_file.by_id(int(identifier))
             if element and element.is_a().endswith("Type"):
                 type_elements.append(element)
