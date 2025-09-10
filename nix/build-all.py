@@ -267,7 +267,7 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "cgal": (),
     "eigen": (),
     "freetype": (),
-    "rocksdb": ("zstd"),
+    "rocksdb": ("zstd",),
     "zstd": (),
     # 'usd': ('boost', 'oneTBB')
 }
