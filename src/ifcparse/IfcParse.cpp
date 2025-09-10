@@ -844,7 +844,7 @@ void IfcParse::impl::rocks_db_file_storage::add_type_ref(IfcUtil::IfcBaseClass* 
         memcpy(s.data(), &v, sizeof(size_t));
 
         // no merges yet, because the python client doesn't support them
-        db->Merge(rocksdb::WriteOptions{}, "t|" + std::to_string(new_entity->declaration().index_in_schema()), s);
+        db->Merge(wopts, "t|" + std::to_string(new_entity->declaration().index_in_schema()), s);
         
         /*{
             std::string current;
