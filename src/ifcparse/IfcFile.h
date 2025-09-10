@@ -128,45 +128,9 @@ public:
         return storage_.byref_excl_;
     }
 
-    InstanceStreamer(const std::string& fn)
-        : stream_(new IfcSpfStream(fn))
-        , lexer_(new IfcSpfLexer(stream_))
-        , token_stream_(3, Token{})
-        , schema_(nullptr)
-        , ifcroot_type_(nullptr)
-        , progress_(0)
-    {
-        good_ = file_open_status::NO_HEADER;
-        if (*stream_) {
-            header_ = new IfcParse::IfcSpfHeader(lexer_);
-            if (header_->tryRead() && header_->file_schema()->schema_identifiers().size() == 1) {
-                try {
-                    schema_ = IfcParse::schema_by_name(header_->file_schema()->schema_identifiers().front());
-                    good_ = file_open_status::SUCCESS;
-                } catch (const IfcParse::IfcException&) {
-                }
-            }
-            storage_.file = nullptr;
-            storage_.schema = schema_;
-            storage_.tokens = lexer_;
-            storage_.references_to_resolve = &references_to_resolve_;
-        }
-    }
+    InstanceStreamer(const std::string& fn);
 
-    InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer)
-        : stream_(nullptr)
-        , lexer_(lexer)
-        , header_(nullptr)
-        , token_stream_(3, Token{})
-        , schema_(schema)
-        , ifcroot_type_(schema->declaration_by_name("IfcRoot"))
-        , progress_(0)
-    {
-        storage_.file = nullptr;
-        storage_.schema = schema_;
-        storage_.tokens = lexer_;
-		storage_.references_to_resolve = &references_to_resolve_;
-    }
+    InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
 
     ~InstanceStreamer() {
         delete stream_;
