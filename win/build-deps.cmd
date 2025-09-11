@@ -604,13 +604,19 @@ set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
 
 IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
     echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
-    goto :Successful
+    goto :zstd
 )
 call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
 
 :zstd
 set DEPENDENCY_NAME=zstd
 set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%
+
+IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
+    goto :rocksdb
+)
+
 call :GitCloneAndCheckoutRevision https://github.com/facebook/zstd "%DEPENDENCY_DIR%" v1.5.7
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"\build\cmake
@@ -624,6 +630,12 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :rocksdb
 set DEPENDENCY_NAME=rocksdb
 set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%
+
+IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
+    goto :Successful
+)
+
 cd %DEPS_DIR%
 call :GitCloneAndCheckoutRevision https://github.com/facebook/rocksdb "%DEPENDENCY_DIR%" v9.11.2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
