@@ -636,7 +636,8 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^
                -DROCKSDB_INSTALL_ON_WINDOWS=On ^
                -DFAIL_ON_WARNINGS=Off ^
                -DWITH_TESTS=OFF ^
-               -DWITH_ZSTD=On
+               -DWITH_ZSTD=On ^
+               -DPORTABLE=1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\rocksdb.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
