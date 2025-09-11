@@ -998,6 +998,7 @@ if "zstd" in targets:
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
             f"-DZSTD_BUILD_STATIC=ON",
             f"-DZSTD_BUILD_SHARED=OFF",
+            f"-DCMAKE_INSTALL_LIBDIR=lib",
         ],
         cmake_dir="build/cmake/",
         download_url="https://github.com/facebook/zstd",
