@@ -23,7 +23,8 @@ import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
-from typing import Optional, Literal, Any, Union, TypedDict, NotRequired
+from typing import Optional, Literal, Any, Union, TypedDict
+from typing_extensions import NotRequired
 
 try:
     import glob

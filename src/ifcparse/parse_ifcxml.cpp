@@ -279,7 +279,7 @@ static void end_element(void* user, const xmlChar* tag) {
         }
         */
         // @todo
-        // back.inst()->data().storage_.set(back.idx(), elems);
+        // back.inst()->set_attribute_value(back.idx(), elems);
     }
 
     if (state->dialect == ifcxml_dialect_ifc2x3 && state->stack.back().ntype() == stack_node::node_instance) {
@@ -325,28 +325,28 @@ static void process_characters(void* user, const xmlChar* character, int len) {
         if (!val.empty()) {
             // type declaration always at idx 0
             visit_any([&state](auto& v) {
-                state->stack.back().inst()->data().storage_.set(0, v);
+                state->stack.back().inst()->set_attribute_value(0, v);
             }, val);
         }
     } else if (state_type == stack_node::node_header_entry) {
         const std::string tagname = boost::replace_all_copy(state->stack.back().tagname(), "ex:", "");
         auto& header = state->file->header();
         if (tagname == "name") {
-            header.file_name().name(txt);
+            header.file_name()->setname(txt);
         } else if (tagname == "time_stamp") {
-            header.file_name().time_stamp(txt);
+            header.file_name()->settime_stamp(txt);
         } else if (tagname == "author") {
-            header.file_name().author({txt});
+            header.file_name()->setauthor({txt});
         } else if (tagname == "organization") {
-            header.file_name().organization({txt});
+            header.file_name()->setorganization({txt});
         } else if (tagname == "preprocessor_version") {
-            header.file_name().preprocessor_version(txt);
+            header.file_name()->setpreprocessor_version(txt);
         } else if (tagname == "originating_system") {
-            header.file_name().originating_system(txt);
+            header.file_name()->setoriginating_system(txt);
         } else if (tagname == "authorization") {
-            header.file_name().authorization(txt);
+            header.file_name()->setauthorization(txt);
         } else if (tagname == "documentation") {
-            header.file_description().description({txt});
+            header.file_description()->setdescription({txt});
         } else {
             Logger::Error("Unrecognized header entry " + tagname);
         }
@@ -446,14 +446,14 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 
         // Create an attribute value from an instance. Potentially NULL in case it is a
         // forward reference to an instance not yet encountered.
-        auto instance_to_attribute = [&state](const boost::variant<std::string, IfcUtil::IfcBaseClass*>& inst_or_ref, size_t attribute_index, IfcUtil::IfcBaseClass*& inst) {
-            if (inst_or_ref.which() == 0) {
+        auto instance_to_attribute = [&state](const std::variant<std::string, IfcUtil::IfcBaseClass*>& inst_or_ref, size_t attribute_index, IfcUtil::IfcBaseClass*& inst) {
+            if (inst_or_ref.index() == 0) {
                 inst = nullptr;
                 // This attribute is NULL initially and after parsing the complete
                 // file populated in a subsequent step.
-                state->forward_references.push_back(std::make_tuple(inst->as<IfcUtil::IfcBaseEntity>(), attribute_index, boost::get<std::string>(inst_or_ref)));
+                state->forward_references.push_back(std::make_tuple(inst->as<IfcUtil::IfcBaseEntity>(), attribute_index, std::get<std::string>(inst_or_ref)));
             } else {
-                inst = boost::get<IfcUtil::IfcBaseClass*>(inst_or_ref);
+                inst = std::get<IfcUtil::IfcBaseClass*>(inst_or_ref);
                 inst->set_attribute_value(attribute_index, inst);
             }
         };
@@ -461,7 +461,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
         // Create or reference an instance from the file and set attributes based on XML attributes.
         auto create_instance = [&state, &attributes](const IfcParse::declaration* decl) {
             boost::optional<std::string> id;
-            boost::variant<std::string, IfcUtil::IfcBaseClass*> rv;
+            std::variant<std::string, IfcUtil::IfcBaseClass*> rv;
 
             for (auto& pair : attributes) {
                 if (pair.first == "id" || pair.first == "href" || pair.first == "ref") {
@@ -479,7 +479,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 }
             }
 
-            auto untyped = IfcEntityInstanceData(storage_t(decl->as_entity() != nullptr ? decl->as_entity()->attribute_count() : 1));
+            auto untyped = IfcEntityInstanceData(in_memory_attribute_storage(decl->as_entity() != nullptr ? decl->as_entity()->attribute_count() : 1));
 
             const IfcParse::entity* entity = decl->as_entity();
             if (entity != nullptr) {
@@ -494,7 +494,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         auto val = parse_attribute_value(attr->type_of_attribute(), pair.second);
                         if (!val.empty()) {
                             visit_any([&untyped, idx](auto& v) {
-                                untyped.storage_.set(idx, v);
+                                untyped.set_attribute_value(idx, v);
                             }, val);
                         }
                     } else {
@@ -531,7 +531,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
             IfcUtil::IfcBaseClass* inst;
             auto inst_ = create_instance(decl);
             instance_to_attribute(inst_, state->stack.back().idx(), inst);
-            // state->stack.back().inst()->data().storage_.set(state->stack.back().idx(), attr);
+            // state->stack.back().inst()->set_attribute_value(state->stack.back().idx(), attr);
             state->stack.push_back(stack_node::instance(id, inst));
         } else if (state_type == stack_node::node_aggregate) {
 
@@ -592,7 +592,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                             if (inst != nullptr) {
                                 int idx = (*found)->entity_reference()->attribute_index(
                                     (*found)->attribute_reference());
-                                inst->data().storage_.set(idx, state->stack.back().inst());
+                                inst->set_attribute_value(idx, state->stack.back().inst());
                                 state->stack.push_back(stack_node::instance(id, inst));
                             } else {
                                 Logger::Error("Unknown attribute " + tagname);
@@ -619,7 +619,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                                 instance_to_attribute(inst_or_reference, idx, inst);
                                 // @todo
                                 state->stack.back().inst();
-                                state->stack.push_back(stack_node::instance(id, boost::get<IfcUtil::IfcBaseClass*>(inst_or_reference)));
+                                state->stack.push_back(stack_node::instance(id, std::get<IfcUtil::IfcBaseClass*>(inst_or_reference)));
                             } else if (attribute_type->as_named_type()->declared_type()->as_select_type() != nullptr) {
                                 // Select types cause an additional indirection, so the current stack node is simply repeated
                                 state->stack.push_back(stack_node::select(state->stack.back().inst(), idx));
@@ -663,12 +663,12 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     int idx = state->stack.back().inv_attr()->entity_reference()->attribute_index(
                         state->stack.back().inv_attr()->attribute_reference());
                     if (inst != nullptr) {
-                        inst->data().storage_.set(idx, state->stack.back().inst());
+                        inst->set_attribute_value(idx, state->stack.back().inst());
                     } else {
                         Logger::Error("Internal error, inverse attribute not processed");
                     }
                 } else if (state_type == stack_node::node_instance_attribute) {
-                    state->stack.back().inst()->data().storage_.set(state->stack.back().idx(), inst);
+                    state->stack.back().inst()->set_attribute_value(state->stack.back().idx(), inst);
                 }
 
                 if (entity == nullptr) {

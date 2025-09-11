@@ -42,18 +42,6 @@ namespace impl {
     template<class T, typename... Args>
     struct is_unique_ptr<std::unique_ptr<T, Args...>> : std::true_type {};
 
-    /*
-    // Trait to find index of type in parameter pack
-    template <typename T, typename... Ts>
-    struct TypeIndex;
-    template <typename T, typename... Ts>
-    struct TypeIndex<T, T, Ts...> : std::integral_constant<std::size_t, 0> {};
-    template <typename T, typename U, typename... Ts>
-    struct TypeIndex<T, U, Ts...> : std::integral_constant<std::size_t, 1 + TypeIndex<T, Ts...>::value> {};
-    template <typename T, typename... Ts>
-    constexpr std::size_t TypeIndex_v = TypeIndex<T, Ts...>::value;
-    */
-
     // Trait to find index of type in parameter pack considering inheritance
     template <typename T, typename... Ts>
     struct TypeIndex;
@@ -259,7 +247,7 @@ public:
         return apply_visitor_impl(std::forward<Visitor>(visitor), index, std::integral_constant<std::size_t, sizeof...(Types)>{});
     }
 
-    auto size() const {
+    size_t size() const {
         return size_and_indices_ ? size_and_indices_[0] : 0;
     }
 

@@ -73,6 +73,26 @@ jobs:
         with:
           key: ${GITHUB_WORKFLOW}
 
+      # rocksdb on debian distros misses RTTI?
+      - name: build rocksdb
+        run: |
+          git clone https://github.com/facebook/rocksdb --branch v9.11.2
+          cd rocksdb
+          mkdir build && cd build
+          cmake -DFAIL_ON_WARNINGS=Off \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DWITH_TESTS=OFF \
+            -DWITH_TOOLS=OFF \
+            -DWITH_GFLAGS=OFF \
+            -DWITH_BENCHMARK_TOOLS=OFF \
+            -DWITH_CORE_TOOLS=OFF \
+            -DROCKSDB_BUILD_SHARED=Off \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=On \
+            -DUSE_RTTI=On \
+            ..
+          sudo make -j$(nproc) install
+
       - name: Build ifcopenshell
         run: |
           echo $Python3_ROOT_DIR
@@ -102,6 +122,9 @@ jobs:
                -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
                -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
                -DEIGEN_DIR=/usr/include/eigen3 \
+               -DROCKSDB_INCLUDE_DIR=/usr/local/include \
+               -DROCKSDB_LIBRARY_DIR=/usr/local/lib \
+               -DWITH_ROCKSDB=On \
              ../cmake
           sudo make -j $(nproc)
           sudo make install

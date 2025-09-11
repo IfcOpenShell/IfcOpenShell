@@ -72,8 +72,8 @@ namespace IfcGeom {
 		friend bool operator < (const Element& element1, const Element& element2) {
 			if (element1.type() == "IfcBuildingStorey" && element2.type() == "IfcBuildingStorey") {
 				size_t attr_index = element1.product()->declaration().as_entity()->attribute_index("Elevation");
-				auto elev_attr1 = element1.product()->data().get_attribute_value(attr_index);
-				auto elev_attr2 = element2.product()->data().get_attribute_value(attr_index);
+				auto elev_attr1 = element1.product()->get_attribute_value(attr_index);
+				auto elev_attr2 = element2.product()->get_attribute_value(attr_index);
 
 				if (!elev_attr1.isNull() && !elev_attr2.isNull()) {
 					double elev1 = elev_attr1;
