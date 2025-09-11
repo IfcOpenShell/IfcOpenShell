@@ -588,6 +588,19 @@ class BIM_PT_text(Panel):
             return False
         return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
 
+    def get_current_product_for_element_values(self, obj: bpy.types.Object, literal_props) -> Optional[bpy.types.Object]:
+        """Get the product to use for element values - either ProductUsed or assigned product"""
+        if hasattr(literal_props, 'product_used') and literal_props.product_used:
+            return literal_props.product_used
+        
+        element = tool.Ifc.get_entity(obj)
+        if element:
+            assigned_product = tool.Drawing.get_assigned_product(element)
+            if assigned_product:
+                return tool.Ifc.get_object(assigned_product)
+        
+        return None
+
     def draw_text_editing_ui(
         self: Union[bpy.types.Panel, bpy.types.Operator],
         context: bpy.types.Context,

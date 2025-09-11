@@ -743,6 +743,11 @@ class LiteralProps(PropertyGroup):
         default=""
     )
 
+    product_used: PointerProperty(
+        name="Product Used",
+        type=bpy.types.Object,
+        description="Object to use for fetching element values. If empty, uses assigned product"
+    )
 
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
