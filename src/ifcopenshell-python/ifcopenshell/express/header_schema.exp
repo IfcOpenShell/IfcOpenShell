@@ -1,0 +1,28 @@
+SCHEMA header_section_schema;
+
+TYPE time_stamp_text = STRING(256);
+END_TYPE;
+
+TYPE schema_name = STRING(1024);
+END_TYPE;
+
+ENTITY file_name;
+  name                  : STRING (256);
+  time_stamp            : time_stamp_text;
+  author                : LIST [1:?] OF STRING (256);
+  organization          : LIST [1:?] OF STRING (256);
+  preprocessor_version  : STRING (256); 
+  originating_system    : STRING (256);
+  authorisation         : STRING (256); 
+END_ENTITY;
+
+ENTITY file_description;
+  description          : LIST [1:?] OF STRING (256);
+  implementation_level : STRING (256);
+END_ENTITY;
+  
+ENTITY file_schema;
+  schema_identifiers : LIST [1:?] OF UNIQUE schema_name;
+END_ENTITY;
+
+END_SCHEMA;

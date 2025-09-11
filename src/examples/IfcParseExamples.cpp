@@ -137,7 +137,7 @@ void process_pset(element_properties& props, const T* inst) {
 				if (!singleval->NominalValue()) {
 					propvalue = "-";
 				} else {
-					props[*pset->Name()][propname] = format_string(singleval->NominalValue()->template as<IfcUtil::IfcBaseClass>()->data().get_attribute_value(0));
+					props[*pset->Name()][propname] = format_string(singleval->NominalValue()->template as<IfcUtil::IfcBaseClass>()->get_attribute_value(0));
 				}
 			}
 		}
@@ -149,8 +149,8 @@ void process_pset(element_properties& props, const T* inst) {
 		auto qs = qset->Quantities();
 		for (auto it = qs->begin(); it != qs->end(); ++it) {
 			auto& q = *it;
-			if (q->template as<typename Schema::IfcPhysicalSimpleQuantity>() && q->data().get_attribute_value(3).type() == IfcUtil::Argument_DOUBLE) {
-				double v = q->data().get_attribute_value(3);
+			if (q->template as<typename Schema::IfcPhysicalSimpleQuantity>() && q->get_attribute_value(3).type() == IfcUtil::Argument_DOUBLE) {
+				double v = q->get_attribute_value(3);
 				props[*qset->Name()][q->Name()] = std::to_string(v);
 			}
 		}

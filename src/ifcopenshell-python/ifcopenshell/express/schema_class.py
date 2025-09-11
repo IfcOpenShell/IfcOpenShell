@@ -174,11 +174,9 @@ class EarlyBoundCodeWriter:
 
     def begin_schema(self):
         self.names.sort(key=str.lower)
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         num_names = len(self.names)
         self.statements.append("declaration* %(schema_name)s_types[%(num_names)d] = {nullptr};" % locals())
-
-        self.statements.append("{string_pool_placeholder}")
 
         self.statements.append("{factory_placeholder}")
 
@@ -194,10 +192,11 @@ class EarlyBoundCodeWriter:
 # #endif
 #         """
 #         )
-        self.statements.append("IfcParse::schema_definition* %s_populate_schema() {" % self.schema_name)
+        self.statements.append("IfcParse::schema_definition* %s_populate_schema() {" % self.schema_name.upper())
+        self.statements.append("{string_pool_placeholder}")
 
     def typedef(self, name, declared_type):
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         index_in_schema = self.names.index(name)
         ref = self.strings.append(name)
         self.statements.append(
@@ -206,7 +205,7 @@ class EarlyBoundCodeWriter:
         )
 
     def enumeration(self, name, enum):
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         index_in_schema = self.names.index(name)
         ref = self.strings.append(name)
         items = ",".join(self.strings.append(v) for v in enum.values)
@@ -216,7 +215,7 @@ class EarlyBoundCodeWriter:
         )
 
     def entity(self, name, type):
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         index_in_schema = self.names.index(name)
         ref = self.strings.append(name)
         supertype = "0" if len(type.supertypes) == 0 else "%s_types[%d]" % (self.schema_name, self.names.index(type.supertypes[0]))
@@ -227,7 +226,7 @@ class EarlyBoundCodeWriter:
         )
 
     def select(self, name, type):
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         index_in_schema = self.names.index(name)
         ref = self.strings.append(name)
         items = ",".join(
@@ -239,7 +238,7 @@ class EarlyBoundCodeWriter:
         )
 
     def entity_attributes(self, name, attribute_definitions, is_derived):
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         index_in_schema = self.names.index(name)
         def _():
             index_in_schema = self.names.index(name)
@@ -253,7 +252,7 @@ class EarlyBoundCodeWriter:
         self.statements.append("    ((entity*)%(schema_name)s_types[%(index_in_schema)d])->set_attributes({%(attributes)s}, {%(derived)s});" % locals())
 
     def inverse_attributes(self, name, inv_attrs):
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         index_in_schema = self.names.index(name)
         def _():
             schema_name = self.schema_name
@@ -269,16 +268,16 @@ class EarlyBoundCodeWriter:
         self.statements.append("    ((entity*) %(schema_name)s_types[%(index_in_schema)d])->set_inverse_attributes({%(attributes)s});" % locals())
 
     def entity_subtypes(self, name, tys):
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         index_in_schema = self.names.index(name)
         subtypes = ",".join(map(lambda t: ("((entity*) %%(schema_name)s_types[%d])" % self.names.index(t)), tys)) % locals()
         self.statements.append("    ((entity*) %(schema_name)s_types[%(index_in_schema)d])->set_subtypes({%(subtypes)s});" % locals())
 
     def finalize(self, can_be_instantiated_set):
-        schema_name = self.schema_name
+        schema_name = self.schema_name.upper()
         schema_name_title = self.schema_name.capitalize()
         def _():
-            schema_name = self.schema_name
+            schema_name = self.schema_name.upper()
             schema_name_title = self.schema_name.capitalize()
             for type_name in self.names:
                 index_in_schema = self.names.index(type_name)
@@ -378,6 +377,7 @@ class SchemaClass(codegen.Base):
 
         def transform_to_indexed(fn):
             def wrapper(*args, **kwargs):
+                schema_name_upper = mapping.schema.name.upper()
                 declared_type = fn(*args, **kwargs)
                 if 'simple_type' in declared_type:
                     pass
@@ -385,10 +385,9 @@ class SchemaClass(codegen.Base):
                     match = re.search(r'\((\w+?_[\w+]+?_\w+?)\)', declared_type)
                     if match:
                         old_decl = match.group(1)
-                        tn = old_decl.rsplit('_', 2)[1]
-                        idx = x.names.index(tn)
-                        snu = schema_name.upper()
-                        declared_type = declared_type.replace(old_decl, '%(snu)s_types[%(idx)d]' % locals())
+                        name = old_decl.lower().replace(schema_name.lower() + '_', '').replace('_type', '')
+                        idx = [n.lower() for n in x.names].index(name)
+                        declared_type = declared_type.replace(old_decl, '%(schema_name_upper)s_types[%(idx)d]' % locals())
                 return declared_type
             return wrapper if code == EarlyBoundCodeWriter else fn
 

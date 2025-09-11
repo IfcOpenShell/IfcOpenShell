@@ -119,7 +119,7 @@ simple_type_python_mapping = {
 
 
 def annotate_inst_attr_pos(
-    inst: Union[ifcopenshell.entity_instance, W.HeaderEntity],
+    inst: ifcopenshell.entity_instance,
     pos: Union[int, tuple[int, ...]],
     entity_str: str = "",
 ) -> str:
@@ -311,17 +311,22 @@ def assert_valid(
         return True
 
 
-def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Union[Logger, json_logger]) -> None:
+def log_internal_cpp_errors(
+    f: Optional[ifcopenshell.file], filename: str, logger: Union[Logger, json_logger], log_content: Optional[str] = None
+) -> None:
     import re
     import bisect
 
     chr_offset_re = re.compile(r"at offset (\d+)\s*")
     for_instance_re = re.compile(r"\s*for instance #(\d+)\s*")
 
-    log = ifcopenshell.get_log()
-    msgs = list(map(json.loads, filter(None, log.split("\n"))))
+    if log_content is None:
+        log_content = ifcopenshell.get_log()
+    msgs = list(map(json.loads, filter(None, log_content.split("\n"))))
     chr_offsets = [chr_offset_re.findall(m["message"]) for m in msgs]
-    if chr_offsets:
+    instance_messages = [for_instance_re.findall(m["message"]) for m in msgs]
+
+    if chr_offsets or (instance_messages and f is None):
         # The file is opened in binary mode, in order
         # to correspond with the offsets reported by
         # IfcOpenShell C++
@@ -342,15 +347,25 @@ def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Union[L
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
 
-    instance_messages = [for_instance_re.findall(m["message"]) for m in msgs]
     if instance_messages:
         for instid, msg in zip(instance_messages, msgs):
             if instid:
                 m = for_instance_re.sub("", msg["message"])
-                try:
-                    inst = f[int(instid[0])]
-                except:
-                    inst = None
+                if f is not None:
+                    try:
+                        inst = f[int(instid[0])]
+                    except:
+                        inst = None
+                else:
+                    inst = next(
+                        (
+                            l
+                            for l in lines
+                            if l.strip().startswith(f"#{instid}".encode("ascii"))
+                            and re.sub(r"\s+", "", l).startswith(f"#{instid}=".encode("ascii"))
+                        ),
+                        None,
+                    )
                 if isinstance(logger, json_logger):
                     logger.set_state("instance", inst)
                     logger.set_state("attribute", None)
@@ -427,7 +442,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
 
         filename = f
         try:
-            f = ifcopenshell.open(f)
+            f = ifcopenshell.open(f, readonly=True)
         except ifcopenshell.SchemaError as e:
             current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
             schema_name = str(e).split(" ")[-1].lower()
@@ -616,9 +631,9 @@ def validate_guid(guid: str) -> Union[str, None]:
 def to_string_header_entity(header_entity):
     """Recreate IFC header string representation, like FILE_NAME(...)"""
 
-    # Prefer native .toString() if available (native IfcOpenShell wrapper)
-    if isinstance(header_entity, W.HeaderEntity):
-        return header_entity.toString()
+    # Prefer native .to_string() if available (native IfcOpenShell wrapper)
+    if isinstance(header_entity, ifcopenshell.entity_instance):
+        return header_entity.to_string(True)
     elif hasattr(header_entity, "_fields"):
         values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
         return f"{type(header_entity).__name__.upper()}({','.join(values)})"
@@ -629,12 +644,19 @@ def to_string_header_entity(header_entity):
 def validate_ifc_header(
     f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file], logger: Union[Logger, json_logger]
 ) -> None:
-    header: Union[W.IfcSpfHeader, types.SimpleNamespace] = f.header
+    # @todo now that we have the header schema compiled into ifcopenshell, and the
+    # header instances being conventional entity instances, this specific logic should
+    # not be necessary anymore.
+    header: Union[ifcopenshell.entity_instance, types.SimpleNamespace] = f.header
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
     def log_error(
-        header_entity: Union[W.HeaderEntity, tuple], name: str, index: int, expected_type: str, provided_type: str
+        header_entity: Union[ifcopenshell.entity_instance, tuple],
+        name: str,
+        index: int,
+        expected_type: str,
+        provided_type: str,
     ) -> None:
         logger.error(
             (
@@ -649,7 +671,9 @@ def validate_ifc_header(
             provided_type,
         )
 
-    def validate_attribute(header_entity: W.HeaderEntity, name: str, index: int, *, aggregate: bool = False) -> None:
+    def validate_attribute(
+        header_entity: ifcopenshell.entity_instance, name: str, index: int, *, aggregate: bool = False
+    ) -> None:
         try:
             value = getattr(header_entity, name)
         except RuntimeError as _:

@@ -29,10 +29,21 @@ private:
 %ignore IfcParse::IfcFile::schema;
 %ignore IfcParse::IfcFile::begin;
 %ignore IfcParse::IfcFile::end;
+%ignore IfcParse::IfcFile::types_begin;
+%ignore IfcParse::IfcFile::types_end;
+%ignore IfcParse::IfcFile::internal_guid_map;
+%ignore IfcParse::IfcFile::storage_;
+
+%ignore IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
+
+%ignore IfcParse::InstanceStreamer::read_instance;
+
+%ignore in_memory_file_storage;
+%ignore rocks_db_file_storage;
 // Available as get_inverse().
 %ignore IfcParse::IfcFile::instances_by_reference;
 
-%ignore parse_context;
+%ignore IfcParse::parse_context;
 
 %ignore operator<<;
 
@@ -44,6 +55,10 @@ private:
 %ignore IfcParse::IfcSpfHeader::IfcSpfHeader(IfcSpfLexer*);
 %ignore IfcParse::IfcSpfHeader::lexer;
 %ignore IfcParse::IfcSpfHeader::stream;
+%ignore IfcParse::IfcSpfHeader::file_description;
+%ignore IfcParse::IfcSpfHeader::file_name;
+%ignore IfcParse::IfcSpfHeader::file_schema;
+
 %ignore IfcParse::HeaderEntity::is;
 
 %ignore IfcParse::IfcFile::type_iterator;
@@ -122,6 +137,52 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 }
 %}
 
+%inline %{
+#include <memory>
+#include <string>
+#include <rocksdb/db.h>
+#include <rocksdb/slice.h>
+#include <Python.h>
+
+class RocksDBPrefixIterator {
+public:
+    RocksDBPrefixIterator(const IfcParse::impl::rocks_db_file_storage* storage,
+                          const std::string& prefix)
+        : it_(storage->db->NewIterator(storage->ropts)), prefix_(prefix)
+    {
+        it_->Seek(prefix_);
+    }
+
+    bool valid() const {
+        if (!it_ || !it_->Valid()) return false;
+        const rocksdb::Slice k = it_->key();
+        const rocksdb::Slice p(prefix_);
+        return k.starts_with(p);
+    }
+
+    void next() {
+        if (it_) it_->Next();
+    }
+
+    PyObject* key() const {
+        if (!valid()) { Py_RETURN_NONE; }
+        const rocksdb::Slice k = it_->key();
+        return PyBytes_FromStringAndSize(k.data(), static_cast<Py_ssize_t>(k.size()));
+    }
+
+    PyObject* value() const {
+        if (!valid()) { Py_RETURN_NONE; }
+        const rocksdb::Slice v = it_->value();
+        return PyBytes_FromStringAndSize(v.data(), static_cast<Py_ssize_t>(v.size()));
+    }
+private:
+    std::unique_ptr<rocksdb::Iterator> it_;
+    std::string prefix_;
+};
+%}
+
+%newobject IfcParse::IfcFile::key_value_store_iter;
+
 %extend IfcParse::IfcFile {
 	// Use to correlate to entity_instance.file_pointer, so that we
 	// can trace file ownership of instances on the python side.
@@ -167,7 +228,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	std::vector<unsigned> entity_names() const {
 		std::vector<unsigned> keys;
 		keys.reserve(std::distance($self->begin(), $self->end()));
-		for (IfcParse::IfcFile::entity_by_id_t::const_iterator it = $self->begin(); it != $self->end(); ++ it) {
+		for (auto it = $self->begin(); it != $self->end(); ++ it) {
 			keys.push_back(it->first);
 		}
 		return keys;
@@ -196,10 +257,49 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return $self->schema()->name();
 	}
 
+	int storage_mode() const {
+		return std::visit([](auto& m) -> int {
+			if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
+				return 0;
+			} else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+				return 1;
+			}
+			return -1;
+		}, $self->storage_);
+	}
+
+	RocksDBPrefixIterator* key_value_store_iter(const std::string& prefix) const {
+        auto* storage = std::visit([](auto& m) -> IfcParse::impl::rocks_db_file_storage const * {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+                return &m;
+            }
+            return nullptr;
+        }, $self->storage_);
+		if (!storage) {
+			nullptr;
+		}
+		return new RocksDBPrefixIterator(storage, prefix);
+	}
+
+	PyObject* key_value_store_query(const std::string& key) const {
+        auto* storage = std::visit([](auto& m) -> IfcParse::impl::rocks_db_file_storage const * {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+                return &m;
+            }
+            return nullptr;
+        }, $self->storage_);
+		if (!storage) {
+			Py_RETURN_NONE;
+		}
+		std::string value;
+		if (storage->db->Get(storage->ropts, key, &value) != rocksdb::Status::OK()) {
+			Py_RETURN_NONE;
+		}
+		return PyBytes_FromStringAndSize(value.data(), value.size());
+	}
+
 	%pythoncode %{
-        # Hide the getters with read-only property implementations
-        header = property(header)
-        schema = property(schema_name)
+		schema = property(schema_name)
 	%}
 }
 
@@ -304,7 +404,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 
 	AttributeValue get_argument(unsigned i) {
-		return $self->data().get_attribute_value(i);
+		return $self->get_attribute_value(i);
 	}
 
 	AttributeValue get_argument(const std::string& a) {
@@ -312,7 +412,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		if (i == -1) {
 			throw std::runtime_error("Attribute '" + a + "' not found on entity named " + $self->declaration().name());
 		}
-		return $self->data().get_attribute_value((unsigned)i);
+		return $self->get_attribute_value((unsigned)i);
 	}
 
 	bool __eq__(IfcUtil::IfcBaseClass* other) const {
@@ -325,7 +425,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
         return oss.str();
 	}
 
-	std::string to_string(bool valid_spf) const {
+	std::string to_string(bool valid_spf = true) const {
 		std::ostringstream oss;
 		$self->toString(oss, valid_spf);
         return oss.str();
@@ -541,11 +641,24 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 };
 
 %extend IfcParse::IfcSpfHeader {
+	// Cast to base class pointers for SWIG, because
+	// it has no idea about the schema definitions.
+	IfcUtil::IfcBaseClass* file_description_py() {
+		return $self->file_description();
+	}
+	IfcUtil::IfcBaseClass* file_name_py() {
+		return $self->file_name();
+	}
+	IfcUtil::IfcBaseClass* file_schema_py() {
+		return $self->file_schema();
+	}
+
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        file_description = property(file_description)
-        file_name = property(file_name)
-        file_schema = property(file_schema)
+		# self.file_ref is set in ifcopenshell.file.header()
+        file_description = property(lambda self: self.file_ref(self.file_description_py()))
+        file_name = property(lambda self: self.file_ref(self.file_name_py()))
+        file_schema = property(lambda self: self.file_ref(self.file_schema_py()))
 	%}
 };
 
@@ -579,8 +692,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %include "../ifcparse/ifc_parse_api.h"
 %include "../ifcparse/IfcSpfHeader.h"
 %include "../ifcparse/IfcFile.h"
+%include "../ifcparse/file_open_status.h"
 %include "../ifcparse/IfcBaseClass.h"
 %include "../ifcparse/IfcSchema.h"
+%include "../serializers/RocksDbSerializer.h"
 
 // The IfcFile* returned by open() is to be freed by SWIG/Python
 %newobject open;
@@ -588,10 +703,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %newobject parse_ifcxml;
 
 %inline %{
-	IfcParse::IfcFile* open(const std::string& fn) {
+	IfcParse::IfcFile* open(const std::string& fn, bool readonly=false) {
 		IfcParse::IfcFile* f;
 		Py_BEGIN_ALLOW_THREADS;
-		f = new IfcParse::IfcFile(fn);
+		f = new IfcParse::IfcFile(fn, IfcParse::FT_AUTODETECT, readonly);
 		Py_END_ALLOW_THREADS;
 		return f;
 	}
@@ -613,7 +728,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	IfcUtil::IfcBaseClass* new_IfcBaseClass(const std::string& schema_identifier, const std::string& name) {
 		const IfcParse::schema_definition* schema = IfcParse::schema_by_name(schema_identifier);
 		const IfcParse::declaration* decl = schema->declaration_by_name(name);
-        IfcEntityInstanceData data(storage_t(decl->as_entity() ? decl->as_entity()->attribute_count() : 1));
+        IfcEntityInstanceData data(in_memory_attribute_storage(decl->as_entity() ? decl->as_entity()->attribute_count() : 1));
 		auto inst = schema->instantiate(decl, std::move(data));
 		if (auto entinst = inst->as<IfcUtil::IfcBaseEntity>()) {
             entinst->populate_derived();
@@ -781,8 +896,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 
 	// @todo refactor this to remove duplication with the typemap. 
 	// except this is calls the above function in case of instances.
-	PyObject* convert_cpp_attribute_to_python(AttributeValue arg, bool include_identifier = true) {
-		return arg.array_->apply_visitor([include_identifier](auto& v){
+	PyObject* convert_cpp_attribute_to_python(IfcUtil::IfcBaseClass* instance, size_t attribute_index, bool include_identifier = true) {
+		return instance->get_attribute_value(attribute_index).apply_visitor([include_identifier](const auto& v){
 			using U = std::decay_t<decltype(v)>;
             if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
@@ -820,7 +935,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
             } else {
 				return pythonize(v);
 			}
-		}, arg.index_);
+		});
 	}
 %}
 %inline %{
@@ -837,8 +952,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				auto attr_type = *dit
 					? IfcUtil::Argument_DERIVED
 					: IfcUtil::from_parameter_type((*it)->type_of_attribute());
-				auto value_cpp = v->data().get_attribute_value(std::distance(attrs.begin(), it));
-				auto value_py = convert_cpp_attribute_to_python(value_cpp, include_identifier);
+				auto value_py = convert_cpp_attribute_to_python(v, std::distance(attrs.begin(), it), include_identifier);
 				PyDict_SetItem(d, name_py, value_py);
 				Py_DECREF(name_py);
 				Py_DECREF(value_py);
@@ -854,8 +968,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		} else {
 			const std::string& name_cpp = "wrappedValue";
 			auto name_py = pythonize(name_cpp);
-			auto value_cpp = v->data().get_attribute_value(0);
-			auto value_py = convert_cpp_attribute_to_python(value_cpp, include_identifier);
+			auto value_py = convert_cpp_attribute_to_python(v, 0, include_identifier);
 			PyDict_SetItem(d, name_py, value_py);
 			Py_DECREF(name_py);
 			Py_DECREF(value_py);
@@ -874,3 +987,219 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 %}
 
+%extend IfcParse::InstanceStreamer {
+	PyObject* read_instance_py() {
+		auto simply_type_to_dictionary = [&](IfcUtil::IfcBaseClass* t) -> PyObject* {
+			const auto& nm = t->declaration().name();
+			auto ifc_val = t->get_attribute_value(0);
+			auto attribute_val_py = ifc_val.apply_visitor([&](const auto& t) {
+                using U = std::decay_t<decltype(t)>;
+
+                if constexpr (is_std_vector_v<U>) {
+                    return pythonize_vector(t);
+                } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+                    return pythonize(std::string(t.value()));
+                } else if constexpr (std::is_same_v<U, Derived>) {
+                    if (feature_use_attribute_value_derived) {
+                        return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
+                    } else {
+                        Py_INCREF(Py_None);
+                        return static_cast<PyObject*>(Py_None);
+                    }
+                } else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+                    // cannot occur in streaming mode
+                    Py_INCREF(Py_None);
+                    return static_cast<PyObject*>(Py_None);
+                } else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+                    // cannot occur in streaming mode
+                    Py_INCREF(Py_None);
+                    return static_cast<PyObject*>(Py_None);
+                } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+                    Py_INCREF(Py_None);
+                    return static_cast<PyObject*>(Py_None);
+                } else {
+                    return pythonize(t);
+                }
+			});
+
+			PyObject* val = PyDict_New();
+			{
+				const std::string& key_cpp = "type";
+				auto name_py = pythonize(key_cpp);
+				auto value_py = pythonize(nm);
+				PyDict_SetItem(val, name_py, value_py);
+				Py_DECREF(name_py);
+				Py_DECREF(value_py);
+			}
+			{
+				const std::string& key_cpp = "value";
+				auto name_py = pythonize(key_cpp);
+				PyDict_SetItem(val, name_py, attribute_val_py);
+				Py_DECREF(name_py);
+				Py_DECREF(attribute_val_py);
+			}
+			return val;
+		};
+
+		auto instance_reference_to_dict = [&](int i) -> PyObject* {
+			PyObject* val = PyDict_New();
+			const std::string& key_cpp = "ref";
+			auto name_py = pythonize(key_cpp);
+			auto value_py = pythonize(i);
+			PyDict_SetItem(val, name_py, value_py);
+			Py_DECREF(name_py);
+			Py_DECREF(value_py);
+			return val;
+		};
+
+		if (!*self) {
+			Py_INCREF(Py_None);
+			return Py_None;
+		}
+		auto inst = self->read_instance();
+		if (!inst) {
+			Py_INCREF(Py_None);
+			return Py_None;
+		}
+		PyObject* d = PyDict_New();
+
+		{
+			const std::string& key_cpp = "id";
+			auto name_py = pythonize(key_cpp);
+			auto value_py = pythonize((int) std::get<0>(*inst));
+			PyDict_SetItem(d, name_py, value_py);
+			Py_DECREF(name_py);
+			Py_DECREF(value_py);
+		}
+		{
+			const std::string& key_cpp = "type";
+			auto name_py = pythonize(key_cpp);
+			auto value_py = pythonize(std::get<1>(*inst)->name());
+			PyDict_SetItem(d, name_py, value_py);
+			Py_DECREF(name_py);
+			Py_DECREF(value_py);
+		}
+		{
+			const auto* decl = std::get<1>(*inst);
+			const auto& data = std::get<2>(*inst);
+
+			for (size_t i = 0; i < decl->as_entity()->attribute_count(); i++) {
+				auto val = data.get_attribute_value(nullptr, decl, 0, i);
+
+                // sets dict member, returns void
+				val.apply_visitor([&](const auto& t) -> void {
+					using T = std::decay_t<decltype(t)>;
+					PyObject* attribute_val_py;
+					if constexpr (std::is_same_v<T, IfcUtil::IfcBaseClass*>) {
+						attribute_val_py = simply_type_to_dictionary(t);
+					} else {
+                        using U = std::decay_t<decltype(t)>;
+
+                        if constexpr (is_std_vector_v<U>) {
+                            attribute_val_py = pythonize_vector(t);
+                        } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+                            attribute_val_py = pythonize(std::string(t.value()));
+                        } else if constexpr (std::is_same_v<U, Derived>) {
+                            if (feature_use_attribute_value_derived) {
+                                attribute_val_py = SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
+                            } else {
+                                Py_INCREF(Py_None);
+                                attribute_val_py = static_cast<PyObject*>(Py_None);
+                            }
+                        } else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+                            // cannot occur in streaming mode
+                            Py_INCREF(Py_None);
+                            attribute_val_py = static_cast<PyObject*>(Py_None);
+                        } else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+                            // cannot occur in streaming mode
+                            Py_INCREF(Py_None);
+                            attribute_val_py = static_cast<PyObject*>(Py_None);
+                        } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+                            Py_INCREF(Py_None);
+                            attribute_val_py = static_cast<PyObject*>(Py_None);
+                        } else {
+                            attribute_val_py = pythonize(t);
+                        }
+					}
+
+					{
+						auto name_py = pythonize(decl->as_entity()->attribute_by_index(i)->name());
+						PyDict_SetItem(d, name_py, attribute_val_py);
+						Py_DECREF(name_py);
+						Py_DECREF(attribute_val_py);
+					}
+				});
+			}
+
+			for (auto& p : self->references()) {
+				int index = p.first.index_;
+				auto name_py = pythonize(decl->as_entity()->attribute_by_index(index)->name());
+
+				std::visit([&](const auto& v) -> void {
+                    PyObject* attribute_val_py = nullptr;
+					using T = std::decay_t<decltype(v)>;
+					
+					if constexpr (std::is_same_v<T, IfcParse::reference_or_simple_type>) {
+						if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(&v)) {
+							// So this never happens?
+						} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&v)) {
+							attribute_val_py = instance_reference_to_dict(*name);
+						}
+					} else if constexpr (std::is_same_v<T, std::vector<IfcParse::reference_or_simple_type>>) {
+						attribute_val_py = PyTuple_New(v.size());
+						size_t idx = 0;
+						for (auto const& inner : v) {
+							if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(&inner)) {
+								PyTuple_SetItem(attribute_val_py, idx++, simply_type_to_dictionary(*inst));
+							} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&inner)) {
+								PyTuple_SetItem(attribute_val_py, idx++, instance_reference_to_dict(*name));
+							}
+						}
+					} else if constexpr (std::is_same_v<T, std::vector<std::vector<IfcParse::reference_or_simple_type>>>) {
+						attribute_val_py = PyTuple_New(v.size());
+						size_t outer_idx = 0;
+						for (auto const& inner : v) {
+							PyObject* inner_py = PyTuple_New(inner.size());
+							size_t idx = 0;
+							for (auto const& innermost : inner) {
+								if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(&innermost)) {
+									PyTuple_SetItem(inner_py, idx++, simply_type_to_dictionary(*inst));
+								} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&innermost)) {
+									PyTuple_SetItem(inner_py, idx++, instance_reference_to_dict(*name));
+								}
+							}
+							PyTuple_SetItem(attribute_val_py, outer_idx++, inner_py);
+						}
+					}
+
+                    if (attribute_val_py) {
+                        // This is for IfcPropertySetDefinitionSet where the references need to be written
+                        // into a simple type.
+                        PyObject* existing = PyDict_GetItemWithError(d, name_py);
+                        bool set_in_dict = false;
+                        if (existing && PyDict_Check(existing) && PyDict_GetItemString(existing, "type")) {
+                            PyObject* val = PyDict_GetItemString(existing, "value");
+                            if (val && val == Py_None) {
+                                PyDict_SetItemString(existing, "value", attribute_val_py);
+                                set_in_dict = true;
+                            }
+                        }
+
+                        if (!set_in_dict) {
+                            PyDict_SetItem(d, name_py, attribute_val_py);
+                            Py_DECREF(name_py);
+                            Py_DECREF(attribute_val_py);
+                        }
+                    }
+
+				}, p.second);
+			}
+		}
+
+		$self->references().clear();
+		$self->inverses().clear();
+
+		return d;
+	}
+}
+	

@@ -119,7 +119,7 @@ class Implementation(codegen.Base):
                     null_check = ""
                     if arg["is_optional"]:
                         attr_check = (
-                            "if(data_.get_attribute_value(%d).isNull()) { return %%s; }"
+                            "if(get_attribute_value(%d).isNull()) { return %%s; }"
                             % (arg["index"] - 1,)
                         )
                         if "boost::optional" in arg["full_type"]:
@@ -246,9 +246,9 @@ class Implementation(codegen.Base):
             )
 
             superclass_num_attrs = (
-                "%s(IfcEntityInstanceData(storage_t(%%d)))" % type.supertypes[0]
+                "%s(IfcEntityInstanceData(in_memory_attribute_storage(%%d)))" % type.supertypes[0]
                 if len(type.supertypes) == 1
-                else "IfcUtil::IfcBaseEntity(IfcEntityInstanceData(storage_t(%d)))"
+                else "IfcUtil::IfcBaseEntity(IfcEntityInstanceData(in_memory_attribute_storage(%d)))"
             ) % len(constructor_arguments)
 
             write(

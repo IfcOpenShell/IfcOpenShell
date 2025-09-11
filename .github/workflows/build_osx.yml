@@ -42,7 +42,7 @@ jobs:
       - name: Install Dependencies
         run: |
           brew update
-          brew install git bison autoconf automake libffi cmake findutils
+          brew install git bison autoconf automake libffi findutils
           echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Install aws cli
@@ -51,8 +51,8 @@ jobs:
 
       - name: Unpack Dependencies
         run: |
-          install_root=$(find ./build -maxdepth 4 -name install)
-          find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \;
+          install_root=$(find ./build -maxdepth 4 -type d -name install 2>/dev/null | head -n 1 || true)
+          [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \; || true
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
@@ -85,7 +85,7 @@ jobs:
       - name: Package .zip archives
         run: |
           VERSION=v`cat VERSION`
-          cd ./build/`uname`/*/10.9/install/ifcopenshell
+          cd ./build/`uname`/*/10.15/install/ifcopenshell
           mkdir ~/output
 
           ls -d python-* | while read py_version; do

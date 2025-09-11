@@ -41,11 +41,12 @@ Used environment variables:
     - ``BUILD_DIR`` - build directory. By default will use "build" folder in IfcOpenShell repository.
     - ``DEPS_DIR`` - dependencies directory. By default will create automatic folder in build directory.
     - ``BUILD_CFG`` - build configuration, 'RelWithDebInfo' by default.
-"""
+    - ``USE_CURRENT_PYTHON_VERSION`` - use current python config instead of compile from source
+    - ``IFCOS_NUM_BUILD_PROCS`` - number of concurrent processes defaults to available cores + 1
+    - ``NO_CLEAN`` - do not clean build directories but continue working on current build (installed dependencies are never cleared)
+    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (IFC2X3; IFC4; IFC4X3_ADD2) - to be supplied as 2x3;4
 
 
-###############################################################################
-#                                                                             #
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
 # Prerequisites for this script to function correctly:                        #
@@ -78,7 +79,9 @@ Used environment variables:
 #          $ yum install git gcc gcc-c++ autoconf bison make cmake            #
 #            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
 #            automake patch                                                   #
-###############################################################################
+
+"""
+
 import logging
 import os
 import re
@@ -126,14 +129,15 @@ PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.13.8"
 SWIG_VERSION = "4.1.0"
 OPENCOLLADA_VERSION = "v1.6.68"
-HDF5_VERSION = "1.12.1"
+HDF5_VERSION = "1.13.0"
 
 GMP_VERSION = "6.2.1"
 MPFR_VERSION = "3.1.6"  # latest is 4.1.0
 CGAL_VERSION = "5.6.x-branch"
 USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
-
+ROCKSDB_VERSION = "9.11.2"
+ZSTD_VERSION = "1.5.7"
 # binaries
 cp = "cp"
 bash = "bash"
@@ -186,8 +190,10 @@ USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
 TOOLSET = None
 if platform.system() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
-    TOOLSET = "10.9" if USE_OCCT else "10.6"
-
+    # TOOLSET = "10.9" if USE_OCCT else "10.6"
+    # /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/arm64/10.9/build/rocksdb/cache/clock_cache.cc:732:14: error: aligned allocation function of type 'void *(std::size_t, std::align_val_t)' is only available on macOS 10.13 or newer
+    # /Users/runner/work/IfcOpenShell/IfcOpenShell/src/ifcparse/IfcFile.cpp:539:14: error: 'exists' is unavailable: introduced in macOS 10.15
+    TOOLSET = "10.15"
 
 IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
 
@@ -244,7 +250,7 @@ cecho(
 )
 
 dependency_tree: "dict[str, tuple[str, ...]]" = {
-    "IfcParse": ("boost", "libxml2", "hdf5"),
+    "IfcParse": ("boost", "libxml2", "hdf5", "rocksdb"),
     "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen"),
     "IfcConvert": ("IfcGeom",),
     "OpenCOLLADA": ("libxml2", "pcre"),
@@ -261,6 +267,8 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "cgal": (),
     "eigen": (),
     "freetype": (),
+    "rocksdb": ("zstd",),
+    "zstd": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
@@ -462,6 +470,7 @@ def build_dependency(
     pre_compile_subs: "Sequence[tuple[str, str, str]]" = (),
     additional_files: "Union[dict[str, str], None]" = None,
     no_append_name=False,
+    cmake_dir=None,
     **kwargs,
 ) -> None:
     """Handles building of dependencies with different tools (which are
@@ -556,17 +565,23 @@ def build_dependency(
         sp.run(shell, shell=True, check=True, cwd=extract_dir)
 
     if mode == "ctest":
-        run(
-            ["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"],
-            cwd=extract_dir,
-        )
+        try:
+            run(
+                ["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"],
+                cwd=extract_dir,
+            )
+        except Exception as e:
+            print("-" * 70)
+            print(open(os.path.join(extract_dir, 'hdf5.log')))
+            print("-" * 70)
+            raise e
         run([tar, "-xf", kwargs["ctest_result"] + ".tar.gz"], cwd=os.path.join(extract_dir, "build"))
         shutil.copytree(
             os.path.join(extract_dir, "build", kwargs["ctest_result"], kwargs["ctest_result_path"]),
             os.path.join(DEPS_DIR, "install", name),
         )
     elif mode != "bjam":
-        extract_build_dir = os.path.join(extract_dir, "build")
+        extract_build_dir = os.path.join(extract_dir, *([cmake_dir] if cmake_dir else []), "build")
         if os.path.exists(extract_build_dir):
             shutil.rmtree(extract_build_dir)
         os.makedirs(extract_build_dir)
@@ -752,8 +767,8 @@ if USE_OCCT and "occ" in targets:
         build_tool_args=[
             f"-DINSTALL_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}",
             f"-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}",
-            "-DBUILD_MODULE_Draw=0",
-            "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
+            f"-DBUILD_MODULE_Draw=0",
+            f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
         ],
         download_url="https://github.com/Open-Cascade-SAS/OCCT",
@@ -767,12 +782,12 @@ elif "occ" in targets:
         name=f"oce-{OCE_VERSION}",
         mode="cmake",
         build_tool_args=[
-            "-DOCE_DISABLE_TKSERVICE_FONT=ON",
-            "-DOCE_TESTING=OFF",
-            "-DOCE_BUILD_SHARED_LIB=OFF",
-            "-DOCE_DISABLE_X11=ON",
-            "-DOCE_VISUALISATION=OFF",
-            "-DOCE_OCAF=OFF",
+            f"-DOCE_DISABLE_TKSERVICE_FONT=ON",
+            f"-DOCE_TESTING=OFF",
+            f"-DOCE_BUILD_SHARED_LIB=OFF",
+            f"-DOCE_DISABLE_X11=ON",
+            f"-DOCE_VISUALISATION=OFF",
+            f"-DOCE_OCAF=OFF",
             f"-DOCE_INSTALL_PREFIX={DEPS_DIR}/install/oce-{OCE_VERSION}",
         ],
         download_url="https://github.com/tpaviot/oce/archive/",
@@ -934,8 +949,8 @@ if "cgal" in targets:
             f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
             f"-DBoost_INCLUDE_DIR={DEPS_DIR}/install/boost-{BOOST_VERSION}",
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/cgal-{CGAL_VERSION}/",
-            "-DCGAL_HEADER_ONLY=On",
-            "-DBUILD_SHARED_LIBS=Off",
+            f"-DCGAL_HEADER_ONLY=On",
+            f"-DBUILD_SHARED_LIBS=Off",
         ],
         download_url="https://github.com/CGAL/cgal.git",
         download_name="cgal",
@@ -975,6 +990,49 @@ if "usd" in targets:
         revision=f"v{USD_VERSION}",
     )
 
+if "zstd" in targets:
+    build_dependency(
+        name=f"zstd-{ZSTD_VERSION}",
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            f"-DZSTD_BUILD_STATIC=ON",
+            f"-DZSTD_BUILD_SHARED=OFF",
+            f"-DCMAKE_INSTALL_LIBDIR=lib",
+        ],
+        cmake_dir="build/cmake/",
+        download_url="https://github.com/facebook/zstd",
+        download_name="zstd",
+        download_tool=download_tool_git,
+        revision=f"v{ZSTD_VERSION}",
+    )
+
+if "rocksdb" in targets:
+    build_dependency(
+        name=f"rocksdb-{ROCKSDB_VERSION}",
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}",
+            f"-DFAIL_ON_WARNINGS=Off",
+            f"-DWITH_TESTS=OFF",
+            f"-DWITH_TOOLS=OFF",
+            f"-DWITH_GFLAGS=OFF",
+            f"-DWITH_BENCHMARK_TOOLS=OFF",
+            f"-DWITH_CORE_TOOLS=OFF",
+            f"-DROCKSDB_BUILD_SHARED=Off",
+            f"-DCMAKE_POSITION_INDEPENDENT_CODE=On",
+            f"-DUSE_RTTI=On",
+            f"-DWITH_ZSTD=On",
+            f"-DPORTABLE=1",
+            f"-DZSTD_INCLUDE_DIRS={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
+            f"-DZSTD_LIBRARIES={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib/libzstd.a",
+        ],
+        download_url="https://github.com/facebook/rocksdb",
+        download_name="rocksdb",
+        download_tool=download_tool_git,
+        revision=f"v{ROCKSDB_VERSION}",
+    )
+
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -1006,14 +1064,18 @@ if "wasm" in flags:
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
 
+schemas = os.environ.get("IFCOS_SCHEMAS")
+if schemas:
+    cmake_args.append(f"-DSCHEMA_VERSIONS={schemas}")
+
 if "cgal" in targets:
     cmake_args.extend(
         [
-            "-DCGAL_INCLUDE_DIR=" f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
-            "-DGMP_INCLUDE_DIR=" f"{DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-            "-DGMP_LIBRARY_DIR=" f"{DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
-            "-DMPFR_INCLUDE_DIR=" f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
-            "-DMPFR_LIBRARY_DIR=" f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
+            f"-DCGAL_INCLUDE_DIR={DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
+            f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
+            f"-DGMP_LIBRARY_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
+            f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
+            f"-DMPFR_LIBRARY_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
         ]
     )
 
@@ -1030,33 +1092,33 @@ elif "occ" in targets:
 if "OpenCOLLADA" in targets:
     cmake_args.extend(
         [
-            "-DOPENCOLLADA_INCLUDE_DIR=" f"{DEPS_DIR}/install/OpenCOLLADA/include/opencollada",
-            "-DOPENCOLLADA_LIBRARY_DIR=" f"{DEPS_DIR}/install/OpenCOLLADA/lib/opencollada",
+            f"-DOPENCOLLADA_INCLUDE_DIR={DEPS_DIR}/install/OpenCOLLADA/include/opencollada",
+            f"-DOPENCOLLADA_LIBRARY_DIR={DEPS_DIR}/install/OpenCOLLADA/lib/opencollada",
         ]
     )
 else:
     cmake_args.extend(
         [
-            "-DCOLLADA_SUPPORT=" "Off",
+            f"-DCOLLADA_SUPPORT=Off",
         ]
     )
 
 if "pcre" in targets:
-    cmake_args.append("-DPCRE_LIBRARY_DIR=" f"{DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib")
+    cmake_args.append(f"-DPCRE_LIBRARY_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib")
 
 if "libxml2" in targets:
     cmake_args.extend(
         [
-            "-DLIBXML2_INCLUDE_DIR=" f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
-            "-DLIBXML2_LIBRARIES=" f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
+            f"-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
+            f"-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
         ]
     )
 
 if "hdf5" in targets:
     cmake_args.extend(
         [
-            "-DHDF5_INCLUDE_DIR=" f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/include",
-            "-DHDF5_LIBRARY_DIR=" f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}/lib",
+            f"-DHDF5_INCLUDE_DIR={DEPS_DIR}/install/hdf5-{HDF5_VERSION}/include",
+            f"-DHDF5_LIBRARY_DIR={DEPS_DIR}/install/hdf5-{HDF5_VERSION}/lib",
         ]
     )
 else:
@@ -1065,9 +1127,21 @@ else:
 if "usd" in targets:
     cmake_args.extend(
         [
-            "-DUSD_SUPPORT=" "On",
-            "-DUSD_INCLUDE_DIR=" f"{DEPS_DIR}/install/usd-{USD_VERSION}/include",
-            "-DUSD_LIBRARY_DIR=" f"{DEPS_DIR}/install/usd-{USD_VERSION}/lib",
+            f"-DUSD_SUPPORT=" "On",
+            f"-DUSD_INCLUDE_DIR={DEPS_DIR}/install/usd-{USD_VERSION}/include",
+            f"-DUSD_LIBRARY_DIR={DEPS_DIR}/install/usd-{USD_VERSION}/lib",
+        ]
+    )
+
+if "rocksdb" in targets:
+    cmake_args.extend(
+        [
+            f"-DWITH_ROCKSDB=On",
+            f"-DROCKSDB_INCLUDE_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/include",
+            f"-DROCKSDB_LIBRARY_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/lib",
+            f"-DWITH_ZSTD=On",
+            f"-DZSTD_INCLUDE_DIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
+            f"-DZSTD_LIBRARY_DIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib",
         ]
     )
 
@@ -1075,11 +1149,11 @@ if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(expl
     logger.info("\rConfiguring executables...")
 
     exec_args = [
-        "-DBUILD_IFCGEOM=" + OFF_ON["IfcGeom" in targets],
-        "-DBUILD_GEOMSERVER=" + OFF_ON["IfcGeomServer" in targets],
-        "-DBUILD_CONVERT=" + OFF_ON["IfcConvert" in targets],
-        "-DBUILD_IFCPYTHON=" "OFF",
-        "-DCMAKE_INSTALL_PREFIX=" f"{DEPS_DIR}/install/ifcopenshell",
+        f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
+        f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
+        f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
+        f"-DBUILD_IFCPYTHON=OFF",
+        f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
     ]
 
     run_cmake("", exec_args + cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
@@ -1140,7 +1214,7 @@ if "IfcOpenShell-Python" in targets:
                     else []
                 ),
                 "-DPYTHON_INCLUDE_DIR=" + python_include,
-                "-DCMAKE_INSTALL_PREFIX=" f"{DEPS_DIR}/install/ifcopenshell/tmp",
+                f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
                 "-DUSERSPACE_PYTHON_PREFIX="
                 + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
                 *swig_when_built,
@@ -1155,6 +1229,8 @@ if "IfcOpenShell-Python" in targets:
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
         if python_executable:
+            run([python_executable, "-m", "ensurepip"])
+            run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
             module_dir = os.path.dirname(
                 run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"])
             )
@@ -1199,6 +1275,10 @@ if "IfcOpenShell-Python" in targets:
 
             module_dir = compile_python_wrapper(python_version, python_library, python_include, python_executable)
             assert module_dir
+            # Not sure why, but added after reading this in the logs
+            # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
+            # D'oh this was just due to a missing f-string f but doesn't hurt to keep it in.
+            run(["mkdir", "-p", os.path.join(DEPS_DIR, "install", "ifcopenshell")])
             run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")])
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
