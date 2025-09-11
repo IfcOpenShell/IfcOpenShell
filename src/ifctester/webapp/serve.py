@@ -18,7 +18,12 @@
 
 import os
 import argparse
+import mimetypes
 from flask import Flask, send_from_directory, send_file
+
+# Browsers expecting this specific MIME type for .mjs files,
+# otherwise they fail to load.
+mimetypes.add_type("text/javascript", ".mjs")
 
 app = Flask(__name__)
 
