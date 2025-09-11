@@ -28,9 +28,7 @@ import weakref
 from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict
 from collections.abc import Callable, Generator
-
-# py39 compat: re-enable when support is dropped
-# from typing_extensions import assert_never
+from typing_extensions import assert_never
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -215,9 +213,7 @@ class Transaction:
                     for index, value in data:
                         inverse[index] = self.unserialise_value(inverse, value)
             else:
-                # py39 compat: re-enable when support is dropped
-                # assert_never(operation["action"])
-                pass
+                assert_never(operation["action"])
 
     def commit(self) -> None:
         for operation in self.operations:
@@ -238,9 +234,7 @@ class Transaction:
             elif operation["action"] == "batch_delete":
                 pass
             else:
-                # py39 compat: re-enable when support is dropped
-                # assert_never(operation["action"])
-                pass
+                assert_never(operation["action"])
 
 
 file_dict: dict[int, tuple[weakref.ReferenceType[file], int]] = {}
