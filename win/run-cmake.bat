@@ -114,6 +114,8 @@ set TBB_INCLUDE_DIR=%INSTALL_DIR%\tbb\include
 set TBB_LIBRARY_DIR=%INSTALL_DIR%\tbb\lib
 set ROCKSDB_INCLUDE_DIR=%INSTALL_DIR%\rocksdb\include
 set ROCKSDB_LIBRARY_DIR=%INSTALL_DIR%\rocksdb\lib
+set ZSTD_INCLUDE_DIR=%INSTALL_DIR%\zstd\include
+set ZSTD_LIBRARY_DIR=%INSTALL_DIR%\zstd\lib
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
