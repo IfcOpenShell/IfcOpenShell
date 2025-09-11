@@ -366,6 +366,8 @@ private:
         batch_mode_ = true; 
     }
     void unbatch();
+
+    void reset_identity_cache();
 };
 
 #ifdef WITH_IFCXML
