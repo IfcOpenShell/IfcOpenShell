@@ -452,6 +452,7 @@ namespace {
 IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* ffile, bool readonly)
     : file(ffile)
     , db(init_db(filepath, readonly))
+    // @todo streaming serializer does not populate the byguid map
     , byguid_internal_(db, "g|")
     , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
     , instance_ids_(db, "i|")
@@ -461,7 +462,7 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
     // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
     // , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
 {
-    // wopts.disableWAL = true;
+    wopts.disableWAL = true;
 }
 
 IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
