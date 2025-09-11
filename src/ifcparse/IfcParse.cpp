@@ -2768,6 +2768,15 @@ void IfcParse::IfcFile::unbatch() {
     batch_deletion_ids_.clear();
 }
 
+void IfcParse::IfcFile::reset_identity_cache() {
+    std::visit([](auto& x) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+            x.instance_cache_.clear();
+            x.type_instance_cache_.clear();
+        }
+	}, storage_);
+}
+
 void IfcParse::IfcFile::build_inverses() {
     for (const auto& pair : *this) {
         build_inverses_(pair.second);
