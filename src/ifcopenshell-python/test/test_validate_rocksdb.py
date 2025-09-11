@@ -48,7 +48,7 @@ def test_file(file):
             ifcopenshell.validate.validate(rocks, logger)
         except ifcopenshell.SchemaError as e:
             pytest.skip()
-        # ifcopenshell.validate.log_internal_cpp_errors(None, file, logger, log_content=log)
+        ifcopenshell.validate.log_internal_cpp_errors(None, file, logger, log_content=log)
         file = os.path.basename(file)
         if file.startswith("fail-"):
             assert len(logger.statements) > 0
