@@ -1008,8 +1008,6 @@ if "zstd" in targets:
     )
 
 if "rocksdb" in targets:
-    sp.call(['find', f'{DEPS_DIR}/install/zstd-{ZSTD_VERSION}'])
-
     build_dependency(
         name=f"rocksdb-{ROCKSDB_VERSION}",
         mode="cmake",
