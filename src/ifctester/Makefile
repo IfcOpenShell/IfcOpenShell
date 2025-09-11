@@ -32,6 +32,7 @@ webapp-dev:
 
 .PHONY: pyodide-download
 pyodide-download:
+	echo "Use Python ${PYTHON} and pip ${PIP} to build the package"
 	@if [ -d "$(PYODIDE_DIR)" ]; then \
 		echo "Pyodide directory already exists at $(PYODIDE_DIR), skipping download"; \
 	else \
@@ -80,7 +81,9 @@ clean:
 
 .PHONY: dist
 dist: webapp-prepare
-	$(MAKE) -f ../common.mk dist PACKAGE_NAME=$(PACKAGE_NAME)
+# For some reason OS is not initalized when we call common.mk dist, which matters on Windows.
+# So we pass it explicitly.
+	$(MAKE) -f ../common.mk dist PACKAGE_NAME=$(PACKAGE_NAME) OS=$(OS)
 
 .PHONY: webapp-prepare
 webapp-prepare: webapp-build
