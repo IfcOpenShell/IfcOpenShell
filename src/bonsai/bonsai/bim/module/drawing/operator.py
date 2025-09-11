@@ -3717,8 +3717,7 @@ class SelectElementValues(bpy.types.Operator):
     expanded_category: bpy.props.StringProperty(default="Basic")
     
     def invoke(self, context, event):
-        self.expanded_category = "Basic"
-        return context.window_manager.invoke_popup(self, width=700)
+        return context.window_manager.invoke_props_dialog(self, width=600)
 
     def draw(self, context):
         obj = context.active_object
@@ -3728,56 +3727,29 @@ class SelectElementValues(bpy.types.Operator):
             self.layout.label(text="No product assigned to this annotation", icon="ERROR")
             return
             
-        available_keys = self.get_available_element_value_keys(assigned_product)
-        key_mapping = {}
-        key_counter = 1
+        if not ElementValuesData.is_loaded:
+            ElementValuesData.load()
+        available_keys = ElementValuesData.get_available_element_value_keys(assigned_product)
+        
+        all_keys_flat = ElementValuesData.get_flattened_keys(available_keys)
         
         for category_name, keys in available_keys.items():
-            for key, display_name in keys:
-                key_mapping[key_counter] = key
-                key_counter += 1
-
-        info_box = self.layout.box()
-        info_box.scale_y = 0.8
-        info_box.label(text="Click category headers to expand (only one at a time)", icon="INFO")
-        info_box.label(text="Use {{valueX}} in custom expressions to reference attributes", icon="INFO")
-
-        key_counter = 1
-        
-        for category_name, keys in available_keys.items():
+            if not keys:
+                continue
+                
             box = self.layout.box()
-            is_expanded = category_name == self.expanded_category            
-            header_row = box.row(align=True)
+            box.label(text=category_name, icon=self.get_category_icon(category_name))
             
-            icon = "DOWNARROW_HLT" if is_expanded else "RIGHTARROW"
-            toggle_op = header_row.operator("bim.toggle_category", text="", icon=icon, emboss=False)
-            toggle_op.category_name = category_name
-            toggle_op.is_currently_expanded = is_expanded
-            toggle_op.literal_prop_id = self.literal_prop_id
-            
-            item_count = len(keys)
-            count_text = f"({item_count})" if item_count > 0 else "(empty)"
-            header_row.label(text=f"{category_name} {count_text}", icon=self.get_category_icon(category_name))
-            
-            if is_expanded and keys:
-                for key, display_name in keys:
-                    row = box.row(align=True)
-                    row.scale_y = 0.9
-                    row.separator(factor=1.5)
-                    
-                    split = row.split(factor=0.7, align=True)
-                    split.label(text=display_name)
-                    
-                    right_row = split.row(align=True)
-                    right_row.label(text=f"{{{{value{key_counter}}}}}")
-                    
-                    op = right_row.operator("bim.insert_formatted_literal_popup", text="", icon="ADD")
-                    op.literal_prop_id = self.literal_prop_id
-                    op.element_value_key = key
-                    
-                    key_counter += 1
-            else:
-                key_counter += item_count
+            for key, description in keys:
+                row = box.row()
+                split = row.split(factor=0.6)
+                split.label(text=description)
+                
+                try:
+                    value_number = next(i for i, (k, _) in enumerate(all_keys_flat, 1) if k == key)
+                    split.label(text=f"{{{{value{value_number}}}}}")
+                except StopIteration:
+                    split.label(text="")
 
     def execute(self, context):
         return {"FINISHED"}
@@ -3785,8 +3757,8 @@ class SelectElementValues(bpy.types.Operator):
     def get_category_icon(self, category_name):
         icons = {
             "Basic": "OBJECT_DATA",
-            "Attributes": "PROPERTIES",
-            "Property Sets": "PROPERTIES",
+            "Attributes": "PROPERTIES", 
+            "Property Sets": "PROPERTIES", 
             "Quantity Sets": "SNAP_VOLUME",
             "Type": "OUTLINER_OB_MESH",
             "Spatial": "HOME",
@@ -3799,302 +3771,6 @@ class SelectElementValues(bpy.types.Operator):
             "Coordinates": "EMPTY_ARROWS",
         }
         return icons.get(category_name, "DOT")
-    
-    def get_available_element_value_keys(self, element: ifcopenshell.entity_instance) -> dict[str, list[tuple[str, str]]]:
-        """Get all available selector syntax keys for the element following IfcOpenshell selector syntax documentation"""
-        keys = {}
-        
-        basic_keys = []
-        basic_keys.append(("id", f"IFC ID: {element.id()}"))
-        basic_keys.append(("class", f"IFC Class: {element.is_a()}"))
-        
-        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
-        if predefined_type and predefined_type != "NOTDEFINED":
-            basic_keys.append(("predefined_type", f"Predefined Type: {predefined_type}"))
-        
-        keys["Basic"] = basic_keys
-        
-        element_attrs = []
-        excluded_attrs = {'id', 'type', 'GlobalId', 'OwnerHistory', 'ObjectPlacement', 'Representation'}
-        
-        for attr_name in element.get_info().keys():
-            if attr_name not in excluded_attrs:
-                try:
-                    value = getattr(element, attr_name)
-                    if value is not None and value != '' and value != 'NOTDEFINED':
-                        if not hasattr(value, 'is_a'):
-                            element_attrs.append((attr_name, f"{attr_name}: {value}"))
-                except:
-                    pass
-        
-        keys["Attributes"] = element_attrs
-        
-        pset_keys = []
-        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
-        if psets:
-            for pset_name, pset_data in psets.items():
-                if pset_name not in ["id", "type"]:
-                    for prop_name, prop_value in pset_data.items():
-                        if prop_name not in ["id", "type"]:
-                            pset_keys.append((f"{pset_name}.{prop_name}", f"{pset_name}.{prop_name}: {prop_value}"))
-        
-        keys["Property Sets"] = pset_keys
-        
-        qset_keys = []
-        qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
-        if qsets:
-            for qset_name, qset_data in qsets.items():
-                if qset_name not in ["id", "type"]:
-                    for qty_name, qty_value in qset_data.items():
-                        if qty_name not in ["id", "type"]:
-                            qset_keys.append((f"{qset_name}.{qty_name}", f"{qset_name}.{qty_name}: {qty_value}"))
-        
-        keys["Quantity Sets"] = qset_keys
-        
-        type_keys = []
-        if hasattr(element, 'IsTypedBy') and element.IsTypedBy:
-            relating_type = element.IsTypedBy[0].RelatingType
-            
-            for attr_name in relating_type.get_info().keys():
-                if attr_name not in excluded_attrs:
-                    try:
-                        value = getattr(relating_type, attr_name)
-                        if value is not None and value != '' and value != 'NOTDEFINED':
-                            if not hasattr(value, 'is_a'):
-                                type_keys.append((f"type.{attr_name}", f"Type {attr_name}: {value}"))
-                    except:
-                        pass
-            
-            type_keys.append(("types.count", "Type Occurrences Count: [calculated at runtime]"))
-        
-        keys["Type"] = type_keys
-        
-        spatial_keys = []
-        
-        if hasattr(element, 'ContainedInStructure') and element.ContainedInStructure:
-            container = element.ContainedInStructure[0].RelatingStructure
-            if container and hasattr(container, 'Name') and container.Name:
-                spatial_keys.append(("container.Name", f"Container Name: {container.Name}"))
-        
-        spaces = [rel.RelatingSpace for rel in getattr(element, 'HasAssignments', []) 
-                if rel.is_a('IfcRelAssignsToGroup') and rel.RelatingGroup.is_a('IfcSpace')]
-        if spaces and spaces[0].Name:
-            spatial_keys.append(("space.Name", f"Space Name: {spaces[0].Name}"))
-        
-        current_element = element
-        
-        if hasattr(current_element, 'ContainedInStructure') and current_element.ContainedInStructure:
-            storey = current_element.ContainedInStructure[0].RelatingStructure
-            if storey and storey.is_a('IfcBuildingStorey') and storey.Name:
-                spatial_keys.append(("storey.Name", f"Storey Name: {storey.Name}"))
-                
-                if hasattr(storey, 'Decomposes') and storey.Decomposes:
-                    building = storey.Decomposes[0].RelatingObject
-                    if building and building.is_a('IfcBuilding') and building.Name:
-                        spatial_keys.append(("building.Name", f"Building Name: {building.Name}"))
-                        
-                        if hasattr(building, 'Decomposes') and building.Decomposes:
-                            site = building.Decomposes[0].RelatingObject
-                            if site and site.is_a('IfcSite') and site.Name:
-                                spatial_keys.append(("site.Name", f"Site Name: {site.Name}"))
-        
-        keys["Spatial"] = spatial_keys
-        
-        parent_keys = []
-        parent = ifcopenshell.util.element.get_aggregate(element)
-        if parent and hasattr(parent, 'Name') and parent.Name:
-            parent_keys.append(("parent.Name", f"Parent Name: {parent.Name}"))
-            parent_keys.append(("parent.class", f"Parent Class: {parent.is_a()}"))
-            if hasattr(parent, 'PredefinedType') and parent.PredefinedType:
-                parent_keys.append(("parent.predefined_type", f"Parent Type: {parent.PredefinedType}"))
-        
-        keys["Parent"] = parent_keys
-        
-        classification_keys = []
-        classifications = ifcopenshell.util.classification.get_references(element)
-        if classifications:
-            classifications_list = list(classifications)
-            
-            all_classification_attrs = set()
-            for classification in classifications_list:
-                all_classification_attrs.update(classification.get_info().keys())
-            
-            
-
-            for i, classification in enumerate(classifications_list):
-                classification_info = classification.get_info()
-                
-                for attr_name in sorted(all_classification_attrs):
-                    if attr_name in classification_info:
-                        value = getattr(classification, attr_name, None)
-                        if value is not None and value != '' and value != 'NOTDEFINED':
-                            if not hasattr(value, 'is_a'):
-                                classification_keys.append((f"Class Ref.{attr_name}.{i}", f"Classification {i+1} {attr_name}: {value}"))
-
-        keys["Classification"] = classification_keys
-        
-        group_keys = []
-        system_keys = []
-        zone_keys = []
-        
-        if hasattr(element, 'HasAssignments'):
-            for assignment in element.HasAssignments:
-                if assignment.is_a('IfcRelAssignsToGroup'):
-                    group = assignment.RelatingGroup
-                    group_name = getattr(group, 'Name', '') or f"Unnamed {group.is_a()}"
-                    
-                    group_keys.append(("group.Name", f"Group Name: {group_name}"))
-                    group_keys.append(("group.class", f"Group Class: {group.is_a()}"))
-                    
-                    if group.is_a('IfcSystem'):
-                        system_keys.append(("system.Name", f"System Name: {group_name}"))
-                        system_keys.append(("system.class", f"System Class: {group.is_a()}"))
-                        if hasattr(group, 'PredefinedType') and group.PredefinedType:
-                            system_keys.append(("system.predefined_type", f"System Type: {group.PredefinedType}"))
-                    
-                    if group.is_a('IfcZone'):
-                        zone_keys.append(("zone.Name", f"Zone Name: {group_name}"))
-                        zone_keys.append(("zone.class", f"Zone Class: {group.is_a()}"))
-                        if hasattr(group, 'PredefinedType') and group.PredefinedType:
-                            zone_keys.append(("zone.predefined_type", f"Zone Type: {group.PredefinedType}"))
-        
-        keys["Groups"] = group_keys
-        keys["Systems"] = system_keys
-        keys["Zones"] = zone_keys
-        
-        material_keys = []
-        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-        if material:
-            all_material_attrs = set()
-            material_info = material.get_info()
-            all_material_attrs.update(material_info.keys())
-            
-            for attr_name in sorted(all_material_attrs):
-                if attr_name in material_info:
-                    value = getattr(material, attr_name, None)
-                    if value is not None and value != '' and value != 'NOTDEFINED':
-                        if not hasattr(value, 'is_a'):
-                            material_keys.append((f"material.{attr_name}", f"Material {attr_name}: {value}"))
-            
-            material_keys.append(("materials.count", "Materials Count: [calculated at runtime]"))
-            
-            if material.is_a("IfcMaterialLayerSet"):
-                if hasattr(material, 'MaterialLayers') and material.MaterialLayers:
-                    for i, layer in enumerate(material.MaterialLayers):
-                        layer_info = layer.get_info()
-                        
-                        for attr_name in sorted(layer_info.keys()):
-                            if attr_name not in excluded_material_attrs:
-                                value = getattr(layer, attr_name, None)
-                                if value is not None and value != '' and value != 'NOTDEFINED':
-                                    if not hasattr(value, 'is_a'):
-                                        material_keys.append((f"material.item.{attr_name}.{i}", f"Layer {i+1} {attr_name}: {value}"))
-                        
-                        if layer.Material:
-                            layer_material_info = layer.Material.get_info()
-                            for attr_name in sorted(layer_material_info.keys()):
-                                if attr_name not in excluded_material_attrs:
-                                    value = getattr(layer.Material, attr_name, None)
-                                    if value is not None and value != '' and value != 'NOTDEFINED':
-                                        if not hasattr(value, 'is_a'):
-                                            material_keys.append((f"material.item.Material.{attr_name}.{i}", f"Layer {i+1} Material {attr_name}: {value}"))
-            
-            elif material.is_a("IfcMaterialProfileSet"):
-                if hasattr(material, 'MaterialProfiles') and material.MaterialProfiles:
-                    for i, profile in enumerate(material.MaterialProfiles):
-                        profile_info = profile.get_info()
-                        
-                        for attr_name in sorted(profile_info.keys()):
-                            if attr_name not in excluded_material_attrs:
-                                value = getattr(profile, attr_name, None)
-                                if value is not None and value != '' and value != 'NOTDEFINED':
-                                    if not hasattr(value, 'is_a'):
-                                        material_keys.append((f"material.item.{attr_name}.{i}", f"Profile {i+1} {attr_name}: {value}"))
-                        
-                        if profile.Material:
-                            profile_material_info = profile.Material.get_info()
-                            for attr_name in sorted(profile_material_info.keys()):
-                                if attr_name not in excluded_material_attrs:
-                                    value = getattr(profile.Material, attr_name, None)
-                                    if value is not None and value != '' and value != 'NOTDEFINED':
-                                        if not hasattr(value, 'is_a'):
-                                            material_keys.append((f"material.item.Material.{attr_name}.{i}", f"Profile {i+1} Material {attr_name}: {value}"))
-            
-            elif material.is_a("IfcMaterialConstituentSet"):
-                if hasattr(material, 'MaterialConstituents') and material.MaterialConstituents:
-                    for i, constituent in enumerate(material.MaterialConstituents):
-                        constituent_info = constituent.get_info()
-                        
-                        for attr_name in sorted(constituent_info.keys()):
-                            if attr_name not in excluded_material_attrs:
-                                value = getattr(constituent, attr_name, None)
-                                if value is not None and value != '' and value != 'NOTDEFINED':
-                                    if not hasattr(value, 'is_a'):
-                                        material_keys.append((f"material.item.{attr_name}.{i}", f"Constituent {i+1} {attr_name}: {value}"))
-                        
-                        if constituent.Material:
-                            constituent_material_info = constituent.Material.get_info()
-                            for attr_name in sorted(constituent_material_info.keys()):
-                                if attr_name not in excluded_material_attrs:
-                                    value = getattr(constituent.Material, attr_name, None)
-                                    if value is not None and value != '' and value != 'NOTDEFINED':
-                                        if not hasattr(value, 'is_a'):
-                                            material_keys.append((f"material.item.Material.{attr_name}.{i}", f"Constituent {i+1} Material {attr_name}: {value}"))
-
-        keys["Material"] = material_keys
-        
-        coordinate_keys = []
-        
-        if hasattr(element, 'ObjectPlacement') and element.ObjectPlacement:
-            placement = element.ObjectPlacement
-            if placement.is_a('IfcLocalPlacement') and placement.RelativePlacement:
-                rel_placement = placement.RelativePlacement
-                if hasattr(rel_placement, 'Location') and rel_placement.Location:
-                    coords = rel_placement.Location.Coordinates
-                    if len(coords) >= 3:
-                        coordinate_keys.extend([
-                            ("x", f"X Coordinate: {coords[0]:.3f}"),
-                            ("y", f"Y Coordinate: {coords[1]:.3f}"),
-                            ("z", f"Z Coordinate: {coords[2]:.3f}"),
-                        ])
-        
-        if not coordinate_keys:
-            coordinate_keys = [
-                ("x", "X Coordinate: [calculated at runtime]"),
-                ("y", "Y Coordinate: [calculated at runtime]"),
-                ("z", "Z Coordinate: [calculated at runtime]"),
-            ]
-        
-        coordinate_keys.extend([
-            ("easting", "Map Easting: [calculated at runtime]"),
-            ("northing", "Map Northing: [calculated at runtime]"),
-            ("elevation", "Map Elevation: [calculated at runtime]"),
-        ])
-        
-        keys["Coordinates"] = coordinate_keys
-        
-        return keys
-
-class ToggleCategory(bpy.types.Operator):
-    bl_idname = "bim.toggle_category"
-    bl_label = "Toggle Category"
-    
-    category_name: bpy.props.StringProperty()
-    is_currently_expanded: bpy.props.BoolProperty()
-    literal_prop_id: bpy.props.IntProperty()
-    
-    def execute(self, context):
-        if self.is_currently_expanded:
-            new_expanded = ""
-        else:
-            new_expanded = self.category_name
-        
-        bpy.ops.bim.select_element_values('INVOKE_DEFAULT', 
-                                         literal_prop_id=self.literal_prop_id,
-                                         expanded_category=new_expanded)
-        
-        return {"FINISHED"}
-
 
 
 class ToggleElementValuesPanel(bpy.types.Operator):
@@ -4106,16 +3782,17 @@ class ToggleElementValuesPanel(bpy.types.Operator):
     
     def execute(self, context):
         obj = context.active_object
-        assert obj
+        if not obj:
+            return {"CANCELLED"}
+        
         props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+        
         literal_props = props.literals[self.literal_prop_id]
         
-        literal_props.show_element_values = not literal_props.show_element_values
-        
-        if not literal_props.show_element_values:
-            literal_props.expanded_category = ""
-        else:
-            literal_props.expanded_category = "Basic"
+        current_state = getattr(literal_props, "show_element_values", False)
+        literal_props.show_element_values = not current_state
         
         return {"FINISHED"}
 
@@ -4126,13 +3803,18 @@ class ToggleElementValuesCategory(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     
     category_name: bpy.props.StringProperty()
-    is_currently_expanded: bpy.props.BoolProperty()
     literal_prop_id: bpy.props.IntProperty()
-    
+    is_currently_expanded: bpy.props.BoolProperty()
+
     def execute(self, context):
         obj = context.active_object
-        assert obj
+        if not obj:
+            return {"CANCELLED"}
+        
         props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+        
         literal_props = props.literals[self.literal_prop_id]
         
         if self.is_currently_expanded:
@@ -4143,35 +3825,6 @@ class ToggleElementValuesCategory(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class InsertFormattedLiteral(bpy.types.Operator):
-    bl_idname = "bim.insert_formatted_literal"
-    bl_label = "Insert Formatted Literal"
-    bl_description = "Insert the selected element value with optional formatting into the text literal"
-    bl_options = {"REGISTER", "UNDO"}
-    
-    literal_prop_id: bpy.props.IntProperty()
-    element_value_key: bpy.props.StringProperty()
-    
-    def execute(self, context):
-        obj = context.active_object
-        assert obj
-        props = tool.Drawing.get_text_props(obj)
-        literal_props = props.literals[self.literal_prop_id]
-        
-        for attr in literal_props.attributes:
-            if attr.name == "Literal":
-                current_text = attr.string_value or ""
-                variable_syntax = f"{{{{{self.element_value_key}}}}}"
-                
-                if current_text:
-                    attr.string_value = f"{current_text} {variable_syntax}"
-                else:
-                    attr.string_value = variable_syntax
-                break
-        
-        tool.Blender.update_viewport()
-        return {"FINISHED"}
-
 class InsertFormattedLiteralPopup(bpy.types.Operator):
     bl_idname = "bim.insert_formatted_literal_popup"
     bl_label = "Insert Formatted Element Value"
@@ -4180,7 +3833,8 @@ class InsertFormattedLiteralPopup(bpy.types.Operator):
     
     literal_prop_id: bpy.props.IntProperty()
     element_value_key: bpy.props.StringProperty()
-    
+    value_number: bpy.props.IntProperty()
+
     formatting_type: bpy.props.EnumProperty(
         name="Formatting",
         items=[
@@ -4269,7 +3923,7 @@ class InsertFormattedLiteralPopup(bpy.types.Operator):
             "- concat({{value1}}, \" - \", {{value3}})\n"
             "- upper(concat(\"Type: \", {{value}}))"
         ),
-        default="concat(\"Prefix: \", {{value}})"
+        default="concat({{value}}, \" - \", {{value2}})"
     )
 
     def invoke(self, context, event):
@@ -4305,9 +3959,24 @@ class InsertFormattedLiteralPopup(bpy.types.Operator):
             obj = bpy.context.active_object
             if obj:
                 element = tool.Ifc.get_entity(obj)
-                assigned_product = tool.Drawing.get_assigned_product(element)
-                if assigned_product:
-                    all_categories = ElementValuesData.get_available_element_value_keys(assigned_product)
+                
+                props = tool.Drawing.get_text_props(obj)
+                product = None
+                
+                if props.literals:
+                    for literal_props in props.literals:
+                        if hasattr(literal_props, 'product_used') and literal_props.product_used:
+                            product = tool.Ifc.get_entity(literal_props.product_used)
+                            break
+                
+                if not product:
+                    product = tool.Drawing.get_assigned_product(element)
+                
+                if not product:
+                    product = element
+                
+                if product:
+                    all_categories = ElementValuesData.get_available_element_value_keys(product)
                     
                     available_keys = []
                     for cat_name, cat_keys in all_categories.items():
@@ -4398,9 +4067,24 @@ class InsertFormattedLiteralPopup(bpy.types.Operator):
             obj = bpy.context.active_object
             if obj:
                 element = tool.Ifc.get_entity(obj)
-                assigned_product = tool.Drawing.get_assigned_product(element)
-                if assigned_product:
-                    all_categories = ElementValuesData.get_available_element_value_keys(assigned_product)
+                
+                props = tool.Drawing.get_text_props(obj)
+                product = None
+                
+                if props.literals:
+                    for literal_props in props.literals:
+                        if hasattr(literal_props, 'product_used') and literal_props.product_used:
+                            product = tool.Ifc.get_entity(literal_props.product_used)
+                            break
+                
+                if not product:
+                    product = tool.Drawing.get_assigned_product(element)
+                
+                if not product:
+                    product = element
+                
+                if product:
+                    all_categories = ElementValuesData.get_available_element_value_keys(product)
                     
                     all_keys_flat = []
                     for cat_name, cat_keys in all_categories.items():

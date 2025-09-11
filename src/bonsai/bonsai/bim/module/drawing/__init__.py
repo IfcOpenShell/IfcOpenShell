@@ -64,7 +64,7 @@ classes = (
     operator.ExpandSheet,
     operator.ToggleElementValuesPanel,
     operator.ToggleElementValuesCategory,
-    operator.InsertFormattedLiteral,
+    operator.SelectElementValues,
     operator.InsertFormattedLiteralPopup,
     operator.LoadDrawings,
     operator.LoadReferences,
