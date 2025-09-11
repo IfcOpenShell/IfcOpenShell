@@ -1139,6 +1139,9 @@ if "rocksdb" in targets:
             f"-DWITH_ROCKSDB=On",
             f"-DROCKSDB_INCLUDE_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/include",
             f"-DROCKSDB_LIBRARY_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/lib",
+            f"-DWITH_ZSTD=On",
+            f"-DZSTD_INCLUDE_DIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
+            f"-DZSTD_LIBRARY_DIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib",
         ]
     )
 

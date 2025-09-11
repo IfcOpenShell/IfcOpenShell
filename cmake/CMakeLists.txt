@@ -349,6 +349,9 @@ if (WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
 
     if (WITH_ZSTD)
+        # @todo do we actually need the zstd include dir or rather just pass
+        # the libzstd.a along with the rocksdb library when needed and feature
+        # detect based on rocksdb API?
         if("${ZSTD_INCLUDE_DIR}" STREQUAL "")
             find_path(ZSTD_INCLUDE_DIR zstd.h
                 PATHS
