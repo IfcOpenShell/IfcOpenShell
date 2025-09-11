@@ -1229,6 +1229,8 @@ if "IfcOpenShell-Python" in targets:
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
         if python_executable:
+            run([python_executable, "-m", "ensurepip"])
+            run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
             module_dir = os.path.dirname(
                 run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"])
             )
