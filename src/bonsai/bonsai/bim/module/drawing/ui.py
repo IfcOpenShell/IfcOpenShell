@@ -586,6 +586,19 @@ class BIM_PT_text(Panel):
             return False
         return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
 
+    def get_current_product_for_element_values(self, obj: bpy.types.Object, literal_props) -> Optional[bpy.types.Object]:
+        """Get the product to use for element values - either ProductUsed or assigned product"""
+        if hasattr(literal_props, 'product_used') and literal_props.product_used:
+            return literal_props.product_used
+        
+        element = tool.Ifc.get_entity(obj)
+        if element:
+            assigned_product = tool.Drawing.get_assigned_product(element)
+            if assigned_product:
+                return tool.Ifc.get_object(assigned_product)
+        
+        return None
+
     def draw_text_editing_ui(
         self: Union[bpy.types.Panel, bpy.types.Operator],
         context: bpy.types.Context,
@@ -644,91 +657,99 @@ class BIM_PT_text(Panel):
             expand_icon = "DOWNARROW_HLT" if getattr(literal_props, "show_element_values", False) else "RIGHTARROW"
             op = row.operator("bim.toggle_element_values_panel", icon=expand_icon, text="")
             op.literal_prop_id = i
-            
             if getattr(literal_props, "show_element_values", False):
                 values_box = box.box()
-                values_box.label(text="Element Values:", icon="PROPERTIES")
                 
-                element = tool.Ifc.get_entity(obj)
-                assigned_product = tool.Drawing.get_assigned_product(element) if element else None
+                element_values_row = values_box.row(align=True)
+                element_values_row.label(text="Element Values:", icon="PROPERTIES")
+                element_values_row.prop(literal_props, "product_used", text="", icon="EYEDROPPER")
                 
-                if not assigned_product:
-                    info_row = values_box.row()
-                    info_row.label(text="No product assigned to this annotation", icon="ERROR")
-                    info_row = values_box.row()
-                    info_row.label(text="Assign a product to access element values", icon="INFO")
-                else:
-                    if not ElementValuesData.is_loaded:
-                        ElementValuesData.load()
+                current_product = self.get_current_product_for_element_values(obj, literal_props)
+                if current_product:
+                    product_name = current_product.name if hasattr(current_product, 'name') else str(current_product)
+                    source_row = values_box.row()
+                    source_row.label(text=f"Source: {product_name}", icon="OBJECT_DATA")
                     
-                    available_keys = ElementValuesData.get_available_element_value_keys(assigned_product)
-                    
-                    search_row = values_box.row()
-                    search_row.prop(literal_props, "element_values_filter", text="Search", icon="VIEWZOOM")
-                    
-                    filter_text = getattr(literal_props, "element_values_filter", "").lower()
-                    
-                    expanded_category = getattr(literal_props, "expanded_category", "Basic")
-                    
-                    info_box = values_box.box()
-                    info_box.scale_y = 0.8
-                    info_row = info_box.row()
-                    info_row.label(text="Click category headers to expand (only one at a time)", icon="INFO")
-                    
-                    for category_name, keys in available_keys.items():
-                        filtered_keys = keys
-                        if filter_text:
-                            filtered_keys = [(key, desc) for key, desc in keys if filter_text in desc.lower() or filter_text in key.lower()]
+                    element = tool.Ifc.get_entity(current_product)
+                    if element:
+                        if not ElementValuesData.is_loaded:
+                            ElementValuesData.load()
                         
-                        if filter_text and not filtered_keys:
-                            continue
+                        available_keys = ElementValuesData.get_available_element_value_keys(element)
                         
-                        header_row = values_box.row()
-                        is_expanded = (expanded_category == category_name)
-                        expand_icon = "TRIA_DOWN" if is_expanded else "TRIA_RIGHT"
-                        category_icon = get_category_icon(category_name)
+                        search_row = values_box.row()
+                        search_row.prop(literal_props, "element_values_filter", text="Search", icon="VIEWZOOM")
                         
-                        op = header_row.operator(
-                            "bim.toggle_element_values_category", 
-                            text=f"{category_name} ({len(filtered_keys)})",
-                            icon=expand_icon,
-                            emboss=False
-                        )
-                        op.category_name = category_name
-                        op.literal_prop_id = i
-                        op.is_currently_expanded = is_expanded
+                        filter_text = getattr(literal_props, "element_values_filter", "").lower()
+                        expanded_category = getattr(literal_props, "expanded_category", "")
                         
-                        if is_expanded and filtered_keys:
-                            category_box = values_box.box()
-                            category_box.scale_y = 0.9
+                        all_keys_flat = []
+                        for cat_name, cat_keys in available_keys.items():
+                            for cat_key, cat_desc in cat_keys:
+                                all_keys_flat.append((cat_key, cat_desc))
+                        
+                        info_box = values_box.box()
+                        info_box.scale_y = 0.8
+                        info_row = info_box.row()
+                        info_row.label(text="Click category headers to expand (only one at a time)", icon="INFO")
+                        
+                        for category_name, keys in available_keys.items():
+                            filtered_keys = keys
+                            if filter_text:
+                                filtered_keys = [(key, desc) for key, desc in keys if filter_text in desc.lower() or filter_text in key.lower()]
                             
-                            for key, description in filtered_keys:
-                                key_row = category_box.row()
-                                key_row.scale_y = 0.8
+                            if filter_text and not filtered_keys:
+                                continue
+                            
+                            header_row = values_box.row()
+                            is_expanded = (expanded_category == category_name)
+                            expand_icon = "TRIA_DOWN" if is_expanded else "TRIA_RIGHT"
+                            
+                            op = header_row.operator(
+                                "bim.toggle_element_values_category", 
+                                text=f"{category_name} ({len(filtered_keys)})",
+                                icon=expand_icon,
+                                emboss=False
+                            )
+                            op.category_name = category_name
+                            op.literal_prop_id = i
+                            op.is_currently_expanded = is_expanded
+                            
+                            if is_expanded and filtered_keys:
+                                category_box = values_box.box()
+                                category_box.scale_y = 0.9
                                 
-                                split = key_row.split(factor=0.7, align=True)
-                                split.label(text=description)
-                                
-                                right_row = split.row(align=True)
-                                
-                                all_keys_flat = []
-                                for cat_name, cat_keys in available_keys.items():
-                                    for cat_key, cat_desc in cat_keys:
-                                        all_keys_flat.append(cat_key)
-                                
-                                try:
-                                    value_number = all_keys_flat.index(key) + 1
-                                    right_row.label(text="{{value{}}}".format(value_number))
-                                except ValueError:
-                                    right_row.label(text="")
-                                
-                                insert_op = right_row.operator(
-                                    "bim.insert_formatted_literal_popup",
-                                    text="",
-                                    icon="ADD"
-                                )
-                                insert_op.literal_prop_id = i
-                                insert_op.element_value_key = key
+                                for key, description in filtered_keys:
+                                    key_row = category_box.row()
+                                    key_row.scale_y = 0.8
+                                    
+                                    split = key_row.split(factor=0.6, align=True)
+                                    split.label(text=description)
+                                    
+                                    right_row = split.row(align=True)
+                                    
+                                    try:
+                                        value_number = next(idx for idx, (k, _) in enumerate(all_keys_flat, 1) if k == key)
+                                        right_row.label(text=f"{{{{value{value_number}}}}}")
+                                    except StopIteration:
+                                        right_row.label(text="")
+                                    
+                                    insert_op = right_row.operator(
+                                        "bim.insert_formatted_literal_popup",
+                                        text="",
+                                        icon="ADD"
+                                    )
+                                    insert_op.literal_prop_id = i
+                                    insert_op.element_value_key = key
+                                    insert_op.value_number = value_number
+                    else:
+                        error_row = values_box.row()
+                        error_row.label(text="Selected object has no IFC data", icon="ERROR")
+                else:
+                    info_row = values_box.row()
+                    info_row.label(text="No product assigned or selected", icon="ERROR")
+                    info_row = values_box.row()
+                    info_row.label(text="Use eyedropper to select an object or assign a product", icon="INFO")
             
             # skip BoxAlignment since we're going to format it ourselves
             attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
