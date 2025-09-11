@@ -1022,6 +1022,7 @@ if "rocksdb" in targets:
             f"-DCMAKE_POSITION_INDEPENDENT_CODE=On",
             f"-DUSE_RTTI=On",
             f"-DWITH_ZSTD=On",
+            f"-DPORTABLE=1",
             f"-DZSTD_INCLUDE_DIRS={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
             f"-DZSTD_LIBRARIES={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib/libzstd.a",
         ],
