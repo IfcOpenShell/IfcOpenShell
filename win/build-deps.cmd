@@ -610,14 +610,21 @@ call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPEND
 
 :zstd
 set DEPENDENCY_NAME=zstd
-set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%
+set ZSTD_VERSION=1.5.7
+set ZSTD_ZIP=zstd-%ZSTD_VERSION%.zip
+set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%-%ZSTD_VERSION%
 
 IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
     echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
     goto :rocksdb
 )
 
-call :GitCloneAndCheckoutRevision https://github.com/facebook/zstd "%DEPENDENCY_DIR%" v1.5.7
+cd %DEPS_DIR%
+call :DownloadFile ^
+    https://github.com/facebook/zstd/archive/refs/tags/v%ZSTD_VERSION%.zip ^
+    "%DEPS_DIR%" %ZSTD_ZIP%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :ExtractArchive %ZSTD_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"\build\cmake
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\zstd" -DZSTD_BUILD_STATIC=ON -DZSTD_BUILD_SHARED=OFF
@@ -629,7 +636,9 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :rocksdb
 set DEPENDENCY_NAME=rocksdb
-set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%
+set ROCKSDB_VERSION=9.11.2
+set ROCKSDB_ZIP=rocksdb-%ROCKSDB_VERSION%.zip
+set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%-%ROCKSDB_VERSION%
 
 IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
     echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
@@ -637,10 +646,15 @@ IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
 )
 
 cd %DEPS_DIR%
-call :GitCloneAndCheckoutRevision https://github.com/facebook/rocksdb "%DEPENDENCY_DIR%" v9.11.2
+call :DownloadFile ^
+    https://github.com/facebook/rocksdb/archive/refs/tags/v%ROCKSDB_VERSION%.zip ^
+    "%DEPS_DIR%" %ROCKSDB_ZIP%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :ExtractArchive %ROCKSDB_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 :: see rocksdb\thirdparty.inc
+:: providing package is not supported on Windows.
 set ZSTD_INCLUDE=%INSTALL_DIR%\zstd\include
 set ZSTD_LIB_DEBUG=%INSTALL_DIR%\zstd\lib\zstd_static.lib
 set ZSTD_LIB_RELEASE=%INSTALL_DIR%\zstd\lib\zstd_static.lib
