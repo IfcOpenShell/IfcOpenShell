@@ -85,7 +85,12 @@ try:
 except Exception:
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
-from .file import rocksdb_lazy_instance, file
+# `_file`, `_stream` is used only for annotations inside this file,
+# see https://github.com/microsoft/pyright/discussions/9065.
+from .file import file as _file
+from .file import file
+
+from .file import rocksdb_lazy_instance
 from . import guid
 from .entity_instance import entity_instance, register_schema_attributes
 from .sql import sqlite, sqlite_entity
@@ -104,7 +109,8 @@ __all__ = [
 ]
 
 try:
-    from .stream import stream, stream_entity
+    from .stream import stream as _stream, stream_entity
+    from .stream import stream
 except:
     pass
 
@@ -124,16 +130,16 @@ class SchemaError(Error):
 @overload
 def open(
     path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[False] = False
-) -> Union[file, sqlite]: ...
+) -> Union[_file, sqlite]: ...
 @overload
-def open(path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[True]) -> stream: ...
+def open(path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[True]) -> _stream: ...
 @overload
 def open(
     path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: bool
-) -> Union[file, sqlite, stream]: ...
+) -> Union[_file, sqlite, _stream]: ...
 def open(
     path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False, readonly: bool = False
-) -> Union[file, sqlite, stream]:
+) -> Union[_file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
     :param should_stream: Whether to open the file in streaming mode. Could be useful
