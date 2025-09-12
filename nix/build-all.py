@@ -1025,8 +1025,7 @@ if "rocksdb" in targets:
             f"-DUSE_RTTI=On",
             f"-DWITH_ZSTD=On",
             f"-DPORTABLE=1",
-            f"-DZSTD_INCLUDE_DIRS={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
-            f"-DZSTD_LIBRARIES={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib/libzstd.a",
+            f"-DCMAKE_PREFIX_PATH={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
         ],
         download_url="https://github.com/facebook/rocksdb",
         download_name="rocksdb",
@@ -1138,11 +1137,10 @@ if "rocksdb" in targets:
     cmake_args.extend(
         [
             f"-DWITH_ROCKSDB=On",
-            f"-DROCKSDB_INCLUDE_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/include",
-            f"-DROCKSDB_LIBRARY_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/lib",
             f"-DWITH_ZSTD=On",
-            f"-DZSTD_INCLUDE_DIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
-            f"-DZSTD_LIBRARY_DIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib",
+            "-DCMAKE_PREFIX_PATH="
+            f"{DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION};"
+            f"{DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
         ]
     )
 

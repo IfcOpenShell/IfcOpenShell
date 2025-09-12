@@ -122,8 +122,6 @@ jobs:
                -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
                -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
                -DEIGEN_DIR=/usr/include/eigen3 \
-               -DROCKSDB_INCLUDE_DIR=/usr/local/include \
-               -DROCKSDB_LIBRARY_DIR=/usr/local/lib \
                -DWITH_ROCKSDB=On \
              ../cmake
           sudo make -j $(nproc)
