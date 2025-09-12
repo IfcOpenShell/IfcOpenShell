@@ -63,8 +63,8 @@ PLATFORMTAG:=win_amd64
 endif
 
 BINARY_VERSION:=0.8.4
-IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-358395c-$(PLATFORM).zip
-IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-358395c-$(PLATFORM).zip
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-e795cec-$(PLATFORM).zip
+IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-e795cec-$(PLATFORM).zip
 
 .PHONY: build-urls
 build-urls:
