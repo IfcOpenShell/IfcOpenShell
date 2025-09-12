@@ -375,7 +375,7 @@ if (WITH_ROCKSDB)
         if(ZSTD_LIBRARY)
             message(STATUS "zstd library ${ZSTD_LIBRARY} found in: ${ZSTD_LIBRARY_DIR}")
         else()
-            message(FATAL_ERROR "Unable to find rocksdb library in: ${ZSTD_LIBRARY_DIR}")
+            message(FATAL_ERROR "Unable to find zstd library in: ${ZSTD_LIBRARY_DIR}")
         endif()
 
         add_definitions(-DIFOPSH_WITH_ROCKSDB_ZSTD)
