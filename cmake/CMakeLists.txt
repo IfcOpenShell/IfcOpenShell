@@ -314,76 +314,22 @@ if(USD_SUPPORT)
 endif(USD_SUPPORT)
 
 if (WITH_ROCKSDB)
-    UNIFY_ENVVARS_AND_CACHE(ROCKSDB_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(ROCKSDB_LIBRARY_DIR)
-    UNIFY_ENVVARS_AND_CACHE(ZSTD_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(ZSTD_LIBRARY_DIR)
-
-    if("${ROCKSDB_INCLUDE_DIR}" STREQUAL "")
-        find_path(ROCKSDB_INCLUDE_DIR rocksdb/db.h
-            PATHS
-                /usr/include
-                /usr/local/include
-            REQUIRED
-        )
-        if(ROCKSDB_INCLUDE_DIR)
-            message(STATUS "Found rocksdb include files in: ${ROCKSDB_INCLUDE_DIR}")
-        else()
-            message(FATAL_ERROR "Unable to find rocksdb include directory, specify ROCKSDB_INCLUDE_DIR manually.")
-        endif()
-    else()
-        set(ROCKSDB_INCLUDE_DIR ${ROCKSDB_INCLUDE_DIR} CACHE FILEPATH "rocksdb header files")
-        message(STATUS "Looking for rocksdb include files in: ${ROCKSDB_INCLUDE_DIR}")
-    endif()
-
-    find_library(ROCKSDB_LIBRARY
-        NAMES rocksdb
-        PATHS ${ROCKSDB_LIBRARY_DIR})
-    if(ROCKSDB_LIBRARY)
-        message(STATUS "rocksdb library ${ROCKSDB_LIBRARY} found in: ${ROCKSDB_LIBRARY_DIR}")
-    else()
-        message(FATAL_ERROR "Unable to find rocksdb library in: ${ROCKSDB_LIBRARY_DIR}")
-    endif()
-
+    find_package(RocksDB CONFIG REQUIRED)
+    message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
     add_definitions(-DIFOPSH_WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
+    link_libraries(RocksDB::rocksdb)
 
     if (WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
-        if("${ZSTD_INCLUDE_DIR}" STREQUAL "")
-            find_path(ZSTD_INCLUDE_DIR zstd.h
-                PATHS
-                    /usr/include
-                    /usr/local/include
-                REQUIRED
-            )
-            if(ZSTD_INCLUDE_DIR)
-                message(STATUS "Found zstd include files in: ${ZSTD_INCLUDE_DIR}")
-            else()
-                message(FATAL_ERROR "Unable to find zstd include directory, specify ZSTD_INCLUDE_DIR manually.")
-            endif()
-        else()
-            set(ZSTD_INCLUDE_DIR ${ZSTD_INCLUDE_DIR} CACHE FILEPATH "zstd header files")
-            message(STATUS "Looking for zstd include files in: ${ZSTD_INCLUDE_DIR}")
-        endif()
-
-        find_library(ZSTD_LIBRARY
-            NAMES zstd zstd_static
-            PATHS ${ZSTD_LIBRARY_DIR})
-        if(ZSTD_LIBRARY)
-            message(STATUS "zstd library ${ZSTD_LIBRARY} found in: ${ZSTD_LIBRARY_DIR}")
-        else()
-            message(FATAL_ERROR "Unable to find zstd library in: ${ZSTD_LIBRARY_DIR}")
-        endif()
+        find_package(zstd CONFIG REQUIRED)
+        message(STATUS "zstd: found at '${zstd_DIR}'.")
+        link_libraries(zstd::libzstd_static)
 
         add_definitions(-DIFOPSH_WITH_ROCKSDB_ZSTD)
         set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB_ZSTD)
-    endif()
-
-    if(WIN32)
-        set(RPCRT_LIBRARIES "rpcrt4.lib" "shlwapi.lib")
     endif()
 endif()
 
@@ -956,7 +902,7 @@ endif()
 include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
-    ${TBB_INCLUDE_DIR} ${ROCKSDB_INCLUDE_DIR} ${ZSTD_INCLUDE_DIR}
+    ${TBB_INCLUDE_DIR}
 )
 
 if(NOT SCHEMA_VERSIONS)
@@ -1119,7 +1065,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 add_library(IfcParse ${IFCPARSE_FILES})
-target_link_libraries(IfcParse ${ROCKSDB_LIBRARY} ${ZSTD_LIBRARY} ${RPCRT_LIBRARIES} ${STDCPPFS})
+target_link_libraries(IfcParse ${STDCPPFS})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
 if(LibXml2_DIR)

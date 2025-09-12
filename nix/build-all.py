@@ -1025,8 +1025,7 @@ if "rocksdb" in targets:
             f"-DUSE_RTTI=On",
             f"-DWITH_ZSTD=On",
             f"-DPORTABLE=1",
-            f"-DZSTD_INCLUDE_DIRS={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
-            f"-DZSTD_LIBRARIES={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib/libzstd.a",
+            f"-DCMAKE_PREFIX_PATH={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
         ],
         download_url="https://github.com/facebook/rocksdb",
         download_name="rocksdb",
@@ -1059,6 +1058,13 @@ cmake_args = [
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
 ]
 """Default CMake args to use for all CMake configs."""
+cmake_args_prefix_path: list[str] = []
+
+
+def get_cmake_args_prefix_path() -> list[str]:
+    prefix_path = ";".join(cmake_args_prefix_path)
+    return [f"-DCMAKE_PREFIX_PATH={prefix_path}"]
+
 
 if "wasm" in flags:
     # Boost is built by the build script so should not be found
@@ -1138,11 +1144,13 @@ if "rocksdb" in targets:
     cmake_args.extend(
         [
             f"-DWITH_ROCKSDB=On",
-            f"-DROCKSDB_INCLUDE_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/include",
-            f"-DROCKSDB_LIBRARY_DIR={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}/lib",
             f"-DWITH_ZSTD=On",
-            f"-DZSTD_INCLUDE_DIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/include",
-            f"-DZSTD_LIBRARY_DIR={DEPS_DIR}/install/zstd-{ZSTD_VERSION}/lib",
+        ]
+    )
+    cmake_args_prefix_path.extend(
+        [
+            f"{DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}",
+            f"{DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
         ]
     )
 
@@ -1157,7 +1165,7 @@ if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(expl
         f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
     ]
 
-    run_cmake("", exec_args + cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
+    run_cmake("", exec_args + cmake_args + get_cmake_args_prefix_path(), cmake_dir=CMAKE_DIR, cwd=executables_dir)
 
     logger.info("\rBuilding executables...   ")
 
@@ -1202,6 +1210,7 @@ if "IfcOpenShell-Python" in targets:
         run_cmake(
             "",
             cmake_args
+            + get_cmake_args_prefix_path()
             + [
                 "-DPYTHON_LIBRARY=" + python_library,
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
