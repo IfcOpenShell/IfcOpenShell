@@ -359,10 +359,12 @@ def log_internal_cpp_errors(
                 else:
                     inst = next(
                         (
-                            l
+                            l.decode("ascii", errors="ignore").strip()
                             for l in lines
-                            if l.strip().startswith(f"#{instid}".encode("ascii"))
-                            and re.sub(r"\s+", "", l).startswith(f"#{instid}=".encode("ascii"))
+                            if l.strip().startswith(f"#{instid[0]}".encode("ascii"))
+                            and re.sub(r"\s+".encode("ascii"), b"", l).startswith(
+                                f"#{instid[0]}=".encode("ascii")
+                            )
                         ),
                         None,
                     )
