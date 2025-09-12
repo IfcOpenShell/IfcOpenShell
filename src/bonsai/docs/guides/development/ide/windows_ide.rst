@@ -42,16 +42,16 @@ Integrated Development Environment (IDE) and we will create a dedicated user for
 2. **Install Blender for the created user**: We will install blender locally in the users home directory.
    We must check that we are following the `Systems requirements <https://docs.bonsaibim.org/guides/development/installation.html/>`__.
 
-   We will download Blender 4.2 from the `Blender download page <https://www.blender.org/download/>`__.
-   In particular, we take the `4.2 LTS <https://www.blender.org/download/lts/4-2/>`__ for Windows.
+   We will download Blender 4.5 from the `Blender download page <https://www.blender.org/download/>`__.
+   In particular, we take the `4.5 LTS <https://www.blender.org/download/lts/4-5/>`__ for Windows.
    
-   We will download the Windows - Portable (.zip) version: 
+   We will download the Windows - Installer version: 
    
-   https://www.blender.org/download/release/Blender4.2/blender-4.2.8-windows-x64.zip
+   https://www.blender.org/download/release/Blender4.5/blender-4.5.3-windows-x64.msi
 
-   Unzip the file in the user home directory. In our case it is *C:\\Users\\falke\\Documents\\blender-4.2.8-windows-x64* (the user *falken10vdl* has as home directory *C:\\Users\\falke*).
+   Run the file in the user home directory. In our case it is *C:\\Users\\falke\\Documents\\blender-4.5.3-windows-x64* (the user *falken10vdl* has as home directory *C:\\Users\\falke*).
 
-   CONGRATULATIONS! You have now Blender installed locally in your machine. You can launch it by double clicking in blender.exe which is situated in the previous folder.
+   CONGRATULATIONS! You have now Blender installed locally in your machine. You can launch it by searching for *blender* under the windows search tool.
 
    Now install the Bonsai Blender extension. Follow the `Unstable installation <https://docs.bonsaibim.org/guides/development/installation.html#unstable-installation>`__.
 
@@ -73,7 +73,7 @@ Integrated Development Environment (IDE) and we will create a dedicated user for
       :width: 1000 px
 
    
-   In our case it is version 3.11.7
+   In our case it is version 3.11.11
    
    We will need to install the closest version in our Linux machine.
    
@@ -203,13 +203,15 @@ Integrated Development Environment (IDE) and we will create a dedicated user for
 X. **BONUS: Editing Bonsai Documentation**: Please refer to `Writing documentation <https://docs.bonsaibim.org/guides/development/writing_docs.html/>`__ for details on how to edit and contribute documentation.
    Here we just summarize the steps to integrate that workflow in VSCode and using Inkscape.
 
-   - Download and install Inkscape from `Inkscape download page <https://inkscape.org/release>`__. In our case we will use `Inkscape 1.4 Windows 64 bit msi installer <https://inkscape.org/release/inkscape-1.4/windows/64-bit/msi/dl/>`__.  
+   - Download and install Inkscape from `Inkscape download page <https://inkscape.org/release>`__. In our case we will use `Inkscape 1.4.2 Windows 64 bit msi installer <https://inkscape.org/release/inkscape-1.4.2/windows/64-bit/msi/dl/>`__.  
 
    - The file below has the style annotation for the Bonsai documentation.
 
    .. container:: blockbutton
 
-      `Download style annotation file <https://docs.bonsaibim.org/quickstart/ide/bonsai_style_annotation.svg>`__
+      .. raw:: html
+
+         <a href="../../../_static/bonsai_style_annotation.svg" download>Download style annotation file</a>
 
    It contains some shapes and styles that you can use to create your own diagrams.
 
@@ -333,49 +335,33 @@ Now let's find out how to interact with GitHub in order to make changes to the B
 
    VSCode will ask you to select a folder where the repository will be cloned. and it will start the cloning process.
 
-   Once finished, you will see the repository in the Explorer tool.
+   Once finished, you will see the repository in the VS Code Explorer tool 
 
    .. image:: images/cloned-repo.png
       :width: 1000 px
 
-10. **Link the Bonsai addon to the local cloned repository**: We will now edit the following 
-    script that establishes links from the unstable-installation to the cloned repository so we 
-    can easily see the changes done in the cloned repository taken effect when we load blender 
-    locally.
+   under the directory C:\\User\\falke\\Documents\\bonsaiDevel\\IfcOpenshell
 
-    .. container:: blockbutton
+   .. image:: images/cloned-repo-directory-win.png
+      :width: 1000 px
+      
 
-       :download:`Download dev_environment.bat <windows/dev_environment.bat>`
 
-    Edit the file to match the paths in your system. In our case we will edit the following lines:
+10. **Link the Bonsai addon to the local cloned repository**: We will now go to the scripts directory
+   
+    (C:\\User\\falke\\Documents\\bonsaiDevel\\IfcOpenshell\\src\\bonsai\\scripts) and 
+    execute the python script dev_environment.py that establishes links from the unstable-installation to the cloned repository 
+    so we can easily see the changes done in the cloned repository taken effect when we load blender locally.
 
-    - SET REPO_PATH=%HOMEDRIVE%\\Users\\%USERNAME%\\Documents\\bonsaiDevel\\IfcOpenShell
-    - SET BLENDER_PATH=%HOMEDRIVE%\\Users\\%USERNAME%\\AppData\\Roaming\\Blender Foundation\\Blender\\4.2
-    - SET PACKAGE_PATH=%BLENDER_PATH%\\extensions\\.local\\lib\\python3.11\\site-packages
-    - SET BONSAI_PATH=%BLENDER_PATH%\\extensions\\raw_githubusercontent_com\\bonsai
+    We execute the script in the terminal with administrator rights. 
 
-    You need to run it as an administrator.
-
-    .. image:: images/run-as-administrator.png
+    .. image:: images/run-as-admin.png
        :width: 1000 px
-    
+
     Confirm the data and the script will create the necessary links.
 
-    .. image:: images/running-dev_environment-bat.png
+    .. image:: images/dev-environment-script-win.png
        :width: 1000 px
-
-
-    .. warning::
-   
-       If you receive errors like this:
-
-       .. code-block:: bash
-
-          The system cannot find the path specified.
-
-       It means that you have not installed the Bonsai Blender extension. Please refer to tha 
-       last part of point 2. above and follow the `Unstable installation <https://docs.bonsaibim.org/guides/development/installation.html#unstable-installation>`__.
-
 
 11. **Adjust the VSCode Blender extension**: We will now make some adjustments to the VSCode Blender extension to ease the reload of the addon.
     Select the Extensions tool. Then  :menuselection:`Blender Development` and then select :menuselection:`Settings`.
@@ -387,7 +373,7 @@ Now let's find out how to interact with GitHub in order to make changes to the B
     test during Bonsai development):
 
     - --python-expr
-    - import bpy; import os; os.chdir("C:\\\\Users\\\\falke\\\\Documents\\\\blender-4.2.8-windows-x64"); bpy.ops.bim.load_project(filepath="C:\\\\Users\\\\falke\\\\Documents\\\\bonsaiDevel\\\\Testing.ifc", should_start_fresh_session=True, use_detailed_tooltip=True)
+    - import bpy; import os; os.chdir("C:\\\\Users\\\\falke\\\\Documents\\\\blender-4.5.3-windows-x64"); bpy.ops.bim.load_project(filepath="C:\\\\Users\\\\falke\\\\Documents\\\\bonsaiDevel\\\\Testing.ifc", should_start_fresh_session=True, use_detailed_tooltip=True)
 
     .. image:: images/VSCode-blender-additional-arguments-windows.png
        :width: 1000 px
