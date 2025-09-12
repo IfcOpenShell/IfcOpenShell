@@ -573,7 +573,7 @@ def build_dependency(
             )
         except Exception as e:
             print("-" * 70)
-            print(open(os.path.join(extract_dir, 'hdf5.log')))
+            print(open(os.path.join(extract_dir, "hdf5.log")))
             print("-" * 70)
             raise e
         run([tar, "-xf", kwargs["ctest_result"] + ".tar.gz"], cwd=os.path.join(extract_dir, "build"))
