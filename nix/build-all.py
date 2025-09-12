@@ -276,8 +276,9 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
 def gather_dependencies(dep: str) -> "Generator[str]":
     yield dep
     for d in dependency_tree[dep]:
-        for x in gather_dependencies(d):
-            yield x
+        if f"without-{d.lower()}" not in flags:
+            for x in gather_dependencies(d):
+                yield x
 
 
 if "v" in flags:
