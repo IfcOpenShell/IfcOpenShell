@@ -57,8 +57,8 @@ pyodide-download:
 		cp $(PYODIDE_DIR)/tmp/pyodide/six-*-py2.py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
 		cp $(PYODIDE_DIR)/tmp/pyodide/typing_extensions-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
 		cp $(PYODIDE_DIR)/tmp/pyodide/urllib3-*-py3-none-any.whl $(PYODIDE_DIR)/ 2>/dev/null || true; \
-		rm -rf /tmp/pyodide; \
-		rm -f /tmp/pyodide-$(PYODIDE_VERSION).tar.bz2; \
+		rm -rf $(PYODIDE_DIR)/tmp/pyodide; \
+		rm -f $(PYODIDE_DIR)/tmp/pyodide-$(PYODIDE_VERSION).tar.bz2; \
 		echo "Pyodide $(PYODIDE_VERSION) prepared in $(PYODIDE_DIR)"; \
 	fi
 
