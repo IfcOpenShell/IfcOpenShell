@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc5D.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+import itertools
 import os
 import types
 import json
@@ -58,6 +60,23 @@ for name in get_args(RULE_SET):
         rules[name] = json.load(f)
 
 
+@functools.cache
+def lower_case_entity_names(schema_iden: str):
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden)
+    return set(n.name().lower() for n in schema.entities())
+
+
+@functools.cache
+def entity_supertypes(schema_iden: str, entity_name: str):
+    def visit(decl):
+        yield decl.name().lower()
+        if ty := decl.supertype():
+            yield from visit(ty)
+
+    decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden).declaration_by_name(entity_name)
+    return list(visit(decl))
+
+
 def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> ResultsDict:
     """Quantify elements from a rules using preset quantification rules
 
@@ -73,8 +92,22 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
+        if not set(m.lower() for m in queries.keys()) - lower_case_entity_names(ifc_file.schema_identifier):
+            # all defined queries are actually simple entity names: instead of looping over all
+            # calculators we loop over the entity types so that we don't have to repeatedly query
+            # the model, especially when the set of elements is small.
+            casenorm = {k.lower(): k for k in queries.keys()}
+            pred = lambda inst: inst.is_a().lower()
+            for ty, elements in itertools.groupby(sorted(elements, key=pred), key=pred):
+                for sty in entity_supertypes(ifc_file.schema_identifier, ty):
+                    if qtos := queries.get(casenorm.get(sty)):
+                        calculator.calculate(ifc_file, list(elements), qtos, results)
         for query, qtos in queries.items():
-            filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
+            if query.lower() in lower_case_entity_names(ifc_file.schema_identifier):
+                # by_type is faster than selector parsing
+                filtered_elements = ifc_file.by_type(query)
+            else:
+                filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
             if filtered_elements:
                 calculator.calculate(ifc_file, filtered_elements, qtos, results)
     return results
