@@ -25,20 +25,21 @@ Can be used to run validation on IFC file from the command line:
 
     python -m ifcopenshell.validate /path/to/model.ifc --rules
 
-```
-$ python -m ifcopenshell.validate -h
-usage: validate.py [-h] [--rules] [--json] [--fields] [--spf] files [files ...]
+.. code-block:: console
 
-positional arguments:
-  files       The IFC file to validate.
+    python -m ifcopenshell.validate -h
+    
+    usage: validate.py [-h] [--rules] [--json] [--fields] [--spf] files [files ...]
 
-options:
-  -h, --help  show this help message and exit
-  --rules     Run express rules.
-  --json      Output in JSON format.
-  --fields    Output more detailed information about failed entities (only with --json).
-  --spf       Output entities in SPF format (only with --json).
-```
+    positional arguments:
+      files       The IFC file to validate.
+
+    options:
+      -h, --help  show this help message and exit
+      --rules     Run express rules.
+      --json      Output in JSON format.
+      --fields    Output more detailed information about failed entities (only with --json).
+      --spf       Output entities in SPF format (only with --json).
 
 """
 
