@@ -140,9 +140,9 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %inline %{
 #include <memory>
 #include <string>
+#ifdef IFOPSH_WITH_ROCKSDB
 #include <rocksdb/db.h>
 #include <rocksdb/slice.h>
-#include <Python.h>
 
 class RocksDBPrefixIterator {
 public:
@@ -179,6 +179,7 @@ private:
     std::unique_ptr<rocksdb::Iterator> it_;
     std::string prefix_;
 };
+#endif
 %}
 
 %newobject IfcParse::IfcFile::key_value_store_iter;
@@ -268,6 +269,7 @@ private:
 		}, $self->storage_);
 	}
 
+#ifdef IFOPSH_WITH_ROCKSDB
 	RocksDBPrefixIterator* key_value_store_iter(const std::string& prefix) const {
         auto* storage = std::visit([](auto& m) -> IfcParse::impl::rocks_db_file_storage const * {
             if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
@@ -280,6 +282,7 @@ private:
 		}
 		return new RocksDBPrefixIterator(storage, prefix);
 	}
+#endif
 
 	PyObject* key_value_store_query(const std::string& key) const {
         auto* storage = std::visit([](auto& m) -> IfcParse::impl::rocks_db_file_storage const * {
