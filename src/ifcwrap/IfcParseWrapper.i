@@ -294,11 +294,15 @@ private:
 		if (!storage) {
 			Py_RETURN_NONE;
 		}
+#ifdef IFOPSH_WITH_ROCKSDB
 		std::string value;
 		if (storage->db->Get(storage->ropts, key, &value) != rocksdb::Status::OK()) {
 			Py_RETURN_NONE;
 		}
 		return PyBytes_FromStringAndSize(value.data(), value.size());
+#else
+		Py_RETURN_NONE;
+#endif
 	}
 
 	%pythoncode %{
