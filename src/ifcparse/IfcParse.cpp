@@ -2529,6 +2529,7 @@ std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
                 }
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+#ifdef IFOPSH_WITH_ROCKSDB
             // @todo no lower/upper_bounds() implemented yet
             auto prefix = "v|" + std::to_string(instance_id) + "|";
             auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
@@ -2542,7 +2543,7 @@ std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
                 }
                 it->Next();
             }
-
+#endif
         }
     }, storage_);
 

@@ -1,8 +1,10 @@
 #include "IfcFile.h"
 #include "IfcLogger.h"
 
+#ifdef IFOPSH_WITH_ROCKSDB
 #include <rocksdb/table.h>
 #include <rocksdb/convenience.h>
+#endif
 
 IfcParse::parse_context::~parse_context() {
     for (auto& t : tokens_) {
@@ -462,7 +464,9 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
     // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
     // , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
 {
+#ifdef IFOPSH_WITH_ROCKSDB
     wopts.disableWAL = true;
+#endif
 }
 
 IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
