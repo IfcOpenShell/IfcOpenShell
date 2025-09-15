@@ -66,6 +66,7 @@ class BIM_PT_systems(Panel):
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
 
+        assert self.layout
         self.props = tool.System.get_system_props()
         active_system_item = self.props.active_system_ui_item
         row = self.layout.row(align=True)
@@ -91,12 +92,15 @@ class BIM_PT_systems(Panel):
         row = self.layout.row(align=True)
         row.label(text="{} Systems Found in Project".format(SystemData.data["total_systems"]), icon="OUTLINER")
         if self.props.is_editing:
+            row.operator("bim.add_system", text="", icon="ADD")
             row.operator("bim.disable_system_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "system_class", text="")
-            row.operator("bim.add_system", text="", icon="ADD")
             if active_system_item:
+                op = row.operator("bim.add_system", text="", icon="ADD")
+                op.parent_system_id = active_system_item.ifc_definition_id
+
                 system_id = active_system_item.ifc_definition_id
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.system = system_id
