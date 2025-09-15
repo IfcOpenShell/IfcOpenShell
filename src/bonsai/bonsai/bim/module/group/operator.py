@@ -22,7 +22,7 @@ import ifcopenshell.api.group
 import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
-import json
+from typing import TYPE_CHECKING, Literal, get_args
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -31,7 +31,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        tool.Group.import_groups()
+        tool.Group.import_groups("IfcGroup")
         tool.Group.enable_group_editing_ui()
         tool.Group.disable_editing_group()
         return {"FINISHED"}
@@ -41,20 +41,23 @@ class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.toggle_group"
     bl_label = "Toggle Group"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_definition_id: bpy.props.IntProperty()
-    index: bpy.props.IntProperty()
-    option: bpy.props.StringProperty(name="Expand or Collapse")
+
+    ifc_definition_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    group_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Group.GroupType)],
+    )
+    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Group.ToggleOption)],
+    )
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        group_type: tool.Group.GroupType
+        option: tool.Group.ToggleOption
 
     def _execute(self, context):
-        props = tool.Group.get_group_props()
-        expanded_groups: set[int]
-        expanded_groups = set(json.loads(props.expanded_groups_json))
-        if self.option == "Expand":
-            expanded_groups.add(self.ifc_definition_id)
-        elif self.ifc_definition_id in expanded_groups:
-            expanded_groups.remove(self.ifc_definition_id)
-        props.expanded_groups_json = json.dumps(list(expanded_groups))
-        bpy.ops.bim.load_groups()
+        group = tool.Ifc.get().by_id(self.ifc_definition_id)
+        tool.Group.toggle_group(group, self.group_type, self.option)
         return {"FINISHED"}
 
 

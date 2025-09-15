@@ -54,11 +54,17 @@ class System(PropertyGroup):
     name: StringProperty(name="Name", update=update_system_name)
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    has_children: BoolProperty(name="Has Children")
+    tree_depth: IntProperty(name="Tree Depth")
+    is_expanded: BoolProperty(name="Is Expanded")
 
     if TYPE_CHECKING:
         name: str
         ifc_class: str
         ifc_definition_id: int
+        has_children: bool
+        tree_depth: int
+        is_expanded: bool
 
 
 def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
@@ -91,6 +97,8 @@ class BIMSystemProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_adding: BoolProperty(name="Is Adding", default=False)
     systems: CollectionProperty(name="Systems", type=System)
+    expanded_groups_json: StringProperty(name="Expanded Systems JSON", default="[]")
+    """See `expanded_groups_json`. We name it "groups" for compatibility with Group UI code."""
     active_system_index: IntProperty(name="Active System Index")
     active_system_id: IntProperty(name="Active System Id")
     edited_system_id: IntProperty(name="Edited System Id")
@@ -104,6 +112,7 @@ class BIMSystemProperties(PropertyGroup):
         is_editing: bool
         is_adding: bool
         systems: bpy.types.bpy_prop_collection_idprop[System]
+        expanded_groups_json: str
         active_system_index: int
         active_system_id: int
         edited_system_id: int

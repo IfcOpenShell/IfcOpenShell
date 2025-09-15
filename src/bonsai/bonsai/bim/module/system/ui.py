@@ -428,10 +428,22 @@ class BIM_UL_systems(UIList):
         icon,
         active_data,
         active_propname,
-    ):
+    ) -> None:
         if item:
             row = layout.row(align=True)
+            for i in range(0, item.tree_depth):
+                row.label(text="", icon="BLANK1")
             system_id = item.ifc_definition_id
+            if item.has_children:
+                op = row.operator(
+                    "bim.toggle_group",
+                    text="",
+                    icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT",
+                    emboss=False,
+                )
+                op.group_type = "IfcSystem"
+                op.ifc_definition_id = item.ifc_definition_id
+                op.option = "COLLAPSE" if item.is_expanded else "EXPAND"
             if data.edited_system_id == system_id:
                 row.label(text="", icon="GREASEPENCIL")
             row.prop(item, "name", text="", icon=SYSTEM_ICONS[item.ifc_class], emboss=False)
