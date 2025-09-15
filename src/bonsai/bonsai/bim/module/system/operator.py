@@ -87,7 +87,7 @@ class RemoveSystem(bpy.types.Operator, tool.Ifc.Operator):
     system: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_system(tool.Ifc, tool.System, system=tool.Ifc.get().by_id(self.system))
+        core.remove_system(tool.Ifc, tool.Group, tool.System, system=tool.Ifc.get().by_id(self.system))
 
 
 class EnableEditingSystem(bpy.types.Operator):
