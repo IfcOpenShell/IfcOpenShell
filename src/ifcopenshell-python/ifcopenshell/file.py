@@ -574,6 +574,7 @@ class file:
         else:
             schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
         if f is not None:
+            self.wrapped_data = f
             if not f.good():
                 from . import Error, SchemaError
 
@@ -582,12 +583,11 @@ class file:
                     NO_HEADER: lambda: (Error, "Unable to parse IFC SPF header"),
                     UNSUPPORTED_SCHEMA: lambda: (
                         SchemaError,
-                        "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
+                        "Unsupported schema: %s" % ",".join(self.header.file_schema.schema_identifiers),
                     ),
                     INVALID_SYNTAX: lambda: (Error, "Syntax error during parse, check logs"),
                 }[f.good().value()]()
                 raise exc(msg)
-            self.wrapped_data = f
         else:
             args = filter(None, [schema])
             args = map(ifcopenshell_wrapper.schema_by_name, args)
