@@ -292,22 +292,8 @@ class DumbSlabPlaner:
         if thickness == 0:
             return
 
-        layer_offset = layer_params["offset"]
-        self.props = tool.Material.get_object_material_props(obj)
-        if self.props.use_custom_offset:
-            custom_offset_reference = self.props.custom_offset_reference
-            custom_offset = self.props.custom_offset
-            direction_sense = layer_params["direction_sense"]
-            if (direction_sense == "POSITIVE" and custom_offset_reference == "TOP"):
-                layer_offset = custom_offset - thickness * self.unit_scale
-            if direction_sense == "POSITIVE" and custom_offset_reference == "MIDDLE":
-                layer_offset = custom_offset - (thickness / 2) * self.unit_scale
-            if (direction_sense == "POSITIVE" and custom_offset_reference == "BOTTOM") or (direction_sense == "NEGATIVE" and custom_offset_reference == "TOP"):
-                layer_offset = custom_offset
-            if direction_sense == "NEGATIVE" and custom_offset_reference == "MIDDLE":
-                layer_offset = custom_offset + (thickness / 2) * self.unit_scale
-            if (direction_sense == "NEGATIVE" and custom_offset_reference == "BOTTOM"):
-                layer_offset = custom_offset + thickness * self.unit_scale
+        custom_offset = tool.Model.get_material_layer_custom_offset(element, obj)
+        layer_offset = (custom_offset * self.unit_scale) if custom_offset is not None else layer_params["offset"]
 
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
@@ -348,19 +334,15 @@ class DumbSlabPlaner:
                 extrusion.Depth = perpendicular_depth
 
                 ifc_position = extrusion.Position
-                if perpendicular_offset == 0.0:
-                    # Clean up possible previous offset.
-                    tool.Model.reset_extrusion_position(extrusion)
+                position = offset_direction * perpendicular_offset
+                material = ifcopenshell.util.element.get_material(element)
+                if material:
+                    if material.is_a("IfcMaterialLayerSetUsage"):
+                        material.OffsetFromReferenceLine = position.z
+                if ifc_position:
+                    ifc_position.Location.Coordinates = position
                 else:
-                    position = offset_direction * perpendicular_offset
-                    material = ifcopenshell.util.element.get_material(element)
-                    if material:
-                        if material.is_a("IfcMaterialLayerSetUsage"):
-                            material.OffsetFromReferenceLine = position.z
-                    if ifc_position:
-                        ifc_position.Location.Coordinates = position
-                    else:
-                        tool.Model.add_extrusion_position(extrusion, position)
+                    tool.Model.add_extrusion_position(extrusion, position)
 
             else:
                 props = tool.Model.get_model_props()
