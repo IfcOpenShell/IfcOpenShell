@@ -89,28 +89,19 @@ SHARED_PTR_DISOWN: Any
 
 cvar: Any
 
-class FileDescription(HeaderEntity):
-    description: tuple[str, ...]
-    implementation_level: str
-
-class FileName(HeaderEntity):
-    name: str
-    """Updated automatically only on ``file.write``."""
-    time_stamp: str
-    author: tuple[str, ...]
-    organization: tuple[str, ...]
-    preprocessor_version: str
-    originating_system: str
-    authorization: str
-
 class IfcSpfHeader:
+    """
+    IFC Header definition:
+    https://standards.buildingsmart.org/documents/Implementation/ImplementationGuide_IFCHeaderData_Version_1.0.2.pdf
+    """
+
     def file(self, *args): ...
     @property
-    def file_description(self) -> FileDescription: ...
+    def file_description(self) -> ifcopenshell.entity_instance: ...
     @property
-    def file_name(self) -> FileName: ...
+    def file_name(self) -> ifcopenshell.entity_instance: ...
     @property
-    def file_schema(self): ...
+    def file_schema(self) -> ifcopenshell.entity_instance: ...
     def read(self): ...
     def tryRead(self): ...
     def write(self, out): ...
@@ -261,9 +252,6 @@ class Element:
         E.g. 'product-186f8dc2-070c-46e1-a65b-a435a043ba3e-body'.
         """
         ...
-
-class FileSchema(HeaderEntity):
-    schema_identifiers: Any
 
 class GeometrySerializer:
     READ_BREP: Any
@@ -975,8 +963,9 @@ class file:
     def good(self): ...
     @staticmethod
     def guid_map(*args): ...
-    @property
-    def header(self) -> IfcSpfHeader: ...
+    def header(self) -> IfcSpfHeader:
+        """Internal IfcSpfHeader instance, always prefer ``ifcopenshell.file.header`` instead."""
+
     def ifcroot_type(self) -> entity: ...
     def internal_guid_map(self): ...
     def load(self, entity_instance_name, entity, arg4, attribute_index): ...
