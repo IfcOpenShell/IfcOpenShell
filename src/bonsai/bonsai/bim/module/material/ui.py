@@ -231,6 +231,7 @@ class BIM_PT_object_material(Panel):
         bonsai.bim.helper.draw_attributes(self.props.material_set_attributes, self.layout)
         bonsai.bim.helper.draw_attributes(self.props.material_set_usage_attributes, self.layout)
 
+        self.custom_offset()
         if ObjectMaterialData.data["set_item_name"] == "profile" and not self.mprops.profiles:
             row = self.layout.row(align=True)
             row.label(text="No Profiles Available")
@@ -390,6 +391,20 @@ class BIM_PT_object_material(Panel):
                 else:
                     row.label(text="Exterior")
 
+    def custom_offset(self):
+        set_usage = ObjectMaterialData.data.get("set_usage", {})
+        layer_set_direction = set_usage.get("layer_set_direction")
+        if layer_set_direction:
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.prop(self.props, "use_custom_offset", text="Use Custom Offset")
+            row = box.row(align=True)
+            if layer_set_direction == "AXIS2":
+                row.prop(self.props, "custom_wall_reference", text="Reference")
+            if layer_set_direction == "AXIS3":
+                row.prop(self.props, "custom_slab_reference", text="Reference")
+            row = box.row(align=True)
+            row.prop(self.props, "custom_offset", text="Custom Offset")
 
 class BIM_UL_materials(UIList):
     def draw_item(

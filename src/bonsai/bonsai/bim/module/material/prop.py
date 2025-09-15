@@ -208,6 +208,24 @@ class BIMObjectMaterialProperties(PropertyGroup):
     parameterized_profile_classes: EnumProperty(
         items=get_parameterized_profile_classes, name="Parameterized Profile Classes"
     )
+    use_custom_offset: BoolProperty(name="Use Custom Usage Settings")
+    custom_offset: FloatProperty(name="Use Custom Usage Settings", subtype="DISTANCE")
+    custom_slab_reference: EnumProperty(
+        items=[
+            ("TOP", "TOP", ""),
+            ("MIDDLE", "MIDDLE", ""),
+            ("BOTTOM", "BOTTOM", ""),
+        ],
+        name="Custom Offset Reference",
+    )
+    custom_wall_reference: EnumProperty(
+        items=[
+            ("EXTERIOR", "EXTERIOR", ""),
+            ("CENTER", "CENTER", ""),
+            ("INTERIOR", "INTERIOR", ""),
+        ],
+        name="Custom Offset Reference",
+    )
 
     if TYPE_CHECKING:
         material_type: str
@@ -221,3 +239,6 @@ class BIMObjectMaterialProperties(PropertyGroup):
         material_set_item_material: str
         profile_classes: str
         parameterized_profile_classes: str
+        use_custom_offset: bool
+        custom_offset: float
+        custom_offset_reference: str
