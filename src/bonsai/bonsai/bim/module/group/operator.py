@@ -87,9 +87,9 @@ class AddGroup(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         result = ifcopenshell.api.group.add_group(tool.Ifc.get())
         if self.group:
-            ifcopenshell.api.group.assign_group(
-                tool.Ifc.get(), products=[result], group=tool.Ifc.get().by_id(self.group)
-            )
+            group = tool.Ifc.get().by_id(self.group)
+            ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=[result], group=group)
+            tool.Group.toggle_group(group, "IfcGroup", "EXPAND")
         tool.Group.import_groups("IfcGroup")
         return {"FINISHED"}
 
