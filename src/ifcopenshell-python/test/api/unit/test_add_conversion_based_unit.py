@@ -19,6 +19,7 @@
 import test.bootstrap
 import ifcopenshell.api.unit
 
+
 class TestAddConversionBasedUnitIFC2X3(test.bootstrap.IFC2X3):
     def test_run(self):
         unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="foot")
@@ -86,6 +87,7 @@ class TestAddConversionBasedUnitIFC2X3(test.bootstrap.IFC2X3):
             assert target_unit.UnitType == "TIMEUNIT"
             assert target_unit.Name == "SECOND"
             assert target_unit.Prefix is None
+
 
 class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBasedUnitIFC2X3):
     def test_adding_a_unit_with_offset(self):
