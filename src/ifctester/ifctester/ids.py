@@ -63,6 +63,7 @@ def open(filepath: str, validate: bool = False) -> Ids:
 
 
 def from_string(xml: str, validate: bool = False) -> Ids:
+    tree = ET.ElementTree(ET.fromstring(xml))
     try:
         if validate:
             get_schema().validate(tree)
