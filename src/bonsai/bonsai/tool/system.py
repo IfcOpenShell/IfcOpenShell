@@ -48,6 +48,16 @@ class System(bonsai.core.tool.System):
     def get_zone_props(cls) -> BIMZoneProperties:
         return bpy.context.scene.BIMZoneProperties
 
+    SYSTEM_ICONS = {
+        "IfcSystem": "EXTERNAL_DRIVE",
+        "IfcDistributionSystem": "NETWORK_DRIVE",
+        "IfcDistributionCircuit": "DRIVER",
+        "IfcBuildingSystem": "MOD_BUILD",
+        "IfcBuiltSystem": "MOD_BUILD",
+        "IfcZone": "CUBE",
+    }
+    SYSTEM_ICONS["IfcElectricalCircuit"] = SYSTEM_ICONS["IfcDistributionCircuit"]
+
     @classmethod
     def add_ports(
         cls,
@@ -430,10 +440,8 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def draw_system_ui(cls, layout: bpy.types.UILayout, system_id: int, system_name: str, system_class: str) -> None:
-        from bonsai.bim.module.system.ui import SYSTEM_ICONS
-
         row = layout.row(align=True)
-        row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
+        row.label(text=system_name, icon=cls.SYSTEM_ICONS[system_class])
         op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
         op.system = system_id
         op = row.operator("bim.unassign_system", text="", icon="X")
