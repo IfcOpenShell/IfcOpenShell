@@ -269,7 +269,7 @@ class GroupQtosData(Data):
 
     @classmethod
     def load(cls):
-        props = tool.Blender.get_group_props()
+        props = tool.Group.get_group_props()
         assert (active_group := props.active_group)
         ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), qtos_only=True)}
@@ -282,7 +282,7 @@ class GroupPsetData(Data):
 
     @classmethod
     def load(cls):
-        props = tool.Blender.get_group_props()
+        props = tool.Group.get_group_props()
         assert (active_group := props.active_group)
         ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)}
