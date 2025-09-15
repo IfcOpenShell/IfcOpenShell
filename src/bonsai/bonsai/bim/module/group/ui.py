@@ -45,6 +45,7 @@ class BIM_PT_groups(Panel):
         if not GroupsData.is_loaded:
             GroupsData.load()
         self.props = tool.Blender.get_group_props()
+        assert self.layout
 
         row = self.layout.row(align=True)
         row.label(text=f"{GroupsData.data['total_groups']} Groups Found", icon="OUTLINER")

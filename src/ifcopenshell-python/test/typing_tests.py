@@ -23,7 +23,8 @@ Those tests are not automatically checked and just there to make sure overloads 
 
 
 import ifcopenshell
-from typing import assert_type, Union
+from typing import Union
+from typing_extensions import assert_type
 
 
 def ifcopenshell_open_test(str_: str, bool_: bool):

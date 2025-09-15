@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.feature
 import ifcopenshell.api.type
+import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile

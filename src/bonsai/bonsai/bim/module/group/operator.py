@@ -213,9 +213,9 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         products = [
-            tool.Ifc.get_entity(o)
+            element
             for o in tool.Blender.get_selected_objects(include_active=False)
-            if tool.Ifc.get_entity(o)
+            if (element := tool.Ifc.get_entity(o))
         ]
         if not products:
             return

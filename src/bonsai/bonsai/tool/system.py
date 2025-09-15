@@ -29,7 +29,6 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
 import re
-from math import pi, cos, sin
 from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
 from enum import Enum

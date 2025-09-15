@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.geom
+import ifcopenshell.util
+import ifcopenshell.util.shape
 import pytest
 import test.bootstrap
 import ifcopenshell.api

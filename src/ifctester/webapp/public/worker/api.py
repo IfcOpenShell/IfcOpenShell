@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.util
+import ifcopenshell.util.attribute
 import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 import xml.etree.ElementTree as ET

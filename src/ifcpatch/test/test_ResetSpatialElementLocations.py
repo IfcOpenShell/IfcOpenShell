@@ -18,9 +18,11 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
-import ifcopenshell.util.unit
+import ifcopenshell.util.placement
 import ifcpatch
 import numpy as np
 

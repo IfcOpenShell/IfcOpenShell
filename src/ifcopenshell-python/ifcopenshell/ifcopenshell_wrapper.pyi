@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-from typing import Any, Union, Literal, Self
+from typing import Any, Union, Literal
+from typing_extensions import Self
 
 # `std::vector<xxx>` usually translated to `tuple[xxx, ...]`.
 

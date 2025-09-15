@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
-import ifcopenshell.util.schema
+import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 from typing import Any, Union
