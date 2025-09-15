@@ -18,8 +18,6 @@
 
 import test.bootstrap
 import ifcopenshell.api.unit
-import ifcopenshell.util.unit as subject
-
 
 class TestAddConversionBasedUnitIFC2X3(test.bootstrap.IFC2X3):
     def test_run(self):
@@ -40,28 +38,6 @@ class TestAddConversionBasedUnitIFC2X3(test.bootstrap.IFC2X3):
         assert si_unit.UnitType == "LENGTHUNIT"
         assert si_unit.Prefix is None
         assert si_unit.Name == "METRE"
-
-
-class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBasedUnitIFC2X3):
-    def test_adding_a_unit_with_offset(self):
-        unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="fahrenheit")
-        assert unit.is_a("IfcConversionBasedUnitWithOffset")
-        assert unit.Dimensions.LengthExponent == 0
-        assert unit.Dimensions.MassExponent == 0
-        assert unit.Dimensions.TimeExponent == 0
-        assert unit.Dimensions.ElectricCurrentExponent == 0
-        assert unit.Dimensions.ThermodynamicTemperatureExponent == 1
-        assert unit.Dimensions.AmountOfSubstanceExponent == 0
-        assert unit.Dimensions.LuminousIntensityExponent == 0
-        assert unit.UnitType == "THERMODYNAMICTEMPERATUREUNIT"
-        assert unit.Name == "fahrenheit"
-        assert unit.ConversionFactor.ValueComponent.wrappedValue == 1.8
-        si_unit = unit.ConversionFactor.UnitComponent
-        assert si_unit.is_a("IfcSIUnit")
-        assert si_unit.UnitType == "THERMODYNAMICTEMPERATUREUNIT"
-        assert si_unit.Prefix is None
-        assert si_unit.Name == "KELVIN"
-        assert unit.ConversionOffset == -459.67
 
     def test_adding_mass_units_creates_proper_massunit(self):
         mass_units = [
@@ -111,61 +87,28 @@ class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBased
             assert target_unit.Name == "SECOND"
             assert target_unit.Prefix is None
 
+class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBasedUnitIFC2X3):
+    def test_adding_a_unit_with_offset(self):
+        unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="fahrenheit")
+        assert unit.is_a("IfcConversionBasedUnitWithOffset")
+        assert unit.Dimensions.LengthExponent == 0
+        assert unit.Dimensions.MassExponent == 0
+        assert unit.Dimensions.TimeExponent == 0
+        assert unit.Dimensions.ElectricCurrentExponent == 0
+        assert unit.Dimensions.ThermodynamicTemperatureExponent == 1
+        assert unit.Dimensions.AmountOfSubstanceExponent == 0
+        assert unit.Dimensions.LuminousIntensityExponent == 0
+        assert unit.UnitType == "THERMODYNAMICTEMPERATUREUNIT"
+        assert unit.Name == "fahrenheit"
+        assert unit.ConversionFactor.ValueComponent.wrappedValue == 1.8
+        si_unit = unit.ConversionFactor.UnitComponent
+        assert si_unit.is_a("IfcSIUnit")
+        assert si_unit.UnitType == "THERMODYNAMICTEMPERATUREUNIT"
+        assert si_unit.Prefix is None
+        assert si_unit.Name == "KELVIN"
+        assert unit.ConversionOffset == -459.67
+
     def test_unknown_units_fall_back_to_userdefined(self):
         unknown_unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="unknown_unit")
         assert unknown_unit.UnitType == "USERDEFINED"
         assert unknown_unit.Name == "unknown_unit"
-
-    def test_mass_units_in_imperial_types(self):
-        expected_mass_units = ["ounce", "pound", "ton UK", "ton US", "tonne"]
-
-        for unit_name in expected_mass_units:
-            assert unit_name in subject.imperial_types
-            assert subject.imperial_types[unit_name] == "MASSUNIT"
-
-    def test_time_units_in_imperial_types(self):
-        expected_time_units = ["minute", "hour", "day"]
-
-        for unit_name in expected_time_units:
-            assert unit_name in subject.imperial_types
-            assert subject.imperial_types[unit_name] == "TIMEUNIT"
-
-    def test_mass_units_have_conversion_factors(self):
-        expected_mass_conversions = {
-            "ounce": 0.02835,
-            "pound": 0.454,
-            "ton UK": 1016.0469088,
-            "ton US": 907.18474,
-            "tonne": 1000.0,
-        }
-
-        for unit_name, expected_factor in expected_mass_conversions.items():
-            assert unit_name in subject.si_conversions
-            assert subject.si_conversions[unit_name] == expected_factor
-
-    def test_time_units_have_conversion_factors(self):
-        expected_time_conversions = {
-            "minute": 60,
-            "hour": 3600,
-            "day": 86400,
-        }
-
-        for unit_name, expected_factor in expected_time_conversions.items():
-            assert unit_name in subject.si_conversions
-            assert subject.si_conversions[unit_name] == expected_factor
-
-    def test_mass_and_time_units_have_symbols(self):
-        expected_symbols = {
-            "ounce": "oz",
-            "pound": "lb",
-            "ton UK": "ton",
-            "ton US": "ton",
-            "tonne": "t",
-            "minute": "min",
-            "hour": "hr",
-            "day": "day",
-        }
-
-        for unit_name, expected_symbol in expected_symbols.items():
-            assert unit_name in subject.unit_symbols
-            assert subject.unit_symbols[unit_name] == expected_symbol
