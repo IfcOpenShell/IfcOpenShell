@@ -19,9 +19,11 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
+import ifcopenshell.geom
 import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
 import ifcopenshell.ifcopenshell_wrapper as wrapper
+import ifcopenshell.util.unit
 import numpy as np
 import math
 

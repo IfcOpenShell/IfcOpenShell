@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
+import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.util.alignment
 import ifcopenshell.util.unit

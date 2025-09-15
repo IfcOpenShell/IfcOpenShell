@@ -259,6 +259,7 @@ class BIM_PT_project(Panel):
 
     def draw_editable_file_info(self, context):
         pprops = self.props
+        assert self.layout
 
         if ifc_file := tool.Ifc.get():
             row = self.layout.row(align=True)

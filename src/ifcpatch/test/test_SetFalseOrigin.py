@@ -18,9 +18,15 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
-import ifcopenshell.util.unit
+import ifcopenshell.util.element
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
 import ifcpatch
 import numpy as np
 

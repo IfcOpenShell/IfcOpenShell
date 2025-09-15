@@ -22,6 +22,7 @@ import ifcopenshell.api.nest
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.guid
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 from ifcopenshell import ifcopenshell_wrapper

@@ -23,6 +23,9 @@ from ifcopenshell import entity_instance
 import math
 from collections.abc import Sequence
 
+import ifcopenshell.util
+import ifcopenshell.util.unit
+
 
 def layout_horizontal_alignment_by_pi_method(
     file: ifcopenshell.file, layout: entity_instance, hpoints: Sequence[Sequence[float]], radii: Sequence[float]

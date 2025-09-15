@@ -19,6 +19,8 @@
 import ifcopenshell
 from ifcopenshell import entity_instance
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+import ifcopenshell.util
+import ifcopenshell.util.unit
 from collections.abc import Sequence
 import math
 

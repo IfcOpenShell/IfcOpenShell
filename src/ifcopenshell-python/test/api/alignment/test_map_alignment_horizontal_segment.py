@@ -21,6 +21,7 @@
 
 import pytest
 import ifcopenshell.api.alignment
+import ifcopenshell.api.unit
 from ifcopenshell.api.alignment._map_alignment_horizontal_segment import _map_alignment_horizontal_segment
 
 
