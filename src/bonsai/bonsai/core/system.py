@@ -55,9 +55,15 @@ def edit_system(ifc: type[tool.Ifc], system_tool: type[tool.System], system: ifc
     system_tool.import_systems()
 
 
-def remove_system(ifc: type[tool.Ifc], system_tool: type[tool.System], system: ifcopenshell.entity_instance) -> None:
+def remove_system(
+    ifc: type[tool.Ifc],
+    group: type[tool.Group],
+    system_tool: type[tool.System],
+    system: ifcopenshell.entity_instance,
+) -> None:
     ifc.run("system.remove_system", system=system)
     system_tool.import_systems()
+    group.update_uilist_index("IfcSystem")
 
 
 def enable_editing_system(system_tool: type[tool.System], system: ifcopenshell.entity_instance) -> None:

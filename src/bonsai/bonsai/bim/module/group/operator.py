@@ -118,6 +118,7 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         ifcopenshell.api.group.remove_group(self.file, group=self.file.by_id(self.group))
         tool.Group.import_groups("IfcGroup")
+        tool.Group.update_uilist_index("IfcGroup")
         return {"FINISHED"}
 
 

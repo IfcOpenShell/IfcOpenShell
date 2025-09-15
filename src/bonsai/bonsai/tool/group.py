@@ -137,3 +137,8 @@ class Group(bonsai.core.tool.System):
             expanded_groups.remove(ifc_definition_id)
         props.expanded_groups_json = json.dumps(list(expanded_groups))
         cls.import_groups(group_type)
+
+    @classmethod
+    def update_uilist_index(cls, group_type: GroupType) -> None:
+        props, blender_groups = cls.get_groups_data(group_type)
+        props.active_group_index = tool.Blender.get_valid_uilist_index(props.active_group_index, blender_groups)
