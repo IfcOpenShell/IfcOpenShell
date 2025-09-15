@@ -38,6 +38,7 @@ def disable_system_editing_ui(system: type[tool.System]) -> None:
 
 def add_system(
     ifc: type[tool.Ifc],
+    group: type[tool.Group],
     system: type[tool.System],
     ifc_class: str,
     parent_system: Union[ifcopenshell.entity_instance, None],
@@ -45,6 +46,8 @@ def add_system(
     new_system = ifc.run("system.add_system", ifc_class=ifc_class)
     if parent_system:
         ifc.run("group.assign_group", products=[new_system], group=parent_system)
+        group.toggle_group(parent_system, "IfcSystem", "EXPAND")
+
     system.import_systems()
 
 

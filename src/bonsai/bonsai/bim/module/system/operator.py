@@ -67,7 +67,7 @@ class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.System.get_system_props()
         ifc_file = tool.Ifc.get()
         parent_system = None if self.parent_system_id == 0 else ifc_file.by_id(self.parent_system_id)
-        core.add_system(tool.Ifc, tool.System, ifc_class=props.system_class, parent_system=parent_system)
+        core.add_system(tool.Ifc, tool.Group, tool.System, ifc_class=props.system_class, parent_system=parent_system)
 
 
 class EditSystem(bpy.types.Operator, tool.Ifc.Operator):
