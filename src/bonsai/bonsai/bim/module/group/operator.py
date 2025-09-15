@@ -202,6 +202,7 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
             if (element := tool.Ifc.get_entity(o))
         ]
         ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
+        self.report({"INFO"}, f"Assigned {len(products)} objects to group.")
 
 
 class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
@@ -220,6 +221,7 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
         if not products:
             return
         ifcopenshell.api.group.unassign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
+        self.report({"INFO"}, f"Unassigned {len(products)} objects from group.")
 
 
 class SelectGroupElements(bpy.types.Operator):
