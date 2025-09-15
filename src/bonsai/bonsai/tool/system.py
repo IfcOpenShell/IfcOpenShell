@@ -33,6 +33,7 @@ from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, Any, Union
+from natsort import natsorted
 
 if TYPE_CHECKING:
     from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties, BIMZoneProperties
@@ -160,15 +161,7 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def import_systems(cls) -> None:
-        props = cls.get_system_props()
-        props.systems.clear()
-        for system in cls.get_systems():
-            if system.is_a() in ["IfcStructuralAnalysisModel"]:
-                continue
-            new = props.systems.add()
-            new.ifc_definition_id = system.id()
-            new["name"] = system.Name or "Unnamed"
-            new.ifc_class = system.is_a()
+        tool.Group.import_groups("IfcSystem")
 
     @classmethod
     def load_ports(cls, element: ifcopenshell.entity_instance, ports: list[ifcopenshell.entity_instance]) -> None:
