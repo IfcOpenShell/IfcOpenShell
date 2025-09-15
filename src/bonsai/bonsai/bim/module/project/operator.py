@@ -850,25 +850,25 @@ class EnableEditingHeader(bpy.types.Operator):
         props = tool.Project.get_project_props()
         props.is_editing = True
 
-        mvd = "".join(tool.Ifc.get().wrapped_data.header.file_description.description)
+        mvd = "".join(tool.Ifc.get().header.file_description.description)
         if "[" in mvd:
             props.mvd = mvd.split("[")[1][0:-1]
         else:
             props.mvd = ""
 
-        author = self.file.wrapped_data.header.file_name.author
+        author = self.file.header.file_name.author
         if author:
             props.author_name = author[0]
             if len(author) > 1:
                 props.author_email = author[1]
 
-        organisation = self.file.wrapped_data.header.file_name.organization
+        organisation = self.file.header.file_name.organization
         if organisation:
             props.organisation_name = organisation[0]
             if len(organisation) > 1:
                 props.organisation_email = organisation[1]
 
-        props.authorisation = self.file.wrapped_data.header.file_name.authorization or ""
+        props.authorisation = self.file.header.file_name.authorization or ""
         return {"FINISHED"}
 
 
@@ -897,35 +897,35 @@ class EditHeader(bpy.types.Operator):
         props = tool.Project.get_project_props()
         props.is_editing = True
 
-        self.file.wrapped_data.header.file_description.description = (f"ViewDefinition[{props.mvd}]",)
-        self.file.wrapped_data.header.file_name.author = (props.author_name, props.author_email)
-        self.file.wrapped_data.header.file_name.organization = (props.organisation_name, props.organisation_email)
-        self.file.wrapped_data.header.file_name.authorization = props.authorisation
+        self.file.header.file_description.description = (f"ViewDefinition[{props.mvd}]",)
+        self.file.header.file_name.author = (props.author_name, props.author_email)
+        self.file.header.file_name.organization = (props.organisation_name, props.organisation_email)
+        self.file.header.file_name.authorization = props.authorisation
         bpy.ops.bim.disable_editing_header()
         return {"FINISHED"}
 
     def record_state(self):
         self.file = tool.Ifc.get()
         return {
-            "description": self.file.wrapped_data.header.file_description.description,
-            "author": self.file.wrapped_data.header.file_name.author,
-            "organisation": self.file.wrapped_data.header.file_name.organization,
-            "authorisation": self.file.wrapped_data.header.file_name.authorization,
+            "description": self.file.header.file_description.description,
+            "author": self.file.header.file_name.author,
+            "organisation": self.file.header.file_name.organization,
+            "authorisation": self.file.header.file_name.authorization,
         }
 
     def rollback(self, data):
         file = tool.Ifc.get()
-        file.wrapped_data.header.file_description.description = data["old"]["description"]
-        file.wrapped_data.header.file_name.author = data["old"]["author"]
-        file.wrapped_data.header.file_name.organization = data["old"]["organisation"]
-        file.wrapped_data.header.file_name.authorization = data["old"]["authorisation"]
+        file.header.file_description.description = data["old"]["description"]
+        file.header.file_name.author = data["old"]["author"]
+        file.header.file_name.organization = data["old"]["organisation"]
+        file.header.file_name.authorization = data["old"]["authorisation"]
 
     def commit(self, data):
         file = tool.Ifc.get()
-        file.wrapped_data.header.file_description.description = data["new"]["description"]
-        file.wrapped_data.header.file_name.author = data["new"]["author"]
-        file.wrapped_data.header.file_name.organization = data["new"]["organisation"]
-        file.wrapped_data.header.file_name.authorization = data["new"]["authorisation"]
+        file.header.file_description.description = data["new"]["description"]
+        file.header.file_name.author = data["new"]["author"]
+        file.header.file_name.organization = data["new"]["organisation"]
+        file.header.file_name.authorization = data["new"]["authorisation"]
 
 
 class DisableEditingHeader(bpy.types.Operator):

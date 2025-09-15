@@ -60,8 +60,8 @@ class CopyDebugInformation(bpy.types.Operator):
                 {
                     "ifc": os.path.basename(tool.Ifc.get_path()) if os.path.isfile(tool.Ifc.get_path()) else "Unsaved",
                     "schema": tool.Ifc.get().schema,
-                    "preprocessor_version": tool.Ifc.get().wrapped_data.header.file_name.preprocessor_version,
-                    "originating_system": tool.Ifc.get().wrapped_data.header.file_name.originating_system,
+                    "preprocessor_version": tool.Ifc.get().header.file_name.preprocessor_version,
+                    "originating_system": tool.Ifc.get().header.file_name.originating_system,
                 }
             )
 

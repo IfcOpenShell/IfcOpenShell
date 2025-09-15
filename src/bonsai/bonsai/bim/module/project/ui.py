@@ -288,7 +288,7 @@ class BIM_PT_project(Panel):
                 if isinstance(ifc_file, ifcopenshell.sqlite):
                     mvd = ifc_file.mvd_str
                 else:
-                    mvd = "".join(ifc_file.wrapped_data.header.file_description.description)
+                    mvd = "".join(ifc_file.header.file_description.description)
                 if "[" in mvd:
                     mvd = mvd.split("[")[1][0:-1]
                 row.label(text=mvd)

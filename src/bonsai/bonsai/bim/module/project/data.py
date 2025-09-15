@@ -96,7 +96,7 @@ class ProjectData:
         if not ifc:
             return ""
         try:
-            save_datetime = ifc.wrapped_data.header.file_name.time_stamp
+            save_datetime = ifc.header.file_name.time_stamp
             save_date, save_time = save_datetime.split("T")
             return f"{save_date} {':'.join(save_time.split(':')[0:2])}"
         except:

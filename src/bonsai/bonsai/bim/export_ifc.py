@@ -74,12 +74,12 @@ class IfcExporter:
                     json.dump(jsonData, outfile, indent=None if self.ifc_export_settings.json_compact else 4)
 
     def set_header(self):
-        self.file.wrapped_data.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
-        self.file.wrapped_data.header.file_name.time_stamp = (
+        self.file.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
+        self.file.header.file_name.time_stamp = (
             datetime.datetime.utcnow().replace(tzinfo=datetime.UTC).astimezone().replace(microsecond=0).isoformat()
         )
-        self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
-        self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
+        self.file.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
+        self.file.header.file_name.originating_system = "{} {}".format(
             self.get_application_name(), tool.Blender.get_bonsai_version()
         )
 

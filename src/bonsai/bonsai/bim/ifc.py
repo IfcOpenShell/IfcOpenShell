@@ -132,7 +132,7 @@ class IfcStore:
     def generate_cache_path() -> str:
         """Generate cache path based on the active file and it's path."""
         assert IfcStore.file
-        ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
+        ifc_key = IfcStore.path + IfcStore.file.header.file_name.time_stamp
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
         prefs = tool.Blender.get_addon_preferences()
         cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
