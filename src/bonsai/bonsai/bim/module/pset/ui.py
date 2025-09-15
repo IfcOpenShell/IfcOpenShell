@@ -667,7 +667,7 @@ class BIM_PT_group_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = tool.Blender.get_group_props()
+        props = tool.Group.get_group_props()
         return bool(props.active_group)
 
     def draw(self, context):
@@ -699,7 +699,7 @@ class BIM_PT_group_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = tool.Blender.get_group_props()
+        props = tool.Group.get_group_props()
         return bool(props.active_group)
 
     def draw(self, context):

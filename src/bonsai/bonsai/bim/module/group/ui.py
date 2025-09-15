@@ -44,7 +44,7 @@ class BIM_PT_groups(Panel):
     def draw(self, context):
         if not GroupsData.is_loaded:
             GroupsData.load()
-        self.props = tool.Blender.get_group_props()
+        self.props = tool.Group.get_group_props()
         assert self.layout
 
         row = self.layout.row(align=True)
@@ -106,7 +106,7 @@ class BIM_PT_object_groups(Panel):
         if not ObjectGroupsData.is_loaded:
             ObjectGroupsData.load()
         assert self.layout
-        self.props = tool.Blender.get_group_props()
+        self.props = tool.Group.get_group_props()
 
         for group in ObjectGroupsData.data["groups"]:
             row = self.layout.row(align=True)
