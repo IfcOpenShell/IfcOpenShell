@@ -41,7 +41,7 @@ class TestAssignSceneUnits:
         ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
 
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit", "planeangleunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit", "massunit", "timeunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
@@ -61,7 +61,7 @@ class TestAssignSceneUnits:
         ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
 
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit", "planeangleunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit", "massunit", "timeunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
@@ -83,7 +83,7 @@ class TestAssignSceneUnits:
         ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
 
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit", "planeangleunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit", "massunit", "timeunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
@@ -103,7 +103,7 @@ class TestAssignSceneUnits:
         ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
 
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit", "planeangleunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit", "massunit", "timeunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
