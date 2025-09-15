@@ -36,7 +36,7 @@ from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING
+from typing import NamedTuple, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings
@@ -437,3 +437,50 @@ class Project(bonsai.core.tool.Project):
                     remove_root(rel)
             else:
                 assert False, f"Shouldn't be here, {rel}"
+
+    class HeaderData(NamedTuple):
+        mvd: str
+        author_name: str
+        author_email: str
+        organization_name: str
+        organization_email: str
+        authorization: str
+
+    @classmethod
+    def get_header_data(cls) -> HeaderData:
+        if not (ifc_file := tool.Ifc.get()):
+            return {}
+
+        # MVD.
+        if isinstance(ifc_file, ifcopenshell.sqlite):
+            mvd = ifc_file.mvd_str
+        else:
+            mvd = "".join(ifc_file.header.file_description.description)
+        if f"[" in mvd:
+            mvd = mvd.split("[")[1][0:-1]
+
+        # Author.
+        author = ifc_file.header.file_name.author
+        author_name, author_email = "", ""
+        if author:
+            author_name = author[0]
+            if len(author) > 1:
+                author_email = author[1]
+
+        # Organization.
+        organization_name, organization_email = "", ""
+        organization = ifc_file.header.file_name.organization
+        if organization:
+            organization_name = organization[0]
+            if len(organization) > 1:
+                organization_email = organization[1]
+
+        authorization = ifc_file.header.file_name.authorization or ""
+        return cls.HeaderData(
+            mvd=mvd,
+            author_name=author_name,
+            author_email=author_email,
+            organization_name=organization_name,
+            organization_email=organization_email,
+            authorization=authorization,
+        )
