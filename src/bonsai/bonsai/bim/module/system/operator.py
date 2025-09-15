@@ -24,6 +24,7 @@ import bonsai.tool as tool
 import bonsai.core.system as core
 import bonsai.bim.helper
 from bonsai.bim.module.system.data import PortData, SystemData
+from typing import TYPE_CHECKING
 
 
 class LoadSystems(bpy.types.Operator):
@@ -51,9 +52,22 @@ class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add System"
     bl_options = {"REGISTER", "UNDO"}
 
+    parent_system_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        parent_system_id: int
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        if properties.parent_system_id:
+            return "Add new subsystem to the active system."
+        return "Add new IfcSystem."
+
     def _execute(self, context):
         props = tool.System.get_system_props()
-        core.add_system(tool.Ifc, tool.System, ifc_class=props.system_class)
+        ifc_file = tool.Ifc.get()
+        parent_system = None if self.parent_system_id == 0 else ifc_file.by_id(self.parent_system_id)
+        core.add_system(tool.Ifc, tool.System, ifc_class=props.system_class, parent_system=parent_system)
 
 
 class EditSystem(bpy.types.Operator, tool.Ifc.Operator):
