@@ -266,33 +266,30 @@ class BIM_PT_project(Panel):
             row.label(text="IFC Schema", icon="FILE_CACHE")
             row.label(text=ifc_file.schema)
 
-            if pprops.is_editing:
-                row = self.layout.row(align=True)
-                row.prop(pprops, "mvd")
+            if not ProjectData.is_loaded:
+                ProjectData.load()
 
-                row = self.layout.row(align=True)
-                row.prop(pprops, "author_name")
-                row = self.layout.row(align=True)
-                row.prop(pprops, "author_email")
-
-                row = self.layout.row(align=True)
-                row.prop(pprops, "organisation_name")
-                row = self.layout.row(align=True)
-                row.prop(pprops, "organisation_email")
-
-                row = self.layout.row(align=True)
-                row.prop(pprops, "authorisation")
-            else:
-                row = self.layout.row(align=True)
-                row.label(text="IFC MVD", icon="FILE_HIDDEN")
-                if isinstance(ifc_file, ifcopenshell.sqlite):
-                    mvd = ifc_file.mvd_str
+            headers_props_and_icons = [
+                ("mvd", "FILE_HIDDEN"),
+                ("author_name", None),
+                ("author_email", None),
+                ("organisation_name", None),
+                ("organisation_email", None),
+                ("authorisation", None),
+            ]
+            rna_props = pprops.bl_rna.properties
+            for prop_name, prop_icon in headers_props_and_icons:
+                if pprops.is_editing:
+                    row = self.layout.row(align=True)
+                    row.prop(pprops, prop_name)
                 else:
-                    mvd = "".join(ifc_file.header.file_description.description)
-                if "[" in mvd:
-                    mvd = mvd.split("[")[1][0:-1]
-                row.label(text=mvd)
-
+                    value = getattr(ProjectData.data["header_info"], prop_name)
+                    if not value:
+                        continue
+                    row = self.layout.row(align=True)
+                    icon = {} if prop_icon is None else {"icon": prop_icon}
+                    row.label(text=rna_props[prop_name].name, **icon)
+                    row.label(text=value)
         else:
             row = self.layout.row(align=True)
             row.label(text="File Not Loaded", icon="ERROR")

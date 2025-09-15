@@ -446,6 +446,14 @@ class BIMProjectProperties(PropertyGroup):
     def get_library_element_index(self, lib_element: LibraryElement) -> int:
         return next(i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element)
 
+    def load_header_data(self, header_data: tool.Project.HeaderData) -> None:
+        self.mvd = header_data.mvd
+        self.author_name = header_data.author_name
+        self.author_email = header_data.author_email
+        self.organisation_name = header_data.organization_name
+        self.organisation_email = header_data.organization_email
+        self.authorisation = header_data.authorization
+
     if TYPE_CHECKING:
         is_editing: bool
         is_loading: bool

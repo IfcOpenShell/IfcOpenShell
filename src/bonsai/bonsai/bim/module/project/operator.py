@@ -849,26 +849,8 @@ class EnableEditingHeader(bpy.types.Operator):
         self.file = tool.Ifc.get()
         props = tool.Project.get_project_props()
         props.is_editing = True
-
-        mvd = "".join(tool.Ifc.get().header.file_description.description)
-        if "[" in mvd:
-            props.mvd = mvd.split("[")[1][0:-1]
-        else:
-            props.mvd = ""
-
-        author = self.file.header.file_name.author
-        if author:
-            props.author_name = author[0]
-            if len(author) > 1:
-                props.author_email = author[1]
-
-        organisation = self.file.header.file_name.organization
-        if organisation:
-            props.organisation_name = organisation[0]
-            if len(organisation) > 1:
-                props.organisation_email = organisation[1]
-
-        props.authorisation = self.file.header.file_name.authorization or ""
+        header_data = tool.Project.get_header_data()
+        props.load_header_data(header_data)
         return {"FINISHED"}
 
 
@@ -883,6 +865,9 @@ class EditHeader(bpy.types.Operator):
         return tool.Ifc.get()
 
     def execute(self, context):
+        # NOTE: Though header entities are now generic `entity_instance`
+        # we still have a special undo system in place for this operator
+        # since general undo system tracks only elements with ids != 0.
         IfcStore.begin_transaction(self)
         self.transaction_data = {}
         self.transaction_data["old"] = self.record_state()
@@ -890,6 +875,7 @@ class EditHeader(bpy.types.Operator):
         self.transaction_data["new"] = self.record_state()
         IfcStore.add_transaction_operation(self)
         IfcStore.end_transaction(self)
+        bonsai.bim.handler.refresh_ui_data()
         return result
 
     def _execute(self, context):
