@@ -57,9 +57,9 @@ class SystemData:
 
         # We're only interested in systems for services. Not sure why IFC groups these together.
         return [
-            (c, c, get_entity_doc(version, c).get("description", ""))
-            for c in sorted([d.name() for d in declarations])
-            if c not in ("IfcStructuralAnalysisModel")
+            (c, c, get_entity_doc(version, c).get("description", ""), tool.System.SYSTEM_ICONS[c], i)
+            for i, c in enumerate(sorted([d.name() for d in declarations]))
+            if c != "IfcStructuralAnalysisModel"
         ]
 
     @classmethod

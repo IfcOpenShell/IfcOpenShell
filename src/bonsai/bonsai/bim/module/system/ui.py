@@ -36,16 +36,6 @@ FLOW_DIRECTION_TO_ICON = {
     "NOTDEFINED": "CHECKBOX_DEHLT",
 }
 
-SYSTEM_ICONS = {
-    "IfcSystem": "EXTERNAL_DRIVE",
-    "IfcDistributionSystem": "NETWORK_DRIVE",
-    "IfcDistributionCircuit": "DRIVER",
-    "IfcBuildingSystem": "MOD_BUILD",
-    "IfcBuiltSystem": "MOD_BUILD",
-    "IfcZone": "CUBE",
-}
-SYSTEM_ICONS["IfcElectricalCircuit"] = SYSTEM_ICONS["IfcDistributionCircuit"]
-
 
 class BIM_PT_systems(Panel):
     bl_label = "Systems"
@@ -446,7 +436,7 @@ class BIM_UL_systems(UIList):
                 op.option = "COLLAPSE" if item.is_expanded else "EXPAND"
             if data.edited_system_id == system_id:
                 row.label(text="", icon="GREASEPENCIL")
-            row.prop(item, "name", text="", icon=SYSTEM_ICONS[item.ifc_class], emboss=False)
+            row.prop(item, "name", text="", icon=tool.System.SYSTEM_ICONS[item.ifc_class], emboss=False)
 
 
 class BIM_UL_zones(UIList):
