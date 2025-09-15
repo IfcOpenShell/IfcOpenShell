@@ -654,6 +654,40 @@ class Model(bonsai.core.tool.Model):
         )
 
     @classmethod
+    def get_material_layer_custom_offset(cls, element: ifcopenshell.entity_instance, obj) -> MaterialLayerParameters:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        layer_params = tool.Model.get_material_layer_parameters(element)
+        layer_offset = layer_params["offset"]
+        thickness = layer_params["thickness"] / unit_scale
+        props = tool.Material.get_object_material_props(obj)
+        if props.use_custom_offset:
+            if tool.Model.get_usage_type(element) == "LAYER2":
+                custom_offset_reference = props.custom_wall_reference
+            elif tool.Model.get_usage_type(element) == "LAYER3":
+                custom_offset_reference = props.custom_slab_reference
+            else:
+                return None
+
+            custom_offset = props.custom_offset
+            direction_sense = layer_params["direction_sense"]
+            if direction_sense == "POSITIVE" and custom_offset_reference in {"INTERIOR", "TOP"}:
+                layer_offset = custom_offset - thickness * unit_scale
+            if direction_sense == "POSITIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
+                layer_offset = custom_offset - (thickness / 2) * unit_scale
+            if (direction_sense == "POSITIVE" and custom_offset_reference in {"EXTERIOR", "BOTTOM"}) or (
+                direction_sense == "NEGATIVE" and custom_offset_reference in {"EXTERIOR", "TOP"}
+            ):
+                layer_offset = custom_offset
+            if direction_sense == "NEGATIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
+                layer_offset = custom_offset + (thickness / 2) * unit_scale
+            if direction_sense == "NEGATIVE" and custom_offset_reference in {"INTERIOR", "BOTTOM"}:
+                layer_offset = custom_offset + thickness * unit_scale
+
+            return layer_offset / unit_scale
+
+        return None
+
+    @classmethod
     def get_booleans(
         cls,
         element: Optional[ifcopenshell.entity_instance] = None,
@@ -2466,4 +2500,10 @@ class Model(bonsai.core.tool.Model):
                 queue.add((rel.RelatingElement, obj))
         for element, wall in queue:
             if tool.Model.get_usage_type(element) == "LAYER2" and wall:
+                # Use layer custom offset
+                custom_offset = tool.Model.get_material_layer_custom_offset(element, wall)
+                material = ifcopenshell.util.element.get_material(element)
+                if material.is_a("IfcMaterialLayerSetUsage") and custom_offset is not None:
+                    material.OffsetFromReferenceLine = custom_offset
+
                 cls.recreate_wall(element, wall)

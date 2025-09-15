@@ -241,4 +241,5 @@ class BIMObjectMaterialProperties(PropertyGroup):
         parameterized_profile_classes: str
         use_custom_offset: bool
         custom_offset: float
-        custom_offset_reference: str
+        custom_slab_reference: str
+        custom_wall_reference: str
