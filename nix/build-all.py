@@ -310,8 +310,8 @@ targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
 print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t)))))
 
 # Check that required tools are in PATH
-
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake"]:
+yacc = "yacc"  # Used during swig building process, installed with `bison`.
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc]:
     if which(cmd) is None:
         raise ValueError(f"Required tool '{cmd}' not installed or not added to PATH")
 
