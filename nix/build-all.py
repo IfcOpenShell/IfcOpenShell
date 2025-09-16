@@ -790,6 +790,8 @@ if USE_OCCT and "occ" in targets:
             f"-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}",
             f"-DBUILD_MODULE_Draw=0",
             f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
+            # Disable xlib explicitly, as it tries to use it on Desktop Ubuntu, adding unnecessary dependency.
+            f"-DUSE_XLIB=OFF",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
         ],
         download_url="https://github.com/Open-Cascade-SAS/OCCT",
