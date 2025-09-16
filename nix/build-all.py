@@ -126,6 +126,7 @@ OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.86.0"
 PCRE_VERSION = "8.41"
+PCRE2_VERSION = "10.32"
 LIBXML2_VERSION = "2.13.8"
 SWIG_VERSION = "4.1.0"
 OPENCOLLADA_VERSION = "v1.6.68"
@@ -256,12 +257,13 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "OpenCOLLADA": ("libxml2", "pcre"),
     "IfcGeomServer": ("IfcGeom",),
     "IfcOpenShell-Python": ("python", "swig", "IfcGeom"),
-    "swig": ("pcre",),
+    "swig": ("pcre2",),
     "boost": (),
     "libxml2": (),
     "python": (),
     "occ": ("freetype",),
     "pcre": (),
+    "pcre2": (),
     "json": (),
     "hdf5": (),
     "cgal": (),
@@ -730,13 +732,22 @@ if "pcre" in targets:
         download_name=f"pcre-{PCRE_VERSION}.tar.bz2",
     )
 
+if "pcre2" in targets:
+    build_dependency(
+        name=f"pcre2-{PCRE2_VERSION}",
+        mode="autoconf",
+        build_tool_args=[DISABLE_FLAG],
+        download_url=f"https://downloads.sourceforge.net/project/pcre/pcre2/{PCRE2_VERSION}/",
+        download_name=f"pcre2-{PCRE2_VERSION}.tar.bz2",
+    )
+
 # An issue exists with swig-1.3 and python >= 3.2
 # Therefore, build a recent copy from source
 if "swig" in targets:
     build_dependency(
         name="swig",
         mode="autoconf",
-        build_tool_args=["--disable-ccache", f"--with-pcre-prefix={DEPS_DIR}/install/pcre-{PCRE_VERSION}"],
+        build_tool_args=["--disable-ccache", f"--with-pcre2-prefix={DEPS_DIR}/install/pcre2-{PCRE2_VERSION}"],
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
         download_tool=download_tool_git,
