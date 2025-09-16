@@ -740,7 +740,7 @@ if "swig" in targets:
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
         download_tool=download_tool_git,
-        revision=f"rel-{SWIG_VERSION}",
+        revision=f"v{SWIG_VERSION}",
     )
 
 if "freetype" in targets:
