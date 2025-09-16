@@ -499,3 +499,9 @@ class Unit(bonsai.core.tool.Unit):
         elif ifc_class == "IfcMonetaryUnit":
             return "COPY_ID"
         return "MOD_MESHDEFORM"
+
+    @classmethod
+    def add_mass_and_time_units(cls) -> bool:
+        """Return True if the user wants to add mass and time units, False otherwise."""
+        bim_props = tool.Blender.get_bim_props()
+        return getattr(bim_props, "add_mass_time_units", False)

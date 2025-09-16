@@ -357,14 +357,19 @@ class BIM_PT_new_project_wizard(Panel):
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
         row = self.layout.row()
-        row.prop(props, "mass_unit", text="Mass Unit")
-        row = self.layout.row()
-        row.prop(props, "time_unit", text="Time Unit")
         prop_with_search(self.layout, pprops, "template_file", text="Template")
-
+        self.layout.use_property_split = False
+        row = self.layout.row()
+        label = "Add Mass and Time Units" if not props.add_mass_time_units else "Remove Mass and Time Units"
+        row.prop(props, "add_mass_time_units", toggle=True, text=label)
+        self.layout.use_property_split = True
+        if props.add_mass_time_units:
+            row = self.layout.row()
+            row.prop(props, "mass_unit", text="Mass Unit")
+            row = self.layout.row()
+            row.prop(props, "time_unit", text="Time Unit")
         row = self.layout.row()
         row.operator("bim.create_project")
-
 
 class BIM_PT_project_library(Panel):
     bl_label = "Project Library"
