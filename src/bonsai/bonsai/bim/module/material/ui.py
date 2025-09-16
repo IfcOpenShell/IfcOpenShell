@@ -406,6 +406,7 @@ class BIM_PT_object_material(Panel):
             row = box.row(align=True)
             row.prop(self.props, "custom_offset", text="Custom Offset")
 
+
 class BIM_UL_materials(UIList):
     def draw_item(
         self,
