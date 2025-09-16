@@ -684,15 +684,24 @@ if "hdf5" in targets:
     for f in compiler_flags:
         os.environ[f] = re.sub(r"-flto(=\w+)?", "", os.environ[f])
 
+    HDF5_UNDERSCORE = "_".join(HDF5_VERSION.split("."))
     HDF5_MAJOR = ".".join(HDF5_VERSION.split(".")[:-1])
+    dependency_name = f"hdf5-{HDF5_VERSION}"
     build_dependency(
-        name=f"hdf5-{HDF5_VERSION}",
-        mode="ctest",
-        build_tool_args=[],
-        download_url=f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{HDF5_MAJOR}/hdf5-{HDF5_VERSION}/src/",
-        download_name=f"CMake-hdf5-{HDF5_VERSION}.tar.gz",
-        ctest_result=f"HDF5-{HDF5_VERSION}-{platform.system()}",
-        ctest_result_path=f"HDF_Group/HDF5/{HDF5_VERSION}",
+        name=dependency_name,
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+            "-DHDF5_ENABLE_Z_LIB_SUPPORT=OFF",
+            "-DBUILD_TESTING=OFF",
+            "-DHDF5_BUILD_TOOLS=OFF",
+            "-DHDF5_BUILD_EXAMPLES=OFF",
+            "-DBUILD_SHARED_LIBS=OFF",
+            "-DHDF5_BUILD_UTILS=OFF",
+            "-DHDF5_BUILD_CPP_LIB=ON",
+        ],
+        download_url=f"https://github.com/HDFGroup/hdf5/archive/refs/tags/",
+        download_name=f"hdf5-{HDF5_UNDERSCORE}.tar.gz",
     )
 
     for f, o in zip(compiler_flags, orig):
