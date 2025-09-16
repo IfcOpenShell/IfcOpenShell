@@ -837,6 +837,10 @@ if USE_OCCT and "occ" in targets:
             f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             # Disable xlib explicitly, as it tries to use it on Desktop Ubuntu, adding unnecessary dependency.
             f"-DUSE_XLIB=OFF",
+            # Avoid building 3D Viewer.
+            f"-DUSE_FREETYPE=OFF",
+            f"-DUSE_OPENGL=OFF",
+            f"-DUSE_GLES2=OFF",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
         ],
         download_url="https://github.com/Open-Cascade-SAS/OCCT",
