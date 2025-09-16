@@ -1144,12 +1144,7 @@ if "libxml2" in targets:
     )
 
 if "hdf5" in targets:
-    cmake_args.extend(
-        [
-            f"-DHDF5_INCLUDE_DIR={DEPS_DIR}/install/hdf5-{HDF5_VERSION}/include",
-            f"-DHDF5_LIBRARY_DIR={DEPS_DIR}/install/hdf5-{HDF5_VERSION}/lib",
-        ]
-    )
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}")
 else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
 
