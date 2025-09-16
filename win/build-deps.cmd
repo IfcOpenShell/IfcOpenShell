@@ -177,8 +177,8 @@ echo.
 cd "%DEPS_DIR%"
 
 :: VERSIONS
-set HDF5_VERSION=1.12.1
-set HDF5_VERSION_MAJOR=1.12
+:: Don't use HDF5 1.13.0, because it has a broken cmake package path.
+set HDF5_VERSION=1_13_1
 set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 set PYTHON_VERSION=%PYTHON_VERSION%
@@ -323,12 +323,13 @@ IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_NAME%" (
 
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
 call :DownloadFile ^
-    http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/%HDF5_CMAKE_ZIP% ^
+    https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-%HDF5_VERSION%.zip ^
     "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\hdf5-%HDF5_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-pushd "%DEPS_DIR%\hdf5-%HDF5_VERSION%"
+ren "%DEPS_DIR%\hdf5-hdf5-%HDF5_VERSION%" "hdf5-%HDF5_VERSION%"
+pushd "%DEPENDENCY_DIR%"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%HDF5_INSTALL_NAME%" ^
                -DHDF5_ENABLE_Z_LIB_SUPPORT=OFF -DBUILD_TESTING=OFF ^
                -DHDF5_BUILD_TOOLS=OFF -DHDF5_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=OFF -DHDF5_BUILD_UTILS=OFF ^
