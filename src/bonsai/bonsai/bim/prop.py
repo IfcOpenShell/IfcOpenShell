@@ -586,6 +586,11 @@ class BIMProperties(PropertyGroup):
         ],
         name="IFC Volume Unit",
     )
+    add_mass_time_units: bpy.props.BoolProperty(
+        name="Add Mass and Time Units",
+        description="Enable to define mass and time units for the project",
+        default=False
+    )
     mass_unit: EnumProperty(
         items=[
             ("KILOGRAM", "Kilogram", "Kilograms"),
