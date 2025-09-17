@@ -92,7 +92,9 @@ import shutil
 import tarfile
 import multiprocessing
 import platform
+import threading
 import sysconfig
+from datetime import datetime
 
 # @todo temporary for expired mpfr.org certificate on 2023-04-08
 import ssl
@@ -345,22 +347,43 @@ def run(cmds: "Sequence[str]", cwd: "Union[str, None]" = None, can_fail: bool = 
     with leading and trailing whitespace removed.
     """
 
+    def timestamp() -> str:
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]  # same format as logging
+
+    def stream_reader(pipe, collector: list[str], log_file) -> None:
+        for line in iter(pipe.readline, ""):
+            log_file.write(f"{timestamp()} {line}")
+            log_file.flush()
+            collector.append(line)
+        pipe.close()
+
     logger.debug(f"running command {' '.join(cmds)} in directory {cwd}")
-    log_file_handle = open(LOG_FILE, "a")
-    proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE, encoding="utf-8")
-    stdout, stderr = proc.communicate()
-    log_file_handle.write(stdout)
-    log_file_handle.write(stderr)
-    log_file_handle.close()
+    stdout: list[str] = []
+    stderr: list[str] = []
+
+    # Ensure both live logs available in the log file
+    # and the putput.
+    with open(LOG_FILE, "a", encoding="utf-8") as log_file_handle:
+        proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE, encoding="utf-8")
+        assert proc.stdout and proc.stderr
+
+        t_out = threading.Thread(target=stream_reader, args=(proc.stdout, stdout, log_file_handle))
+        t_err = threading.Thread(target=stream_reader, args=(proc.stderr, stderr, log_file_handle))
+        t_out.start()
+        t_err.start()
+        t_out.join()
+        t_err.join()
+        proc.wait()
+
     logger.debug(f"command returned {proc.returncode}")
 
     if proc.returncode != 0 and not can_fail:
         print("-" * 70)
-        print(stderr)
+        print("".join(stderr))
         print("-" * 70)
         raise RuntimeError(f"Command `{' '.join(cmds)}` returned exit code {proc.returncode}")
 
-    return stdout.strip()
+    return "".join(stdout).strip()
 
 
 if platform.system() == "Darwin":
