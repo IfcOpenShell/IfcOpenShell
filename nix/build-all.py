@@ -63,14 +63,19 @@ Used environment variables:
 #                                                                             #
 #   for python37 to install correctly additionally:                           #
 #     * libffi(-dev[el])                                                      #
+#   for Python build we also needs ssl                                        #
+#   (since we do `pip install numpy` at the end)                              #
+#     * libssl-dev                                                            #
 #                                                                             #
 #     on debian 7.8 these can be obtained with:                               #
 #          $ apt-get install git gcc g++ autoconf bison bzip2 cmake           #
 #            mesa-common-dev libffi-dev libfontconfig1-dev                    #
+#            libssl-dev                                                       #
 #                                                                             #
 #     on ubuntu 14.04:                                                        #
 #          $ apt-get install git gcc g++ autoconf bison make cmake            #
 #            mesa-common-dev libffi-dev libfontconfig1-dev                    #
+#            libssl-dev                                                       #
 #                                                                             #
 #     on OS X El Capitan with homebrew:                                       #
 #          $ brew install git bison autoconf automake libffi cmake            #
