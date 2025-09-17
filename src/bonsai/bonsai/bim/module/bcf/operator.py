@@ -1215,7 +1215,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         assert blender_topic
         topic = bcfxml.topics[blender_topic.name]
         if self.viewpoint_guid:
-            viewpoint_guid = self.viewpoint_guid
+            viewpoint_guid = self.viewpoint_guid + ".bcfv"
             if viewpoint_guid not in topic.viewpoints:
                 self.report({"ERROR"}, f"No such viewpoint in the active topic: '{viewpoint_guid}'.")
                 return {"CANCELLED"}
