@@ -1286,9 +1286,13 @@ if "IfcOpenShell-Python" in targets:
         if python_executable:
             run([python_executable, "-m", "ensurepip"])
             run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
-            module_dir = os.path.dirname(
-                run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"])
+            module_dir = run(
+                [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]
             )
+            # Use just the last line is used,
+            # because output might contain warning like `No stream support: No module named 'lark'`.
+            module_dir = module_dir.strip().splitlines()[-1]
+            module_dir = os.path.dirname(module_dir)
 
             if platform.system() != "Darwin":
                 if BUILD_CFG == "Release":
