@@ -746,27 +746,24 @@ if(HDF5_SUPPORT)
         endif()
     endif()
 
-    if(NOT HDF5_LIBRARIES)
-        if(NOT WIN32 AND NOT APPLE)
-            # debian default
-            set(HDF5_LIBRARIES
-                /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
-                /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
-                /usr/lib/x86_64-linux-gnu/libsz.so
-                /usr/lib/x86_64-linux-gnu/libaec.so
-                z dl
-            )
+    if(NOT HDF5_INCLUDE_DIR)
+        # First try to find it as a config.
+        find_package(HDF5 CONFIG)
+        if(HDF5_DIR)
+            message(STATUS "HDF5: found config at '${HDF5_DIR}'.")
+            set(HDF5_LIBRARIES hdf5_cpp-static)
         else()
-            find_package(HDF5 CONFIG)
-            if(NOT HDF5_DIR)
+            # If it failed, still try to find as a module.
+            # E.g. on Ubuntu `libhdf5-dev` doesn't provie hdf5-config.cmake.
+            # Will automatically fill HDF5_LIBRARIES and HDF5_INCLUDE_DIR.
+            find_package(HDF5)
+            if(NOT HDF5_INCLUDE_DIR)
                 message(
                     FATAL_ERROR
                     "HDF5_LIBRARY_DIR is not provided (current value: '${HDF5_LIBRARY_DIR}'). "
-                    "Also could not find HDF5 package."
+                    "Also could not find HDF5 package (neither module or config)."
                 )
             endif()
-            message(STATUS "Found HDF5 package: '${HDF5_DIR}'.")
-            set(HDF5_LIBRARIES hdf5_cpp-static)
         endif()
     endif()
 
