@@ -131,7 +131,7 @@ USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
 PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.0"]
-JSON_VERSION = "v3.6.1"
+JSON_VERSION = "3.10.0"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.86.0"
@@ -743,12 +743,17 @@ if "hdf5" in targets:
 
 
 if "json" in targets:
-    json_url = f"https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp"
-    json_install_path = f"{DEPS_DIR}/install/json/nlohmann/json.hpp"
-    if not os.path.exists(os.path.dirname(json_install_path)):
-        os.makedirs(os.path.dirname(json_install_path))
-    if not os.path.exists(json_install_path):
-        urlretrieve(json_url, json_install_path)
+    dependency_name = f"json-{JSON_VERSION}"
+    build_dependency(
+        name=dependency_name,
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+            "-DJSON_BuildTests=OFF",
+        ],
+        download_url=f"https://github.com/nlohmann/json/releases/download/v{JSON_VERSION}",
+        download_name="json.tar.xz",
+    )
 
 if "eigen" in targets:
     dependency_name = f"eigen-install-{EIGEN_VERSION}"
@@ -1112,7 +1117,6 @@ cmake_args = [
     "-DBUILD_EXAMPLES=OFF",
     "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
     "-DGLTF_SUPPORT=ON",
-    f"-DJSON_INCLUDE_DIR={DEPS_DIR}/install/json",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DADD_COMMIT_SHA=" + ("On" if ADD_COMMIT_SHA else "Off"),
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
@@ -1121,6 +1125,7 @@ cmake_args = [
 cmake_args_prefix_path: list[str] = [
     f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
     f"{DEPS_DIR}/install/eigen-install-{EIGEN_VERSION}",
+    f"{DEPS_DIR}/install/json-{JSON_VERSION}",
 ]
 
 
