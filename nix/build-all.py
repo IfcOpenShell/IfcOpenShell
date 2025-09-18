@@ -1149,21 +1149,15 @@ elif "occ" in targets:
     cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
 
 if "OpenCOLLADA" in targets:
-    cmake_args.extend(
-        [
-            f"-DOPENCOLLADA_INCLUDE_DIR={DEPS_DIR}/install/OpenCOLLADA/include/opencollada",
-            f"-DOPENCOLLADA_LIBRARY_DIR={DEPS_DIR}/install/OpenCOLLADA/lib/opencollada",
-        ]
-    )
+    # pcre is a dependency of OpenCOLLADA, but since we `find_package`,
+    # we don't need to add it explicitly here as cmake will find it from the config.
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/OpenCOLLADA")
 else:
     cmake_args.extend(
         [
             f"-DCOLLADA_SUPPORT=Off",
         ]
     )
-
-if "pcre" in targets:
-    cmake_args.append(f"-DPCRE_LIBRARY_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib")
 
 if "libxml2" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}")
