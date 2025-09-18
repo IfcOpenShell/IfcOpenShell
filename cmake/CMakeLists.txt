@@ -465,12 +465,27 @@ if(BUILD_IFCGEOM)
             "Using provided OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
             "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
         )
+        # Parse OCC_VERSION_STRING.
+        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
+            REGEX "#define OCC_VERSION_MAJOR.*"
+        )
+        string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
+        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
+            REGEX "#define OCC_VERSION_MINOR.*"
+        )
+        string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
+        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
+            REGEX "#define OCC_VERSION_MAINTENANCE.*"
+        )
+        string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
+        set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
     elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
         # OCE is not supported for find_package, because it's using a different name (`oce`)
         # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
         find_package(OpenCASCADE CONFIG REQUIRED)
         set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
         set(OCC_LIBRARY_DIR ${OpenCASCADE_LIBRARY_DIR})
+        set(OCC_VERSION_STRING ${OpenCASCADE_VERSION})
         message(
             STATUS
             "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
@@ -487,21 +502,6 @@ if(BUILD_IFCGEOM)
             "and you need to provide OCE_INCLUDE_DIR and OCE_LIBRARY_DIR directly."
         )
     endif()
-
-    # Parse OCC_VERSION_STRING.
-    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
-        REGEX "#define OCC_VERSION_MAJOR.*"
-    )
-    string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
-    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
-        REGEX "#define OCC_VERSION_MINOR.*"
-    )
-    string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
-    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
-        REGEX "#define OCC_VERSION_MAINTENANCE.*"
-    )
-    string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
-    set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
 
     set(
         OPENCASCADE_LIBRARY_NAMES
