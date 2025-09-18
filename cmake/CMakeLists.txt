@@ -267,13 +267,13 @@ if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
             message(STATUS "Unable to find nlohmann_json package, trying to find it as a header-only library.")
         endif()
     endif()
-    
+
     if(NOT nlohmann_json_DIR)
         clear_wasm_sysroot()
         find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
         restore_wasm_sysroot()
         set(JSON_INCLUDE_DIR ${json_header_path})
-        
+
         if(json_header_path)
             message(STATUS "JSON for Modern C++ header file found in '${JSON_INCLUDE_DIR}'.")
         else()
