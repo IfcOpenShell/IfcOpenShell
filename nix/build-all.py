@@ -1111,8 +1111,10 @@ cmake_args = [
 cmake_args_prefix_path: list[str] = []
 
 
-def get_cmake_args_prefix_path() -> list[str]:
-    prefix_path = ";".join(cmake_args_prefix_path)
+def get_cmake_args_prefix_path(additional_paths: Sequence[str] = ()) -> list[str]:
+    args_prefix_path = cmake_args_prefix_path.copy()
+    args_prefix_path.extend(additional_paths)
+    prefix_path = ";".join(args_prefix_path)
     return [f"-DCMAKE_PREFIX_PATH={prefix_path}"]
 
 
@@ -1248,14 +1250,14 @@ if "IfcOpenShell-Python" in targets:
 
         os.environ["PYTHON_LIBRARY_BASENAME"] = os.path.basename(python_library)
 
-        swig_when_built = []
+        swig_prefix_paths: list[str] = []
         if "swig" in targets:
-            swig_when_built.append(f"-DSWIG_EXECUTABLE={DEPS_DIR}/install/swig/bin/swig")
+            swig_prefix_paths.append(f"{DEPS_DIR}/install/swig")
 
         run_cmake(
             "",
             cmake_args
-            + get_cmake_args_prefix_path()
+            + get_cmake_args_prefix_path(swig_prefix_paths)
             + [
                 "-DPYTHON_LIBRARY=" + python_library,
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
@@ -1272,7 +1274,6 @@ if "IfcOpenShell-Python" in targets:
                 f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
                 "-DUSERSPACE_PYTHON_PREFIX="
                 + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
-                *swig_when_built,
             ],
             cmake_dir=CMAKE_DIR,
             cwd=python_dir,
