@@ -484,7 +484,11 @@ if(BUILD_IFCGEOM)
         # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
         find_package(OpenCASCADE CONFIG REQUIRED)
         set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
-        set(OCC_LIBRARY_DIR ${OpenCASCADE_LIBRARY_DIR})
+        # Do not use OpenCASCADE_LIBRARY_DIR for OCC_LIBRARY_DIR - check target property explicitly.
+        # On Windows there is a case with OpenCASCADE_LIBRARY_DIR points to `lib` folder,
+        # while TKernel is actually in `libi`.
+        get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
+        get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
         set(OCC_VERSION_STRING ${OpenCASCADE_VERSION})
         message(
             STATUS
@@ -525,7 +529,10 @@ if(BUILD_IFCGEOM)
     if(libTKernel)
         message(STATUS "Required Open Cascade Library files found")
     else()
-        message(FATAL_ERROR "Unable to find Open Cascade library files, aborting")
+        message(
+            FATAL_ERROR
+            "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting"
+        )
     endif()
 
     # Use the found libTKernel as a template for all other OCC libraries
