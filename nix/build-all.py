@@ -135,6 +135,7 @@ JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.86.0"
+EIGEN_VERSION = "3.3.9"
 PCRE_VERSION = "8.41"
 PCRE2_VERSION = "10.32"
 LIBXML2_VERSION = "2.13.8"
@@ -750,8 +751,16 @@ if "json" in targets:
         urlretrieve(json_url, json_install_path)
 
 if "eigen" in targets:
-    git_clone_or_pull_repository(
-        "https://gitlab.com/libeigen/eigen.git", f"{DEPS_DIR}/install/eigen-3.3.9", revision="3.3.9"
+    dependency_name = f"eigen-install-{EIGEN_VERSION}"
+    build_dependency(
+        name=f"{dependency_name}",
+        mode="cmake",
+        # We add '-install-' in the middle, so it won't be confused with git repo we used previously.
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+        ],
+        download_url=f"https://gitlab.com/libeigen/eigen/-/archive/{EIGEN_VERSION}/",
+        download_name=f"eigen-{EIGEN_VERSION}.tar.gz",
     )
 
 if "pcre" in targets:
@@ -1104,7 +1113,6 @@ cmake_args = [
     "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
     "-DGLTF_SUPPORT=ON",
     f"-DJSON_INCLUDE_DIR={DEPS_DIR}/install/json",
-    f"-DEIGEN_DIR={DEPS_DIR}/install/eigen-3.3.9",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DADD_COMMIT_SHA=" + ("On" if ADD_COMMIT_SHA else "Off"),
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
@@ -1112,6 +1120,7 @@ cmake_args = [
 """Default CMake args to use for all CMake configs."""
 cmake_args_prefix_path: list[str] = [
     f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
+    f"{DEPS_DIR}/install/eigen-install-{EIGEN_VERSION}",
 ]
 
 
