@@ -1142,11 +1142,10 @@ if "cgal" in targets:
     )
 
 if "occ" in targets and USE_OCCT:
-    occ_include_dir = f"{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade"
-    occ_library_dir = f"{DEPS_DIR}/install/occt-{OCCT_VERSION}/lib"
-    cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
 
 elif "occ" in targets:
+    # We don't support find_package for OCE.
     occ_include_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce"
     occ_library_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
     cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
