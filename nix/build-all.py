@@ -1102,7 +1102,6 @@ cmake_args = [
     "-DUSE_MMAP=OFF",
     "-DBUILD_EXAMPLES=OFF",
     "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
-    f"-DBOOST_ROOT={DEPS_DIR}/install/boost-{BOOST_VERSION}",
     "-DGLTF_SUPPORT=ON",
     f"-DJSON_INCLUDE_DIR={DEPS_DIR}/install/json",
     f"-DEIGEN_DIR={DEPS_DIR}/install/eigen-3.3.9",
@@ -1111,7 +1110,9 @@ cmake_args = [
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
 ]
 """Default CMake args to use for all CMake configs."""
-cmake_args_prefix_path: list[str] = []
+cmake_args_prefix_path: list[str] = [
+    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
+]
 
 
 def get_cmake_args_prefix_path(additional_paths: Sequence[str] = ()) -> list[str]:
