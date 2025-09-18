@@ -863,7 +863,9 @@ endif(MSVC)
 # Ensure other dependencies are provided.
 if(NOT EXISTS "${EIGEN_DIR}")
     find_package(Eigen3 CONFIG)
-    if(NOT Eigen3_DIR)
+    if(Eigen3_DIR)
+        message(STATUS "Eigen3: found config at '${Eigen3_DIR}'.")
+    else()
         message(
             FATAL_ERROR
             "EIGEN_DIR is not provided or provided folder doesn't exist (current value: '${EIGEN_DIR}'). "
