@@ -429,37 +429,12 @@ if(BUILD_IFCGEOM)
 
     # Open CASCADE
     if(WITH_OPENCASCADE)
-
-    # Fallback for missing OCC_INCLUDE_DIR.
-    if(NOT OCC_INCLUDE_DIR)
-	clear_wasm_sysroot()
-        find_path(OCC_INCLUDE_DIR Standard_Version.hxx
-            PATHS
-                /usr/include/occt
-                /usr/include/oce
-                /usr/include/opencascade
-        )
-	restore_wasm_sysroot()
-
-        if(OCC_INCLUDE_DIR)
-            message(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-        endif()
-    else()
+    if(OCC_INCLUDE_DIR)
         set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
         message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
     endif()
 
-    if("${OCC_LIBRARY_DIR}" STREQUAL "")
-        find_library(OCC_LIBRARY TKernel
-            PATHS
-                /usr/lib
-        )
-
-        if(OCC_LIBRARY)
-            GET_FILENAME_COMPONENT(OCC_LIBRARY_DIR ${OCC_LIBRARY} PATH)
-            message(STATUS "Found Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
-        endif()
-    else()
+    if(OCC_LIBRARY_DIR)
         set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
         message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
     endif()
@@ -468,14 +443,15 @@ if(BUILD_IFCGEOM)
     if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
         message(
             STATUS
-            "Using provided OCCT_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
+            "Using provided OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
             "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
         )
     elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
+        # OCE is not supported for find_package, because it's using a different name (`oce`)
+        # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
         find_package(OpenCASCADE CONFIG REQUIRED)
-        get_target_property(OCC_INCLUDE_DIR TKernel INTERFACE_INCLUDE_DIRECTORIES)
-        get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
-        get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
+        set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
+        set(OCC_LIBRARY_DIR ${OpenCASCADE_LIBRARY_DIR})
         message(
             STATUS
             "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
@@ -487,7 +463,9 @@ if(BUILD_IFCGEOM)
             FATAL_ERROR
             "Couldn't find Open CASCADE installation. "
             "Either both OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}') "
-            "must be specified or OpenCASCADE package should be discoverable."
+            "must be specified or OpenCASCADE package should be discoverable. "
+            "If you're using OCE, then providing a package is not available "
+            "and you need to provide OCE_INCLUDE_DIR and OCE_LIBRARY_DIR directly."
         )
     endif()
 
