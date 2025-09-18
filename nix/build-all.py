@@ -1166,12 +1166,7 @@ if "pcre" in targets:
     cmake_args.append(f"-DPCRE_LIBRARY_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib")
 
 if "libxml2" in targets:
-    cmake_args.extend(
-        [
-            f"-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
-            f"-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
-        ]
-    )
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}")
 
 if "hdf5" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}")
