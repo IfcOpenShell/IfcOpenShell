@@ -229,8 +229,16 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 endmacro()
 
 if(WITH_CGAL)
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT EXISTS "${CGAL_INCLUDE_DIR}")
-        message(FATAL_ERROR "CGAL_INCLUDE_DIR ('${CGAL_INCLUDE_DIR}') is not provided or doesn't exist.")
+    if(NOT CGAL_INCLUDE_DIR)
+        find_package(CGAL REQUIRED)
+        if(NOT CGAL_DIR)
+            message(
+                FATAL_ERROR
+                "CGAL_SUPPORT enabled, but CGAL_INCLUDE_DIR wasn't provided and CGAL package couldn't be found."
+            )
+        endif()
+        message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
+        link_libraries(CGAL::CGAL)
     endif()
 
     add_definitions(-DIFOPSH_WITH_CGAL)
@@ -1066,7 +1074,11 @@ else()
 endif()
 
 if(BUILD_IFCGEOM)
-    if(WITH_CGAL)
+    # CGAL::CGAL target already has dependencies resolved.
+    if(WITH_CGAL AND CGAL_DIR)
+        set(CGAL_LIBRARIES CGAL::CGAL)
+        message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
+    elseif(WITH_CGAL AND NOT CGAL_DIR)
 	clear_wasm_sysroot()
         find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
         find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
