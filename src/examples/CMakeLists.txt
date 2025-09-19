@@ -17,6 +17,7 @@
 #                                                                              #
 ################################################################################
 
+if(SCHEMA_VERSIONS MATCHES "2x3")
 ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
 TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
 set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
@@ -33,6 +34,7 @@ TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_L
 set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
 
 endif()
+endif(SCHEMA_VERSIONS MATCHES "2x3")
 
 if(SCHEMA_VERSIONS MATCHES "4x3")
     ADD_EXECUTABLE(IfcAlignment IfcAlignment.cpp)
