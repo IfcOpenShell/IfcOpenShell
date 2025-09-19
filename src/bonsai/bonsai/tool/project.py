@@ -442,9 +442,9 @@ class Project(bonsai.core.tool.Project):
         mvd: str
         author_name: str
         author_email: str
-        organization_name: str
-        organization_email: str
-        authorization: str
+        organisation_name: str
+        organisation_email: str
+        authorisation: str
 
     @classmethod
     def get_header_data(cls) -> HeaderData:
@@ -479,7 +479,7 @@ class Project(bonsai.core.tool.Project):
             mvd=mvd,
             author_name=author_name,
             author_email=author_email,
-            organization_name=organization_name,
-            organization_email=organization_email,
-            authorization=authorization,
+            organisation_name=organization_name,
+            organisation_email=organization_email,
+            authorisation=authorization,
         )
