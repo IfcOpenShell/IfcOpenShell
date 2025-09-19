@@ -28,6 +28,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
@@ -253,7 +254,9 @@ class ProfileImportIFC(bpy.types.Operator):
 class CreateAllShapes(bpy.types.Operator):
     bl_idname = "bim.create_all_shapes"
     bl_label = "Test All Shapes"
-    bl_description = "Look for errors in all the shapes contained in the file"
+    bl_description = (
+        "Look for errors in all the shapes contained in the file.\n\nSee system console for the detailed results."
+    )
     bl_options = {"REGISTER"}
 
     geometry_library: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
@@ -274,19 +277,23 @@ class CreateAllShapes(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         self.file = tool.Ifc.get()
         geometry_library = self.custom_geometry_library or self.geometry_library
         elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
+        print(f"Testing geometry library '{geometry_library}'.")
 
         total = len(elements)
         settings = ifcopenshell.geom.settings()
         settings.set("keep-bounding-boxes", True)
         settings_2d = ifcopenshell.geom.settings()
         settings_2d.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-        failures = []
+        failures: list[ifcopenshell.entity_instance] = []
         excludes = ()  # For the developer to debug with
         for i, element in enumerate(elements, 1):
             if element.GlobalId in excludes:
@@ -305,12 +312,11 @@ class CreateAllShapes(bpy.types.Operator):
                     failures.append(element)
                     print("***** FAILURE *****")
             if shape:
+                assert isinstance(shape, W.TriangulationElement)
+                geom = shape.geometry
                 print(
-                    "Success",
-                    time.time() - start,
-                    len(shape.geometry.verts),
-                    len(shape.geometry.edges),
-                    len(shape.geometry.faces),
+                    f"Success {time.time() - start:.3f}s "
+                    f"V:{(len(geom.verts)//3)} E:{(len(geom.edges)//2)} F:{(len(geom.faces)//3)}"
                 )
         self.report({"INFO"}, f"Failed shapes: {len(failures)}, check the system console for details.")
         for failure in failures:
