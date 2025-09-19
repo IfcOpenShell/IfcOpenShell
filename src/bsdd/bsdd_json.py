@@ -104,22 +104,6 @@ class BsddClass(CaseInsensitiveModel):
         for cr in self.ClassRelations:
             cr._set_parent(self)
 
-    def _apply_code_side_effects(self, code: str) -> None:
-        from bsdd_json.utils import class_utils as cl_utils
-
-        if not code.strip():
-            logging.info("Empty Code is not allowed")
-            raise ValueError("Empty Code is not allowed")
-
-        parent = self._parent_ref() if self._parent_ref else None
-        if parent is not None and code in cl_utils.get_all_class_codes(parent):
-            logging.info(f"Code '{code}' exists already")
-            raise ValueError(f"Code '{code}' exists already")
-
-        # propagate to children
-        for child in cl_utils.get_children(self):
-            child.ParentClassCode = code
-
 
 class BsddClassRelation(CaseInsensitiveModel):
     RelationType: CLASS_RELATION_TYPE
