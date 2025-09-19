@@ -72,7 +72,10 @@ class BIM_PT_debug(Panel):
         row = layout.row()
         row.operator("bim.convert_to_blender")
 
-        row = layout.row()
+        row = layout.row(align=True)
+        op_props = wm.operator_properties_last(bpy.ops.bim.create_all_shapes.idname())
+        row.prop(op_props, "geometry_library", text="")
+        row.prop(op_props, "custom_geometry_library", text="", placeholder="Custom Geometry Library")
         row.operator("bim.create_all_shapes")
 
         row = layout.row()

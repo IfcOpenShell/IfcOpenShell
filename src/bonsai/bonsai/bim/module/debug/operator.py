@@ -258,8 +258,10 @@ class CreateAllShapes(bpy.types.Operator):
 
     geometry_library: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
         name="Geometry Library",
+        description="Geometry library to use for testing shape creation.",
         items=[(i, i, "") for i in get_args(ifcopenshell.geom.GEOMETRY_LIBRARY)],
-        default="opencascade",
+        # By default use the same library as used for importing ifc project.
+        default="hybrid-cgal-simple-opencascade",
     )
     custom_geometry_library: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
         name="Custom Geometry Library",
