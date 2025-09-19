@@ -448,8 +448,7 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def get_header_data(cls) -> HeaderData:
-        if not (ifc_file := tool.Ifc.get()):
-            return {}
+        assert (ifc_file := tool.Ifc.get())
 
         # MVD.
         if isinstance(ifc_file, ifcopenshell.sqlite):
