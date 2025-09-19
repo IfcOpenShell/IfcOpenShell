@@ -40,4 +40,4 @@ Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools]
-py-modules = ["bsdd"]
+py-modules = ["bsdd","bsdd_json","type_hints"]
