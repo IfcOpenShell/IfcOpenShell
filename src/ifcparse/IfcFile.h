@@ -318,9 +318,9 @@ private:
     const IfcSpfHeader& header() const { return _header; }
     IfcSpfHeader& header() { return _header; }
 
-    static std::string createTimestamp() ;
+    static std::string createTimestamp();
 
-    const IfcParse::schema_definition* schema() const { return schema_; }
+    const IfcParse::schema_definition* schema() const;
 
     std::pair<IfcUtil::IfcBaseClass*, double> getUnit(const std::string& unit_type);
 
