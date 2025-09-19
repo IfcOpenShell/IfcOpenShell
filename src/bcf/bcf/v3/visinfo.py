@@ -319,9 +319,7 @@ def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
     ifc_file = element.wrapped_data.file
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
     elem_placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-    elem_placement[0][3] *= unit_scale
-    elem_placement[1][3] *= unit_scale
-    elem_placement[2][3] *= unit_scale
+    elem_placement[:3, 3] *= unit_scale
 
     return mdl.VisualizationInfo(
         guid=str(uuid.uuid4()),
@@ -381,7 +379,7 @@ def build_camera(elem_placement: NDArray[np.float64]) -> mdl.PerspectiveCamera:
 
 
 def build_camera_from_vectors(
-    camera_position: NDArray[np.float64], camera_dir: NDArray[np.float64], camera_up: NDArray[np.float64]
+    camera_position: list[float], camera_dir: list[float], camera_up: list[float]
 ) -> mdl.PerspectiveCamera:
     """
     Return a BCF camera for an IFC element placement matrix.
