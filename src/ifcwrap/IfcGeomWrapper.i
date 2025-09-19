@@ -112,6 +112,14 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	}
 }
 
+%typemap(out) boost::optional<bool> {
+    if ($1) {
+        $result = PyBool_FromLong(*$1 ? 1 : 0);
+    } else {
+        Py_INCREF(Py_None);
+        $result = Py_None;
+    }
+}
 
 %typemap(in) ifcopenshell::geometry::taxonomy::item::ptr {
 	// @this is really annoying, but apparently inheritance
