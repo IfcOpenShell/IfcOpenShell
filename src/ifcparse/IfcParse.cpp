@@ -1404,6 +1404,7 @@ IfcFile::IfcFile(std::istream& stream, int length)
     IfcSpfStream s(stream, length);
     storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
+    good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
     byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
@@ -1418,6 +1419,7 @@ IfcFile::IfcFile(void* data, int length)
     IfcSpfStream s(data, length);
     storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
+    good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
     byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
@@ -1431,6 +1433,7 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s)
 {
     storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_);
+    good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
     byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
@@ -2510,6 +2513,13 @@ std::string IfcFile::createTimestamp() {
     }
 
     return result;
+}
+
+const IfcParse::schema_definition* IfcFile::schema() const {
+    if (schema_ == nullptr) {
+        throw IfcException("No schema loaded");
+	}
+    return schema_;
 }
 
 std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
