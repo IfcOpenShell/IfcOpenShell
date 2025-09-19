@@ -36,7 +36,7 @@ set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
 endif()
 endif(SCHEMA_VERSIONS MATCHES "2x3")
 
-if(SCHEMA_VERSIONS MATCHES "4x3")
+if(SCHEMA_VERSIONS MATCHES "4x3_add2")
     ADD_EXECUTABLE(IfcAlignment IfcAlignment.cpp)
     TARGET_LINK_LIBRARIES(IfcAlignment ${IFCOPENSHELL_LIBRARIES})
     set_target_properties(IfcAlignment PROPERTIES FOLDER Examples)
