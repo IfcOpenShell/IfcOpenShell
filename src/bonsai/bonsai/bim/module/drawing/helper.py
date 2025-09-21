@@ -539,3 +539,26 @@ def add_newline_between_words(text: str, newline_at: int) -> str:
         start = space_index + 1  # Skip the space itself
 
     return "\n".join(result)
+
+
+def get_relative_z(obj: bpy.types.Object, element, abs_z: float) -> float:
+    """Return relative Z of an element, accounting for its spatial container.
+
+    Args:
+        obj: The Blender object representing the element.
+        element: The IFC entity for the object.
+        abs_z: The absolute Z value in world coordinates.
+
+    Returns:
+        Relative Z value if the element is inside a spatial container,
+        otherwise the absolute Z.
+    """
+    z = abs_z
+    if element:
+        spatial_container = ifcopenshell.util.element.get_container(element)
+        if spatial_container:
+            container_obj = tool.Ifc.get_object(spatial_container)
+            if container_obj:
+                spatial_container_z = container_obj.matrix_world.translation.z
+                z = abs_z - spatial_container_z
+    return z

@@ -1205,22 +1205,11 @@ class PlanLevelDecorator(BaseDecorator):
 
             def get_text():
                 abs_z = verts[0].z
-                z = abs_z
-
-                if element:
-                    spatial_container = ifcopenshell.util.element.get_container(element)
-
-                    if spatial_container:
-                        container_obj = tool.Ifc.get_object(spatial_container)
-
-                        if container_obj:
-                            spatial_container_z = container_obj.matrix_world.translation.z
-                            z = abs_z - spatial_container_z
+                z = helper.get_relative_z(obj, element, abs_z)
 
                 rl = self.format_value(context, z)
                 text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
-
             self.draw_dimension_text(
                 context,
                 get_text,
