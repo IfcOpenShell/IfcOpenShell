@@ -1012,7 +1012,9 @@ class SvgWriter:
 
             # TODO: allow metric to be configurable
             def get_text():
-                z = (matrix_world @ points[0].co.xyz).z
+                abs_z = (matrix_world @ points[0].co.xyz).z
+                z = helper.get_relative_z(obj, element, abs_z)
+
                 rl = helper.format_distance(
                     z,
                     precision=self.precision,
