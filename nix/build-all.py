@@ -365,7 +365,7 @@ def run(cmds: "Sequence[str]", cwd: "Union[str, None]" = None, can_fail: bool = 
     def timestamp() -> str:
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]  # same format as logging
 
-    def stream_reader(pipe, collector: list[str], log_file) -> None:
+    def stream_reader(pipe, collector: "list[str]", log_file) -> None:
         for line in iter(pipe.readline, ""):
             log_file.write(f"{timestamp()} {line}")
             log_file.flush()
@@ -1132,14 +1132,14 @@ cmake_args = [
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
 ]
 """Default CMake args to use for all CMake configs."""
-cmake_args_prefix_path: list[str] = [
+cmake_args_prefix_path: "list[str]" = [
     f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
     f"{DEPS_DIR}/install/eigen-install-{EIGEN_VERSION}",
     f"{DEPS_DIR}/install/json-{JSON_VERSION}",
 ]
 
 
-def get_cmake_args_prefix_path(additional_paths: Sequence[str] = ()) -> list[str]:
+def get_cmake_args_prefix_path(additional_paths: "Sequence[str]" = ()) -> "list[str]":
     args_prefix_path = cmake_args_prefix_path.copy()
     args_prefix_path.extend(additional_paths)
     prefix_path = ";".join(args_prefix_path)
