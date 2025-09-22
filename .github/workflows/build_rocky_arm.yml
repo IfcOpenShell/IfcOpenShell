@@ -54,8 +54,20 @@ jobs:
       #     key: ${GITHUB_WORKFLOW}-rockylinux8-x64
 
       - name: Run Build Script
+        shell: bash
         run: |
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release python3 ./nix/build-all.py --diskcleanup
+          set -o pipefail
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release python3 ./nix/build-all.py -v --diskcleanup 2>&1 | tee build.log
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-rocky-arm64
+          path: |
+            build.log
+            build/*/*/logs/*.log
+          retention-days: 30
 
       - name: Pack Dependencies
         run: |
