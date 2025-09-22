@@ -335,10 +335,16 @@ endif(USD_SUPPORT)
 if (WITH_ROCKSDB)
     # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
     # find it's zstd dependency on Windows.
-    set(TEMP CMAKE_FIND_PACKAGE_PREFER_CONFIG)
-    set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
+    # Only do it on Windows, otherwise it might create problems as
+    # findzstd and zstd-config target names do not match.
+    if(WIN32)
+        set(TEMP CMAKE_FIND_PACKAGE_PREFER_CONFIG)
+        set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
+    endif()
     find_package(RocksDB CONFIG REQUIRED)
-    set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
+    if(WIN32)
+        set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
+    endif()
 
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
     add_definitions(-DIFOPSH_WITH_ROCKSDB)
