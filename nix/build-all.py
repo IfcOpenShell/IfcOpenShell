@@ -73,12 +73,12 @@ Used environment variables:
 #     on debian 7.8 these can be obtained with:                               #
 #          $ apt-get install git gcc g++ autoconf bison bzip2 cmake           #
 #            mesa-common-dev libffi-dev libfontconfig1-dev                    #
-#            libssl-dev                                                       #
+#            libssl-dev xz                                                    #
 #                                                                             #
 #     on ubuntu 14.04:                                                        #
 #          $ apt-get install git gcc g++ autoconf bison make cmake            #
 #            mesa-common-dev libffi-dev libfontconfig1-dev                    #
-#            libssl-dev                                                       #
+#            libssl-dev xz-utils                                              #
 #                                                                             #
 #     on OS X El Capitan with homebrew:                                       #
 #          $ brew install git bison autoconf automake libffi cmake            #
@@ -86,7 +86,7 @@ Used environment variables:
 #     on RHEL-related distros:                                                #
 #          $ yum install git gcc gcc-c++ autoconf bison make cmake            #
 #            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
-#            automake patch byacc                                             #
+#            automake patch byacc xz                                          #
 
 """
 
@@ -165,6 +165,7 @@ date = "date"
 curl = "curl"
 wget = "wget"
 strip = "strip"
+xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
 
 explicit_targets = [s for s in sys.argv[1:] if not s.startswith("-")]
 """Targets provided by CLI."""
@@ -327,7 +328,7 @@ print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t
 # Check that required tools are in PATH
 yacc = "yacc"  # Used during swig building process, installed with `bison` on Debian / `byacc` on Red Hat.
 missing_commands: "list[str]" = []
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc]:
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz]:
     if which(cmd) is None:
         missing_commands.append(cmd)
 
