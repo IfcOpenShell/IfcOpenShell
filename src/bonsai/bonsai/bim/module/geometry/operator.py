@@ -1428,7 +1428,12 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             index = pset["Index"]
             annotations = get_assignments(element)
             container = ifcopenshell.util.element.get_container(element)
-            original_data[group][index] = {"Name": pset["Name"], "Aggregate_Index": pset["Aggregate_Index"], "Assignment": annotations, "Container": container}
+            original_data[group][index] = {
+                "Name": pset["Name"],
+                "Aggregate_Index": pset["Aggregate_Index"],
+                "Assignment": annotations,
+                "Container": container,
+            }
 
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
@@ -1479,7 +1484,11 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     properties={"Aggregate_Index": int(original_data[group][index]["Aggregate_Index"])},
                 )
                 bonsai.core.spatial.assign_container(
-                    tool.Ifc, tool.Collector, tool.Spatial, container=original_data[group][index]["Container"], element_obj=obj
+                    tool.Ifc,
+                    tool.Collector,
+                    tool.Spatial,
+                    container=original_data[group][index]["Container"],
+                    element_obj=obj,
                 )
                 for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
                     tool.Collector.assign(tool.Ifc.get_object(part))

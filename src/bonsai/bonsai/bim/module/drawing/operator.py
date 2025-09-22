@@ -1270,9 +1270,9 @@ class CreateDrawing(bpy.types.Operator):
             layer_material_name = layer_material.Name or "null"
             layer_material_name = tool.Drawing.canonicalise_class_name(layer_material_name)
             classes.append(f"layer-material-{layer_material_name}")
-            
+
             # Add material category if available
-            if hasattr(layer_material, 'Category') and layer_material.Category:
+            if hasattr(layer_material, "Category") and layer_material.Category:
                 layer_material_category = tool.Drawing.canonicalise_class_name(layer_material.Category)
                 classes.append(f"layer-material-category-{layer_material_category}")
 

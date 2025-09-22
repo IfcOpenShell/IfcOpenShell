@@ -2216,7 +2216,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 continue
             if (hide := non_ifc_objects_hide.get(obj)) is not None:
                 obj.hide_set(hide)
-                obj.hide_render = hide 
+                obj.hide_render = hide
             else:
                 obj.hide_render = True
 

@@ -404,7 +404,6 @@ class Raycast(bonsai.core.tool.Raycast):
         ):
             snap_threshold = rv3d.window_matrix.to_scale()[1] * -1 / 100
 
-
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
         except:
