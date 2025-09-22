@@ -326,9 +326,13 @@ print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t
 
 # Check that required tools are in PATH
 yacc = "yacc"  # Used during swig building process, installed with `bison` on Debian / `byacc` on Red Hat.
+missing_commands: "list[str]" = []
 for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc]:
     if which(cmd) is None:
-        raise ValueError(f"Required tool '{cmd}' not installed or not added to PATH")
+        missing_commands.append(cmd)
+
+if missing_commands:
+    raise ValueError(f"Required tools not installed or not added to PATH: {', '.join(missing_commands)}")
 
 # identifiers for the download tool (could be less memory consuming as ints, but are more verbose as strings)
 download_tool_default = download_tool_py = "py"
