@@ -86,7 +86,7 @@ Used environment variables:
 #     on RHEL-related distros:                                                #
 #          $ yum install git gcc gcc-c++ autoconf bison make cmake            #
 #            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
-#            automake patch                                                   #
+#            automake patch byacc                                             #
 
 """
 
@@ -325,7 +325,7 @@ targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
 print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t)))))
 
 # Check that required tools are in PATH
-yacc = "yacc"  # Used during swig building process, installed with `bison`.
+yacc = "yacc"  # Used during swig building process, installed with `bison` on Debian / `byacc` on Red Hat.
 for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc]:
     if which(cmd) is None:
         raise ValueError(f"Required tool '{cmd}' not installed or not added to PATH")

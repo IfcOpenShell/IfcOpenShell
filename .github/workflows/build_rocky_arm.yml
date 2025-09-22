@@ -16,7 +16,7 @@ jobs:
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
-                         findutils xz
+                         findutils xz byacc
           python3 -m pip install typing_extensions
           git config --global --add safe.directory '*'
 
