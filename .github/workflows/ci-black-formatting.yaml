@@ -47,6 +47,8 @@ jobs:
         id: ruff
         run: |
           uvx ruff check
+          # It's actually Python 3.6, but ruff only supports 3.7+, but it should do.
+          uvx ruff check nix/build-all.py --target-version py37
         continue-on-error: true
 
       - name: Final check
