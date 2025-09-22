@@ -411,7 +411,6 @@ class BIM_PT_object_material(Panel):
             row.enabled = self.props.use_custom_offset
 
 
-
 class BIM_UL_materials(UIList):
     def draw_item(
         self,

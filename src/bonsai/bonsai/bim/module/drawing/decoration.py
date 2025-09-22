@@ -1210,6 +1210,7 @@ class PlanLevelDecorator(BaseDecorator):
                 rl = self.format_value(context, z)
                 text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
+
             self.draw_dimension_text(
                 context,
                 get_text,
