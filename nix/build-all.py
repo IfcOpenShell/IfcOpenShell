@@ -892,6 +892,10 @@ if "libxml2" in targets:
 if "OpenCOLLADA" in targets:
     patches = ["./patches/opencollada/pr622_and_disable_subdirs.patch"]
 
+    # This patch allows static libraries config on Unix,
+    # because the config is weird and doesn't allow non-shared libraries on Unix.
+    patches.append("./patches/opencollada/allow_static_libraries_config_on_unix.patch")
+
     if "wasm" in flags:
         # This is necessary for the WASM build, because recent versions of
         # clang don't have the tr1:: namespace anymore. However, it breaks
