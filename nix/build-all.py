@@ -266,7 +266,7 @@ cecho(
 
 dependency_tree: "dict[str, tuple[str, ...]]" = {
     "IfcParse": ("boost", "libxml2", "hdf5", "rocksdb"),
-    "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen"),
+    "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen", "OpenCOLLADA"),
     "IfcConvert": ("IfcGeom",),
     "OpenCOLLADA": ("libxml2", "pcre"),
     "IfcGeomServer": ("IfcGeom",),
