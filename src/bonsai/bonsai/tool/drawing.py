@@ -2211,10 +2211,14 @@ class Drawing(bonsai.core.tool.Drawing):
         # Note that render visibility is only set on drawing generation time for speed.
         for obj in bpy.context.view_layer.objects:
             if obj.name in element_obj_names:
-                obj.hide_set(False)  # Show the object
+                obj.hide_set(False)
+                obj.hide_render = False
                 continue
             if (hide := non_ifc_objects_hide.get(obj)) is not None:
                 obj.hide_set(hide)
+                obj.hide_render = hide 
+            else:
+                obj.hide_render = True
 
         cls.import_camera_props(drawing, camera.data)
 
