@@ -1499,6 +1499,33 @@ IfcParse::InstanceStreamer::InstanceStreamer(const std::string& fn)
     }
 }
 
+IfcParse::InstanceStreamer::InstanceStreamer(void* data, int length)
+    : stream_(new IfcSpfStream(data, length))
+    , lexer_(new IfcSpfLexer(stream_))
+    , token_stream_(3, Token{})
+    , schema_(nullptr)
+    , ifcroot_type_(nullptr)
+    , progress_(0)
+{
+    init_locale();
+
+    good_ = file_open_status::NO_HEADER;
+    if (*stream_) {
+        header_ = new IfcParse::IfcSpfHeader(lexer_);
+        if (header_->tryRead() && header_->file_schema()->schema_identifiers().size() == 1) {
+            try {
+                schema_ = IfcParse::schema_by_name(header_->file_schema()->schema_identifiers().front());
+                good_ = file_open_status::SUCCESS;
+            } catch (const IfcParse::IfcException&) {
+            }
+        }
+        storage_.file = nullptr;
+        storage_.schema = schema_;
+        storage_.tokens = lexer_;
+        storage_.references_to_resolve = &references_to_resolve_;
+    }
+}
+
 IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer)
     : stream_(nullptr)
     , lexer_(lexer)

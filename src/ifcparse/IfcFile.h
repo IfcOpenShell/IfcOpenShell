@@ -130,6 +130,8 @@ public:
 
     InstanceStreamer(const std::string& fn);
 
+    InstanceStreamer(void* data, int length);
+
     InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
 
     ~InstanceStreamer() {

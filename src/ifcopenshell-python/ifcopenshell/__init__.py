@@ -301,12 +301,28 @@ def stream2(path: Union[Path, str]):
     as a dictionary.
 
     Args:
-        path (Union[Path, str]): _description_
+        path (Union[Path, str]): input file path
 
     Yields:
-        _type_: _description_
+        dict: entity instance dictionaries
     """
     streamer = ifcopenshell_wrapper.InstanceStreamer(str(path))
+    while streamer:
+        if inst := streamer.read_instance_py():
+            yield inst
+
+
+def stream2_from_string(data: str):
+    """Streams the content of a file path from string, yielding each instance
+    as a dictionary.
+
+    Args:
+        data (str): input data
+
+    Yields:
+        dict: entity instance dictionaries
+    """
+    streamer = ifcopenshell_wrapper.stream_from_string(data)
     while streamer:
         if inst := streamer.read_instance_py():
             yield inst

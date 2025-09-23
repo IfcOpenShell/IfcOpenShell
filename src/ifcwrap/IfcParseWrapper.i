@@ -708,6 +708,7 @@ private:
 %newobject open;
 %newobject read;
 %newobject parse_ifcxml;
+%newobject stream_from_string;
 
 %inline %{
 	IfcParse::IfcFile* open(const std::string& fn, bool readonly=false) {
@@ -726,6 +727,12 @@ private:
 		f = new IfcParse::IfcFile((void *)copiedData, data.length());
 		Py_END_ALLOW_THREADS;
 		return f;
+	}
+
+	IfcParse::InstanceStreamer* stream_from_string(const std::string& data) {
+		char* copiedData = new char[data.length()];
+		memcpy(copiedData, data.c_str(), data.length());
+		return new IfcParse::InstanceStreamer((void *)copiedData, data.length());
 	}
 
 	const char* version() {
