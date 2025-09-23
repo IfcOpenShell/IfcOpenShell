@@ -72,6 +72,8 @@ IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file)
     file_name_(nullptr),
     file_schema_(nullptr)
 {
+    Header_section_schema::get_schema();
+
     if (file == nullptr) {
         // overwritten later in IfcFile::setDefaultHeaderValues() when we know the schema identifier
         file_description_ = new Header_section_schema::file_description({}, "");
@@ -101,6 +103,8 @@ IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file)
 
 IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcSpfLexer* lexer)
 {
+    Header_section_schema::get_schema();
+
 	storage_ = new impl::in_memory_file_storage;
 	storage_->tokens = lexer;
     file_ = nullptr;
@@ -284,5 +288,3 @@ Header_section_schema::file_schema* IfcParse::IfcSpfHeader::file_schema() {
 
     return file_schema_; 
 }
-
-static auto& _ = Header_section_schema::get_schema();
