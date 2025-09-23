@@ -913,6 +913,8 @@ if "OpenCOLLADA" in targets:
             f"-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}",
             f"-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}",
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/",
+            # OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4.
+            f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
         ],
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
