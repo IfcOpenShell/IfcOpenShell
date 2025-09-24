@@ -539,19 +539,19 @@ class PolylineDecorator:
                 screen_coords[f"distance_{label_index}"] = (dim_text_coords, text)
                 label_index += 1
 
-        if self.measure_type != "SINGLE":
+        # --- Show angles for polyline/poly area ---
+        if self.measure_type != "SINGLE" and len(self.polyline_points) > 2:
             for i in range(len(self.polyline_points)):
-                if i ==1:
+                if i == 0 or i == len(self.polyline_points) - 1:
                     continue
-
-                angle_text_pos = Vector(self.polyline_points[i - 1].position)
+                angle_text_pos = Vector(self.polyline_points[i].position)
                 angle_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, angle_text_pos)
-
                 if angle_text_coords:
-                    text = "a: " + self.polyline_points[i].angle
-                    screen_coords[f"angle_{label_index}"] = (angle_text_coords, text)
-                    label_index += 1
+                    text = "a: " + self.polyline_points[i+1].angle
+                    screen_coords[f"angle_{i}"] = (angle_text_coords, text)
 
+
+        # --- Show XYZ axis values for single measurement ---
         if self.measure_type == "SINGLE":
             axis_line, axis_line_center = self.calculate_measurement_x_y_and_z(context)
             if axis_line and axis_line_center:
@@ -567,33 +567,29 @@ class PolylineDecorator:
                         text = f"{prefix}: {formatted_value}"
                         screen_coords[f"xyz_{i}"] = (dim_text_coords, text)
 
-        # Area and Length text
+        #Area and Length text
         polyline_verts = [Vector((p.x, p.y, p.z)) for p in self.polyline_points]
 
         # Area
         if self.measure_type == "POLY_AREA" and self.polyline_data.area:
-            if len(polyline_verts) < 3:
-                return
-            center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
-            if polyline_verts[0] == polyline_verts[-1]:
-                center = sum(polyline_verts[:-1], Vector()) / len(
-                    polyline_verts[:-1]
-                )  # Doesn't use the last point if is a closed polyline
-            area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
-            if area_text_coords:
-                value = self.polyline_data.area
-                text = f"area: {value}"
-                screen_coords["area"] = (area_text_coords, text)
+            if len(polyline_verts) >= 3:
+                center = sum(polyline_verts, Vector()) / len(polyline_verts)
+                if polyline_verts[0] == polyline_verts[-1]:
+                    center = sum(polyline_verts[:-1], Vector()) / len(polyline_verts[:-1])
+                area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
+                if area_text_coords:
+                    value = self.polyline_data.area
+                    text = f"area: {value}"
+                    screen_coords["area"] = (area_text_coords, text)
 
         # Length
         if self.measure_type in {"POLYLINE", "POLY_AREA"}:
-            if len(polyline_verts) < 3:
-                return
-            total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
-            if total_length_text_coords:
-                value = self.polyline_data.total_length
-                text = f"length: {value}"
-                screen_coords["length"] = (total_length_text_coords, text)
+            if len(polyline_verts) >= 3:
+                total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
+                if total_length_text_coords:
+                    value = self.polyline_data.total_length
+                    text = f"length: {value}"
+                    screen_coords["length"] = (total_length_text_coords, text)
 
         self.adjust_overlapping_labels(screen_coords)
 
