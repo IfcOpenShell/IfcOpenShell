@@ -1427,7 +1427,8 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
             index = pset["Index"]
             annotations = get_assignments(element)
-            original_data[group][index] = {"Name": str(pset["Aggregate_Index"]), "Assignment": annotations}
+            container = ifcopenshell.util.element.get_container(element)
+            original_data[group][index] = {"Name": pset["Name"], "Aggregate_Index": pset["Aggregate_Index"], "Assignment": annotations, "Container": container}
 
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
@@ -1470,12 +1471,12 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             index = pset["Index"]
 
             if index == 0:
-                obj.name = pset["Name"]
+                obj.name = pset["Name"] + "_" + str(original_data[group][index]["Aggregate_Index"])
                 ifc_file = tool.Ifc.get()
                 ifcopenshell.api.pset.edit_pset(
                     ifc_file,
                     ifc_file.by_id(pset["id"]),
-                    properties={"Aggregate_Index": int(original_data[group][index]["Name"])},
+                    properties={"Aggregate_Index": int(original_data[group][index]["Aggregate_Index"])},
                 )
                 assignments = original_data[group][index]["Assignment"]
                 if assignments:
