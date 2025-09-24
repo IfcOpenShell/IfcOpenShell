@@ -1302,6 +1302,10 @@ endif(BUILD_GEOMSERVER)
 if(ADD_COMMIT_SHA)
     find_package(Git)
 
+    if(NOT GIT_FOUND)
+        message(FATAL_ERROR "Failed to find Git for ADD_COMMIT_SHA option.")
+    endif()
+
     if(GIT_FOUND)
         if (VERSION_OVERRIDE)
             set (git_branch ${RELEASE_VERSION})
