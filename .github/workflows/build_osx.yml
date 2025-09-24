@@ -11,7 +11,7 @@ jobs:
       matrix:
         include:
           - os: macos
-            runner: macos-13
+            runner: macos-14
             arch: x64
             oldarch: 
           - os: macos
@@ -66,8 +66,13 @@ jobs:
           if [ "${{ matrix.os }}" == "macos" ]; then
             DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE
           fi
+          if [ "${{ matrix.arch }}" == "x64" ]; then
+            MAC_INTEL=-mac-cross-compile-intel
+          fi
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release python3 ./nix/build-all.py -v --diskcleanup | tee build.log
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
+            python3 ./nix/build-all.py -v --diskcleanup ${MAC_INTEL} \
+            | tee build.log
 
       - name: Upload Build Logs
         if: always()
