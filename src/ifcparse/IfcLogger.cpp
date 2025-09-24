@@ -33,6 +33,8 @@
 #include <iostream>
 #include <mutex>
 
+static my_thread_local boost::optional<const IfcUtil::IfcBaseClass*> current_product_;
+
 namespace {
 
 std::string get_time(bool with_milliseconds = false) {
@@ -261,7 +263,6 @@ std::stringstream Logger::log_stream_;
 Logger::Severity Logger::verbosity_ = Logger::LOG_NOTICE;
 Logger::Severity Logger::max_severity_ = Logger::LOG_NOTICE;
 Logger::Format Logger::format_ = Logger::FMT_PLAIN;
-boost::optional<const IfcUtil::IfcBaseClass*> Logger::current_product_;
 boost::optional<long long> Logger::first_timepoint_;
 std::map<std::string, double> Logger::performance_statistics_;
 std::map<std::string, double> Logger::performance_signal_start_;
