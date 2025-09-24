@@ -31,6 +31,7 @@ Available arguments:
     ``-py-313`` - build for specific Python version
         (building for all supported Python version by default).
     ``-wasm`` - compile for wasm
+    ``-mac-cross-compile-intel`` - cross compile for Intel Mac on Apple Silicon host
     ``-shared`` - build shared libraries. By default will build static.
     ``-diskcleanup`` - clean up build directories after finishing building dependencies
     ``-v`` - enable verbose logs
@@ -198,6 +199,11 @@ def which(cmd: str) -> Union[str, None]:
     return None
 
 
+# Flags.
+MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
+assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
+WASM = "wasm" in flags
+
 # Set defaults for missing empty environment variables
 
 USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
@@ -216,7 +222,15 @@ CMAKE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "cmak
 
 build_dir = os.environ.get("BUILD_DIR", os.path.join(os.path.dirname(__file__), "..", "build"))
 
-DEFAULT_DEPS_DIR = Path(build_dir) / platform.system() / ("wasm" if "wasm" in flags else platform.machine())
+
+if WASM:
+    arch = "wasm"
+elif MAC_CROSS_COMPILE_INTEL:
+    arch = "x86_64"
+else:
+    arch = platform.machine()
+DEFAULT_DEPS_DIR = Path(build_dir) / platform.system() / arch
+
 if TOOLSET:
     DEFAULT_DEPS_DIR = DEFAULT_DEPS_DIR / TOOLSET
 DEFAULT_DEPS_DIR = os.path.realpath(DEFAULT_DEPS_DIR)
@@ -304,6 +318,10 @@ if "v" in flags:
 else:
     logger.setLevel(logging.INFO)
 
+if MAC_CROSS_COMPILE_INTEL:
+    MAC_CROSS_COMPILE_INTEL_ARGS = ["-DCMAKE_OSX_ARCHITECTURES=x86_64"]
+else:
+    MAC_CROSS_COMPILE_INTEL_ARGS = []
 OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = "shared" not in flags
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
@@ -740,6 +758,7 @@ if "hdf5" in targets:
             "-DBUILD_SHARED_LIBS=OFF",
             "-DHDF5_BUILD_UTILS=OFF",
             "-DHDF5_BUILD_CPP_LIB=ON",
+            *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
         download_url=f"https://github.com/HDFGroup/hdf5/archive/refs/tags/",
         download_name=f"hdf5-{HDF5_UNDERSCORE}.tar.gz",
@@ -915,6 +934,7 @@ if "OpenCOLLADA" in targets:
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/",
             # OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4.
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+            *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
@@ -1137,6 +1157,7 @@ cmake_args = [
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DADD_COMMIT_SHA=" + ("On" if ADD_COMMIT_SHA else "Off"),
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
+    *MAC_CROSS_COMPILE_INTEL_ARGS,
 ]
 """Default CMake args to use for all CMake configs."""
 cmake_args_prefix_path: "list[str]" = [
