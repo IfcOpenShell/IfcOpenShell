@@ -50,6 +50,8 @@ Used environment variables:
     - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (IFC2X3; IFC4; IFC4X3_ADD2) - to be supplied as `2x3;4`
     - ``USE_OCCT`` - whether to use official Open CASCADE instead of Community Edition
     (`true` by default, any other value is considered `false`)
+    - ``ADD_COMMIT_SHA`` - if defined with any non-empty value then
+    `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
 
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
