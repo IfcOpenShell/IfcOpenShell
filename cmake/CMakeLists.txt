@@ -1336,6 +1336,7 @@ if(ADD_COMMIT_SHA)
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
 
+        set(git_sha "418eb277d")
         message(STATUS "IfcOpenShell branch: \"${git_branch}\"")
         message(STATUS "IfcOpenShell commit: \"${git_sha}\"")
 
