@@ -1478,6 +1478,11 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     ifc_file.by_id(pset["id"]),
                     properties={"Aggregate_Index": int(original_data[group][index]["Aggregate_Index"])},
                 )
+                bonsai.core.spatial.assign_container(
+                    tool.Ifc, tool.Collector, tool.Spatial, container=original_data[group][index]["Container"], element_obj=obj
+                )
+                for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
+                    tool.Collector.assign(tool.Ifc.get_object(part))
                 assignments = original_data[group][index]["Assignment"]
                 if assignments:
                     assign_to_annotations(obj, assignments)
