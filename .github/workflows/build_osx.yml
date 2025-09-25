@@ -67,6 +67,7 @@ jobs:
             DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE
           fi
           if [ "${{ matrix.arch }}" == "x64" ]; then
+            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
             MAC_INTEL=-mac-cross-compile-intel
           fi
           set -o pipefail
