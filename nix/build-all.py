@@ -188,8 +188,10 @@ def cecho(message, color=NO_COLOR):
     logger.info(f"{color}{message}\033[0m")
 
 
-def which(cmd):
-    for path in os.getenv("PATH").split(":"):
+def which(cmd: str) -> Union[str, None]:
+    PATH = os.getenv("PATH")
+    assert PATH
+    for path in PATH.split(":"):
         if os.path.exists(path) and cmd in os.listdir(path):
             return cmd
     return None
