@@ -323,8 +323,15 @@ else:
 
 if MAC_CROSS_COMPILE_INTEL:
     MAC_CROSS_COMPILE_INTEL_ARGS = ["-DCMAKE_OSX_ARCHITECTURES=x86_64"]
+    MAC_CROSS_COMPILE_INTEL_BJAM_ARGS = ["architecture=x86"]
+    MAC_CROSS_COMPILE_INTEL_CXX = "clang++ -arch x86_64"
+    MAC_CROSS_COMPILE_INTEL_CC = "clang -arch x86_64"
 else:
     MAC_CROSS_COMPILE_INTEL_ARGS = []
+    MAC_CROSS_COMPILE_INTEL_BJAM_ARGS = []
+    MAC_CROSS_COMPILE_INTEL_CXX = ""
+    MAC_CROSS_COMPILE_INTEL_CC = ""
+
 OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = "shared" not in flags
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
@@ -801,6 +808,13 @@ if "eigen" in targets:
     )
 
 if "pcre" in targets:
+    OLD_CC, OLD_CCXX = None, None
+    if MAC_CROSS_COMPILE_INTEL:
+        OLD_CC, OLD_CCXX = os.environ.get("CC"), os.environ.get("CXX")
+        os.environ["CC"] = MAC_CROSS_COMPILE_INTEL_CC
+        os.environ["CXX"] = MAC_CROSS_COMPILE_INTEL_CXX
+    # Keep it autoconf as OpenCOLLADA is pretty old and might break
+    # if we update it's dependencies for mmore modern cmake.
     build_dependency(
         name=f"pcre-{PCRE_VERSION}",
         mode="autoconf",
@@ -808,6 +822,15 @@ if "pcre" in targets:
         download_url=f"https://downloads.sourceforge.net/project/pcre/pcre/{PCRE_VERSION}/",
         download_name=f"pcre-{PCRE_VERSION}.tar.bz2",
     )
+    if MAC_CROSS_COMPILE_INTEL:
+        if OLD_CC is None:
+            del os.environ["CC"]
+        else:
+            os.environ["CC"] = OLD_CC
+        if OLD_CCXX is None:
+            del os.environ["CXX"]
+        else:
+            os.environ["CXX"] = OLD_CCXX
 
 if "pcre2" in targets:
     build_dependency(
@@ -874,6 +897,8 @@ if USE_OCCT and "occ" in targets:
             f"-DUSE_OPENGL=OFF",
             f"-DUSE_GLES2=OFF",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
+            f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+            *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
         download_url="https://github.com/Open-Cascade-SAS/OCCT",
         download_name="occt",
@@ -899,6 +924,10 @@ elif "occ" in targets:
     )
 
 if "libxml2" in targets:
+    OLD_CC = ""
+    if MAC_CROSS_COMPILE_INTEL:
+        OLD_CC = os.environ.get("CC")
+        os.environ["CC"] = MAC_CROSS_COMPILE_INTEL_CC
     build_dependency(
         f"libxml2-{LIBXML2_VERSION}",
         "autoconf",
@@ -913,6 +942,11 @@ if "libxml2" in targets:
         download_url=f"https://download.gnome.org/sources/libxml2/{'.'.join(LIBXML2_VERSION.split('.')[0:2])}/",
         download_name=f"libxml2-{LIBXML2_VERSION}.tar.xz",
     )
+    if MAC_CROSS_COMPILE_INTEL:
+        if OLD_CC is None:
+            del os.environ["CC"]
+        else:
+            os.environ["CC"] = OLD_CC
 
 if "OpenCOLLADA" in targets:
     patches = ["./patches/opencollada/pr622_and_disable_subdirs.patch"]
@@ -964,7 +998,12 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
     if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
         open_ssl_prefix = run([brew_intel, "--prefix", "openssl@3"]).strip()
-        PYTHON_CONFIGURE_ARGS.append(f'--with-openssl="{open_ssl_prefix}"')
+        # I'm not sure why, but if I do `"{open_ssl_prefix}"` (keep the quotes),
+        # autconf fails to find ssl.
+        PYTHON_CONFIGURE_ARGS.append(f'--with-openssl={open_ssl_prefix}')
+
+    if MAC_CROSS_COMPILE_INTEL:
+        PYTHON_CONFIGURE_ARGS.extend(["--with-universal-archs=intel-64", "--enable-universalsdk"])
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
         try:
@@ -1013,6 +1052,7 @@ if "boost" in targets:
             "stage",
             "-s",
             "NO_BZIP2=1",
+            *MAC_CROSS_COMPILE_INTEL_BJAM_ARGS,
         ],
         download_url=BOOST_LOCATION,
         # don't remember what this is, but fail on 1.86
@@ -1033,6 +1073,11 @@ if "cgal" in targets:
         gmp_args.extend(("--disable-assembly", "--host", "none", "--enable-cxx"))
         mpfr_args.extend(("--host", "none"))
 
+    OLD_CC = None
+    if MAC_CROSS_COMPILE_INTEL:
+        OLD_CC = os.environ.get("CC")
+        os.environ["CC"] = MAC_CROSS_COMPILE_INTEL_CC
+
     build_dependency(
         name=f"gmp-{GMP_VERSION}",
         mode="autoconf",
@@ -1051,6 +1096,12 @@ if "cgal" in targets:
         download_url=f"http://www.mpfr.org/mpfr-{MPFR_VERSION}/",
         download_name=f"mpfr-{MPFR_VERSION}.tar.bz2",
     )
+
+    if MAC_CROSS_COMPILE_INTEL:
+        if OLD_CC is None:
+            del os.environ["CC"]
+        else:
+            os.environ["CC"] = OLD_CC
 
     build_dependency(
         name=f"cgal-{CGAL_VERSION}",
@@ -1112,6 +1163,7 @@ if "zstd" in targets:
             f"-DZSTD_BUILD_STATIC=ON",
             f"-DZSTD_BUILD_SHARED=OFF",
             f"-DCMAKE_INSTALL_LIBDIR=lib",
+            *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
         cmake_dir="build/cmake/",
         download_url="https://github.com/facebook/zstd",
@@ -1138,6 +1190,7 @@ if "rocksdb" in targets:
             f"-DWITH_ZSTD=On",
             f"-DPORTABLE=1",
             f"-DCMAKE_PREFIX_PATH={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
         download_url="https://github.com/facebook/rocksdb",
         download_name="rocksdb",
