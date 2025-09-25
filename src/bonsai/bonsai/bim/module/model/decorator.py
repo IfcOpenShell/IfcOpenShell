@@ -523,7 +523,6 @@ class PolylineDecorator:
         blf.color(self.font_id, *color)
 
         screen_coords = {}
-        label_index = 0
 
         for i in range(len(self.polyline_points)):
             if i < 1 and self.measure_type == "POLY_AREA":
@@ -536,9 +535,7 @@ class PolylineDecorator:
             if dim_text_coords:
                 formatted_value = self.polyline_points[i].dim
                 text = "d: " + formatted_value
-                screen_coords[f"distance_{label_index}"] = (dim_text_coords, text)
-                label_index += 1
-
+                screen_coords[f"distance_{i}"] = (dim_text_coords, text)
         # --- Show angles for polyline/poly area ---
         if self.measure_type != "SINGLE" and len(self.polyline_points) > 2:
             for i in range(len(self.polyline_points)):
@@ -609,7 +606,11 @@ class PolylineDecorator:
         for label_key, (screen_co, text) in screen_coords.items():
             text_dimensions[label_key] = blf.dimensions(font_id, text)
 
-        min_spacing = 12
+        if text_dimensions:
+            first_height = next(iter(text_dimensions.values()))[1]
+            min_spacing = max(2, first_height * 0.3)
+        else:
+            min_spacing = 2
 
         label_keys = list(screen_coords.keys())
         for pass_num in range(3):  # 3 passes to try to optimize complex overlaps
