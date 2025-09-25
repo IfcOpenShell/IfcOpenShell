@@ -33,7 +33,7 @@
 #include <iostream>
 #include <mutex>
 
-static my_thread_local boost::optional<const IfcUtil::IfcBaseClass*> current_product_;
+static my_thread_local const IfcUtil::IfcBaseClass* current_product_;
 
 namespace {
 
@@ -63,11 +63,11 @@ template <>
 const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = {L"Performance", L"Debug", L"Notice", L"Warning", L"Error"};
 
 template <typename T>
-void plain_text_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void plain_text_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
     out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
-        std::string global_id = (*current_product)->as<IfcUtil::IfcBaseEntity>()->get("GlobalId");
+        std::string global_id = current_product->as<IfcUtil::IfcBaseEntity>()->get("GlobalId");
         out << "{" << global_id.c_str() << "} ";
     }
     out << message.c_str() << std::endl;
@@ -90,7 +90,7 @@ std::basic_string<T> string_as(const std::string& string) {
 }
 
 template <typename T>
-void json_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
 
     // @todo this is crazy
@@ -103,7 +103,7 @@ void json_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& c
     property_tree.put(level_string, severity_strings<typename T::char_type>::value[type]);
     if (current_product) {
         std::ostringstream oss;
-        (*current_product)->toString(oss);
+        current_product->toString(oss);
         property_tree.put(product_string, string_as<typename T::char_type>(oss.str()));
     }
     property_tree.put(message_string, string_as<typename T::char_type>(message));
@@ -133,7 +133,7 @@ void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
         PrintPerformanceStats();
         performance_statistics_.clear();
     }
-    current_product_ = product;
+    current_product_ = product.get_value_or(nullptr);
 }
 
 void Logger::SetOutput(std::ostream* stream1, std::ostream* stream2) {
