@@ -1266,9 +1266,15 @@ class CreateDrawing(bpy.types.Operator):
 
         if layer:
             classes.append(layer.is_a())
-            material_name = layer.Material.Name or "null"
-            material_name = tool.Drawing.canonicalise_class_name(material_name)
-            classes.append(f"layer-material-{material_name}")
+            layer_material = layer.Material
+            layer_material_name = layer_material.Name or "null"
+            layer_material_name = tool.Drawing.canonicalise_class_name(layer_material_name)
+            classes.append(f"layer-material-{layer_material_name}")
+            
+            # Add material category if available
+            if hasattr(layer_material, 'Category') and layer_material.Category:
+                layer_material_category = tool.Drawing.canonicalise_class_name(layer_material.Category)
+                classes.append(f"layer-material-category-{layer_material_category}")
 
         for key in self.metadata:
             value = ifcopenshell.util.selector.get_element_value(element, key)
