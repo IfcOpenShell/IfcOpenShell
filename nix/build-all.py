@@ -169,6 +169,7 @@ curl = "curl"
 wget = "wget"
 strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
+brew_intel = "/usr/local/bin/brew"
 
 explicit_targets = [s for s in sys.argv[1:] if not s.startswith("-")]
 """Targets provided by CLI."""
@@ -354,6 +355,9 @@ for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch",
 
 if missing_commands:
     raise ValueError(f"Required tools not installed or not added to PATH: {', '.join(missing_commands)}")
+
+if MAC_CROSS_COMPILE_INTEL:
+    assert os.path.exists(brew_intel), f"For intel cross compilation the brew path is expected to be '{brew_intel}'."
 
 # identifiers for the download tool (could be less memory consuming as ints, but are more verbose as strings)
 download_tool_default = download_tool_py = "py"
@@ -959,6 +963,8 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
     PYTHON_CONFIGURE_ARGS: "list[str]" = []
     if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
+        open_ssl_prefix = run([brew_intel, "--prefix", "openssl@3"]).strip()
+        PYTHON_CONFIGURE_ARGS.append(f'--with-openssl="{open_ssl_prefix}"')
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
         try:
