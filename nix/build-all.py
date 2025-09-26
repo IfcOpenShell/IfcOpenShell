@@ -169,7 +169,7 @@ curl = "curl"
 wget = "wget"
 strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
-brew_intel = "/usr/local/bin/brew"
+brew = "brew"
 
 explicit_targets = [s for s in sys.argv[1:] if not s.startswith("-")]
 """Targets provided by CLI."""
@@ -364,7 +364,8 @@ if missing_commands:
     raise ValueError(f"Required tools not installed or not added to PATH: {', '.join(missing_commands)}")
 
 if MAC_CROSS_COMPILE_INTEL:
-    assert os.path.exists(brew_intel), f"For intel cross compilation the brew path is expected to be '{brew_intel}'."
+    brew = "/usr/local/bin/brew"
+    assert os.path.exists(brew), f"For intel cross compilation the brew path is expected to be '{brew}'."
 
 # identifiers for the download tool (could be less memory consuming as ints, but are more verbose as strings)
 download_tool_default = download_tool_py = "py"
@@ -997,10 +998,10 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
     PYTHON_CONFIGURE_ARGS: "list[str]" = []
     if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
-        open_ssl_prefix = run([brew_intel, "--prefix", "openssl@3"]).strip()
+        open_ssl_prefix = run([brew, "--prefix", "openssl@3"]).strip()
         # I'm not sure why, but if I do `"{open_ssl_prefix}"` (keep the quotes),
         # autconf fails to find ssl.
-        PYTHON_CONFIGURE_ARGS.append(f'--with-openssl={open_ssl_prefix}')
+        PYTHON_CONFIGURE_ARGS.append(f"--with-openssl={open_ssl_prefix}")
 
     if MAC_CROSS_COMPILE_INTEL:
         PYTHON_CONFIGURE_ARGS.extend(["--with-universal-archs=intel-64", "--enable-universalsdk"])
