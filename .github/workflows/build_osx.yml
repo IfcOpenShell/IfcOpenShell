@@ -69,6 +69,9 @@ jobs:
           if [ "${{ matrix.arch }}" == "x64" ]; then
             arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
             MAC_INTEL=-mac-cross-compile-intel
+            # We don't use gmpcxx, but it comes preinstalled on macos runner as arm64 bottle
+            # and CGAL detects it and breaks cross compilation.
+            brew uninstall --ignore-dependencies gmp
           fi
           set -o pipefail
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
