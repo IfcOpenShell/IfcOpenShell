@@ -194,7 +194,7 @@ void IfcGeom::Iterator::process_concurrently() {
 
 	kernel_pool.reserve(conc_threads);
 	for (unsigned i = 0; i < conc_threads; ++i) {
-		kernel_pool.push_back(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_));
+		kernel_pool.push_back(new ifcopenshell::geometry::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(converter_->kernel()->clone()), ifc_file, settings_));
 	}
 
 	std::vector<std::future<geometry_conversion_result*>> threadpool;

@@ -3,6 +3,8 @@
 
 #include <CGAL/Polygon_mesh_processing/repair.h>
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
+#include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
+#include <CGAL/Polygon_mesh_processing/polygon_mesh_to_polygon_soup.h>
 
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
@@ -17,6 +19,10 @@ using IfcGeom::ConversionResultShape;
 #else
 using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
+#endif
+
+#ifdef IFOPSH_SIMPLE_KERNEL
+#define CgalShape SimpleCgalShape
 #endif
 
 typedef CGAL::Polyhedron_3<Kernel_> Polyhedron;
@@ -701,6 +707,43 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::intersect(ConversionRe
 #endif
 }
 
+namespace {
+	template <typename Polyhedron>
+	void concatenate_polyhedra(Polyhedron& p1, const Polyhedron& p2) {
+		std::vector<cgal_point_t> points1, points2;
+		std::vector<std::vector<std::size_t>> faces1, faces2;
+
+		// Extract soups
+		CGAL::Polygon_mesh_processing::polygon_mesh_to_polygon_soup(p1, points1, faces1);
+		CGAL::Polygon_mesh_processing::polygon_mesh_to_polygon_soup(p2, points2, faces2);
+
+		// Offset indices in faces2 by current number of points in points1
+		std::size_t offset = points1.size();
+		for (auto& f : faces2) {
+			for (auto& idx : f) {
+				idx += offset;
+			}
+		}
+
+		// Merge soups
+		points1.insert(points1.end(), points2.begin(), points2.end());
+		faces1.insert(faces1.end(), faces2.begin(), faces2.end());
+
+		// Build merged polyhedron
+		Polyhedron merged;
+		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(points1, faces1, merged);
+
+		p1 = std::move(merged);
+	}
+}
+
+ConversionResultShape* ifcopenshell::geometry::CgalShape::concat(ConversionResultShape* other)
+{
+	auto shp = poly();
+	concatenate_polyhedra(shp, ((CgalShape*)other)->poly());
+	return new CgalShape(shp);
+}
+
 std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::CgalShape::bounding_box() const
 {
 	throw std::runtime_error("Not implemented");
@@ -734,6 +777,11 @@ void ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>&, OpaqueCoordina
 
 void ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
+}
+
+bool ifcopenshell::geometry::CgalShape::surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+	// @todo
+	return false;
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL

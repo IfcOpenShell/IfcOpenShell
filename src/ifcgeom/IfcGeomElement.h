@@ -143,7 +143,7 @@ namespace IfcGeom {
 		{}
 
 		bool calculate_projected_surface_area(double& along_x, double& along_y, double& along_z) const {
-			return geometry().calculate_projected_surface_area(*this->transformation().data(), along_x, along_y, along_z);
+			return geometry().calculate_projected_surface_area(this->transformation().data(), along_x, along_y, along_z);
 		}
 	private:
 		BRepElement(const BRepElement& other);

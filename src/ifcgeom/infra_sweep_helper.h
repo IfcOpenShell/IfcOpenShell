@@ -4,11 +4,13 @@
 #include "taxonomy.h"
 #include "ConversionSettings.h"
 
+#include "ifc_geom_api.h"
+
 namespace ifcopenshell {
 
 	namespace geometry {
 		
-		struct cross_section {
+		struct IFC_GEOM_API cross_section {
 			double dist_along;
 			taxonomy::geom_item::ptr section_geometry;
 			Eigen::Vector3d offset;
@@ -19,7 +21,7 @@ namespace ifcopenshell {
 			}
 		};
 
-		taxonomy::loft::ptr make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& directrix, std::vector<cross_section>& cross_sections);
+		IFC_GEOM_API taxonomy::loft::ptr make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& directrix, std::vector<cross_section>& cross_sections);
 	}
 
 }

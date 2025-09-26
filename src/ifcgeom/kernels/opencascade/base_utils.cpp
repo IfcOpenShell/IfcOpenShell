@@ -4,6 +4,8 @@
 #include "OpenCascadeConversionResult.h"
 #include "boolean_utils.h"
 
+#include <Standard_Version.hxx>
+
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
@@ -47,6 +49,8 @@
 #include <BRepAlgoAPI_Fuse.hxx>
 
 #include <TopTools_IndexedMapOfShape.hxx>
+
+#include <ShapeUpgrade_UnifySameDomain.hxx>
 
 // For axis placements detect equality early in order for the
 // relatively computionaly expensive gp_Trsf calculation to be skipped
@@ -297,18 +301,52 @@ TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const gp
 	}
 }
 
+namespace {
+	bool is_non_uniform(const Eigen::Matrix4d& M, double eps = 1e-6)
+	{
+		Eigen::Matrix3d L = M.block<3, 3>(0, 0);
+		double sx = L.col(0).norm();
+		double sy = L.col(1).norm();
+		double sz = L.col(2).norm();
+		return !(
+			std::abs(sx - sy) < eps &&
+			std::abs(sx - sz) < eps &&
+			std::abs(sy - sz) < eps
+		);
+	}
+}
+
 TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const ifcopenshell::geometry::taxonomy::matrix4& t) {
-	// @todo this probably discards non-uniform scale?
+
 	gp_GTrsf trsf;
 	if (t.components_) {
-		gp_Trsf tr;
 		const auto& m = t.ccomponents();
-		tr.SetValues(
-			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-		);
-		trsf = tr;
+		// This is either a bug or very finicky, but this appears to be the only
+		// way to get the transformation metadata to line up.
+		//
+		// - If gp_GTrsf.form is other, applying the transformation will result in
+		//   a conversion to b-spline surfaces for about everything, which impacts
+		//   performance and breaks detection of view volume in the svg serializer,
+		//   which would be the case when setting the SetVectorialPart() block
+		//   unconditionally.
+		//   (calling SetForm() afterwards to detect CompoundTrsf over Other would
+		//      set Scale to zero (bug?))
+		if (is_non_uniform(m)) {
+			trsf.SetVectorialPart(gp_Mat(
+				m(0, 0), m(0, 1), m(0, 2),
+				m(1, 0), m(1, 1), m(1, 2),
+				m(2, 0), m(2, 1), m(2, 2)
+			));
+			trsf.SetTranslationPart(gp_XYZ(m(0, 3), m(1, 3), m(2, 3)));
+		} else {
+			gp_Trsf tr;
+			tr.SetValues(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+			);
+			trsf = tr;
+		}
 	}
 	return apply_transformation(s, trsf);
 }
@@ -863,4 +901,18 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
 	Logger::Warning(str.str());
 
 	return false;
+}
+
+TopoDS_Shape IfcGeom::util::unify(const TopoDS_Shape& s, double tolerance) {
+	tolerance = (std::min)(min_edge_length(s) / 2., tolerance);
+	ShapeUpgrade_UnifySameDomain usd(s);
+#if OCC_VERSION_HEX >= 0x70200
+	usd.SetSafeInputMode(true);
+#endif
+#if OCC_VERSION_HEX >= 0x70100
+	usd.SetLinearTolerance(tolerance);
+	usd.SetAngularTolerance(1.e-3);
+#endif
+	usd.Build();
+	return usd.Shape();
 }

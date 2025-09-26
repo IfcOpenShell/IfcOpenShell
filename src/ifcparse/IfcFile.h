@@ -84,10 +84,9 @@ enum filetype {
     FT_AUTODETECT
 };
 
-filetype guess_file_type(const std::string& fn);
+IFC_PARSE_API filetype guess_file_type(const std::string& fn);
 
-
-class InstanceStreamer {
+class IFC_PARSE_API InstanceStreamer {
 private:
     IfcSpfStream* stream_;
     IfcSpfLexer* lexer_;

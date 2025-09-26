@@ -294,6 +294,7 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 #endif
 	#include "../ifcgeom/Iterator.h"
 	#include "../ifcgeom/ConversionResult.h"
+	#include "../ifcgeom/hybrid_kernel.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"

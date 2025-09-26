@@ -4,20 +4,16 @@
 
 using namespace ifcopenshell::geometry;
 
-ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s)
-	: geometry_library_(boost::to_lower_copy(geometry_library))
+ifcopenshell::geometry::Converter::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s)
+	: kernel_(std::move(geometry_library))
 {
 	mapping_ = impl::mapping_implementations().construct(file, s);
-	kernel_ = kernels::construct(file, geometry_library, mapping_->settings());
 	// Mapping reads unit information and applies to settings
 	settings_ = mapping_->settings();
 }
 
 ifcopenshell::geometry::Converter::~Converter()
 {
-	if (kernel_ != nullptr) {
-		delete kernel_;
-	}
 	if (mapping_ != nullptr) {
 		delete mapping_;
 	}
@@ -414,101 +410,3 @@ IfcGeom::ConversionResults ifcopenshell::geometry::Converter::convert(IfcUtil::I
 	}
 	return results;
 }
-
-//#include "../../ifcparse/Ifc2x3.h"
-//#include "../../ifcparse/Ifc4.h"
-//
-//// @todo remove
-//#include "../../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
-//
-//#include <TopExp.hxx>
-//#include <TopTools_ListOfShape.hxx>
-//#include <TopTools_IndexedMapOfShape.hxx>
-//#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
-//
-//IfcGeom::Kernel::Kernel(const std::string& geometry_library, IfcParse::IfcFile* file) {
-//	if (file != 0) {
-//		if (file->schema() == 0) {
-//			throw IfcParse::IfcException("No schema associated with file");
-//		}
-//
-//		const std::string& schema_name = file->schema()->name();
-//		implementation_ = impl::kernel_implementations().construct(schema_name, geometry_library, file);
-//	}
-//}
-//
-//int IfcGeom::Kernel::count(const ConversionResultShape* s_, int t_, bool unique) {
-//	// @todo make kernel agnostic
-//	const TopoDS_Shape& s = ((OpenCascadeShape*) s_)->shape();
-//	TopAbs_ShapeEnum t = (TopAbs_ShapeEnum) t_;
-//
-//	if (unique) {
-//		TopTools_IndexedMapOfShape map;
-//		TopExp::MapShapes(s, t, map);
-//		return map.Extent();
-//	} else {
-//		int i = 0;
-//		TopExp_Explorer exp(s, t);
-//		for (; exp.More(); exp.Next()) {
-//			++i;
-//		}
-//		return i;
-//	}
-//}
-//
-//
-//int IfcGeom::Kernel::surface_genus(const ConversionResultShape* s_) {
-//	// @todo make kernel agnostic
-//	const TopoDS_Shape& s = ((OpenCascadeShape*) s_)->shape();
-//	OpenCascadeShape Ss(s);
-//
-//	int nv = count(&Ss, (int) TopAbs_VERTEX, true);
-//	int ne = count(&Ss, (int) TopAbs_EDGE, true);
-//	int nf = count(&Ss, (int) TopAbs_FACE, true);
-//
-//	const int euler = nv - ne + nf;
-//	const int genus = (2 - euler) / 2;
-//
-//	return genus;
-//}
-//
-//
-//IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst, bool include_openings) {
-//	if (inst->as<Ifc2x3::IfcProduct>()) {
-//		return get_decomposing_entity_impl(inst->as<Ifc2x3::IfcProduct>(), include_openings);
-//	} else if (inst->as<Ifc4::IfcProduct>()) {
-//		return get_decomposing_entity_impl(inst->as<Ifc4::IfcProduct>(), include_openings);
-//	} else if (inst->declaration().name() == "IfcProject") {
-//		return nullptr;
-//	} else {
-//		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
-//	}
-//}
-//
-//
-//bool IfcGeom::Kernel::is_manifold(const ConversionResultShape* s_) {
-//        // @todo make kernel agnostic
-//        const TopoDS_Shape& a = ((OpenCascadeShape*) s_)->shape();
-//
-//	if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
-//		TopoDS_Iterator it(a);
-//		for (; it.More(); it.Next()) {
-//			OpenCascadeShape s(it.Value());
-//			if (!is_manifold(&s)) {
-//				return false;
-//			}
-//		}
-//		return true;
-//	} else {
-//		TopTools_IndexedDataMapOfShapeListOfShape map;
-//		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
-//
-//		for (int i = 1; i <= map.Extent(); ++i) {
-//			if (map.FindFromIndex(i).Extent() != 2) {
-//				return false;
-//			}
-//		}
-//
-//		return true;
-//	}
-//}

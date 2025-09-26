@@ -13,7 +13,6 @@
 #include <Extrema_ExtPC.hxx>
 #include <Geom_Plane.hxx>
 #include <Geom_BSplineCurve.hxx>
-#include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <GeomAPI_ExtremaCurveCurve.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -573,20 +572,6 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 	}
 
 	return N;
-}
-
-TopoDS_Shape IfcGeom::util::unify(const TopoDS_Shape & s, double tolerance) {
-	tolerance = (std::min)(min_edge_length(s) / 2., tolerance);
-	ShapeUpgrade_UnifySameDomain usd(s);
-#if OCC_VERSION_HEX >= 0x70200
-	usd.SetSafeInputMode(true);
-#endif
-#if OCC_VERSION_HEX >= 0x70100
-	usd.SetLinearTolerance(tolerance);
-	usd.SetAngularTolerance(1.e-3);
-#endif
-	usd.Build();
-	return usd.Shape();
 }
 
 bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const TopTools_ListOfShape & b_input, TopoDS_Shape & result, double eps) {

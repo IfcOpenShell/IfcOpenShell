@@ -32,9 +32,9 @@
 #include <string>
 
 namespace IfcUtil {
-std::u32string::value_type convert_codepage(int codepage, int index);
-std::string convert_utf8(const std::u32string& string);
-std::u32string convert_utf8(const std::string& string);
+IFC_PARSE_API std::u32string::value_type convert_codepage(int codepage, int index);
+IFC_PARSE_API std::string convert_utf8(const std::u32string& string);
+IFC_PARSE_API std::u32string convert_utf8(const std::string& string);
 } // namespace IfcUtil
 
 namespace IfcParse {

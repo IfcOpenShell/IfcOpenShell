@@ -41,7 +41,7 @@
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
 
-class EnumerationReference {
+class IFC_PARSE_API EnumerationReference {
 private:
     const IfcParse::enumeration_type* enumeration_;
     size_t index_;
@@ -64,10 +64,10 @@ public:
         return enumeration_;
     }
 };
-class Blank {};
-class Derived {};
-class empty_aggregate_t {};
-class empty_aggregate_of_aggregate_t {};
+class IFC_PARSE_API Blank {};
+class IFC_PARSE_API Derived {};
+class IFC_PARSE_API empty_aggregate_t {};
+class IFC_PARSE_API empty_aggregate_of_aggregate_t {};
 
 template<typename... Args>
 struct parameter_pack {
@@ -154,14 +154,14 @@ struct TypeEncoder_t<parameter_pack<Types...>> {
 
 using TypeEncoder = TypeEncoder_t<type_variant_parameter_pack>;
 
-struct MutableAttributeValue {
+struct IFC_PARSE_API MutableAttributeValue {
     int name_;
     uint8_t index_;
 };
 
 namespace IfcParse {
     namespace impl {
-        class rocks_db_file_storage;
+        class IFC_PARSE_API rocks_db_file_storage;
     }
 }
 
@@ -283,7 +283,7 @@ namespace impl {
 #endif
 
 // short lived
-struct AttributeValue {
+struct IFC_PARSE_API AttributeValue {
     uint8_t index_;
     uint8_t storage_model_ = 0;
     const IfcParse::declaration* entity_or_type_ = 0;
@@ -391,15 +391,15 @@ struct AttributeValue {
 };
 
 
-struct rocks_db_attribute_storage {
+struct IFC_PARSE_API rocks_db_attribute_storage {
 public:
 #ifdef IFOPSH_WITH_ROCKSDB
     // @todo void* is obviously very ugly here
     template<typename T>
-    void set(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, const T& value);
+    IFC_PARSE_API void set(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, const T& value);
 
     template<typename T>
-    bool has(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const;
+    IFC_PARSE_API bool has(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const;
 
     template<typename Visitor>
     auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, Visitor&& visitor) const {

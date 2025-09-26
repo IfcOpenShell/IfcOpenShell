@@ -19,128 +19,6 @@
 
 #include "IfcGeomRepresentation.h"
 
-#ifdef IFOPSH_WITH_OPENCASCADE
-#include "../ifcparse/IfcLogger.h"
-#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
-#include "../ifcgeom/kernels/opencascade/base_utils.h"
-
-#include <BRep_Tool.hxx>
-#include <BRepTools.hxx>
-#include <BRep_Builder.hxx>
-#include <Geom_Plane.hxx>
-#include <TopoDS_Compound.hxx>
-#include <BRepGProp.hxx>
-#include <GProp_GProps.hxx>
-#include <TopoDS.hxx>
-
-#include <BRepBuilderAPI_Transform.hxx>
-#include <BRepBuilderAPI_GTransform.hxx>
-
-TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
-	if (t.Form() == gp_Identity) {
-		return s;
-	} else {
-		/// @todo set to 1. and exactly 1. or use epsilon?
-		if (t.ScaleFactor() != 1.) {
-			return BRepBuilderAPI_Transform(s, t, true);
-		} else {
-			return s.Moved(t);
-		}
-	}
-}
-
-TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
-	if (t.Form() == gp_Other) {
-		return BRepBuilderAPI_GTransform(s, t, true);
-	} else {
-		return apply_transformation(s, t.Trsf());
-	}
-}
-
-namespace {
-	void accumulate(const gp_Ax3& ax, const gp_Dir& normal, double area, double& along_x, double& along_y, double& along_z) {
-		along_x += area * fabs(ax.XDirection().Dot(normal));
-		along_y += area * fabs(ax.YDirection().Dot(normal));
-		along_z += area * fabs(ax.Direction().Dot(normal));
-	}
-
-	void surface_area_along_direction(double tol, const TopoDS_Shape& s, const gp_Ax3& ax, double& along_x, double& along_y, double& along_z) {
-		along_x = along_y = along_z = 0.;
-
-		bool meshed = false;
-
-		TopExp_Explorer exp(s, TopAbs_FACE);
-		for (; exp.More(); exp.Next()) {
-			const TopoDS_Face& face = TopoDS::Face(exp.Current());
-			Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
-			Handle(Geom_Plane) plane = Handle(Geom_Plane)::DownCast(surf);
-
-			if (surf->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
-				GProp_GProps prop_area;
-				BRepGProp::SurfaceProperties(face, prop_area);
-				const double area = prop_area.Mass();
-
-				accumulate(ax, plane->Position().Direction(), area, along_x, along_y, along_z);
-			} else {
-
-				if (!meshed) {
-					try {
-						BRepMesh_IncrementalMesh(s, tol);
-					} catch (...) {
-						Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
-						return;
-					}
-					meshed = true;
-				}
-
-				TopLoc_Location loc;
-				Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
-				if (!tri.IsNull()) {
-					std::vector<gp_XYZ> coords;
-					coords.reserve(tri->NbNodes());
-
-					for (int i = 1; i <= tri->NbNodes(); ++i) {
-						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
-					}
-
-					const Poly_Array1OfTriangle& triangles = tri->Triangles();
-					for (int i = 1; i <= triangles.Length(); ++i) {
-						int n1, n2, n3;
-
-						if (face.Orientation() == TopAbs_REVERSED) {
-							triangles(i).Get(n3, n2, n1);
-						} else {
-							triangles(i).Get(n1, n2, n3);
-						}
-
-						const gp_XYZ& pt1 = coords[n1 - 1];
-						const gp_XYZ& pt2 = coords[n2 - 1];
-						const gp_XYZ& pt3 = coords[n3 - 1];
-						const gp_Vec v1 = pt2 - pt1;
-						const gp_Vec v2 = pt3 - pt2;
-						const gp_Vec v3 = pt1 - pt3;
-						const gp_Vec normal_vector = v1 ^ v2;
-						if (normal_vector.Magnitude() > 1.e-7) {
-							gp_Dir normal = gp_Dir();
-
-							double edge_lengths[3] = { v1.Magnitude(), v2.Magnitude(), v3.Magnitude() };
-							std::sort(&edge_lengths[0], &edge_lengths[2]);
-
-							const double& a = edge_lengths[0];
-							const double& b = edge_lengths[1];
-							const double& c = edge_lengths[2];
-
-							const double area = 0.25 * sqrt((a + (b + c))*(c - (a - b))*(c + (a - b))*(a + (b - c)));
-							accumulate(ax, normal, area, along_x, along_y, along_z);
-						}
-					}
-				}
-			}
-		}
-	}
-}
-#endif
-
 IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	: Representation(brep.settings(), brep.entity(), brep.id())
 {
@@ -169,191 +47,73 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 		surface_style_ids_.push_back(sid);
 	}
 
-	if (brep.begin() != brep.end()) {
-#ifdef IFOPSH_WITH_OPENCASCADE
-		if (std::dynamic_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(brep.begin()->Shape())) {
-			ConversionResultShape* shape = brep.as_compound();
-			ifcopenshell::geometry::taxonomy::matrix4 identity;
-			shape->Serialize(identity, brep_data_);
-			delete shape;
-		} else
-#endif
-		{
-			for (auto it = brep.begin(); it != brep.end(); ++it) {
-				std::string part;
-				it->Shape()->Serialize(*it->Placement(), part);
-				if (brep_data_.size()) {
-					brep_data_ = brep_data_ + "\n---\n" + part;
-				} else {
-					brep_data_ = part;
-				}
-			}
-		}
-	}
-}
-
-namespace {
-	bool is_non_uniform(const Eigen::Matrix4d& M, double eps = 1e-6)
-	{
-		Eigen::Matrix3d L = M.block<3, 3>(0, 0);
-		double sx = L.col(0).norm();
-		double sy = L.col(1).norm();
-		double sz = L.col(2).norm();
-		return !(
-			std::abs(sx - sy) < eps &&
-			std::abs(sx - sz) < eps &&
-			std::abs(sy - sz) < eps
-		);
-	}
+	ifcopenshell::geometry::taxonomy::matrix4 identity;
+	auto* comp = brep.as_compound();
+	comp->Serialize(identity, brep_data_);
+	delete comp;
 }
 
 IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool force_meters) const {
-#ifdef IFOPSH_WITH_OPENCASCADE
-	TopoDS_Compound compound;
-	BRep_Builder builder;
-	builder.MakeCompound(compound);
+	ConversionResultShape* accum = nullptr;
 
 	for (auto it = begin(); it != end(); ++it) {
-		const TopoDS_Shape& s = *std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape());
-
-		gp_GTrsf trsf;
-		if (it->Placement()->components_) {
-			const auto& m = it->Placement()->ccomponents();
-			// This is either a bug or very finicky, but this appears to be the only
-			// way to get the transformation metadata to line up.
-			//
-			// - If gp_GTrsf.form is other, applying the transformation will result in
-			//   a conversion to b-spline surfaces for about everything, which impacts
-			//   performance and breaks detection of view volume in the svg serializer,
-			//   which would be the case when setting the SetVectorialPart() block
-			//   unconditionally.
-			//   (calling SetForm() afterwards to detect CompoundTrsf over Other would
-			//      set Scale to zero (bug?))
-			if (is_non_uniform(m)) {
-				trsf.SetVectorialPart(gp_Mat(
-					m(0, 0), m(0, 1), m(0, 2),
-					m(1, 0), m(1, 1), m(1, 2),
-					m(2, 0), m(2, 1), m(2, 2)
-				));
-				trsf.SetTranslationPart(gp_XYZ(m(0, 3), m(1, 3), m(2, 3)));
-			} else {
-				gp_Trsf tr;
-				tr.SetValues(
-					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-					m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-				);
-				trsf = tr;
-			}
-		}
-
+		double unit_scale = 1.0;
 		if (!force_meters && settings().get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
-			gp_Trsf scale;
-			scale.SetScaleFactor(1.0 / settings().get<ifcopenshell::geometry::settings::LengthUnit>().get());
-			trsf.PreMultiply(scale);
+			unit_scale = 1.0 / settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
 		}
-
-		const TopoDS_Shape moved_shape = apply_transformation(s, trsf);
-		builder.Add(compound, moved_shape);
+		auto s = it->apply_transform(unit_scale);
+		if (accum) {
+			auto n = accum->concat(s);
+			delete s;
+			delete accum;
+			accum = n;
+		} else {
+			accum = s;
+		}
 	}
 
-	return new ifcopenshell::geometry::OpenCascadeShape(std::move(compound));
-#else
-        throw std::runtime_error("Not available without Open Cascade");
-#endif
+	return accum;
 }
 
-
 bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
-#ifdef IFOPSH_WITH_OPENCASCADE
-	try {
+	std::unique_ptr<ConversionResultShape> s(as_compound());
+	if (!s) {
 		area = 0.;
-
-		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
-			GProp_GProps prop;
-			BRepGProp::SurfaceProperties(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()), prop);
-			area += prop.Mass();
-		}
-
-		return true;
-	} catch (...) {
-		Logger::Error("Error during calculation of surface area");
 		return false;
 	}
-#else
-        throw std::runtime_error("Not available without Open Cascade");
-#endif
+	area = s->area()->to_double();
+	return true;
 }
 
 bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
-#ifdef IFOPSH_WITH_OPENCASCADE
-	try {
+	std::unique_ptr<ConversionResultShape> s(as_compound());
+	if (!s) {
 		volume = 0.;
-
-		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
-			if (util::is_manifold(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()))) {
-				GProp_GProps prop;
-				BRepGProp::VolumeProperties(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()), prop);
-				volume += prop.Mass();
-			} else {
-				return false;
-			}
-		}
-
-		return true;
-	} catch (...) {
-		Logger::Error("Error during calculation of volume");
 		return false;
 	}
-#else
-        throw std::runtime_error("Not available without Open Cascade");
-#endif
+	volume = s->area()->to_double();
+	return true;
 }
 
-bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4& place, double & along_x, double & along_y, double & along_z) const {
-#ifdef IFOPSH_WITH_OPENCASCADE
-	try {
-		gp_GTrsf trsf;
+bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+	along_x = along_y = along_z = 0.;
 
-		if (place.components_) {
-			gp_Trsf tr;
-			const auto& m = place.ccomponents();
-			tr.SetValues(
-				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-			);
-			trsf = tr;
+	for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
+		double x, y, z;
+		it->Shape()->surface_area_along_direction(settings().get<ifcopenshell::geometry::settings::MesherLinearDeflection>().get(), place, x, y, z);
+
+		if (it->Shape()->is_manifold()) {
+			x /= 2.;
+			y /= 2.;
+			z /= 2.;
 		}
 
-		gp_Mat mat = trsf.Trsf().HVectorialPart();
-		gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));
-
-		along_x = along_y = along_z = 0.;
-
-		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
-			double x, y, z;
-			surface_area_along_direction(settings().get<ifcopenshell::geometry::settings::MesherLinearDeflection>().get(), *std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()), ax, x, y, z);
-
-			if (util::is_manifold(*std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape()))) {
-				x /= 2.;
-				y /= 2.;
-				z /= 2.;
-			}
-
-			along_x += x;
-			along_y += y;
-			along_z += z;
-		}
-
-		return true;
-	} catch (...) {
-		Logger::Error("Error during calculation of projected surface area");
-		return false;
+		along_x += x;
+		along_y += y;
+		along_z += z;
 	}
-#else
-        throw std::runtime_error("Not available without Open Cascade");
-#endif
+
+	return true;
 }
 
 IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
