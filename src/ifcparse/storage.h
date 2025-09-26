@@ -188,7 +188,7 @@ namespace IfcParse {
     };
 
     namespace impl {
-        struct in_memory_file_storage {
+        struct IFC_PARSE_API in_memory_file_storage {
             IfcParse::IfcSpfLexer* tokens;
             // IfcParse::IfcSpfStream* stream;
 
@@ -248,11 +248,6 @@ namespace IfcParse {
                 }
             };
 
-
-            static bool guid_map_;
-            static bool guid_map() { return guid_map_; }
-            static void guid_map(bool b) { guid_map_ = b; }
-
             entity_instance_by_name_t byid_;
             type_instance_by_name_t tbyid_;
             entities_by_type_t bytype_excl_;
@@ -303,7 +298,7 @@ namespace IfcParse {
             IfcUtil::IfcBaseClass* create(const IfcParse::declaration* decl);
         };
 
-        class rocks_db_file_storage {
+        class IFC_PARSE_API rocks_db_file_storage {
         public:
             rocksdb::DB* db;
             rocksdb::WriteOptions wopts;
@@ -441,7 +436,7 @@ namespace IfcParse {
             */
 
             // @todo merge iterators (template?)
-            class rocksdb_types_iterator {
+            class IFC_PARSE_API rocksdb_types_iterator {
             private:
                 rocksdb::Iterator* state_;
                 const rocks_db_file_storage* storage_;

@@ -501,52 +501,52 @@ void rocks_db_attribute_storage::set(void* storage, const IfcParse::declaration*
         std::to_string(index), v);
 }
 
-template void rocks_db_attribute_storage::set<Blank>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const Blank& value);
-template void rocks_db_attribute_storage::set<int>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const int& value);
-template void rocks_db_attribute_storage::set<bool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const bool& value);
-template void rocks_db_attribute_storage::set<boost::logic::tribool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const boost::logic::tribool& value);
-template void rocks_db_attribute_storage::set<double>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const double& value);
-template void rocks_db_attribute_storage::set<std::string>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::string& value);
-template void rocks_db_attribute_storage::set<boost::dynamic_bitset<>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const boost::dynamic_bitset<>& value);
-template void rocks_db_attribute_storage::set<EnumerationReference>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const EnumerationReference& value);
-template void rocks_db_attribute_storage::set<IfcUtil::IfcBaseClass*>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, IfcUtil::IfcBaseClass* const& value);
-template void rocks_db_attribute_storage::set<std::vector<int>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<int>& value);
-template void rocks_db_attribute_storage::set<std::vector<double>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<double>& value);
-template void rocks_db_attribute_storage::set<std::vector<std::string>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<std::string>& value);
-template void rocks_db_attribute_storage::set<std::vector<boost::dynamic_bitset<>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<boost::dynamic_bitset<>>& value);
-template void rocks_db_attribute_storage::set<aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const aggregate_of_instance::ptr& value);
-template void rocks_db_attribute_storage::set<std::vector<std::vector<int>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<int>>& value);
-template void rocks_db_attribute_storage::set<std::vector<std::vector<double>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<double>>& value);
-template void rocks_db_attribute_storage::set<aggregate_of_aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const aggregate_of_aggregate_of_instance::ptr& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<Blank>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const Blank& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<int>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const int& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<bool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const bool& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<boost::logic::tribool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const boost::logic::tribool& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<double>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const double& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::string>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::string& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<boost::dynamic_bitset<>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const boost::dynamic_bitset<>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<EnumerationReference>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const EnumerationReference& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<IfcUtil::IfcBaseClass*>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, IfcUtil::IfcBaseClass* const& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<int>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<int>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<double>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<double>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::string>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<std::string>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<boost::dynamic_bitset<>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<boost::dynamic_bitset<>>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const aggregate_of_instance::ptr& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<int>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<int>>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<std::vector<std::vector<double>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const std::vector<std::vector<double>>& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<aggregate_of_aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const aggregate_of_aggregate_of_instance::ptr& value);
 
 // @todo why do these need to be included, but are not in BaseEntity::set()?
-template void rocks_db_attribute_storage::set<Derived>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const Derived& value);
-template void rocks_db_attribute_storage::set<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_t& value);
-template void rocks_db_attribute_storage::set<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_of_aggregate_t& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<Derived>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const Derived& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_t& value);
+template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_of_aggregate_t& value);
 
 
 
-template bool rocks_db_attribute_storage::has<Blank>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<int>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<bool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<boost::logic::tribool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<double>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<std::string>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<boost::dynamic_bitset<>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<EnumerationReference>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<IfcUtil::IfcBaseClass*>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<std::vector<int>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<std::vector<double>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<std::vector<std::string>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<std::vector<boost::dynamic_bitset<>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<std::vector<std::vector<int>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<std::vector<std::vector<double>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<aggregate_of_aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<Blank>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<int>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<bool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<boost::logic::tribool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<double>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::string>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<boost::dynamic_bitset<>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<EnumerationReference>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<IfcUtil::IfcBaseClass*>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<int>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<double>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::string>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<boost::dynamic_bitset<>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<int>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vector<double>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<aggregate_of_aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
 
 // @todo why do these need to be included, but are not in BaseEntity::set()?
-template bool rocks_db_attribute_storage::has<Derived>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
-template bool rocks_db_attribute_storage::has<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<Derived>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template IFC_PARSE_API bool rocks_db_attribute_storage::has<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
 
 #endif

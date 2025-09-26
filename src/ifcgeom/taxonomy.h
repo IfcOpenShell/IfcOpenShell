@@ -87,7 +87,7 @@ typedef item* ptr; \
 typedef item const* ptr;
 #endif
 
-			class topology_error : public std::runtime_error {
+			class IFC_GEOM_API topology_error : public std::runtime_error {
 			public:
 				topology_error() : std::runtime_error("Generic topology error") {}
 				topology_error(const char* const s) : std::runtime_error(s) {}
@@ -138,9 +138,9 @@ typedef item const* ptr;
                 STYLE
             };
 
-			const std::string& kind_to_string(kinds k);
+			IFC_GEOM_API const std::string& kind_to_string(kinds k);
 
-			struct item {
+			struct IFC_GEOM_API item {
 			private:
 				uint32_t identity_;
 				static std::atomic_uint32_t counter_;
@@ -195,7 +195,7 @@ typedef item const* ptr;
 			}
 
 			template <typename T>
-			struct eigen_base {
+			struct IFC_GEOM_API eigen_base {
 				T* components_;
 
 				eigen_base() {
@@ -264,7 +264,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
+			struct IFC_GEOM_API matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
 			private:
 				void init(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) {
 					auto Z = z.normalized();
@@ -319,10 +319,18 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
+				void pre_multiply_scale(double s) {
+					components().block<3, 4>(0, 0) *= s;
+				}
+
+				void post_multiply_scale(double s) {
+					components().block<4, 3>(0, 0) *= s;
+				}
+
 				Eigen::Vector3d translation_part() const { return ccomponents().col(3).head<3>(); }
 			};
 
-			struct colour : public item, public eigen_base<Eigen::Vector3d> {
+			struct IFC_GEOM_API colour : public item, public eigen_base<Eigen::Vector3d> {
 				DECLARE_PTR(colour)
 
 				void print(std::ostream& o, int indent = 0) const;
@@ -343,7 +351,7 @@ typedef item const* ptr;
 				const double& b() const { return ccomponents()[2]; }
 			};
 
-			struct style : public item {
+			struct IFC_GEOM_API style : public item {
 				DECLARE_PTR(style)
 
 				std::string name;
@@ -385,7 +393,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct geom_item : public item {
+			struct IFC_GEOM_API geom_item : public item {
 				DECLARE_PTR(geom_item)
 
 				style::ptr surface_style;
@@ -396,12 +404,12 @@ typedef item const* ptr;
 				geom_item(matrix4::ptr m) : surface_style(nullptr), matrix(m) {}
 			};
 
-			struct implicit_item : public geom_item {
+			struct IFC_GEOM_API implicit_item : public geom_item {
 				DECLARE_PTR(implicit_item)
 				using geom_item::geom_item;
 			};
 
-			struct function_item : public implicit_item {
+			struct IFC_GEOM_API function_item : public implicit_item {
                 DECLARE_PTR(function_item)
 
                 function_item(const IfcUtil::IfcBaseInterface* instance = nullptr) : implicit_item(instance) {}
@@ -422,7 +430,7 @@ typedef item const* ptr;
                 };
             };
 
-			struct functor_item : public function_item {
+			struct IFC_GEOM_API functor_item : public function_item {
             DECLARE_PTR(functor_item)
 
             functor_item(double length, std::function<Eigen::Matrix4d(double u)> fn, const IfcUtil::IfcBaseInterface* instance = nullptr) : function_item(instance),
@@ -448,7 +456,7 @@ typedef item const* ptr;
 				std::function<Eigen::Matrix4d(double u)> fn_;
          };
 
-			struct piecewise_function : public function_item {
+			struct IFC_GEOM_API piecewise_function : public function_item {
             DECLARE_PTR(piecewise_function)
 
 				using spans_t = std::vector<function_item::const_ptr>;
@@ -480,7 +488,7 @@ typedef item const* ptr;
                 spans_t spans_;
             };
 
-         struct gradient_function : public function_item {
+         struct IFC_GEOM_API gradient_function : public function_item {
              DECLARE_PTR(gradient_function)
              gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const IfcUtil::IfcBaseInterface* instance = nullptr);
              gradient_function(gradient_function&&) = default;
@@ -506,7 +514,7 @@ typedef item const* ptr;
                piecewise_function::const_ptr horizontal_, vertical_;
          };
 
-         struct cant_function : public function_item {
+         struct IFC_GEOM_API cant_function : public function_item {
              DECLARE_PTR(cant_function)
              cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const IfcUtil::IfcBaseInterface* instance = nullptr);
              cant_function(cant_function&&) = default;
@@ -533,7 +541,7 @@ typedef item const* ptr;
              piecewise_function::const_ptr cant_;
          };
 
-         struct offset_function : public function_item {
+         struct IFC_GEOM_API offset_function : public function_item {
              DECLARE_PTR(offset_function)
              offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const IfcUtil::IfcBaseInterface* instance = nullptr);
              offset_function(offset_function&&) = default;
@@ -585,7 +593,7 @@ typedef item const* ptr;
 			}
 #endif
 
-			bool less(item::const_ptr, item::const_ptr);
+			IFC_GEOM_API bool less(item::const_ptr, item::const_ptr);
 
 			struct less_functor {
 				bool operator()(item::const_ptr a, item::const_ptr b) const {
@@ -613,13 +621,13 @@ typedef item const* ptr;
 
 			// @todo make 4d for easier multiplication
 			template <size_t N>
-			struct cartesian_base : public item, public eigen_base<Eigen::Vector3d> {
+			struct IFC_GEOM_API cartesian_base : public item, public eigen_base<Eigen::Vector3d> {
 				cartesian_base() : eigen_base() {}
 				cartesian_base(const Eigen::Vector3d& c) : eigen_base(c) {}
 				cartesian_base(double x, double y, double z = 0.) : eigen_base(Eigen::Vector3d(x, y, z)) {}
 			};
 
-			struct point3 : public cartesian_base<3> {
+			struct IFC_GEOM_API point3 : public cartesian_base<3> {
 				DECLARE_PTR(point3)
 
 				virtual point3* clone_() const { return new point3(*this); }
@@ -637,7 +645,7 @@ typedef item const* ptr;
 				point3(double x, double y, double z = 0.) : cartesian_base(x, y, z) {}
 			};
 
-			struct direction3 : public cartesian_base<3> {
+			struct IFC_GEOM_API direction3 : public cartesian_base<3> {
 				DECLARE_PTR(direction3)
 
 				virtual direction3* clone_() const { return new direction3(*this); }
@@ -655,14 +663,14 @@ typedef item const* ptr;
 				direction3(double x, double y, double z = 0.) : cartesian_base(x, y, z) {}
 			};
 
-			struct curve : public geom_item {
+			struct IFC_GEOM_API curve : public geom_item {
 				void print_impl(std::ostream& o, const std::string& classname, int indent = 0) const {
 					o << std::string(indent, ' ') << classname << std::endl;
 					this->matrix->print(o, indent + 4);
 				}
 			};
 
-			struct line : public curve {
+			struct IFC_GEOM_API line : public curve {
 				DECLARE_PTR(line)
 
 				virtual line* clone_() const { return new line(*this); }
@@ -676,7 +684,7 @@ typedef item const* ptr;
 				void print(std::ostream& o, int indent = 0) const;
 			};
 
-			struct circle : public curve {
+			struct IFC_GEOM_API circle : public curve {
 				DECLARE_PTR(circle)
 
 				double radius;
@@ -720,7 +728,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct ellipse : public curve {
+			struct IFC_GEOM_API ellipse : public curve {
 				DECLARE_PTR(ellipse)
 
 				double radius;
@@ -737,7 +745,7 @@ typedef item const* ptr;
 				void print(std::ostream& o, int indent = 0) const;
 			};
 
-			struct bspline_curve : public curve {
+			struct IFC_GEOM_API bspline_curve : public curve {
 				DECLARE_PTR(bspline_curve)
 
 				virtual bspline_curve* clone_() const { return new bspline_curve(*this); }
@@ -770,7 +778,7 @@ typedef item const* ptr;
 				int degree;
 			};
 
-			struct offset_curve : public curve {
+			struct IFC_GEOM_API offset_curve : public curve {
 				DECLARE_PTR(offset_curve)
 
 				direction3::ptr reference;
@@ -786,7 +794,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct trimmed_curve : public geom_item {
+			struct IFC_GEOM_API trimmed_curve : public geom_item {
 				DECLARE_PTR(trimmed_curve)
 
 				// @todo The copy constructor of point3 within the variant fails on the avx instruction
@@ -810,7 +818,7 @@ typedef item const* ptr;
 				void print(std::ostream& o, int indent = 0) const;
 			};
 
-			struct edge : public trimmed_curve {
+			struct IFC_GEOM_API edge : public trimmed_curve {
 				DECLARE_PTR(edge)
 
 				edge() : trimmed_curve() {}
@@ -827,7 +835,7 @@ typedef item const* ptr;
 			};
 
 			template <typename T = item>
-			struct collection_base : public geom_item {
+			struct IFC_GEOM_API collection_base : public geom_item {
 				std::vector<typename T::ptr> children;
 
 				collection_base() {}
@@ -893,7 +901,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct collection : public collection_base<geom_item> {
+			struct IFC_GEOM_API collection : public collection_base<geom_item> {
 				DECLARE_PTR(collection)
 
 				virtual collection* clone_() const { return new collection(*this); }
@@ -906,7 +914,7 @@ typedef item const* ptr;
 			};
 
 
-			struct loop : public collection_base<edge> {
+			struct IFC_GEOM_API loop : public collection_base<edge> {
 				DECLARE_PTR(loop)
 
 				boost::optional<bool> external, closed;
@@ -969,7 +977,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct face : public collection_base<loop> {
+			struct IFC_GEOM_API face : public collection_base<loop> {
 				DECLARE_PTR(face)
 
 				item::ptr basis;
@@ -990,7 +998,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct shell : public collection_base<face> {
+			struct IFC_GEOM_API shell : public collection_base<face> {
 				DECLARE_PTR(shell)
 
 				boost::optional<bool> closed;
@@ -1028,7 +1036,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct solid : public collection_base<shell> {
+			struct IFC_GEOM_API solid : public collection_base<shell> {
 				DECLARE_PTR(solid)
 
 				virtual solid* clone_() const { return new solid(*this); }
@@ -1040,7 +1048,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct loft : public collection_base<geom_item> {
+			struct IFC_GEOM_API loft : public collection_base<geom_item> {
 				DECLARE_PTR(loft)
 
 				item::ptr axis;
@@ -1059,9 +1067,9 @@ typedef item const* ptr;
 				}
 			};
 
-			struct surface : public geom_item {};
+			struct IFC_GEOM_API surface : public geom_item {};
 
-			struct plane : public surface {
+			struct IFC_GEOM_API plane : public surface {
 				DECLARE_PTR(plane)
 
 				virtual plane* clone_() const { return new plane(*this); }
@@ -1073,7 +1081,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct cylinder : public surface {
+			struct IFC_GEOM_API cylinder : public surface {
 				DECLARE_PTR(cylinder)
 
 				double radius;
@@ -1087,7 +1095,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct sphere : public surface {
+			struct IFC_GEOM_API sphere : public surface {
 				DECLARE_PTR(sphere)
 
 				double radius;
@@ -1101,7 +1109,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct torus : public surface {
+			struct IFC_GEOM_API torus : public surface {
 				DECLARE_PTR(torus)
 
 				double radius1;
@@ -1116,7 +1124,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct bspline_surface : public surface {
+			struct IFC_GEOM_API bspline_surface : public surface {
 				DECLARE_PTR(bspline_surface)
 
 				virtual bspline_surface* clone_() const { return new bspline_surface(*this); }
@@ -1159,7 +1167,7 @@ typedef item const* ptr;
 				std::array<int, 2> degree;
 			};
 
-			struct sweep : public geom_item {
+			struct IFC_GEOM_API sweep : public geom_item {
 				DECLARE_PTR(sweep)
 
 				item::ptr basis;
@@ -1168,7 +1176,7 @@ typedef item const* ptr;
 				sweep(matrix4::ptr m, item::ptr b) : geom_item(m), basis(b) {}
 			};
 
-			struct extrusion : public sweep {
+			struct IFC_GEOM_API extrusion : public sweep {
 				DECLARE_PTR(extrusion)
 
 				direction3::ptr direction;
@@ -1187,7 +1195,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct revolve : public sweep {
+			struct IFC_GEOM_API revolve : public sweep {
 				DECLARE_PTR(revolve)
 
 				point3::ptr axis_origin;
@@ -1205,7 +1213,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct sweep_along_curve : public sweep {
+			struct IFC_GEOM_API sweep_along_curve : public sweep {
 				DECLARE_PTR(sweep_along_curve)
 
 				item::ptr surface;
@@ -1226,7 +1234,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct node : public item {
+			struct IFC_GEOM_API node : public item {
 				DECLARE_PTR(node)
 
 				// std::map<std::string, geom_item> representations;
@@ -1242,7 +1250,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct boolean_result : public collection_base<geom_item> {
+			struct IFC_GEOM_API boolean_result : public collection_base<geom_item> {
 				DECLARE_PTR(boolean_result)
 
 				enum operation_t {
@@ -1300,7 +1308,7 @@ typedef item const* ptr;
 				static const size_t max = std::tuple_size<impl::UpgradesTuple>::value;
 			};
 
-			boost::optional<face::ptr> loop_to_face_upgrade_impl(ptr item);
+			IFC_GEOM_API boost::optional<face::ptr> loop_to_face_upgrade_impl(ptr item);
 			template <typename T>
 			class loop_to_face_upgrade {
 			private:
@@ -1326,7 +1334,7 @@ typedef item const* ptr;
 				}
 			};
 
-			boost::optional<edge::ptr> curve_to_edge_upgrade_impl(ptr item);
+			IFC_GEOM_API boost::optional<edge::ptr> curve_to_edge_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_edge_upgrade {
 			private:
@@ -1352,7 +1360,7 @@ typedef item const* ptr;
 				}
 			};
 
-			boost::optional<loop::ptr> curve_to_loop_upgrade_impl(ptr item);
+			IFC_GEOM_API boost::optional<loop::ptr> curve_to_loop_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_loop_upgrade {
 			private:
@@ -1378,7 +1386,7 @@ typedef item const* ptr;
 				}
 			};
 
-			boost::optional<loop::ptr> edge_to_loop_upgrade_impl(ptr item);
+			IFC_GEOM_API boost::optional<loop::ptr> edge_to_loop_upgrade_impl(ptr item);
 			template <typename T>
 			class edge_to_loop_upgrade {
 			private:
@@ -1404,7 +1412,7 @@ typedef item const* ptr;
 				}
 			};
 
-			boost::optional<face::ptr> curve_to_face_upgrade_impl(ptr item);
+			IFC_GEOM_API boost::optional<face::ptr> curve_to_face_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_face_upgrade {
 			private:
@@ -1430,7 +1438,7 @@ typedef item const* ptr;
 				}
 			};
 
-			boost::optional<function_item::ptr> loop_to_function_item_upgrade_impl(ptr item);
+			IFC_GEOM_API boost::optional<function_item::ptr> loop_to_function_item_upgrade_impl(ptr item);
             template <typename T>
             class loop_to_function_item_upgrade {
               private:
@@ -1672,7 +1680,7 @@ typedef item const* ptr;
 			}
 		}
 
-		taxonomy::collection::ptr flatten(const taxonomy::collection::ptr& deep);
+		IFC_GEOM_API taxonomy::collection::ptr flatten(const taxonomy::collection::ptr& deep);
 
 		template <typename Fn>
 		bool apply_predicate_to_collection(const taxonomy::ptr& i, Fn fn) {
@@ -1724,10 +1732,10 @@ typedef item const* ptr;
 			return collection;
 		}
 
-		taxonomy::solid::ptr create_box(double dx, double dy, double dz);
-		taxonomy::solid::ptr create_box(double x, double y, double z, double dx, double dy, double dz);
+		IFC_GEOM_API taxonomy::solid::ptr create_box(double dx, double dy, double dz);
+		IFC_GEOM_API taxonomy::solid::ptr create_box(double x, double y, double z, double dx, double dy, double dz);
 
-		struct layerset_information {
+		struct IFC_GEOM_API layerset_information {
 			std::vector<double> thicknesses;
 			std::vector<ifcopenshell::geometry::taxonomy::ptr> layers;
 			std::vector<ifcopenshell::geometry::taxonomy::style> styles;

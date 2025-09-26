@@ -26,3 +26,6 @@ std::string IfcGeom::NumberNativeDouble::to_string() const {
 	ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << value_;
 	return ss.str();
 }
+
+template struct IFC_GEOM_API IfcGeom::OpaqueCoordinate<3>;
+template struct IFC_GEOM_API IfcGeom::OpaqueCoordinate<4>;

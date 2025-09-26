@@ -25,6 +25,7 @@
 #include "../../../ifcgeom/IfcGeomElement.h"
 #include "../../../ifcgeom/Iterator.h"
 #include "OpenCascadeConversionResult.h"
+#include "OpenCascadeKernel.h"
 #include "base_utils.h"
 
 #include <NCollection_UBTree.hxx>
@@ -1503,7 +1504,7 @@ namespace IfcGeom {
 			settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
 			settings_.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
 
-			IfcGeom::Iterator it(settings_, &f, {}, 1);
+			IfcGeom::Iterator it(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(new OpenCascadeKernel(settings_)), settings_, &f, {}, 1);
 
 			add_file(it);
 		}

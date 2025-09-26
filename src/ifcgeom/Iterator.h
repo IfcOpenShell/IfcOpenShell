@@ -86,7 +86,7 @@
 
 namespace IfcGeom {
 
-	struct geometry_conversion_result {
+	struct IFC_GEOM_API geometry_conversion_result {
 		int index;
 
 		// For NoParallelMapping==true
@@ -102,7 +102,7 @@ namespace IfcGeom {
 	};
 
 
-	class Iterator {
+	class IFC_GEOM_API Iterator {
 	private:
 		GeometrySerializer* cache_ = nullptr;
 
@@ -212,50 +212,33 @@ namespace IfcGeom {
 
 		ifcopenshell::geometry::taxonomy::direction3::ptr remove_offset_();
 	public:
-		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
+
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
 			, num_threads_(num_threads)
-			, geometry_library_(geometry_library)
-			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
+			, geometry_library_(geometry_library->geometry_library())
+			// @todo verify whether settings are correctly passed on
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
 		{
 		}
 
-		Iterator(const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
-			: settings_(settings)
-			, ifc_file(file)
-			, filters_(filters)
-			, num_threads_(num_threads)
-			, geometry_library_("opencascade")
-			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
-		{
-		}
-
-		Iterator(const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(1)
-			, geometry_library_("opencascade")
-			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
+			, geometry_library_(geometry_library->geometry_library())
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
 		{
 		}
 
-		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
-			: settings_(settings)
-			, ifc_file(file)
-			, num_threads_(1)
-			, geometry_library_(geometry_library)
-			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
-		{
-		}
-
-		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(num_threads)
-			, geometry_library_(geometry_library)
-			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
+			, geometry_library_(geometry_library->geometry_library())
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
 		{
 		}
 

@@ -24,6 +24,10 @@
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
 
+#ifdef IFOPSH_SIMPLE_KERNEL
+#define CgalShape SimpleCgalShape
+#endif
+
 #include <CGAL/minkowski_sum_3.h>
 #include <CGAL/exceptions.h>
 

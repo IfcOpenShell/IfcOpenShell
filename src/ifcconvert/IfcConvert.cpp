@@ -45,6 +45,7 @@
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
 #include "../ifcgeom/IfcGeomRenderStyles.h"
+#include "../ifcgeom/hybrid_kernel.h"
 
 #include "../ifcparse/utils.h"
 
@@ -1018,7 +1019,7 @@ int main(int argc, char** argv) {
     if (is_tesselated && (center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
 
-		IfcGeom::Iterator tmp_context_iterator(geometry_kernel, geometry_settings, ifc_file, filter_funcs, num_threads);
+		IfcGeom::Iterator tmp_context_iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings), geometry_settings, ifc_file, filter_funcs, num_threads);
 			
 		time_t start, end;
 		time(&start);
@@ -1064,7 +1065,7 @@ int main(int argc, char** argv) {
 
 	std::unique_ptr<IfcGeom::Iterator> context_iterator;
 	if (!elems_from_adaptor) {
-		context_iterator.reset(new IfcGeom::Iterator(geometry_kernel, geometry_settings, ifc_file, filter_funcs, num_threads));
+		context_iterator.reset(new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings), geometry_settings, ifc_file, filter_funcs, num_threads));
 	}	
 
 #if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
@@ -1639,7 +1640,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
 	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
 
-	IfcGeom::Iterator context_iterator(settings, &f, {}, 1);
+	IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "opencascade", settings), settings, &f, {}, 1);
 
 	if (!context_iterator.initialize()) {
 		return;

@@ -22,9 +22,9 @@
 namespace po = boost::program_options;
 
 namespace std {
-	istream& operator>>(istream& in, set<int>& ints);
-	istream& operator>>(istream& in, set<string>& ints);
-	istream& operator>>(istream& in, vector<double>& vs);
+	IFC_GEOM_API istream& operator>>(istream& in, set<int>& ints);
+	IFC_GEOM_API istream& operator>>(istream& in, set<string>& ints);
+	IFC_GEOM_API istream& operator>>(istream& in, vector<double>& vs);
 }
 #endif
 
@@ -249,7 +249,7 @@ namespace ifcopenshell {
 				CURVES_SURFACES_AND_SOLIDS
 			};
 
-			std::istream& operator>>(std::istream& in, OutputDimensionalityTypes& ioo);
+			IFC_GEOM_API std::istream& operator>>(std::istream& in, OutputDimensionalityTypes& ioo);
 
 			struct OutputDimensionality : public SettingBase<OutputDimensionality, OutputDimensionalityTypes> {
 				static constexpr const char* const name = "dimensionality";
@@ -266,7 +266,7 @@ namespace ifcopenshell {
 				SERIALIZED
 			};
 
-			std::istream& operator>>(std::istream& in, IteratorOutputOptions& ioo);
+			IFC_GEOM_API std::istream& operator>>(std::istream& in, IteratorOutputOptions& ioo);
 
 			struct IteratorOutput : public SettingBase<IteratorOutput, IteratorOutputOptions> {
 				static constexpr const char* const name = "iterator-output";
@@ -395,7 +395,7 @@ namespace ifcopenshell {
 				MAXSTEPSIZE,
 				MINSTEPS };
 
-			std::istream& operator>>(std::istream& in, FunctionStepMethod& ioo);
+			IFC_GEOM_API std::istream& operator>>(std::istream& in, FunctionStepMethod& ioo);
 
          struct FunctionStepType : public SettingBase<FunctionStepType, FunctionStepMethod> {
                static constexpr const char* const name = "function-step-type";
@@ -425,7 +425,7 @@ namespace ifcopenshell {
 				POLYHEDRON_WITH_HOLES
 			};
 
-			std::istream& operator>>(std::istream& in, TriangulationMethod& ioo);
+			IFC_GEOM_API std::istream& operator>>(std::istream& in, TriangulationMethod& ioo);
 
 			struct TriangulationType : public SettingBase<TriangulationType, TriangulationMethod> {
 				static constexpr const char* const name = "triangulation-type";
@@ -536,7 +536,7 @@ namespace ifcopenshell {
 		}
 
 		template <typename settings_t>
-		class IFC_GEOM_API SettingsContainer {
+		class SettingsContainer {
 		public:
          typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, FunctionStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
 		private:
@@ -645,7 +645,7 @@ namespace ifcopenshell {
 			}
 		};
 
-		class IFC_GEOM_API Settings : public SettingsContainer<
+		class Settings : public SettingsContainer<
                                           std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset>
 		>
 		{};
@@ -654,16 +654,13 @@ namespace ifcopenshell {
 
 // @todo find a place
 namespace IfcGeom {
-	class IFC_GEOM_API geometry_exception : public std::exception {
+	class IFC_GEOM_API geometry_exception : public std::runtime_error {
 	protected:
 		std::string message;
 	public:
 		geometry_exception(const std::string& m)
-			: message(m) {}
-		virtual ~geometry_exception() throw () {}
-		virtual const char* what() const throw() {
-			return message.c_str();
-		}
+			: std::runtime_error(m)
+		{}
 	};
 
 	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {

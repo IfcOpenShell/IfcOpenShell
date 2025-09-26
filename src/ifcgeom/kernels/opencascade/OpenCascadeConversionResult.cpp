@@ -7,6 +7,8 @@
 #include <Geom_SphericalSurface.hxx>
 #include <Geom_Plane.hxx>
 #include <BRepTools_WireExplorer.hxx>
+#include <TopoDS_Compound.hxx>
+#include <BRep_Builder.hxx>
 
 #include "OpenCascadeConversionResult.h"
 
@@ -546,6 +548,26 @@ ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::intersect(Conve
 	return boolean_op(BOPAlgo_COMMON, shape_, ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_);
 }
 
+ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::concat(ConversionResultShape* other)
+{
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	
+	auto& left = shape_;
+	auto& right = ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_;
+
+	if (left.ShapeType() == TopAbs_COMPOUND) {
+		compound = TopoDS::Compound(left);
+	} else {
+		builder.MakeCompound(compound);
+		builder.Add(compound, left);
+	}
+	
+	builder.Add(compound, right);
+
+	return new OpenCascadeShape(std::move(compound));
+}
+
 std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::OpenCascadeShape::bounding_box() const
 {
 	throw std::runtime_error("Not implemented");
@@ -554,6 +576,113 @@ std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::Open
 ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::moved(ifcopenshell::geometry::taxonomy::matrix4::ptr t) const
 {
 	return new OpenCascadeShape(IfcGeom::util::apply_transformation(shape_, *t));
+}
+
+namespace {
+	void accumulate(const gp_Ax3& ax, const gp_Dir& normal, double area, double& along_x, double& along_y, double& along_z) {
+		along_x += area * fabs(ax.XDirection().Dot(normal));
+		along_y += area * fabs(ax.YDirection().Dot(normal));
+		along_z += area * fabs(ax.Direction().Dot(normal));
+	}
+
+	void surface_area_along_direction_(double tol, const TopoDS_Shape& s, const gp_Ax3& ax, double& along_x, double& along_y, double& along_z) {
+		along_x = along_y = along_z = 0.;
+
+		bool meshed = false;
+
+		TopExp_Explorer exp(s, TopAbs_FACE);
+		for (; exp.More(); exp.Next()) {
+			const TopoDS_Face& face = TopoDS::Face(exp.Current());
+			Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
+			Handle(Geom_Plane) plane = Handle(Geom_Plane)::DownCast(surf);
+
+			if (surf->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+				GProp_GProps prop_area;
+				BRepGProp::SurfaceProperties(face, prop_area);
+				const double area = prop_area.Mass();
+
+				accumulate(ax, plane->Position().Direction(), area, along_x, along_y, along_z);
+			} else {
+
+				if (!meshed) {
+					try {
+						BRepMesh_IncrementalMesh(s, tol);
+					} catch (...) {
+						Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
+						return;
+					}
+					meshed = true;
+				}
+
+				TopLoc_Location loc;
+				Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
+				if (!tri.IsNull()) {
+					std::vector<gp_XYZ> coords;
+					coords.reserve(tri->NbNodes());
+
+					for (int i = 1; i <= tri->NbNodes(); ++i) {
+						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
+					}
+
+					const Poly_Array1OfTriangle& triangles = tri->Triangles();
+					for (int i = 1; i <= triangles.Length(); ++i) {
+						int n1, n2, n3;
+
+						if (face.Orientation() == TopAbs_REVERSED) {
+							triangles(i).Get(n3, n2, n1);
+						} else {
+							triangles(i).Get(n1, n2, n3);
+						}
+
+						const gp_XYZ& pt1 = coords[n1 - 1];
+						const gp_XYZ& pt2 = coords[n2 - 1];
+						const gp_XYZ& pt3 = coords[n3 - 1];
+						const gp_Vec v1 = pt2 - pt1;
+						const gp_Vec v2 = pt3 - pt2;
+						const gp_Vec v3 = pt1 - pt3;
+						const gp_Vec normal_vector = v1 ^ v2;
+						if (normal_vector.Magnitude() > 1.e-7) {
+							gp_Dir normal = gp_Dir();
+
+							double edge_lengths[3] = { v1.Magnitude(), v2.Magnitude(), v3.Magnitude() };
+							std::sort(&edge_lengths[0], &edge_lengths[2]);
+
+							const double& a = edge_lengths[0];
+							const double& b = edge_lengths[1];
+							const double& c = edge_lengths[2];
+
+							const double area = 0.25 * sqrt((a + (b + c)) * (c - (a - b)) * (c + (a - b)) * (a + (b - c)));
+							accumulate(ax, normal, area, along_x, along_y, along_z);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+bool ifcopenshell::geometry::OpenCascadeShape::surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const
+{
+	gp_GTrsf trsf;
+
+	if (place->components_) {
+		gp_Trsf tr;
+		const auto& m = place->ccomponents();
+		tr.SetValues(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+		);
+		trsf = tr;
+	}
+
+	gp_Mat mat = trsf.Trsf().HVectorialPart();
+	gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));
+
+	surface_area_along_direction_(tol, shape_, ax, along_x, along_y, along_z);
+
+	return true;
 }
 
 void ifcopenshell::geometry::OpenCascadeShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {

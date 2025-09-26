@@ -20,6 +20,8 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
+#include "../../../ifcgeom/kernels/ifc_geomlibrary_api.h"
+
 #include "../../../ifcgeom/IfcGeomElement.h"
 
 #undef Handle
@@ -100,7 +102,7 @@ namespace ifcopenshell { namespace geometry {
 	using IfcGeom::negate_;
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-	class IFC_GEOM_API NumberEpeck : public OpaqueNumber {
+	class IFC_GEOMLIBRARY_API NumberEpeck : public OpaqueNumber {
 	private:
 		CGAL::Epeck::FT value_;
 
@@ -175,7 +177,7 @@ namespace ifcopenshell { namespace geometry {
 	};
 #endif
 
-	class CgalShape : public IfcGeom::ConversionResultShape {
+	class IFC_GEOMLIBRARY_API CgalShape : public IfcGeom::ConversionResultShape {
 	private:
 		bool convex_tag_ = false;
 		mutable boost::optional<cgal_shape_t> shape_;
@@ -250,17 +252,20 @@ namespace ifcopenshell { namespace geometry {
 		virtual ConversionResultShape* add(ConversionResultShape*);
 		virtual ConversionResultShape* subtract(ConversionResultShape*);
 		virtual ConversionResultShape* intersect(ConversionResultShape*);
+		virtual ConversionResultShape* concat(ConversionResultShape*);
 
 		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
 		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
+
+		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const;
 
 		bool convex_tag() const { return convex_tag_; }
 		bool& convex_tag() { return convex_tag_; }
 	};
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-	class CgalShapeHalfSpaceDecomposition : public IfcGeom::ConversionResultShape {
+	class IFC_GEOMLIBRARY_API CgalShapeHalfSpaceDecomposition : public IfcGeom::ConversionResultShape {
 	private:
 		std::unique_ptr<halfspace_tree<Kernel_>> shape_;
 		std::list<CGAL::Plane_3<Kernel_>> planes_;
@@ -315,12 +320,23 @@ namespace ifcopenshell { namespace geometry {
 		virtual ConversionResultShape* add(ConversionResultShape*);
 		virtual ConversionResultShape* subtract(ConversionResultShape*);
 		virtual ConversionResultShape* intersect(ConversionResultShape*);
+		virtual ConversionResultShape* concat(ConversionResultShape*) {
+			return nullptr;
+		}
 
 		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
 		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
+
+		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const {
+			return false;
+		}
 	};
 #endif
 }}
+
+#ifdef IFOPSH_SIMPLE_KERNEL
+#undef CgalShape
+#endif
 
 #endif

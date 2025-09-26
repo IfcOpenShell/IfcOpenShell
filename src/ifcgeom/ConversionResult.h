@@ -290,10 +290,13 @@ namespace IfcGeom {
 		virtual ConversionResultShape* add(ConversionResultShape*) = 0;
 		virtual ConversionResultShape* subtract(ConversionResultShape*) = 0;
 		virtual ConversionResultShape* intersect(ConversionResultShape*) = 0;
+		virtual ConversionResultShape* concat(ConversionResultShape*) = 0;
 
 		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) = 0;
 		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) = 0;
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const = 0;
+		
+		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const = 0;
 
 		virtual ~ConversionResultShape() {}
 		
@@ -327,6 +330,15 @@ namespace IfcGeom {
 		ifcopenshell::geometry::taxonomy::style::ptr StylePtr() const { return style_; }
 		void setStyle(ifcopenshell::geometry::taxonomy::style::ptr newStyle) { style_ = newStyle; }
 		int ItemId() const { return id; }
+		ConversionResultShape* apply_transform(double unit_scale = 1.) const {
+			if (unit_scale != 1.) {
+				auto m = ifcopenshell::geometry::taxonomy::matrix4::ptr(placement_->clone_());
+				m->pre_multiply_scale(unit_scale);
+				return shape_->moved(m);
+			} else {
+				return shape_->moved(placement_);
+			}
+		}
 	};
 
 	typedef std::vector<ConversionResult> ConversionResults;

@@ -71,6 +71,7 @@
 }
 
 %newobject IfcGeom::Representation::BRep::item;
+%newobject IfcGeom::Representation::BRep::as_compound;
 
 %newobject IfcGeom::ConversionResultShape::halfspaces;
 %newobject IfcGeom::ConversionResultShape::box;
@@ -78,6 +79,7 @@
 %newobject IfcGeom::ConversionResultShape::add;
 %newobject IfcGeom::ConversionResultShape::subtract;
 %newobject IfcGeom::ConversionResultShape::intersect;
+%newobject IfcGeom::ConversionResultShape::concat;
 %newobject IfcGeom::ConversionResultShape::moved;
 
 %newobject IfcGeom::ConversionResultShape::area;
@@ -635,7 +637,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::entity_filter ef{ include, false, elems_set };
-		return new IfcGeom::Iterator(geometry_library, settings, file, {ef}, num_threads);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {ef}, num_threads);
 	}
 
 	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
@@ -644,13 +646,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		af.attribute_name = "GlobalId";
 		af.populate(elems_set);
 		af.include = include;
-		return new IfcGeom::Iterator(geometry_library, settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads);
 	}
 
 	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
 		std::set<int> elems_set(elems.begin(), elems.end());
 		IfcGeom::instance_id_filter af(include, false, elems_set);
-		return new IfcGeom::Iterator(geometry_library, settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads);
 	}
 %}
 
@@ -876,7 +878,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& st, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->file_;
 			
-		ifcopenshell::geometry::Converter kernel(geometry_library, file, st);
+		ifcopenshell::geometry::Converter kernel(ifcopenshell::geometry::kernels::construct(file, geometry_library, st), file, st);
 			
 		if (typename Schema::IfcProduct* product = instance->as<typename Schema::IfcProduct>()) {
 			if (representation) {

@@ -51,14 +51,14 @@
 
 #include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
-#include "../../../ifcgeom/ifc_geom_api.h"
+#include "../../../ifcgeom/kernels/ifc_geomlibrary_api.h"
 
 #include "../../../ifcgeom/taxonomy.h"
 #include "../../../ifcgeom/ConversionSettings.h"
 
 namespace IfcGeom {
 
-class IFC_GEOM_API OpenCascadeKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
+class IFC_GEOMLIBRARY_API OpenCascadeKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
 private:
 
 	/*
@@ -102,6 +102,12 @@ public:
 		, faceset_helper_(nullptr)
 		, precision_(settings.get<ifcopenshell::geometry::settings::Precision>().get())
 	{}
+
+	virtual AbstractKernel* clone() const {
+		return new OpenCascadeKernel(settings());
+	}
+
+	virtual bool supports_boolean_operations() const { return true; }
 
 	bool convert(const ifcopenshell::geometry::taxonomy::extrusion::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&, bool reversed_surface = false);
