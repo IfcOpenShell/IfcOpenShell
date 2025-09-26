@@ -72,6 +72,8 @@ jobs:
             # We don't use gmpcxx, but it comes preinstalled on macos runner as arm64 bottle
             # and CGAL detects it and breaks cross compilation.
             brew uninstall --ignore-dependencies gmp
+            # Required by Python.
+            /usr/local/bin/brew install gettext openssl
           fi
           set -o pipefail
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
