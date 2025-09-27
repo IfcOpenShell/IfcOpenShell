@@ -283,6 +283,7 @@ class IfcImporter:
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
         self.setup_arrays()
+        self.update_linked_aggregates()
         self.profile_code("Setup arrays")
         tool.Project.load_linked_models_from_ifc()
         self.profile_code("Load linked models")
@@ -1217,6 +1218,36 @@ class IfcImporter:
                     for i in range(len(data)):
                         tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
                         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+
+    def update_linked_aggregates(self):
+        # TODO Remove this after a while. See commit 17d6b8a
+        # https://github.com/IfcOpenShell/IfcOpenShell/commit/17d6b8af61c8dd7cd82f6e72b2fb3831d851a33d#commitcomment-163151609
+
+        groups = self.file.by_type("IfcGroup")
+        target_groups = [group for group in groups if group.Name == "BBIM_Linked_Aggregate"]
+        if not target_groups:
+            return
+
+        for i, group in enumerate(target_groups):
+            name = "Default"
+            elements = ifcopenshell.util.element.get_grouped_by(self.file.by_id(group.id()), is_recursive=True)
+            for j, element in enumerate(elements):
+                split = element.Name.rsplit("_")
+                name = split[0]
+                try:
+                    aggregate_index = int(split[1])
+                except:
+                    aggregate_index = 0
+                pset = ifcopenshell.util.element.get_pset(element, "BBIM_Linked_Aggregate", should_inherit=False)
+                if not pset:
+                    return
+                if "Aggregate_Index" not in pset.keys():
+                    ifcopenshell.api.run(
+                        "pset.edit_pset",
+                        self.file,
+                        pset=self.file.by_id(pset["id"]),
+                        properties={"Aggregate_Index": aggregate_index, "Name": name},
+                    )
 
 
 class IfcImportSettings:
