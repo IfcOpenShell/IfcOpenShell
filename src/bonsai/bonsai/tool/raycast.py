@@ -19,6 +19,7 @@
 import bmesh
 import bpy
 import copy
+import numpy as np
 from bpy_extras import view3d_utils
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -213,15 +214,7 @@ class Raycast(bonsai.core.tool.Raycast):
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
         points = []
 
-        # Makes the snapping point more or less sticky than others
-        # It changes the distance and affects how the snapping point are sorted
-        # We multiply by the increment snap which is based on the viewport zoom
-        if rv3d.view_perspective == "PERSP":
-            snap_threshold = rv3d.view_distance / 100
-        if rv3d.view_perspective == "ORTHO" or (
-            rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
-        ):
-            snap_threshold = rv3d.window_matrix.to_scale()[1] * -1 / 100
+        snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -314,12 +307,7 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
-        if rv3d.view_perspective == "PERSP":
-            snap_threshold = rv3d.view_distance / 100
-        if rv3d.view_perspective == "ORTHO" or (
-            rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
-        ):
-            snap_threshold = rv3d.window_matrix.to_scale()[1] * -1 / 100
+        snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -397,12 +385,7 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
-        if rv3d.view_perspective == "PERSP":
-            snap_threshold = rv3d.view_distance / 100
-        if rv3d.view_perspective == "ORTHO" or (
-            rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
-        ):
-            snap_threshold = rv3d.window_matrix.to_scale()[1] * -1 / 100
+        snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -515,3 +498,16 @@ class Raycast(bonsai.core.tool.Raycast):
 
         else:
             return None, None, None
+
+    @classmethod
+    def calculate_snap_threshold(cls, view_distance):
+        snap_threshold = view_distance / 100
+        area = tool.Blender.get_view3d_area()
+        lens = area.spaces.active.lens
+        xp = np.array([1, 10, 50])
+        fp = np.array([50, 10, 1])
+        value = np.interp(lens, xp, fp)
+        if lens < 50:
+            snap_threshold *= value
+        return snap_threshold
+
