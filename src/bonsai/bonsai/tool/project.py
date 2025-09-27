@@ -483,3 +483,23 @@ class Project(bonsai.core.tool.Project):
             organisation_email=organization_email,
             authorisation=authorization,
         )
+
+    @classmethod
+    def get_clipping_planes_normals(cls):
+        normals =[]
+        for clipping_plane in tool.Project.get_project_props().clipping_planes:
+            plane = clipping_plane.obj
+            if not plane or not plane.data:
+                continue
+
+            if plane.mode == "EDIT":
+                continue  # A profile decorator or something else is used here.
+
+            v1 = plane.matrix_world @ plane.data.vertices[0].co
+            v2 = plane.matrix_world @ plane.data.vertices[1].co
+            v3 = plane.matrix_world @ plane.data.vertices[2].co
+            d1 = v1 - v2
+            d2 = v3 - v2
+            normals.append((v1, d1.cross(d2).normalized()))
+        return normals
+        

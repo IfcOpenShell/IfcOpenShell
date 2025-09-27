@@ -491,7 +491,7 @@ class Snap(bonsai.core.tool.Snap):
             "distance": 10,  # High value so it has low priority
         }
         detected_snaps.append(snap_point)
-
+        detected_snaps = [snap for snap in detected_snaps if (tool.Raycast.point_is_visible_in_clipping_plane(snap["point"]) or snap["group"] == "Plane")]
         return detected_snaps
 
     @classmethod

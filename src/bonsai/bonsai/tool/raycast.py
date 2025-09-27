@@ -135,6 +135,38 @@ class Raycast(bonsai.core.tool.Raycast):
             return False
 
     @classmethod
+    def object_is_visible_in_clipping_plane(cls, obj):
+        is_visible = True
+        if obj.type == "EMPTY":
+            vertex = obj.location
+            is_visible = cls.point_is_visible_in_clipping_plane(vertex)
+
+        if obj.type == "CURVE":
+            obj = bpy.data.objects.new("new_object", obj.to_mesh().copy())
+
+        if obj.type == "MESH":
+            for v in obj.data.vertices:
+                vertex = obj.matrix_world @ v.co
+                is_visible = cls.point_is_visible_in_clipping_plane(vertex)
+                if is_visible:
+                    break
+        return is_visible
+
+    @classmethod
+    def point_is_visible_in_clipping_plane(cls, vertex):
+        normals = tool.Project.get_clipping_planes_normals()
+        print("NORMALS", normals)
+        if not normals:
+            return True
+        for normal in normals:
+            t = (vertex - normal[0]).normalized()
+            result = normal[1].dot(t)
+            if result < 0:
+                return False
+        return True
+
+        
+    @classmethod
     def get_viewport_ray_data(
         cls, context: bpy.types.Context, event: bpy.types.Event, mouse_pos: tuple[int, int] = None
     ):
@@ -421,7 +453,9 @@ class Raycast(bonsai.core.tool.Raycast):
         for obj, bbox_2d in objs_2d_bbox:
             if bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
-                    objs_to_raycast.append(obj)
+                    if tool.Raycast.object_is_visible_in_clipping_plane(obj):
+                        objs_to_raycast.append(obj)
+             
         return objs_to_raycast
 
     @classmethod
