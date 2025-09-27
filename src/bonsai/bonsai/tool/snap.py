@@ -518,12 +518,7 @@ class Snap(bonsai.core.tool.Snap):
         def sort_points_by_weighted_distance(snapping_points):
             for snap in snapping_points:
                 rv3d = bpy.context.region_data
-                if rv3d.view_perspective == "PERSP":
-                    zoom_factor = rv3d.view_distance
-                if rv3d.view_perspective == "ORTHO" or (
-                    rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
-                ):
-                    zoom_factor = rv3d.window_matrix.to_scale()[1] * -1
+                zoom_factor = rv3d.view_distance
                 if snap["type"] == "Vertex":
                     snap["distance"] *= zoom_factor / 10
                 if snap["type"] == "Edge Center":
