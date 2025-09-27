@@ -79,7 +79,7 @@ class Snap(bonsai.core.tool.Snap):
             ortho_threshold = [-10.0, -4.75, -2.2, -0.75]
             distances = [3, 6, 10, 20]
 
-        increment = None
+        increment = 1
         if rv3d.view_perspective == "PERSP":
             if rv3d.view_distance < distances[0]:
                 increment = (1 / fractions[0]) * factor
