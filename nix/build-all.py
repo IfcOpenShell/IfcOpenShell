@@ -932,17 +932,20 @@ if "libxml2" in targets:
     if MAC_CROSS_COMPILE_INTEL:
         OLD_CC = os.environ.get("CC")
         os.environ["CC"] = MAC_CROSS_COMPILE_INTEL_CC
+    build_tool_args=[
+        "--without-python",
+        ENABLE_FLAG,
+        DISABLE_FLAG,
+        "--without-zlib",
+        "--without-iconv",
+        "--without-lzma",
+    ]
+    if "wasm" in flags:
+        build_tool_args.append("--without-threads")
     build_dependency(
         f"libxml2-{LIBXML2_VERSION}",
         "autoconf",
-        build_tool_args=[
-            "--without-python",
-            ENABLE_FLAG,
-            DISABLE_FLAG,
-            "--without-zlib",
-            "--without-iconv",
-            "--without-lzma",
-        ],
+        build_tool_args=build_tool_args,
         download_url=f"https://download.gnome.org/sources/libxml2/{'.'.join(LIBXML2_VERSION.split('.')[0:2])}/",
         download_name=f"libxml2-{LIBXML2_VERSION}.tar.xz",
     )
@@ -1290,6 +1293,13 @@ else:
 
 if "libxml2" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}")
+    if "wasm" in flags:
+        cmake_args.extend(
+            [
+                f"-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
+                f"-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
+            ]
+        )
 
 if "hdf5" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}")
