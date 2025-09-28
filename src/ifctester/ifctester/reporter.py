@@ -86,7 +86,7 @@ class ResultsSpecification(TypedDict):
     total_checks_pass: int
     total_checks_fail: int
     percent_checks_pass: ResultsPercent
-    required: bool
+    cardinality: str
     applicability: list[str]
     requirements: list[ResultsRequirement]
 
@@ -356,6 +356,13 @@ class Json(Reporter):
         )
         percent_checks_pass = math.floor((total_checks_pass / total_checks) * 100) if total_checks else "N/A"
 
+        if specification.minOccurs == 1 and specification.maxOccurs == "unbounded":
+            cardinality = "required"
+        elif specification.minOccurs == 0 and specification.maxOccurs == "unbounded":
+            cardinality = "optional"
+        elif specification.minOccurs == 0 and specification.maxOccurs == 0:
+            cardinality = "prohibited"
+
         return ResultsSpecification(
             name=specification.name,
             description=specification.description,
@@ -370,7 +377,7 @@ class Json(Reporter):
             total_checks_pass=total_checks_pass,
             total_checks_fail=total_checks - total_checks_pass,
             percent_checks_pass=percent_checks_pass,
-            required=specification.minOccurs != 0,
+            cardinality=cardinality,
             applicability=applicability,
             requirements=requirements,
         )
@@ -435,6 +442,12 @@ class Html(Json):
     def report(self) -> None:
         super().report()
         for spec in self.results["specifications"]:
+            print('checking', spec["cardinality"])
+            if spec["cardinality"] == "optional" and spec["total_checks"] == 0:
+                spec["is_skipped"] = True
+            spec["is_prohibited"] = spec["cardinality"] == "prohibited"
+            spec["cardinality"] = spec["cardinality"].capitalize()
+            spec["has_requirements"] = bool(spec["requirements"])
             for requirement in spec["requirements"]:
                 total_passed_entities = len(requirement["passed_entities"])
                 total_failed_entities = len(requirement["failed_entities"])
