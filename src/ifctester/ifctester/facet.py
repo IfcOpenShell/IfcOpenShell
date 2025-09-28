@@ -126,14 +126,16 @@ class Facet:
     ) -> str:
         if clause_type == "applicability":
             templates = self.applicability_templates
-        elif clause_type == "requirement":
-            is_prohibited = False
             if specification and specification.maxOccurs == 0:
-                is_prohibited = not is_prohibited
-            if requirement and requirement.cardinality == "prohibited":
-                is_prohibited = not is_prohibited
-            templates = self.prohibited_templates if is_prohibited else self.requirement_templates
-            if requirement and requirement.cardinality == "optional":
+                templates = self.prohibited_templates
+        elif clause_type == "requirement":
+            if specification and specification.maxOccurs == 0:
+                return "The requirement is not applicable"
+            if (not requirement) or isinstance(requirement, Entity) or requirement.cardinality == "required":
+                templates = self.requirement_templates
+            elif requirement.cardinality == "prohibited":
+                templates = self.prohibited_templates
+            elif requirement.cardinality == "optional":
                 templates = [
                     t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
                 ]

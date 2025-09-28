@@ -32,6 +32,7 @@ import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.util.pset
+import ifctester.ids
 import ifctester.facet
 from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
 
@@ -228,6 +229,31 @@ class TestEntity:
         ifc = ifcopenshell.file()
         wall3 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
         run("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
+
+    def test_to_string_required_applicability(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=1, maxOccurs="unbounded")
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("applicability", spec) == "All IFCWALL data"
+
+    def test_to_string_optional_applicability(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=0, maxOccurs="unbounded")
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("applicability", spec) == "All IFCWALL data"
+
+    def test_to_string_prohibited_applicability(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=0, maxOccurs=0)
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("applicability", spec) == "Shall not be IFCWALL data"
+
+    def test_to_string_ignored_requirement(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=0, maxOccurs=0)
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("requirement", spec) == "The requirement is not applicable"
+
+    def test_to_string_required_requirement(self):
+        spec = ifctester.ids.Specification(name="Foo")
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("requirement", spec) == "Shall be IFCWALL data"
 
 
 class TestAttribute:
