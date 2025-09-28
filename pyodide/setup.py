@@ -7,5 +7,5 @@ setup(name='ifcopenshell',
       author_email='thomas@aecgeeks.com',
       url='http://ifcopenshell.org',
       packages=find_packages(),
-      package_data={'': ['*.so', '*.json']},
+      package_data={'': ['*.so', '*.json', '*.ifc']},
 )
