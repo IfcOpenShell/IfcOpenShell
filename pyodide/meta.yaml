@@ -5,10 +5,6 @@ package:
 source:
   path: ../../IfcOpenShell
 
-requirements:
-  build:
-    - bison
-
 build:
   script: |
     BUILD_CFG=Release python nix/build-all.py --without-rocksdb --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py313 IfcOpenShell-Python
