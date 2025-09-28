@@ -107,16 +107,26 @@
             {{/instructions}}
 
             <div class="container">
-                <div class="{{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}} percent" style="width: {{^total_checks}}100{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}{{/total_checks}}%;">{{^total_checks}}Skipped{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}%{{/total_checks}}</div>
+                <div class="
+                {{#is_skipped}}skipped{{/is_skipped}}
+                {{^is_skipped}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/is_skipped}}
+                percent" style="width: {{^total_checks}}100{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}{{/total_checks}}%;">{{#is_skipped}}Skipped{{/is_skipped}}{{^is_skipped}}{{percent_checks_pass}}%{{/is_skipped}}</div>
             </div>
             <p>
-                <span class="item {{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}}">{{^total_checks}}Skipped{{/total_checks}}{{#total_checks}}{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}{{/total_checks}}</span>
+                <span class="item {{#is_skipped}}skipped{{/is_skipped}}{{^is_skipped}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/is_skipped}}">{{#is_skipped}}Optional: Skipped{{/is_skipped}}{{^is_skipped}}{{#status}}{{cardinality}}: Pass{{/status}}{{^status}}{{cardinality}}: Fail{{/status}}{{/is_skipped}}</span>
+                {{#is_prohibited}}
+                <span class="item">
+                    Elements matched: <strong>{{total_applicable}}</strong>
+                </span>
+                {{/is_prohibited}}
+                {{^is_prohibited}}
                 <span class="item">
                     Checks passed: <strong>{{total_checks_pass}}</strong> / <strong>{{total_checks}}</strong>
                 </span>
                 <span class="item">
                     Elements passed: <strong>{{total_applicable_pass}}</strong> / <strong>{{total_applicable}}</strong>
                 </span>
+                {{/is_prohibited}}
             </p>
             {{^is_ifc_version}}
             <p>
@@ -135,9 +145,11 @@
                 <li>{{.}}</li>
                 {{/applicability}}
             </ul>
+            {{#has_requirements}}
             <p>
                 <strong>Requirements</strong>
             </p>
+            {{/has_requirements}}
             <ol>
                 {{#requirements}}
                 <li class="{{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}}">

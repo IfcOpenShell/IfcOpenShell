@@ -328,7 +328,7 @@ class Specification:
                 for facet in self.requirements:
                     facet.status = False
         elif self.maxOccurs == 0:  # Prohibited specification
-            if self.applicable_entities and not self.requirements:
+            if self.applicable_entities:
                 self.status = False
 
     def get_usage(self) -> Cardinality:
