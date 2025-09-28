@@ -1263,6 +1263,11 @@ if "cgal" in targets:
 
 if "occ" in targets and USE_OCCT:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
+    if "wasm" in flags:
+        cmake_args.extend([
+            f"-DOCC_INCLUDE_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade",
+            f"-DOCC_LIBRARY_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}/lib",
+        ])
 
 elif "occ" in targets:
     # We don't support find_package for OCE.
