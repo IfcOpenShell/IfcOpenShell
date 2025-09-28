@@ -1243,6 +1243,8 @@ if "wasm" in flags:
     # Boost is built by the build script so should not be found
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
+    # set Eigen3 path for WASM to avoid find_package issues
+    cmake_args.append(f"-DEIGEN_DIR={DEPS_DIR}/install/eigen-install-{EIGEN_VERSION}/include/eigen3")
 
 schemas = os.environ.get("IFCOS_SCHEMAS")
 if schemas:
