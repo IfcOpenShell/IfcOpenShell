@@ -21,6 +21,8 @@ import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.bim.module.classification.prop as classification_prop
+import ifcopenshell.util.classification
+
 from bpy.types import Panel, UIList
 from bonsai.bim.module.classification.data import (
     ClassificationsData,
@@ -253,33 +255,28 @@ class ReferenceUI:
     def draw_reference_ui(self, reference: dict[str, Any]) -> None:
         row = self.layout.row(align=True)
 
-        split = row.split(factor=0.3)
-        col1 = split.column()
-        split = split.split(factor=0.3)
-        col2 = split.column()
-        split = split.split(factor=0.7)
-        col3 = split.column()
-        col4 = split.column()
-
-        if reference.get("ClassificationSystemName"):
-            col1.label(text=reference["ClassificationSystemName"], icon="OUTLINER_COLLECTION")
-        else:
-            col1.label(text="")
+        classification_entity = ifcopenshell.util.classification.get_classification(
+            reference["ifcClassificationReference"]
+        )
+        classification_name = classification_entity.Name if classification_entity else ""
+        row.label(text=classification_name, icon="OUTLINER_COLLECTION")
 
         if self.file.schema == "IFC2X3":
             name = reference["ItemReference"] or "No Identification"
         else:
             name = reference["Identification"] or "No Identification"
-        col2.label(text=name, icon="ASSET_MANAGER")
-        col3.label(text=reference["Name"] or "")
+        row.label(text=name, icon="ASSET_MANAGER")
 
-        button_row = col4.row(align=True)
+        # Name
+        row.label(text=reference.get("Name") or "")
+
+        # Buttons
         if reference["Location"]:
-            button_row.operator("bim.open_uri", icon="URL", text="").uri = reference["Location"]
+            row.operator("bim.open_uri", icon="URL", text="").uri = reference["Location"]
         if not self.props.active_reference_id:
-            op = button_row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
+            op = row.operator("bim.enable_editing_classification_reference", text="", icon="GREASEPENCIL")
             op.reference = reference["id"]
-        op = button_row.operator("bim.remove_classification_reference", text="", icon="X")
+        op = row.operator("bim.remove_classification_reference", text="", icon="X")
         op.reference = reference["id"]
         op.obj = self.obj
         op.obj_type = self.data.obj_type
