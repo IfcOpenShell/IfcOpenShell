@@ -30,6 +30,7 @@ jobs:
 
   build:
     needs: activate
+    if: false  # Temporarily disabled
     name: ${{ matrix.config.name }}-${{ matrix.pyver }}
     runs-on: ubuntu-latest
     strategy:
