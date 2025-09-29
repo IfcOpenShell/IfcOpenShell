@@ -146,23 +146,6 @@ jobs:
           sverchok_zip="$(pwd)/dist/$(ls dist)"
           blender --command extension install-file -r user_default $sverchok_zip
 
-      - name: Update index.json on extensions repo
-        run: |
-          set -x -e
-
-          # Setup Blender.
-          BLENDER_PATH=$(find blender-*/ -maxdepth 0 -exec readlink -f {} \;)
-          export PATH="$PATH:$BLENDER_PATH"
-          blender --version
-
-          cd bonsai_unstable_repo
-          git config --global user.name 'IfcOpenBot'
-          git config --global user.email 'IfcOpenBot@users.noreply.github.com'
-          git add index.json
-          git add readme.md
-          git commit -m "Update index.json"
-          git push
-
       - name: Run bonsai tests
         run: |
           set -x -e
