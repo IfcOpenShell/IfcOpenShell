@@ -442,7 +442,7 @@ class Html(Json):
     def report(self) -> None:
         super().report()
         for spec in self.results["specifications"]:
-            print('checking', spec["cardinality"])
+            print("checking", spec["cardinality"])
             if spec["cardinality"] == "optional" and spec["total_checks"] == 0:
                 spec["is_skipped"] = True
             spec["is_prohibited"] = spec["cardinality"] == "prohibited"
