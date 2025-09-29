@@ -38,6 +38,7 @@ exclude = [
     "src/ifc2ca/templates",
 ]
 [tool.ruff.lint]
+preview = true
 select = [
     # Default Ruff rules.
     # "E4",        # imports
