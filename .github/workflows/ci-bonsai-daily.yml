@@ -90,7 +90,6 @@ jobs:
           body: "See README in https://github.com/IfcOpenShell/bonsai_unstable_repo/ on how to setup autoupdates for daily Bonsai builds."
 
   update-extensions-repo-and-run-tests:
-    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout bonsai_unstable_repo repository
