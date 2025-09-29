@@ -136,6 +136,7 @@ class Facet:
             elif requirement.cardinality == "prohibited":
                 templates = self.prohibited_templates
             elif requirement.cardinality == "optional":
+                templates = self.requirement_templates
                 templates = [
                     t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
                 ]
