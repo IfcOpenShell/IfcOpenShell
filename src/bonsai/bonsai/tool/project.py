@@ -486,7 +486,7 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def get_clipping_planes_normals(cls):
-        normals =[]
+        normals = []
         for clipping_plane in tool.Project.get_project_props().clipping_planes:
             plane = clipping_plane.obj
             if not plane or not plane.data:
@@ -502,4 +502,3 @@ class Project(bonsai.core.tool.Project):
             d2 = v3 - v2
             normals.append((v1, d1.cross(d2).normalized()))
         return normals
-        
