@@ -1397,6 +1397,11 @@ if(BUILD_IFCGEOM)
         DESTINATION ${INCLUDEDIR}/ifcgeom
     )
 
+    file(GLOB SERIALIZATION_H_FILES ../src/ifcgeom/serialization/*.h)
+    install(FILES ${SERIALIZATION_H_FILES}
+        DESTINATION ${INCLUDEDIR}/ifcgeom/serialization
+    )
+
     foreach(kernel ${GEOMETRY_KERNELS})
         file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
          install(FILES ${IFCGEOM_H_FILES}
