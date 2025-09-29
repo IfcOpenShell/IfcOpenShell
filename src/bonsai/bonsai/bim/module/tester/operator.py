@@ -520,8 +520,10 @@ class SelectFailedEntities(bpy.types.Operator):
         self.report({"INFO"}, f"{len(failed_ids)} failed entities found, {len(context.selected_objects)} selected.")
         return {"FINISHED"}
 
+
 class ColorSpecefication(bpy.types.Operator):
     """Colors all entities red that failed each test and color all entities yellow that failed some tests"""
+
     bl_idname = "bim.color_specification"
     bl_label = "Color Failed Entities"
     bl_options = {"REGISTER", "UNDO"}
@@ -531,9 +533,11 @@ class ColorSpecefication(bpy.types.Operator):
         props = context.scene.IfcTesterProperties
         report = tool.Tester.report
 
-        failures = [{e["id"] for e in requirement["failed_entities"]} for requirement in report[self.spec_index]["requirements"]]
+        failures = [
+            {e["id"] for e in requirement["failed_entities"]} for requirement in report[self.spec_index]["requirements"]
+        ]
         failed_all_ids = set.intersection(*failures)
-        failed_some_ids =  set.union(*failures)-failed_all_ids
+        failed_some_ids = set.union(*failures) - failed_all_ids
         if props.flag:
             area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
             area.spaces[0].shading.color_type = "OBJECT"
