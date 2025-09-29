@@ -1079,13 +1079,6 @@ endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
-        message(STATUS "GCC < 9 detected, linking stdc++fs explicitly")
-        set(STDCPPFS stdc++fs)
-    endif()
-endif()
-
 add_library(IfcParse ${IFCPARSE_FILES})
 target_link_libraries(IfcParse ${STDCPPFS})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
