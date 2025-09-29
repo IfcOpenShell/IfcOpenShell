@@ -688,7 +688,9 @@ class Property(Facet):
                     elif prop is not None and prop != "":
                         props[pset_name][self.baseName] = prop
                 else:
-                    props[pset_name] = {k: v for k, v in pset_props.items() if k == self.baseName}
+                    props[pset_name] = {
+                        k: v for k, v in pset_props.items() if k == self.baseName and v is not None and v != ""
+                    }
 
                 if not bool(props[pset_name]):
                     if self.cardinality == "optional":
