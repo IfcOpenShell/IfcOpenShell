@@ -101,6 +101,7 @@ jobs:
 
       - name: Download Blender and run critical tests
         run: |
+          set -x -e
           # Ensure Bonsai and ifcsverchok enable/disable works before uploading to extensions repo.
 
           # Download Blender.
