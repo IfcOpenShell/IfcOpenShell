@@ -59,6 +59,7 @@
 #ifdef HAS_SCHEMA_4x3_add2
 #include "Ifc4x3_add2.h"
 #endif
+#include "Header_section_schema.h"
 
 bool IfcParse::declaration::is(const std::string& name) const {
     const std::string* name_ptr = &name;
@@ -165,6 +166,7 @@ void IfcParse::register_schema(schema_definition* schema) {
 
 const IfcParse::schema_definition* IfcParse::schema_by_name(const std::string& name) {
     // TODO: initialize automatically somehow
+    Header_section_schema::get_schema();
 #ifdef HAS_SCHEMA_2x3
     Ifc2x3::get_schema();
 #endif
@@ -262,6 +264,7 @@ void IfcParse::clear_schemas() {
 #ifdef HAS_SCHEMA_4x3_add2
     Ifc4x3_add2::clear_schema();
 #endif
+    Header_section_schema::clear_schema();
 
     // clear any remaining registered schemas
     // we pop schemas until map is empty, because map iteration is invalidated after each erasure
