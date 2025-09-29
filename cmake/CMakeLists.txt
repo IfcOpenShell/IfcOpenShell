@@ -30,10 +30,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    message(STATUS "`ccache` is found, using it as a compiler launcher.")
 endif()
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
+if(POLICY CMP0141) # 3.25+
+  cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
+endif()
 if(POLICY CMP0144) # 3.27
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
 endif()
@@ -121,6 +125,26 @@ endif()
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
     set(BUILD_IFCGEOM ON)
+endif()
+
+if(CCACHE_FOUND AND MSVC)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    if(MSVC)
+        # By default Visual Studio generators will use /Zi which is not compatible
+        # with ccache, so tell Visual Studio to use /Z7 instead.
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+        # Not needed for Ninja.
+        if(CMAKE_GENERATOR MATCHES "Visual Studio")
+            file(COPY_FILE
+                ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe
+                ONLY_IF_DIFFERENT)
+            set(CMAKE_VS_GLOBALS
+                "CLToolExe=cl.exe"
+                "CLToolPath=${CMAKE_BINARY_DIR}"
+                "UseMultiToolTask=true"
+            )
+        endif()
+    endif()
 endif()
 
 if(MSVC AND MSVC_PARALLEL_BUILD)
