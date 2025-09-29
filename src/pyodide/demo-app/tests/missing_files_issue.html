@@ -21,7 +21,7 @@
             const micropip = pyodide.pyimport("micropip");
             await micropip.install("typing-extensions");
             document.querySelector("#status").innerHTML = "Loading IfcOpenShell";
-            await micropip.install("../wheels/ifcopenshell-0.8.3+34a1bc6-cp313-cp313-emscripten_4_0_9_wasm32.whl");
+            await micropip.install("../wheels/ifcopenshell-0.8.4+c64b477-cp313-cp313-emscripten_4_0_9_wasm32.whl");
 
             document.querySelector("#status").innerHTML = "Loading test script";
 
