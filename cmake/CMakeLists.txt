@@ -127,7 +127,7 @@ if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM)
     set(BUILD_IFCGEOM ON)
 endif()
 
-if(CCACHE_FOUND AND MSVC)
+if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
     if(MSVC)
         # By default Visual Studio generators will use /Zi which is not compatible
