@@ -115,7 +115,7 @@ jobs:
           # Setup unstable repo to get Bonsai build.
           cd bonsai_unstable_repo
           pip install -r requirements.txt
-          python setup_extensions_repo.py --last-tag
+          python setup_extensions_repo.py bonsai-0.8.4-alpha2509181254
           cd ..
           bonsai_zip="$(pwd)/$(ls bonsai_unstable_repo/bonsai_py311*-linux-x64.zip)"
 
