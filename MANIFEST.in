@@ -1,0 +1,2 @@
+recursive-include src/ifcopenshell-python/ifcopenshell/util/schema *.json
+recursive-include src/ifcopenshell-python/ifcopenshell/util/schema *.ifc
