@@ -1287,6 +1287,25 @@ class TestProperty:
         run("Properties can be overriden by an occurrence 1/2", facet=facet, inst=wall, expected=True)
         run("Properties can be overriden by an occurrence 2/2", facet=facet, inst=wall_type, expected=False)
 
+        ifc = self.setup_ifc()
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
+        prop = ifc.create_entity("IfcPropertySingleValue",Name= "Foo",NominalValue = ifc.create_entity("IfcMassMeasure",6.))
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": prop})
+        restriction = Restriction(options={"minExclusive": 5.}, base="double")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo",value= restriction, dataType="IfcMassMeasure")
+        run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=True)
+        prop.NominalValue =  ifc.create_entity("IfcMassMeasure",4.)
+        run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=False)
+        
+        #add Gram as Unit to force conversion
+        gram_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="MASSUNIT")
+        prop.Unit = gram_unit
+        prop.NominalValue =  ifc.create_entity("IfcMassMeasure",6000.)
+        run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=True)
+        prop.NominalValue =  ifc.create_entity("IfcMassMeasure",6.)
+        run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=False)
+
     def setup_ifc(self):
         ifc = ifcopenshell.file()
         ifc.createIfcProject()
@@ -1295,7 +1314,8 @@ class TestProperty:
         areaunit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="AREAUNIT", prefix="MILLI")
         volumeunit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="VOLUMEUNIT", prefix="MILLI")
         timeunit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="TIMEUNIT")
-        ifcopenshell.api.unit.assign_unit(ifc, units=[lengthunit, areaunit, volumeunit, timeunit])
+        mass_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="MASSUNIT", prefix="KILO")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[lengthunit, areaunit, volumeunit, timeunit,mass_unit])
         return ifc
 
 

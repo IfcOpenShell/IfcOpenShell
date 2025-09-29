@@ -716,11 +716,12 @@ class Property(Facet):
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit and getattr(unit, "Name", None):
                             # TODO support unnamed derived units
+                            output_prefix = 'KILO' if unit.UnitType == 'MASSUNIT' else None
                             props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
                                 prop_entity.NominalValue.wrappedValue,
                                 getattr(unit, "Prefix", None),
                                 unit.Name,
-                                None,
+                                output_prefix,
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
                     elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):
