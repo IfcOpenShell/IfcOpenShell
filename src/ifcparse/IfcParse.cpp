@@ -1381,11 +1381,13 @@ IfcFile::IfcFile(const std::string& path, filetype ty, bool readonly)
             storage_.emplace<0>();
             good_ = file_open_status::READ_ERROR;
         } else {
-            std::get<impl::rocks_db_file_storage>(storage_).read_schema(schema_);
-
-            byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
-            byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
-            byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
+            if (std::get<impl::rocks_db_file_storage>(storage_).read_schema(schema_)) {
+                byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
+                byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
+                byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
+            } else {
+                good_ = file_open_status::UNSUPPORTED_SCHEMA;
+            }
         }
         // byidentity_ = decltype(byidentity_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_cache_);
     } else {
@@ -2896,7 +2898,11 @@ bool IfcParse::impl::rocks_db_file_storage::read_schema(const IfcParse::schema_d
     db->Get(rocksdb::ReadOptions{}, key, &value);
     std::vector<std::string> strings;
     if (::impl::deserialize(this, value, strings) && strings.size() == 1) {
-        schema = schema_by_name(strings[0]);
+        try {
+            schema = schema_by_name(strings[0]);
+        } catch (IfcException&) {
+            return false;
+		}
         return true;
     }
 #endif
