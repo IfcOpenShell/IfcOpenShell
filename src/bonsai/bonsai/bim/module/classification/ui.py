@@ -154,7 +154,15 @@ class ReferenceUI:
             row = self.layout.row(align=True)
             row.label(text="No References")
 
-        for reference in self.data.data["references"]:
+        def get_classification_name(reference):
+            classification_entity = ifcopenshell.util.classification.get_classification(
+                reference["ifcClassificationReference"]
+            )
+            return classification_entity.Name if classification_entity else ""
+
+        sorted_references = sorted(self.data.data["references"], key=get_classification_name)
+
+        for reference in sorted_references:
             if self.props.active_reference_id == reference["id"]:
                 self.draw_editable_ui()
             else:
@@ -266,11 +274,7 @@ class ReferenceUI:
         else:
             name = reference["Identification"] or "No Identification"
         row.label(text=name, icon="ASSET_MANAGER")
-
-        # Name
         row.label(text=reference.get("Name") or "")
-
-        # Buttons
         if reference["Location"]:
             row.operator("bim.open_uri", icon="URL", text="").uri = reference["Location"]
         if not self.props.active_reference_id:
