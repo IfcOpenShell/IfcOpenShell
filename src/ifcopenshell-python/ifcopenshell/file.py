@@ -1036,7 +1036,10 @@ class file:
 
     @property
     def header(self):
-        h = self.wrapped_data.header()
+        try:  # Temporary workaround until new builds are ready. See #7131.
+            h = self.wrapped_data.header()
+        except:
+            return self.wrapped_data.header
         object.__setattr__(h, "file_ref", lambda inst: entity_instance.wrap_value(inst, file=self))
         return h
 
