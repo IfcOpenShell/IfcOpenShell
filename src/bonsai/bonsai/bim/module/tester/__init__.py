@@ -25,6 +25,7 @@ classes = (
     operator.StopIfcTesterWebapp,
     operator.OpenIfcTesterWebapp,
     operator.SelectRequirement,
+    operator.ColorSpecefication,
     operator.SelectFailedEntities,
     operator.ExportBcf,
     prop.FailedEntities,
