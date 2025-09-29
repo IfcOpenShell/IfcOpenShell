@@ -358,18 +358,29 @@ class BIM_PT_new_project_wizard(Panel):
         row.prop(props, "volume_unit", text="Volume Unit")
         row = self.layout.row()
         prop_with_search(self.layout, pprops, "template_file", text="Template")
-        self.layout.use_property_split = False
-        row = self.layout.row()
-        label = "Add Mass and Time Units" if not props.add_mass_time_units else "Remove Mass and Time Units"
-        row.prop(props, "add_mass_time_units", toggle=True, text=label)
         self.layout.use_property_split = True
-        if props.add_mass_time_units:
-            row = self.layout.row()
-            row.prop(props, "mass_unit", text="Mass Unit")
-            row = self.layout.row()
-            row.prop(props, "time_unit", text="Time Unit")
         row = self.layout.row()
         row.operator("bim.create_project")
+
+class BIM_PT_mass_time_units(Panel):
+    bl_label = "Mass and Time Units"
+    bl_idname = "BIM_PT_mass_time_units"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_new_project_wizard"
+
+    def draw(self, context):
+        layout = self.layout
+        props = tool.Blender.get_bim_props()
+        label = "Add Mass and Time Units" if not props.add_mass_time_units else "Remove Mass and Time Units"
+        layout.prop(props, "add_mass_time_units", toggle=True, text=label)
+        if props.add_mass_time_units:
+            row = layout.row()
+            row.prop(props, "mass_unit", text="Mass Unit")
+            row = layout.row()
+            row.prop(props, "time_unit", text="Time Unit")
 
 class BIM_PT_project_library(Panel):
     bl_label = "Project Library"
