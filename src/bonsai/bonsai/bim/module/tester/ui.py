@@ -112,6 +112,9 @@ class BIM_PT_tester(Panel):
         )
         row = self.layout.row()
         row.label(text=f"Requirements ({n_requirements}):")
+        if props.flag:
+            op = row.operator("bim.color_specification", text="", icon="COLOR")
+            op.spec_index = props.active_specification_index
         box = self.layout.box()
         for i, requirement in enumerate(specification["requirements"]):
             row = box.row(align=True)
