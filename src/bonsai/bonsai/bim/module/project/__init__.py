@@ -114,6 +114,7 @@ def register():
         kmi = km.keymap_items.new("bim.save_project", "S", "PRESS", ctrl=True)
         kmi.properties.should_save_as = False
         addon_keymaps.append((km, kmi))
+    bpy.utils.register_class(ui.BIM_PT_mass_time_units)
 
 
 def unregister():
@@ -131,3 +132,4 @@ def unregister():
         for km, kmi in addon_keymaps:
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
+    bpy.utils.unregister_class(ui.BIM_PT_mass_time_units)
