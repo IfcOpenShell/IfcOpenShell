@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 from .type_hints import *
-from typing import List, Optional, Literal
+from typing import Optional, Literal
 from datetime import datetime
 from pydantic import BaseModel, Field, PrivateAttr, model_validator, ConfigDict
 import json
 import weakref
-import logging
 
 
 def _lower_first(s: str) -> str:
@@ -36,8 +35,8 @@ class BsddDictionary(CaseInsensitiveModel):
     QualityAssuranceProcedureUrl: Optional[str] = None
     ReleaseDate: Optional[datetime] = None
     Status: Optional[STATUS] = None
-    Classes: List[BsddClass] = Field(default_factory=list)
-    Properties: List[BsddProperty] = Field(default_factory=list)
+    Classes: list[BsddClass] = Field(default_factory=list)
+    Properties: list[BsddProperty] = Field(default_factory=list)
 
     @classmethod
     def load(cls, path) -> BsddDictionary:
@@ -66,29 +65,29 @@ class BsddClass(CaseInsensitiveModel):
     Definition: Optional[str] = None
     Description: Optional[str] = None
     ParentClassCode: Optional[str | None] = None
-    RelatedIfcEntityNamesList: Optional[List[str]] = None
-    Synonyms: Optional[List[str]] = None
+    RelatedIfcEntityNamesList: Optional[list[str]] = None
+    Synonyms: Optional[list[str]] = None
     ActivationDateUtc: Optional[datetime] = None
     ReferenceCode: Optional[str] = None
-    CountriesOfUse: Optional[List[COUNTRY_CODE]] = None
+    CountriesOfUse: Optional[list[COUNTRY_CODE]] = None
     CountryOfOrigin: Optional[COUNTRY_CODE] = None
     CreatorLanguageIsoCode: Optional[LANGUAGE_ISO_CODE] = None
     DeActivationDateUtc: Optional[datetime] = None
     DeprecationExplanation: Optional[str] = None
     DocumentReference: Optional[str] = None
     OwnedUri: Optional[str] = None
-    ReplacedObjectCodes: Optional[List[str]] = None
-    ReplacingObjectCodes: Optional[List[str]] = None
+    ReplacedObjectCodes: Optional[list[str]] = None
+    ReplacingObjectCodes: Optional[list[str]] = None
     RevisionDateUtc: Optional[datetime] = None
     RevisionNumber: Optional[int] = None
     Status: Optional[CLASS_STATUS] = None
-    SubdivisionsOfUse: Optional[List[str]] = None
+    SubdivisionsOfUse: Optional[list[str]] = None
     Uid: Optional[str] = None
     VersionDateUtc: Optional[datetime] = None
     VersionNumber: Optional[int] = None
     VisualRepresentationUri: Optional[str] = None
-    ClassProperties: List[BsddClassProperty] = Field(default_factory=list)
-    ClassRelations: List[BsddClassRelation] = Field(default_factory=list)
+    ClassProperties: list[BsddClassProperty] = Field(default_factory=list)
+    ClassRelations: list[BsddClassRelation] = Field(default_factory=list)
 
     _parent_ref: Optional[weakref.ReferenceType["BsddDictionary"]] = PrivateAttr(default=None)
 
@@ -147,7 +146,7 @@ class BsddClassProperty(CaseInsensitiveModel):
     PropertyType: Optional[Literal["Property", "Dependency"]] = None
     SortNumber: Optional[int] = None
     Symbol: Optional[str] = None
-    AllowedValues: List[BsddAllowedValue] = Field(default_factory=list)
+    AllowedValues: list[BsddAllowedValue] = Field(default_factory=list)
     _parent_ref: Optional[weakref.ReferenceType["BsddClass"]] = PrivateAttr(default=None)
 
     def _set_parent(self, parent: "BsddClass") -> None:
@@ -181,11 +180,11 @@ class BsddProperty(CaseInsensitiveModel):
     Definition: Optional[str] = None
     Description: Optional[str] = None
     DataType: Optional[DATATYPE_TYPE] = None
-    Units: Optional[List[UNITS_TYPE]] = None
+    Units: Optional[list[UNITS_TYPE]] = None
     Example: Optional[str] = None
     ActivationDateUtc: Optional[datetime] = None
-    ConnectedPropertyCodes: Optional[List[str]] = None
-    CountriesOfUse: Optional[List[COUNTRY_CODE]] = None
+    ConnectedPropertyCodes: Optional[list[str]] = None
+    CountriesOfUse: Optional[list[COUNTRY_CODE]] = None
     CountryOfOrigin: Optional[COUNTRY_CODE] = None
     CreatorLanguageIsoCode: Optional[LANGUAGE_ISO_CODE] = None
     DeActivationDateUtc: Optional[datetime] = None
@@ -199,7 +198,7 @@ class BsddProperty(CaseInsensitiveModel):
     DimensionAmountOfSubstance: Optional[int] = None
     DimensionLuminousIntensity: Optional[int] = None
     DocumentReference: Optional[DOCUMENT_TYPE] = None
-    DynamicParameterPropertyCodes: Optional[List[str]] = None
+    DynamicParameterPropertyCodes: Optional[list[str]] = None
     IsDynamic: Optional[bool] = None
     MaxExclusive: Optional[float] = None
     MaxInclusive: Optional[float] = None
@@ -210,19 +209,19 @@ class BsddProperty(CaseInsensitiveModel):
     Pattern: Optional[str] = None
     PhysicalQuantity: Optional[str] = None
     PropertyValueKind: Optional[PROPERTY_VALUE_KIND_TYPE] = None
-    ReplacedObjectCodes: Optional[List[str]] = None
-    ReplacingObjectCodes: Optional[List[str]] = None
+    ReplacedObjectCodes: Optional[list[str]] = None
+    ReplacingObjectCodes: Optional[list[str]] = None
     RevisionDateUtc: Optional[datetime] = None
     RevisionNumber: Optional[int] = None
     Status: Optional[PROPERTY_STATUS] = None
-    SubdivisionsOfUse: Optional[List[str]] = None
+    SubdivisionsOfUse: Optional[list[str]] = None
     TextFormat: Optional[str] = None
     Uid: Optional[str] = None
     VersionDateUtc: Optional[datetime] = None
     VersionNumber: Optional[int] = None
     VisualRepresentationUri: Optional[str] = None
-    PropertyRelations: List[BsddPropertyRelation] = Field(default_factory=list)
-    AllowedValues: List[BsddAllowedValue] = Field(default_factory=list)
+    PropertyRelations: list[BsddPropertyRelation] = Field(default_factory=list)
+    AllowedValues: list[BsddAllowedValue] = Field(default_factory=list)
     _parent_ref: Optional[weakref.ReferenceType["BsddDictionary"]] = PrivateAttr(default=None)
 
     def _set_parent(self, parent: "BsddDictionary") -> None:
