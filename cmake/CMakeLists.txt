@@ -1173,7 +1173,7 @@ if(BUILD_IFCGEOM)
 
         add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
         set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
+        target_link_libraries(geometry_mapping_ifc${schema} IfcParse IfcGeom)
         list(APPEND mapping_libraries geometry_mapping_ifc${schema})
     endforeach()
 
