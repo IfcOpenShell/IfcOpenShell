@@ -28,7 +28,7 @@ Can be used to run validation on IFC file from the command line:
 .. code-block:: console
 
     python -m ifcopenshell.validate -h
-    
+
     usage: validate.py [-h] [--rules] [--json] [--fields] [--spf] files [files ...]
 
     positional arguments:
