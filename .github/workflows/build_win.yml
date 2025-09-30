@@ -45,6 +45,11 @@ jobs:
             7z x $_.FullName
           }
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: win-${{ matrix.arch }}
+
       - name: Run Build Script
         shell: cmd
         run: |
