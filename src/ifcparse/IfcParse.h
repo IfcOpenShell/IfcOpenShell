@@ -43,11 +43,8 @@
 #include <string>
 #include <vector>
 
-#if defined(IFCOPENSHELL_BRANCH) && defined(IFCOPENSHELL_COMMIT)
-#define IFCOPENSHELL_VERSION STRINGIFY(IFCOPENSHELL_BRANCH) "-" STRINGIFY(IFCOPENSHELL_COMMIT)
-#else
-#define IFCOPENSHELL_VERSION "0.8.0"
-#endif
+
+extern const char *IFCOPENSHELL_VERSION;
 
 namespace IfcParse {
 
