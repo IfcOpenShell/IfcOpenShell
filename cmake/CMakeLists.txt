@@ -91,8 +91,8 @@ option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcO
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
-option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
-option(VERSION_OVERRIDE "Override the version defined in IfcParse.h with the file VERSION in the repository root" OFF)
+option(ADD_COMMIT_SHA "Add commit sha and branch in version number, requires git" OFF)
+option(VERSION_OVERRIDE "Override the version defined in buildinfo.cpp with the file VERSION in the repository root" OFF)
 
 set(
     PYTHON_MODULE_INSTALL_DIR
@@ -1363,8 +1363,10 @@ if(ADD_COMMIT_SHA)
             message(FATAL_ERROR "Unable to determine commit sha and/or branch")
         endif()
 
-        add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
-        add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
+        target_compile_definitions(IfcParse PRIVATE
+            -DIFCOPENSHELL_BRANCH=${git_branch}
+            -DIFCOPENSHELL_COMMIT=${git_sha}
+        )
     endif()
 endif(ADD_COMMIT_SHA)
 

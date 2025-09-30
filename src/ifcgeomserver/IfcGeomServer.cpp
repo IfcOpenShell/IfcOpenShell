@@ -191,7 +191,7 @@ protected:
 	}
 public:
 	const std::string& string() { return str; }
-	Hello() : Command(HELLO), str("IfcOpenShell-" IFCOPENSHELL_VERSION "-0") {}
+	Hello() : Command(HELLO), str("IfcOpenShell-" + std::string(IFCOPENSHELL_VERSION) + "-0") {}
 };
 
 class More : public Command {
