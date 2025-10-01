@@ -796,7 +796,7 @@ if(HDF5_SUPPORT)
             # If it failed, still try to find as a module.
             # E.g. on Ubuntu `libhdf5-dev` doesn't provie hdf5-config.cmake.
             # Will automatically fill HDF5_LIBRARIES and HDF5_INCLUDE_DIR.
-            find_package(HDF5)
+            find_package(HDF5 COMPONENTS CXX)
             if(NOT HDF5_INCLUDE_DIR)
                 message(
                     FATAL_ERROR
