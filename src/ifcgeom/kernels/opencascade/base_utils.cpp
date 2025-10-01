@@ -607,7 +607,7 @@ gp_Pnt IfcGeom::util::point_above_plane(const gp_Pln& pln, bool agree) {
 	}
 }
 
-bool IfcGeom::util::is_compound(const TopoDS_Shape& shape) {
+bool IfcGeom::util::is_compound_of_faces(const TopoDS_Shape& shape) {
 	bool has_solids = TopExp_Explorer(shape, TopAbs_SOLID).More() != 0;
 	bool has_shells = TopExp_Explorer(shape, TopAbs_SHELL).More() != 0;
 	bool has_compounds = TopExp_Explorer(shape, TopAbs_COMPOUND).More() != 0;

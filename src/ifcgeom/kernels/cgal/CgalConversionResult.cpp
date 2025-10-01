@@ -610,6 +610,11 @@ ConversionResultShape * ifcopenshell::geometry::CgalShape::box()
 	throw std::runtime_error("Not implemented");
 }
 
+ConversionResultShape* ifcopenshell::geometry::CgalShape::wrap_in_compound()
+{
+	return new CgalShape(poly(), convex_tag_);
+}
+
 std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::vertices()
 {
 	// @todo this is ridiculous
@@ -999,6 +1004,12 @@ void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vec
 	}
 	auto nw = shape_->map(mp);
 	shape_ = std::move(nw);
+}
+
+
+ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::wrap_in_compound()
+{
+	throw std::runtime_error("Not implemented");
 }
 
 #endif

@@ -90,6 +90,7 @@ namespace ifcopenshell {
 			virtual ConversionResultShape* halfspaces();
 			virtual ConversionResultShape* solid();
 			virtual ConversionResultShape* box();
+			virtual ConversionResultShape* wrap_in_compound();
 
 			virtual std::vector<ConversionResultShape*> vertices();
 			virtual std::vector<ConversionResultShape*> edges();

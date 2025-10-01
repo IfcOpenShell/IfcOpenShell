@@ -51,7 +51,7 @@ namespace IfcGeom {
 		IFC_GEOMLIBRARY_API bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid, double tol);
 		IFC_GEOMLIBRARY_API bool shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li);
 		IFC_GEOMLIBRARY_API bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& solid, double tol, bool force_sewing = false);
-		IFC_GEOMLIBRARY_API bool is_compound(const TopoDS_Shape& shape);
+		IFC_GEOMLIBRARY_API bool is_compound_of_faces(const TopoDS_Shape& shape);
 		IFC_GEOMLIBRARY_API bool is_convex(const TopoDS_Wire& wire, double tol);
 		IFC_GEOMLIBRARY_API TopoDS_Shape halfspace_from_plane(const gp_Pln& pln, const gp_Pnt& cent);
 		IFC_GEOMLIBRARY_API gp_Pln plane_from_face(const TopoDS_Face& face);
