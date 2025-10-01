@@ -79,6 +79,7 @@ jobs:
           git clone https://github.com/facebook/rocksdb --branch v9.11.2
           cd rocksdb
           mkdir build && cd build
+          # rocksdb is using ccache automatically.
           cmake -DFAIL_ON_WARNINGS=Off \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr/local \
