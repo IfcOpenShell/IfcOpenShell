@@ -282,6 +282,7 @@ namespace IfcGeom {
 		virtual ConversionResultShape* halfspaces() = 0;
 		virtual ConversionResultShape* box() = 0;
 		virtual ConversionResultShape* solid() = 0;
+		virtual ConversionResultShape* wrap_in_compound() = 0;
 
 		virtual std::vector<ConversionResultShape*> vertices() = 0;
 		virtual std::vector<ConversionResultShape*> edges() = 0;

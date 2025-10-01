@@ -1431,7 +1431,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 }
 
 TopoDS_Shape IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol) {
-	const bool is_comp = is_compound(shape);
+	const bool is_comp = is_compound_of_faces(shape);
 	if (!is_comp) {
 		return shape;
 	}
