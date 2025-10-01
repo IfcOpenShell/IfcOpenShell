@@ -101,8 +101,6 @@ jobs:
           
           mkdir build && cd build
           cmake \
-               -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-               -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
                -DCMAKE_CXX_STANDARD=17 \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
