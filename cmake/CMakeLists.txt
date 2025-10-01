@@ -786,7 +786,7 @@ if(HDF5_SUPPORT)
         endif()
     endif()
 
-    if(NOT HDF5_INCLUDE_DIR)
+    if(NOT HDF5_INCLUDE_DIR OR NOT HDF5_LIBRARY_DIR)
         # First try to find it as a config.
         find_package(HDF5 CONFIG)
         if(HDF5_DIR)
@@ -800,6 +800,7 @@ if(HDF5_SUPPORT)
             if(NOT HDF5_INCLUDE_DIR)
                 message(
                     FATAL_ERROR
+                    "HDF5_INCLUDE_DIR is not provided (current value: '${HDF5_INCLUDE_DIR}'). "
                     "HDF5_LIBRARY_DIR is not provided (current value: '${HDF5_LIBRARY_DIR}'). "
                     "Also could not find HDF5 package (neither module or config)."
                 )
