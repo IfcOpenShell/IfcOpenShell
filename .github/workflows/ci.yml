@@ -1,6 +1,7 @@
-name: ci
+name: IfcConvert CI/CD Test
 
-on:
+
+on:[push , pull_request]
   push:
     paths:
       - 'src/ifcblender/**'
@@ -126,10 +127,14 @@ jobs:
              ../cmake
           sudo make -j $(nproc)
           sudo make install
+      - name: Install IfcConvert
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ifcconvert
 
       - name: Run IfcConvert on Sample files
         run: |
-          (find test/input src/bonsai/test/files -name '*.ifc' | while read i; do \
+
             echo $i | tee -a log; \
             timeout 1m "$(which IfcConvert)" -yv "$i" "$i.obj" --validate >> log 2>&1; \
             echo $i $? >> statuses; \
