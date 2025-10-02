@@ -394,7 +394,7 @@ class Drawing:
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
-    def update_newline_at_and_symbol(cls, obj): pass
+    def update_text_annotation_properties(cls, obj): pass
     def update_text_size_pset(cls, obj): pass
 
 
