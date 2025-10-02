@@ -30,14 +30,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    message(STATUS "`ccache` is found, using it as a compiler launcher.")
 endif()
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
-if(POLICY CMP0141) # 3.25+
-  cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
-endif()
 if(POLICY CMP0144) # 3.27
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
 endif()
@@ -91,8 +87,8 @@ option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcO
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
-option(ADD_COMMIT_SHA "Add commit sha and branch in version number, requires git" OFF)
-option(VERSION_OVERRIDE "Override the version defined in buildinfo.cpp with the file VERSION in the repository root" OFF)
+option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
+option(VERSION_OVERRIDE "Override the version defined in IfcParse.h with the file VERSION in the repository root" OFF)
 
 set(
     PYTHON_MODULE_INSTALL_DIR
@@ -127,33 +123,8 @@ if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM)
     set(BUILD_IFCGEOM ON)
 endif()
 
-if(CCACHE_FOUND)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    if(MSVC)
-        # By default Visual Studio generators will use /Zi which is not compatible
-        # with ccache, so tell Visual Studio to use /Z7 instead.
-        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
-        # Not needed for Ninja.
-        if(CMAKE_GENERATOR MATCHES "Visual Studio")
-            file(COPY_FILE
-                ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe
-                ONLY_IF_DIFFERENT)
-            set(CMAKE_VS_GLOBALS
-                "CLToolExe=cl.exe"
-                "CLToolPath=${CMAKE_BINARY_DIR}"
-                "UseMultiToolTask=true"
-            )
-        endif()
-    endif()
-endif()
-
 if(MSVC AND MSVC_PARALLEL_BUILD)
     add_definitions("/MP")
-endif()
-
-if (MSVC AND BUILD_SHARED_LIBS)
-    # @todo how do projects normally deal with this regarding classes derived from std::exception?
-    add_compile_options(/wd4275)
 endif()
 
 if(NO_WARN)
@@ -258,16 +229,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 endmacro()
 
 if(WITH_CGAL)
-    if(NOT CGAL_INCLUDE_DIR)
-        find_package(CGAL REQUIRED)
-        if(NOT CGAL_DIR)
-            message(
-                FATAL_ERROR
-                "CGAL_SUPPORT enabled, but CGAL_INCLUDE_DIR wasn't provided and CGAL package couldn't be found."
-            )
-        endif()
-        message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
-        link_libraries(CGAL::CGAL)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT EXISTS "${CGAL_INCLUDE_DIR}")
+        message(FATAL_ERROR "CGAL_INCLUDE_DIR ('${CGAL_INCLUDE_DIR}') is not provided or doesn't exist.")
     endif()
 
     add_definitions(-DIFOPSH_WITH_CGAL)
@@ -288,26 +251,15 @@ endif()
 
 if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-    if(NOT JSON_INCLUDE_DIR)
-        find_package(nlohmann_json CONFIG)
-        if(nlohmann_json_DIR)
-            link_libraries(nlohmann_json::nlohmann_json)
-        else()
-            message(STATUS "Unable to find nlohmann_json package, trying to find it as a header-only library.")
-        endif()
-    endif()
+    clear_wasm_sysroot()
+    find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
+    restore_wasm_sysroot()
+    set(JSON_INCLUDE_DIR ${json_header_path})
 
-    if(NOT nlohmann_json_DIR)
-        clear_wasm_sysroot()
-        find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
-        restore_wasm_sysroot()
-        set(JSON_INCLUDE_DIR ${json_header_path})
-
-        if(json_header_path)
-            message(STATUS "JSON for Modern C++ header file found in '${JSON_INCLUDE_DIR}'.")
-        else()
-            message(FATAL_ERROR "Unable to find JSON for Modern C++ header file / package, aborting")
-        endif()
+    if(json_header_path)
+        message(STATUS "JSON for Modern C++ header file found in ${JSON_INCLUDE_DIR}")
+    else()
+        message(FATAL_ERROR "Unable to find JSON for Modern C++ header file, aborting")
     endif()
 
     add_definitions(-DWITH_GLTF)
@@ -362,34 +314,76 @@ if(USD_SUPPORT)
 endif(USD_SUPPORT)
 
 if (WITH_ROCKSDB)
-    # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
-    # find it's zstd dependency on Windows.
-    # Only do it on Windows, otherwise it might create problems as
-    # findzstd and zstd-config target names do not match.
-    if(WIN32)
-        set(TEMP CMAKE_FIND_PACKAGE_PREFER_CONFIG)
-        set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
-    endif()
-    find_package(RocksDB CONFIG REQUIRED)
-    if(WIN32)
-        set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
+    UNIFY_ENVVARS_AND_CACHE(ROCKSDB_INCLUDE_DIR)
+    UNIFY_ENVVARS_AND_CACHE(ROCKSDB_LIBRARY_DIR)
+    UNIFY_ENVVARS_AND_CACHE(ZSTD_INCLUDE_DIR)
+    UNIFY_ENVVARS_AND_CACHE(ZSTD_LIBRARY_DIR)
+
+    if("${ROCKSDB_INCLUDE_DIR}" STREQUAL "")
+        find_path(ROCKSDB_INCLUDE_DIR rocksdb/db.h
+            PATHS
+                /usr/include
+                /usr/local/include
+            REQUIRED
+        )
+        if(ROCKSDB_INCLUDE_DIR)
+            message(STATUS "Found rocksdb include files in: ${ROCKSDB_INCLUDE_DIR}")
+        else()
+            message(FATAL_ERROR "Unable to find rocksdb include directory, specify ROCKSDB_INCLUDE_DIR manually.")
+        endif()
+    else()
+        set(ROCKSDB_INCLUDE_DIR ${ROCKSDB_INCLUDE_DIR} CACHE FILEPATH "rocksdb header files")
+        message(STATUS "Looking for rocksdb include files in: ${ROCKSDB_INCLUDE_DIR}")
     endif()
 
-    message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
+    find_library(ROCKSDB_LIBRARY
+        NAMES rocksdb
+        PATHS ${ROCKSDB_LIBRARY_DIR})
+    if(ROCKSDB_LIBRARY)
+        message(STATUS "rocksdb library ${ROCKSDB_LIBRARY} found in: ${ROCKSDB_LIBRARY_DIR}")
+    else()
+        message(FATAL_ERROR "Unable to find rocksdb library in: ${ROCKSDB_LIBRARY_DIR}")
+    endif()
+
     add_definitions(-DIFOPSH_WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
-    link_libraries(RocksDB::rocksdb)
 
     if (WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
-        find_package(zstd CONFIG REQUIRED)
-        message(STATUS "zstd: found at '${zstd_DIR}'.")
-        link_libraries(zstd::libzstd_static)
+        if("${ZSTD_INCLUDE_DIR}" STREQUAL "")
+            find_path(ZSTD_INCLUDE_DIR zstd.h
+                PATHS
+                    /usr/include
+                    /usr/local/include
+                REQUIRED
+            )
+            if(ZSTD_INCLUDE_DIR)
+                message(STATUS "Found zstd include files in: ${ZSTD_INCLUDE_DIR}")
+            else()
+                message(FATAL_ERROR "Unable to find zstd include directory, specify ZSTD_INCLUDE_DIR manually.")
+            endif()
+        else()
+            set(ZSTD_INCLUDE_DIR ${ZSTD_INCLUDE_DIR} CACHE FILEPATH "zstd header files")
+            message(STATUS "Looking for zstd include files in: ${ZSTD_INCLUDE_DIR}")
+        endif()
+
+        find_library(ZSTD_LIBRARY
+            NAMES zstd zstd_static
+            PATHS ${ZSTD_LIBRARY_DIR})
+        if(ZSTD_LIBRARY)
+            message(STATUS "zstd library ${ZSTD_LIBRARY} found in: ${ZSTD_LIBRARY_DIR}")
+        else()
+            message(FATAL_ERROR "Unable to find zstd library in: ${ZSTD_LIBRARY_DIR}")
+        endif()
 
         add_definitions(-DIFOPSH_WITH_ROCKSDB_ZSTD)
         set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB_ZSTD)
+    endif()
+
+    if(WIN32)
+        set(RPCRT_LIBRARIES "rpcrt4.lib" "shlwapi.lib")
     endif()
 endif()
 
@@ -489,12 +483,37 @@ if(BUILD_IFCGEOM)
 
     # Open CASCADE
     if(WITH_OPENCASCADE)
-    if(OCC_INCLUDE_DIR)
+
+    # Fallback for missing OCC_INCLUDE_DIR.
+    if(NOT OCC_INCLUDE_DIR)
+	clear_wasm_sysroot()
+        find_path(OCC_INCLUDE_DIR Standard_Version.hxx
+            PATHS
+                /usr/include/occt
+                /usr/include/oce
+                /usr/include/opencascade
+        )
+	restore_wasm_sysroot()
+
+        if(OCC_INCLUDE_DIR)
+            message(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
+        endif()
+    else()
         set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
         message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
     endif()
 
-    if(OCC_LIBRARY_DIR)
+    if("${OCC_LIBRARY_DIR}" STREQUAL "")
+        find_library(OCC_LIBRARY TKernel
+            PATHS
+                /usr/lib
+        )
+
+        if(OCC_LIBRARY)
+            GET_FILENAME_COMPONENT(OCC_LIBRARY_DIR ${OCC_LIBRARY} PATH)
+            message(STATUS "Found Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+        endif()
+    else()
         set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
         message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
     endif()
@@ -503,34 +522,14 @@ if(BUILD_IFCGEOM)
     if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
         message(
             STATUS
-            "Using provided OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
+            "Using provided OCCT_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
             "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
         )
-        # Parse OCC_VERSION_STRING.
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
-            REGEX "#define OCC_VERSION_MAJOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
-            REGEX "#define OCC_VERSION_MINOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
-            REGEX "#define OCC_VERSION_MAINTENANCE.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
-        set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
     elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
-        # OCE is not supported for find_package, because it's using a different name (`oce`)
-        # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
         find_package(OpenCASCADE CONFIG REQUIRED)
-        set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
-        # Do not use OpenCASCADE_LIBRARY_DIR for OCC_LIBRARY_DIR - check target property explicitly.
-        # On Windows there is a case with OpenCASCADE_LIBRARY_DIR points to `lib` folder,
-        # while TKernel is actually in `libi`.
+        get_target_property(OCC_INCLUDE_DIR TKernel INTERFACE_INCLUDE_DIRECTORIES)
         get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
         get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
-        set(OCC_VERSION_STRING ${OpenCASCADE_VERSION})
         message(
             STATUS
             "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
@@ -542,11 +541,24 @@ if(BUILD_IFCGEOM)
             FATAL_ERROR
             "Couldn't find Open CASCADE installation. "
             "Either both OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}') "
-            "must be specified or OpenCASCADE package should be discoverable. "
-            "If you're using OCE, then providing a package is not available "
-            "and you need to provide OCE_INCLUDE_DIR and OCE_LIBRARY_DIR directly."
+            "must be specified or OpenCASCADE package should be discoverable."
         )
     endif()
+
+    # Parse OCC_VERSION_STRING.
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
+        REGEX "#define OCC_VERSION_MAJOR.*"
+    )
+    string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
+        REGEX "#define OCC_VERSION_MINOR.*"
+    )
+    string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
+        REGEX "#define OCC_VERSION_MAINTENANCE.*"
+    )
+    string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
+    set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
 
     set(
         OPENCASCADE_LIBRARY_NAMES
@@ -570,10 +582,7 @@ if(BUILD_IFCGEOM)
     if(libTKernel)
         message(STATUS "Required Open Cascade Library files found")
     else()
-        message(
-            FATAL_ERROR
-            "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting"
-        )
+        message(FATAL_ERROR "Unable to find Open Cascade library files, aborting")
     endif()
 
     # Use the found libTKernel as a template for all other OCC libraries
@@ -791,24 +800,27 @@ if(HDF5_SUPPORT)
         endif()
     endif()
 
-    if(NOT HDF5_INCLUDE_DIR)
-        # First try to find it as a config.
-        find_package(HDF5 CONFIG)
-        if(HDF5_DIR)
-            message(STATUS "HDF5: found config at '${HDF5_DIR}'.")
-            set(HDF5_LIBRARIES hdf5_cpp-static)
+    if(NOT HDF5_LIBRARIES)
+        if(NOT WIN32 AND NOT APPLE)
+            # debian default
+            set(HDF5_LIBRARIES
+                /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
+                /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
+                /usr/lib/x86_64-linux-gnu/libsz.so
+                /usr/lib/x86_64-linux-gnu/libaec.so
+                z dl
+            )
         else()
-            # If it failed, still try to find as a module.
-            # E.g. on Ubuntu `libhdf5-dev` doesn't provie hdf5-config.cmake.
-            # Will automatically fill HDF5_LIBRARIES and HDF5_INCLUDE_DIR.
-            find_package(HDF5)
-            if(NOT HDF5_INCLUDE_DIR)
+            find_package(HDF5 CONFIG)
+            if(NOT HDF5_DIR)
                 message(
                     FATAL_ERROR
                     "HDF5_LIBRARY_DIR is not provided (current value: '${HDF5_LIBRARY_DIR}'). "
-                    "Also could not find HDF5 package (neither module or config)."
+                    "Also could not find HDF5 package."
                 )
             endif()
+            message(STATUS "Found HDF5 package: '${HDF5_DIR}'.")
+            set(HDF5_LIBRARIES hdf5_cpp-static)
         endif()
     endif()
 
@@ -930,9 +942,7 @@ endif(MSVC)
 # Ensure other dependencies are provided.
 if(NOT EXISTS "${EIGEN_DIR}")
     find_package(Eigen3 CONFIG)
-    if(Eigen3_DIR)
-        message(STATUS "Eigen3: found config at '${Eigen3_DIR}'.")
-    else()
+    if(NOT Eigen3_DIR)
         message(
             FATAL_ERROR
             "EIGEN_DIR is not provided or provided folder doesn't exist (current value: '${EIGEN_DIR}'). "
@@ -946,7 +956,7 @@ endif()
 include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
-    ${TBB_INCLUDE_DIR}
+    ${TBB_INCLUDE_DIR} ${ROCKSDB_INCLUDE_DIR} ${ZSTD_INCLUDE_DIR}
 )
 
 if(NOT SCHEMA_VERSIONS)
@@ -1058,14 +1068,12 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
             set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${schema})
 
             add_library(geometry_serializer_ifc${schema} STATIC ../src/ifcgeom/Serialization/schema/Serialization.cpp)
-            set_target_properties(geometry_serializer_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS -DIfcSchema=Ifc${schema}")
-            target_link_libraries(geometry_serializer_ifc${schema} ${OPENCASCADE_LIBRARIES})
+            set_target_properties(geometry_serializer_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
             list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
         endforeach()
 
-        add_library(geometry_serializer STATIC ../src/ifcgeom/Serialization/Serialization.h ../src/ifcgeom/Serialization/Serialization.cpp)
-        set_target_properties(geometry_serializer PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS")
-        target_link_libraries(geometry_serializer ${geometry_serializer_libraries} IfcParse)
+        add_library(geometry_serializer STATIC ../src/ifcgeom/Serialization/Serialization.cpp)
+        target_link_libraries(geometry_serializer ${geometry_serializer_libraries})
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} geometry_serializer ${geometry_serializer_libraries})
     endif()
 endif()
@@ -1103,8 +1111,15 @@ endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
+        message(STATUS "GCC < 9 detected, linking stdc++fs explicitly")
+        set(STDCPPFS stdc++fs)
+    endif()
+endif()
+
 add_library(IfcParse ${IFCPARSE_FILES})
-target_link_libraries(IfcParse ${STDCPPFS})
+target_link_libraries(IfcParse ${ROCKSDB_LIBRARY} ${ZSTD_LIBRARY} ${RPCRT_LIBRARIES} ${STDCPPFS})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
 if(LibXml2_DIR)
@@ -1117,11 +1132,7 @@ else()
 endif()
 
 if(BUILD_IFCGEOM)
-    # CGAL::CGAL target already has dependencies resolved.
-    if(WITH_CGAL AND CGAL_DIR)
-        set(CGAL_LIBRARIES CGAL::CGAL)
-        message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
-    elseif(WITH_CGAL AND NOT CGAL_DIR)
+    if(WITH_CGAL)
 	clear_wasm_sysroot()
         find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
         find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
@@ -1143,23 +1154,23 @@ if(BUILD_IFCGEOM)
         file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
         set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-        add_library(geometry_kernel_${kernel} ${IFCGEOM_FILES} ../src/ifcgeom/kernels/ifc_geomlibrary_api.h)
-        set_property(TARGET geometry_kernel_${kernel} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS")
+        add_library(geometry_kernel_${kernel} ${IFCGEOM_FILES})
+        set_property(TARGET geometry_kernel_${kernel} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
         # needed?
         # if(NOT WASM_BUILD)
         # endif()
-        target_link_libraries(geometry_kernel_${kernel} ${${KERNEL_UPPER}_LIBRARIES} IfcGeom IfcParse)
+        target_link_libraries(geometry_kernel_${kernel} ${${KERNEL_UPPER}_LIBRARIES})
         list(APPEND kernel_libraries geometry_kernel_${kernel})
 
         if(${kernel} STREQUAL "cgal")
             set_property(TARGET geometry_kernel_${kernel} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
 
             add_library(geometry_kernel_${kernel}_simple ${IFCGEOM_FILES})
-            set_target_properties(geometry_kernel_${kernel}_simple PROPERTIES COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS")
+            set_target_properties(geometry_kernel_${kernel}_simple PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS")
             # needed?
             # if(NOT WASM_BUILD)
             # endif()
-            target_link_libraries(geometry_kernel_${kernel}_simple ${${KERNEL_UPPER}_LIBRARIES} IfcGeom IfcParse)
+            target_link_libraries(geometry_kernel_${kernel}_simple ${${KERNEL_UPPER}_LIBRARIES})
             list(APPEND kernel_libraries geometry_kernel_${kernel}_simple)
         endif()
     endforeach()
@@ -1173,7 +1184,7 @@ if(BUILD_IFCGEOM)
 
         add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
         set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        target_link_libraries(geometry_mapping_ifc${schema} IfcParse IfcGeom)
+        target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
         list(APPEND mapping_libraries geometry_mapping_ifc${schema})
     endforeach()
 
@@ -1189,7 +1200,11 @@ if(BUILD_IFCGEOM)
         find_package(Threads)
     endif()
 
-    target_link_libraries(IfcGeom IfcParse ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT})
+    if(WASM_BUILD)
+        target_link_libraries(IfcGeom ${kernel_libraries} ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT})
+    else()
+        target_link_libraries(IfcGeom IfcParse ${kernel_libraries} ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT})
+    endif()
 
 endif(BUILD_IFCGEOM)
 
@@ -1204,7 +1219,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
     foreach(schema ${SCHEMA_VERSIONS})
         add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
-        set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORTS -DIfcSchema=Ifc${schema}")
+        set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
 
         if(WASM_BUILD)
             target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
@@ -1214,7 +1229,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
     endforeach()
 
     add_library(Serializers ${SERIALIZERS_FILES})
-    set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+    set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
     if(WITH_PROJ)
         target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
@@ -1225,7 +1240,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
         target_link_libraries(Serializers ${PROJ_LIBRARIES})
     endif()
 
-    target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES} IfcGeom ${OPENCASCADE_LIBRARIES} ${kernel_libraries} IfcParse)
+    target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES})
 
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
@@ -1272,7 +1287,7 @@ if(BUILD_CONVERT)
     set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
     add_executable(IfcConvert ${IFCCONVERT_FILES})
 
-    target_link_libraries(IfcConvert IfcGeom IfcParse Serializers ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+    target_link_libraries(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
 	if (WITH_RELATIONSHIP_VALIDATION)
         set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DWITH_RELATIONSHIP_VALIDATION")
     endif()
@@ -1306,7 +1321,7 @@ if(BUILD_GEOMSERVER)
     file(GLOB H_FILES ../src/ifcgeomserver/*.h)
     set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
     add_executable(IfcGeomServer ${SOURCE_FILES})
-    target_link_libraries(IfcGeomServer IfcGeom IfcParse Serializers ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
 
     if((NOT WIN32) AND BUILD_SHARED_LIBS)
         SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
@@ -1321,10 +1336,6 @@ endif(BUILD_GEOMSERVER)
 
 if(ADD_COMMIT_SHA)
     find_package(Git)
-
-    if(NOT GIT_FOUND)
-        message(FATAL_ERROR "Failed to find Git for ADD_COMMIT_SHA option.")
-    endif()
 
     if(GIT_FOUND)
         if (VERSION_OVERRIDE)
@@ -1363,10 +1374,8 @@ if(ADD_COMMIT_SHA)
             message(FATAL_ERROR "Unable to determine commit sha and/or branch")
         endif()
 
-        target_compile_definitions(IfcParse PRIVATE
-            -DIFCOPENSHELL_BRANCH=${git_branch}
-            -DIFCOPENSHELL_COMMIT=${git_sha}
-        )
+        add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
+        add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
     endif()
 endif(ADD_COMMIT_SHA)
 
@@ -1421,11 +1430,6 @@ if(BUILD_IFCGEOM)
 
     install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
         DESTINATION ${INCLUDEDIR}/ifcgeom
-    )
-
-    file(GLOB SERIALIZATION_H_FILES ../src/ifcgeom/serialization/*.h)
-    install(FILES ${SERIALIZATION_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom/serialization
     )
 
     foreach(kernel ${GEOMETRY_KERNELS})

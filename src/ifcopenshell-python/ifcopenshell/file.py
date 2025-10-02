@@ -976,9 +976,8 @@ class file:
         """Write ifc model to file.
 
         :param format: Force use of a specific format. Guessed from file name
-            if None.  Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to
-            format=".ifc" with zipped=True) For zipped .ifcXML use
-            format=".ifcXML" with zipped=True
+            if None.  Supported formats : .ifc, .ifcZIP (equivalent to
+            format=".ifc" with zipped=True)
         :param zipped: zip the file after it is written
 
         Example:
@@ -986,10 +985,8 @@ class file:
         .. code:: python
 
             model.write("path/to/model.ifc")
-            model.write("path/to/model.ifcXML")
             model.write("path/to/model.ifcZIP")
-            model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
-            model.write("path/to/model.anyextension", format=".ifcXML")
+            model.write("path/to/model.anyextension", format=".ifc")
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -997,15 +994,7 @@ class file:
         if format == None:
             format = ifcopenshell.guess_format(path)
         if format == ".ifcXML":
-            serializer = ifcopenshell_wrapper.XmlSerializer(self, str(path))
-            serializer.finalize()
-            if zipped:
-                unzipped_path = path.with_suffix(format)
-                path.rename(unzipped_path)
-                with zipfile.ZipFile(path, "w") as zip_file:
-                    zip_file.write(unzipped_path, unzipped_path.name, compress_type=zipfile.ZIP_DEFLATED)
-                unzipped_path.unlink()
-            return
+            raise NotImplementedError("Writing .ifcXML files is not supported")
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
         self.wrapped_data.write(str(path))
