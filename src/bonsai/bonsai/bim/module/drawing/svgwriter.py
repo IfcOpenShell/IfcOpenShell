@@ -839,6 +839,12 @@ class SvgWriter:
 
         symbol = tool.Drawing.get_annotation_symbol(element)
         newline_at = tool.Drawing.get_newline_at(element)
+        
+        # Get reverse_list and list_separator from EPset_Annotation
+        pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
+        reverse_list = pset_data.get("Reverse_List", False)
+        list_separator = pset_data.get("List_Separator") or ", "
+        
         template_text_fields = []
         if symbol:
             symbol_transform = self.get_symbol_transform(text_position_svg_str, angle, text_obj)
@@ -855,7 +861,7 @@ class SvgWriter:
                     # NOTE: zip makes sure that we iterate over the shortest list
                     for field, text_literal in zip(template_text_fields, text_literals):
                         field.text = tool.Drawing.replace_text_literal_variables(
-                            text_literal.Literal, product or element
+                            text_literal.Literal, product or element, reverse_list, list_separator
                         )
                         field.attrib["class"] = classes_str
 
@@ -875,7 +881,9 @@ class SvgWriter:
         line_number = 0
 
         for text_literal in text_literals:
-            text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product or element)
+            text = tool.Drawing.replace_text_literal_variables(
+                text_literal.Literal, product or element, reverse_list, list_separator
+            )
             text_tags = self.create_text_tag(
                 text,
                 text_position_svg,
