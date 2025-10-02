@@ -2,150 +2,34 @@ name: Build IfcOpenShell OSX
 
 on:
   workflow_dispatch:
+    inputs:
+      cache_key:
+        description: 'Cache key'
+        required: true
+        type: string
+      version:
+        description: 'Cache hash version'
+        required: true
+        type: string
 
 jobs:
-  build_ifcopenshell:
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos
-            runner: macos-14
-            arch: x64
-            oldarch: 
-          - os: macos
-            runner: macos-14
-            arch: arm64
-            oldarch: m1
-
+  cache-upload:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore cache
+        uses: Andrej730/cache/restore@main
         with:
-          submodules: recursive
+          # Path won't be actually used, we will match by 'version'.
+          path: .
+          key: ${{ github.event.inputs.cache_key }}
+          version: ${{ github.event.inputs.version }}
 
-      - name: Checkout Build Repository
-        uses: actions/checkout@v3
-        with:
-          repository: IfcOpenShell/build-outputs
-          path: ./build
-          ref: ${{ matrix.os }}-${{ matrix.arch }}
-          lfs: true
-          token: ${{ secrets.BUILD_REPO_TOKEN }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-        
-      - name: Install Dependencies
-        run: |
-          brew update
-          # preinstalled: xz, cmake
-          brew install git bison autoconf automake libffi findutils
-          echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
-
-      - name: Install aws cli
-        run: |
-          python -m pip install awscli
-
-      - name: Unpack Dependencies
-        run: |
-          install_root=$(find ./build -maxdepth 4 -type d -name install 2>/dev/null | head -n 1 || true)
-          [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \; || true
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: mac-${{ matrix.arch }}
-
-      - name: Run Build Script
-        shell: bash
-        run: |
-          if [ "${{ matrix.os }}" == "macos" ]; then
-            DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE
-          fi
-          if [ "${{ matrix.arch }}" == "x64" ]; then
-            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            MAC_INTEL=-mac-cross-compile-intel
-            # We don't use gmpcxx, but it comes preinstalled on macos runner as arm64 bottle
-            # and CGAL detects it and breaks cross compilation.
-            brew uninstall --ignore-dependencies gmp
-            # Required by Python.
-            /usr/local/bin/brew install gettext openssl
-          fi
-          set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
-            python3 ./nix/build-all.py -v --diskcleanup ${MAC_INTEL} \
-            | tee build.log
-
-      - name: Upload Build Logs
-        if: always()
+      - name: Upload cached folder as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs-osx-${{ matrix.arch }}
+          name: cache-artifact
           path: |
-            build.log
-            build/*/*/*/logs/*.log
-            build/*/*/*/build/ifcopenshell/**/CMakeCache.txt
-          retention-days: 30
-
-      - name: Pack Dependencies
-        run: |
-          cd build
-          for install_dir in $(find $(find . -maxdepth 4 -name install) -mindepth 1 -maxdepth 1 -type d); do
-            test -f $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz || tar -czf $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz -C $(dirname "$install_dir") $(basename "$install_dir");
-          done
-
-      - name: Commit and Push Changes to Build Repository
-        run: |
-          cd build
-          git config user.name "IfcOpenBot"
-          git config user.email "ifcopenbot@ifcopenshell.org"
-          git add "$(find . -maxdepth 4 -name install)/*.tar.gz"
-          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
-          git push || true
-
-      - name: Package .zip archives
-        run: |
-          VERSION=v`cat VERSION`
-          cd ./build/`uname`/*/10.15/install/ifcopenshell
-          mkdir ~/output
-
-          ls -d python-* | while read py_version; do
-              postfix=`echo ${py_version: -1} | sed s/[0-9]//`
-              numbers=`echo $py_version | grep -oE '[0-9]+\.[0-9]+' | tr -d '.'`
-              py_version_major=python-${numbers}$postfix
-              pushd . > /dev/null
-              cd $py_version
-              if [ ! -d ifcopenshell ]; then
-                  mkdir ../ifcopenshell_
-                  mv * ../ifcopenshell_
-                  mv ../ifcopenshell_ ifcopenshell
-              fi
-              [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
-              find ifcopenshell -name "*.pyc" -delete
-              zip -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip ifcopenshell/*
-              mv *.zip ~/output
-              popd > /dev/null
-          done
-
-          cd bin
-          rm *.zip || true
-          ls | while read exe; do
-              zip -qq -r ${exe}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip $exe
-          done
-          mv *.zip ~/output
-          cd ..
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Upload .zip archives to S3
-        run: |
-          aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive
+            /home/runner/work/**/*.tzst
