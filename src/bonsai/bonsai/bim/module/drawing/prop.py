@@ -744,6 +744,11 @@ class BIMTextProperties(PropertyGroup):
         name="Font Size",
     )
     newline_at: IntProperty(name="Newline At")
+    reverse_list: BoolProperty(name="Reverse List", description="Reverses the order of any list.", default=False)
+    list_separator: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="List Separator",
+        description="Text used to separate lists. Uses a comma (, ) if empty.",
+    )
     symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
         name="Symbol",
         description="Symbol from symbols.svg to use for this text.",
@@ -760,6 +765,8 @@ class BIMTextProperties(PropertyGroup):
         literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
         font_size: str
         newline_at: int
+        reverse_list: bool
+        list_separator: str
         symbol: Union[str, Literal["NO SYMBOL", "CUSTOM SYMBOL"]]
         custom_symbol: str
 
@@ -796,6 +803,8 @@ class BIMTextProperties(PropertyGroup):
             "FontSize": float(self.font_size),
             "Newline_At": int(self.newline_at),
             "Symbol": self.get_symbol(),
+            "Reverse_List": self.reverse_list,
+            "List_Separator": self.list_separator or ", ",
         }
         return text_data
 

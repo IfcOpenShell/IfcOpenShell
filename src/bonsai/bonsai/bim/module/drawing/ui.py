@@ -590,6 +590,10 @@ class BIM_PT_text(Panel):
         row.prop(props, "font_size")
         row = self.layout.row(align=True)
         row.prop(props, "newline_at")
+        row = self.layout.row(align=True)
+        row.prop(props, "reverse_list")
+        row = self.layout.row(align=True)
+        row.prop(props, "list_separator")
 
         row = self.layout.row(align=True)
         row.prop(props, "symbol")
@@ -648,6 +652,12 @@ class BIM_PT_text(Panel):
             row = self.layout.row(align=True)
             row.label(text="Newline_At")
             row.label(text=str(text_data["Newline_At"]))
+            row = self.layout.row(align=True)
+            row.label(text="Reverse_List")
+            row.label(text=str(text_data["Reverse_List"]))
+            row = self.layout.row(align=True)
+            row.label(text="List_Separator")
+            row.label(text=str(text_data["List_Separator"]))
 
             for literal_data in text_data["Literals"]:
                 box = self.layout.box()

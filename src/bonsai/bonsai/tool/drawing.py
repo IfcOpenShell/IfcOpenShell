@@ -1098,6 +1098,8 @@ class Drawing(bonsai.core.tool.Drawing):
         props.font_size = str(text_data["FontSize"])
         props.newline_at = text_data["Newline_At"]
         props.set_symbol(text_data["Symbol"])
+        props.reverse_list = text_data["Reverse_List"]
+        props.list_separator = text_data["List_Separator"]
 
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -1235,24 +1237,28 @@ class Drawing(bonsai.core.tool.Drawing):
             )
 
     @classmethod
-    def update_newline_at_and_symbol(cls, obj: bpy.types.Object) -> None:
+    def update_text_annotation_properties(cls, obj: bpy.types.Object) -> None:
+        """Update all EPset_Annotation properties from the text props"""
         props = cls.get_text_props(obj)
         element = tool.Ifc.get_entity(obj)
         assert element
-        newline_at = int(props.newline_at)
-        symbol = props.get_symbol()
+        
         ifc_file = tool.Ifc.get()
         pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        
         ifcopenshell.api.pset.edit_pset(
             ifc_file,
             pset=pset,
             properties={
-                "Newline_At": newline_at,
-                "Symbol": symbol,
+                "Newline_At": int(props.newline_at),
+                "Symbol": props.get_symbol(),
+                "Reverse_List": props.reverse_list,
+                "List_Separator": props.list_separator or "",
             },
         )
+
 
     # TODO below this point is highly experimental prototype code with no tests
 
@@ -1834,10 +1840,18 @@ class Drawing(bonsai.core.tool.Drawing):
         return bool(a_tree.overlap(b_tree))
 
     @classmethod
-    def replace_text_literal_variables(cls, text: str, product: Optional[ifcopenshell.entity_instance] = None) -> str:
+    def replace_text_literal_variables(
+        cls, 
+        text: str, 
+        product: Optional[ifcopenshell.entity_instance] = None, 
+        reverse_list: bool = False,
+        list_separator: str = ", "
+    ) -> str:
         if not product:
             return text
-
+        if list_separator:
+            list_separator = list_separator.encode().decode('unicode_escape')
+        
         for command in re.findall("``.*?``", text):
             original_command = command
             for variable in re.findall("{{.*?}}", command):
@@ -1845,13 +1859,14 @@ class Drawing(bonsai.core.tool.Drawing):
                 value = '"' + str(value).replace('"', '\\"') + '"'
                 command = command.replace(variable, value)
             text = text.replace(original_command, ifcopenshell.util.selector.format(command[2:-2]))
-
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
             if isinstance(value, (list, tuple)):
-                value = ", ".join(str(v) for v in value)
+                if reverse_list:
+                    value = list_separator.join(str(v) for v in reversed(value))
+                else:
+                    value = list_separator.join(str(v) for v in value)
             text = text.replace(variable, str(value))
-
         return text
 
     @classmethod
