@@ -100,6 +100,8 @@ jobs:
           echo ${{ env.pythonLocation }}
           
           mkdir build && cd build
+          # Ubuntu 22.04's libocct-foundation-dev package doesn't have Config.cmake, so we provide OCC paths directly.
+          # In later versions of Ubuntu, this can be simplified and the OCC paths can be removed.
           cmake \
                -DCMAKE_CXX_STANDARD=17 \
                -DCMAKE_BUILD_TYPE=Release \
@@ -113,14 +115,6 @@ jobs:
                -DCOLLADA_SUPPORT=Off \
                "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
                -DGLTF_SUPPORT=On \
-               -DJSON_INCLUDE_DIR=/usr/include \
-               -DCGAL_INCLUDE_DIR=/usr/include \
-               -DGMP_INCLUDE_DIR=/usr/include \
-               -DMPFR_INCLUDE_DIR=/usr/include \
-               -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-               -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-               -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
-               -DEIGEN_DIR=/usr/include/eigen3 \
                -DWITH_ROCKSDB=On \
              ../cmake
           sudo make -j $(nproc)
