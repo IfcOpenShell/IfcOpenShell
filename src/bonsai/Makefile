@@ -127,7 +127,7 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download GitPython --dest=./wheels
 	# Provides audio playback for costing
 	# This is a REALLY IMPORTANT feature
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel git+https://github.com/Andrej730/aud.git --wheel-dir=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel git+https://github.com/zdhoward/aud --wheel-dir=./wheels
 	# IfcOpenShell dependency - support for new typing features
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download typing_extensions --dest=./wheels
 	# Required by IfcCSV
