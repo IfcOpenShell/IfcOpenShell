@@ -46,7 +46,8 @@ jobs:
           }
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        # Use fork to resolve cache misses / duplicated cache entries on Windows.
+        uses: Andrej730/ccache-action@main
         with:
           key: win-${{ matrix.arch }}
 
