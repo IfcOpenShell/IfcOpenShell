@@ -61,7 +61,7 @@ class BIM_PT_tester(Panel):
         row = self.layout.row()
         row.prop(props, "flag")
         row = self.layout.row()
-        row.prop(props, "hide_empty_specs")
+        row.prop(props, "hide_skipped_specs")
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
             props.ifc_files.layout_file_select(row, "*.ifc;*.ifczip;*.ifcxml", "IFC File(s)")
@@ -103,7 +103,7 @@ class BIM_PT_tester(Panel):
     def draw_editable_ui(self) -> None:
         props = tool.Tester.get_tester_props()
         specification = TesterData.data["specification"]
-        if props.hide_empty_specs and specification["total_checks"] == 0:
+        if props.hide_skipped_specs and specification["total_checks"] == 0 and specification[""]:
             return
 
         n_requirements = len(specification["requirements"])
@@ -168,7 +168,7 @@ class BIM_UL_tester_specifications(UIList):
         filter_flags = [self.bitflag_filter_item] * len(items)
 
         props = tool.Tester.get_tester_props()
-        if props.hide_empty_specs:
+        if props.hide_skipped_specs:
             for idx, item in enumerate(items):
                 report = tool.Tester.report[idx]
                 if report["total_checks"] != 0:
