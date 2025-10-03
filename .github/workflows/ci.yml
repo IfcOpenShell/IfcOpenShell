@@ -69,7 +69,7 @@ jobs:
           libhdf5-dev libcgal-dev libeigen3-dev
           
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ubuntu-22.04-${{ runner.arch }}
 
