@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 34300d41ad..09b2e0d45f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -721,6 +721,8 @@ else()
+   OCCT_CHECK_AND_UNSET ("3RDPARTY_DOT_EXECUTABLE")
+ endif()
+ 
++list (REMOVE_ITEM BUILD_TOOLKITS ExpToCasExe)
++
+ # bison
+ if (BUILD_YACCLEX)
+   list (APPEND OCCT_3RDPARTY_CMAKE_LIST "adm/cmake/bison")
