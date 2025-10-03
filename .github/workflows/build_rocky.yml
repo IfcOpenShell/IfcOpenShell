@@ -47,11 +47,11 @@ jobs:
           install_root=$(find ./build -maxdepth 4 -type d -name install 2>/dev/null | head -n 1 || true)
           [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \; || true
 
-      # Not supported on docker
-      # - name: ccache
-      #   uses: hendrikmuhs/ccache-action@v1
-      #   with:
-      #     key: ubuntu-22.04-${{ runner.arch }}-rockylinux8
+      - name: ccache
+        # Using fork to support Rocky.
+        uses: Andrej730/ccache-action@main
+        with:
+          key: ubuntu-22.04-${{ runner.arch }}-rockylinux8
 
       - name: Run Build Script
         shell: bash
