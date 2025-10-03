@@ -655,6 +655,12 @@ namespace ifcopenshell {
 
 // @todo find a place
 namespace IfcGeom {
+
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4275)
+#endif
+
 	class IFC_GEOM_API geometry_exception : public std::runtime_error {
 	protected:
 		std::string message;
@@ -662,12 +668,19 @@ namespace IfcGeom {
 		geometry_exception(const std::string& m)
 			: std::runtime_error(m)
 		{}
+		~geometry_exception() override;
 	};
 
 	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
 	public:
 		too_many_faces_exception()
 			: geometry_exception("Too many faces for operation") {}
+		~too_many_faces_exception() override;
 	};
 }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
 #endif

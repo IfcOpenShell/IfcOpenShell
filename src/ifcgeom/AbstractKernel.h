@@ -36,21 +36,26 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance = AL
 }
 
 namespace ifcopenshell { 
-	
+
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4275)
+#endif
+
 	class IFC_GEOM_API not_implemented_error : public std::exception {
 	public:
-		const char* what() const noexcept override {
-			return "Not implemented.";
-		}
+		const char* what() const noexcept override;
 	};
 
 	class IFC_GEOM_API not_supported_error : public std::exception {
 	public:
-		const char* what() const noexcept override {
-			return "Not supported.";
-		}
+		const char* what() const noexcept override;
 	};
-	
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
 	namespace geometry { namespace kernels {
 
 	class IFC_GEOM_API AbstractKernel {
