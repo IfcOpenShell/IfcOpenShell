@@ -189,6 +189,8 @@ namespace IfcParse {
 
     namespace impl {
         struct IFC_PARSE_API in_memory_file_storage {
+            std::vector<IfcUtil::IfcBaseClass*> read_simple_type_instances;
+
             IfcParse::IfcSpfLexer* tokens;
             // IfcParse::IfcSpfStream* stream;
 
@@ -212,6 +214,11 @@ namespace IfcParse {
             typedef entity_instance_by_name_t::iterator iterator;
 
             in_memory_file_storage(IfcParse::IfcFile* f = nullptr) : tokens(nullptr), file(f), schema(nullptr) {}
+            ~in_memory_file_storage() {
+                for (auto* inst : read_simple_type_instances) {
+                    delete inst;
+                }
+            }
             in_memory_file_storage(const in_memory_file_storage&) = delete;
             in_memory_file_storage(const in_memory_file_storage&&) = delete;
 
