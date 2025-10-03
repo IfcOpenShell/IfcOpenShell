@@ -165,6 +165,10 @@ class BIM_UL_tester_specifications(UIList):
         items = getattr(data, propname)
         filter_flags = [self.bitflag_filter_item] * len(items)
 
+        props = tool.Tester.get_tester_props()
+        if not props.hide_empty_specs:
+            return filter_flags, []
+        
         for idx, item in enumerate(items):
             report = tool.Tester.report[idx]
             if (
