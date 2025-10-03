@@ -171,9 +171,7 @@ class BIM_UL_tester_specifications(UIList):
         if props.hide_empty_specs:
             for idx, item in enumerate(items):
                 report = tool.Tester.report[idx]
-                if (
-                    report["total_checks"] != 0
-                ):
+                if report["total_checks"] != 0:
                     filter_flags[idx] |= self.bitflag_filter_item
                 else:
                     filter_flags[idx] &= ~self.bitflag_filter_item
