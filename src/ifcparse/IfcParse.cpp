@@ -725,6 +725,7 @@ void IfcParse::impl::in_memory_file_storage::load(unsigned entity_instance_name,
                     // the 2nd pass.
                     load(entity_instance_name, entity, ps, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index);
                     auto* simple_type_instance = (schema ? schema : file->schema())->instantiate(decl, ps.construct(entity_instance_name, *references_to_resolve, decl, boost::none, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index));
+                    read_simple_type_instances.push_back(simple_type_instance);
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
                     simple_type_instance->file_ = file;
