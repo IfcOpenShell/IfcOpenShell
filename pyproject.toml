@@ -38,6 +38,7 @@ exclude = [
     "src/ifc2ca/templates",
 ]
 [tool.ruff.lint]
+preview = true
 select = [
     # Default Ruff rules.
     # "E4",        # imports
@@ -60,7 +61,4 @@ ignore = [
     "UP030", # implicit references for positional format fields
     "UP031", # Replace % with .format
     "UP032", # Replace .format with f-string
-
-    # Deprecated Ruff rules.
-    "UP038", # Use X | Y in isinstance
 ]

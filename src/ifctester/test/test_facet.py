@@ -921,8 +921,11 @@ class TestProperty:
         pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"AnotherProperty": "AnotherValue"})
         run("Elements with a matching pset but no property also fail", facet=facet, inst=element, expected=False)
-        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"AnotherProperty": None})
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": None}, should_purge=False)
         run("Properties with a null value fail", facet=facet, inst=element, expected=False)
+        restriction = Restriction(options={"pattern": "Fo.*"})
+        facet = Property(propertySet="Foo_Bar", baseName=restriction, dataType="IFCLABEL")
+        run("Pattern matched properties with a null value fail", facet=facet, inst=element, expected=False)
         ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": "Bar"})
         run("A name check will match any property with any string value", facet=facet, inst=element, expected=True)
 

@@ -266,9 +266,6 @@ void IfcParse::clear_schemas() {
 #endif
     Header_section_schema::clear_schema();
 
-    // clear any remaining registered schemas
-    // we pop schemas until map is empty, because map iteration is invalidated after each erasure
-    while (!schemas.empty()) {
-        delete schemas.begin()->second;
-    }
+	// Schemas are owned by their respective modules in a unique_ptr, so just clear the map
+    schemas.clear();
 }

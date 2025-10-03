@@ -74,7 +74,7 @@ bool GltfSerializer::ready() {
 }
 
 void GltfSerializer::writeHeader() {
-	json_["asset"]["generator"] = "IfcOpenShell IfcConvert " IFCOPENSHELL_VERSION;
+	json_["asset"]["generator"] = "IfcOpenShell IfcConvert " + std::string(IFCOPENSHELL_VERSION);
 	json_["asset"]["version"] = "2.0";
 	json_["scene"] = 0;
 

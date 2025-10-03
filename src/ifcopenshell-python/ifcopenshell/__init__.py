@@ -185,7 +185,7 @@ def open(
         return sqlite(path)
     if should_stream:
         return stream(path)
-    if readonly: # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
+    if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
         f = ifcopenshell_wrapper.open(str(path.absolute()), readonly)
     else:
         f = ifcopenshell_wrapper.open(str(path.absolute()))

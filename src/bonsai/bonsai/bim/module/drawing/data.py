@@ -241,6 +241,7 @@ class DecoratorData:
         cls.is_loaded = True
         cls.cut_cache = {}
         cls.layerset_cache = {}
+        cls.fill_cache = {}
 
         text = {}
         dimension = {}
@@ -346,12 +347,10 @@ class DecoratorData:
             (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
         )
         font_size = FONT_SIZES[font_size_type]
-
-        # get symbol
         symbol = tool.Drawing.get_annotation_symbol(element)
-
-        # get newline_at
         newline_at = pset_data.get("Newline_At", 0)
+        reverse_list = pset_data.get("Reverse_List", False)
+        list_separator = pset_data.get("List_Separator") or ", "
 
         # other attributes
         literals = tool.Drawing.get_text_literal(obj, return_list=True)
@@ -363,11 +362,20 @@ class DecoratorData:
             literal_data = {
                 "Literal": literal_value,
                 "BoxAlignment": literal.BoxAlignment,
-                "CurrentValue": tool.Drawing.replace_text_literal_variables(literal_value, product),
+                "CurrentValue": tool.Drawing.replace_text_literal_variables(
+                    literal_value, product, reverse_list, list_separator
+                ),
             }
             literals_data.append(literal_data)
 
-        return {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}
+        return {
+            "Literals": literals_data,
+            "FontSize": font_size,
+            "Symbol": symbol,
+            "Newline_At": newline_at,
+            "Reverse_List": reverse_list,
+            "List_Separator": list_separator,
+        }
 
     @classmethod
     def get_dimension_data(cls, obj: bpy.types.Object) -> dict[str, Any]:

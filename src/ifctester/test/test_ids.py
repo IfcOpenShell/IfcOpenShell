@@ -170,29 +170,34 @@ class TestIds:
         waldo = model.createIfcSlab(Name="Waldo")
         run("Optional specifications may still pass if nothing is applicable", specs, model, True)
 
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.applicability.append(ids.Attribute(name="Name", value="Waldo"))
+        specs.specifications.append(spec)
         spec.set_usage("prohibited")
         model = ifcopenshell.file()
         wall = model.createIfcSlab(Name="Waldo")
-        run("Prohibited specifications fail if at least one entity passes all requirements 1/3", specs, model, True)
+        run("Prohibited specifications fail if at least one entity is applicable 1/3", specs, model, True)
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Wally")
         run(
-            "Prohibited specifications fail if at least one entity passes all requirements 2/3",
+            "Prohibited specifications fail if at least one entity is applicable 2/3",
             specs,
             model,
             True,
-            [wall],
+            [],
             [],
         )
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
         run(
-            "Prohibited specifications fail if at least one entity passes all requirements 3/3",
+            "Prohibited specifications fail if at least one entity is applicable 3/3",
             specs,
             model,
             False,
             [wall],
-            [wall],
+            [],
         )
 
         spec.set_usage("optional")

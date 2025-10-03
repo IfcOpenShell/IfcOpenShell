@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 
 def camera_vectors_from_element_placement(
     elem_placement: NDArray[np.float64],
-) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[list[float], list[float], list[float]]:
     """
     Calculate the vectors of a camera pointing to an element.
 
@@ -22,7 +22,7 @@ def camera_vectors_from_element_placement(
 
 def camera_vectors_from_target_position(
     target_position: NDArray[np.float64], offset: Optional[NDArray[np.float64]] = None
-) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[list[float], list[float], list[float]]:
     """
     Calculate the vectors of a camera pointing to a target point.
 
@@ -38,16 +38,7 @@ def camera_vectors_from_target_position(
     camera_direction = unit_vector(-camera_offset)  # pylint: disable=invalid-unary-operand-type
     camera_right = unit_vector(np.cross(np.array([0.0, 0.0, 1.0]), camera_direction))
     camera_up = unit_vector(np.cross(camera_direction, camera_right))
-    return camera_position, camera_direction, camera_up
-    # rotation_transform = np.eye(4)
-    # rotation_transform[0, :3] = camera_right
-    # rotation_transform[1, :3] = camera_up
-    # rotation_transform[2, :3] = camera_direction
-    # translation_transform = np.eye(4)
-    # translation_transform[:3, -1] = -camera_position
-    # look_at_transform = np.matmul(rotation_transform, translation_transform)
-    # mat = np.linalg.inv(look_at_transform)
-    # return camera_position, -mat[:3, 2], mat[:3, 1]
+    return camera_position.tolist(), camera_direction.tolist(), camera_up.tolist()
 
 
 def unit_vector(v: NDArray[np.float64]) -> NDArray[np.float64]:

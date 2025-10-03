@@ -358,7 +358,7 @@ yacc = "yacc"  # Used during swig building process, installed with `bison` on De
 missing_commands: "list[str]" = []
 required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz]
 if "wasm" in flags:
-    required_commands.remove(yacc) # yacc not needed for wasm builds
+    required_commands.remove(yacc)  # yacc not needed for wasm builds
 for cmd in required_commands:
     if which(cmd) is None:
         missing_commands.append(cmd)
@@ -932,7 +932,7 @@ if "libxml2" in targets:
     if MAC_CROSS_COMPILE_INTEL:
         OLD_CC = os.environ.get("CC")
         os.environ["CC"] = MAC_CROSS_COMPILE_INTEL_CC
-    build_tool_args=[
+    build_tool_args = [
         "--without-python",
         ENABLE_FLAG,
         DISABLE_FLAG,
@@ -1258,21 +1258,25 @@ if "cgal" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/gmp-{GMP_VERSION}")
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}")
     if "wasm" in flags:
-        cmake_args.extend([
-            f"-DCGAL_INCLUDE_DIR={DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
-            f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-            f"-DGMP_LIBRARY_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
-            f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
-            f"-DMPFR_LIBRARY_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
-        ])
+        cmake_args.extend(
+            [
+                f"-DCGAL_INCLUDE_DIR={DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
+                f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
+                f"-DGMP_LIBRARY_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
+                f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
+                f"-DMPFR_LIBRARY_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
+            ]
+        )
 
 if "occ" in targets and USE_OCCT:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
     if "wasm" in flags:
-        cmake_args.extend([
-            f"-DOCC_INCLUDE_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade",
-            f"-DOCC_LIBRARY_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}/lib",
-        ])
+        cmake_args.extend(
+            [
+                f"-DOCC_INCLUDE_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade",
+                f"-DOCC_LIBRARY_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}/lib",
+            ]
+        )
 
 elif "occ" in targets:
     # We don't support find_package for OCE.

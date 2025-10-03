@@ -19,7 +19,6 @@
 import math
 import numpy as np
 import ifcopenshell
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 from typing import NamedTuple, Optional, Union
@@ -422,12 +421,12 @@ def local2global(
         ]
     )
     result = rotation_matrix @ scale_and_factor_matrix @ matrix
-    result[:, 0][0:3] /= np.linalg.norm(result[:, 0][0:3])
-    result[:, 1][0:3] /= np.linalg.norm(result[:, 1][0:3])
-    result[:, 2][0:3] /= np.linalg.norm(result[:, 2][0:3])
-    result[0][3] += eastings
-    result[1][3] += northings
-    result[2][3] += orthogonal_height
+    result[:3, 0] /= np.linalg.norm(result[:3, 0])
+    result[:3, 1] /= np.linalg.norm(result[:3, 1])
+    result[:3, 2] /= np.linalg.norm(result[:3, 2])
+    result[0, 3] += eastings
+    result[1, 3] += northings
+    result[2, 3] += orthogonal_height
     return result
 
 
@@ -455,9 +454,7 @@ def auto_local2global(
     result = local2global(matrix, *parameters)
     if should_return_in_map_units:
         return result
-    result[0][3] /= parameters.scale
-    result[1][3] /= parameters.scale
-    result[2][3] /= parameters.scale
+    result[:3, 3] /= parameters.scale
     return result
 
 
@@ -512,13 +509,13 @@ def global2local(
         ]
     )
     result = matrix.copy()
-    result[0][3] -= eastings
-    result[1][3] -= northings
-    result[2][3] -= orthogonal_height
+    result[0, 3] -= eastings
+    result[1, 3] -= northings
+    result[2, 3] -= orthogonal_height
     result = np.linalg.inv(scale_and_factor_matrix) @ np.linalg.inv(rotation_matrix) @ result
-    result[:, 0][0:3] /= np.linalg.norm(result[:, 0][0:3])
-    result[:, 1][0:3] /= np.linalg.norm(result[:, 1][0:3])
-    result[:, 2][0:3] /= np.linalg.norm(result[:, 2][0:3])
+    result[:3, 0] /= np.linalg.norm(result[:3, 0])
+    result[:3, 1] /= np.linalg.norm(result[:3, 1])
+    result[:3, 2] /= np.linalg.norm(result[:3, 2])
     return result
 
 
@@ -543,9 +540,7 @@ def auto_global2local(
         return matrix.copy()
     if not is_specified_in_map_units:
         matrix = matrix.copy()
-        matrix[0][3] *= parameters.scale
-        matrix[1][3] *= parameters.scale
-        matrix[2][3] *= parameters.scale
+        matrix[:3, 3] *= parameters.scale
     result = global2local(matrix, *parameters)
     wcs = get_wcs(ifc_file)
     if wcs is not None:

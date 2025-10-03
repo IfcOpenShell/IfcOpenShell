@@ -68,7 +68,7 @@ IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool 
 			delete accum;
 			accum = n;
 		} else {
-			accum = s;
+			accum = s->wrap_in_compound();
 		}
 	}
 

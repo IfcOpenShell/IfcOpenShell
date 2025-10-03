@@ -484,6 +484,15 @@ ConversionResultShape * ifcopenshell::geometry::OpenCascadeShape::box()
 	throw std::runtime_error("Not implemented");
 }
 
+ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::wrap_in_compound()
+{
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+	builder.Add(compound, shape_);
+	return new OpenCascadeShape(std::move(compound));
+}
+
 std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::vertices()
 {
 	TopTools_IndexedMapOfShape map;
@@ -556,7 +565,9 @@ ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::concat(Conversi
 	auto& left = shape_;
 	auto& right = ((ifcopenshell::geometry::OpenCascadeShape*)other)->shape_;
 
-	if (left.ShapeType() == TopAbs_COMPOUND) {
+	// This reads a bit strange, but we want to specifically avoid compounds of faces that are
+	// the result of shell instances that are not sewn into a shell (yet).
+	if (left.ShapeType() == TopAbs_COMPOUND && !IfcGeom::util::is_compound_of_faces(left)) {
 		compound = TopoDS::Compound(left);
 	} else {
 		builder.MakeCompound(compound);

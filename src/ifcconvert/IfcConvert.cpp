@@ -1664,7 +1664,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	latebound_access::set(application, "ApplicationDeveloper", org);
 	latebound_access::set(application, "Version", std::string(IFCOPENSHELL_VERSION));
 	latebound_access::set(application, "ApplicationFullName", std::string("IfcConvert"));
-	latebound_access::set(application, "ApplicationIdentifier", std::string("IfcConvert" IFCOPENSHELL_VERSION));
+	latebound_access::set(application, "ApplicationIdentifier", std::string("IfcConvert") + IFCOPENSHELL_VERSION);
 	
 	auto ownerhist = latebound_access::create(f, "IfcOwnerHistory");
 	latebound_access::set(ownerhist, "OwningUser", pando);

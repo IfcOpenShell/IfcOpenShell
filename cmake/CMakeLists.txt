@@ -30,10 +30,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    message(STATUS "`ccache` is found, using it as a compiler launcher.")
 endif()
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
+if(POLICY CMP0141) # 3.25+
+  cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
+endif()
 if(POLICY CMP0144) # 3.27
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
 endif()
@@ -87,8 +91,8 @@ option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcO
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
-option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
-option(VERSION_OVERRIDE "Override the version defined in IfcParse.h with the file VERSION in the repository root" OFF)
+option(ADD_COMMIT_SHA "Add commit sha and branch in version number, requires git" OFF)
+option(VERSION_OVERRIDE "Override the version defined in buildinfo.cpp with the file VERSION in the repository root" OFF)
 
 set(
     PYTHON_MODULE_INSTALL_DIR
@@ -121,6 +125,26 @@ endif()
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
     set(BUILD_IFCGEOM ON)
+endif()
+
+if(CCACHE_FOUND)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    if(MSVC)
+        # By default Visual Studio generators will use /Zi which is not compatible
+        # with ccache, so tell Visual Studio to use /Z7 instead.
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+        # Not needed for Ninja.
+        if(CMAKE_GENERATOR MATCHES "Visual Studio")
+            file(COPY_FILE
+                ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe
+                ONLY_IF_DIFFERENT)
+            set(CMAKE_VS_GLOBALS
+                "CLToolExe=cl.exe"
+                "CLToolPath=${CMAKE_BINARY_DIR}"
+                "UseMultiToolTask=true"
+            )
+        endif()
+    endif()
 endif()
 
 if(MSVC AND MSVC_PARALLEL_BUILD)
@@ -1149,7 +1173,7 @@ if(BUILD_IFCGEOM)
 
         add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
         set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
+        target_link_libraries(geometry_mapping_ifc${schema} IfcParse IfcGeom)
         list(APPEND mapping_libraries geometry_mapping_ifc${schema})
     endforeach()
 
@@ -1339,8 +1363,10 @@ if(ADD_COMMIT_SHA)
             message(FATAL_ERROR "Unable to determine commit sha and/or branch")
         endif()
 
-        add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
-        add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
+        target_compile_definitions(IfcParse PRIVATE
+            -DIFCOPENSHELL_BRANCH=${git_branch}
+            -DIFCOPENSHELL_COMMIT=${git_sha}
+        )
     endif()
 endif(ADD_COMMIT_SHA)
 
@@ -1395,6 +1421,11 @@ if(BUILD_IFCGEOM)
 
     install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
         DESTINATION ${INCLUDEDIR}/ifcgeom
+    )
+
+    file(GLOB SERIALIZATION_H_FILES ../src/ifcgeom/serialization/*.h)
+    install(FILES ${SERIALIZATION_H_FILES}
+        DESTINATION ${INCLUDEDIR}/ifcgeom/serialization
     )
 
     foreach(kernel ${GEOMETRY_KERNELS})

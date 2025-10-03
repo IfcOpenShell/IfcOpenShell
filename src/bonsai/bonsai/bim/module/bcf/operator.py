@@ -1215,7 +1215,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         assert blender_topic
         topic = bcfxml.topics[blender_topic.name]
         if self.viewpoint_guid:
-            viewpoint_guid = self.viewpoint_guid
+            viewpoint_guid = self.viewpoint_guid + ".bcfv"
             if viewpoint_guid not in topic.viewpoints:
                 self.report({"ERROR"}, f"No such viewpoint in the active topic: '{viewpoint_guid}'.")
                 return {"CANCELLED"}
@@ -1313,7 +1313,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         x_axis = y_axis.cross(z_axis).normalized()
         rotation = Matrix((x_axis, y_axis, z_axis))
         rotation.invert()
-        matrix = np.matrix(
+        matrix = np.array(
             (
                 [x_axis[0], y_axis[0], z_axis[0], camera.camera_view_point.x],
                 [x_axis[1], y_axis[1], z_axis[1], camera.camera_view_point.y],

@@ -81,6 +81,7 @@
 %newobject IfcGeom::ConversionResultShape::intersect;
 %newobject IfcGeom::ConversionResultShape::concat;
 %newobject IfcGeom::ConversionResultShape::moved;
+%newobject IfcGeom::ConversionResultShape::wrap_in_compound;
 
 %newobject IfcGeom::ConversionResultShape::area;
 %newobject IfcGeom::ConversionResultShape::volume;

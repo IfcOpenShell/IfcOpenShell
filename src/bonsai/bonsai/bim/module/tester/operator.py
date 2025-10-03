@@ -521,6 +521,39 @@ class SelectFailedEntities(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ColorSpecefication(bpy.types.Operator):
+    """Colors all entities red that failed each test and color all entities yellow that failed some tests"""
+
+    bl_idname = "bim.color_specification"
+    bl_label = "Color Failed Entities"
+    bl_options = {"REGISTER", "UNDO"}
+    spec_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.IfcTesterProperties
+        report = tool.Tester.report
+
+        failures = [
+            {e["id"] for e in requirement["failed_entities"]} for requirement in report[self.spec_index]["requirements"]
+        ]
+        failed_all_ids = set.intersection(*failures)
+        failed_some_ids = set.union(*failures) - failed_all_ids
+        if props.flag:
+            area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
+            area.spaces[0].shading.color_type = "OBJECT"
+            area.spaces[0].shading.show_xray = True
+            for obj in context.scene.objects:
+                ifc_id = tool.Blender.get_ifc_definition_id(obj)
+                if ifc_id in failed_all_ids:
+                    obj.color = (1, 0, 0, 1)
+                elif ifc_id in failed_some_ids:
+                    obj.color = (1, 1, 0, 1)
+                else:
+                    obj.color = (1, 1, 1, 1)
+
+        return {"FINISHED"}
+
+
 class ExportBcf(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_bcf"
     bl_label = "Export BCF"

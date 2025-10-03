@@ -165,7 +165,6 @@ class Raycast(bonsai.core.tool.Raycast):
                 return False
         return True
 
-        
     @classmethod
     def get_viewport_ray_data(
         cls, context: bpy.types.Context, event: bpy.types.Event, mouse_pos: tuple[int, int] = None
@@ -455,7 +454,7 @@ class Raycast(bonsai.core.tool.Raycast):
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
                     if tool.Raycast.object_is_visible_in_clipping_plane(obj):
                         objs_to_raycast.append(obj)
-             
+
         return objs_to_raycast
 
     @classmethod
@@ -544,4 +543,3 @@ class Raycast(bonsai.core.tool.Raycast):
         if lens < 50:
             snap_threshold *= value
         return snap_threshold
-

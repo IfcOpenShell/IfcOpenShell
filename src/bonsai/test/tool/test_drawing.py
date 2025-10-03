@@ -793,7 +793,7 @@ class TestShowDecorations(NewFile):
 
 
 class TestDrawingMaintainingSheetPosition(NewFile):
-    def get_sheet_drawing_data(self, layout_path):
+    def get_sheet_drawing_data(self, layout_path: Path) -> dict[str, tuple[float, ...]]:
         SVG = "{http://www.w3.org/2000/svg}"
         ET.register_namespace("", SVG)
         layout_tree = ET.parse(layout_path)
@@ -801,7 +801,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
 
         drawing_view = layout_root.findall(f'{SVG}g[@data-type="drawing"]')[0]
 
-        drawing_data = {}
+        drawing_data: dict[str, tuple[float, ...]] = {}
         for image in drawing_view.findall(f"{SVG}image"):
             attribs = ["x", "y", "width", "height"]
             image_type = image.attrib["data-type"]
