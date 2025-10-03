@@ -84,8 +84,9 @@ namespace ifcopenshell {
 						}
 						if constexpr (HasDefault<Derived>()) {
 							return Derived::defaultvalue;
+						} else {
+						    throw std::runtime_error("Setting not set");
 						}
-						throw std::runtime_error("Setting not set");
 					}
 				}
 
