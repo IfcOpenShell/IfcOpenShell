@@ -103,6 +103,8 @@ class BIM_PT_tester(Panel):
     def draw_editable_ui(self) -> None:
         props = tool.Tester.get_tester_props()
         specification = TesterData.data["specification"]
+        if props.hide_empty_specs and specification["total_checks"] == 0:
+            return
 
         n_requirements = len(specification["requirements"])
 
@@ -166,17 +168,28 @@ class BIM_UL_tester_specifications(UIList):
         filter_flags = [self.bitflag_filter_item] * len(items)
 
         props = tool.Tester.get_tester_props()
-        if not props.hide_empty_specs:
-            return filter_flags, []
-        
-        for idx, item in enumerate(items):
-            report = tool.Tester.report[idx]
-            if (
-                report["total_checks"] != 0
-            ):
-                filter_flags[idx] |= self.bitflag_filter_item
-            else:
-                filter_flags[idx] &= ~self.bitflag_filter_item
+        if props.hide_empty_specs:
+            for idx, item in enumerate(items):
+                report = tool.Tester.report[idx]
+                if (
+                    report["total_checks"] != 0
+                ):
+                    filter_flags[idx] |= self.bitflag_filter_item
+                else:
+                    filter_flags[idx] &= ~self.bitflag_filter_item
+
+        filter_name = self.filter_name
+        if filter_name:
+            name_filtered = bpy.types.UI_UL_list.filter_items_by_name(
+                filter_name,
+                self.bitflag_filter_item,
+                items,
+                "name",
+            )
+            if len(name_filtered) == len(filter_flags):
+                for idx, flag in enumerate(name_filtered):
+                    if flag == 0:
+                        filter_flags[idx] &= ~self.bitflag_filter_item
 
         return filter_flags, []
 
