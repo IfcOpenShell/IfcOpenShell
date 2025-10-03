@@ -103,7 +103,8 @@ class BIM_PT_tester(Panel):
     def draw_editable_ui(self) -> None:
         props = tool.Tester.get_tester_props()
         specification = TesterData.data["specification"]
-        if props.hide_skipped_specs and specification["total_checks"] == 0 and specification[""]:
+        is_skipped = specification["total_checks"] == 0 and specification["cardinality"] == "optional"
+        if props.hide_skipped_specs and is_skipped:
             return
 
         n_requirements = len(specification["requirements"])
