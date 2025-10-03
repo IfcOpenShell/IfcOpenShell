@@ -131,7 +131,11 @@ class Facet:
         elif clause_type == "requirement":
             if specification and specification.maxOccurs == 0:
                 return "The requirement is not applicable"
-            if (not requirement) or isinstance(requirement, Entity) or requirement.cardinality == "required":
+            if (
+                (not requirement)
+                or isinstance(requirement, Entity)
+                or requirement.cardinality in ["required", "optional"]
+            ):
                 templates = self.requirement_templates
             elif requirement.cardinality == "prohibited":
                 templates = self.prohibited_templates
