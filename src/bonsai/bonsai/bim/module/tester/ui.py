@@ -60,7 +60,8 @@ class BIM_PT_tester(Panel):
         row.prop(props, "generate_ods_report")
         row = self.layout.row()
         row.prop(props, "flag")
-
+        row = self.layout.row()
+        row.prop(props, "hide_empty_specs")
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
             props.ifc_files.layout_file_select(row, "*.ifc;*.ifczip;*.ifcxml", "IFC File(s)")
@@ -159,6 +160,21 @@ class BIM_UL_tester_specifications(UIList):
             row = layout.split(factor=0.3, align=True)
             row.label(text=item.name, icon="CHECKMARK" if item.status else "CANCEL")
             row.label(text=item.description)
+
+    def filter_items(self, context: bpy.types.Context, data: IfcTesterProperties, propname: str):
+        items = getattr(data, propname)
+        filter_flags = [self.bitflag_filter_item] * len(items)
+
+        for idx, item in enumerate(items):
+            report = tool.Tester.report[idx]
+            if (
+                report["total_checks"] != 0
+            ):
+                filter_flags[idx] |= self.bitflag_filter_item
+            else:
+                filter_flags[idx] &= ~self.bitflag_filter_item
+
+        return filter_flags, []
 
 
 class BIM_UL_tester_failed_entities(UIList):
