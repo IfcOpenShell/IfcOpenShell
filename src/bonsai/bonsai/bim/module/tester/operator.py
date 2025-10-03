@@ -135,6 +135,7 @@ class IfcTesterNamespace(socketio.AsyncNamespace):
         try:
             request_id = data.get("id")
             ids_string = data.get("ids")
+            props = tool.Tester.get_tester_props()
 
             if not request_id:
                 await self.emit("error", {"error": "No request ID provided"}, room=sid)
@@ -176,7 +177,7 @@ class IfcTesterNamespace(socketio.AsyncNamespace):
                 json_report = json_reporter.to_string()
 
                 # HTML report
-                html_reporter = ifctester.reporter.Html(ids)
+                html_reporter = ifctester.reporter.Html(ids, hide_skipped=props.hide_empty_specs)
                 html_reporter.report()
                 html_report = html_reporter.to_string()
 
@@ -267,7 +268,7 @@ class ExecuteIfcTester(bpy.types.Operator):
             start = time.time()
 
             if props.generate_html_report:
-                engine = ifctester.reporter.Html(specs)
+                engine = ifctester.reporter.Html(specs, props.hide_empty_specs)
                 engine.report()
                 output_path = output.as_posix()
                 engine.to_file(output_path)

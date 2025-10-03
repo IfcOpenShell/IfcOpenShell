@@ -55,6 +55,7 @@ class Results(TypedDict):
     date: str
     filepath: str
     filename: str
+    hide_skipped: bool
     specifications: list[ResultsSpecification]
     status: bool
     total_specifications: int
@@ -236,9 +237,10 @@ class Txt(Console):
 
 
 class Json(Reporter):
-    def __init__(self, ids: Ids):
+    def __init__(self, ids: Ids,hide_skipped = False):
         super().__init__(ids)
         self.results = Results()
+        self.results["hide_skipped"] = hide_skipped
 
     def report(self) -> Results:
         self.results["title"] = self.ids.info.get("title", "Untitled IDS")
@@ -435,14 +437,14 @@ class Json(Reporter):
 
 
 class Html(Json):
-    def __init__(self, ids: Ids):
+    def __init__(self, ids: Ids, hide_skipped: bool = False):
         self.entity_limit = 100
         super().__init__(ids)
+        self.results["hide_skipped"] = hide_skipped
 
     def report(self) -> None:
         super().report()
         for spec in self.results["specifications"]:
-            print("checking", spec["cardinality"])
             if spec["cardinality"] == "optional" and spec["total_checks"] == 0:
                 spec["is_skipped"] = True
             spec["is_prohibited"] = spec["cardinality"] == "prohibited"
