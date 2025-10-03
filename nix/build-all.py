@@ -1368,6 +1368,9 @@ if "IfcOpenShell-Python" in targets:
     if "wasm" in flags:
         ADDITIONAL_ARGS = f"-Wl,-undefined,suppress -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper"
 
+    # NOTE: We don't use `CXXFLAGS` for wrappers, so wrapper is compiled with different flags
+    # (e.g. ` -fdata-sections` is missing, which is set by default for executables)
+    # So cache doesn't match and running build-all.py builds most of ifcopenshell libraries twice.
     os.environ["CPPFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CXXFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
     os.environ["CFLAGS"] = f"{CFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
