@@ -41,8 +41,8 @@ class IFC_PARSE_API IfcException : public std::exception {
   public:
     IfcException(const std::string& message)
         : message_(message) {}
-    virtual ~IfcException() throw() {}
-    virtual const char* what() const throw() {
+    ~IfcException() override;
+    const char* what() const noexcept override {
         return message_.c_str();
     }
 };
@@ -51,7 +51,7 @@ class IFC_PARSE_API IfcAttributeOutOfRangeException : public IfcException {
   public:
     IfcAttributeOutOfRangeException(const std::string& exception)
         : IfcException(exception) {}
-    ~IfcAttributeOutOfRangeException() throw() {}
+    ~IfcAttributeOutOfRangeException() override;
 };
 
 class IFC_PARSE_API IfcInvalidTokenException : public IfcException {
@@ -70,7 +70,7 @@ class IFC_PARSE_API IfcInvalidTokenException : public IfcException {
         : IfcException(
               std::string("Unexpected '") + std::string(1, character) + "' at offset " +
               boost::lexical_cast<std::string>(token_start)) {}
-    ~IfcInvalidTokenException() throw() {}
+    ~IfcInvalidTokenException() override;
 };
 
 } // namespace IfcParse
