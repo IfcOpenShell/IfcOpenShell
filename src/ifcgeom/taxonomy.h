@@ -87,11 +87,21 @@ typedef item* ptr; \
 typedef item const* ptr;
 #endif
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4275)
+#endif
+
 			class IFC_GEOM_API topology_error : public std::runtime_error {
 			public:
 				topology_error() : std::runtime_error("Generic topology error") {}
 				topology_error(const char* const s) : std::runtime_error(s) {}
+				~topology_error() override;
 			};
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 			// Implementer note: If you add a new item type, be sure to do the following
 			// 1) Add a new kind to this list

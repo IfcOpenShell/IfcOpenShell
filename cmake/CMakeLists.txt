@@ -151,11 +151,6 @@ if(MSVC AND MSVC_PARALLEL_BUILD)
     add_definitions("/MP")
 endif()
 
-if (MSVC AND BUILD_SHARED_LIBS)
-    # @todo how do projects normally deal with this regarding classes derived from std::exception?
-    add_compile_options(/wd4275)
-endif()
-
 if(NO_WARN)
     if(MSVC)
         add_compile_options("/w")

@@ -223,6 +223,8 @@ namespace {
 	};
 }
 
+ifcopenshell::geometry::taxonomy::topology_error::~topology_error() = default;
+
 bool ifcopenshell::geometry::taxonomy::less(item::const_ptr a, item::const_ptr b) {
 	if (a == b) {
 		return false;

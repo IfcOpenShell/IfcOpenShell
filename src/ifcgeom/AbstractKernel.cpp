@@ -7,6 +7,14 @@
 
 using namespace ifcopenshell::geometry;
 
+const char* ifcopenshell::not_implemented_error::what() const noexcept {
+	return "Not implemented.";
+}
+
+const char* ifcopenshell::not_supported_error::what() const noexcept {
+	return "Not supported.";
+}
+
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::ptr item, IfcGeom::ConversionResults& results) {
 	if (settings_.get<settings::CacheShapes>().get()) {
 		auto it = cache_.find(item);
