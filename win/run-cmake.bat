@@ -135,7 +135,7 @@ echo    PYTHONHOME              = %PYTHONHOME%
 echo    PYTHON_INCLUDE_DIR      = %PYTHON_INCLUDE_DIR%
 echo    PYTHON_LIBRARY          = %PYTHON_LIBRARY%
 echo    PYTHON_EXECUTABLE       = %PYTHON_EXECUTABLE%
-echo    SWIG_DIR                = %SWIG_DIR%
+echo    SWIG_INSTALL_DIR        = %SWIG_INSTALL_DIR%
 echo    JSON_INCLUDE_DIR        = %JSON_INCLUDE_DIR%
 echo.
 echo    CGAL_INCLUDE_DIR        = %CGAL_INCLUDE_DIR%
