@@ -459,7 +459,8 @@ class Html(Json):
                 requirement["total_passed_entities"] = total_passed_entities
                 requirement["total_omitted_passes"] = total_passed_entities - self.entity_limit
                 requirement["has_omitted_passes"] = total_passed_entities > self.entity_limit
-
+                requirement["instructions"] = requirement["metadata"].get("@instructions")
+                
     def limit_entities(self, entities):
         if len(entities) > self.entity_limit:
             if entities[0]["element_type"]:
