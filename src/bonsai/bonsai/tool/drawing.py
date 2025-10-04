@@ -1242,12 +1242,12 @@ class Drawing(bonsai.core.tool.Drawing):
         props = cls.get_text_props(obj)
         element = tool.Ifc.get_entity(obj)
         assert element
-        
+
         ifc_file = tool.Ifc.get()
         pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
-        
+
         ifcopenshell.api.pset.edit_pset(
             ifc_file,
             pset=pset,
@@ -1258,7 +1258,6 @@ class Drawing(bonsai.core.tool.Drawing):
                 "List_Separator": props.list_separator or "",
             },
         )
-
 
     # TODO below this point is highly experimental prototype code with no tests
 
@@ -1841,17 +1840,17 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def replace_text_literal_variables(
-        cls, 
-        text: str, 
-        product: Optional[ifcopenshell.entity_instance] = None, 
+        cls,
+        text: str,
+        product: Optional[ifcopenshell.entity_instance] = None,
         reverse_list: bool = False,
-        list_separator: str = ", "
+        list_separator: str = ", ",
     ) -> str:
         if not product:
             return text
         if list_separator:
-            list_separator = list_separator.encode().decode('unicode_escape')
-        
+            list_separator = list_separator.encode().decode("unicode_escape")
+
         for command in re.findall("``.*?``", text):
             original_command = command
             for variable in re.findall("{{.*?}}", command):
