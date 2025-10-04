@@ -141,7 +141,7 @@ class BIM_PT_tester(Panel):
             and props.n_entities > 0
             and len(props.failed_entities) > 0
         ):
-            
+
             requirement = specification["requirements"][props.active_requirement_index]
             metadata = requirement.get("metadata")
             if metadata and metadata.get("@instructions"):
@@ -150,7 +150,7 @@ class BIM_PT_tester(Panel):
                 box = self.layout.box()
                 column = box.column(align=True)
                 draw_multiline_text(column, metadata.get("@instructions"), context=context)
-            
+
             row = self.layout.row()
             row.label(text=f"Failed entities [{props.n_entities}]:")
             self.layout.template_list(
@@ -161,7 +161,6 @@ class BIM_PT_tester(Panel):
                 props,
                 "active_failed_entity_index",
             )
-
 
 
 class BIM_UL_tester_specifications(UIList):

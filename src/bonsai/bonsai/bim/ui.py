@@ -1498,6 +1498,7 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
                 url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
                 url_op.uri = url
 
+
 def draw_multiline_text(
     layout: bpy.types.UILayout,
     text: str,
@@ -1521,6 +1522,7 @@ def draw_multiline_text(
 
         for line in textwrap.wrap(paragraph, width=wrap_width):
             layout.label(text=line)
+
 
 class BIM_PT_decorators_overlay(Panel):
     bl_space_type = "VIEW_3D"

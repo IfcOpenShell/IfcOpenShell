@@ -473,7 +473,7 @@ class SelectRequirement(bpy.types.Operator):
         props.has_entities = True if props.n_entities > 0 else False
         props.failed_entities.clear()
         props.active_requirement_index = self.req_index
-        
+
         for e in failed_entities:
             new_entity = props.failed_entities.add()
             new_entity.ifc_id = e["id"]

@@ -93,7 +93,7 @@ class IfcTesterProperties(PropertyGroup):
         active_specification_index: int
         active_requirement_index: int
         old_index: int
-        active_failed_entity_index: int        
+        active_failed_entity_index: int
         specifications: bpy.types.bpy_prop_collection_idprop[Specification]
         failed_entities: bpy.types.bpy_prop_collection_idprop[FailedEntities]
         has_entities: bool
