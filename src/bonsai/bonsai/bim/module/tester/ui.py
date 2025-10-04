@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from bonsai.bim.ui import draw_multiline_text
+
 import bpy
 from bpy.types import Panel, UIList
 import bonsai.tool as tool
@@ -95,11 +97,11 @@ class BIM_PT_tester(Panel):
                 "active_specification_index",
             )
 
-            self.draw_editable_ui()
+            self.draw_editable_ui(context)
             row = self.layout.row()
             row.operator("bim.export_bcf", text="Export BCF", icon="EXPORT")
 
-    def draw_editable_ui(self) -> None:
+    def draw_editable_ui(self, context: bpy.types.Context) -> None:
         props = tool.Tester.get_tester_props()
         specification = TesterData.data["specification"]
 
@@ -110,6 +112,13 @@ class BIM_PT_tester(Panel):
         row.label(
             text=f'Passed: {specification["total_checks_pass"]}/{specification["total_checks"]} ({specification["percent_checks_pass"]}%)'
         )
+        row = self.layout.row()
+        if specification.get("instructions"):
+            row.label(text="Instructions:")
+            box = self.layout.box()
+            column = box.column(align=True)
+            draw_multiline_text(column, specification.get("instructions"), context=context)
+
         row = self.layout.row()
         row.label(text=f"Requirements ({n_requirements}):")
         if props.flag:
@@ -132,6 +141,16 @@ class BIM_PT_tester(Panel):
             and props.n_entities > 0
             and len(props.failed_entities) > 0
         ):
+            
+            requirement = specification["requirements"][props.active_requirement_index]
+            metadata = requirement.get("metadata")
+            if metadata and metadata.get("@instructions"):
+                row = self.layout.row()
+                row.label(text="Instructions:")
+                box = self.layout.box()
+                column = box.column(align=True)
+                draw_multiline_text(column, metadata.get("@instructions"), context=context)
+            
             row = self.layout.row()
             row.label(text=f"Failed entities [{props.n_entities}]:")
             self.layout.template_list(
@@ -142,6 +161,7 @@ class BIM_PT_tester(Panel):
                 props,
                 "active_failed_entity_index",
             )
+
 
 
 class BIM_UL_tester_specifications(UIList):

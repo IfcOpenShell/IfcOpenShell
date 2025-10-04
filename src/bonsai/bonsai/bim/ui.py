@@ -40,6 +40,7 @@ from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.pset.prop import IfcProperty
 from typing import Optional, TYPE_CHECKING, Literal
 from natsort import natsorted
+import textwrap
 
 
 if TYPE_CHECKING:
@@ -1497,6 +1498,29 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
                 url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
                 url_op.uri = url
 
+def draw_multiline_text(
+    layout: bpy.types.UILayout,
+    text: str,
+    *,
+    context: bpy.types.Context | None = None,
+) -> None:
+    """Render a read-only text box that wraps long text."""
+    assert layout
+
+    region_width = 200
+    if context and context.region:
+        region_width = context.region.width
+
+    approximate_char_width = 7  # Empirical average width for Blender UI font (px)
+    wrap_width = max(20, int(region_width / approximate_char_width))
+
+    for paragraph in text.splitlines():
+        if not paragraph:
+            layout.label(text="")
+            continue
+
+        for line in textwrap.wrap(paragraph, width=wrap_width):
+            layout.label(text=line)
 
 class BIM_PT_decorators_overlay(Panel):
     bl_space_type = "VIEW_3D"
