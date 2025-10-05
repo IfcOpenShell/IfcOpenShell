@@ -118,3 +118,20 @@ END-ISO-10303-21;
         assert qt_float_count_measure_ifc4x3.is_a("IfcQuantityNumber")
         assert isinstance(qt_float_count_measure_ifc4x3[3], float)
         assert qt_float_count_measure_ifc4x3[3] == 723.0
+
+    def test_migrate_extended_material_properties_ifc2x3_ifc4(self):
+        ifc2x3_file = ifcopenshell.api.project.create_file(version="IFC2X3")
+        material = ifc2x3_file.createIfcMaterial(Name="Material")
+        props = [ifc2x3_file.createIfcPropertySingleValue(Name="Foo")]
+        original_element = ifc2x3_file.createIfcExtendedMaterialProperties(Material=material, ExtendedProperties=props)
+        ifc4_file = ifcopenshell.api.project.create_file()
+
+        migrator = subject.Migrator()
+        for element in ifc2x3_file:
+            migrator.migrate(element, ifc4_file)
+
+        new_element = ifc4_file.by_type("IfcMaterialProperties")[0]
+        assert new_element.Material.is_a("IfcMaterial")
+        assert new_element.Material.Name == "Material"
+        assert new_element.Properties[0].is_a("IfcPropertySingleValue")
+        assert new_element.Properties[0].Name == "Foo"
