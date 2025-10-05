@@ -323,20 +323,23 @@ class ObjectMaterialData:
 
     @classmethod
     def total_thickness(cls):
-        if cls.material:
-            layers = []
-            if cls.material.is_a("IfcMaterialLayerSetUsage"):
-                layers = cls.material.ForLayerSet.MaterialLayers
-            elif cls.material.is_a("IfcMaterialLayerSet"):
-                layers = cls.material.MaterialLayers
-            thickness = sum([l.LayerThickness for l in layers or []])
-            prefs = tool.Blender.get_addon_preferences()
-            assert bpy.context.scene
-            unit_system = bpy.context.scene.unit_settings.system
-            precision = None
-            if unit_system == "IMPERIAL":
-                precision = prefs.doc.imperial_precision
-            return format_distance(thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True)
+        if not cls.material:
+            return
+        layers = []
+        if cls.material.is_a("IfcMaterialLayerSetUsage"):
+            layers = cls.material.ForLayerSet.MaterialLayers
+        elif cls.material.is_a("IfcMaterialLayerSet"):
+            layers = cls.material.MaterialLayers
+        if not layers:
+            return
+        thickness = sum([l.LayerThickness for l in layers or []])
+        prefs = tool.Blender.get_addon_preferences()
+        assert bpy.context.scene
+        unit_system = bpy.context.scene.unit_settings.system
+        precision = None
+        if unit_system == "IMPERIAL":
+            precision = prefs.doc.imperial_precision
+        return format_distance(thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     @classmethod
     def set_item_name(cls) -> Union[str, None]:
