@@ -2188,9 +2188,6 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def activate_drawing(cls, camera: bpy.types.Object) -> None:
-        selected_objects_before = bpy.context.selected_objects
-        non_ifc_objects_hide = {o: o.hide_get() for o in bpy.context.view_layer.objects if not tool.Ifc.get_entity(o)}
-
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
         assert drawing and isinstance(camera.data, bpy.types.Camera)
@@ -2202,13 +2199,7 @@ class Drawing(bonsai.core.tool.Drawing):
         target_view = cls.get_drawing_target_view(drawing)
         subcontexts = cls.get_drawing_subcontexts(target_view)
 
-        # Hide everything first, then selectively show. This is significantly faster.
-        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
-            bpy.ops.object.hide_view_set(unselected=False)
-            bpy.ops.object.hide_view_set(unselected=True)
-
-        # switch representations and hide elements without representations
-        element_obj_names = set()
+        # Switch representations
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
             if not obj:
@@ -2239,26 +2230,18 @@ class Drawing(bonsai.core.tool.Drawing):
                     has_context = True
                     break
 
-            # Don't hide IfcAnnotations or Aggregates as some of them might exist without representations
-            if has_context or element.is_a("IfcAnnotation") or element.IsDecomposedBy:
-                element_obj_names.add(obj.name)
-
-        # Note that render visibility is only set on drawing generation time for speed.
+        should_hides = []
         for obj in bpy.context.view_layer.objects:
-            if obj.name in element_obj_names:
-                obj.hide_set(False)
-                obj.hide_render = False
-                continue
-            if (hide := non_ifc_objects_hide.get(obj)) is not None:
-                obj.hide_set(hide)
-                obj.hide_render = hide
+            if element := tool.Ifc.get_entity(obj):
+                should_hides.append(0 if element in filtered_elements else 1)
             else:
-                obj.hide_render = True
+                should_hides.append(obj.hide_viewport)
+            obj.update_tag()  # Ensure refresh viewport after foreach_set visibility
+        should_hides = np.fromiter(should_hides, dtype=np.uint8, count=len(should_hides))
+        bpy.context.view_layer.objects.foreach_set("hide_viewport", should_hides)
+        bpy.context.view_layer.objects.foreach_set("hide_render", should_hides)
 
         cls.import_camera_props(drawing, camera.data)
-
-        for obj in selected_objects_before:
-            obj.select_set(True)
 
     @classmethod
     def get_elements_in_camera_view(
