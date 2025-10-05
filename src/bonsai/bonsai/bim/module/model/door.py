@@ -95,15 +95,17 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     representation_data["part_of_product"] = None
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
     if fallback_material := (int(props.lining_material) or int(props.framing_material) or int(props.glazing_material)):
+        materials = {
+            "Lining": tool.Ifc.get().by_id(int(props.lining_material) or fallback_material),
+            "Framing": tool.Ifc.get().by_id(int(props.framing_material) or fallback_material),
+        }
+        if props.transom_thickness:
+            materials["Glazing"] = tool.Ifc.get().by_id(int(props.glazing_material) or fallback_material)
         ifcopenshell.api.material.set_shape_aspect_constituents(
             ifc_file,
             element=element,
             context=body,
-            materials={
-                "Lining": tool.Ifc.get().by_id(int(props.lining_material) or fallback_material),
-                "Framing": tool.Ifc.get().by_id(int(props.framing_material) or fallback_material),
-                "Glazing": tool.Ifc.get().by_id(int(props.glazing_material) or fallback_material),
-            },
+            materials=materials,
         )
     elif material := ifcopenshell.util.element.get_material(element):
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
