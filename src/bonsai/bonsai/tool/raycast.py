@@ -155,7 +155,6 @@ class Raycast(bonsai.core.tool.Raycast):
     @classmethod
     def point_is_visible_in_clipping_plane(cls, vertex):
         normals = tool.Project.get_clipping_planes_normals()
-        print("NORMALS", normals)
         if not normals:
             return True
         for normal in normals:

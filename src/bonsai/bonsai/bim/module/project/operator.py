@@ -155,6 +155,7 @@ class CreateProject(bpy.types.Operator):
             tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
         )
         tool.Blender.register_toolbar()
+        tool.Loader.set_unit_scale(ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()))
 
     def rollback(self, data):
         IfcStore.file = None
