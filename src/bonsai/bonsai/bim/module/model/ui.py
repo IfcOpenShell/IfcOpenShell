@@ -550,7 +550,7 @@ class BIM_PT_door(bpy.types.Panel):
 
                 row = prop_with_search(self.layout, props, "lining_material")
                 tool.Model.draw_material_ui_select(row, props.lining_material)
-                row = prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+                row = prop_with_search(self.layout, props, "framing_material", text="Panel Framing Material")
                 tool.Model.draw_material_ui_select(row, props.framing_material)
                 if props.transom_thickness:
                     row = prop_with_search(self.layout, props, "glazing_material")
