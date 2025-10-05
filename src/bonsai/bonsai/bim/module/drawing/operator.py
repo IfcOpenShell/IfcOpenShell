@@ -435,10 +435,6 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_underlay_cache:
             return svg_path
 
-        visible_object_names = {obj.name for obj in bpy.context.visible_objects}
-        for obj in bpy.context.view_layer.objects:
-            obj.hide_render = obj.name not in visible_object_names
-
         assert context.scene and context.view_layer and context.screen
         context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
         assert (drawing_style := self.cprops.get_active_drawing_style())
@@ -449,7 +445,7 @@ class CreateDrawing(bpy.types.Operator):
             previous_visibility: dict[str, bool] = {}
             collection = tool.Blender.get_object_bim_props(self.camera).collection
             assert collection
-            # Hie annotations.
+            # Hide annotations.
             for obj in collection.objects:
                 if context.view_layer.objects.get(obj.name):
                     previous_visibility[obj.name] = obj.hide_get()
@@ -2171,27 +2167,10 @@ class ActivateModel(bpy.types.Operator):
         if model_props.show_cut_decorator:
             CutDecorator.uninstall()
 
-        # Preserve current visibility statuses for:
-        # - non-ifc objects
-        # - type product
-        # - annotations (so we won't unhide other drawings)
         ifc_file = tool.Ifc.get()
-        visibility_status: dict[bpy.types.Object, bool] = {}
-        for obj in bpy.data.objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                hide = obj.hide_get()
-            elif element.is_a("IfcAnnotation"):
-                hide = True
-            elif element.is_a("IfcTypeProduct"):
-                hide = obj.hide_get()
-            else:
-                continue
-            visibility_status[obj] = hide
 
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
-                bpy.ops.object.hide_view_clear(select=False)
                 bpy.ops.bim.activate_status_filters(only_if_enabled=True)
 
         elements = {e for obj in context.visible_objects if (e := tool.Ifc.get_entity(obj))}
@@ -2241,9 +2220,12 @@ class ActivateModel(bpy.types.Operator):
                 should_sync_changes_first=True,
             )
 
-        # restore visibility after hide_view_clear()
-        for obj, hide_status in visibility_status.items():
-            obj.hide_set(hide_status)
+        for obj in bpy.context.view_layer.objects:
+            obj.update_tag()  # Ensure refresh viewport after foreach_set visibility
+        should_hides = np.full(len(bpy.context.view_layer.objects), 0, dtype=np.uint8)
+        should_hides = np.ascontiguousarray(should_hides)
+        bpy.context.view_layer.objects.foreach_set("hide_viewport", should_hides)
+        bpy.context.view_layer.objects.foreach_set("hide_render", should_hides)
 
         tool.Blender.update_viewport()
         bonsai.bim.handler.refresh_ui_data()
