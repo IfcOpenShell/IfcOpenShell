@@ -33,7 +33,7 @@ export async function preloadAutocompletions() {
         );
         const allEntities = new Set();
         entitySets.forEach(entities => {
-            entities.forEach(entity => allEntities.add(entity));
+            entities.forEach(entity => allEntities.add(entity.toUpperCase()));
         });
         
         // Data types
