@@ -186,10 +186,8 @@
                 {#if !IDS.Module.activeDocument}
                     <div class="no-document">
                         <div class="no-document-icon"></div>
-                        <h2>Get Started</h2>
-                        <p>Create or open an existing IDS document.</p>
-                        <button class="btn" onclick={() => IDS.createDocument()}>Create IDS document</button>
-                        <button class="btn" onclick={() => IDS.openDocument()}>Import IDS file</button>
+                        <button class="btn" onclick={() => IDS.createDocument()}>New IDS</button>
+                        <button class="btn" onclick={() => IDS.openDocument()}>Open IDS</button>
                     </div>
                 {:else}
                     <!-- Editor/Viewer Toggle -->
