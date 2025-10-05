@@ -36,6 +36,7 @@ from typing_extensions import NotRequired
 class CsvHeader(TypedDict):
     Index: int
     Name: int
+    Description: NotRequired[str]
     Unit: int
     Identification: NotRequired[int]
     Value: NotRequired[int]
@@ -80,6 +81,7 @@ class CostItem(TypedDict):
 
     Identification: Union[str, None]
     Name: Union[str, None]
+    Description: Union[str, None]
     Unit: Union[str, None]
     CostValues: Union[dict[str, float], float, None]
 
@@ -183,15 +185,6 @@ class Csv2Ifc:
                     available_fields = set(self.headers.keys())
                     missing_fields = mandatory_fields - available_fields
 
-                    # TODO: 25-04-17 Deprecated 'Description' argument, should fully remove later.
-                    if missing_fields and "Name" in missing_fields and "Description" in available_fields:
-                        print(
-                            "WARNING. 'Description' column is deprecated and should be renamed to 'Name'. It will be deprecated soon completely."
-                        )
-                        self.headers["Name"] = self.headers["Description"]
-                        del self.headers["Description"]
-                        missing_fields.remove("Name")
-
                     if missing_fields:
                         raise Exception(f"Missing mandatory fields in CSV header: {', '.join(missing_fields)}")
 
@@ -212,6 +205,7 @@ class Csv2Ifc:
 
     def get_row_cost_data(self, row: list[str]) -> CostItem:
         name = row[self.headers["Name"]]
+        description = row[self.headers["Description"]] if "Description" in self.headers else None
         identification = row[self.headers["Identification"]] if "Identification" in self.headers else None
         quantity = row[(self.headers["Quantity"])] if "Quantity" in self.headers else None
         unit = row[self.headers["Unit"]]
@@ -241,6 +235,7 @@ class Csv2Ifc:
         return {
             "Identification": str(identification) if identification else None,
             "Name": str(name) if name else None,
+            "Description": str(description) if description else None,
             "Unit": str(unit) if unit else None,
             "CostValues": cost_values,
             "Quantity": float(quantity) if quantity else None,
@@ -276,6 +271,7 @@ class Csv2Ifc:
             cost_item["ifc"] = ifcopenshell.api.cost.add_cost_item(self.file, cost_item=parent)
 
         cost_item["ifc"].Name = cost_item["Name"]
+        cost_item["ifc"].Description = cost_item["Description"]
         cost_item["ifc"].Identification = cost_item["Identification"]
 
         cost_values = cost_item["CostValues"]
