@@ -98,7 +98,8 @@ class DumbProfileGenerator:
             vec1 = Vector((polyline_points[i].x, polyline_points[i].y, polyline_points[i].z))
             vec2 = Vector((polyline_points[i + 1].x, polyline_points[i + 1].y, polyline_points[i + 1].z))
             coords = (vec1, vec2)
-            profiles.append(self.create_profile_from_2_points(coords))
+            if profile := self.create_profile_from_2_points(coords):
+                profiles.append(profile)
         return profiles, is_polyline_closed
 
     def derive_from_cursor(self) -> bpy.types.Object:
@@ -183,7 +184,7 @@ class DumbProfileGenerator:
     ) -> ProfileFrom2PointsReturn:
         self.direction = coords[1] - coords[0]
         length = self.direction.length
-        if round(length, 4) < 0.1:
+        if round(length, 4) < 0.001:
             return
         data: dict[str, Any] = {"coords": coords}
 
