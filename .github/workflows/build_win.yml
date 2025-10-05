@@ -50,6 +50,9 @@ jobs:
         uses: Andrej730/ccache-action@main
         with:
           key: win-${{ matrix.arch }}
+          # Windows ccache needs ~1GB
+          # and with default 500MB some cache gets deleted, leading to misses.
+          max-size: 5000MB
 
       - name: Run Build Script
         shell: cmd
