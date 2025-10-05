@@ -337,9 +337,21 @@ class StartIfcTesterWebapp(bpy.types.Operator):
             websocket_server_thread = threading.Thread(target=run_websocket_server, daemon=True)
             websocket_server_thread.start()
 
+            py_version = sys.version_info
+            bonsai_lib_path = (
+                Path(bpy.utils.user_resource("EXTENSIONS"))
+                / ".local"
+                / "lib"
+                / f"python{py_version.major}.{py_version.minor}"
+                / "site-packages"
+            )
+            env = os.environ.copy()
+            env["BONSAI_LIB_PATH"] = str(bonsai_lib_path)
+            env["BONSAI_VERSION"] = tool.Blender.get_bonsai_version()
+
             # Start the Flask server as subprocess
             webapp_process = subprocess.Popen(
-                [sys.executable, webapp_serve_path, "--host", "127.0.0.1", "--port", str(webapp_port)]
+                [sys.executable, webapp_serve_path, "--host", "127.0.0.1", "--port", str(webapp_port)], env=env
             )
 
             # Update properties

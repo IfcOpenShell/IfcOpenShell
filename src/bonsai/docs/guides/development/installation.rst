@@ -174,6 +174,14 @@ If there are changes to the IfcOpenShell binaries, you may replace the two
 ``*ifcopenshell_wrapper*`` files with new ones downloaded from the automated
 `IfcOpenShell builds directory <https://builds.ifcopenshell.org/>`__.
 
+If you wish to run the IfcTester webapp, you will also need to have ``npm`` and
+setup IfcTester:
+
+.. code-block:: bash
+
+    cd src/ifctester
+    make webapp-prepare
+
 .. seealso::
 
     There is a `useful Blender Addon

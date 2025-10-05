@@ -17,8 +17,18 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import argparse
 import mimetypes
+
+bonsai_lib_path = os.environ.get("BONSAI_LIB_PATH")
+print(os.environ)
+print(bonsai_lib_path)
+bonsai_version = os.environ.get("BONSAI_VERSION")
+
+if bonsai_lib_path:
+    sys.path.insert(0, bonsai_lib_path)
+
 from flask import Flask, send_from_directory, send_file
 
 # Browsers expecting this specific MIME type for .mjs files,
