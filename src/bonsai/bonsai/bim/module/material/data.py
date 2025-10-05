@@ -404,7 +404,7 @@ class ObjectMaterialData:
         material = cls.material
         if not cls.material or not material.is_a("IfcMaterialConstituentSet"):
             return []
-        return [m.Name for m in material.MaterialConstituents if m.Name]
+        return [m.Name for m in material.MaterialConstituents or [] if m.Name]
 
     @classmethod
     def is_type_material_overridden(cls) -> bool:

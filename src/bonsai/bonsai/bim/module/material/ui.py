@@ -254,6 +254,10 @@ class BIM_PT_object_material(Panel):
         active_object = bpy.context.active_object
         self.layerset_bounds(box, active_object, location="Top_Exterior")
 
+        if not ObjectMaterialData.data["set_items"]:
+            row = box.row()
+            row.label(text="No Materials Found")
+
         for set_item in ObjectMaterialData.data["set_items"]:
             if (
                 len(self.props.material_set_item_profile_attributes)
@@ -356,6 +360,10 @@ class BIM_PT_object_material(Panel):
         box = self.layout.box()
         active_object = bpy.context.active_object
         self.layerset_bounds(box, active_object, location="Top_Interior")
+
+        if not ObjectMaterialData.data["set_items"]:
+            row = box.row()
+            row.label(text="No Materials Found")
 
         for set_item in ObjectMaterialData.data["set_items"]:
             material_name = set_item["material"]
