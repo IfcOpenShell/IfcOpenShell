@@ -820,7 +820,11 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def import_annotations_in_group(cls, group: ifcopenshell.entity_instance) -> None:
         elements = set(
-            [e for e in cls.get_group_elements(group) if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING"]
+            [
+                e
+                for e in cls.get_group_elements(group)
+                if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING" and not tool.Ifc.get_object(e)
+            ]
         )
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
@@ -1466,10 +1470,8 @@ class Drawing(bonsai.core.tool.Drawing):
             def ensure_referenced_drawing_obj_exists(drawing: ifcopenshell.entity_instance):
                 obj = tool.Ifc.get_object(drawing)
                 if obj is None:
+                    # Annotations in that drawing are lazy loaded as needed
                     obj = cls.import_drawing(drawing)
-                    # there is no need for other drawing annotations in that case
-                    # but we import them anyway so we won't break that drawing activation
-                    cls.import_annotations_in_group(cls.get_drawing_group(drawing))
                     tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
 
             target_view = ifcopenshell.util.element.get_pset(reference_element, "EPset_Drawing", "TargetView")
@@ -2192,6 +2194,7 @@ class Drawing(bonsai.core.tool.Drawing):
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
         assert drawing and isinstance(camera.data, bpy.types.Camera)
+        cls.import_annotations_in_group(cls.get_drawing_group(drawing))
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         filtered_elements.add(drawing)
