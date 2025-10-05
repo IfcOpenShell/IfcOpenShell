@@ -527,7 +527,7 @@ html, body {
         .no-document-icon {
             height: 125px;
             width: 200px;
-            background: url(/images/no_document.svg);
+            background: url(/logo.svg);
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
