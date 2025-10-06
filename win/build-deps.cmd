@@ -175,7 +175,11 @@ cd "%DEPS_DIR%"
 set HDF5_VERSION=1_13_1
 set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-set PYTHON_VERSION=3.11.7
+IF DEFINED PYTHON_VERSION (
+    echo Using overridden PYTHON_VERSION: '%PYTHON_VERSION%'
+) else (
+    set PYTHON_VERSION=3.11.7
+)
 
 :: VERSION DERIVATIONS
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
