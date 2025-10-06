@@ -888,7 +888,34 @@ class IfcImporter:
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             )
-
+        if element.is_a("IfcAnnotation") and getattr(element, "ObjectType", None) == "IMAGE":
+            image = None
+            if obj.data and obj.data.materials and obj.data.materials[0]:
+                material = obj.data.materials[0]
+                if material.use_nodes and material.node_tree:
+                    for node in material.node_tree.nodes:
+                        if node.type == 'TEX_IMAGE' and node.image:
+                            image = node.image
+                            break
+            if image:
+                import bmesh
+                bm = bmesh.new()
+                bm.from_mesh(obj.data)
+                if not bm.loops.layers.uv:
+                    uv_layer = bm.loops.layers.uv.new()
+                else:
+                    uv_layer = bm.loops.layers.uv.active
+                aspect_ratio = image.size[1] / image.size[0]
+                for face in bm.faces:
+                    for loop in face.loops:
+                        vert = loop.vert
+                        v = (vert.co.y * 0.5) + 0.5
+                        u = (vert.co.x * 0.5 * aspect_ratio) + 0.5
+                        loop[uv_layer].uv = (u, v)
+                bm.to_mesh(obj.data)
+                bm.free()
+                obj.data.update()
+    
         return obj
 
     def load_existing_meshes(self) -> None:
