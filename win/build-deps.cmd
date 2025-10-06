@@ -205,6 +205,34 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
+
+:ccache
+set DEPENDENCY_NAME=ccache
+set CCACHE_VERSION=4.12.1
+set CCACHE_INSTALL_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%-%CCACHE_VERSION%-windows-x86_64
+set CCACHE_ZIP=ccache-%CCACHE_VERSION%-windows-x86_64.zip
+set DEPENDENCY_DIR=%CCACHE_INSTALL_DIR%
+
+where ccache >nul 2>&1
+IF %ERRORLEVEL%==0 (
+    echo Found existing ccache in PATH. Skipping.
+    goto :proj
+)
+
+echo CCACHE_INSTALL_DIR=%CCACHE_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+IF EXIST "%DEPENDENCY_DIR%" (
+    echo Found existing "%DEPENDENCY_DIR%", skipping
+    goto :proj
+)
+
+cd %DEPS_DIR%
+call :DownloadFile ^
+    https://github.com/ccache/ccache/releases/download/v%CCACHE_VERSION%/%CCACHE_ZIP% ^
+    "%DEPS_DIR%" %CCACHE_ZIP%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :ExtractArchive %CCACHE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 :proj
 
 IF EXIST "%INSTALL_DIR%\proj-9.2.1" (
