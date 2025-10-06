@@ -72,6 +72,10 @@ def assign_class(
     """
     Args:
         context: is not optional if `should_add_representation` is True
+
+    TODO: Do NOT use should_add_representation. Because it internally calls
+    geometry.add_representation which is 1,000 lines of Blender -> IFC magic.
+    Instead, explicitly create a representation using tool.Geometry.
     """
     if ifc.get_entity(obj):
         return
