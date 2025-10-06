@@ -71,6 +71,8 @@ class IfcTesterProperties(PropertyGroup):
     generate_ods_report: BoolProperty(default=False, name="Generate ODS report", options=set())
     flag: BoolProperty(default=False, name="Flag Failed Entities", options=set())
     active_specification_index: IntProperty(name="Active Specification Index", update=update_active_specification_index)
+    active_requirement_index: IntProperty(name="Active Requirement Index")
+
     old_index: IntProperty(name="", default=0)
     active_failed_entity_index: IntProperty(name="Active Failed Entity Index")
     specifications: CollectionProperty(name="Specifications", type=Specification)
@@ -89,6 +91,7 @@ class IfcTesterProperties(PropertyGroup):
         generate_ods_report: bool
         flag: bool
         active_specification_index: int
+        active_requirement_index: int
         old_index: int
         active_failed_entity_index: int
         specifications: bpy.types.bpy_prop_collection_idprop[Specification]
