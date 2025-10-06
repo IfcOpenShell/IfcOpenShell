@@ -106,14 +106,17 @@ class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
             obj = bpy.data.objects.new(object_type, None)
 
         obj.name = props.type_name
+        ifc_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", "MODEL_VIEW")
         element = tool.Drawing.run_root_assign_class(
             obj=obj,
             ifc_class="IfcTypeProduct",
             predefined_type=object_type,
             should_add_representation=has_representation,
-            context=ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Annotation", "MODEL_VIEW"),
+            context=ifc_context,
             ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
         )
+        if representation := tool.Drawing.get_representation(element, ifc_context):
+            tool.Drawing.reload_representation(obj=obj, representation=representation)
         element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
 
         if props.create_representation_for_type and object_type == "IMAGE":
