@@ -1875,10 +1875,51 @@ class Blender(bonsai.core.tool.Blender):
             bpy.ops.object.hide_view_clear(select=False)
 
         bpy.ops.object.select_all(action="DESELECT")
-        for o in objs_to_show:
-            o.select_set(True)
+        for obj in objs:
+            obj.select_set(True)
         with bpy.context.temp_override(**override):
             bpy.ops.object.hide_view_set(unselected=True)
+
+        bpy.ops.object.select_all(action="DESELECT")
+        for name in previously_selected:
+            obj = bpy.data.objects.get(name)
+            if obj:
+                obj.select_set(True)
+        bpy.context.view_layer.objects.active = previously_active
+
+    @classmethod
+    def hide_objects(cls, objs):
+        previously_selected = {o.name for o in bpy.context.selected_objects}
+        previously_active = bpy.context.view_layer.objects.active
+
+        override = cls.get_viewport_context()
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objs:
+            obj.select_set(True)
+        with bpy.context.temp_override(**override):
+            bpy.ops.object.hide_view_set(unselected=False)
+
+        for name in previously_selected:
+            obj = bpy.data.objects.get(name)
+            if obj:
+                obj.select_set(True)
+        bpy.context.view_layer.objects.active = previously_active
+
+    @classmethod
+    def show_objects(cls, objs):
+        previously_selected = {o.name for o in bpy.context.selected_objects}
+        previously_active = bpy.context.view_layer.objects.active
+
+        bpy.ops.object.select_all(action="DESELECT")
+        override = cls.get_viewport_context()
+        with bpy.context.temp_override(**override):
+            bpy.ops.object.hide_view_clear(select=True)
+
+        for obj in bpy.context.selected_objects:
+            if obj in objs:
+                obj.select_set(False)
+        with bpy.context.temp_override(**override):
+            bpy.ops.object.hide_view_set(unselected=False)
 
         bpy.ops.object.select_all(action="DESELECT")
         for name in previously_selected:
