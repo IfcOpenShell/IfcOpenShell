@@ -1204,6 +1204,28 @@ class Spatial(bonsai.core.tool.Spatial):
         )
 
     @classmethod
+    def set_space_visibility(cls, is_visible: bool) -> None:
+        if tool.Ifc.get().schema == "IFC2X3":
+            elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+        else:
+            elements = tool.Ifc.get().by_type("IfcSpatialElement")
+        for element in elements:
+            if obj := tool.Ifc.get_object(element):
+                if obj.hide_viewport is True and is_visible:
+                    obj.hide_viewport = False
+                elif obj.hide_viewport is False and not is_visible:
+                    obj.hide_viewport = True
+
+    @classmethod
+    def set_grid_visibility(cls, is_visible: bool) -> None:
+        for element in tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis"):
+            if obj := tool.Ifc.get_object(element):
+                if obj.hide_viewport is True and is_visible:
+                    obj.hide_viewport = False
+                elif obj.hide_viewport is False and not is_visible:
+                    obj.hide_viewport = True
+
+    @classmethod
     def toggle_spaces_visibility_wired_and_textured(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
         first_obj = tool.Ifc.get_object(spaces[0])
         assert isinstance(first_obj, bpy.types.Object)
