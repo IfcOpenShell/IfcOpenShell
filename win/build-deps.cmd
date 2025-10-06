@@ -147,6 +147,8 @@ echo     Defaults to Build if not specified.
 call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
 echo   - Download and install Python.
 echo     Set to something other than TRUE if you wish to use an already installed version of Python.
+echo     But then you'll need to set PYTHONHOME env variable to your Python installation before running run-cmake.bat
+echo     to your Python installation path.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -174,7 +176,6 @@ cd "%DEPS_DIR%"
 :: Don't use HDF5 1.13.0, because it has a broken cmake package path.
 set HDF5_VERSION=1_13_1
 set OCCT_VERSION=7.8.1
-:: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 IF DEFINED PYTHON_VERSION (
     echo Using overridden PYTHON_VERSION: '%PYTHON_VERSION%'
 ) else (
@@ -184,10 +185,6 @@ IF DEFINED PYTHON_VERSION (
 :: VERSION DERIVATIONS
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-:: '3.11.7' -> '311'
-for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do (
-    set PY_VER_MAJOR_MINOR=%%a%%b
-)
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     set PYTHONHOME=%DEPS_DIR%\python.%PYTHON_VERSION%\tools
 )
@@ -200,7 +197,6 @@ echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
