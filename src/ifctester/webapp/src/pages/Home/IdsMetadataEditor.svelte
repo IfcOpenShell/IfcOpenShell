@@ -22,7 +22,7 @@
             <input class="form-input" type="text" bind:value={() => getProp("title"), (v) => setProp("title", v)} placeholder="Enter IDS title">
         </div>
         <div class="form-group">
-            <label>Author</label>
+            <label>Author Email</label>
             <input class="form-input" type="email" bind:value={() => getProp("author"), (v) => setProp("author", v)} placeholder="Enter author">
         </div>
         <div class="form-group">
