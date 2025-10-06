@@ -237,7 +237,7 @@ class Txt(Console):
 
 
 class Json(Reporter):
-    def __init__(self, ids: Ids,hide_skipped = False):
+    def __init__(self, ids: Ids, hide_skipped=False):
         super().__init__(ids)
         self.results = Results()
         self.results["hide_skipped"] = hide_skipped
@@ -462,7 +462,7 @@ class Html(Json):
                 requirement["total_omitted_passes"] = total_passed_entities - self.entity_limit
                 requirement["has_omitted_passes"] = total_passed_entities > self.entity_limit
                 requirement["instructions"] = requirement["metadata"].get("@instructions")
-                
+
     def limit_entities(self, entities):
         if len(entities) > self.entity_limit:
             if entities[0]["element_type"]:
