@@ -1552,12 +1552,10 @@ class Drawing(bonsai.core.tool.Drawing):
             context=context,
             ifc_representation_class=None,
         )
+        if representation := ifcopenshell.util.representation.get_representation(element, context):
+            cls.reload_representation(obj=obj, representation=representation)
         bpy.data.curves.remove(data)
 
-        assert element
-        representation = ifcopenshell.util.representation.get_representation(element, context)
-        assert representation
-        obj.data["ios_edges_item_ids"] = (representation.Items[0].id(),)
         return element
 
     @classmethod
@@ -1645,6 +1643,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 context=context,
                 ifc_representation_class=None,
             )
+            if representation := ifcopenshell.util.representation.get_representation(element, context):
+                cls.reload_representation(obj=obj, representation=representation)
             return element
 
     @classmethod
@@ -1682,6 +1682,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 context=context,
                 ifc_representation_class=None,
             )
+            if representation := ifcopenshell.util.representation.get_representation(element, context):
+                cls.reload_representation(obj=obj, representation=representation)
             return element
 
     @classmethod
@@ -1782,6 +1784,8 @@ class Drawing(bonsai.core.tool.Drawing):
             context=context,
             ifc_representation_class=None,
         )
+        if representation := ifcopenshell.util.representation.get_representation(element, context):
+            cls.reload_representation(obj=obj, representation=representation)
         return element
 
     @classmethod
