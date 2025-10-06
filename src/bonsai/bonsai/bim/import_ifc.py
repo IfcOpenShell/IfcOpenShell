@@ -625,18 +625,13 @@ class IfcImporter:
         print("Done creating geometry")
 
     def create_spatial_elements(self) -> None:
-        if tool.Blender.get_addon_preferences().spatial_elements_unselectable:
-            self.create_generic_elements(self.spatial_elements, unselectable=True)
-        else:
-            self.create_generic_elements(self.spatial_elements, unselectable=False)
+        self.create_generic_elements(self.spatial_elements)
 
     def create_elements(self) -> None:
         self.create_generic_elements(self.elements)
         self.create_generic_elements(self.gross_elements, is_gross=True)
 
-    def create_generic_elements(
-        self, elements: set[ifcopenshell.entity_instance], unselectable=False, is_gross=False
-    ) -> None:
+    def create_generic_elements(self, elements: set[ifcopenshell.entity_instance], is_gross=False) -> None:
         if isinstance(self.file, ifcopenshell.sqlite):
             return self.create_generic_sqlite_elements(elements)
 
@@ -659,10 +654,6 @@ class IfcImporter:
             if i % 250 == 0:
                 print("{} / {} elements processed ...".format(i, total))
             objects.add(self.create_product(element))
-
-        if unselectable:
-            for obj in objects:
-                obj.hide_select = True
 
     def create_generic_sqlite_elements(self, elements: set[ifcopenshell.entity_instance]) -> None:
         assert isinstance(self.file, ifcopenshell.sql.sqlite)

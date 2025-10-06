@@ -373,11 +373,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Path to create and store temporary files. If left blank, a system default will be used.",
         subtype="DIR_PATH",
     )
-    spatial_elements_unselectable: BoolProperty(
-        name="Make Spatial Elements Unselectable By Default",
-        default=True,
-        description="If disabled, it will be possible to select spatial elements in the 3D viewport.\nIt is recommended to keep this `Enabled`, as this can have unintended consequences",
-    )
     decorations_colour: bpy.props.FloatVectorProperty(
         name="Decorations Color", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
@@ -503,7 +498,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         activate_workspace: bool
         should_setup_toolbar: bool
         should_play_chaching_sound: bool
-        spatial_elements_unselectable: bool
         tmp_dir: str
         decorations_colour: tuple[float, float, float, float]
         decorator_color_selected: tuple[float, float, float, float]
@@ -565,7 +559,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "should_setup_toolbar")
         layout.prop(self, "should_use_snap")
         layout.prop(self, "should_play_chaching_sound")
-        layout.prop(self, "spatial_elements_unselectable")
 
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "occurrence_name_style")
