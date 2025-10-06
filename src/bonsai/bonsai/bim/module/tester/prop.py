@@ -82,6 +82,7 @@ class IfcTesterProperties(PropertyGroup):
     webapp_server_port: IntProperty(name="Webapp Server Port", default=0)
     webapp_is_running: BoolProperty(default=False, name="Webapp Is Running", options=set())
     websocket_server_port: IntProperty(name="WebSocket Server Port", default=0)
+    hide_skipped_specs: BoolProperty(default=False, name="Hide skipped Specifications", options=set())
 
     if TYPE_CHECKING:
         specs: MultipleFileSelect

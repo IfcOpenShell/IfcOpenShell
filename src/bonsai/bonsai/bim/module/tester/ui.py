@@ -62,7 +62,8 @@ class BIM_PT_tester(Panel):
         row.prop(props, "generate_ods_report")
         row = self.layout.row()
         row.prop(props, "flag")
-
+        row = self.layout.row()
+        row.prop(props, "hide_skipped_specs")
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
             props.ifc_files.layout_file_select(row, "*.ifc;*.ifczip;*.ifcxml", "IFC File(s)")
@@ -104,6 +105,9 @@ class BIM_PT_tester(Panel):
     def draw_editable_ui(self, context: bpy.types.Context) -> None:
         props = tool.Tester.get_tester_props()
         specification = TesterData.data["specification"]
+        is_skipped = specification["total_checks"] == 0 and specification["cardinality"] == "optional"
+        if props.hide_skipped_specs and is_skipped:
+            return
 
         n_requirements = len(specification["requirements"])
 
@@ -178,6 +182,34 @@ class BIM_UL_tester_specifications(UIList):
             row = layout.split(factor=0.3, align=True)
             row.label(text=item.name, icon="CHECKMARK" if item.status else "CANCEL")
             row.label(text=item.description)
+
+    def filter_items(self, context: bpy.types.Context, data: IfcTesterProperties, propname: str):
+        items = getattr(data, propname)
+        filter_flags = [self.bitflag_filter_item] * len(items)
+
+        props = tool.Tester.get_tester_props()
+        if props.hide_skipped_specs:
+            for idx, item in enumerate(items):
+                report = tool.Tester.report[idx]
+                if report["total_checks"] != 0:
+                    filter_flags[idx] |= self.bitflag_filter_item
+                else:
+                    filter_flags[idx] &= ~self.bitflag_filter_item
+
+        filter_name = self.filter_name
+        if filter_name:
+            name_filtered = bpy.types.UI_UL_list.filter_items_by_name(
+                filter_name,
+                self.bitflag_filter_item,
+                items,
+                "name",
+            )
+            if len(name_filtered) == len(filter_flags):
+                for idx, flag in enumerate(name_filtered):
+                    if flag == 0:
+                        filter_flags[idx] &= ~self.bitflag_filter_item
+
+        return filter_flags, []
 
 
 class BIM_UL_tester_failed_entities(UIList):
