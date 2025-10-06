@@ -121,8 +121,6 @@ class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
                         tool.Geometry,
                         obj=obj,
                         representation=new_active_representation,
-                        should_reload=False,
-                        is_global=False,
                     )
         return {"FINISHED"}
 

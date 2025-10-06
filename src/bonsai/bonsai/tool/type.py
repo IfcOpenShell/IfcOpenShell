@@ -131,14 +131,10 @@ class Type(bonsai.core.tool.Type):
         cls,
         obj: bpy.types.Object,
         representation: ifcopenshell.entity_instance,
-        should_reload: bool = False,
-        is_global: bool = False,
     ) -> None:
         return bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=representation,
-            should_reload=should_reload,
-            is_global=is_global,
         )

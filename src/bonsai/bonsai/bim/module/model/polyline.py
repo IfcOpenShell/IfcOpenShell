@@ -580,8 +580,6 @@ def get_generic_product_preview_data(context, relating_type):
                 tool.Geometry,
                 obj_type,
                 representation,
-                should_reload=True,
-                is_global=False,
             )
             context.view_layer.update()
             break

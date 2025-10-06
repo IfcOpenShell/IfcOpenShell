@@ -203,8 +203,6 @@ class TestSwitchRepresentation:
             geometry,
             obj="obj",
             representation="mapped_rep",
-            should_reload=True,
-            is_global=True,
             apply_openings=True,
         )
 
@@ -221,8 +219,6 @@ class TestSwitchRepresentation:
             geometry,
             obj="obj",
             representation="mapped_rep",
-            should_reload=False,
-            is_global=False,
         )
 
     def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, ifc, geometry):
@@ -236,8 +232,6 @@ class TestSwitchRepresentation:
             geometry,
             obj="obj",
             representation="mapped_rep",
-            should_reload=False,
-            is_global=False,
         )
 
 

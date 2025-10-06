@@ -406,8 +406,6 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry,
                     obj=obj,
                     representation=representation,
-                    should_reload=True,
-                    is_global=True,
                 )
             elif self.representation_template == "EXTRUSION":
                 builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -421,8 +419,6 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry,
                     obj=obj,
                     representation=representation,
-                    should_reload=True,
-                    is_global=True,
                 )
             return
 
@@ -451,8 +447,6 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
 
         # Update required as core.type.assign_type may change obj.data
@@ -735,6 +729,4 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )

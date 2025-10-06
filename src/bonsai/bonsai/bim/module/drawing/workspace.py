@@ -180,8 +180,6 @@ def create_annotation_occurrence(context):
             tool.Geometry,
             obj=obj,
             representation=representation,
-            should_reload=True,
-            is_global=True,
         )
 
     if obj.data and not relating_type_rep:

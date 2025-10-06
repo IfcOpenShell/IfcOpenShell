@@ -157,8 +157,6 @@ class BIM_PT_representations(Panel):
                 icon="FILE_REFRESH" if representation["is_active"] else "OUTLINER_DATA_MESH",
                 text="",
             )
-            op.should_switch_all_meshes = True
-            op.should_reload = True
             op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
