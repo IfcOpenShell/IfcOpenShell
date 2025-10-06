@@ -598,6 +598,11 @@ html, body {
             border-color: #008242;
             box-shadow: 0 0 0 0.2rem #00824254;
         }
+        .form-input:invalid {
+            outline: 1px;
+            border-color: #f44336;
+            box-shadow: 0 0 0 0.2rem #f4433654;
+        }
         .form-input::placeholder {
             color: #888888;
         }
