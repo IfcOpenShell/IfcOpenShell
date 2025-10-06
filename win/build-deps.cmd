@@ -90,10 +90,6 @@ IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
-set PYTHON_VERSION=3.11
-py -%PYTHON_VERSION% --version 2>&1>NUL
-IF %ERRORLEVEL%==0 set IFCOS_INSTALL_PYTHON=EXISTS
-set PYTHON_VERSION=%PYTHON_VERSION%.7
 
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
@@ -147,12 +143,10 @@ echo     Defaults to RelWithDebInfo if not specified.
 IF %BUILD_CFG%==MinSizeRel call cecho.cmd 0 14 "     WARNING: MinSizeRel build can suffer from a significant performance loss."
 call cecho.cmd 0 13 "* Build Type`t`t= %BUILD_TYPE%"
 echo   - The used build type for the dependencies (Build, Rebuild, Clean).
-echo     Defaults to Build if not specified. Rebuild/Clean also uninstalls Python (if it was installed by this script).
+echo     Defaults to Build if not specified.
 call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
 echo   - Download and install Python.
 echo     Set to something other than TRUE if you wish to use an already installed version of Python.
-echo     EXISTS value is set automatically if same Python version is already found on the system
-echo     and we won't be able to install it again.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -181,16 +175,17 @@ cd "%DEPS_DIR%"
 set HDF5_VERSION=1_13_1
 set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-set PYTHON_VERSION=%PYTHON_VERSION%
+set PYTHON_VERSION=3.11.7
 
 :: VERSION DERIVATIONS
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+:: '3.11.7' -> '311'
 for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do (
     set PY_VER_MAJOR_MINOR=%%a%%b
 )
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+    set PYTHONHOME=%DEPS_DIR%\python.%PYTHON_VERSION%\tools
 )
 
 :: Cache last used CMake generator and configurable dependency dirs for other scripts to use
@@ -558,31 +553,28 @@ set PYTHON_AMD64_POSTFIX=-amd64
 IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
 set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 
-IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    cd "%DEPS_DIR%"
-    call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-    REM Uninstall if build Rebuild/Clean used
-    IF NOT %BUILD_TYPE%==Build (
-        call cecho.cmd 0 13 "Uninstalling %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        start /w %PYTHON_INSTALLER% /quiet /uninstall
-    )
-
-    IF NOT EXIST "%PYTHONHOME%". (
-        call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        start /w  %PYTHON_INSTALLER% /quiet TargetDir="%PYTHONHOME%"
-        if errorlevel 1 (
-            :: Standard installer doesn't support installing same Python version twice,
-            :: but we skip installation during IFCOS_INSTALL_PYTHON initialization.
-            call cecho.cmd 0 12 "Failed to install Python. Error code: !ERRORLEVEL!."
-            GOTO :Error
-        )
-    ) ELSE (
-        call cecho.cmd 0 13 "%DEPENDENCY_NAME% already installed. Skipping."
-    )
-) ELSE (
-    call cecho.cmd 0 13 "IFCOS_INSTALL_PYTHON not true, skipping installation of Python."
+IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
+    call cecho.cmd 0 13 "IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python."
+    goto :SWIG
 )
+
+:: nuget doesn't support providing architecture for packages.
+if NOT %TARGET_ARCH%==x64 (
+    call cecho.cmd 0 12 "Automatic insallation of Python for x86 builds is not supported,"
+    call cecho.cmd 0 12 "please install Python %PYTHON_VERSION% manually and ensure that it is available in PATH."
+    call cecho.cmd 0 12 "https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER%"
+    goto :Error
+)
+
+
+if EXIST "%PYTHONHOME%" (
+    echo Found existing '%PYTHONHOME%', skipping installation.
+    goto :SWIG
+)
+
+"%NUGET_EXE%" install Python -Version %PYTHON_VERSION% -OutputDirectory "%DEPS_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 
 :SWIG
 
