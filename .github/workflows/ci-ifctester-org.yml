@@ -8,18 +8,17 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
-
+        with:
+          repository: IfcOpenShell/ifctester_org_static_html
+          token: ${{ secrets.IFCOPENBOT_TOKEN }}
+          path: ifctester_org_static_html
       - working-directory: ./src/ifctester
-        env:
-          GH_APIKEY: ${{ secrets.GH_APIKEY }}
-          OSC_APIKEY: ${{ secrets.OSC_APIKEY }}
         run: |
           sudo apt update && sudo apt install -y nodejs
           pwd
           ls
           git config --global user.name 'IfcOpenBot'
           git config --global user.email 'IfcOpenBot@users.noreply.github.com'
-          git clone https://${{ secrets.GH_APIKEY }}@github.com/IfcOpenShell/ifctester_org_static_html
           pwd
           ls
           make webapp-build
