@@ -192,6 +192,8 @@ class TopicHandler:
             bcf_zip: The BCF zip file to save to.
         """
         topic_dir = self.guid
+        # simulating directory creation (ZipFile in python < 3.11 doesn't have mkdir)
+        destination_zip.writestr(f"{topic_dir}/", "")
         self._save_xml(destination_zip, self._markup, "markup.bcf")
         self._save_viewpoints(destination_zip, topic_dir)
         self._save_bim_snippet(destination_zip)
