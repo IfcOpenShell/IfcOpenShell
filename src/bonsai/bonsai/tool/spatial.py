@@ -1198,8 +1198,6 @@ class Spatial(bonsai.core.tool.Spatial):
             tool.Geometry,
             obj=obj,
             representation=body,
-            should_reload=True,
-            is_global=True,
         )
 
     @classmethod

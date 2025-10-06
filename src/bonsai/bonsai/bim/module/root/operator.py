@@ -333,8 +333,6 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry,
                     obj=obj,
                     representation=representation,
-                    should_reload=True,
-                    is_global=True,
                 )
             else:
 
@@ -578,8 +576,6 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
             if not tool.Ifc.get_entity(props.representation_obj):
                 bpy.data.objects.remove(props.representation_obj)
@@ -599,8 +595,6 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
         elif representation_template == "EXTRUSION":
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -647,8 +641,6 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
         elif representation_template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -759,8 +751,6 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
         elif representation_template == "EDGE":
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -773,8 +763,6 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
         elif representation_template == "FACE":
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -787,8 +775,6 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
 
         bpy.context.view_layer.update()  # Ensures obj.matrix_world is correct

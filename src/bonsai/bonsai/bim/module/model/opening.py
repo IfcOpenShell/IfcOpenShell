@@ -186,8 +186,6 @@ class FilledOpeningGenerator:
                     tool.Geometry,
                     obj=voided_obj,
                     representation=representation,
-                    should_reload=True,
-                    is_global=True,
                 )
 
     def regenerate_from_type(self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
@@ -248,8 +246,6 @@ class FilledOpeningGenerator:
                 tool.Geometry,
                 obj=voided_obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
 
     def generate_opening_from_filling(
@@ -418,8 +414,6 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                             tool.Geometry,
                             obj=building_obj,
                             representation=representation,
-                            should_reload=True,
-                            is_global=True,
                         )
         return {"FINISHED"}
 
@@ -795,8 +789,6 @@ class CloneOpening(Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
             )
 
         return {"FINISHED"}

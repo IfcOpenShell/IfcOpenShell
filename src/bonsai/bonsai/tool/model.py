@@ -1091,8 +1091,6 @@ class Model(bonsai.core.tool.Model):
             tool.Geometry,
             obj=obj,
             representation=new_representation,
-            should_reload=True,
-            is_global=True,
         )
 
     @classmethod
@@ -1305,8 +1303,6 @@ class Model(bonsai.core.tool.Model):
                 tool.Geometry,
                 obj=obj,
                 representation=body,
-                should_reload=True,
-                is_global=True,
             )
 
     @classmethod
@@ -1650,8 +1646,6 @@ class Model(bonsai.core.tool.Model):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
                 apply_openings=True,
             )
 
@@ -2465,8 +2459,6 @@ class Model(bonsai.core.tool.Model):
             tool.Geometry,
             obj=obj,
             representation=rep,
-            should_reload=True,
-            is_global=True,
         )
         tool.Geometry.record_object_materials(obj)
 

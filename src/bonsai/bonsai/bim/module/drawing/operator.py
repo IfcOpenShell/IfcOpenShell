@@ -2218,8 +2218,6 @@ class ActivateModel(bpy.types.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=model,
-                should_reload=False,
-                is_global=True,
             )
 
         tool.Blender.reset_object_visibility()

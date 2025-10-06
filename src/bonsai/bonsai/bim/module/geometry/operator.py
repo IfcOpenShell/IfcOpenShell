@@ -427,9 +427,7 @@ class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_definition_id: bpy.props.IntProperty()
-    should_reload: bpy.props.BoolProperty()
     disable_opening_subtractions: bpy.props.BoolProperty()
-    should_switch_all_meshes: bpy.props.BoolProperty()
 
     @classmethod
     def poll(cls, context):
@@ -465,8 +463,6 @@ class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=self.should_reload,
-                is_global=self.should_switch_all_meshes,
             )
 
 
@@ -720,8 +716,6 @@ class UpdateParametricRepresentation(bpy.types.Operator):
             tool.Geometry,
             obj=obj,
             representation=tool.Ifc.get().by_id(props.ifc_definition_id),
-            should_reload=True,
-            is_global=True,
         )
         if show_representation_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
@@ -1902,8 +1896,6 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=self.target,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
                 apply_openings=True,
             )
 

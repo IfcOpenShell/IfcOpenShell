@@ -115,15 +115,9 @@ def switch_representation(
     geometry: type[tool.Geometry],
     obj: bpy.types.Object,
     representation: ifcopenshell.entity_instance,
-    should_reload: bool = True,
-    is_global: bool = True,
     apply_openings: bool = True,
 ) -> None:
-    """Function can switch to representation that wasn't yet assigned to that object. See #2766.
-
-    :param should_reload: reload `obj.data` from ifc representation
-    :param is_global: replace mesh data for all users of `obj.data`, not just `obj`
-
+    """Switch obj representation (even if not yet assigned to that object. See #2766.)
     """
     if not geometry.get_object_data(obj) and geometry.is_text_literal(representation):
         return

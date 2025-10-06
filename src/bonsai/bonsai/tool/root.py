@@ -326,8 +326,6 @@ class Root(bonsai.core.tool.Root):
                                 tool.Geometry,
                                 obj=voided_obj,
                                 representation=representation,
-                                should_reload=True,
-                                is_global=True,
                             )
 
     @classmethod

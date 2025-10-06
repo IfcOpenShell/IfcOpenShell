@@ -1178,8 +1178,6 @@ class Drawing(bonsai.core.tool.Drawing):
             tool.Geometry,
             obj=obj,
             representation=representation,
-            should_reload=True,
-            is_global=True,
         )
 
     @classmethod
@@ -2222,8 +2220,6 @@ class Drawing(bonsai.core.tool.Drawing):
                         tool.Geometry,
                         obj=obj,
                         representation=priority_representation,
-                        should_reload=False,
-                        is_global=True,
                     )
                     has_context = True
                     break
