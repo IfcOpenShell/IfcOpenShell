@@ -74,6 +74,15 @@ class TestMergeDuplicateTypes(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_material(wall1, should_inherit=False) == None
         assert ifcopenshell.util.element.get_material(wall2, should_inherit=False) == None
 
+    def test_not_merging_empty_attributes(self):
+        wall_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="")
+        wall_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="")
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeDuplicateTypes", "arguments": ["Name", True]})
+        assert len(output.by_type("IfcWallType")) == 1
+        wall_type3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="")
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeDuplicateTypes", "arguments": ["Name", False]})
+        assert len(output.by_type("IfcWallType")) == 2
+
 
 class TestMergeDuplicateTypesIFC2X3(test.bootstrap.IFC2X3, TestMergeDuplicateTypes):
     pass
