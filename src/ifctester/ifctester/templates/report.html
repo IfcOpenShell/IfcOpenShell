@@ -157,6 +157,14 @@
                         <summary>
                             {{description}}
                         </summary>
+                        {{#instructions}}
+                        <div class="instructions">
+                            <p>
+                                <strong>Instructions</strong>
+                            </p>
+                            {{instructions}}
+                        </div>
+                        {{/instructions}}
                         {{#total_ckecks}}
                         <table class="skipped">
                             <thead>
