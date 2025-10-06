@@ -582,7 +582,6 @@ def get_generic_product_preview_data(context, relating_type):
                 representation,
                 should_reload=True,
                 is_global=False,
-                should_sync_changes_first=False,
             )
             context.view_layer.update()
             break

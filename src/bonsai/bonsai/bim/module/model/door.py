@@ -147,7 +147,6 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
         representation=ifcopenshell.util.representation.get_representation(element, active_context),
         should_reload=True,
         is_global=True,
-        should_sync_changes_first=False,
     )
 
     # type attributes
@@ -583,7 +582,6 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
             representation=body,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
         props.is_editing = False

@@ -169,7 +169,6 @@ class DumbSlabGenerator:
             representation=representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
         obj.matrix_world = obj.matrix_world @ Matrix.Rotation(self.x_angle, 4, "X")
 
@@ -362,7 +361,6 @@ class DumbSlabPlaner:
                     representation=new_rep,
                     should_reload=True,
                     is_global=True,
-                    should_sync_changes_first=False,
                 )
                 bonsai.core.geometry.remove_representation(
                     tool.Ifc, tool.Geometry, obj=obj, representation=representation
@@ -388,7 +386,6 @@ class DumbSlabPlaner:
             representation=representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
 
@@ -590,7 +587,6 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             representation=representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
         return {"FINISHED"}
 
@@ -634,7 +630,6 @@ def disable_editing_extrusion_profile(context):
         representation=body,
         should_reload=True,
         is_global=True,
-        should_sync_changes_first=False,
     )
     return {"FINISHED"}
 
@@ -769,7 +764,6 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             representation=body,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
         # Only certain classes should have a footprint

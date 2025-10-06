@@ -205,7 +205,6 @@ class TestSwitchRepresentation:
             representation="mapped_rep",
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=True,
             apply_openings=True,
         )
 
@@ -224,7 +223,6 @@ class TestSwitchRepresentation:
             representation="mapped_rep",
             should_reload=False,
             is_global=False,
-            should_sync_changes_first=True,
         )
 
     def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, ifc, geometry):
@@ -240,7 +238,6 @@ class TestSwitchRepresentation:
             representation="mapped_rep",
             should_reload=False,
             is_global=False,
-            should_sync_changes_first=True,
         )
 
 
@@ -248,7 +245,7 @@ class TestGetRepresentationIfcParameters:
     def test_run(self, geometry):
         geometry.get_object_data("obj").should_be_called().will_return("data")
         geometry.import_representation_parameters("data").should_be_called()
-        subject.get_representation_ifc_parameters(geometry, obj="obj", should_sync_changes_first=False)
+        subject.get_representation_ifc_parameters(geometry, obj="obj")
 
 
 class TestRemoveRepresentation:

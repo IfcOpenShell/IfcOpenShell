@@ -152,7 +152,6 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                         is_global=True,
                         # Don't sync changes because object has an opening,
                         # therefore bim.update_representaiton wouldn't work either way.
-                        should_sync_changes_first=False,
                     )
                 tool.Geometry.lock_scale(voided_obj)
 
@@ -198,7 +197,6 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
                     representation=representation,
                     should_reload=True,
                     is_global=True,
-                    should_sync_changes_first=False,
                 )
         tool.Geometry.unlock_scale_object_with_openings(obj)
         tool.Geometry.clear_cache(element)

@@ -1180,7 +1180,6 @@ class Drawing(bonsai.core.tool.Drawing):
             representation=representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
     @classmethod
@@ -2225,7 +2224,6 @@ class Drawing(bonsai.core.tool.Drawing):
                         representation=priority_representation,
                         should_reload=False,
                         is_global=True,
-                        should_sync_changes_first=True,
                     )
                     has_context = True
                     break

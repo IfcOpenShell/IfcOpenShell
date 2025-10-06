@@ -182,7 +182,6 @@ def create_annotation_occurrence(context):
             representation=representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
     if obj.data and not relating_type_rep:

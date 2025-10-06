@@ -188,7 +188,6 @@ class FilledOpeningGenerator:
                     representation=representation,
                     should_reload=True,
                     is_global=True,
-                    should_sync_changes_first=False,
                 )
 
     def regenerate_from_type(self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
@@ -251,7 +250,6 @@ class FilledOpeningGenerator:
                 representation=representation,
                 should_reload=True,
                 is_global=True,
-                should_sync_changes_first=False,
             )
 
     def generate_opening_from_filling(
@@ -422,7 +420,6 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                             representation=representation,
                             should_reload=True,
                             is_global=True,
-                            should_sync_changes_first=False,
                         )
         return {"FINISHED"}
 
@@ -800,7 +797,6 @@ class CloneOpening(Operator, tool.Ifc.Operator):
                 representation=representation,
                 should_reload=True,
                 is_global=True,
-                should_sync_changes_first=False,
             )
 
         return {"FINISHED"}

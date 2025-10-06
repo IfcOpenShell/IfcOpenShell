@@ -125,7 +125,6 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
         representation=ifcopenshell.util.representation.get_representation(element, active_context),
         should_reload=True,
         is_global=True,
-        should_sync_changes_first=True,
     )
 
     # type attributes
@@ -497,7 +496,6 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
             representation=body,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
         props.is_editing = False
