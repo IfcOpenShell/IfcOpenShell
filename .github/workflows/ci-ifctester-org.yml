@@ -30,7 +30,8 @@ jobs:
           pwd
           ls
           ls -l webapp/dist/
-          cp -r webapp/dist/* ifctester_org_static_html/
+      - name: Push
+          cp -r src/ifctester/webapp/dist/* ifctester_org_static_html/
           git -C ifctester_org_static_html add .
           git -C ifctester_org_static_html commit --allow-empty -m "$(git log --oneline -1)"
           git -C ifctester_org_static_html push
