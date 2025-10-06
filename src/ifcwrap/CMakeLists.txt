@@ -35,23 +35,25 @@ ENDIF()
 include(GNUInstallDirs)
 INCLUDE(${SWIG_USE_FILE})
 
-IF(NOT "$ENV{PYTHON_INCLUDE_DIR}" STREQUAL "")
-	SET(PYTHON_INCLUDE_DIR $ENV{PYTHON_INCLUDE_DIR} CACHE FILEPATH "Python header files")
-	MESSAGE(STATUS "Looking for Python header files in: ${PYTHON_INCLUDE_DIR}")
+IF(NOT "${PYTHON_INCLUDE_DIR}" STREQUAL "")
+    # Hint for FindPython where to find Python_INCLUDE_DIRS.
+    set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
+    MESSAGE(STATUS "Looking for Python header files in: ${Python_INCLUDE_DIR}")
 ENDIF()
-IF(NOT "$ENV{PYTHON_LIBRARY}" STREQUAL "")
-	SET(PYTHON_LIBRARY $ENV{PYTHON_LIBRARY} CACHE FILEPATH "Python library file")
-	MESSAGE(STATUS "Looking for Python library file in: ${PYTHON_LIBRARY}")
+IF(NOT "${PYTHON_LIBRARY}" STREQUAL "")
+    # Hint for FindPython where to find Python_LIBRARIES.
+    set(Python_LIBRARY "${PYTHON_LIBRARY}")
+    MESSAGE(STATUS "Looking for Python library file in: ${Python_LIBRARY}")
 ENDIF()
 
 # NOTE PYTHONLIBS_FOUND and PYTHONINTERP_FOUND cannot seem to be trusted so
 # we need further checks to see whether the packages were actually found or not.
-FIND_PACKAGE(PythonLibs)
-IF(NOT PYTHONLIBS_FOUND OR "$PYTHON_INCLUDE_DIRS}" STREQUAL "")
+FIND_PACKAGE(Python COMPONENTS Development)
+IF(NOT Python_Development_FOUND)
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
 ENDIF()
 
-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
@@ -90,7 +92,7 @@ if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
 SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
 else()
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${LIBSVGFILL})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${Python_LIBRARIES} ${LIBSVGFILL})
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
@@ -98,17 +100,21 @@ endif()
 
 # Try to find the Python interpreter to get the site-packages
 # directory in which the wrapper can be installed.
-FIND_PACKAGE(PythonInterp)
-IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MODULE_INSTALL_DIR)
+if(NOT ${PYTHON_EXECUTABLE} STREQUAL "")
+    set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+    MESSAGE(STATUS "Looking for Python interpreter in: ${PYTHON_EXECUTABLE}")
+endif()
+FIND_PACKAGE(Python COMPONENTS Interpreter)
+IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
     if (NOT WASM_BUILD)
-    # Find Python interpreter and get its version
     # Not on WASM because we're cross compiling in that case
-    EXECUTE_PROCESS(
-        COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
-        OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
+    #
+    # Python_SOABI example value is 'cp311-win_amd64'.
+    if(WIN32)
+        set(PYTHON_EXTENSION_SUFFIX ".${Python_SOABI}.pyd")
+    else()
+        set(PYTHON_EXTENSION_SUFFIX ".${Python_SOABI}.so")
+    endif()
     # On Windows there is '_d' prefix for debug builds - e.g. `_d.cp311-win_amd64.pyd`.
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         set_target_properties(
@@ -133,10 +139,7 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
                 OUTPUT_VARIABLE python_package_dir
             )
         ELSE ()
-            EXECUTE_PROCESS(
-                COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import sysconfig; sys.stdout.write(sysconfig.get_path('platlib'))"
-                OUTPUT_VARIABLE python_package_dir
-            )
+            set(python_package_dir "${Python_SITEARCH}")
         ENDIF()
         if (BUILD_PACKAGE)
             set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
@@ -145,6 +148,7 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
     IF("${python_package_dir}" STREQUAL "")
         MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
     ELSE()
+        message(STATUS "Python wrapper will be installed to '${python_package_dir}'.")
         FILE(GLOB_RECURSE sourcefiles
             "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*"
         )
