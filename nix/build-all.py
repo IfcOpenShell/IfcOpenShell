@@ -1380,29 +1380,56 @@ if "IfcOpenShell-Python" in targets:
     os.makedirs(python_dir, exist_ok=True)
 
     def compile_python_wrapper(
-        python_version: str, python_library: str, python_include: str, python_executable: Union[str, None]
+        python_version: str,
+        python_library: Union[str, None] = None,
+        python_include: Union[str, None] = None,
+        python_executable: Union[str, None] = None,
+        python_path: Union[Path, None] = None,
     ) -> Union[str, None]:
         """
         :return: Path to module dir if ``python_executable`` was provided, otherwise ``None``.
         """
+        assert bool(python_path) ^ bool(python_library and python_include)
+
         logger.info(f"\rConfiguring python {python_version} wrapper...")
 
         cache_path = os.path.join(python_dir, "CMakeCache.txt")
         if os.path.exists(cache_path):
             os.remove(cache_path)
 
-        os.environ["PYTHON_LIBRARY_BASENAME"] = os.path.basename(python_library)
-
-        swig_prefix_paths: list[str] = []
+        prefix_paths: list[str] = []
         if "swig" in targets:
-            swig_prefix_paths.append(f"{DEPS_DIR}/install/swig")
+            prefix_paths.append(f"{DEPS_DIR}/install/swig")
+        if python_path:
+            # We couldn't just prefix PATH and have to provide all variables explicitly,
+            # see run-cmake.bat note for details.
+            python_executable = (Path(python_path) / "bin" / "python3").__str__()
+            python_include = run(
+                [
+                    python_executable,
+                    "-c",
+                    "import sysconfig; print(sysconfig.get_config_var('INCLUDEPY'))",
+                ]
+            )
+            python_library = run(
+                [
+                    python_executable,
+                    "-c",
+                    "import sysconfig, pathlib; "
+                    "lib_dir = pathlib.Path(sysconfig.get_config_var('LIBDIR')); "
+                    "print((lib_dir / sysconfig.get_config_var('LIBRARY')).__str__())",
+                ]
+            )
+            if platform.system() == "Darwin":
+                # Oddly on Mac `LIBRARY` returns .a that doesn't even exists.
+                python_library = Path(python_library).with_suffix(".dylib").__str__()
 
+        assert python_library and python_include
         run_cmake(
             "",
             cmake_args
-            + get_cmake_args_prefix_path(swig_prefix_paths)
+            + get_cmake_args_prefix_path(prefix_paths)
             + [
-                "-DPYTHON_LIBRARY=" + python_library,
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
                 # *([f"-DPYTHON_MODULE_INSTALL_DIR={os.environ['PYTHONPATH']}/ifcopenshell"] if "wasm" in flags else []),
                 *(
@@ -1413,7 +1440,8 @@ if "IfcOpenShell-Python" in targets:
                     if "wasm" in flags
                     else []
                 ),
-                "-DPYTHON_INCLUDE_DIR=" + python_include,
+                f"-DPYTHON_LIBRARY={python_library}",
+                f"-DPYTHON_INCLUDE_DIR={python_include}",
                 f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
                 "-DUSERSPACE_PYTHON_PREFIX="
                 + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
@@ -1470,13 +1498,8 @@ if "IfcOpenShell-Python" in targets:
         compile_python_wrapper(platform.python_version(), python_lib, python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
-            python_library = run([bash, "-c", f"ls    {DEPS_DIR}/install/python-{python_version}/lib/libpython*.*"])
-            python_include = run([bash, "-c", f"ls -d {DEPS_DIR}/install/python-{python_version}/include/python*"])
-            python_executable = os.path.join(
-                DEPS_DIR, "install", f"python-{python_version}", "bin", f"python{python_version[0]}"
-            )
-
-            module_dir = compile_python_wrapper(python_version, python_library, python_include, python_executable)
+            python_path = Path(DEPS_DIR) / "install" / f"python-{python_version}"
+            module_dir = compile_python_wrapper(python_version, python_path=python_path)
             assert module_dir
             # Not sure why, but added after reading this in the logs
             # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
