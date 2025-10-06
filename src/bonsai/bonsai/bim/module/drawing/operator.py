@@ -3701,6 +3701,13 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         layout.prop(self, "use_existing_object_by_name")
 
     def _execute(self, context):
+        space = tool.Blender.get_view3d_space()
+        if space and space.shading.type == "SOLID" and space.shading.color_type != "TEXTURE":
+            self.report(
+                {"WARNING"},
+                'Please change to "Texture" in "Object Color" for Viewport Shading: Solid to see the reference image properly.',
+            )
+
         abs_path = Path(self.filepath).absolute().resolve()
         image_filepath = Path(tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path))
         ifc_file = tool.Ifc.get()
@@ -3716,6 +3723,20 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             plane_scale = (Vector(image.size) / min(image.size)).to_3d()
             matrix = Matrix.LocRotScale(None, None, plane_scale)
             bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
+
+            if not bm.loops.layers.uv:
+                uv_layer = bm.loops.layers.uv.new()
+            else:
+                uv_layer = bm.loops.layers.uv.active
+
+            aspect_ratio = image.size[1] / image.size[0]
+            for face in bm.faces:
+                for loop in face.loops:
+                    vert = loop.vert
+                    v = (vert.co.y * 0.5) + 0.5
+                    u = (vert.co.x * 0.5 * aspect_ratio) + 0.5
+                    loop[uv_layer].uv = (u, v)
+
             tool.Blender.apply_bmesh(mesh, bm)
 
         if self.use_existing_object_by_name:
