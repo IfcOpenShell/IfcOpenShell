@@ -206,6 +206,30 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 
+:nuget
+set DEPENDENCY_NAME=nuget
+set NUGET_VERSION=6.14.0
+set NUGET_INSTALL_DIR=%DEPS_DIR%\nuget-%NUGET_VERSION%
+set NUGET_EXE=%NUGET_INSTALL_DIR%\nuget.exe
+
+where nuget >nul 2>&1
+IF %ERRORLEVEL%==0 (
+    echo Found existing nuget in PATH. Skipping.
+    goto :ccache
+)
+
+IF EXIST "%NUGET_EXE%" (
+    echo Found existing "%DEPS_DIR%\nuget.exe", skipping
+    goto :ccache
+)
+
+cd %DEPS_DIR%
+call :DownloadFile ^
+    https://dist.nuget.org/win-x86-commandline/v%NUGET_VERSION%/nuget.exe ^
+    "%NUGET_INSTALL_DIR%" nuget.exe
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+
 :ccache
 set DEPENDENCY_NAME=ccache
 set CCACHE_VERSION=4.12.1
@@ -781,6 +805,7 @@ exit /b %IFCOS_SCRIPT_RET%
 :: DownloadFile - Downloads a file using PowerShell
 :: Params: %1 url, %2 destinationDir, %3 filename
 :DownloadFile
+mkdir "%2"
 pushd "%2"
 if not exist "%~3". (
     call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into %~2."
