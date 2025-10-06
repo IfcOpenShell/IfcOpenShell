@@ -224,7 +224,7 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     is_visible: BoolProperty(
         name="Is Visible",
         description="Show or hide spatial elements, such as buildings, sites, etc",
-        default=True,
+        default=False,
         update=update_spatial_is_visible,
     )
     container_filter: StringProperty(name="Container Filter", default="", options={"TEXTEDIT_UPDATE"})

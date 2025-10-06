@@ -65,8 +65,11 @@ class Collector(bonsai.core.tool.Collector):
             collection = cls._create_project_child_collection("IfcTypeProduct")
             cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcSpace"):
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
             collection = cls._create_project_child_collection("IfcSpace")
             cls.link_collection_object_safe(collection, obj)
+            obj.hide_viewport = True
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
             cls.link_collection_object_safe(collection, obj)
@@ -90,6 +93,7 @@ class Collector(bonsai.core.tool.Collector):
                 cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
                 cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
+            obj.hide_viewport = True
         elif (
             tool.Ifc.get_schema() != "IFC2X3"
             and element.is_a("IfcSpatialElement")
@@ -101,6 +105,7 @@ class Collector(bonsai.core.tool.Collector):
                 cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
                 cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
+            obj.hide_viewport = True
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             if collection := cls._create_own_collection(obj):
                 cls.link_collection_object_safe(collection, obj)
