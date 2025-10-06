@@ -2230,16 +2230,15 @@ class Drawing(bonsai.core.tool.Drawing):
                     has_context = True
                     break
 
-        should_hides = []
+        visible_objects = []
         for obj in bpy.context.view_layer.objects:
             if element := tool.Ifc.get_entity(obj):
-                should_hides.append(0 if element in filtered_elements else 1)
+                if element in filtered_elements:
+                    visible_objects.append(obj)
             else:
-                should_hides.append(obj.hide_viewport)
-            obj.update_tag()  # Ensure refresh viewport after foreach_set visibility
-        should_hides = np.fromiter(should_hides, dtype=np.uint8, count=len(should_hides))
-        bpy.context.view_layer.objects.foreach_set("hide_viewport", should_hides)
-        bpy.context.view_layer.objects.foreach_set("hide_render", should_hides)
+                if obj.hide_get() is False:
+                    visible_objects.append(obj)
+        tool.Blender.isolate_objects(visible_objects)
 
         cls.import_camera_props(drawing, camera.data)
 

@@ -2220,13 +2220,7 @@ class ActivateModel(bpy.types.Operator):
                 should_sync_changes_first=True,
             )
 
-        for obj in bpy.context.view_layer.objects:
-            obj.update_tag()  # Ensure refresh viewport after foreach_set visibility
-        should_hides = np.full(len(bpy.context.view_layer.objects), 0, dtype=np.uint8)
-        should_hides = np.ascontiguousarray(should_hides)
-        bpy.context.view_layer.objects.foreach_set("hide_viewport", should_hides)
-        bpy.context.view_layer.objects.foreach_set("hide_render", should_hides)
-
+        tool.Blender.reset_object_visibility()
         tool.Blender.update_viewport()
         bonsai.bim.handler.refresh_ui_data()
 
