@@ -117,8 +117,7 @@ def switch_representation(
     representation: ifcopenshell.entity_instance,
     apply_openings: bool = True,
 ) -> None:
-    """Switch obj representation (even if not yet assigned to that object. See #2766.)
-    """
+    """Switch obj representation (even if not yet assigned to that object. See #2766.)"""
     if not geometry.get_object_data(obj) and geometry.is_text_literal(representation):
         return
 
