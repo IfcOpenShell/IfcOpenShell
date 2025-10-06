@@ -1200,7 +1200,6 @@ class Spatial(bonsai.core.tool.Spatial):
             representation=body,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
     @classmethod

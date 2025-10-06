@@ -141,5 +141,4 @@ class Type(bonsai.core.tool.Type):
             representation=representation,
             should_reload=should_reload,
             is_global=is_global,
-            should_sync_changes_first=False,
         )

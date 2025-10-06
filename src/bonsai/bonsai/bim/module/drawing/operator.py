@@ -2220,7 +2220,6 @@ class ActivateModel(bpy.types.Operator):
                 representation=model,
                 should_reload=False,
                 is_global=True,
-                should_sync_changes_first=True,
             )
 
         tool.Blender.reset_object_visibility()

@@ -169,7 +169,6 @@ class DumbProfileGenerator:
             representation=representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Parametric")
@@ -570,7 +569,6 @@ class DumbProfileJoiner:
             representation=new_body,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
         if element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting"):
@@ -1039,7 +1037,6 @@ def disable_editing_extrusion_axis(context):
         representation=body,
         should_reload=True,
         is_global=True,
-        should_sync_changes_first=False,
     )
     return {"FINISHED"}
 
@@ -1103,7 +1100,6 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
             representation=body,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
         bpy.context.view_layer.update()

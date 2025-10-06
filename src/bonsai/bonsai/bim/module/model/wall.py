@@ -519,7 +519,6 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     representation=representation,
                     should_reload=True,
                     is_global=True,
-                    should_sync_changes_first=False,
                 )
 
                 # Object rotation
@@ -1026,7 +1025,6 @@ class DumbWallGenerator:
             representation=representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})

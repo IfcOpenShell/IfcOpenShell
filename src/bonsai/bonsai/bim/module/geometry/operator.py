@@ -467,7 +467,6 @@ class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 representation=representation,
                 should_reload=self.should_reload,
                 is_global=self.should_switch_all_meshes,
-                should_sync_changes_first=True,
             )
 
 
@@ -723,7 +722,6 @@ class UpdateParametricRepresentation(bpy.types.Operator):
             representation=tool.Ifc.get().by_id(props.ifc_definition_id),
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
         if show_representation_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
@@ -1906,7 +1904,6 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 representation=representation,
                 should_reload=True,
                 is_global=True,
-                should_sync_changes_first=False,
                 apply_openings=True,
             )
 

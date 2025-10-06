@@ -248,7 +248,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
         Marking object as edited is an optimization mechanism - instead of saving
         changed geometry to IFC, we mark it as changed and then it's saved later
-        (typically during project save or switch_representation(should_sync_changes_first=True)).
+        (typically during project save).
 
         Other caveat of using edited objects is that it won't have an effect for objects with openings,
         since we can't deduce non-openings representation from edited representation with openings.

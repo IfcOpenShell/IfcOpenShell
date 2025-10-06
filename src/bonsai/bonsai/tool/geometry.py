@@ -1352,7 +1352,6 @@ class Geometry(bonsai.core.tool.Geometry):
             representation=representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
             apply_openings=True,
         )
 
@@ -1389,7 +1388,6 @@ class Geometry(bonsai.core.tool.Geometry):
             obj=obj,
             representation=new_representation,
             should_reload=False,
-            should_sync_changes_first=False,
             is_global=True,
         )
 

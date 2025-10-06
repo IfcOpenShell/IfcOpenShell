@@ -123,7 +123,6 @@ class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
                         representation=new_active_representation,
                         should_reload=False,
                         is_global=False,
-                        should_sync_changes_first=False,
                     )
         return {"FINISHED"}
 

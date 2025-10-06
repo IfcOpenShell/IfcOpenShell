@@ -1093,7 +1093,6 @@ class Model(bonsai.core.tool.Model):
             representation=new_representation,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
 
     @classmethod
@@ -1308,7 +1307,6 @@ class Model(bonsai.core.tool.Model):
                 representation=body,
                 should_reload=True,
                 is_global=True,
-                should_sync_changes_first=False,
             )
 
     @classmethod
@@ -1654,7 +1652,6 @@ class Model(bonsai.core.tool.Model):
                 representation=representation,
                 should_reload=True,
                 is_global=True,
-                should_sync_changes_first=False,
                 apply_openings=True,
             )
 
@@ -2470,7 +2467,6 @@ class Model(bonsai.core.tool.Model):
             representation=rep,
             should_reload=True,
             is_global=True,
-            should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
 
