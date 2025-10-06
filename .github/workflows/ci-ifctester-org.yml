@@ -15,10 +15,17 @@ jobs:
           OSC_APIKEY: ${{ secrets.OSC_APIKEY }}
         run: |
           sudo apt update && sudo apt install -y nodejs
+          pwd
+          ls
           git config --global user.name 'IfcOpenBot'
           git config --global user.email 'IfcOpenBot@users.noreply.github.com'
           git clone https://${{ secrets.GH_APIKEY }}@github.com/IfcOpenShell/ifctester_org_static_html
+          pwd
+          ls
           make webapp-build
+          pwd
+          ls
+          ls -l webapp/dist/
           git -C ifctester_org_static_html add webapp/dist/*
           git -C ifctester_org_static_html commit --allow-empty -m "$(git log --oneline -1)"
           git -C ifctester_org_static_html push
