@@ -477,6 +477,8 @@ class Blender(bonsai.core.tool.Blender):
     def ensure_bin_in_path(cls) -> None:
         """Check 'bin' folder is in PATH, if not add for this session"""
         bin_dir = str(Path(__file__).parent.parent.resolve() / "libs" / "bin")
+        if not os.path.isdir(bin_dir):
+            return  # Maybe the user is using a system-wide Python package. See #7157.
         current_path = os.environ["PATH"]
         if bin_dir not in current_path:
             os.environ["PATH"] = current_path + os.pathsep + bin_dir
