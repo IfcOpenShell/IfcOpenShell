@@ -14,8 +14,11 @@ jobs:
           repository: IfcOpenShell/ifctester_org_static_html
           token: ${{ secrets.IFCOPENBOT_TOKEN }}
           path: ifctester_org_static_html
-      - working-directory: ./src/ifctester
+      - name: Build website
+        working-directory: ./src/ifctester
         run: |
+          pwd
+          ls
           sudo apt update && sudo apt install -y nodejs
           pwd
           ls
