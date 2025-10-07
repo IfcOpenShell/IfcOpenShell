@@ -487,6 +487,9 @@ class BIMWorkScheduleProperties(PropertyGroup):
     other_columns: EnumProperty(
         items=[
             ("Controls.Calendar", "Calendar", ""),
+            ("Controls.TotalElements", "Total Elements", "The total number of assigned elements to this task"),
+            ("Controls.TotalInputs", "Total Inputs", "The total number of input elements to this task"),
+            ("Controls.TotalOutputs", "Total Outputs", "The total number of input elements to this task"),
         ],
         name="Special Columns",
     )
