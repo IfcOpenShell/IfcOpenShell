@@ -899,7 +899,7 @@ class BIM_UL_tasks(UIList):
             split2 = split1.split(factor=0.9 - min(0.5, 0.15 * len(self.props.columns)))
             split2.prop(item, "name", emboss=False, text="")
 
-            BIM_UL_tasks.draw_custom_columns(self.props, split2, item, task)
+            BIM_UL_tasks.draw_custom_columns(self.props, split2, item, task, item.ifc_definition_id)
 
             if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
                 row.prop(
@@ -966,6 +966,7 @@ class BIM_UL_tasks(UIList):
         row: bpy.types.UILayout,
         item: Optional[bpy.types.PropertyGroup] = None,
         task: Optional[dict[str, Any]] = None,
+        ifc_definition_id: int = 0,
         *,
         header: bool = False,
     ) -> None:
@@ -1005,6 +1006,21 @@ class BIM_UL_tasks(UIList):
                         row.label(text=item.derived_calendar + "*")
                     else:
                         row.label(text=item.calendar or "-")
+            elif column.name == "Controls.TotalInputs":
+                if header:
+                    row.label(text="# Inputs")
+                else:
+                    row.label(text=str(SequenceData.data["tasks"][ifc_definition_id]["TotalInputs"]))
+            elif column.name == "Controls.TotalOutputs":
+                if header:
+                    row.label(text="# Outputs")
+                else:
+                    row.label(text=str(SequenceData.data["tasks"][ifc_definition_id]["TotalOutputs"]))
+            elif column.name == "Controls.TotalElements":
+                if header:
+                    row.label(text="# Elements")
+                else:
+                    row.label(text=str(SequenceData.data["tasks"][ifc_definition_id]["TotalElements"]))
             else:
                 ifc_class, name = column.name.split(".")
                 if header:
