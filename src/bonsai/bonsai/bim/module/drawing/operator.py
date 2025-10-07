@@ -839,6 +839,7 @@ class CreateDrawing(bpy.types.Operator):
 
         if tool.Drawing.is_camera_orthographic():
             self.generate_bisect_linework(context, root)
+            self.generate_wall_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
 
