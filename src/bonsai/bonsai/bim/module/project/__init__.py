@@ -42,6 +42,7 @@ classes = (
     operator.ExportIFC,
     operator.FlipClippingPlane,
     operator.IFCFileHandlerOperator,
+    operator.ImageScalingTool,
     operator.LinkIfc,
     operator.LoadLink,
     operator.LoadLinkedProject,
