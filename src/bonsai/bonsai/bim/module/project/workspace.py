@@ -38,6 +38,7 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         ("bim.explore_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.explore_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
         ("bim.explore_hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
+        ("bim.explore_hotkey", {"type": "S", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_S")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -70,6 +71,13 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
         row = layout.row(align=True)
         op = row.operator("bim.clear_measurement", text="", icon="X")
+
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="", icon="EVENT_S")
+        row = layout.row(align=True)
+        op = row.operator("bim.explore_hotkey", text="Image Scaling Tool", icon="IMAGE_PLANE")
+        op.hotkey = "S_S"
 
 
 class ExploreHotkey(bpy.types.Operator):
@@ -110,3 +118,18 @@ class ExploreHotkey(bpy.types.Operator):
             bpy.ops.bim.measure_face_area_tool("INVOKE_DEFAULT")
         else:
             bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)
+
+    def hotkey_S_S(self):
+        active_obj = bpy.context.active_object
+        selected_objects = tool.Blender.get_selected_objects()
+        element = tool.Ifc.get_entity(active_obj) if active_obj else None
+        
+        if (not active_obj or 
+            not element or 
+            not element.is_a("IfcAnnotation") or 
+            len(selected_objects) != 1 or
+            not tool.Drawing.is_annotation_object_type(element, "IMAGE")):
+            self.report({"ERROR"}, "Please select one image annotation first.")
+            return
+
+        bpy.ops.bim.image_scaling_tool("INVOKE_DEFAULT")

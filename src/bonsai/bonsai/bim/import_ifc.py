@@ -888,6 +888,7 @@ class IfcImporter:
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             )
+
         if element.is_a("IfcAnnotation") and getattr(element, "ObjectType", None) == "IMAGE":
             image = None
             if obj.data and obj.data.materials and obj.data.materials[0]:
@@ -905,17 +906,30 @@ class IfcImporter:
                     uv_layer = bm.loops.layers.uv.new()
                 else:
                     uv_layer = bm.loops.layers.uv.active
-                aspect_ratio = image.size[1] / image.size[0]
-                for face in bm.faces:
-                    for loop in face.loops:
-                        vert = loop.vert
-                        v = (vert.co.y * 0.5) + 0.5
-                        u = (vert.co.x * 0.5 * aspect_ratio) + 0.5
-                        loop[uv_layer].uv = (u, v)
+                
+                if bm.verts:
+                    min_x = min(v.co.x for v in bm.verts)
+                    max_x = max(v.co.x for v in bm.verts)
+                    min_y = min(v.co.y for v in bm.verts)
+                    max_y = max(v.co.y for v in bm.verts)
+                    
+                    width = max_x - min_x
+                    height = max_y - min_y
+                    
+                    for face in bm.faces:
+                        for loop in face.loops:
+                            vert = loop.vert
+                            u = (vert.co.x - min_x) / width if width > 0 else 0.5
+                            v = (vert.co.y - min_y) / height if height > 0 else 0.5
+                            
+                            u = max(0.0, min(1.0, u))
+                            v = max(0.0, min(1.0, v))
+                            
+                            loop[uv_layer].uv = (u, v)
+                
                 bm.to_mesh(obj.data)
                 bm.free()
                 obj.data.update()
-    
         return obj
 
     def load_existing_meshes(self) -> None:
