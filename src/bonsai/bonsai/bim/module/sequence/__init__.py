@@ -105,6 +105,7 @@ classes = (
     operator.RemoveWorkTime,
     operator.ReorderTask,
     operator.SaveAnimationColorScheme,
+    operator.SelectTaskElements,
     operator.SelectTaskRelatedInputs,
     operator.SelectTaskRelatedProducts,
     operator.SelectUnassignedWorkScheduleProducts,

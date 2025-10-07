@@ -75,6 +75,8 @@ def update_active_task_index(self, context):
     bonsai.bim.module.pset.data.refresh()
     if self.editing_task_type == "SEQUENCE":
         tool.Sequence.load_task_properties()
+    if self.should_auto_select:
+        tool.Sequence.select_active_task_elements(task)
 
 
 def update_active_task_outputs(self, context):
@@ -518,9 +520,9 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_input_index: IntProperty(name="Active Task Input Index")
     task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
     active_task_output_index: IntProperty(name="Active Task Output Index")
-    show_nested_outputs: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_outputs)
-    show_nested_resources: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_resources)
-    show_nested_inputs: BoolProperty(name="Show Nested Tasks", default=False, update=update_active_task_inputs)
+    show_nested_outputs: BoolProperty(name="Show Nested Task Elements", default=False, update=update_active_task_outputs)
+    show_nested_resources: BoolProperty(name="Show Nested Task Elements", default=False, update=update_active_task_resources)
+    show_nested_inputs: BoolProperty(name="Show Nested Task Elements", default=False, update=update_active_task_inputs)
     product_input_tasks: CollectionProperty(name="Product Task Inputs", type=TaskProduct)
     product_output_tasks: CollectionProperty(name="Product Task Outputs", type=TaskProduct)
     active_product_output_task_index: IntProperty(name="Active Product Output Task Index")
@@ -530,6 +532,9 @@ class BIMWorkScheduleProperties(PropertyGroup):
     should_show_schedule_baseline_ui: BoolProperty(name="Baselines", default=False)
     filter_by_active_schedule: BoolProperty(
         name="Filter By Active Schedule", default=False, update=update_filter_by_active_schedule
+    )
+    should_auto_select: BoolProperty(
+        name="Auto Select", description="Auto select elements when task is selected", default=False
     )
 
     if TYPE_CHECKING:
