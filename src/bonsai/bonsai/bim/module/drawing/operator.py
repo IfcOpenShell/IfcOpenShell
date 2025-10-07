@@ -3702,10 +3702,11 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
     def _execute(self, context):
         space = tool.Blender.get_view3d_space()
-        if space and space.shading.type == "SOLID" and space.shading.color_type != "TEXTURE":
+        if space.shading.color_type != "TEXTURE":
+            space.shading.color_type = "TEXTURE"
             self.report(
                 {"WARNING"},
-                'Please change to "Texture" in "Object Color" for Viewport Shading: Solid to see the reference image properly.',
+                '"Object Color" for Viewport Shading: Solid changed to "Texture" to see the reference image properly.',
             )
 
         abs_path = Path(self.filepath).absolute().resolve()
