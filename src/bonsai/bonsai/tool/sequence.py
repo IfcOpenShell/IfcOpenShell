@@ -1790,6 +1790,15 @@ class Sequence(bonsai.core.tool.Sequence):
         cls.load_task_resources(task)
 
     @classmethod
+    def select_active_task_elements(cls, task):
+        if not task:
+            return
+        bpy.ops.object.select_all(action="DESELECT")
+        for element in set(cls.get_task_inputs(task) + cls.get_task_outputs(task)):
+            if obj := tool.Ifc.get_object(element):
+                obj.select_set(True)
+
+    @classmethod
     def refresh_task_resources(cls):
         task = cls.get_highlighted_task()
         if not task:

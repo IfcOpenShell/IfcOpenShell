@@ -290,13 +290,21 @@ class BIM_PT_work_schedules(Panel):
                     row2 = self.layout.row(align=True)
                     row2.alignment = "RIGHT"
 
-                    row2.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
-                    row2.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING")
-                    row2.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
-                    row2.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = (
+                    col = row2.column()
+                    row_ = col.row(align=True)
+                    op = row_.operator("bim.select_task_elements", icon="RESTRICT_SELECT_OFF", text="Select Elements")
+                    op.task = task.ifc_definition_id
+                    row_.prop(self.props, "should_auto_select", icon="OBJECT_HIDDEN", text="")
+
+                    col = row2.column()
+                    row_ = col.row(align=True)
+                    row_.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
+                    row_.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING")
+                    row_.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
+                    row_.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = (
                         ifc_definition_id
                     )
-                    row2.operator("bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL").task = (
+                    row_.operator("bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL").task = (
                         ifc_definition_id
                     )
                 row.operator("bim.add_task", text="Add", icon="ADD").task = ifc_definition_id
@@ -716,11 +724,10 @@ class BIM_PT_task_icom(Panel):
                 input_id = self.props.task_inputs[self.props.active_task_input_index].ifc_definition_id
                 op.related_object = input_id
 
-        op = row2.operator("bim.select_task_related_inputs", icon="RESTRICT_SELECT_OFF", text="Select")
+        op = row2.operator("bim.select_task_related_inputs", icon="RESTRICT_SELECT_OFF", text="")
         op.task = task.ifc_definition_id
+        row2.prop(self.props, "show_nested_inputs", icon="OUTLINER", text="")
 
-        row2 = col.row()
-        row2.prop(self.props, "show_nested_inputs", text="Show Nested")
         row2 = col.row()
         row2.template_list("BIM_UL_task_inputs", "", self.props, "task_inputs", self.props, "active_task_input_index")
 
@@ -744,8 +751,7 @@ class BIM_PT_task_icom(Panel):
             op.related_object_type = "RESOURCE"
             op.resource = self.props.task_resources[self.props.active_task_resource_index].ifc_definition_id
 
-        row2 = col.row()
-        row2.prop(self.props, "show_nested_resources", text="Show Nested")
+        row2.prop(self.props, "show_nested_resources", icon="OUTLINER", text="")
 
         row2 = col.row()
         row2.template_list(
@@ -773,10 +779,10 @@ class BIM_PT_task_icom(Panel):
                 output_id = self.props.task_outputs[self.props.active_task_output_index].ifc_definition_id
                 op.relating_product = output_id
 
-        op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
+        op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="")
         op.task = task.ifc_definition_id
-        row2 = col.row()
-        row2.prop(self.props, "show_nested_outputs", text="Show Nested")
+        row2.prop(self.props, "show_nested_outputs", icon="OUTLINER", text="")
+
         row2 = col.row()
         row2.template_list(
             "BIM_UL_task_outputs", "", self.props, "task_outputs", self.props, "active_task_output_index"

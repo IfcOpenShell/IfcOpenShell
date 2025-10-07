@@ -1281,6 +1281,17 @@ class DisableEditingSequence(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SelectTaskElements(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_task_elements"
+    bl_label = "Select All Task Elements"
+    bl_options = {"REGISTER", "UNDO"}
+    task: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.select_task_inputs(tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
+        core.select_task_outputs(tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
+
+
 class SelectTaskRelatedProducts(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_task_related_products"
     bl_label = "Select All Output Products"
