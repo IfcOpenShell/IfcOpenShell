@@ -70,7 +70,7 @@ class GridDecorator:
 
         grid_props = tool.Spatial.get_grid_props()
         for axis in grid_props.grid_axes:
-            if not (obj := axis.obj) or obj.hide_get() == True:
+            if not (obj := axis.obj) or obj.visible_get() is False:
                 continue
             if obj.select_get() and context.mode != "OBJECT":
                 continue
@@ -125,21 +125,22 @@ class GridDecorator:
         unselected_edges = []
         grid_props = tool.Spatial.get_grid_props()
         for axis in grid_props.grid_axes:
-            if (obj := axis.obj) and obj.hide_get() == False:
-                if obj.select_get():
-                    if context.mode != "OBJECT":
-                        continue
-                    edges = selected_edges
-                    verts = selected_verts
-                else:
-                    edges = unselected_edges
-                    verts = unselected_verts
-                i = len(verts)
-                edges.append([i, i + 1])
-                matrix_world = obj.matrix_world
-                v1 = matrix_world @ obj.data.vertices[0].co
-                v2 = matrix_world @ obj.data.vertices[1].co
-                verts.extend([v1, v2])
+            if not (obj := axis.obj) or obj.visible_get() is False:
+                continue
+            if obj.select_get():
+                if context.mode != "OBJECT":
+                    continue
+                edges = selected_edges
+                verts = selected_verts
+            else:
+                edges = unselected_edges
+                verts = unselected_verts
+            i = len(verts)
+            edges.append([i, i + 1])
+            matrix_world = obj.matrix_world
+            v1 = matrix_world @ obj.data.vertices[0].co
+            v2 = matrix_world @ obj.data.vertices[1].co
+            verts.extend([v1, v2])
 
         if unselected_verts:
             self.draw_batch("LINES", unselected_verts, decorator_color_background, unselected_edges)
