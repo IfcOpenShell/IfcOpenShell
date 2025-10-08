@@ -41,6 +41,7 @@ import socketio
 import threading
 import queue
 import json
+import platformdirs
 from time import sleep
 from pathlib import Path
 import bonsai.core.sequence
@@ -63,6 +64,13 @@ IFC_TASK_ATTRIBUTE_MAP = {
     "pEnd": "ScheduleFinish",
     "pName": "Name",
 }
+
+
+def get_pid_file_path():
+    """Get the path to the PID file in the user's cache directory."""
+    cache_dir = Path(platformdirs.user_cache_dir("bonsai"))
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / "running_pid.json"
 
 
 class Web(bonsai.core.tool.Web):
@@ -213,7 +221,7 @@ class Web(bonsai.core.tool.Web):
             cls.disconnect_websocket_server()
 
         # sleep(0.5)
-        pid_file = tool.Blender.get_data_dir_path("webui") / "running_pid.json"
+        pid_file = get_pid_file_path()
         with open(pid_file, "r") as f:
             pids = json.load(f)
 
@@ -250,7 +258,7 @@ class Web(bonsai.core.tool.Web):
         while True:
             if time.time() - start > max_time:
                 return False
-            pid_file = tool.Blender.get_data_dir_path("webui") / "running_pid.json"
+            pid_file = get_pid_file_path()
             try:
                 with open(pid_file, "r") as f:
                     data = json.load(f)
