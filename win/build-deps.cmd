@@ -210,6 +210,7 @@ set NUGET_EXE=%NUGET_INSTALL_DIR%\nuget.exe
 where nuget >nul 2>&1
 IF %ERRORLEVEL%==0 (
     echo Found existing nuget in PATH. Skipping.
+    for /f "delims=" %%i in ('where nuget') do set "NUGET_EXE=%%i"
     goto :ccache
 )
 
