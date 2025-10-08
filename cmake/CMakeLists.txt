@@ -1046,7 +1046,7 @@ if(BUILD_IFCGEOM)
 	if(WASM_BUILD)
 	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 	else()
-	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom)
 	endif()
 endif()
 
@@ -1176,7 +1176,7 @@ if(BUILD_IFCGEOM)
 
         add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
         set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        target_link_libraries(geometry_mapping_ifc${schema} IfcParse IfcGeom)
+        target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
         list(APPEND mapping_libraries geometry_mapping_ifc${schema})
     endforeach()
 
