@@ -44,6 +44,8 @@ ZIP packages
    +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
    | Python 3.13 | :ios_python_url:`py313-linux64` | :ios_python_url:`py313-win64` | :ios_python_url:`py313-macos64` | :ios_python_url:`py313-macosm164` |
    +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.14 | :ios_python_url:`py314-linux64` | :ios_python_url:`py314-win64` | :ios_python_url:`py314-macos64` | :ios_python_url:`py314-macosm164` |
+   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
 
 2. Unzip the downloaded file and copy the ``ifcopenshell`` directory into your
    Python path. If you're not sure where your Python path is, run the following
