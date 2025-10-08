@@ -133,7 +133,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.6"]
+PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
 JSON_VERSION = "3.11.3"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
@@ -371,8 +371,9 @@ for cmd in required_commands:
 if missing_commands:
     raise ValueError(f"Required tools not installed or not added to PATH: {', '.join(missing_commands)}")
 
+MAC_INTEL_BIN_PATH = "/usr/local/bin"
 if MAC_CROSS_COMPILE_INTEL:
-    brew = "/usr/local/bin/brew"
+    brew = f"{MAC_INTEL_BIN_PATH}/brew"
     assert os.path.exists(brew), f"For intel cross compilation the brew path is expected to be '{brew}'."
 
 # identifiers for the download tool (could be less memory consuming as ints, but are more verbose as strings)
@@ -1010,6 +1011,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
     # On OSX a dynamic python library is built or it would not be compatible
     # with the system python because of some threading initialization
     PYTHON_CONFIGURE_ARGS: "list[str]" = []
+    original_path = ""
     if platform.system() == "Darwin":
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
         open_ssl_prefix = run([brew, "--prefix", "openssl@3"]).strip()
@@ -1018,6 +1020,10 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
         PYTHON_CONFIGURE_ARGS.append(f"--with-openssl={open_ssl_prefix}")
 
     if MAC_CROSS_COMPILE_INTEL:
+        original_path = os.environ["PATH"]
+        # Need to ensure python will pick up intel's `pkg-config`,
+        # otherwise it might attempt to use ARM libraries (e.g. `zstd`) and fail.
+        os.environ["PATH"] = f"{MAC_INTEL_BIN_PATH}{os.pathsep}{original_path}"
         PYTHON_CONFIGURE_ARGS.extend(["--with-universal-archs=intel-64", "--enable-universalsdk"])
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
@@ -1039,6 +1045,9 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
             if not os.path.exists(os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}")):
                 raise e
 
+    if MAC_CROSS_COMPILE_INTEL:
+        assert original_path
+        os.environ["PATH"] = original_path
     os.environ["CPPFLAGS"] = OLD_CPP_FLAGS
     os.environ["CXXFLAGS"] = OLD_CXX_FLAGS
     os.environ["CFLAGS"] = OLD_C_FLAGS

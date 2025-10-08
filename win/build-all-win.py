@@ -11,7 +11,7 @@ from zipfile import ZipFile
 
 assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' directory."
 
-PYTHON_VERSIONS = ["3.9.13", "3.10.3", "3.11.8", "3.12.1", "3.13.0"]
+PYTHON_VERSIONS = ["3.9.13", "3.10.3", "3.11.8", "3.12.1", "3.13.0", "3.14.0"]
 REPO_PATH = Path(__file__).parent.parent
 REPO_WIN = REPO_PATH / "win"
 VERSION = (REPO_PATH / "VERSION").read_text().strip()

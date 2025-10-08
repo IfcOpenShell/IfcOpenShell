@@ -72,6 +72,10 @@ jobs:
             # We don't use gmpcxx, but it comes preinstalled on macos runner as arm64 bottle
             # and CGAL detects it and breaks cross compilation.
             brew uninstall --ignore-dependencies gmp
+            # Otherwise Python will fallback to use arm64 `pkg-config`,
+            # will pick up arm64 libraries ('zstd' in particular),
+            # and break the build.
+            /usr/local/bin/brew install pkg-config
             # Required by Python.
             /usr/local/bin/brew install gettext openssl
           fi

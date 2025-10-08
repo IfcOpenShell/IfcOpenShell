@@ -43,6 +43,9 @@ endif
 ifeq ($(PYVERSION), py313)
 PYNUMBER:=313
 endif
+ifeq ($(PYVERSION), py314)
+PYNUMBER:=314
+endif
 ifndef PYNUMBER
 $(error Unsupported PYVERSION '$(PYVERSION)')
 endif
