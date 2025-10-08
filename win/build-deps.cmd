@@ -35,7 +35,7 @@ if NOT "%CD%" == "%batpath%" (
 
 
 set PROJECT_NAME=IfcOpenShell
-call utils\cecho.cmd 15 0 "This script fetches and builds all %PROJECT_NAME% dependencies"
+call utils\cecho.cmd 0 15 "This script fetches and builds all %PROJECT_NAME% dependencies"
 echo.
 
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
