@@ -127,6 +127,10 @@ public:
         return storage_.byref_excl_;
     }
 
+    std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> steal_instances() {
+        return storage_.steal_instances();
+    }
+
     InstanceStreamer(const std::string& fn);
 
     InstanceStreamer(void* data, int length);

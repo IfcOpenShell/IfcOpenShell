@@ -259,7 +259,8 @@ void RocksDbSerializer::write_streaming_() {
 				}
 
 				// @nb we also need to delete them
-				delete inst;
+				// not anymore, as they are now registered as unique_ptr in the in_memory_file_storage
+				// delete inst;
 			}
 
 			// Entity type as numeric ref to index_in_schema
