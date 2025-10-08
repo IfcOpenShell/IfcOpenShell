@@ -266,7 +266,6 @@ namespace impl {
         if (val[0] != TypeEncoder::encode_type<T>()) {
             return false;
         }
-        auto s = (val.size() - 1) / sizeof(T);
         memcpy(&t, val.data() + 1, sizeof(T));
         return true;
     }
@@ -404,7 +403,7 @@ public:
     template<typename Visitor>
     auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, Visitor&& visitor) const {
         // @todo do we need visitation on all data/storage/attribute levels?
-        AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl, index).apply_visitor(std::forward<Visitor>(visitor));
+        AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl, (uint8_t) index).apply_visitor(std::forward<Visitor>(visitor));
     }
 #endif
 };

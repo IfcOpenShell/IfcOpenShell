@@ -106,7 +106,7 @@ public:
         return iterator(base_map_->find(k), &transform_);
     }
 
-    size_t erase(const key_type& k) {
+    size_t erase(const key_type&) {
         // @todo
         return 0;
     }
