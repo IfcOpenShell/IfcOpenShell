@@ -37,6 +37,7 @@ private:
 %ignore IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
 
 %ignore IfcParse::InstanceStreamer::read_instance;
+%ignore IfcParse::InstanceStreamer::steal_instances;
 
 %ignore in_memory_file_storage;
 %ignore rocks_db_file_storage;
