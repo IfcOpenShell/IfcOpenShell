@@ -51,6 +51,8 @@
         "MPFR_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
         "Boost_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
         "Boost_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "HDF5_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "HDF5_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
         "ZLIB_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include"
       }
     },
