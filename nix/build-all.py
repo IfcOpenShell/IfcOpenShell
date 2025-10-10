@@ -204,6 +204,7 @@ def which(cmd: str) -> Union[str, None]:
 
 
 # Flags.
+APPLE = platform.system() == "Darwin"
 MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
 assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
 WASM = "wasm" in flags
@@ -396,6 +397,13 @@ try:
     del os.environ["__PYVENV_LAUNCHER__"]
 except:
     pass
+
+
+def restore_env(var_name: str, old_value: Union[str, None]) -> None:
+    if old_value is None:
+        del os.environ[var_name]
+    else:
+        os.environ[var_name] = old_value
 
 
 def run(cmds: "Sequence[str]", cwd: "Union[str, None]" = None, can_fail: bool = False) -> str:
@@ -819,9 +827,9 @@ if "eigen" in targets:
     )
 
 if "pcre" in targets:
-    OLD_CC, OLD_CCXX = None, None
+    OLD_CC, OLD_CXX = None, None
     if MAC_CROSS_COMPILE_INTEL:
-        OLD_CC, OLD_CCXX = os.environ.get("CC"), os.environ.get("CXX")
+        OLD_CC, OLD_CXX = os.environ.get("CC"), os.environ.get("CXX")
         os.environ["CC"] = MAC_CROSS_COMPILE_INTEL_CC
         os.environ["CXX"] = MAC_CROSS_COMPILE_INTEL_CXX
     # Keep it autoconf as OpenCOLLADA is pretty old and might break
@@ -834,14 +842,8 @@ if "pcre" in targets:
         download_name=f"pcre-{PCRE_VERSION}.tar.bz2",
     )
     if MAC_CROSS_COMPILE_INTEL:
-        if OLD_CC is None:
-            del os.environ["CC"]
-        else:
-            os.environ["CC"] = OLD_CC
-        if OLD_CCXX is None:
-            del os.environ["CXX"]
-        else:
-            os.environ["CXX"] = OLD_CCXX
+        restore_env("CC", OLD_CC)
+        restore_env("CXX", OLD_CXX)
 
 if "pcre2" in targets:
     build_dependency(
@@ -1094,7 +1096,13 @@ if "boost" in targets:
 if "cgal" in targets:
     gmp_args: "list[str]" = []
     mpfr_args: "list[str]" = []
-    if "wasm" in flags:
+
+    OLD_HOST_CC = None
+    if WASM:
+        if APPLE:
+            # Override `HOST_CC`, otherwise `emcc` will try to use it's own `clang` which can only build
+            # wasm executables and build will fail.
+            os.environ["HOST_CC"] = "clang"
         # Disable assembly, otherwise `emcc -c conftest.s` will crash due to assembly mismatch.
         gmp_args.extend(("--disable-assembly", "--enable-cxx"))
         mpfr_args.extend(("--host", "none"))
@@ -1115,6 +1123,9 @@ if "cgal" in targets:
         download_name=f"gmp-{GMP_VERSION}.tar.bz2",
     )
 
+    if WASM and APPLE:
+        restore_env("HOST_CC", OLD_HOST_CC)
+
     build_dependency(
         name=f"mpfr-{MPFR_VERSION}",
         mode="autoconf",
@@ -1124,10 +1135,7 @@ if "cgal" in targets:
     )
 
     if MAC_CROSS_COMPILE_INTEL:
-        if OLD_CC is None:
-            del os.environ["CC"]
-        else:
-            os.environ["CC"] = OLD_CC
+        restore_env("CC", OLD_CC)
 
     build_dependency(
         name=f"cgal-{CGAL_VERSION}",
