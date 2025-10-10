@@ -301,6 +301,11 @@ cecho(
     """ - How many compiler processes may be run in parallel.
 """
 )
+cecho(f" * IFCOS_SCHEMAS = '{os.environ.get('IFCOS_SCHEMAS')}'", MAGENTA)
+cecho(
+    """ - IFC Schemas to compile. If not provided, fallback to default provided in cmake.
+"""
+)
 
 dependency_tree: "dict[str, tuple[str, ...]]" = {
     "IfcParse": ("boost", "libxml2", "hdf5", "rocksdb"),
