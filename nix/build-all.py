@@ -207,7 +207,24 @@ def which(cmd: str) -> Union[str, None]:
 APPLE = platform.system() == "Darwin"
 MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
 assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
+
 WASM = "wasm" in flags
+if WASM:
+    required_vars = (
+        "PYMAJOR",
+        "PYMINOR",
+        "PYMICRO",
+        # Folder where WASM-Python was installed.
+        # e.g '/pyodide/cpython/installs/python-3.13.2'.
+        "TARGETINSTALLDIR",
+        # 'include' folder in WASM-Python installation.
+        # e.g. '/pyodide/cpython/installs/python-3.13.2/include/python3.13'
+        "PYTHONINCLUDE",
+        "SIDE_MODULE_CFLAGS",
+        "SIDE_MODULE_LDFLAGS",
+    )
+    missing_vars = [v for v in required_vars if v not in os.environ]
+    assert not missing_vars, f"Some variables required for WASM compilation are missing: {', '.join(missing_vars)}"
 
 # Set defaults for missing empty environment variables
 
