@@ -1097,7 +1097,8 @@ if "cgal" in targets:
     gmp_args: "list[str]" = []
     mpfr_args: "list[str]" = []
     if "wasm" in flags:
-        gmp_args.extend(("--disable-assembly", "--host", "none", "--enable-cxx"))
+        # Disable assembly, otherwise `emcc -c conftest.s` will crash due to assembly mismatch.
+        gmp_args.extend(("--disable-assembly", "--enable-cxx"))
         mpfr_args.extend(("--host", "none"))
 
     OLD_CC = None
