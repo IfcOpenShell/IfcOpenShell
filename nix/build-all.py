@@ -33,6 +33,7 @@ Available arguments:
     ``-py-313`` - build for specific Python version
         (building for all supported Python version by default).
     ``-wasm`` - compile for wasm
+    ``-without-xxx`` - do not build dependency ``xxx`` (e.g. ``--without-swig``)
     ``-mac-cross-compile-intel`` - cross compile for Intel Mac on Apple Silicon host
     ``-shared`` - build shared libraries. By default will build static.
     ``-diskcleanup`` - clean up build directories after finishing building dependencies
