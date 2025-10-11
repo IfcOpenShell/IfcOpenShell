@@ -108,10 +108,6 @@ def add_sheet(ifc: type[tool.Ifc], drawing: type[tool.Drawing], titleblock: ifco
 def regenerate_sheet(
     drawing: type[tool.Drawing], sheet: ifcopenshell.entity_instance
 ) -> Union[list[tool.Drawing.SheetWarningType], None]:
-    warnings = drawing.validate_sheet_files(sheet)
-    if warnings:
-        return warnings
-
     titleblock_uri = drawing.get_document_uri(sheet, "TITLEBLOCK")
     assert titleblock_uri
 
