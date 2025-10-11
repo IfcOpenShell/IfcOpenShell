@@ -443,6 +443,8 @@ class CreateDrawing(bpy.types.Operator):
         context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
         assert (drawing_style := self.cprops.get_active_drawing_style())
 
+        tool.Blender.sync_render_visibility()
+
         if drawing_style.render_type == "DEFAULT":
             bpy.ops.render.render(write_still=True)
         else:
