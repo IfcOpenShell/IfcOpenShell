@@ -1480,11 +1480,10 @@ class CreateDrawing(bpy.types.Operator):
                 joined_paths.setdefault(hash_keys, []).append(el)
 
         for key, els in joined_paths.items():
-            polygons = []
-            classes = set()
+            queue = []
 
             for el in els:
-                classes.update(el.attrib["class"].split())
+                classes = set(el.attrib["class"].split())
                 classes.add(el.attrib["{http://www.ifcopenshell.org/ns}guid"])
                 is_closed_polygon = False
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
@@ -1499,31 +1498,30 @@ class CreateDrawing(bpy.types.Operator):
                             coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:
                             is_closed_polygon = True
-                            polygons.append(shapely.Polygon(coords))
+                            queue.append((shapely.Polygon(coords), classes))
                 if is_closed_polygon:
                     el.getparent().remove(el)
 
-            try:
-                merged_polygons = shapely.ops.unary_union(polygons)
-            except:
-                print("Warning. Portions of the merge failed. Please report a bug!", polygons)
-                merged_polygons = polygons
+            while queue:
+                polygon, polygon_classes = queue.pop()
+                for polygon2, polygon2_classes in queue[:]:
+                    try:
+                        merged_polygon = shapely.union(polygon, polygon2)
+                    except:
+                        print("Warning. Portions of the merge failed. Please report a bug!", polygon, polygon2)
+                        continue
+                    if type(merged_polygon) == shapely.Polygon:
+                        polygon = merged_polygon
+                        polygon_classes.update(polygon2_classes)
+                        queue.remove((polygon2, polygon2_classes))
 
-            if type(merged_polygons) == shapely.MultiPolygon:
-                merged_polygons = merged_polygons.geoms
-            elif type(merged_polygons) == shapely.Polygon:
-                merged_polygons = [merged_polygons]
-            else:
-                merged_polygons = []
-
-            for polygon in merged_polygons:
                 g = etree.Element("g")
                 path = etree.SubElement(g, "path")
                 d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
                 for interior in polygon.interiors:
                     d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
                 path.attrib["d"] = d
-                g.set("class", " ".join(list(classes)))
+                g.set("class", " ".join(list(polygon_classes)))
                 group.append(g)
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
