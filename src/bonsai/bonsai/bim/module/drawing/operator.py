@@ -796,8 +796,9 @@ class CreateDrawing(bpy.types.Operator):
         edge_bm.to_mesh(edge_mesh)
         edge_bm.free()
 
-        actual_path = svg_path[0:-4] + "0001.svg"
+        freestyle_svg_exporter = tool.Blender.get_addon("freestyle_svg_exporter")
         context.scene.render.filepath = svg_path[0:-4]
+        actual_path = freestyle_svg_exporter.create_path(bpy.context.scene)
         bpy.ops.render.render(write_still=False)
 
         os.replace(actual_path, svg_path)

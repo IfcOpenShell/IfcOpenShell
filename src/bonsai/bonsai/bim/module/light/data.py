@@ -41,7 +41,7 @@ class SolarData:
 
     @classmethod
     def sun_position(cls):
-        return tool.Blender.get_sun_position_addon()
+        return tool.Blender.get_addon("sun_position")
 
     @classmethod
     def sites(cls):

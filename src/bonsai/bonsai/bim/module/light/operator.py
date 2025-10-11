@@ -202,7 +202,7 @@ class RadianceRender(bpy.types.Operator):
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
 
-        # sun_position = tool.Blender.get_sun_position_addon()
+        # sun_position = tool.Blender.get_addon("sun_position")
         #     azimuth, elevation = sun_position.sun_calc.get_sun_coordinates(
         #     sun_pos_props.time,
         #     sun_pos_props.latitude,
