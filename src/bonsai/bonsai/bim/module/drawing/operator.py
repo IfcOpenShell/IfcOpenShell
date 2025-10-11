@@ -2322,9 +2322,8 @@ class ActivateDrawingBase(tool.Ifc.Operator):
 
         dprops.active_drawing_id = self.drawing
         dprops.drawing_styles.clear()
-        if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
-            bpy.ops.bim.reload_drawing_styles()
-            bpy.ops.bim.activate_drawing_style()
+        bpy.ops.bim.reload_drawing_styles()
+        bpy.ops.bim.activate_drawing_style()
 
         if tool.Drawing.is_camera_orthographic():
             core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
