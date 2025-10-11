@@ -1877,11 +1877,25 @@ class Blender(bonsai.core.tool.Blender):
             bpy.ops.object.hide_view_clear(select=False)
 
         bpy.ops.object.select_all(action="DESELECT")
-        for obj in objs:
-            obj.select_set(True)
+
+        # Ensure objs_to_show exists (alias for clarity)
+        objs_to_show = objs
+
+        # Show only these objects
+        for o in objs_to_show:
+            o.select_set(True)
+            o.hide_set(False)        # Make visible in viewport
+            o.hide_render = False    # Make visible in render
+
         with bpy.context.temp_override(**override):
             bpy.ops.object.hide_view_set(unselected=True)
 
+        # Also hide all others from render
+        for o in bpy.context.view_layer.objects:
+            if o not in objs_to_show:
+                o.hide_render = True
+
+        # Restore previous selection state
         bpy.ops.object.select_all(action="DESELECT")
         for name in previously_selected:
             obj = bpy.data.objects.get(name)
