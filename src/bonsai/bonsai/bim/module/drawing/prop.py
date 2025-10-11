@@ -498,6 +498,11 @@ class BIMCameraProperties(PropertyGroup):
         name="Linework Mode",
         update=get_update_layer_callback("linework_mode", "LineworkMode"),
     )
+    generate_material_layers: bpy.props.BoolProperty(
+        name="Generate Material Layers",
+        description="Generate material layer linework in drawings",
+        default=True
+    )
     fill_mode: EnumProperty(
         items=[
             ("NONE", "None", "Disable filling areas seen in projection"),
