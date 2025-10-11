@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import glob
 import bpy
 import json
 import time
@@ -797,14 +796,11 @@ class CreateDrawing(bpy.types.Operator):
         edge_bm.to_mesh(edge_mesh)
         edge_bm.free()
 
-        pattern = svg_path[0:-4] + "????.svg"
-        files = glob.glob(pattern)
-        if not files:
-            self.report({"ERROR"}, f"No Freestyle SVG found matching {pattern}")
-            return None
+        actual_path = svg_path[0:-4] + "0001.svg"
+        context.scene.render.filepath = svg_path[0:-4]
+        bpy.ops.render.render(write_still=False)
 
-        found_path = max(files, key=os.path.getctime)
-        os.replace(found_path, svg_path)
+        os.replace(actual_path, svg_path)
 
         bpy.data.objects.remove(edge_obj)
         bpy.data.meshes.remove(edge_mesh)
