@@ -1354,7 +1354,7 @@ class CreateDrawing(bpy.types.Operator):
             join_criteria = join_criteria.split(",")
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
-            join_criteria = ["class", "material.Name", "/Pset_.*Common/.Status", "EPset_Status.Status", "Material.Name"]
+            join_criteria = ["class", "material.Name", "/Pset_.*Common/.Status", "EPset_Status.Status", "EPset_Status.UserDefinedStatus"]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}
