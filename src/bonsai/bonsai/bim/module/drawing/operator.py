@@ -627,7 +627,7 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = d
             group.append(g)
 
-    def generate_wall_layers(self, context: bpy.types.Context, root) -> None:
+    def generate_material_layers(self, context: bpy.types.Context, root) -> None:
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             if "projection" in el.get("class", "").split():
                 continue
@@ -842,7 +842,8 @@ class CreateDrawing(bpy.types.Operator):
 
         if tool.Drawing.is_camera_orthographic():
             self.generate_bisect_linework(context, root)
-            self.generate_wall_layers(context, root)
+            if self.cprops.generate_material_layers:
+                self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
 
@@ -940,12 +941,14 @@ class CreateDrawing(bpy.types.Operator):
         if self.cprops.cut_mode == "BISECT":
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
-            self.generate_wall_layers(context, root)
+            if self.cprops.generate_material_layers:
+                self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
         elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
-            self.generate_wall_layers(context, root)
+            if self.cprops.generate_material_layers:
+                self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
 
