@@ -227,8 +227,13 @@ class Entity(Facet):
             reason = {"type": "NAME", "actual": inst.is_a().upper()}
 
         if is_pass and self.predefinedType:
-            predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
-            is_pass = predefined_type == self.predefinedType
+            if self.predefinedType == "USERDEFINED":
+                is_pass = ifcopenshell.util.element.is_userdefined_type(inst)
+                if not is_pass:
+                    predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
+            else:
+                predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
+                is_pass = predefined_type == self.predefinedType
 
             if not is_pass:
                 reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}

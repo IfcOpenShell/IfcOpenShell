@@ -172,10 +172,10 @@ class TestEntity:
         facet = Entity(name="IFCWALL", predefinedType="USERDEFINED")
         ifc = ifcopenshell.file()
         run(
-            "A predefined type must always specify a meaningful type, not USERDEFINED itself",
+            "A predefined type may specify USERDEFINED itself",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"),
-            expected=False,
+            expected=True,
         )
 
         ifc = ifcopenshell.file()

@@ -369,6 +369,65 @@ class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
         assert subject.get_predefined_type(element_type) == "NOTDEFINED"
 
 
+class TestIsUserdefinedTypeIFC4(test.bootstrap.IFC4):
+    def test_getting_a_predefined_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.PredefinedType = "PARTITIONING"
+        assert not subject.is_userdefined_type(element)
+
+    def test_getting_an_element_userdefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "FOOBAR"
+        assert subject.is_userdefined_type(element)
+
+    def test_getting_an_element_type_without_a_predefined_type_attribute(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        element.ObjectType = "FOOBAR"
+        assert subject.is_userdefined_type(element)
+
+    def test_getting_an_inherited_predefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        element_type.PredefinedType = "PARTITIONING"
+        assert not subject.is_userdefined_type(element)
+
+    def test_getting_an_inherited_userdefined_type_for_an_element_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        element_type.PredefinedType = "USERDEFINED"
+        element_type.ElementType = "FOOBAR"
+        assert subject.is_userdefined_type(element)
+
+    def test_getting_an_overriden_predefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        element_type.PredefinedType = "NOTDEFINED"
+        element.PredefinedType = "PARTITIONING"
+        assert not subject.is_userdefined_type(element)
+
+    def test_getting_an_inherited_userdefined_type_for_a_process_type(self):
+        element = ifcopenshell.api.sequence.add_task(self.file)
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTaskType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        element_type.PredefinedType = "USERDEFINED"
+        element_type.ProcessType = "FOOBAR"
+        assert subject.is_userdefined_type(element)
+
+    def test_getting_an_element_type_predefined_type(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "PARTITIONING"
+        assert not subject.is_userdefined_type(element_type)
+
+    def test_getting_an_element_type_null_predefined_type(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "NOTDEFINED"
+        assert not subject.is_userdefined_type(element_type)
+
+
 class TestGetTypeIFC4(test.bootstrap.IFC4):
     def test_getting_the_type_of_a_product(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
