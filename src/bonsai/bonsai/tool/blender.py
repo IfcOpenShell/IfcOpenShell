@@ -1506,27 +1506,20 @@ class Blender(bonsai.core.tool.Blender):
         return bpy.context.preferences.addons[blender_package_name].preferences
 
     @classmethod
-    def get_sun_position_addon(cls) -> Union[types.ModuleType, None]:
-        # Check if it's installed as legacy Blender addon.
+    def get_addon(cls, name: str) -> Union[types.ModuleType, None]:
         import importlib
 
         try:
-            sun_position = importlib.import_module("sun_position")
+            return importlib.import_module(name)  # Legacy Blender addon
         except ImportError:
-            sun_position = None
-
-        if sun_position:
-            return sun_position
+            pass
 
         for package_name in bpy.context.preferences.addons.keys():
-            if package_name.endswith(".sun_position"):
+            if package_name.endswith(f".{name}"):
                 try:
-                    sun_position = importlib.import_module(package_name)
-                    return sun_position
+                    return importlib.import_module(package_name)
                 except ModuleNotFoundError:
                     pass
-
-        return sun_position
 
     @classmethod
     def get_sun_props(cls) -> Union[SunPosProperties, None]:
@@ -1897,7 +1890,7 @@ class Blender(bonsai.core.tool.Blender):
         should_hides = [0 if obj.visible_get() else 1 for obj in bpy.data.objects]
         should_hides = np.fromiter(should_hides, dtype=np.uint8, count=len(should_hides))
         bpy.data.objects.foreach_set("hide_render", should_hides)
-        return # Otherwise...
+        return  # Otherwise...
         # for obj in bpy.data.objects:
         #     if not obj.data:
         #         continue
