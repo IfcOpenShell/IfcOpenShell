@@ -2884,8 +2884,14 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         if not props.references:
             cls.poll_message_set("No reference selected.")
             return False
-        bim_props = tool.Blender.get_bim_props()
-        return props.references and props.sheets and bim_props.data_dir
+        if not props.sheets:
+            cls.poll_message_set("No sheets available.")
+            return False
+        prefs = tool.Blender.get_addon_preferences()
+        if not prefs.data_dir:
+            cls.poll_message_set("BIM data directory not set.")
+            return False
+        return True
 
     def _execute(self, context):
         props = tool.Drawing.get_document_props()
