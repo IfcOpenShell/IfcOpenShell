@@ -2226,6 +2226,7 @@ class ActivateModel(bpy.types.Operator):
             )
 
         tool.Blender.reset_object_visibility()
+        tool.Drawing.hide_all_drawing_collections()
         tool.Blender.update_viewport()
         bonsai.bim.handler.refresh_ui_data()
 
