@@ -3028,6 +3028,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             item_mesh = bpy.data.meshes.new("tmp")
             tool.Ifc.link(item, item_mesh)
             item_obj = bpy.data.objects.new("tmp", item_mesh)
+            tool.Geometry.lock_scale(item_obj)
             tool.Geometry.name_item_object(item_obj, item)
             item_obj.matrix_world = obj.matrix_world
             bpy.context.collection.objects.link(item_obj)
