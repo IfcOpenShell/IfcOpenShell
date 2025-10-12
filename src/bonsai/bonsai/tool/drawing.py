@@ -2591,3 +2591,10 @@ class Drawing(bonsai.core.tool.Drawing):
         ifcopenshell.api.document.remove_reference(tool.Ifc.get(), reference=reference)
 
         tool.Drawing.import_sheets()
+
+    @classmethod
+    def hide_all_drawing_collections(cls) -> None:
+        for element in tool.Ifc.get().by_type("IfcAnnotation"):
+            if element.ObjectType == "DRAWING" and (obj := tool.Ifc.get_object(element)):
+                print('found element', element)
+                tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
