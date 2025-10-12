@@ -233,8 +233,11 @@ class Geometry(bonsai.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+        elif element.is_a("IfcAnnotation"):
+            if element.ObjectType == "DRAWING":
+                return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+            elif (referenced_element := tool.Drawing.get_annotation_element(element)) and (drawing := tool.Drawing.get_annotation_drawing(element)):
+                tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
         elif element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.boundary.remove_boundary(ifc_file, boundary=element)
             tool.Boundary.undecorate_boundary(obj)
