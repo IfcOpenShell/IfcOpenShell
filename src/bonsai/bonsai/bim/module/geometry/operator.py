@@ -882,7 +882,16 @@ class OverrideDelete(bpy.types.Operator):
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
-                    return {"FINISHED"}
+                    continue
+                if element.is_a("IfcGridAxis"):
+                    # Deleting the last W axis is OK
+                    if ((grid := element.PartOfU) and len(grid[0].UAxes) == 1) or (
+                        (grid := element.PartOfV) and len(grid[0].VAxes) == 1
+                    ):
+                        self.report(
+                            {"INFO"}, "The last grid axis of a grid cannot be deleted. Delete the grid instead."
+                        )
+                        continue
                 tool.Geometry.delete_ifc_object(obj)
             elif tool.Geometry.is_representation_item(obj):
                 tool.Geometry.delete_ifc_item(obj)

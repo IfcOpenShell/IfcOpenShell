@@ -243,13 +243,10 @@ class Geometry(bonsai.core.tool.Geometry):
             tool.Boundary.undecorate_boundary(obj)
             return bpy.data.objects.remove(obj)
         elif element.is_a("IfcGridAxis"):
-            is_last_axis = False
             # Deleting the last W axis is OK
             if ((grid := element.PartOfU) and len(grid[0].UAxes) == 1) or (
                 (grid := element.PartOfV) and len(grid[0].VAxes) == 1
             ):
-                is_last_axis = True
-            if is_last_axis:
                 return
             ifcopenshell.api.grid.remove_grid_axis(ifc_file, axis=element)
             return bpy.data.objects.remove(obj)
