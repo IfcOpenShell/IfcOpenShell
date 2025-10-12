@@ -1866,12 +1866,14 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = tool.Drawing.get_document_props()
-        # Won't be visible in UI anyway.
-        prefs = tool.Blender.get_addon_preferences()
-        if not props.sheets or not prefs.data_dir:
-            return False
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
+            return False
+        if not props.sheets:
+            cls.poll_message_set("No sheets available.")
+            return False
+        if not tool.Blender.get_user_data_dir():
+            cls.poll_message_set("BIM data directory not set.")
             return False
         return True
 
@@ -2816,8 +2818,13 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         if not props.schedules:
             cls.poll_message_set("No schedule selected.")
             return False
-        prefs = tool.Blender.get_addon_preferences()
-        return props.schedules and props.sheets and prefs.data_dir
+        if not props.sheets:
+            cls.poll_message_set("No sheets available.")
+            return False
+        if not tool.Blender.get_user_data_dir():
+            cls.poll_message_set("BIM data directory not set.")
+            return False
+        return True
 
     def _execute(self, context):
         props = tool.Drawing.get_document_props()
@@ -2887,8 +2894,7 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         if not props.sheets:
             cls.poll_message_set("No sheets available.")
             return False
-        prefs = tool.Blender.get_addon_preferences()
-        if not prefs.data_dir:
+        if not tool.Blender.get_user_data_dir():
             cls.poll_message_set("BIM data directory not set.")
             return False
         return True
