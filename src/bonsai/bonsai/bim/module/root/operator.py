@@ -326,6 +326,10 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     predefined_type=predefined_type,
                     should_add_representation=False,
                 )
+                
+                #Unhide object before mesh tessellation export to prevent "Cannot edit hidden object" error when collector.assign() hides the object.
+                obj.hide_viewport = False
+                
                 representation = tool.Geometry.export_mesh_to_tessellation(obj, ifc_context)
                 ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
                 bonsai.core.geometry.switch_representation(
