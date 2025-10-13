@@ -32,7 +32,7 @@
 #include "ifc_parse_api.h"
 #include "IfcBaseClass.h"
 #include "IfcCharacterDecoder.h"
-#include "IfcSpfStream.h"
+#include "FileReader.h"
 #include "macros.h"
 #include "storage.h"
 
@@ -103,27 +103,27 @@ class IFC_PARSE_API TokenFunc {
 // Functions for creating Tokens from an arbitary file offset
 // The first 4 bits are reserved for Tokens of type ()=,;$*
 //
-Token OperatorTokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end);
-Token GeneralTokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end);
+Token OperatorTokenPtr(IfcSpfLexer* tokens, size_t start, char data);
+Token GeneralTokenPtr(IfcSpfLexer* tokens, size_t start, const std::string& data);
 
-/// A stream of tokens to be read from a IfcSpfStream.
+/// A stream of tokens to be read from a FileReader.
 class IFC_PARSE_API IfcSpfLexer {
   private:
     IfcCharacterDecoder* decoder_;
-    unsigned int skipWhitespace() const;
-    unsigned int skipComment() const;
+    size_t skipWhitespace() const;
+    size_t skipComment() const;
 
   public:
     std::string& GetTempString() const {
         static my_thread_local std::string string;
         return string;
     }
-    IfcSpfStream* stream;
+    FileReader* stream;
     // IfcFile* file;
-    IfcSpfLexer(IfcSpfStream* stream);
+    IfcSpfLexer(FileReader* stream);
     Token Next();
     ~IfcSpfLexer();
-    void TokenString(unsigned int offset, std::string& result);
+    void TokenString(size_t offset, std::string& result);
 };
 
 IFC_PARSE_API aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);

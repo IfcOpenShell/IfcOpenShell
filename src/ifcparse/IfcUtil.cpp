@@ -76,8 +76,8 @@ void aggregate_of_instance::push(const aggregate_of_instance::ptr& instance) {
         }
     }
 }
-unsigned int aggregate_of_instance::size() const { return (unsigned int)list_.size(); }
-void aggregate_of_instance::reserve(unsigned capacity) { list_.reserve((size_t)capacity); }
+size_t aggregate_of_instance::size() const { return list_.size(); }
+void aggregate_of_instance::reserve(size_t capacity) { list_.reserve(capacity); }
 aggregate_of_instance::it aggregate_of_instance::begin() { return list_.begin(); }
 aggregate_of_instance::it aggregate_of_instance::end() { return list_.end(); }
 IfcUtil::IfcBaseClass* aggregate_of_instance::operator[](int i) {
