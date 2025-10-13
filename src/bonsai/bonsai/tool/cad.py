@@ -33,6 +33,7 @@ import sys
 import bpy
 import math
 import bmesh
+import numpy as np
 import mathutils.geometry
 from mathutils import Vector, Matrix, geometry
 import itertools
@@ -188,6 +189,33 @@ class Cad:
         """
         return geometry.intersect_line_plane(v1, v2, plane_co, plane_no)
 
+    def intersect_edge_plane_v2(v1, v2, plane_co, plane_no, eps=1e-9):
+        """
+        Numpy version of intersect_edge_plane
+        > takes an edges as two vector, and a plane as origin point and normal
+        < return the intersection point or None
+        """
+
+        # References: https://rosettacode.org/wiki/Find_the_intersection_of_a_line_with_a_plane#Python,
+        # https://stackoverflow.com/a/18543221
+
+        p0 = np.array((v1.x, v1.y, v1.z), dtype=np.float64)
+        p1 = np.array((v2.x, v2.y, v2.z), dtype=np.float64)
+        pc = np.array((plane_co.x, plane_co.y, plane_co.z), dtype=np.float64)
+        n = np.array((plane_no.x, plane_no.y, plane_no.z), dtype=np.float64)
+
+        u = p1 - p0
+        dot = np.dot(u, n)
+        if abs(dot) < eps:
+            # Line is parallel to plane (no intersection or lies in plane)
+            return None
+
+        w = pc - p0
+        fac = np.dot(w, n) / dot
+        p = p0 + fac * u
+
+        return Vector(p)
+
     @classmethod
     def intersect_edges(
         cls, edge1: tuple[Vector, Vector], edge2: tuple[Vector, Vector]
@@ -215,47 +243,50 @@ class Cad:
     def intersect_edges_v2(cls, edge1, edge2):
         """
         Calculate the closest points on two line segments.
-        Note: This function doesn't use intersect_line_line
+        Note: This function doesn't use intersect_line_line and uses Numpy for calculations
 
         > edge1: tuple of two vectors (v1, v2) representing the first segment
         > edge2: tuple of two vectors (v3, v4) representing the second segment
         < returns: tuple of two vectors (C1, C2) or (None, None) if lines are parallel
         """
-        # This function seems to work better then intersect_line_line
+        # This function seems to work better than intersect_line_line
         # in orthogonal view
         # https://en.wikipedia.org/wiki/Skew_lines#Nearest_points
 
         is_2d = False
         # Starting and ending points
-        P1, P1_end = edge1
-        P2, P2_end = edge2
-        if len(P1) == 2:
+        p1, p1_end = edge1
+        p2, p2_end = edge2
+        if len(p1) == 2:
             is_2d = True
-            P1, P1_end = P1.to_3d(), P1_end.to_3d()
-            P2, P2_end = P2.to_3d(), P2_end.to_3d()
+            p1, p1_end = p1.to_3d(), p1_end.to_3d()
+            p2, p2_end = p2.to_3d(), p2_end.to_3d()
 
+        p1 = np.array((p1.x, p1.y, p1.z), dtype=np.float64)
+        p1_end = np.array((p1_end.x, p1_end.y, p1_end.z), dtype=np.float64)
+        p2 = np.array((p2.x, p2.y, p2.z), dtype=np.float64)
+        p2_end = np.array((p2_end.x, p2_end.y, p2_end.z), dtype=np.float64)
         # Directions
-        d1 = (P1_end - P1).normalized()
-        d2 = (P2_end - P2).normalized()
+        d1 = p1_end - p1
+        d2 = p2_end - p2
+        d1 /= np.linalg.norm(d1) or 1  # equivalent of Vector.normalized() or Vector / Vector.length
+        d2 /= np.linalg.norm(d2) or 1
 
-        n = d1.cross(d2)
+        n = np.cross(d1, d2)
 
         # if n is zero, lines are parallel
-        if abs(n.length) < 1e-6:
+        if abs(np.linalg.norm(n)) < 1e-6:
             return None, None
 
-        n2 = d2.cross(n)
-
-        C1 = P1 + ((P2 - P1).dot(n2) / (d1.dot(n2))) * d1
-
-        n1 = d1.cross(n)
-
-        C2 = P2 + ((P1 - P2).dot(n1) / (d2.dot(n1))) * d2
+        n2 = np.cross(d2, n)
+        c1 = p1 + (np.dot((p2 - p1), n2) / (np.dot(d1, n2))) * d1
+        n1 = np.cross(d1, n)
+        c2 = p2 + (np.dot((p1 - p2), n1) / (np.dot(d2, n1))) * d2
 
         if is_2d:
-            return C1.to_2d(), C2.to_2d()
+            return Vector(c1[:2].copy()), Vector(c2[:2].copy())
         else:
-            return C1, C2
+            return Vector(c1), Vector(c2)
 
     @classmethod
     def get_intersection(cls, edge1, edge2):
@@ -807,3 +838,160 @@ class Cad:
                 v1 = v2
 
         return new_verts
+
+    @classmethod
+    def region_2d_to_vector_3d_np(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector) -> Vector:
+        """
+        Numpy version of view3d_utils.region_2d_to_vector_3d
+        Return a direction vector from the viewport at the specific 2d region
+        coordinate.
+
+        > region: region of the 3D viewport, typically bpy.context.region.
+        > rv3d: 3D region data, typically bpy.context.space_data.region_3d.
+        > coord: 2d coordinates relative to the region:
+           (event.mouse_region_x, event.mouse_region_y) for example.
+        < returns a normalized 3d vector.
+        """
+        view_m = np.array(rv3d.view_matrix)
+        window_m = np.array(rv3d.window_matrix)
+        viewinv = np.linalg.inv(view_m)
+
+        if rv3d.is_perspective:
+            # For better precision with large numbers, avoid using rv3d.perspective_matrix. See https://github.com/IfcOpenShell/IfcOpenShell/issues/7046
+            # Calculate it with view_matrix and window_matrix as numpy arrays.
+            pers_m = window_m @ view_m
+            persinv = np.linalg.inv(pers_m)
+
+            out = np.array(
+                [(2.0 * coord[0] / region.width) - 1.0, (2.0 * coord[1] / region.height) - 1.0, -0.5, 1.0],
+                dtype=np.float64,
+            )
+
+            w = out[:3].dot(persinv[3, :3]) + persinv[3, 3]
+
+            viewinv_translation = viewinv[:3, 3]
+            view_vector = (persinv.dot(out)[:3] / w) - viewinv_translation
+        else:
+            view_vector = -viewinv[:3, 2].copy()  # -Z column
+
+        view_vector /= np.linalg.norm(view_vector) or 1  # equivalent to Vector.normalized()
+        return Vector(view_vector)
+
+    @classmethod
+    def region_2d_to_location_3d_np(
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, depth_location: Vector
+    ) -> Vector:
+        """
+        Numpy version of view3d_utils.region_2d_to_location_3d
+        Return a 3d location from the region relative 2d coords, aligned with
+        *depth_location*.
+
+        > region: region of the 3D viewport, typically bpy.context.region.
+        > rv3d: 3D region data, typically bpy.context.space_data.region_3d.
+        > coord: 2d coordinates relative to the region:
+           (event.mouse_region_x, event.mouse_region_y) for example.
+        < returns a normalized 3d vector.
+        """
+        coord_vec = cls.region_2d_to_vector_3d_np(region, rv3d, coord)
+        depth_location = np.array([depth_location[0], depth_location[1], depth_location[2]], dtype=np.float64)
+
+        origin_start = cls.region_2d_to_origin_3d_np(region, rv3d, coord)
+        origin_end = origin_start + coord_vec
+
+        if rv3d.is_perspective:
+            viewinv = np.linalg.inv(rv3d.view_matrix)
+            view_vec = viewinv[:3, 2].copy()
+            return cls.intersect_edge_plane_v2(
+                Vector(origin_start), Vector(origin_end), Vector(depth_location), Vector(view_vec)
+            )
+        else:
+            return cls.point_on_edge(
+                Vector(depth_location),
+                (Vector(origin_start), Vector(origin_end)),
+            )
+
+    @classmethod
+    def region_2d_to_origin_3d_np(
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, *, clamp: float = None
+    ) -> Vector:
+        """
+        Numpy version of view3d_utils.region_2d_to_origin_3d
+        Return the 3d view origin from the region relative 2d coords.
+
+        .. note::
+
+           Orthographic views have a less obvious origin,
+           the far clip is used to define the viewport near/far extents.
+           Since far clip can be a very large value,
+           the result may give with numeric precision issues.
+
+           To avoid this problem, you can optionally clamp the far clip to a
+           smaller value based on the data you're operating on.
+
+
+        > region: region of the 3D viewport, typically bpy.context.region.
+        > rv3d: 3D region data, typically bpy.context.space_data.region_3d.
+        > coord: 2d coordinates relative to the region:
+           (event.mouse_region_x, event.mouse_region_y) for example.
+        > clamp: clamp: Clamp the maximum far-clip value used.
+           (negative value will move the offset away from the view_location)
+        < returns the origin of the viewpoint in 3d space.
+        """
+
+        view_m = np.array(rv3d.view_matrix)
+        window_m = np.array(rv3d.window_matrix)
+        viewinv = np.linalg.inv(view_m)
+
+        if rv3d.is_perspective:
+            origin_start = viewinv[:3, 3].copy()
+        else:
+            pers_m = window_m @ view_m  # See https://github.com/IfcOpenShell/IfcOpenShell/issues/7046
+            persinv = np.linalg.inv(pers_m)
+
+            dx = (2.0 * coord[0] / region.width) - 1.0
+            dy = (2.0 * coord[1] / region.height) - 1.0
+
+            origin_start = (persinv[:3, 0] * dx) + (persinv[:3, 1] * dy) + persinv[:3, 3]
+
+            if clamp != 0.0:
+                if rv3d.view_perspective != "CAMERA":
+                    origin_offset = persinv[:3, 2].copy()  # column 2
+                    if clamp is not None:
+                        c = float(clamp)
+                        if c < 0.0:
+                            origin_offset = -origin_offset
+                            c = -c
+                        length = np.linalg.norm(origin_offset)
+                        if length > c and length > 0.0:
+                            origin_offset = (origin_offset / length) * c
+                    origin_start = origin_start - origin_offset
+
+        return Vector(origin_start)
+
+    @classmethod
+    def location_3d_to_region_2d_np(
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, *, default=None
+    ) -> Vector:
+        """
+        Numpy version of view3d_utils.location_3d_to_region_2d
+        Return the *region* relative 2d location of a 3d position.
+
+        > region: region of the 3D viewport, typically bpy.context.region.
+        > rv3d: 3D region data, typically bpy.context.space_data.region_3d.
+        > coord: 2d coordinates relative to the region:
+           (event.mouse_region_x, event.mouse_region_y) for example.
+        < returns a 2d location.
+        """
+        pt = np.array((coord[0], coord[1], coord[2], 1.0), dtype=np.float64)
+        view_m = np.array(rv3d.view_matrix)
+        window_m = np.array(rv3d.window_matrix)
+        pers_m = window_m @ view_m
+        prj = pers_m.dot(pt)  # 4-vector
+        w = prj[3]
+        if w > 0.0:
+            width_half = region.width / 2.0
+            height_half = region.height / 2.0
+            x = width_half + width_half * (prj[0] / w)
+            y = height_half + height_half * (prj[1] / w)
+            return Vector((float(x), float(y)))
+        return default
