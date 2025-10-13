@@ -155,7 +155,7 @@ struct TypeEncoder_t<parameter_pack<Types...>> {
 using TypeEncoder = TypeEncoder_t<type_variant_parameter_pack>;
 
 struct IFC_PARSE_API MutableAttributeValue {
-    int name_;
+    uint32_t name_;
     uint8_t index_;
 };
 

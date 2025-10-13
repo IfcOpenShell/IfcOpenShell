@@ -35,7 +35,7 @@ namespace {
             parse_context pc;
             storage->tokens->Next();
             storage->load(-1, nullptr, pc, -1);
-            return pc.construct(-1, *storage->references_to_resolve, nullptr, s, -1);
+            return pc.construct(boost::none, *storage->references_to_resolve, nullptr, s, -1);
         } else {
             // std::unreachable();
             return IfcEntityInstanceData(in_memory_attribute_storage(10));

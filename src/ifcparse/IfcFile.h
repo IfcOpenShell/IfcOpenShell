@@ -88,12 +88,11 @@ IFC_PARSE_API filetype guess_file_type(const std::string& fn);
 
 class IFC_PARSE_API InstanceStreamer {
 private:
-    IfcSpfStream* stream_;
+    FileReader* stream_;
     IfcSpfLexer* lexer_;
     IfcSpfHeader* header_;
     boost::circular_buffer<Token> token_stream_;
     const IfcParse::schema_definition* schema_;
-    const IfcParse::declaration* ifcroot_type_;
     IfcParse::impl::in_memory_file_storage storage_;
     IfcParse::file_open_status good_ = IfcParse::file_open_status::SUCCESS;
     int progress_;
@@ -104,7 +103,7 @@ public:
 	bool coerce_attribute_count = true;
 
     operator bool() const {
-        return good_ && !lexer_->stream->eof;
+        return good_ && !lexer_->stream->eof();
     }
 
     IfcParse::file_open_status status() const {
@@ -131,7 +130,13 @@ public:
         return storage_.steal_instances();
     }
 
-    InstanceStreamer(const std::string& fn);
+    bool has_semicolon() const;
+
+	void push_page(const std::string& page);
+
+    InstanceStreamer();
+
+    InstanceStreamer(const std::string& fn, bool mmap=false);
 
     InstanceStreamer(void* data, int length);
 
@@ -201,14 +206,44 @@ private:
 
   public:
 #ifdef USE_MMAP
-    IfcFile(const std::string& path, bool mmap = false);
-#else
-    IfcFile(const std::string& path, filetype ty=FT_AUTODETECT, bool readonly=false);
+    /// <summary>
+	/// Constructs an IfcFile object from a file path, optionally using memory-mapped I/O, only supports IFC-SPF files.
+    /// </summary>
+    /// <param name="path">UTF-8 file path to an IFC-SPF file</param>
+    /// <param name="mmap">Whether to use memory-mapped I/O</param>
+    IfcFile(const std::string& path, bool mmap);
 #endif
+    /// <summary>
+	/// Constructs an IfcFile object from a file path, supports IFC-SPF and the IfcOpenShell-specific RocksDB format.
+    /// </summary>
+    /// <param name="path">UTF-8 file path to an IFC-SPF file or RocksDB database directory</param>
+    /// <param name="ty">File type of the path</param>
+    /// <param name="readonly">Whether to open in read-only mode, only supported on RocksDB databases</param>
+    IfcFile(const std::string& path, filetype ty=FT_AUTODETECT, bool readonly=false);
+
+    /// <summary>
+	/// Constructs an IfcFile object from a stream containing IFC-SPF data.
+    /// </summary>
     IfcFile(std::istream& stream, int length);
+
+    /// <summary>
+	/// Constructs an IfcFile object from a memory buffer containing IFC-SPF data.
+    /// </summary>
     IfcFile(void* data, int length);
-    IfcFile(IfcParse::IfcSpfStream* stream);
-    // @nb path is only used in rocksdb mode, for spf file is in-memory only until write() is called
+
+    /// <summary>
+    /// Constructs an IfcFile object from a given IFC SPF stream.
+    /// </summary>
+    /// <param name="stream">A pointer to an IfcParse::FileReader object representing the input IFC SPF data stream.</param>
+    IfcFile(IfcParse::FileReader* stream);
+
+    /// <summary>
+    /// Constructs an IfcFile object with the specified schema, file type, and file path.
+    /// @nb path is only used in rocksdb mode, for spf file is in-memory only until write() is called
+    /// </summary>
+    /// <param name="schema">Pointer to the schema definition to use. Defaults to the IFC4 schema if not specified.</param>
+    /// <param name="ty">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
+    /// <param name="path">The file system path to the IFC file. Defaults to an empty string.</param>
     IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"), filetype ty = FT_AUTODETECT, const std::string& path = "");
 
     ~IfcFile();
