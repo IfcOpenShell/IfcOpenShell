@@ -93,7 +93,7 @@ class Raycast(bonsai.core.tool.Raycast):
                 return None
 
         for v in bbox:
-            coord_2d = view3d_utils.location_3d_to_region_2d(context.region, context.space_data.region_3d, v)
+            coord_2d = tool.Cad.location_3d_to_region_2d_np(context.region, context.space_data.region_3d, v)
             if coord_2d is not None:
                 transposed_bbox.append(coord_2d)
 
@@ -180,8 +180,9 @@ class Raycast(bonsai.core.tool.Raycast):
         if not mouse_pos:
             mouse_pos = event.mouse_region_x, event.mouse_region_y
 
-        view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, mouse_pos)
-        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, mouse_pos)
+        view_vector = tool.Cad.region_2d_to_vector_3d_np(region, rv3d, mouse_pos)
+        ray_origin = tool.Cad.region_2d_to_origin_3d_np(region, rv3d, mouse_pos, clamp=10) # TODO clamp is hardcoded but might be necessary to adapt
+
         ray_target = ray_origin + view_vector
         ray_direction = ray_target - ray_origin
 
@@ -247,7 +248,7 @@ class Raycast(bonsai.core.tool.Raycast):
         snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
         try:
-            loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
+            loc = tool.Cad.region_2d_to_location_3d_np(region, rv3d, mouse_pos, ray_direction)
         except:
             loc = Vector((0, 0, 0))
 
@@ -342,7 +343,7 @@ class Raycast(bonsai.core.tool.Raycast):
         snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
         try:
-            loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
+            loc = tool.Cad.region_2d_to_location_3d_np(region, rv3d, mouse_pos, ray_direction)
         except:
             loc = Vector((0, 0, 0))
 
@@ -401,8 +402,8 @@ class Raycast(bonsai.core.tool.Raycast):
             default_container_elevation = 0.0
         intersection = Vector((0, 0, default_container_elevation))
         try:
-            loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
-            intersection = mathutils.geometry.intersect_line_plane(ray_target, loc, plane_origin, plane_normal)
+            loc = tool.Cad.region_2d_to_location_3d_np(region, rv3d, mouse_pos, ray_direction)
+            intersection = tool.Cad.intersect_edge_plane_v2(ray_target, loc, plane_origin, plane_normal)
         except:
             intersection = Vector((0, 0, default_container_elevation))
 
@@ -420,7 +421,7 @@ class Raycast(bonsai.core.tool.Raycast):
         snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
         try:
-            loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
+            loc = tool.Cad.region_2d_to_location_3d_np(region, rv3d, mouse_pos, ray_direction)
         except:
             loc = Vector((0, 0, 0))
 
