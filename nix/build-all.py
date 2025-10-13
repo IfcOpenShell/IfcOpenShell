@@ -379,6 +379,23 @@ else:
     targets = set(dependency_tree.keys())
 
 targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
+if WASM:
+    SKIP_TARGETS_FOR_WASM = {
+        "hdf5",
+        "rocksdb",
+        "opencollada",
+        "swig",
+        "pcre",
+        "pcre2",
+        "IfcGeom",
+        "IfcConvert",
+        "IfcGeomServer",
+    }
+    SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
+    skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
+    if skip_targets:
+        cecho(f"Skipping targets for wasm build: {', '.join(sorted(skip_targets))}", YELLOW)
+    targets.difference_update(skip_targets)
 
 print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t)))))
 
@@ -387,7 +404,10 @@ yacc = "yacc"  # Used during swig building process, installed with `bison` on De
 missing_commands: "list[str]" = []
 required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz]
 if "wasm" in flags:
-    required_commands.remove(yacc)  # yacc not needed for wasm builds
+    # Skip swig build for WASM.
+    required_commands.append("swig")
+    required_commands.remove(yacc)
+
 for cmd in required_commands:
     if which(cmd) is None:
         missing_commands.append(cmd)
@@ -1382,7 +1402,7 @@ if "rocksdb" in targets:
         ]
     )
 
-if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets):
+if not WASM and (not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets)):
     logger.info("\rConfiguring executables...")
 
     exec_args = [
