@@ -229,8 +229,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :ccache
 set DEPENDENCY_NAME=ccache
 set CCACHE_VERSION=4.12.1
-set CCACHE_INSTALL_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%-%CCACHE_VERSION%-windows-x86_64
-set CCACHE_ZIP=ccache-%CCACHE_VERSION%-windows-x86_64.zip
+set CCACHE_INSTALL_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%.%CCACHE_VERSION%\tools
 set DEPENDENCY_DIR=%CCACHE_INSTALL_DIR%
 
 where ccache >nul 2>&1
@@ -245,12 +244,7 @@ IF EXIST "%DEPENDENCY_DIR%" (
     goto :proj
 )
 
-cd %DEPS_DIR%
-call :DownloadFile ^
-    https://github.com/ccache/ccache/releases/download/v%CCACHE_VERSION%/%CCACHE_ZIP% ^
-    "%DEPS_DIR%" %CCACHE_ZIP%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %CCACHE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+"%NUGET_EXE%" install ccache -Version %CCACHE_VERSION% -OutputDirectory "%DEPS_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :proj
