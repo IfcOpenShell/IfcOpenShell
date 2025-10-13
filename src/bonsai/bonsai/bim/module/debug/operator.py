@@ -818,7 +818,7 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
 class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_identical_objects"
     bl_label = "Merge Identical Objects"
-    bl_description = "For materials currently only IfcMaterials are supported"
+    bl_description = "Merge identical IFC entities (that match all attributes). Hold Shift to merge by name/identification attribute only"
     bl_options = {"REGISTER", "UNDO"}
 
     object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
@@ -826,8 +826,23 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
         items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
 
+    by_name_or_identification_only: bpy.props.BoolProperty(
+        name="By Name/Identification Only",
+        description="Merge based only on Name or Identification attribute, ignoring other properties",
+        default=False,
+    )
+
     if TYPE_CHECKING:
         object_type: tool.Debug.PurgeMergeObjectType
+
+    def invoke(self, context, event):
+        # Check if shift key is pressed
+        if event.shift:
+            self.by_name_or_identification_only = True
+        else:
+            self.by_name_or_identification_only = False
+
+        return self.execute(context)
 
     def _execute(self, context):
         object_type: str = self.object_type
@@ -835,9 +850,12 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, f"Unsupported object type {object_type}.")
             return {"CANCELLED"}
 
-        merged_data = tool.Debug.merge_identical_objects(object_type)
+        merged_data = tool.Debug.merge_identical_objects(
+            object_type, by_name_or_identification_only=self.by_name_or_identification_only
+        )
         plural_object_type = f"{object_type.lower().replace('_', ' ')}s"
         if merged_data:
+            merge_mode = " by name/identification" if self.by_name_or_identification_only else ""
             for element_type, element_names in merged_data.items():
                 print(f"- {element_type}:")
                 for name in element_names:
@@ -846,7 +864,8 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
         merged = sum(len(v) for v in merged_data.values())
 
         msg = " See system console for details." if merged else ""
-        self.report({"INFO"}, f"{merged} identical {plural_object_type} were merged.{msg}")
+        merge_mode = " (by name/identification)" if self.by_name_or_identification_only else ""
+        self.report({"INFO"}, f"{merged} identical {plural_object_type} were merged{merge_mode}.{msg}")
 
         if merged == 0:
             return

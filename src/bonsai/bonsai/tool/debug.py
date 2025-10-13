@@ -33,7 +33,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 from collections import defaultdict
-from typing import Literal, TYPE_CHECKING, assert_never
+from typing import Literal, TYPE_CHECKING, assert_never, Union
 from collections.abc import Iterable
 
 if TYPE_CHECKING:
@@ -136,10 +136,17 @@ class Debug(bonsai.core.tool.Debug):
             "PERSON",
             "PERSON_AND_ORGANIZATION",
         ],
+        by_name_or_identification_only: bool = False,
     ) -> dict[str, list[str]]:
         """Merge identical objects.
 
         Note that Styles UI (or other UI) should be updated manually after using this method.
+
+        Args:
+            object_type: The type of object to merge
+            by_name_or_identification_only: If True, merge based only on Name attribute (or equivalent identifier).
+                         For PERSON, uses Identification. For APPLICATION, uses ApplicationFullName.
+                         For PERSON_AND_ORGANIZATION, uses combination of person and organization identifiers.
         """
 
         def get_hash(element: ifcopenshell.entity_instance) -> int:
@@ -151,6 +158,25 @@ class Debug(bonsai.core.tool.Debug):
                 data["ThePerson"] = element.ThePerson.id()
                 data["TheOrganization"] = element.TheOrganization.id()
             return hash(json.dumps(data, sort_keys=True))
+
+        def get_name_key(element: ifcopenshell.entity_instance) -> str:
+            """Get key based on name/identifier attribute for the given object type"""
+            if object_type == "STYLE":
+                return element.Name if element.Name else ""
+            elif object_type == "MATERIAL":
+                return element.Name if element.Name else ""
+            elif object_type == "ORGANIZATION":
+                return element.Name if element.Name else ""
+            elif object_type == "APPLICATION":
+                return element.ApplicationFullName if element.ApplicationFullName else ""
+            elif object_type == "PERSON":
+                return element.Identification if element.Identification else ""
+            elif object_type == "PERSON_AND_ORGANIZATION":
+                person_id = element.ThePerson.Identification if element.ThePerson.Identification else ""
+                org_name = element.TheOrganization.Name if element.TheOrganization.Name else ""
+                return f"{person_id}|{org_name}"
+            else:
+                assert_never(object_type)
 
         ifc_file = tool.Ifc.get()
         merged_element_types: dict[str, list[str]] = {}
@@ -179,22 +205,35 @@ class Debug(bonsai.core.tool.Debug):
         for element_type in element_types:
             elements = ifc_file.by_type(element_type, include_subtypes=False)
 
-            # Calculate hashes.
-            hash_to_elements: defaultdict[int, list[ifcopenshell.entity_instance]] = defaultdict(list)
-            for element in elements:
-                # Except for styles, ignore unnamed elements as they may be not safe to merge
-                merge_optional_names = ("STYLE", "PERSON")
-                not_optional_name = ("APPLICATION", "ORGANIZATION")
-                has_no_name = ("PERSON_AND_ORGANIZATION",)
-                if (
-                    object_type not in merge_optional_names
-                    and object_type not in not_optional_name
-                    and object_type not in has_no_name
-                    and not element.Name
-                ):
-                    continue
-                element_hash = get_hash(element)
-                hash_to_elements[element_hash].append(element)
+            # Calculate hashes or name keys.
+            hash_to_elements: defaultdict[Union[int, str], list[ifcopenshell.entity_instance]]
+
+            if by_name_or_identification_only:
+                # Group by name/identifier only
+                hash_to_elements = defaultdict(list)
+                for element in elements:
+                    name_key = get_name_key(element)
+                    # Skip elements without a valid identifier
+                    if not name_key:
+                        continue
+                    hash_to_elements[name_key].append(element)
+            else:
+                # Group by full hash
+                hash_to_elements = defaultdict(list)
+                for element in elements:
+                    # Except for styles, ignore unnamed elements as they may be not safe to merge
+                    merge_optional_names = ("STYLE", "PERSON")
+                    not_optional_name = ("APPLICATION", "ORGANIZATION")
+                    has_no_name = ("PERSON_AND_ORGANIZATION",)
+                    if (
+                        object_type not in merge_optional_names
+                        and object_type not in not_optional_name
+                        and object_type not in has_no_name
+                        and not element.Name
+                    ):
+                        continue
+                    element_hash = get_hash(element)
+                    hash_to_elements[element_hash].append(element)
 
             merged_elements_names: list[str] = []
             # Merge elements.
