@@ -818,7 +818,12 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
 class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_identical_objects"
     bl_label = "Merge Identical Objects"
-    bl_description = "Merge identical IFC entities (that match all attributes). Hold Shift to merge by name/identification attribute only"
+    bl_description = (
+        "Merge identical IFC objects (that match all attributes).\n"
+        "\n"
+        "SHIFT + CLICK to merge by name/identification attribute only.\n"
+        "Merges names with number suffix, as well (ex: foo, foo.001, foo.002)\n"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
