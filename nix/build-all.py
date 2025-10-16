@@ -51,6 +51,13 @@ Used environment variables:
     - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (IFC2X3; IFC4; IFC4X3_ADD2) - to be supplied as `2x3;4`
     - ``USE_OCCT`` - whether to use official Open CASCADE instead of Community Edition
     (`true` by default, any other value is considered `false`)
+    - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
+    used to deduce `PYMAJOR`, `PYMINOR`, `PYMICRO`, `TARGETINSTALLDIR`, `PYTHONINCLUDE`,
+    `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
+    Allows to build wasm without pyodide build environment, which can be useful for debugging build issues.
+    Example value: 'pyodide/cpython/installs/python-3.13.2'
+    - ``WASM_TOOLCHAIN_FILE`` - path to emscripten toolchain file from pyodide ('Emscripten.cmake')
+    needed only if ``WASM_PYTHON_PATH`` is provided.
     - ``ADD_COMMIT_SHA`` - if defined with any non-empty value then
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
 
@@ -209,7 +216,27 @@ MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
 assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
 
 WASM = "wasm" in flags
+"""Build WASM outside pyodide build environment."""
+WASM_DEBUG = False
 if WASM:
+    if "WASM_PYTHON_PATH" in os.environ:
+        wasm_python_path = os.environ["WASM_PYTHON_PATH"]
+        # Deduce version from path, assuming format .../python-X.Y.Z
+        version_match = re.search(r"python-(\d+)\.(\d+)\.(\d+)", wasm_python_path)
+        if version_match:
+            os.environ["PYMAJOR"] = version_match.group(1)
+            os.environ["PYMINOR"] = version_match.group(2)
+            os.environ["PYMICRO"] = version_match.group(3)
+        os.environ["TARGETINSTALLDIR"] = wasm_python_path
+        os.environ["PYTHONINCLUDE"] = (
+            f"{wasm_python_path}/include/python{os.environ['PYMAJOR']}.{os.environ['PYMINOR']}"
+        )
+        os.environ["SIDE_MODULE_CFLAGS"] = ""
+        # Required, otherwise library will compile as .a, not .so.
+        os.environ["SIDE_MODULE_LDFLAGS"] = "-s SIDE_MODULE=1"
+        # We're outside pyodide build environment, so need to provide toolchain file ourselves.
+        assert "WASM_TOOLCHAIN_FILE" in os.environ, "WASM_TOOLCHAIN_FILE must be set when WASM_PYTHON_PATH is provided"
+        WASM_DEBUG = True
     required_vars = (
         "PYMAJOR",
         "PYMINOR",
@@ -1408,6 +1435,9 @@ if "IfcOpenShell-Python" in targets:
 
     if "wasm" in flags:
         ADDITIONAL_ARGS = "-Wl,-undefined,suppress -sSIDE_MODULE=2"
+        # Override CMAKE_TOOLCHAIN_FILE because by default emscripten doesn't support building shared binaries.
+        if WASM_DEBUG:
+            os.environ["CMAKE_TOOLCHAIN_FILE"] = os.environ["WASM_TOOLCHAIN_FILE"]
 
     # NOTE: We don't use `CXXFLAGS` for wrappers, so wrapper is compiled with different flags
     # (e.g. ` -fdata-sections` is missing, which is set by default for executables)
