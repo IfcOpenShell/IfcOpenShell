@@ -1308,15 +1308,19 @@ def get_cmake_args_prefix_path(additional_paths: "Sequence[str]" = ()) -> "list[
     args_prefix_path = cmake_args_prefix_path.copy()
     args_prefix_path.extend(additional_paths)
     prefix_path = ";".join(args_prefix_path)
-    return [f"-DCMAKE_PREFIX_PATH={prefix_path}"]
+    if WASM:
+        # `emcmake` is disabling search in PATH, so we provide root paths instead.
+        # Provide '/' to PATH, so it will be combined with provided root paths,
+        # otherwise, depending on environment, it might not search the root path itself.
+        return [f"-DCMAKE_FIND_ROOT_PATH={prefix_path}", "-DCMAKE_PREFIX_PATH=//"]
+    else:
+        return [f"-DCMAKE_PREFIX_PATH={prefix_path}"]
 
 
 if "wasm" in flags:
     # Boost is built by the build script so should not be found
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
-    # set Eigen3 path for WASM to avoid find_package issues
-    cmake_args.append(f"-DEIGEN_DIR={DEPS_DIR}/install/eigen-install-{EIGEN_VERSION}/include/eigen3")
 
 schemas = os.environ.get("IFCOS_SCHEMAS")
 if schemas:
@@ -1326,26 +1330,9 @@ if "cgal" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}")
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/gmp-{GMP_VERSION}")
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}")
-    if "wasm" in flags:
-        cmake_args.extend(
-            [
-                f"-DCGAL_INCLUDE_DIR={DEPS_DIR}/install/cgal-{CGAL_VERSION}/include",
-                f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-                f"-DGMP_LIBRARY_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib",
-                f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
-                f"-DMPFR_LIBRARY_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib",
-            ]
-        )
 
 if "occ" in targets and USE_OCCT:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
-    if "wasm" in flags:
-        cmake_args.extend(
-            [
-                f"-DOCC_INCLUDE_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade",
-                f"-DOCC_LIBRARY_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}/lib",
-            ]
-        )
 
 elif "occ" in targets:
     # We don't support find_package for OCE.
@@ -1366,13 +1353,6 @@ else:
 
 if "libxml2" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}")
-    if "wasm" in flags:
-        cmake_args.extend(
-            [
-                f"-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
-                f"-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
-            ]
-        )
 
 if "hdf5" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}")

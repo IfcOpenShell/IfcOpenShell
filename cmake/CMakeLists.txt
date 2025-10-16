@@ -455,8 +455,11 @@ if(NOT MINIMAL_BUILD)
     clear_wasm_sysroot()
     if(IFCXML_SUPPORT)
         if((NOT LIBXML2_INCLUDE_DIR AND NOT LIBXML2_LIBRARIES))
-            # First try config mode (probably works with vcpkg, Conan, macOS brew installs, but not on ubuntu 22.04?)
-            find_package(LibXml2 QUIET CONFIG)
+            # First try config mode (probably works with vcpkg, Conan, macOS brew installs, but not on ubuntu 22.04)
+            # CONFIG is provided using root path, so no need to clear sysroot here.
+            restore_wasm_sysroot()
+            find_package(LibXml2 REQUIRED CONFIG)
+            clear_wasm_sysroot()
 
             if(NOT LibXml2_FOUND)
                 # Fallback to CMake's builtin FindLibXml2 module (works on Ubuntu)
