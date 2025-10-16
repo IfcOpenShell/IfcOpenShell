@@ -1409,7 +1409,7 @@ if "IfcOpenShell-Python" in targets:
         ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
 
     if "wasm" in flags:
-        ADDITIONAL_ARGS = f"-Wl,-undefined,suppress -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper"
+        ADDITIONAL_ARGS = "-Wl,-undefined,suppress -sSIDE_MODULE=2"
 
     # NOTE: We don't use `CXXFLAGS` for wrappers, so wrapper is compiled with different flags
     # (e.g. ` -fdata-sections` is missing, which is set by default for executables)
