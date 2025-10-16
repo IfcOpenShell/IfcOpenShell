@@ -88,6 +88,9 @@ set(SWIG_MODULE_ifcopenshell_wrapper_EXTRA_FLAGS "-interface" "_ifcopenshell_wra
 
 swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
 SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
+if (WASM_BUILD)
+    target_link_options(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PRIVATE "-sEXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper")
+endif()
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
 SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
