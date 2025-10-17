@@ -3,6 +3,7 @@ package:
   version: 0.8.0
 
 source:
+  # meta.yaml is placed as `packages/ifcopenshell/meta.yaml`.
   path: ../../IfcOpenShell
 
 build:
