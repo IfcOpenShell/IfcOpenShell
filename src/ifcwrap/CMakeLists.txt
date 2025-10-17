@@ -92,7 +92,15 @@ set(SWIG_MODULE_ifcopenshell_wrapper_EXTRA_FLAGS "-interface" "_ifcopenshell_wra
 swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
 SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if (WASM_BUILD)
-    target_link_options(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PRIVATE "-sEXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper")
+    # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
+    # Since currently libIfcGeom.a seems to be linked twice it results in duplicated symbols and compilation errors.
+    # Possibly in the future we can clean up linked libs and try `=1`.
+    # SIDE_MODULE=2 - add to .so only explicitly exported functions (`-s EXPORTED_FUNCTIONS).
+    # Have to provide it here to override possible `=1` coming from pyodide.
+    target_link_options(
+        ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}
+        PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2"
+    )
 endif()
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
