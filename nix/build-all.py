@@ -1436,7 +1436,7 @@ if "IfcOpenShell-Python" in targets:
         ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
 
     if "wasm" in flags:
-        ADDITIONAL_ARGS = "-Wl,-undefined,suppress -sSIDE_MODULE=2"
+        ADDITIONAL_ARGS = "-Wl,-undefined,suppress"
         # Override CMAKE_TOOLCHAIN_FILE because by default emscripten doesn't support building shared binaries.
         if WASM_DEBUG:
             os.environ["CMAKE_TOOLCHAIN_FILE"] = os.environ["WASM_TOOLCHAIN_FILE"]
