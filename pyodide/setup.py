@@ -1,3 +1,6 @@
+# setup.py is getting deprecated, but we still use it,
+# because `tool.setuptools.ext-modules` is still experimental in pyproject.toml
+# and we need it to get the wheel suffix right.
 from setuptools import setup, Extension, find_packages
 
 setup(
