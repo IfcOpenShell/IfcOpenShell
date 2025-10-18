@@ -104,7 +104,16 @@ class IfcExporter:
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = self.file.by_id(tool.Blender.get_object_bim_props(obj).ifc_definition_id)
-        if tool.Geometry.is_scaled(obj):
+        # Handle camera scales specially
+        if obj.type == "CAMERA":
+            # Check if this is a reflected ceiling plan camera
+            camera = tool.Ifc.get_entity(obj)
+            if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
+                # Ensure reflected ceiling cameras have the correct scale
+                if obj.scale != (-1, -1, -1):
+                    obj.scale = (-1, -1, -1)
+            # Skip all other scale handling for cameras
+        elif tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
             # update_representation might not apply scale if the object has openings
             # reset it, so let user know that the scale wasn't saved.

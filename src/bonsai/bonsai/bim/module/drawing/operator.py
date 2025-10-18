@@ -2339,10 +2339,19 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         camera = context.scene.camera
         assert camera
         camera_props = tool.Drawing.get_camera_props(camera)
+        # Check if this is a reflected ceiling camera and preserve its scale
+        camera_element = tool.Ifc.get_entity(camera)
+        is_reflected = False
+        if camera_element:
+            is_reflected = ifcopenshell.util.element.get_pset(camera_element, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW"
+            if is_reflected and camera.scale != (-1, -1, -1):
+                camera.scale = (-1, -1, -1)
+
         if camera_props.update_representation(camera.matrix_world):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
-        # See 6452 and 6478.
-        # bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
+            # Restore the scale after update if needed
+            if is_reflected:
+                camera.scale = (-1, -1, -1)
 
         return {"FINISHED"}
 
