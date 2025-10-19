@@ -273,18 +273,16 @@ class Cost(bonsai.core.tool.Cost):
                 return
         props = cls.get_cost_props()
         props.cost_item_type_products.clear()
-        # TODO implement process and resource types
-        # props.cost_item_processes.clear()
-        # props.cost_item_resources.clear()
+        props.cost_item_processes.clear()
+        props.cost_item_resources.clear()
         for rel in cost_item.Controls or []:
             for related_object in rel.RelatedObjects:
                 if related_object.is_a("IfcTypeProduct"):
                     new = props.cost_item_type_products.add()
-                # TODO implement process and resource types
-                # elif related_object.is_a("IfcProcess"):
-                #    new = props.cost_item_processes.add()
-                # elif related_object.is_a("IfcResource"):
-                #    new = props.cost_item_resources.add()
+                elif related_object.is_a("IfcProcess"):
+                    new = props.cost_item_processes.add()
+                elif related_object.is_a("IfcResource"):
+                    new = props.cost_item_resources.add()
                 new.ifc_definition_id = related_object.id()
                 new.name = related_object.Name or "Unnamed"
 
