@@ -165,7 +165,7 @@ namespace IfcParse {
     }
 }
 
-#if IFOPSH_WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
 
 namespace impl {
 
