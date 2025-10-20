@@ -267,9 +267,11 @@ if platform.system() == "Darwin":
 
 IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
 
-CMAKE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "cmake"))
+SCRIPT_PATH = Path(__file__).parent
+REPO_PATH = SCRIPT_PATH.parent
+CMAKE_DIR = (REPO_PATH / "cmake").resolve().__str__()
 
-build_dir = os.environ.get("BUILD_DIR", os.path.join(os.path.dirname(__file__), "..", "build"))
+build_dir = os.environ.get("BUILD_DIR", (REPO_PATH / "build").__str__())
 
 
 if WASM:
@@ -714,7 +716,7 @@ def build_dependency(
         if isinstance(patch, str):
             patch = [patch]
         for p in patch:
-            patch_abs = os.path.abspath(os.path.join(os.path.dirname(__file__), p))
+            patch_abs = (SCRIPT_PATH / p).absolute().__str__()
             if os.path.exists(patch_abs):
                 try:
                     run(["patch", "-p1", "--batch", "--forward", "-i", patch_abs], cwd=extract_dir)
@@ -1502,15 +1504,8 @@ if "IfcOpenShell-Python" in targets:
             + get_cmake_args_prefix_path(prefix_paths)
             + [
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
-                # *([f"-DPYTHON_MODULE_INSTALL_DIR={os.environ['PYTHONPATH']}/ifcopenshell"] if "wasm" in flags else []),
-                *(
-                    [
-                        "-DPYTHON_MODULE_INSTALL_DIR="
-                        + os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "package"))
-                    ]
-                    if "wasm" in flags
-                    else []
-                ),
+                # Needed because pyodide is expecting setup.py to be in the root.
+                *([f"-DPYTHON_MODULE_INSTALL_DIR={REPO_PATH}"] * WASM),
                 f"-DPYTHON_LIBRARY={python_library}",
                 f"-DPYTHON_INCLUDE_DIR={python_include}",
                 f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
@@ -1555,6 +1550,8 @@ if "IfcOpenShell-Python" in targets:
             os.environ["PYTHONINCLUDE"],
             None,
         )
+        # Copy setup.py where pyodide build system expects it.
+        shutil.copy(REPO_PATH / "pyodide" / "setup.py", REPO_PATH)
 
     elif USE_CURRENT_PYTHON_VERSION:
         python_info = sysconfig.get_paths()
