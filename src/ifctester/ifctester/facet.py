@@ -206,6 +206,12 @@ class Entity(Facet):
             except:
                 # If the user has specified a class that doesn't exist in the version
                 results = []
+                if not self.name.endswith("TYPE"):
+                    try:
+                        for element_type in ifc_file.by_type(f"{self.name}Type"):
+                            results.extend(ifcopenshell.util.element.get_types(element_type))
+                    except:
+                        pass
         else:
             results = []
             ifc_classes = [t for t in ifc_file.wrapped_data.types() if t.upper() == self.name]
@@ -223,12 +229,25 @@ class Entity(Facet):
         is_pass = inst.is_a().upper() == self.name
         reason = None
 
-        if not is_pass:
+        if (
+            not is_pass
+            and inst.file.schema == "IFC2X3"
+            and not self.name.endswith("TYPE")
+            and (element_type := ifcopenshell.util.element.get_type(inst))
+        ):
+            is_pass = element_type.is_a().upper() == f"{self.name}TYPE"
+            reason = {"type": "NAME", "actual": element_type.is_a().upper()[:-4]}
+        elif not is_pass:
             reason = {"type": "NAME", "actual": inst.is_a().upper()}
 
         if is_pass and self.predefinedType:
-            predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
-            is_pass = predefined_type == self.predefinedType
+            if self.predefinedType == "USERDEFINED":
+                is_pass = ifcopenshell.util.element.is_userdefined_type(inst)
+                if not is_pass:
+                    predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
+            else:
+                predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
+                is_pass = predefined_type == self.predefinedType
 
             if not is_pass:
                 reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}

@@ -565,6 +565,40 @@ def get_predefined_type(element: ifcopenshell.entity_instance) -> Union[str, Non
     return predefined_type
 
 
+def is_userdefined_type(element: ifcopenshell.entity_instance) -> bool:
+    """Checks if the predefined type is userdefined
+
+    :param element: The IFC Element entity
+    :return: True if userdefined
+
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.by_type("IfcWall")[0]
+        is_userdefined_type = ifcopenshell.util.element.is_userdefined_type(element)
+    """
+    if element_type := get_type(element):
+        predefined_type = getattr(element_type, "PredefinedType", None)
+        if predefined_type == "USERDEFINED":
+            return True
+        elif not predefined_type:
+            predefined_type = getattr(element_type, "ElementType", ...)
+            if predefined_type == ...:
+                predefined_type = getattr(element_type, "ProcessType", None)
+            if predefined_type:
+                return True
+        if predefined_type and predefined_type != "NOTDEFINED":
+            return False
+
+    predefined_type = getattr(element, "PredefinedType", None)
+    if predefined_type == "USERDEFINED":
+        return True
+    elif not predefined_type:
+        return bool(getattr(element, "ObjectType", None))
+    return False
+
+
 def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """Retrieves the construction type element of an element occurrence.
 

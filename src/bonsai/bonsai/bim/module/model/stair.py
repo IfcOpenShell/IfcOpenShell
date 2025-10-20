@@ -188,7 +188,8 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Model.get_stair_props(obj)
         ifc_file = tool.Ifc.get()
 
-        stair_data = props.get_props_kwargs(convert_to_project_units=True)
+        # Use the special method that includes custom_tread_lock for IFC storage
+        stair_data = props.get_props_kwargs_for_ifc_export(convert_to_project_units=True)
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_Stair")
@@ -241,7 +242,8 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         assert element
         props = tool.Model.get_stair_props(obj)
 
-        data = props.get_props_kwargs(convert_to_project_units=True)
+        # Use the special method that includes custom_tread_lock for IFC storage
+        data = props.get_props_kwargs_for_ifc_export(convert_to_project_units=True)
         props.is_editing = False
         regenerate_stair_mesh(obj)
         tool.Model.add_body_representation(obj)

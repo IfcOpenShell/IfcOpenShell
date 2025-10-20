@@ -209,6 +209,25 @@ class Drawing(bonsai.core.tool.Drawing):
         return obj
 
     @classmethod
+    def get_annotation_drawing(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
+        for rel in element.HasAssignments:
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
+                for e in rel.RelatedObjects:
+                    if e.ObjectType == "DRAWING":
+                        return e
+
+    @classmethod
+    def exclude_annotation_from_drawing(cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance) -> None:
+        pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
+        exclude = ifcopenshell.util.element.get_property_definition(pset, prop="Exclude") or ""
+        if exclude:
+            exclude += "+"
+        exclude += element.GlobalId
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": exclude})
+
+    @classmethod
     def ensure_annotation_in_drawing_plane(
         cls, obj: bpy.types.Object, camera: Optional[bpy.types.Object] = None
     ) -> None:
@@ -218,11 +237,7 @@ class Drawing(bonsai.core.tool.Drawing):
             entity = tool.Ifc.get_entity(obj)
             if not entity:
                 return
-            for rel in entity.HasAssignments:
-                if rel.is_a("IfcRelAssignsToGroup"):
-                    for e in rel.RelatedObjects:
-                        if e.ObjectType == "DRAWING":
-                            return tool.Ifc.get_object(e)
+            return tool.Ifc.get_object(cls.get_annotation_drawing(entity))
 
         if not camera:
             camera = get_camera_from_annotation_object(obj) or bpy.context.scene.camera
@@ -1401,7 +1416,10 @@ class Drawing(bonsai.core.tool.Drawing):
         cls, drawing: ifcopenshell.entity_instance
     ) -> list[ifcopenshell.entity_instance]:
         elements = []
-        existing_references = cls.get_group_elements(cls.get_drawing_group(drawing))
+        existing_references = set(cls.get_group_elements(cls.get_drawing_group(drawing)))
+        if exclude := ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "Exclude"):
+            existing_references.update(ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), exclude))
+
         for element in tool.Ifc.get().by_type("IfcAnnotation"):
             if element in existing_references or element == drawing:
                 continue
@@ -1411,8 +1429,13 @@ class Drawing(bonsai.core.tool.Drawing):
                     "GlobalReferencing", False
                 ):
                     elements.append(element)
-        for element in tool.Ifc.get().by_type("IfcGridAxis"):
-            elements.append(element)
+        for element in tool.Ifc.get().by_type("IfcGrid"):
+            if element in existing_references:
+                continue
+            for axis in element.UAxes + element.VAxes + (element.WAxes or tuple()):
+                if axis in existing_references:
+                    continue
+                elements.append(element)
         target_view = tool.Drawing.get_drawing_target_view(drawing)
         if target_view in ("SECTION_VIEW", "ELEVATION_VIEW"):
             for element in tool.Ifc.get().by_type("IfcBuildingStorey"):
@@ -2568,3 +2591,10 @@ class Drawing(bonsai.core.tool.Drawing):
         ifcopenshell.api.document.remove_reference(tool.Ifc.get(), reference=reference)
 
         tool.Drawing.import_sheets()
+
+    @classmethod
+    def hide_all_drawing_collections(cls) -> None:
+        for element in tool.Ifc.get().by_type("IfcAnnotation"):
+            if element.ObjectType == "DRAWING" and (obj := tool.Ifc.get_object(element)):
+                print('found element', element)
+                tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True

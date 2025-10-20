@@ -40,7 +40,7 @@ from bpy.types import PropertyGroup
 from bonsai.bim.module.light.data import SolarData
 from bonsai.bim.module.light.decorator import SolarDecorator
 
-sun_position = tool.Blender.get_sun_position_addon()
+sun_position = tool.Blender.get_addon("sun_position")
 now = datetime.datetime.now()
 
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
