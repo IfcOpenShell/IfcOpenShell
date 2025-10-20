@@ -172,10 +172,10 @@ class TestEntity:
         facet = Entity(name="IFCWALL", predefinedType="USERDEFINED")
         ifc = ifcopenshell.file()
         run(
-            "A predefined type must always specify a meaningful type, not USERDEFINED itself",
+            "A predefined type may specify USERDEFINED itself",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"),
-            expected=False,
+            expected=True,
         )
 
         ifc = ifcopenshell.file()
@@ -229,6 +229,32 @@ class TestEntity:
         ifc = ifcopenshell.file()
         wall3 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
         run("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
+
+    def test_ifc2x3_occurrence_type_mapping(self):
+        set_facet("entity")
+
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        application = ifcopenshell.api.owner.add_application(ifc)
+        person = ifcopenshell.api.owner.add_person(
+            ifc, identification="LPARTEE", family_name="Partee", given_name="Leeable"
+        )
+        organisation = ifcopenshell.api.owner.add_organisation(
+            ifc, identification="AWB", name="Architects Without Ballpens"
+        )
+        user = ifcopenshell.api.owner.add_person_and_organisation(ifc, person=person, organisation=organisation)
+        ifcopenshell.api.owner.settings.get_user = lambda x: user
+        ifcopenshell.api.owner.settings.get_application = lambda x: application
+
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcFlowTerminal")
+        element_type = ifcopenshell.api.root.create_entity(ifc, "IfcAirTerminalType")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=element_type)
+        facet = Entity(name="IFCAIRTERMINAL")
+        assert facet.filter(ifc) == [element]
+        run("In IFC2X3 the type class is checked instead 1/2", facet=facet, inst=element, expected=True)
+
+        facet = Entity(name="IFCELECTRICAPPLIANCE")
+        assert facet.filter(ifc) == []
+        run("In IFC2X3 the type class is checked instead 2/2", facet=facet, inst=element, expected=False)
 
     def test_to_string_required_applicability(self):
         spec = ifctester.ids.Specification(name="Foo", minOccurs=1, maxOccurs="unbounded")

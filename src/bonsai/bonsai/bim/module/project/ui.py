@@ -653,4 +653,5 @@ class BIM_PT_purge(Panel):
             row = layout.row(align=True)
             row.label(text=f"{object_type.replace('_', ' ').capitalize()}:")
             row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = object_type
-            row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = object_type
+            merge_op = row.operator("bim.merge_identical_objects", text="Merge Identical")
+            merge_op.object_type = object_type

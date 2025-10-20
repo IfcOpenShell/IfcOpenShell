@@ -44,11 +44,12 @@ class Patcher(ifcpatch.BasePatcher):
             uniques = {}
             i = 0
             for element in self.file.by_type(ifc_class):
-                data = "-".join([str(a) for a in element])
-                if unique := uniques.get(data, None):
+                ifc_class = element.is_a()
+                key = "-".join([str(a) for a in element])
+                if unique := uniques.get(ifc_class, {}).get(key, None):
                     ifcopenshell.util.element.replace_element(element, unique)
                     self.file.remove(element)
                     i += 1
                 else:
-                    uniques[data] = element
+                    uniques.setdefault(ifc_class, {})[key] = element
             print(f"Replaced {i} {ifc_class}")

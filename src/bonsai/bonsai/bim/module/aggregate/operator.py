@@ -94,6 +94,9 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        aggregates_to_check = set()
+
+        # First pass: unassign all parts and track their aggregates
         for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -101,6 +104,10 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if not aggregate:
                 continue
+
+            # Track this aggregate for later checking
+            aggregates_to_check.add(aggregate)
+
             core.unassign_object(
                 tool.Ifc,
                 tool.Aggregate,
@@ -115,6 +122,29 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
                 if pset:
                     pset = tool.Ifc.get().by_id(pset["id"])
                     ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
+
+        # Second pass: delete aggregates that now have no parts
+        deleted_aggregates = []
+        for aggregate in aggregates_to_check:
+            related_objects = ifcopenshell.util.element.get_parts(aggregate)
+            if len(related_objects) == 0:
+                aggregate_name = aggregate.Name or f"{aggregate.is_a()} #{aggregate.id()}"
+                deleted_aggregates.append(aggregate_name)
+
+                aggregate_obj = tool.Ifc.get_object(aggregate)
+                if aggregate_obj:
+                    ifcopenshell.api.root.remove_product(tool.Ifc.get(), product=aggregate)
+                    bpy.data.objects.remove(aggregate_obj, do_unlink=True)
+
+        # Show info message if aggregates were deleted
+        if deleted_aggregates:
+            if len(deleted_aggregates) == 1:
+                self.report(
+                    {"INFO"}, f"Aggregate '{deleted_aggregates[0]}' was deleted because it had no remaining parts"
+                )
+            else:
+                aggregate_list = ", ".join(f"'{name}'" for name in deleted_aggregates)
+                self.report({"INFO"}, f"Aggregates {aggregate_list} were deleted because they had no remaining parts")
 
 
 class BIM_OT_enable_editing_aggregate(bpy.types.Operator):
