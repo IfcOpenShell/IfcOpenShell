@@ -9,8 +9,6 @@ source:
 build:
   script: |
     BUILD_CFG=Release python nix/build-all.py -v --wasm --py313
-    mv package/ifcopenshell .
-    cp pyodide/setup.py .
 
 about:
   home: http://ifcopenshell.org
