@@ -28,18 +28,8 @@ jobs:
           VERSION=`cat IfcOpenShell/VERSION`
           sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/meta.yaml
           sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/setup.py
-          echo '#!/usr/bin/bash' > script.sh
-          echo 'cd pyodide' >> script.sh
-          echo 'make' >> script.sh
-          echo 'cd ..' >> script.sh
-          echo 'mkdir -p packages/ifcopenshell' >> script.sh
-          echo 'cp IfcOpenShell/pyodide/meta.yaml packages/ifcopenshell' >> script.sh
-          echo 'PYODIDE_ROOT=/src/pyodide \' >> script.sh
-          echo 'PATH=/src/pyodide/emsdk/emsdk:/src/pyodide/emsdk/emsdk/node/22.16.0_64bit/bin:/src/pyodide/emsdk/emsdk/upstream/emscripten:$PATH \' >> script.sh
-          echo 'pyodide build-recipes ifcopenshell --install' >> script.sh
-          chmod +x script.sh
           sed -i s/--tty// pyodide/run_docker
-          pyodide/run_docker ./script.sh
+          pyodide/run_docker IfcOpenShell/pyodide/build_pyodide.sh
           FILE=`echo dist/ifcopenshell-*.whl`
           NEW_FILE=`echo $FILE | sed "s/$VERSION/$VERSION+${GITHUB_SHA:0:7}/"`
           mv $FILE $NEW_FILE
