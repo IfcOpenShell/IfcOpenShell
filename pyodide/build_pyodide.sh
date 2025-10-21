@@ -12,4 +12,6 @@ export PATH=$PYODIDE_ROOT/emsdk/emsdk:$PYODIDE_ROOT/emsdk/emsdk/node/22.16.0_64b
 # Use custom build ifcopenshell directory in build-all to make caching simpler
 # Otherwise pyodide build path typically includes package version, so cached cmake configs might break.
 export BUILD_DIR=/src/ifcopenshell_build
+# Use build-recipes-no-deps first, so logs would be printed to stdout.
+pyodide build-recipes-no-deps ifcopenshell
 pyodide build-recipes ifcopenshell --install
