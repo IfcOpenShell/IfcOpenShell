@@ -118,7 +118,8 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 		auto jt = it + 1;
 		std::array<taxonomy::item::ptr, 2> fa = { *it, *jt };
 		std::array<TopoDS_Shape, 2> shps;
-		std::array<TopoDS_Wire, 2> ws;
+		std::vector<std::array<TopoDS_Wire, 2>> ws;
+		ws.emplace_back();
 		for (int i = 0; i < 2; ++i) {
 			if (fa[i]->kind() == taxonomy::FACE) {
 				if (!convert(std::static_pointer_cast<taxonomy::face>(fa[i]), shps[i])) {
@@ -135,11 +136,20 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 			if (shps[i].ShapeType() != TopAbs_FACE && shps[i].ShapeType() != TopAbs_WIRE) {
 				return false;
 			}
-			// @todo this is only outer wire
+
 			if (shps[i].ShapeType() == TopAbs_FACE) {
-				ws[i] = BRepTools::OuterWire(TopoDS::Face(shps[i]));
+				ws[0][i] = BRepTools::OuterWire(TopoDS::Face(shps[i]));
+				size_t j = 1;
+				for (TopExp_Explorer exp(shps[i], TopAbs_WIRE); exp.More(); exp.Next()) {
+					if (exp.Current() != ws[0][i]) {
+						while (ws.size() <= j) {
+							ws.emplace_back();
+						}
+						ws[j++][i] = TopoDS::Wire(exp.Current());
+					}
+				}
 			} else {
-				ws[i] = TopoDS::Wire(shps[i]);
+				ws[0][i] = TopoDS::Wire(shps[i]);
 			}
 		}
 		if (shps[0].ShapeType() == TopAbs_FACE) {
@@ -154,35 +164,38 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 				BB.Add(comp, shps[1]);
 			}
 		}
-		BRepTools_WireExplorer a(ws[0]);
-		BRepTools_WireExplorer b(ws[1]);
-		for (; a.More() && b.More(); a.Next(), b.Next()) {
-			auto& e1 = a.Current();
-			// auto e3 = TopoDS::Edge(b.Current().Reversed());
-			auto& e3 = b.Current();
 
-			// Documentation says unconnected edges are automatically connected, but this is not the case
-			TopoDS_Vertex e1a, e1b, e3a, e3b;
-			TopExp::Vertices(e1, e1a, e1b, true);
-			TopExp::Vertices(e3, e3a, e3b, true);
-			auto e2 = BRepBuilderAPI_MakeEdge(e1b, e3a).Edge();
-			auto e4 = BRepBuilderAPI_MakeEdge(e3b, e1a).Edge();
-			
-			/*
-			BRepFill_Filling fill;
-			fill.Add(e1, GeomAbs_C0);
-			fill.Add(e2, GeomAbs_C0);
-			fill.Add(e3, GeomAbs_C0);
-			fill.Add(e4, GeomAbs_C0);
-			fill.Build();
-			// faces.Append(fill.Face());
-			BB.Add(comp, fill.Face());
-			*/
+		for (auto& wp : ws) {
+			BRepTools_WireExplorer a(wp[0]);
+			BRepTools_WireExplorer b(wp[1]);
+			for (; a.More() && b.More(); a.Next(), b.Next()) {
+				auto& e1 = a.Current();
+				// auto e3 = TopoDS::Edge(b.Current().Reversed());
+				auto& e3 = b.Current();
 
-			auto f = BRepBuilderAPI_MakeFace(BRepBuilderAPI_MakePolygon(e1a, e1b, e3b, true).Wire()).Face();
-			BB.Add(comp, f);
-			auto g = BRepBuilderAPI_MakeFace(BRepBuilderAPI_MakePolygon(e3b, e3a, e1a, true).Wire()).Face();
-			BB.Add(comp, g);
+				// Documentation says unconnected edges are automatically connected, but this is not the case
+				TopoDS_Vertex e1a, e1b, e3a, e3b;
+				TopExp::Vertices(e1, e1a, e1b, true);
+				TopExp::Vertices(e3, e3a, e3b, true);
+				auto e2 = BRepBuilderAPI_MakeEdge(e1b, e3a).Edge();
+				auto e4 = BRepBuilderAPI_MakeEdge(e3b, e1a).Edge();
+
+				/*
+				BRepFill_Filling fill;
+				fill.Add(e1, GeomAbs_C0);
+				fill.Add(e2, GeomAbs_C0);
+				fill.Add(e3, GeomAbs_C0);
+				fill.Add(e4, GeomAbs_C0);
+				fill.Build();
+				// faces.Append(fill.Face());
+				BB.Add(comp, fill.Face());
+				*/
+
+				auto f = BRepBuilderAPI_MakeFace(BRepBuilderAPI_MakePolygon(e1a, e1b, e3b, true).Wire()).Face();
+				BB.Add(comp, f);
+				auto g = BRepBuilderAPI_MakeFace(BRepBuilderAPI_MakePolygon(e3b, e3a, e1a, true).Wire()).Face();
+				BB.Add(comp, g);
+			}
 		}
 	}
 
