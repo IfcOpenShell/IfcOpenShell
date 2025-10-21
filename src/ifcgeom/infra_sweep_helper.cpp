@@ -172,6 +172,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 						}
 
 						auto interpolated_loop = polygon_from_points(points);
+						interpolated_loop->external = w1->external;
 						if (interpolated->kind() == taxonomy::FACE) {
 							std::static_pointer_cast<taxonomy::face>(interpolated)->children.push_back(interpolated_loop);
 						} else {
