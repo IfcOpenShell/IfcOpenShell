@@ -47,6 +47,16 @@ jobs:
           NEW_FILE=`echo $FILE | sed "s/$VERSION/$VERSION+${GITHUB_SHA:0:7}/"`
           mv $FILE $NEW_FILE
 
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-pyodide
+          path: |
+            packages/ifcopenshell/build.log
+            ifcopenshell_build/*/*/logs/*.log
+          retention-days: 30
+
       - name: Pack Dependencies
         run: |
           cd ifcopenshell_build
