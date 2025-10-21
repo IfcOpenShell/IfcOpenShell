@@ -53,7 +53,6 @@ jobs:
         with:
           name: build-logs-pyodide
           path: |
-            packages/ifcopenshell/build.log
             ifcopenshell_build/*/*/logs/*.log
           retention-days: 30
 
