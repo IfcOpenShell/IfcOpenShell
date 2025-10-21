@@ -1193,7 +1193,7 @@ if "cgal" in targets:
             [("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if "wasm" in flags else []
         ),
         # Sometimes ftp.gnu.org is very slow, use ftpmirror.gnu.org as a workaround.
-        download_url="https://ftp.gnu.org/gnu/gmp/",
+        download_url="https://ftpmirror.gnu.org/gnu/gmp/",
         download_name=f"gmp-{GMP_VERSION}.tar.bz2",
     )
 
