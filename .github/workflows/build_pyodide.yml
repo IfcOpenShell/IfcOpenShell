@@ -23,6 +23,20 @@ jobs:
           token: ${{ secrets.BUILD_REPO_TOKEN }}
           path: pyodide
 
+      - name: Checkout Build Repository
+        uses: actions/checkout@v3
+        with:
+          repository: IfcOpenShell/build-outputs
+          path: ifcopenshell_build
+          ref: wasm
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Unpack Dependencies
+        run: |
+          cd ifcopenshell_build
+          python ../IfcOpenShell/pyodide/cache_dependencies.py unpack
+
       - name: Build
         run: |
           VERSION=`cat IfcOpenShell/VERSION`
@@ -32,6 +46,20 @@ jobs:
           FILE=`echo dist/ifcopenshell-*.whl`
           NEW_FILE=`echo $FILE | sed "s/$VERSION/$VERSION+${GITHUB_SHA:0:7}/"`
           mv $FILE $NEW_FILE
+
+      - name: Pack Dependencies
+        run: |
+          cd ifcopenshell_build
+          python ../IfcOpenShell/pyodide/cache_dependencies.py pack
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd ifcopenshell_build
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add */*/install/cache-*.tar.gz
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
