@@ -952,6 +952,9 @@ class IfcImporter:
         if not props.ifc_file:
             props.ifc_file = self.ifc_import_settings.input_file
         self.file = tool.Ifc.get()
+        # IFC4 Reference View shall have no booleans https://github.com/BuildingSMART/IFC4-CV/issues/14
+        if self.file.schema == "IFC4" and "ReferenceView" in str(self.file.header.file_description.description):
+            self.ifc_import_settings.void_limit = 0
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)

@@ -752,7 +752,8 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl) {
     if (decl->as_entity() || decl->as_type_declaration()) {
         auto* inst = file->schema()->instantiate(decl, rocks_db_attribute_storage{});
-        inst->file_ = file;
+		// @todo maybe this needs to be set to file? In order to have a context (ie. rocksdb::db*) to write to?
+        inst->file_ = nullptr;
         return file->addEntity(inst);
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
@@ -768,6 +769,7 @@ IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::create(const IfcP
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
     }
-    inst->file_ = file;
+	// file_ should be nullptr in order not to bypass addEntity() behaviour of registration in maps
+    inst->file_ = nullptr;
     return file->addEntity(inst);
 }
