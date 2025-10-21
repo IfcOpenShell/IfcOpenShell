@@ -27,7 +27,6 @@ jobs:
         run: |
           VERSION=`cat IfcOpenShell/VERSION`
           sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/meta.yaml
-          sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/setup.py
           sed -i s/--tty// pyodide/run_docker
           pyodide/run_docker IfcOpenShell/pyodide/build_pyodide.sh
           FILE=`echo dist/ifcopenshell-*.whl`
