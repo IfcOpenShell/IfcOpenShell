@@ -22,6 +22,7 @@ import blf
 import math
 import bmesh
 import shapely
+import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
@@ -1625,6 +1626,7 @@ class CutDecorator:
         if cls.installed:
             cls.uninstall()
         handler = cls()
+        handler.cache_camera_matrix()
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW")
 
     @classmethod
@@ -1727,6 +1729,30 @@ class CutDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
+    def cache_camera_matrix(self):
+        obj = bpy.context.scene.camera
+        DecoratorData.camera_location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
+        DecoratorData.camera_rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+
+    def is_camera_moved(self):
+        if not DecoratorData.camera_location_checksum:
+            self.cache_camera_matrix()
+            return True  # Let's be conservative
+        obj = bpy.context.scene.camera
+        loc_check = np.frombuffer(eval(DecoratorData.camera_location_checksum))
+        loc_real = np.array(obj.matrix_world.translation).flatten()
+        if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
+            self.cache_camera_matrix()
+            return True
+        rot_check = np.frombuffer(eval(DecoratorData.camera_rotation_checksum)).reshape(3, 3)
+        rot_real = np.array(obj.matrix_world.to_3x3())
+        rot_dot = np.dot(rot_check, rot_real.T)
+        angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
+        if angle_rad > 0.0017453292519943296:  # 0.1 degrees
+            self.cache_camera_matrix()
+            return True
+        return False
+
     def decorate(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         has_cut_cache = element.id() in DecoratorData.cut_cache
         has_fill_cache = element.id() in DecoratorData.fill_cache
@@ -1734,9 +1760,9 @@ class CutDecorator:
         # Currently selected objects must be recalculated as they may be being moved / edited.
         # If the camera is selected, we also recalculate as the user may be moving the camera.
 
-        if not has_cut_cache or obj.select_get() or context.scene.camera.select_get():
+        if not has_cut_cache or obj.select_get() or self.is_camera_moved():
             self.recalculate_cut(context, obj, element)
-        if not has_fill_cache or obj.select_get() or context.scene.camera.select_get():
+        if not has_fill_cache or obj.select_get() or self.is_camera_moved():
             self.recalculate_fill(context, obj, element)
 
     def recalculate_cut(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
