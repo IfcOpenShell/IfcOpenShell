@@ -235,6 +235,8 @@ class DecoratorData:
     cut_cache = {}
     slice_cache = {}
     fill_cache = {}
+    camera_location_checksum = None
+    camera_rotation_checksum = None
 
     @classmethod
     def load(cls, handler):
