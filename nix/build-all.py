@@ -271,7 +271,7 @@ SCRIPT_PATH = Path(__file__).parent
 REPO_PATH = SCRIPT_PATH.parent
 CMAKE_DIR = (REPO_PATH / "cmake").resolve().__str__()
 
-build_dir = os.environ.get("BUILD_DIR", (REPO_PATH / "build").__str__())
+BUILD_DIR = os.environ.get("BUILD_DIR", (REPO_PATH / "build").__str__())
 
 
 if WASM:
@@ -280,7 +280,7 @@ elif MAC_CROSS_COMPILE_INTEL:
     arch = "x86_64"
 else:
     arch = platform.machine()
-DEFAULT_DEPS_DIR = Path(build_dir) / platform.system() / arch
+DEFAULT_DEPS_DIR = Path(BUILD_DIR) / platform.system() / arch
 
 if TOOLSET:
     DEFAULT_DEPS_DIR = DEFAULT_DEPS_DIR / TOOLSET
@@ -312,6 +312,7 @@ if USE_OCCT:
     cecho(" - Compiling against official Open Cascade")
 else:
     cecho(" - Compiling against Open Cascade Community Edition")
+cecho(f"* Build Directory   = {BUILD_DIR}", MAGENTA)
 cecho(f"* Dependency Directory   = {DEPS_DIR}", MAGENTA)
 cecho(f" - The directory where {PROJECT_NAME} dependencies are installed.")
 cecho(f"* Build Config Type      = {BUILD_CFG}", MAGENTA)
