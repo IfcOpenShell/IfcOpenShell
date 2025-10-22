@@ -3,8 +3,8 @@ There are two ways to build pyodide ifcopenshell Python wrapper wheel.
 
 1. Using pyodide build system (`build_pyodide.yml` does it):
 
-- setup pyodide environment in `pyodide_root` folder - either by using image or build it from source - see https://pyodide.org/en/stable/development/building-from-sources.html
-- clone IfcOpenShell repo next to it to `IfcOpenShell` folder
+- install prebuilt pyodide build and emscripten environment (see `build_pyodide.sh`)
+- clone IfcOpenShell to `IfcOpenShell` folder
 - create `packages/ifcopenshell` folder that will be used by pyodide build system
 - from `IfcOpenShell` move building recipe `pyodide/meta.yaml` to `packages/ifcopenshell`
 - run `pyodide build-recipes ifcopenshell --install`, it will
@@ -19,12 +19,12 @@ There are two ways to build pyodide ifcopenshell Python wrapper wheel.
         - copy the wheel next to `dist` folder (in root directory, next to `packages`)
         - add wheel to `dist/pyodide-lock.json`
 
-2. Build it outside of pyodide system.
+2. Build it outside of pyodide build system.
 
 Building inside pyodide build system should be preferred, option to build it outside is useful for debugging purposes,
 since it's pure cmake without any additional moving parts.
 
-- setup pyodide environment in `pyodide_root` folder, see above
+- setup pyodide environment, see above
 - clone IfcOpenShell repo next to it to `IfcOpenShell` folder
 - setup debug build environment using `source pyodide/debug_build_env.sh /path/to/pyodide_root`
 - run `python nix/build-all.py -wasm -py-313` in `IfcOpenShell`
