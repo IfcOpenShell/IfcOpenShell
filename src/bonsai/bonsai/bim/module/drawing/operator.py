@@ -4332,7 +4332,7 @@ class SelectObjectsIntersectedByCamera(bpy.types.Operator):
         camera_obj = context.scene.camera
         if not camera_obj:
             return
-            
+
         camera = camera_obj.data
         if not isinstance(camera, bpy.types.Camera):
             return
@@ -4346,14 +4346,13 @@ class SelectObjectsIntersectedByCamera(bpy.types.Operator):
         def point_plane_distance(point):
             return (point - plane_point).dot(plane_normal)
 
-        bpy.ops.object.select_all(action='SELECT')
-        
+        bpy.ops.object.select_all(action="SELECT")
+
         deselected = 0
         for obj in context.selected_objects:
             if obj == camera_obj:
                 obj.select_set(False)
                 continue
-
 
             bbox_world = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
             distances = [point_plane_distance(p) for p in bbox_world]
@@ -4361,11 +4360,10 @@ class SelectObjectsIntersectedByCamera(bpy.types.Operator):
             max_d = max(distances)
 
             intersects = (min_d <= 0.0 <= max_d) or (max_d <= 0.0 <= min_d)
-            
+
             if not intersects:
                 obj.select_set(False)
                 deselected += 1
 
         selected_count = len([obj for obj in context.selected_objects if obj != camera_obj])
-        self.report({'INFO'}, f"Selected {selected_count} object(s) intersecting camera plane")
-    
+        self.report({"INFO"}, f"Selected {selected_count} object(s) intersecting camera plane")
