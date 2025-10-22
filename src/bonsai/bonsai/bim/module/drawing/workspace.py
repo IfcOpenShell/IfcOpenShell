@@ -259,6 +259,9 @@ class AnnotationToolUI:
             add_layout_hotkey_operator(
                 cls.layout, "Readjust", "S_G", "Readjust tags based on the products they are assigned to"
             )
+            row = cls.layout.row(align=True)
+            props = tool.Drawing.get_document_props()
+            row.prop(props, "should_select_intersected_by_camera", text="Intersected by Camera")
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
