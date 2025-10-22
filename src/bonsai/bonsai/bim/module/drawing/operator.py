@@ -3757,3 +3757,19 @@ class OpenDocumentationWebUi(bpy.types.Operator):
         else:
             bpy.ops.bim.open_web_browser(page="documentation")
         return {"FINISHED"}
+
+
+class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.exclude_annotation"
+    bl_label = "Exclude Annotation"
+    bl_description = "Excludes the automatic annotation reference from the drawing"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        if not (obj := bpy.context.scene.camera) or not (drawing := tool.Ifc.get_entity(obj)):
+            return
+        for obj in tool.Blender.get_selected_objects(include_active=False):
+            if (element := tool.Ifc.get_entity(obj)) and tool.Drawing.is_auto_annotation(element):
+                if (referenced_element := tool.Drawing.get_annotation_element(element)):
+                    tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
+        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)

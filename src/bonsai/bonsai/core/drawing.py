@@ -476,7 +476,17 @@ def sync_references(
         return
 
     group = drawing_tool.get_drawing_group(drawing)
-    for reference_element in drawing_tool.get_potential_reference_elements(drawing):
+    potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
+    for element in drawing_tool.get_group_elements(group):
+        if (
+            drawing_tool.is_auto_annotation(element)
+            and drawing_tool.get_assigned_product(element) not in potential_reference_elements
+        ):
+            if obj := ifc.get_object(element):
+                drawing_tool.delete_object(obj)
+            ifc.run("root.remove_product", product=element)
+
+    for reference_element in potential_reference_elements:
         reference_obj = ifc.get_object(reference_element)
         annotation = drawing_tool.get_drawing_reference_annotation(drawing, reference_element)
 
