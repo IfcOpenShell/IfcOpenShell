@@ -390,12 +390,13 @@ class RasterStyleProperty(enum.Enum):
 
 RASTER_STYLE_PROPERTIES_EXCLUDE = ("scene.render.filepath",)
 
+
 def update_should_select_intersected_by_camera(self, context: bpy.types.Context) -> None:
     if self.should_select_intersected_by_camera:
         if context.scene.camera:
             bpy.ops.bim.select_objects_intersected_by_camera()
     else:
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
 
 
 class DocProperties(PropertyGroup):
@@ -441,10 +442,10 @@ class DocProperties(PropertyGroup):
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
     should_select_intersected_by_camera: BoolProperty(
-        name="Intersected by Camera", 
+        name="Intersected by Camera",
         description="Select all objects intersected by the active camera view",
         default=False,
-        update=update_should_select_intersected_by_camera
+        update=update_should_select_intersected_by_camera,
     )
 
     if TYPE_CHECKING:
