@@ -3794,21 +3794,21 @@ class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
 
 
-class SelectObjectsIntersectedByCamera(bpy.types.Operator):
-    bl_idname = "bim.select_objects_intersected_by_camera"
-    bl_label = "Select Objects Intersected by Camera"
+class FilterSelectedObjectsIfIntersectedByCamera(bpy.types.Operator):
+    bl_idname = "bim.filter_selected_objects_if_intersected_by_camera"
+    bl_label = "Filter Selected Objects If Intersected by Camera"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select all objects that are intersected by the active camera view"
+    bl_description = "Deselect objects that are not intersected by the active camera view"
 
     @classmethod
     def poll(cls, context):
-        return context.scene.camera is not None
+        return context.scene.camera is not None and len(context.selected_objects) > 0
 
     def execute(self, context):
-        self.select_objects_intersected_by_camera(context)
+        self.filter_selected_objects_if_intersected_by_camera(context)
         return {"FINISHED"}
 
-    def select_objects_intersected_by_camera(self, context: bpy.types.Context) -> None:
+    def filter_selected_objects_if_intersected_by_camera(self, context: bpy.types.Context) -> None:
         camera_obj = context.scene.camera
         if not camera_obj:
             return
@@ -3826,14 +3826,10 @@ class SelectObjectsIntersectedByCamera(bpy.types.Operator):
         def point_plane_distance(point):
             return (point - plane_point).dot(plane_normal)
 
-        bpy.ops.object.select_all(action="SELECT")
-
+        selected_objects = [obj for obj in context.selected_objects if obj != camera_obj]
+        
         deselected = 0
-        for obj in context.selected_objects:
-            if obj == camera_obj:
-                obj.select_set(False)
-                continue
-
+        for obj in selected_objects:
             bbox_world = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
             distances = [point_plane_distance(p) for p in bbox_world]
             min_d = min(distances)
@@ -3845,5 +3841,5 @@ class SelectObjectsIntersectedByCamera(bpy.types.Operator):
                 obj.select_set(False)
                 deselected += 1
 
-        selected_count = len([obj for obj in context.selected_objects if obj != camera_obj])
-        self.report({"INFO"}, f"Selected {selected_count} object(s) intersecting camera plane")
+        remaining_selected = len([obj for obj in context.selected_objects if obj != camera_obj])
+        self.report({"INFO"}, f"Filtered to {remaining_selected} object(s) intersecting camera plane (deselected {deselected})")

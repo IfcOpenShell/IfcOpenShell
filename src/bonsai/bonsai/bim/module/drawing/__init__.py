@@ -89,7 +89,7 @@ classes = (
     operator.SelectAssignedProduct,
     operator.ToggleTargetView,
     operator.OpenDocumentationWebUi,
-    operator.SelectObjectsIntersectedByCamera,
+    operator.FilterSelectedObjectsIfIntersectedByCamera,
     prop.Variable,
     prop.Drawing,
     prop.Document,
