@@ -201,15 +201,6 @@ def cecho(message, color=NO_COLOR):
     logger.info(f"{color}{message}\033[0m")
 
 
-def which(cmd: str) -> Union[str, None]:
-    PATH = os.getenv("PATH")
-    assert PATH
-    for path in PATH.split(":"):
-        if os.path.exists(path) and cmd in os.listdir(path):
-            return cmd
-    return None
-
-
 # Flags.
 APPLE = platform.system() == "Darwin"
 MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
@@ -439,7 +430,7 @@ if "wasm" in flags:
     required_commands.remove(yacc)
 
 for cmd in required_commands:
-    if which(cmd) is None:
+    if shutil.which(cmd) is None:
         missing_commands.append(cmd)
 
 if missing_commands:
