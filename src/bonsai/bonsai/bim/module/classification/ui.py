@@ -282,7 +282,11 @@ class BIM_PT_classification_references(Panel, ReferenceUI):
 
     @classmethod
     def poll(cls, context):
-        return bool((obj := context.active_object) and tool.Ifc.get_entity(obj))
+        return (
+            (obj := tool.Blender.get_active_object())
+            and (element := tool.Ifc.get_entity(obj))
+            and element.is_a("IfcObjectDefinition")
+        )
 
     def get_object_name(self, context: bpy.types.Context) -> str:
         assert (obj := context.active_object)
