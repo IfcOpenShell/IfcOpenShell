@@ -651,9 +651,7 @@ IfcParse::filetype IfcParse::guess_file_type(const std::string& fn) {
     }
 }
 
-std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> IfcParse::InstanceStreamer::read_instance() {
-    // std::cout << "global: " << stream_->tell() << std::endl;
-
+std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> IfcParse::InstanceStreamer::readInstance() {
     std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> return_value;
 
     if (header_ && yielded_header_instances_ < 3) {
@@ -741,10 +739,11 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
             break;
         }
 
-        // std::cout << next_token.startPos << " " << TokenFunc::toString(next_token) << std::endl;
-
         token_stream_.push_back(next_token);
     }
+
+    // Free pages in front of cursor when variable-width tokens are materialized into entity instance data objects
+    (stream_ ? stream_ : (lexer_)->stream)->dropPages();
 
     return return_value;
 }

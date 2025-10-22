@@ -32,6 +32,11 @@ def test_stream():
         "value": ({"ref": 136}, {"ref": 138}),
     }
 
+def test_chunked_stream():
+    assert list(ifcopenshell.stream2(fn)) == list(ifcopenshell.stream2(fn, page_size=1024))
+
+def test_mmaped_stream():
+    assert list(ifcopenshell.stream2(fn)) == list(ifcopenshell.stream2(fn, mmap=True))
 
 def test_file():
     f = ifcopenshell.open(fn)

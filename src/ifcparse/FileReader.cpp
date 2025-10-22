@@ -11,10 +11,7 @@
 #include <vector>
 #include <deque>
 
-// Boost iostreams mmap
 #include <boost/iostreams/device/mapped_file.hpp>
-
-
 
 namespace {
 
@@ -31,8 +28,6 @@ namespace {
 #endif
 
 } // namespace
-
-// ===================== Concrete backends =====================
 
 using namespace IfcParse;
 
@@ -64,7 +59,7 @@ struct PagedFileImpl final : FileReader::Impl {
 
     // LRU cache
     size_t capacity_ = 8;
-    mutable std::list<size_t> lru_;  // most recent at front
+    mutable std::list<size_t> lru_;
     struct Entry {
         FileReader::Page page;
         std::list<size_t>::iterator it;
@@ -90,16 +85,14 @@ struct PagedFileImpl final : FileReader::Impl {
     char get(size_t pos) const override {
         if (pos >= file_size_) throw std::out_of_range("get out of range");
         const size_t pidx = pos / page_size_;
-        const FileReader::Page& p = fetch_page_(pidx);
+        const FileReader::Page& p = fetchPage_(pidx);
         const size_t off = pos % page_size_;
         if (off >= p.data.size()) throw std::out_of_range("offset beyond valid page bytes");
-        // Opportunistic read-ahead for sequential scans
-        // if (off + 1 == p.data.size()) (void)try_prefetch_(pidx + 1);
         return p.data[off];
     }
 
 private:
-    const FileReader::Page& fetch_page_(size_t idx) const {
+    const FileReader::Page& fetchPage_(size_t idx) const {
         auto it = map_.find(idx);
         if (it != map_.end()) {
             touch_(it);
@@ -116,7 +109,8 @@ private:
             const size_t nread = std::fread(pg.data.data(), 1, avail, fp_);
             if (nread != avail) throw std::runtime_error("Short fread on page");
         }
-		pg.data.resize(avail); // trim to actual size
+        // trim to actual size
+		pg.data.resize(avail);
 
         // Insert into LRU
         if (map_.size() >= capacity_) evict_();
@@ -126,16 +120,6 @@ private:
         (void)ok;
         return emplaced_it->second.page;
     }
-
-    /*
-    bool try_prefetch_(size_t idx) const {
-        if (idx * page_size_ >= file_size_) return false;
-        if (map_.find(idx) != map_.end()) return true;
-        if (map_.size() + 1 > capacity_) return false;
-        (void)fetch_page_(idx);
-        return true;
-    }
-    */
 
     void touch_(typename std::unordered_map<size_t, Entry>::iterator it) const {
         lru_.erase(it->second.it);
@@ -189,7 +173,7 @@ struct PushedSequentialImpl final : std::enable_shared_from_this<PushedSequentia
     }
 
     // Drop fully-consumed pages so pos is guaranteed to be within the first page
-    void drop_consumed_up_to(size_t pos) {
+    void dropPages(size_t pos) override {
         while (!pages_.empty()) {
             if (pos - discarded_page_bytes_ >= pages_.front().data.size()) {
 				discarded_page_bytes_ += pages_.front().data.size();
@@ -202,11 +186,17 @@ struct PushedSequentialImpl final : std::enable_shared_from_this<PushedSequentia
 
     char get(size_t pos) const override {
         auto self = const_cast<PushedSequentialImpl*>(this);
+
+        /*
+        // We do not do this automatically because all variable width tokens:
+        // ENUM/STRING/BINARY/KEYWORD are stored as file offsets until a full
+        // entity instance is finalized.
         if (this->shared_from_this().use_count() == 2) {
             // only drop pages when there is only one active client.
             // NB this->shared_from_this() increases count by 1
             self->drop_consumed_up_to(pos);
         }
+        */
 
         const size_t avail_end = size();
         if (pos >= avail_end) throw std::out_of_range("pushed backend: position not committed yet");
@@ -226,13 +216,11 @@ struct PushedSequentialImpl final : std::enable_shared_from_this<PushedSequentia
         throw std::out_of_range("pushed backend: internal inconsistency");
     }
 
-    void push_next_page(const std::string& data) override {
+    void pushNextPage(const std::string& data) override {
         FileReader::Page p; p.data.assign(data.data(), data.data() + data.size());
         pages_.push_back(std::move(p));
     }
 };
-
-// ===================== FileReader public API =====================
 
 IfcParse::FileReader::FileReader(const std::string& fn)
     : cursor_(0)
@@ -255,7 +243,7 @@ IfcParse::FileReader::FileReader(const caller_fed_tag&)
 IfcParse::FileReader::FileReader(const std::string& content, const caller_fed_tag&)
 {
     impl_ = std::make_shared<PushedSequentialImpl>();
-	impl_->push_next_page(content);
+	impl_->pushNextPage(content);
 }
 
 IfcParse::FileReader::FileReader(const std::string& fn, size_t page_size, size_t page_capacity)
@@ -289,9 +277,19 @@ void FileReader::increment(size_t n) {
     cursor_ += n;
 }
 
-void IfcParse::FileReader::push_next_page(const std::string& data)
+void IfcParse::FileReader::pushNextPage(const std::string& data)
 {
-    impl_->push_next_page(data);
+    impl_->pushNextPage(data);
+}
+
+void IfcParse::FileReader::dropPages()
+{
+    impl_->dropPages(0);
+}
+
+void IfcParse::FileReader::dropPages(size_t up_to_pos)
+{
+    impl_->dropPages(up_to_pos);
 }
 
 bool IfcParse::FileReader::eof() const

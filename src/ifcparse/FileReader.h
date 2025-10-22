@@ -29,61 +29,6 @@
 
 #include "ifc_parse_api.h"
 
-/*
-#include <string>
-
-#ifdef USE_MMAP
-#include <boost/iostreams/device/mapped_file.hpp>
-#endif
-
-namespace IfcParse {
-/// The FileReader class represents a ISO 10303-21 IFC-SPF file in memory.
-/// The file is interpreted as a sequence of tokens which are lazily
-/// interpreted only when requested.
-class IFC_PARSE_API FileReader {
-  private:
-#ifdef USE_MMAP
-    boost::iostreams::mapped_file_source mfs;
-#endif
-    FILE* stream_;
-    const char* buffer_;
-    size_t ptr_;
-    size_t len_;
-	size_t buf_size_;
-    size_t ptr_offset_ = 0;
-
-  public:
-    bool valid;
-    bool eof;
-    size_t size;
-
-    FileReader(const std::string& path, bool mmap = false, size_t buf_size = 0);
-    FileReader(std::istream& stream, int length);
-    FileReader(void* data, int length);
-    ~FileReader();
-    /// Returns the character at the cursor
-    char peek();
-    /// Returns the character at specified offset
-    char Read(size_t offset);
-    /// Increment the file cursor and reads new page if necessary
-    void increment();
-    void Close();
-    /// Moves the file cursor to an arbitrary offset in the file
-    void seek(size_t offset);
-    /// Returns the cursor position
-    size_t Tell() const;
-
-    bool is_eof_at(size_t) const;
-    void increment_at(size_t&);
-    char peek_at(size_t);
-
-	operator bool() const { return valid && !eof; }
-};
-} // namespace IfcParse
-
-#endif
-*/
-
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -147,8 +92,13 @@ public:
 
     /// \brief Push the next sequential page (pushed backend only).
 	/// \param data Contents of the page.
-    /// \throws std::logic_error if the current backend is not pushed mode, or if a next page is already queued.
-    void push_next_page(const std::string& data);
+    /// \throws std::logic_error if the current backend is not in pushed mode
+    void pushNextPage(const std::string& data);
+
+    /// \brief Drops pages up to cursor position or provided offset. Does nothing when current backend is not in pushed mode
+    /// \param up_to_pos Pages with an end offset before up_to_pos are dropped from memory
+    void dropPages();
+    void dropPages(size_t up_to_pos);
 
     /// \brief Returns true if the cursor is at or beyond the end of available data.
     /// For the pushed backend, EOF means all pushed bytes have been consumed.
@@ -165,8 +115,11 @@ public:
         virtual size_t size() const = 0;
         virtual char get(size_t pos) const = 0;
         /// \brief Backend may support pushing pages; default throws.
-        virtual void push_next_page(const std::string&) {
+        virtual void pushNextPage(const std::string&) {
             throw std::logic_error("push_next_page: backend does not support pushed mode");
+        }
+        virtual void dropPages(size_t) {
+            // empty on purpose
         }
     };
 

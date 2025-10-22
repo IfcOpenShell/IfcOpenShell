@@ -135,7 +135,7 @@ void RocksDbSerializer::write_streaming_() {
 	streamer.coerce_attribute_count = false;
 
 	while (streamer) {
-		auto inst = streamer.read_instance();
+		auto inst = streamer.readInstance();
 		if (inst) {
 			// name can be zero in case of header instances
 			auto name = std::get<0>(*inst);
