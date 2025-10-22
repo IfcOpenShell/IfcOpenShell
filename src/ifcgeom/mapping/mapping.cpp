@@ -373,7 +373,7 @@ const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const Ifc
                 }
 #endif
 
-#ifdef SCHEMA_HAS_IfcMaterialConstituent
+#ifdef SCHEMA_HAS_IfcMaterialConstituentSet
                 if (associated_material->as<IfcSchema::IfcMaterialConstituentSet>()) {
                     IfcSchema::IfcMaterialConstituentSet* constituentset = associated_material->as<IfcSchema::IfcMaterialConstituentSet>();
                     if (settings_.get<settings::LayersetFirst>().value ? constituentset->MaterialConstituents()->get()->size() >= 1 : constituentset->MaterialConstituents()->get()->size() == 1) {
