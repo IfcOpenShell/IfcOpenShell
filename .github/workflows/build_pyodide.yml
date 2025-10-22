@@ -28,6 +28,11 @@ jobs:
           cd ifcopenshell_build
           python ../IfcOpenShell/pyodide/cache_dependencies.py unpack
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ubuntu-22.04-${{ runner.arch }}
+
       - name: Build
         run: |
           ./IfcOpenShell/pyodide/build_pyodide.sh
