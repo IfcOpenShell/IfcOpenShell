@@ -97,6 +97,15 @@ if (WASM_BUILD)
     # Possibly in the future we can clean up linked libs and try `=1`.
     # SIDE_MODULE=2 - add to .so only explicitly exported functions (`-s EXPORTED_FUNCTIONS).
     # Have to provide it here to override possible `=1` coming from pyodide.
+    if(CMAKE_GENERATOR MATCHES "Makefile")
+        # Accomodate bug in cmake makefile generator:
+        # https://gitlab.kitware.com/cmake/cmake/-/issues/27326
+        string(
+            REPLACE "SIDE_MODULE=1" "SIDE_MODULE=2"
+            CMAKE_MODULE_LINKER_FLAGS
+            "${CMAKE_MODULE_LINKER_FLAGS}"
+        )
+    endif()
     target_link_options(
         ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}
         PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2"
