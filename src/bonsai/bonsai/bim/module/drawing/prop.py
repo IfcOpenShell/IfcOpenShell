@@ -390,6 +390,13 @@ class RasterStyleProperty(enum.Enum):
 
 RASTER_STYLE_PROPERTIES_EXCLUDE = ("scene.render.filepath",)
 
+def update_should_select_intersected_by_camera(self, context: bpy.types.Context) -> None:
+    if self.should_select_intersected_by_camera:
+        if context.scene.camera:
+            bpy.ops.bim.select_objects_intersected_by_camera()
+    else:
+        bpy.ops.object.select_all(action='DESELECT')
+
 
 class DocProperties(PropertyGroup):
     # Note that options are global in descriptions to prevent confusion,
@@ -433,6 +440,12 @@ class DocProperties(PropertyGroup):
     active_sheet_index: IntProperty(name="Active Sheet Index")
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
+    should_select_intersected_by_camera: BoolProperty(
+        name="Intersected by Camera", 
+        description="Select all objects intersected by the active camera view",
+        default=False,
+        update=update_should_select_intersected_by_camera
+    )
 
     if TYPE_CHECKING:
         should_use_underlay_cache: bool
@@ -458,6 +471,7 @@ class DocProperties(PropertyGroup):
         active_sheet_index: int
         drawing_styles: bpy.types.bpy_prop_collection_idprop[DrawingStyle]
         should_draw_decorations: bool
+        should_select_intersected_by_camera: bool
 
     def get_active_drawing(self) -> Union[ifcopenshell.entity_instance, None]:
         drawing_id = self.active_drawing_id
