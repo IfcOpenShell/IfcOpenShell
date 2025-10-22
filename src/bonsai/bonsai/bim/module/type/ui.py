@@ -34,14 +34,11 @@ class BIM_PT_type(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        element = tool.Ifc.get_entity(context.active_object)
-        if not element:
-            return False
-        if not element.is_a("IfcProduct") and not element.is_a("IfcTypeProduct"):
-            return True
-        return True
+        return (
+            (obj := tool.Blender.get_active_object())
+            and (element := tool.Ifc.get_entity(obj))
+            and (element.is_a("IfcObject") or element.is_a("IfcTypeObject"))
+        )
 
     def draw(self, context):
         if not TypeData.is_loaded:

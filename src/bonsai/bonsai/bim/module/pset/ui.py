@@ -242,14 +242,11 @@ class BIM_PT_object_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not (obj := context.active_object):
-            return False
-        ifc_id = tool.Blender.get_ifc_definition_id(obj)
-        if not ifc_id:
-            return False
-        if not tool.Ifc.get_object_by_identifier(ifc_id):
-            return False
-        return True
+        return (
+            (obj := tool.Blender.get_active_object())
+            and (element := tool.Ifc.get_entity(obj))
+            and element.is_a("IfcObjectDefinition")
+        )
 
     def draw(self, context):
         if not ObjectPsetsData.is_loaded:
@@ -388,14 +385,11 @@ class BIM_PT_object_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not (obj := context.active_object):
-            return False
-        ifc_id = tool.Blender.get_ifc_definition_id(obj)
-        if not ifc_id:
-            return False
-        if not tool.Ifc.get_object_by_identifier(ifc_id):
-            return False
-        return True
+        return (
+            (obj := tool.Blender.get_active_object())
+            and (element := tool.Ifc.get_entity(obj))
+            and element.is_a("IfcObjectDefinition")
+        )
 
     def draw(self, context):
         if not ObjectQtosData.is_loaded:
