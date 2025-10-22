@@ -261,7 +261,7 @@ class AnnotationToolUI:
             )
             row = cls.layout.row(align=True)
             props = tool.Drawing.get_document_props()
-            row.prop(props, "should_select_intersected_by_camera", text="Intersected by Camera")
+            row.operator("bim.filter_selected_objects_if_intersected_by_camera", text="Filter by Camera")
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
