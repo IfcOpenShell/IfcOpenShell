@@ -228,7 +228,6 @@ class AnnotationToolUI:
     def draw_type_selection_interface(cls):
         # shared by both sidebar and header
         object_type = cls.props.object_type
-
         row = cls.layout.row(align=True)
         row.label(text="", icon="FILE_VOLUME")
         prop_with_search(row, cls.props, "object_type", text="")
@@ -248,6 +247,9 @@ class AnnotationToolUI:
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
 
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="DRIVER_ROTATIONAL_DIFFERENCE")
+            row.prop(cls.props, "tag_rotation_mode", text="")
             add_layout_hotkey_operator(
                 cls.layout,
                 "Bulk Tag",
@@ -313,7 +315,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 ),
                 enable_editing=False,
             )
-            tool.Drawing.setup_annotation_object(obj, object_type, related_object)
+            tool.Drawing.setup_annotation_object(obj, object_type, related_object, props.tag_rotation_mode)
             created_objects.append(obj)
         
         # Select the created annotation objects
@@ -322,6 +324,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             obj.select_set(True)
         if created_objects:
             bpy.context.view_layer.objects.active = created_objects[-1]
+
 
     def hotkey_S_A(self):
         if bpy.ops.bim.add_annotation.poll():
@@ -351,4 +354,5 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             related_object = tool.Ifc.get_object(related_product)
 
-            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object)
+            rotation_mode = tool.Drawing.get_annotation_props().tag_rotation_mode
+            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object, rotation_mode)

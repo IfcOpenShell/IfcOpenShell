@@ -251,7 +251,11 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def setup_annotation_object(
-        cls, obj: bpy.types.Object, object_type: str, related_object: Optional[bpy.types.Object] = None
+        cls,
+        obj: bpy.types.Object,
+        object_type: str,
+        related_object: Optional[bpy.types.Object] = None,
+        rotation_mode: str = "NONE",
     ) -> None:
         """Finish object's adjustments after both object and entity are created"""
 
@@ -322,6 +326,55 @@ class Drawing(bonsai.core.tool.Drawing):
             ifcopenshell.api.drawing.assign_product(
                 ifc_file, relating_product=related_entity, related_object=obj_entity
             )
+
+        if rotation_mode != "NONE" and related_object:
+            cls.apply_annotation_rotation(obj, related_object, rotation_mode)
+
+    @classmethod
+    def apply_annotation_rotation(
+        cls, tag_obj: bpy.types.Object, related_object: bpy.types.Object, rotation_mode: str
+    ) -> None:
+        """Apply rotation to annotation based on the selected rotation mode"""
+        camera = bpy.context.scene.camera
+        camera_right = camera.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
+
+        if rotation_mode == "CAMERA_Horizontal":
+            location = tag_obj.location.copy()
+            camera_matrix = camera.matrix_world.copy()
+            camera_matrix.translation = location
+            tag_obj.matrix_world = camera_matrix
+
+        elif rotation_mode == "CAMERA_Vertical":
+            location = tag_obj.location.copy()
+            camera_matrix = camera.matrix_world.copy()
+            camera_matrix.translation = location
+            rotation_90z = mathutils.Matrix.Rotation(math.pi / 2, 4, "Z")
+            camera_matrix = camera_matrix @ rotation_90z
+            tag_obj.matrix_world = camera_matrix
+
+        elif rotation_mode == "LOCAL_X":
+            local_x = related_object.matrix_world.to_3x3() @ mathutils.Vector((1, 0, 0))
+            local_x = local_x.normalized()
+            if local_x.dot(camera_right) < 0:
+                local_x = -local_x
+
+            tag_obj.rotation_euler = local_x.to_track_quat("X", "Z").to_euler()
+
+        elif rotation_mode == "LOCAL_Y":
+            local_y = related_object.matrix_world.to_3x3() @ mathutils.Vector((0, 1, 0))
+            local_y = local_y.normalized()
+            if local_y.dot(camera_right) < 0:
+                local_y = -local_y
+
+            tag_obj.rotation_euler = local_y.to_track_quat("X", "Z").to_euler()
+
+        elif rotation_mode == "LOCAL_Z":
+            local_z = related_object.matrix_world.to_3x3() @ mathutils.Vector((0, 0, 1))
+            local_z = local_z.normalized()
+            if local_z.dot(camera_right) < 0:
+                local_z = -local_z
+
+            tag_obj.rotation_euler = local_z.to_track_quat("X", "Z").to_euler()
 
     @classmethod
     def is_annotation_object_type(
