@@ -265,6 +265,7 @@ def register():
         type=prop.BIMExternalParametricGeometryProperties
     )
 
+    bpy.types.VIEW3D_HT_tool_header.prepend(workspace.workspace_settings)
     bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
 

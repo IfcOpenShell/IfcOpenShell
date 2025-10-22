@@ -98,16 +98,22 @@ class BimTool(WorkSpaceTool):
     def draw_settings(
         cls, context: bpy.types.Context, layout: bpy.types.UILayout, ws_tool: bpy.types.WorkSpaceTool
     ) -> None:
-        props = tool.Geometry.get_geometry_props()
         ifc_element_type = None if cls.ifc_element_type == "all" else cls.ifc_element_type
-        if props.mode == "ITEM":
-            EditItemUI.draw(context, layout)
-        elif (
-            active_ifc_object := (context.active_object and tool.Ifc.get_entity(context.active_object))
-        ) and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=ifc_element_type)
+        if tool.Geometry.get_geometry_props().mode == "ITEM":
+            pass
+        elif context.active_object and tool.Ifc.get_entity(context.active_object) and context.selected_objects:
+            pass
         else:
             CreateObjectUI.draw(context, layout, ifc_element_type=ifc_element_type)
+
+
+def workspace_settings(self, context):
+    if not tool.Ifc.get():
+        return
+    if tool.Geometry.get_geometry_props().mode == "ITEM":
+        EditItemUI.draw(context, self.layout)
+    elif context.active_object and tool.Ifc.get_entity(context.active_object) and context.selected_objects:
+        EditObjectUI.draw(context, self.layout)
 
 
 class WallTool(BimTool):
