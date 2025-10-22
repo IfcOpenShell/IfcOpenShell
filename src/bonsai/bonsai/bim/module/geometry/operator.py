@@ -787,6 +787,7 @@ def calc_delete_is_batch(ifc_file: ifcopenshell.file, context: bpy.types.Context
     is_batch = total_elements > 500000 and total_polygons > 2000
     return is_batch
 
+
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
@@ -857,10 +858,10 @@ class OverrideDelete(bpy.types.Operator):
         objects_to_remove = context.selected_objects
 
         self.process_arrays(context)
-        
+
         # Track aggregates before deleting their parts
         aggregates_to_check = self.track_aggregates(objects_to_remove)
-        
+
         clear_active_object = True
 
         for i, obj in enumerate(objects_to_remove, 1):
@@ -895,6 +896,9 @@ class OverrideDelete(bpy.types.Operator):
                             {"INFO"}, "The last grid axis of a grid cannot be deleted. Delete the grid instead."
                         )
                         continue
+                if tool.Drawing.is_auto_annotation(element):
+                    self.report({"INFO"}, "References cannot be deleted. Exclude the referenced element instead.")
+                    continue
                 tool.Geometry.delete_ifc_object(obj)
             elif tool.Geometry.is_representation_item(obj):
                 tool.Geometry.delete_ifc_item(obj)
@@ -959,23 +963,25 @@ class OverrideDelete(bpy.types.Operator):
                 aggregate.id()
             except:
                 continue
-                
+
             related_objects = ifcopenshell.util.element.get_parts(aggregate)
             if len(related_objects) == 0:
                 aggregate_name = aggregate.Name or f"{aggregate.is_a()} #{aggregate.id()}"
                 deleted_aggregates.append(aggregate_name)
-                
+
                 aggregate_obj = tool.Ifc.get_object(aggregate)
                 if aggregate_obj and tool.Blender.is_valid_data_block(aggregate_obj):
                     tool.Geometry.delete_ifc_object(aggregate_obj)
-        
+
         # Show info message if aggregates were deleted
         if deleted_aggregates:
             if len(deleted_aggregates) == 1:
-                self.report({'INFO'}, f"Aggregate '{deleted_aggregates[0]}' was deleted because it had no remaining parts")
+                self.report(
+                    {"INFO"}, f"Aggregate '{deleted_aggregates[0]}' was deleted because it had no remaining parts"
+                )
             else:
                 aggregate_list = ", ".join(f"'{name}'" for name in deleted_aggregates)
-                self.report({'INFO'}, f"Aggregates {aggregate_list} were deleted because they had no remaining parts")
+                self.report({"INFO"}, f"Aggregates {aggregate_list} were deleted because they had no remaining parts")
 
     def process_arrays(self, context: bpy.types.Context) -> None:
         ifc_file = tool.Ifc.get()
@@ -1001,6 +1007,7 @@ class OverrideDelete(bpy.types.Operator):
                         bpy.ops.bim.remove_array(item=i)
                 else:
                     break  # allows to remove only n last layers of an array
+
 
 class SelectedIdsData(NamedTuple):
     objects: set[bpy.types.Object]

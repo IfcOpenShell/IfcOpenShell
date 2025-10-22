@@ -1488,12 +1488,18 @@ class Drawing(bonsai.core.tool.Drawing):
             for axis in element.UAxes + element.VAxes + (element.WAxes or tuple()):
                 if axis in existing_references:
                     continue
-                elements.append(element)
+                elements.append(axis)
         target_view = tool.Drawing.get_drawing_target_view(drawing)
         if target_view in ("SECTION_VIEW", "ELEVATION_VIEW"):
             for element in tool.Ifc.get().by_type("IfcBuildingStorey"):
+                if element in existing_references:
+                    continue
                 elements.append(element)
         return elements
+
+    @classmethod
+    def is_auto_annotation(cls, element: ifcopenshell.entity_instance):
+        return element.is_a("IfcAnnotation") and  element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
 
     @classmethod
     def get_drawing_reference_annotation(
@@ -2649,5 +2655,4 @@ class Drawing(bonsai.core.tool.Drawing):
     def hide_all_drawing_collections(cls) -> None:
         for element in tool.Ifc.get().by_type("IfcAnnotation"):
             if element.ObjectType == "DRAWING" and (obj := tool.Ifc.get_object(element)):
-                print('found element', element)
                 tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
