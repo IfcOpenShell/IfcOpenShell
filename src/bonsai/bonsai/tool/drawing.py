@@ -217,7 +217,9 @@ class Drawing(bonsai.core.tool.Drawing):
                         return e
 
     @classmethod
-    def exclude_annotation_from_drawing(cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance) -> None:
+    def exclude_annotation_from_drawing(
+        cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance
+    ) -> None:
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
@@ -1499,7 +1501,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_auto_annotation(cls, element: ifcopenshell.entity_instance):
-        return element.is_a("IfcAnnotation") and  element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
+        return element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
 
     @classmethod
     def get_drawing_reference_annotation(
@@ -1772,102 +1774,50 @@ class Drawing(bonsai.core.tool.Drawing):
     def generate_grid_axis_reference_annotation(
         cls,
         drawing: ifcopenshell.entity_instance,
-        reference_element: ifcopenshell.entity_instance,
+        axis: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> Union[ifcopenshell.entity_instance, None]:
         import bonsai.bim.module.drawing.helper as helper
 
-        target_view = tool.Drawing.get_drawing_target_view(drawing)
-
         camera = tool.Ifc.get_object(drawing)
-        assert isinstance(camera, bpy.types.Object)
-        assert isinstance(camera_data := camera.data, bpy.types.Camera)
-
-        is_ortho = camera_data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera_data) if is_ortho else None
-        clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
-        elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
-
-        def clone(src: bpy.types.Object) -> bpy.types.Object:
-            dst = src.copy()
-            assert isinstance(dst.data, bpy.types.Mesh)
-            dst.data = dst.data.copy()
-            dst.name = dst.name.replace("IfcGridAxis/", "")
-            tool.Blender.get_object_bim_props(dst).ifc_definition_id = 0
-            tool.Geometry.get_mesh_props(dst.data).ifc_definition_id = 0
-            return dst
-
-        def disassemble(obj: bpy.types.Object) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
-            assert isinstance(obj.data, bpy.types.Mesh)
-            mesh = bmesh.new()
-            mesh.verts.ensure_lookup_table()
-            mesh.from_mesh(obj.data)
-            return obj, mesh
-
-        def assemble(obj: bpy.types.Object, mesh: bmesh.types.BMesh) -> bpy.types.Object:
-            assert isinstance(obj.data, bpy.types.Mesh)
-            mesh.to_mesh(obj.data)
-            return obj
-
-        def to_camera_coords(
-            obj: bpy.types.Object, mesh: bmesh.types.BMesh
-        ) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
-            mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
-            obj.matrix_world = camera.matrix_world
-            annotation_offset = mathutils.Vector((0, 0, -camera_data.clip_start - 0.05))
-            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            obj.matrix_world.translation += annotation_offset
-            return obj, mesh
-
-        def clip_to_camera_boundary(mesh: bmesh.types.BMesh) -> bmesh.types.BMesh:
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
-
-        def draw_grids_vertically(mesh: bmesh.types.BMesh) -> bmesh.types.BMesh:
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.elevate_segment(bounds, points)
-            if points is None:
-                return None
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
-
-        obj = tool.Ifc.get_object(reference_element)
-        if not obj:
-            return
-        assert isinstance(obj, bpy.types.Object)
-        obj, mesh = to_camera_coords(*disassemble(clone(obj)))
-
-        if clipping:
-            mesh = clip_to_camera_boundary(mesh)
-        elif elevating:
-            mesh = draw_grids_vertically(mesh)
-
-        if mesh is None:
+        if camera.data.type != "ORTHO":
             return
 
-        assemble(obj, mesh)
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+        geometry = ifcopenshell.geom.create_shape(settings, axis.AxisCurve)
+        verts = ifcopenshell.util.shape.get_vertices(geometry)
+        grid = (axis.PartOfU or axis.PartOfV or axis.PartOfW)[0]
+        m = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
+        im = camera.matrix_world.inverted()
+        v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in verts[:2]]
 
+        target_view = tool.Drawing.get_drawing_target_view(drawing)
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+            bounds = helper.ortho_view_frame(camera.data)
+            if not (points := helper.clip_segment(bounds, [v1, v2])):
+                return
+        elif target_view in ("ELEVATION_VIEW", "SECTION_VIEW"):
+            bounds = helper.ortho_view_frame(camera.data)
+            if not (points := helper.elevate_segment(bounds, [v1, v2])):
+                return
+        else:
+            return
+
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new(axis.AxisTag or "-", mesh)
+        obj.matrix_world = camera.matrix_world
+        annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+        annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+        obj.matrix_world.translation += annotation_offset
         element = cls.run_root_assign_class(
-            obj=obj,
-            ifc_class="IfcAnnotation",
-            predefined_type="GRID",
-            should_add_representation=True,
-            context=context,
-            ifc_representation_class=None,
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="GRID", should_add_representation=False
         )
-        if representation := ifcopenshell.util.representation.get_representation(element, context):
-            cls.reload_representation(obj=obj, representation=representation)
+        element.Name = axis.AxisTag or "-"
+        builder = ShapeBuilder(tool.Ifc.get())
+        representation = builder.get_representation(context, [builder.polyline(points)])
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
         return element
 
     @classmethod
