@@ -1258,6 +1258,8 @@ class CreateDrawing(bpy.types.Operator):
 
     def get_svg_classes(self, element, layer=None):
         classes = [element.is_a()]
+
+        # ─── Material ──────────────────────────────────────────────
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         material_name = ""
         if material:
@@ -1270,6 +1272,7 @@ class CreateDrawing(bpy.types.Operator):
         else:
             classes.append("material-null")
 
+        # ─── Layer ─────────────────────────────────────────────────
         if layer:
             classes.append(layer.is_a())
             layer_material = layer.Material
@@ -1282,13 +1285,22 @@ class CreateDrawing(bpy.types.Operator):
                 layer_material_category = tool.Drawing.canonicalise_class_name(layer_material.Category)
                 classes.append(f"layer-material-category-{layer_material_category}")
 
+        # ─── Metadata ──────────────────────────────────────────────
         for key in self.metadata:
             value = ifcopenshell.util.selector.get_element_value(element, key)
             if value:
                 classes.append(
-                    tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
+                    tool.Drawing.canonicalise_class_name(key) + "-" +
+                    tool.Drawing.canonicalise_class_name(str(value))
                 )
+
+        # ─── Target View ───────────────────────────────────────────
+        if getattr(self.cprops, "target_view", None):
+            target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
+            classes.append(f"target-view-{target_view_class}")
+
         return classes
+
 
     def is_manifold(self, obj) -> bool:
         result = self.is_manifold_cache.get(obj.data.name, None)
