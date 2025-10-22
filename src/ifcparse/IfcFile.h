@@ -126,13 +126,13 @@ public:
         return storage_.byref_excl_;
     }
 
-    std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> steal_instances() {
+    std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> stealInstances() {
         return storage_.steal_instances();
     }
 
-    bool has_semicolon() const;
+    bool hasSemicolon() const;
 
-	void push_page(const std::string& page);
+	void pushPage(const std::string& page);
 
     InstanceStreamer();
 
@@ -150,7 +150,7 @@ public:
         delete header_;
     }
 
-    std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> read_instance();
+    std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> readInstance();
 };
 
 /// This class provides access to the entity instances in an IFC file

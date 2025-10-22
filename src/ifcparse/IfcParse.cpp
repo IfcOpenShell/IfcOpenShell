@@ -336,11 +336,6 @@ Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, size_t start, const std::str
         token.type = Token_KEYWORD;
     }
 
-    // todo STRING/BINARY/ENUM/KEYWORD not stored
-    // tokenStr is gone after this.
-    // Orrrr we could only free pages when after a full instance is formed because after that no
-	// references to prior token ranges exist anymore.
-
     return token;
 }
 
@@ -1262,7 +1257,7 @@ IfcFile::IfcFile(std::istream& stream, int length)
     std::string string_data;
 	string_data.resize(length);
 	stream.read(string_data.data(), length);
-    s.push_next_page(string_data);
+    s.pushNextPage(string_data);
 
     storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
@@ -1335,27 +1330,33 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
     setDefaultHeaderValues();
 }
 
-bool IfcParse::InstanceStreamer::has_semicolon() const
+bool IfcParse::InstanceStreamer::hasSemicolon() const
 {
     auto local_stream = stream_->clone();
 	auto local_lexer = IfcSpfLexer(&local_stream);
-    Token t = local_lexer.Next();
+    Token t;
+    try {
+        t = local_lexer.Next();
+    } catch (const std::out_of_range&) {
+        return false;
+    }
     while (t.type != Token_NONE) {
         if (TokenFunc::isOperator(t, ';')) {
             return true;
 		}
-        // probably the issue is that this moves the cursor past the page boundary on the local stream which also affects the global one
-        // 'freeze' the stream so that no pages are cleared
-        t = local_lexer.Next();
+        try {
+            t = local_lexer.Next();
+        } catch (const std::out_of_range&) {
+            // This most likely happens when a page boundary is contained within a string
+            break;
+        }
     }
-	std::cout << "local: " << local_stream.tell() << " global: " << stream_->tell() << std::endl;
 	return false;
 }
 
-void IfcParse::InstanceStreamer::push_page(const std::string& page)
+void IfcParse::InstanceStreamer::pushPage(const std::string& page)
 {
-    std::cout << "global: " << stream_->tell() << std::endl;
-    stream_->push_next_page(page);
+    stream_->pushNextPage(page);
     if (good_ == file_open_status::NO_HEADER) {
         header_ = new IfcParse::IfcSpfHeader(lexer_);
         if (header_->tryRead() && header_->file_schema()->schema_identifiers().size() == 1) {
@@ -1503,7 +1504,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
 
     while (streamer) {
 
-        auto inst = streamer.read_instance();
+        auto inst = streamer.readInstance();
 
         if (!inst) {
             // No more instances to read
@@ -1558,7 +1559,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
 	byref_excl_ = streamer.inverses();
     
 	// Move the storage of simple type instances so that they are retained during the lifetime of the file
-    read_simple_type_instances = streamer.steal_instances();
+    read_simple_type_instances = streamer.stealInstances();
 
     Logger::Status("\rDone scanning file   ");
 

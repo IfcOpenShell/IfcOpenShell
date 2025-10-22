@@ -36,8 +36,8 @@ private:
 
 %ignore IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
 
-%ignore IfcParse::InstanceStreamer::read_instance;
-%ignore IfcParse::InstanceStreamer::steal_instances;
+%ignore IfcParse::InstanceStreamer::readInstance;
+%ignore IfcParse::InstanceStreamer::stealInstances;
 
 %ignore in_memory_file_storage;
 %ignore rocks_db_file_storage;
@@ -1003,7 +1003,7 @@ private:
 %}
 
 %extend IfcParse::InstanceStreamer {
-	PyObject* read_instance_py() {
+	PyObject* readInstancePy() {
 		auto simply_type_to_dictionary = [&](IfcUtil::IfcBaseClass* t) -> PyObject* {
 			const auto& nm = t->declaration().name();
 			auto ifc_val = t->get_attribute_value(0);
@@ -1071,7 +1071,7 @@ private:
 			Py_INCREF(Py_None);
 			return Py_None;
 		}
-		auto inst = self->read_instance();
+		auto inst = self->readInstance();
 		if (!inst) {
 			Py_INCREF(Py_None);
 			return Py_None;
