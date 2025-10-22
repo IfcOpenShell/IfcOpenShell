@@ -1959,8 +1959,7 @@ class DecorationsHandler:
         # NOTE: we USE POST_PIXEL here so that we can use both POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
-        if not DecoratorData.is_loaded:
-            DecoratorData.load(handler)
+        DecoratorData.clear_cache()
 
     @classmethod
     def uninstall(cls):
@@ -1986,6 +1985,9 @@ class DecorationsHandler:
     def __call__(self, context):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
+
+        if not DecoratorData.is_loaded:
+            DecoratorData.load(self)
 
         for obj, decorator in DecoratorData.data["object_decorators"]:
             decorator.decorate(context, obj)

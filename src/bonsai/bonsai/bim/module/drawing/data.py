@@ -239,11 +239,14 @@ class DecoratorData:
     camera_rotation_checksum = None
 
     @classmethod
-    def load(cls, handler):
-        cls.is_loaded = True
+    def clear_cache(cls):
         cls.cut_cache = {}
         cls.layerset_cache = {}
         cls.fill_cache = {}
+
+    @classmethod
+    def load(cls, handler):
+        cls.is_loaded = True
 
         text = {}
         dimension = {}
