@@ -864,6 +864,19 @@ class BIMAnnotationProperties(PropertyGroup):
     )
     is_adding_type: bpy.props.BoolProperty(default=False)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
+    tag_rotation_mode: bpy.props.EnumProperty(
+        name="Tag Rotation Mode",
+        description="How to orient the tag relative to the tagged object",
+        items=[
+            ("NONE", "No Rotation", "Keep tag in default orientation"),
+            ("LOCAL_X", "Local X Axis", "Align tag with object's local X axis"),
+            ("LOCAL_Y", "Local Y Axis", "Align tag with object's local Y axis"),
+            ("LOCAL_Z", "Local Z Axis", "Align tag with object's local Z axis"),
+            ("CAMERA_Horizontal", "Camera Horizontal", "Align tag with camera X axis"),
+            ("CAMERA_Vertical", "Camera Vertical", "Align tag with camera Y axis"),
+        ],
+        default="NONE",
+    )
 
     if TYPE_CHECKING:
         object_type: str
