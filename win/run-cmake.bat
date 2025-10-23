@@ -92,10 +92,6 @@ set LIBXML2_INCLUDE_DIR=%DEPS_DIR%\OpenCOLLADA\Externals\LibXML\include
 set LIBXML2_LIBRARIES=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada\xml.lib
 set HDF5_INSTALL_DIR=%INSTALL_DIR%\HDF5-%HDF5_VERSION%-win%ARCH_BITS%
 
-:: Unfortunately we have to provide all 3 paths explicitly,
-:: because if just prefix PATH, then FindPython will have an issue with newer versions of Python.
-:: E.g. older FindPython that didn't s added explicit support for Python 3.14 will fail to find.
-:: So setting paths expliicitly is more robust.
 set PYTHON_EXECUTABLE=%PYTHONHOME%\python.exe
 for /f "usebackq delims=" %%v in (`
     call "%PYTHON_EXECUTABLE%" -c "import sys; print(f'{sys.version_info[0]}{sys.version_info[1]}')"
