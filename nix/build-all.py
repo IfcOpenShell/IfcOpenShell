@@ -54,7 +54,7 @@ Used environment variables:
     - ``USE_OCCT`` - whether to use official Open CASCADE instead of Community Edition
     (`true` by default, any other value is considered `false`)
     - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
-    used to deduce `PYMAJOR`, `PYMINOR`, `PYMICRO`, `TARGETINSTALLDIR`, `PYTHONINCLUDE`,
+    used to deduce `PYVERSION` (e.g. '3.13.2'), `PYTHONINCLUDE`,
     `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
     Allows to build wasm without pyodide build environment, which can be useful for debugging build issues.
     Example value: 'pyodide/cpython/installs/python-3.13.2'
@@ -216,14 +216,10 @@ if WASM:
         wasm_python_path = os.environ["WASM_PYTHON_PATH"]
         # Deduce version from path, assuming format .../python-X.Y.Z
         version_match = re.search(r"python-(\d+)\.(\d+)\.(\d+)", wasm_python_path)
-        if version_match:
-            os.environ["PYMAJOR"] = version_match.group(1)
-            os.environ["PYMINOR"] = version_match.group(2)
-            os.environ["PYMICRO"] = version_match.group(3)
-        os.environ["TARGETINSTALLDIR"] = wasm_python_path
-        os.environ["PYTHONINCLUDE"] = (
-            f"{wasm_python_path}/include/python{os.environ['PYMAJOR']}.{os.environ['PYMINOR']}"
-        )
+        assert version_match, f"Could not deduce python version from '{wasm_python_path}'"
+        python_version = version_match.group(1)
+        os.environ["PYVERSION"] = python_version
+        os.environ["PYTHONINCLUDE"] = f"{wasm_python_path}/include/python{python_version.rpartition('.')[0]}"
         os.environ["SIDE_MODULE_CFLAGS"] = ""
         # Required, otherwise library will compile as .a, not .so.
         os.environ["SIDE_MODULE_LDFLAGS"] = "-s SIDE_MODULE=1"
@@ -231,12 +227,8 @@ if WASM:
         assert "WASM_TOOLCHAIN_FILE" in os.environ, "WASM_TOOLCHAIN_FILE must be set when WASM_PYTHON_PATH is provided"
         WASM_DEBUG = True
     required_vars = (
-        "PYMAJOR",
-        "PYMINOR",
-        "PYMICRO",
-        # Folder where WASM-Python was installed.
-        # e.g '/pyodide/cpython/installs/python-3.13.2'.
-        "TARGETINSTALLDIR",
+        # E.g. '3.13.2'.
+        "PYVERSION",
         # 'include' folder in WASM-Python installation.
         # e.g. '/pyodide/cpython/installs/python-3.13.2/include/python3.13'
         "PYTHONINCLUDE",
@@ -1448,7 +1440,6 @@ if "IfcOpenShell-Python" in targets:
 
     def compile_python_wrapper(
         python_version: str,
-        python_library: Union[str, None] = None,
         python_include: Union[str, None] = None,
         python_executable: Union[str, None] = None,
         python_path: Union[Path, None] = None,
@@ -1456,7 +1447,7 @@ if "IfcOpenShell-Python" in targets:
         """
         :return: Path to module dir if ``python_executable`` was provided, otherwise ``None``.
         """
-        assert bool(python_path) ^ bool(python_library and python_include)
+        assert bool(python_path) ^ bool(python_include)
 
         logger.info(f"\rConfiguring python {python_version} wrapper...")
 
@@ -1469,7 +1460,7 @@ if "IfcOpenShell-Python" in targets:
             prefix_paths.append(f"{DEPS_DIR}/install/swig")
         if python_path:
             # We couldn't just prefix PATH and have to provide all variables explicitly,
-            # see run-cmake.bat note for details.
+            # see ifcwrap/cmake for the details.
             python_executable = (Path(python_path) / "bin" / "python3").__str__()
             python_include = run(
                 [
@@ -1478,20 +1469,8 @@ if "IfcOpenShell-Python" in targets:
                     "import sysconfig; print(sysconfig.get_config_var('INCLUDEPY'))",
                 ]
             )
-            python_library = run(
-                [
-                    python_executable,
-                    "-c",
-                    "import sysconfig, pathlib; "
-                    "lib_dir = pathlib.Path(sysconfig.get_config_var('LIBDIR')); "
-                    "print((lib_dir / sysconfig.get_config_var('LIBRARY')).__str__())",
-                ]
-            )
-            if platform.system() == "Darwin":
-                # Oddly on Mac `LIBRARY` returns .a that doesn't even exists.
-                python_library = Path(python_library).with_suffix(".dylib").__str__()
 
-        assert python_library and python_include
+        assert python_include
         run_cmake(
             "",
             cmake_args
@@ -1500,7 +1479,6 @@ if "IfcOpenShell-Python" in targets:
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
                 # Needed because pyodide is expecting setup.py to be in the root.
                 *([f"-DPYTHON_MODULE_INSTALL_DIR={REPO_PATH}"] * WASM),
-                f"-DPYTHON_LIBRARY={python_library}",
                 f"-DPYTHON_INCLUDE_DIR={python_include}",
                 f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
                 "-DUSERSPACE_PYTHON_PREFIX="
@@ -1538,26 +1516,13 @@ if "IfcOpenShell-Python" in targets:
             return module_dir
 
     if "wasm" in flags:
-        compile_python_wrapper(
-            f"{os.environ['PYMAJOR']}.{os.environ['PYMINOR']}.{os.environ['PYMICRO']}",
-            f"{os.environ['TARGETINSTALLDIR']}/lib/libpython{os.environ['PYMAJOR']}.{os.environ['PYMINOR']}.a",
-            os.environ["PYTHONINCLUDE"],
-            None,
-        )
+        compile_python_wrapper(os.environ["PYVERSION"], os.environ["PYTHONINCLUDE"])
         # Copy setup.py where pyodide build system expects it.
         shutil.copy(REPO_PATH / "pyodide" / "setup.py", REPO_PATH)
 
     elif USE_CURRENT_PYTHON_VERSION:
         python_info = sysconfig.get_paths()
-
-        py_path_components = [sysconfig.get_config_var("LIBDIR"), sysconfig.get_config_var("INSTSONAME")]
-
-        if sysconfig.get_config_var("multiarchsubdir"):
-            py_path_components.insert(1, sysconfig.get_config_var("multiarchsubdir").replace("/", ""))
-
-        python_lib = os.path.join(*py_path_components)
-
-        compile_python_wrapper(platform.python_version(), python_lib, python_info["include"], sys.executable)
+        compile_python_wrapper(platform.python_version(), python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
             python_path = Path(DEPS_DIR) / "install" / f"python-{python_version}"
