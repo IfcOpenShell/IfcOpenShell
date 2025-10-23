@@ -46,17 +46,20 @@ IF(NOT "${PYTHON_LIBRARY}" STREQUAL "")
     MESSAGE(STATUS "Looking for Python library file in: ${Python_LIBRARY}")
 ENDIF()
 
-# NOTE PYTHONLIBS_FOUND and PYTHONINTERP_FOUND cannot seem to be trusted so
-# we need further checks to see whether the packages were actually found or not.
-FIND_PACKAGE(Python COMPONENTS Development)
-IF(NOT Python_Development_FOUND)
+# Development.Module = headers on Unix, headers+libraries on Windows.
+# Required variables:
+# - Windows - Python_INCLUDE_DIR, Python_LIBRARY (MSVC doesn't allow undefined symbols at link time)
+# - Unix - Python_INCLUDE_DIR
+# Unfortunately all paths must be always provided explicitly, not by prefixing PATH.
+# Otherwise FindPython will break on newer Python versions (list of supported versions is hardcoded).
+find_package(Python COMPONENTS Development.Module)
+IF(NOT Python_Development.Module_FOUND)
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
 ENDIF()
 
 # Ensure version is saved here, from wasm libraries,
 # not from Python interpreter that might be unrelated to pyodide Python version.
 set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
-INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
@@ -90,6 +93,7 @@ SET_PROPERTY(
 set(SWIG_MODULE_ifcopenshell_wrapper_EXTRA_FLAGS "-interface" "_ifcopenshell_wrapper")
 
 swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
+swig_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
 SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if (WASM_BUILD)
     # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
@@ -113,9 +117,9 @@ if (WASM_BUILD)
 endif()
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
+swig_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
 else()
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${Python_LIBRARIES} ${LIBSVGFILL})
+swig_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${LIBSVGFILL})
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
