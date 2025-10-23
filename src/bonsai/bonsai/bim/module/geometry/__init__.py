@@ -112,7 +112,6 @@ def block_scale(scene: bpy.types.Scene) -> None:
                     # Only update if scale isn't already (-1, -1, -1)
                     if obj.scale != (-1, -1, -1):
                         obj.scale = (-1, -1, -1)
-                        obj.rotation_euler = (0.0, 0.0, math.radians(180))
             else:
                 if obj.scale != (1, 1, 1):
                     obj.scale = (1, 1, 1)
