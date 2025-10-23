@@ -87,12 +87,24 @@ SET_PROPERTY(
 		utils/typemaps_out.i
 )
 
-# Debug build on Windows add required `_d` suffix to the resulting .pyd file.
-# If we won't override -interface name,
-# swig py wrapper will try to import `_ifcopenshell_wrapper_d` module and would fail.
-set(SWIG_MODULE_ifcopenshell_wrapper_EXTRA_FLAGS "-interface" "_ifcopenshell_wrapper")
+# On Windows there is '_d' prefix for debug builds - e.g. `_d.cp311-win_amd64.pyd`.
+if(WIN32)
+    set(Python_DEBUG_POSTFIX "_d")
+endif()
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "4.2")
+    # `DEBUG_POSTFIX` argument was added in 4.2.
+    swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i DEBUG_POSTFIX "${Python_DEBUG_POSTFIX}")
+else()
+    # If we won't override -interface name,
+    # swig py wrapper will try to import `_ifcopenshell_wrapper_d` module and would fail.
+    set(SWIG_MODULE_ifcopenshell_wrapper_EXTRA_FLAGS "-interface" "_ifcopenshell_wrapper")
+    swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
+    set_target_properties(
+        ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES
+        DEBUG_POSTFIX "${Python_DEBUG_POSTFIX}"
+    )
+endif()
 
-swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
 swig_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
 SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if (WASM_BUILD)
@@ -145,20 +157,10 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
     else()
         set(PYTHON_EXTENSION_SUFFIX ".${Python_SOABI}.so")
     endif()
-    # On Windows there is '_d' prefix for debug builds - e.g. `_d.cp311-win_amd64.pyd`.
-    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set_target_properties(
-            ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES
-            SUFFIX ${PYTHON_EXTENSION_SUFFIX}
-            DEBUG_POSTFIX "_d"
-        )
-    else()
-        set_target_properties(
-            ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES
-            SUFFIX ${PYTHON_EXTENSION_SUFFIX}
-        )
-    endif()
-
+    set_target_properties(
+        ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES
+        SUFFIX ${PYTHON_EXTENSION_SUFFIX}
+    )
     if (PYTHON_MODULE_INSTALL_DIR)
 	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
     else()
