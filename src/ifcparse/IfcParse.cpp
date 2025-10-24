@@ -1200,6 +1200,7 @@ bool IfcParse::IfcFile::initialize(const std::string& fn, bool mmap) {
     }
 
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
+    return good_ == file_open_status::SUCCESS;
 }
 #endif
 
