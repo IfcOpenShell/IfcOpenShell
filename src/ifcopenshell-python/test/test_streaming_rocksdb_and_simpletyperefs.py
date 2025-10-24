@@ -23,6 +23,11 @@ import pytest
 import ifcopenshell
 import tempfile
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 fn = os.path.join(os.path.dirname(__file__), "fixtures/ColumnPSetsOfSets.ifc")
 
 
@@ -32,16 +37,38 @@ def test_stream():
         "value": ({"ref": 136}, {"ref": 138}),
     }
 
+
 def test_chunked_stream():
     assert list(ifcopenshell.stream2(fn)) == list(ifcopenshell.stream2(fn, page_size=1024))
 
+
 def test_mmaped_stream():
     assert list(ifcopenshell.stream2(fn)) == list(ifcopenshell.stream2(fn, mmap=True))
+
 
 def test_file():
     f = ifcopenshell.open(fn)
     assert f[139].RelatingPropertyDefinition.is_a("IfcPropertySetDefinitionSet")
     assert {x.id() for x in f[139].RelatingPropertyDefinition[0]} == {136, 138}
+
+
+def test_partial_open():
+    f = ifcopenshell.open(fn)
+    assert len(f.by_type("ifccartesianpoint"))
+    f = ifcopenshell.open(fn, bypass_types=("IfcRepresentationItem",))
+    assert len(f.by_type("ifccartesianpoint")) == 0
+
+
+@pytest.mark.skipif(psutil is None, reason="psutil not installed")
+def test_memusage_partial_open():
+    m0 = psutil.Process().memory_info().rss
+    f = ifcopenshell.open(fn)
+    m1 = psutil.Process().memory_info().rss
+    g = ifcopenshell.open(fn, bypass_types=("IfcRepresentationItem",))
+    m2 = psutil.Process().memory_info().rss
+    # arbitrary...
+    expected_ratio = 0.75
+    assert (m2 - m1) < (m1 - m0) * expected_ratio
 
 
 def test_rocks():

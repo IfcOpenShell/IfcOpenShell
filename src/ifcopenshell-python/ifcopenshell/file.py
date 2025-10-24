@@ -248,6 +248,7 @@ READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
+UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
 
 import struct
 
@@ -586,8 +587,11 @@ class file:
                         "Unsupported schema: %s" % ",".join(self.header.file_schema.schema_identifiers),
                     ),
                     INVALID_SYNTAX: lambda: (Error, "Syntax error during parse, check logs"),
+                    # This is the case when passing uninitialized_tag
+                    UNKNOWN: lambda: (None, None),
                 }[f.good().value()]()
-                raise exc(msg)
+                if exc is not None:
+                    raise exc(msg)
         else:
             args = filter(None, [schema])
             args = map(ifcopenshell_wrapper.schema_by_name, args)

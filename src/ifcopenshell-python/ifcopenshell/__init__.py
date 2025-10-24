@@ -59,7 +59,7 @@ import sys
 import zipfile
 import tempfile
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING, Any, overload, Literal
+from typing import Optional, Sequence, Union, TYPE_CHECKING, Any, overload, Literal
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -138,7 +138,12 @@ def open(
     path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: bool = False, readonly: bool = False
 ) -> Union[_file, sqlite, _stream]: ...
 def open(
-    path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False, readonly: bool = False
+    path: Union[os.PathLike, str],
+    format: Optional[str] = None,
+    should_stream: bool = False,
+    readonly: bool = False,
+    mmap: bool = False,
+    bypass_types: Optional[Sequence[str]] = None,
 ) -> Union[_file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
@@ -186,7 +191,17 @@ def open(
     if should_stream:
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
-        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly)
+        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly=readonly)
+    elif bypass_types:
+        f = ifcopenshell_wrapper.file(ifcopenshell_wrapper.uninitialized_tag())
+        for ty in bypass_types:
+            f.bypass_type(ty)
+        if mmap:
+            f.initialize(str(path.absolute()), mmap=mmap)
+        else:
+            f.initialize(str(path.absolute()))
+    elif mmap:
+        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)
     else:
         f = ifcopenshell_wrapper.open(str(path.absolute()))
     return file(f)
