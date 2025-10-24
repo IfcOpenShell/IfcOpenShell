@@ -655,30 +655,16 @@ class BIM_PT_text(Panel):
             if other_attributes:
                 bonsai.bim.helper.draw_attributes(other_attributes, box)
 
-                row = box.row(align=True)
-                cols = [row.column(align=True) for j in range(3)]
-                for j in range(9):
-                    cols[j % 3].prop(
-                        literal_props,
-                        "box_alignment",
-                        text="",
-                        index=j,
-                        icon="RADIOBUT_ON" if literal_props.box_alignment[j] else "RADIOBUT_OFF",
-                    )
-            # skip BoxAlignment since we're going to format it ourselves
-            attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
-            popup_active_attribute = attributes[0] if popup_mode else None
-            bonsai.bim.helper.draw_attributes(attributes, box, popup_active_attribute=popup_active_attribute)
-
+            # Box alignment UI
             row = box.row(align=True)
-            cols = [row.column(align=True) for i in range(3)]
-            for i in range(9):
-                cols[i % 3].prop(
+            cols = [row.column(align=True) for j in range(3)]
+            for j in range(9):
+                cols[j % 3].prop(
                     literal_props,
                     "box_alignment",
                     text="",
-                    index=i,
-                    icon="RADIOBUT_ON" if literal_props.box_alignment[i] else "RADIOBUT_OFF",
+                    index=j,
+                    icon="RADIOBUT_ON" if literal_props.box_alignment[j] else "RADIOBUT_OFF",
                 )
 
             col = row.column(align=True)

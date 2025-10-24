@@ -3171,9 +3171,36 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = tool.Drawing.get_text_props(obj)
+        
+        captured_apply_settings = {
+            'apply_font_size_to_all': props.apply_font_size_to_all,
+            'apply_newline_to_all': props.apply_newline_to_all,
+            'font_size': props.font_size,
+            'newline_at': props.newline_at,
+            'literals': []
+        }
+        
+        for i, literal in enumerate(props.literals):
+            literal_data = {
+                'attributes': [(attr.string_value, attr.enum_value) for attr in literal.attributes],
+                'box_alignment': literal.box_alignment[:] if hasattr(literal, 'box_alignment') else None
+            }
+            
+            if i < len(props.literal_apply_settings):
+                apply_settings = props.literal_apply_settings[i]
+                literal_data['apply_text_to_all'] = apply_settings.apply_text_to_all
+                literal_data['apply_path_to_all'] = apply_settings.apply_path_to_all
+                literal_data['apply_box_alignment_to_all'] = apply_settings.apply_box_alignment_to_all
+            else:
+                literal_data['apply_text_to_all'] = False
+                literal_data['apply_path_to_all'] = False
+                literal_data['apply_box_alignment_to_all'] = False
+                
+            captured_apply_settings['literals'].append(literal_data)
+        
         core.edit_text(tool.Drawing, obj=obj)
 
-        self.apply_to_selected_objects(context, obj, props)
+        self.apply_to_selected_objects_with_captured_data(context, obj, captured_apply_settings)
 
         tool.Blender.update_viewport()
 
@@ -3222,6 +3249,58 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
                     if active_settings.apply_box_alignment_to_all:
                         obj_literal.box_alignment = active_literal.box_alignment[:]
                         needs_update = True
+
+            if needs_update:
+                core.edit_text(tool.Drawing, obj=obj)
+
+    def apply_to_selected_objects_with_captured_data(self, context, active_obj, captured_data):
+        """Apply changes to other selected text objects using captured apply settings"""
+        selected_objects = [obj for obj in context.selected_objects if obj != active_obj]
+        
+        for obj in selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
+                continue
+
+            obj_props = tool.Drawing.get_text_props(obj)
+            
+            if len(obj_props.literals) == 0:
+                core.enable_editing_text(tool.Drawing, obj=obj)
+                obj_props.ensure_literal_apply_settings(len(obj_props.literals))
+            
+            needs_update = False
+
+            if captured_data['apply_font_size_to_all']:
+                obj_props.font_size = captured_data['font_size']
+                needs_update = True
+
+            if captured_data['apply_newline_to_all']:
+                obj_props.newline_at = captured_data['newline_at']
+                needs_update = True
+
+            for i, captured_literal in enumerate(captured_data['literals']):
+                if i >= len(obj_props.literals):
+                    continue
+
+                obj_literal = obj_props.literals[i]
+
+                if captured_literal['apply_text_to_all']:
+                    if len(captured_literal['attributes']) > 0 and len(obj_literal.attributes) > 0:
+                        new_value = captured_literal['attributes'][0][0]  # [0] = string_value
+                        obj_literal.attributes[0].string_value = new_value
+                        needs_update = True
+
+                if captured_literal['apply_path_to_all']:
+                    if len(captured_literal['attributes']) > 1 and len(obj_literal.attributes) > 1:
+                        new_value = captured_literal['attributes'][1][1]  # [1] = enum_value
+                        obj_literal.attributes[1].enum_value = new_value
+                        needs_update = True
+
+                if captured_literal['apply_box_alignment_to_all'] and captured_literal['box_alignment']:
+                    obj_literal.box_alignment = captured_literal['box_alignment']
+                    needs_update = True
 
             if needs_update:
                 core.edit_text(tool.Drawing, obj=obj)
