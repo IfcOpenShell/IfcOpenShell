@@ -113,7 +113,6 @@ class IfcExporter:
                 # Ensure reflected ceiling cameras have the correct scale
                 if obj.scale != (-1, -1, -1):
                     obj.scale = (-1, -1, -1)
-                    obj.rotation_euler = (0.0, 0.0, radians(180))
             # Skip all other scale handling for cameras
         elif tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)

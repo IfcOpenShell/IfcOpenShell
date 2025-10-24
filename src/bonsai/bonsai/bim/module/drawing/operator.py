@@ -210,12 +210,6 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
             should_duplicate_annotations=self.should_duplicate_annotations,
         )
 
-        # TODO: Why need to resync active drawing, if it wasn't changed.
-        drawing = props.get_active_drawing()
-        if drawing is None:
-            return
-        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
-
 
 class CreateDrawing(bpy.types.Operator):
     """Creates/refreshes a .svg drawing
@@ -2358,14 +2352,14 @@ class ActivateDrawingBase(tool.Ifc.Operator):
             is_reflected = ifcopenshell.util.element.get_pset(camera_element, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW"
             if is_reflected and camera.scale != (-1, -1, -1):
                 camera.scale = (-1, -1, -1)
-                camera.rotation_euler = (0.0, 0.0, radians(180))
+
 
         if camera_props.update_representation(camera.matrix_world):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
             # Restore the scale after update if needed
             if is_reflected:
                 camera.scale = (-1, -1, -1)
-                camera.rotation_euler = (0.0, 0.0, radians(180))
+
 
         return {"FINISHED"}
 
