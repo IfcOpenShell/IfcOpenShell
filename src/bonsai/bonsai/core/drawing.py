@@ -316,6 +316,7 @@ def duplicate_drawing(
 ) -> ifcopenshell.entity_instance:
     drawing_name = drawing_tool.ensure_unique_drawing_name(drawing_tool.get_name(drawing))
     new_drawing = ifc.run("root.copy_class", product=drawing)
+    drawing_tool.clear_annotation_relationships(new_drawing)
     drawing_tool.copy_representation(drawing, new_drawing)
     drawing_tool.set_name(new_drawing, drawing_name)
     group = drawing_tool.get_drawing_group(new_drawing)
