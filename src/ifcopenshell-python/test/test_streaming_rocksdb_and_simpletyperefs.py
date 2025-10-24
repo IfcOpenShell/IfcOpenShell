@@ -59,6 +59,17 @@ def test_partial_open():
     assert len(f.by_type("ifccartesianpoint")) == 0
 
 
+def test_opening_unicode():
+    import ifcopenshell.template
+
+    with tempfile.TemporaryDirectory() as d:
+        fn = os.path.join(d, "ხყჯ𐰢ᨕதకᎣᚱᾗ.ifc")
+        f = ifcopenshell.template.create()
+        f.write(fn)
+        g = ifcopenshell.open(fn)
+        assert g.by_type("ifcproject")
+
+
 @pytest.mark.skipif(psutil is None, reason="psutil not installed")
 def test_memusage_partial_open():
     m0 = psutil.Process().memory_info().rss
