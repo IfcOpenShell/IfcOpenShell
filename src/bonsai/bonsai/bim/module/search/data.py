@@ -101,7 +101,7 @@ class ColourByPropertyData:
             elif pset.endswith("BaseQuantities"):
                 keys.extend([f'/.*BaseQuantities/."{name}"' for name in properties.keys() if name != "id"])
             else:
-                keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
+                keys.extend([f'"{pset}"."{name}"' for name in properties.keys() if name != "id"])
         results = [(k, k, "") for k in keys]
         return default + results
 

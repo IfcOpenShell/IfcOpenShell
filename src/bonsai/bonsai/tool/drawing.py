@@ -217,7 +217,9 @@ class Drawing(bonsai.core.tool.Drawing):
                         return e
 
     @classmethod
-    def exclude_annotation_from_drawing(cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance) -> None:
+    def exclude_annotation_from_drawing(
+        cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance
+    ) -> None:
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
@@ -883,7 +885,13 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_assigned_product(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
-                return rel.RelatingProduct
+                product = rel.RelatingProduct
+                if product.is_a("IfcGrid") and rel.Name:
+                    for attribute in ("UAxes", "VAxes", "WAxes"):
+                        for axis in getattr(product, attribute) or []:
+                            if axis.AxisTag == rel.Name:
+                                return axis
+                return product
 
     @classmethod
     def import_annotations_in_group(cls, group: ifcopenshell.entity_instance) -> None:
@@ -1499,7 +1507,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_auto_annotation(cls, element: ifcopenshell.entity_instance):
-        return element.is_a("IfcAnnotation") and  element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
+        return element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
 
     @classmethod
     def get_drawing_reference_annotation(
@@ -1512,7 +1520,7 @@ class Drawing(bonsai.core.tool.Drawing):
             # IfcRelAssignsToProduct.RelatingProduct = IfcGrid
             # IfcRelAssignsToProduct.Name = IfcGridAxis.AxisTag
             grid = None
-            for attribute in ("PartOfW", "PartOfV", "PartOfU"):
+            for attribute in ("PartOfU", "PartOfV", "PartOfW"):
                 if getattr(reference_element, attribute, None):
                     grid = getattr(reference_element, attribute)[0]
                     break
@@ -1535,6 +1543,26 @@ class Drawing(bonsai.core.tool.Drawing):
                         return element
 
     @classmethod
+    def regenerate_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        annotation: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
+        if reference_element.is_a("IfcGridAxis"):
+            return cls.regenerate_grid_axis_reference_annotation(drawing, annotation, reference_element, context)
+        elif reference_element.is_a("IfcAnnotation") and reference_element.ObjectType == "DRAWING":
+            target_view = ifcopenshell.util.element.get_pset(reference_element, "EPset_Drawing", "TargetView")
+            if target_view == "ELEVATION_VIEW":
+                return cls.regenerate_elevation_reference_annotation(drawing, annotation, reference_element, context)
+            elif target_view == "SECTION_VIEW":
+                return cls.regenerate_section_reference_annotation(drawing, annotation, reference_element, context)
+        elif reference_element.is_a("IfcBuildingStorey"):
+            return cls.regenerate_storey_annotation(drawing, annotation, reference_element, context)
+        return annotation
+
+    @classmethod
     def generate_reference_annotation(
         cls,
         drawing: ifcopenshell.entity_instance,
@@ -1543,338 +1571,425 @@ class Drawing(bonsai.core.tool.Drawing):
     ) -> ifcopenshell.entity_instance:
         if reference_element.is_a("IfcGridAxis"):
             return cls.generate_grid_axis_reference_annotation(drawing, reference_element, context)
-
         elif reference_element.is_a("IfcAnnotation") and reference_element.ObjectType == "DRAWING":
-
-            def ensure_referenced_drawing_obj_exists(drawing: ifcopenshell.entity_instance):
-                obj = tool.Ifc.get_object(drawing)
-                if obj is None:
-                    # Annotations in that drawing are lazy loaded as needed
-                    obj = cls.import_drawing(drawing)
-                    tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
-
             target_view = ifcopenshell.util.element.get_pset(reference_element, "EPset_Drawing", "TargetView")
             if target_view == "ELEVATION_VIEW":
-                ensure_referenced_drawing_obj_exists(reference_element)
                 return cls.generate_elevation_reference_annotation(drawing, reference_element, context)
             elif target_view == "SECTION_VIEW":
-                ensure_referenced_drawing_obj_exists(reference_element)
                 return cls.generate_section_reference_annotation(drawing, reference_element, context)
-
         elif reference_element.is_a("IfcBuildingStorey"):
             return cls.generate_storey_annotation(drawing, reference_element, context)
+
+    @classmethod
+    def generate_storey_points(
+        cls, drawing: ifcopenshell.entity_instance, storey: ifcopenshell.entity_instance
+    ) -> list | None:
+        import bonsai.bim.module.drawing.helper as helper
+
+        camera = tool.Ifc.get_object(drawing)
+        if camera.data.type != "ORTHO":
+            return
+        if not cls.is_matrix_perpendicular(camera.matrix_world, Matrix()):
+            return
+
+        xmin, xmax, ymin, ymax = helper.ortho_view_frame(camera.data)[:4]
+        rl = ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)[2][3]
+        y = (camera.matrix_world.inverted() @ Vector((0.0, 0.0, rl))).y
+        if y < ymin or y > ymax:
+            return
+
+        return (Vector((xmax, y, 0.0)), Vector((xmin, y, 0.0)))
 
     @classmethod
     def generate_storey_annotation(
         cls,
         drawing: ifcopenshell.entity_instance,
-        reference_element: ifcopenshell.entity_instance,
+        storey: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
+        if not (points := cls.generate_storey_points(drawing, storey)):
+            return
+
+        camera = tool.Ifc.get_object(drawing)
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new(storey.Name or "Unnamed", mesh)
+        obj.matrix_world = cls.get_default_annotation_matrix(camera)
+        element = cls.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="SECTION_LEVEL", should_add_representation=False
+        )
+        tool.Geometry.run_edit_object_placement(obj)
+        element.Name = storey.Name or "Unnamed"
+        builder = ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        points = [p / unit_scale for p in points]
+        representation = builder.get_representation(context, [builder.polyline(points)])
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+        return element
+
+    @classmethod
+    def regenerate_storey_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        annotation: ifcopenshell.entity_instance,
+        storey: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
+        if not (points := cls.generate_storey_points(drawing, storey)):
+            return
+
+        camera = tool.Ifc.get_object(drawing)
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+        shape = ifcopenshell.geom.create_shape(settings, annotation)
+        m = ifcopenshell.util.shape.get_shape_matrix(shape)
+        mw = cls.get_default_annotation_matrix(camera)
+        existing_verts = [Vector(v) for v in ifcopenshell.util.shape.get_vertices(shape.geometry)]
+
+        new_points = None
+        if not np.allclose(m, np.array(mw), atol=1e-4):
+            new_points = points
+        elif len(existing_verts) != 2:
+            new_points = points
+        else:
+            existing_verts = sorted(existing_verts, key=lambda v: v.x)
+            xmin, xmax = [v.x for v in existing_verts]
+            y = points[0].y
+            if not tool.Cad.is_x(y, existing_verts[0].y) or not tool.Cad.is_x(y, existing_verts[1].y):
+                new_points = (Vector((xmax, y, 0.0)), Vector((xmin, y, 0.0)))
+
+        if new_points:
+            if representation := ifcopenshell.util.representation.get_representation(annotation, context):
+                ifcopenshell.api.geometry.unassign_representation(
+                    tool.Ifc.get(), product=annotation, representation=representation
+                )
+            builder = ShapeBuilder(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            new_points = [p / unit_scale for p in new_points]
+            representation = builder.get_representation(context, [builder.polyline(new_points)])
+            ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), annotation, representation)
+
+            if obj := tool.Ifc.get_object(annotation):
+                obj.matrix_world = mw
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=representation
+                )
+            else:
+                ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), product=annotation, matrix=np.array(mw))
+
+        annotation.Name = storey.Name or "Unnamed"
+        return annotation
+
+    @classmethod
+    def generate_section_reference_points(
+        cls, drawing: ifcopenshell.entity_instance, section: ifcopenshell.entity_instance
+    ) -> list | None:
         import bonsai.bim.module.drawing.helper as helper
 
         camera = tool.Ifc.get_object(drawing)
-        assert isinstance(camera, bpy.types.Object)
-        assert isinstance((camera_data := camera.data), bpy.types.Camera)
-        props = tool.Drawing.get_camera_props(camera_data)
+        if camera.data.type != "ORTHO":
+            return
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, section)
+        m = ifcopenshell.util.shape.get_shape_matrix(shape)
+        if not cls.is_matrix_perpendicular(camera.matrix_world, Matrix(m)):
+            return
+        if not cls.does_shape_intersect_camera(shape, camera):
+            return
 
-        bounds = helper.ortho_view_frame(camera_data) if camera_data.type == "ORTHO" else None
-        reference_obj = tool.Ifc.get_object(reference_element)
-        assert isinstance(reference_obj, bpy.types.Object)
+        # Get cutting plane as a line
+        verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
+        cutting_plane_verts = sorted(verts, key=lambda v: v[2])[-4:]
+        v1, *_, v2 = sorted(cutting_plane_verts, key=lambda v: v[0])  # Cut is in +X direction
+        im = camera.matrix_world.inverted()
+        v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in [v1, v2]]
 
-        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
-            mat = reference_obj.matrix_world.copy()
-            xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
-            xyz[2] = 0
-            xyz = camera.matrix_world @ xyz
-            mat.translation = xyz
-            annotation_offset = mathutils.Vector((0, 0, -camera_data.clip_start - 0.05))
-            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat.translation += annotation_offset
-            return mat
-
-        def project_point_onto_camera(point: Vector, camera: bpy.types.Object) -> Vector:
-            projection = camera.matrix_world.to_quaternion() @ mathutils.Vector((0, 0, -1))
-            return camera.matrix_world.inverted() @ mathutils.geometry.intersect_line_plane(
-                point.xyz, point.xyz - projection, camera.location, projection
-            )
-
-        obj_matrix = to_camera_coords(camera, reference_obj)
-
-        if props.raster_x > props.raster_y:
-            width = camera_data.ortho_scale
-            height = width / props.raster_x * props.raster_y
-        else:
-            height = camera_data.ortho_scale
-            width = height / props.raster_y * props.raster_x
-
-        projection = project_point_onto_camera(reference_obj.location, camera)
-        co1 = camera.matrix_world @ mathutils.Vector((width / 2, projection[1], -1))
-        co2 = camera.matrix_world @ mathutils.Vector((-(width / 2), projection[1], -1))
-        co1 = obj_matrix.inverted() @ co1
-        co2 = obj_matrix.inverted() @ co2
-
-        data = bpy.data.curves.new("Annotation", type="CURVE")
-        data.dimensions = "3D"
-        data.resolution_u = 2
-
-        polyline = data.splines.new("POLY")
-        polyline.points.add(1)
-        polyline.points[-2].co = list(co1) + [1]
-        polyline.points[-1].co = list(co2) + [1]
-
-        obj = bpy.data.objects.new(reference_obj.name, data)
-        obj.matrix_world = obj_matrix
-
-        element = cls.run_root_assign_class(
-            obj=obj,
-            ifc_class="IfcAnnotation",
-            predefined_type="SECTION_LEVEL",
-            should_add_representation=True,
-            context=context,
-            ifc_representation_class=None,
-        )
-        if representation := ifcopenshell.util.representation.get_representation(element, context):
-            cls.reload_representation(obj=obj, representation=representation)
-        bpy.data.curves.remove(data)
-
-        return element
+        bounds = helper.ortho_view_frame(camera.data)
+        if not (points := helper.clip_segment(bounds, [v1, v2])):
+            return
+        for v in points:
+            v.z = 0
+        return points
 
     @classmethod
     def generate_section_reference_annotation(
         cls,
         drawing: ifcopenshell.entity_instance,
-        reference_element: ifcopenshell.entity_instance,
+        section: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-        import bonsai.bim.module.drawing.helper as helper
+        if not (points := cls.generate_section_reference_points(drawing, section)):
+            return
 
-        reference_obj = tool.Ifc.get_object(reference_element)
-        reference_obj.matrix_world
         camera = tool.Ifc.get_object(drawing)
-        bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new(section.Name or "Unnamed", mesh)
+        obj.matrix_world = cls.get_default_annotation_matrix(camera)
+        element = cls.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="SECTION", should_add_representation=False
+        )
+        element.Name = section.Name or "Unnamed"
+        builder = ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        points = [p / unit_scale for p in points]
+        representation = builder.get_representation(context, [builder.polyline(points)])
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+        return element
 
-        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
-            mat = reference_obj.matrix_world.copy()
-            xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
-            xyz[2] = 0
-            xyz = camera.matrix_world @ xyz
-            mat.translation = xyz
-            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
-            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat.translation += annotation_offset
-            return mat
+    @classmethod
+    def regenerate_section_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        annotation: ifcopenshell.entity_instance,
+        section: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
+        if not (points := cls.generate_section_reference_points(drawing, section)):
+            return
 
-        def clip_to_camera_boundary(
-            mesh: bpy.types.Mesh, bounds: tuple[float, float, float, float, float, float]
-        ) -> Union[bpy.types.Mesh, None]:
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
+        camera = tool.Ifc.get_object(drawing)
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+        shape = ifcopenshell.geom.create_shape(settings, annotation)
+        m = ifcopenshell.util.shape.get_shape_matrix(shape)
+        mw = cls.get_default_annotation_matrix(camera)
+        existing_verts = [Vector(v) for v in ifcopenshell.util.shape.get_vertices(shape.geometry)]
 
-        if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
-            reference_mesh = cls.get_camera_block(reference_obj)
-            obj_matrix = to_camera_coords(camera, reference_obj)
+        new_points = None
+        if not np.allclose(m, np.array(mw), atol=1e-4):
+            new_points = points
+        elif len(existing_verts) != 2:
+            new_points = points
+        else:
+            if not tool.Cad.are_edges_collinear(existing_verts, points):
+                # Attempt to update the section line by projecting existing verts onto the new line
+                v1 = tool.Cad.point_on_edge(existing_verts[0], points)
+                v2 = tool.Cad.point_on_edge(existing_verts[1], points)
+                existing_length = (existing_verts[0] - existing_verts[1]).length
+                new_length = (v2 - v1).length
+                if abs((existing_length - new_length) / existing_length) <= 0.10:
+                    # If the projected line is within 10% of the previous length ...
+                    new_points = (v1, v2)
+                else:
+                    new_points = points
 
-            # The reference mesh vertices represent a view cube. To convert
-            # this into a section line we:
-            # 1. Select the 4 +Z vertices local to the reference element. This
-            # is the cutting plane.
-            verts_local_to_reference = [reference_obj.matrix_world.inverted() @ v for v in reference_mesh["verts"]]
-            cutting_plane_verts = sorted(verts_local_to_reference, key=lambda x: x.z)[-4:]
-            global_cutting_plane_verts = [reference_obj.matrix_world @ v for v in cutting_plane_verts]
-            # 2. Project the cutting plane onto our viewing camera.
-            verts_local_to_camera = [camera.matrix_world.inverted() @ v for v in global_cutting_plane_verts]
-            # 3. Collapse verts with the same XY coords, and set Z to be just
-            # below the clip_start so it's visible
-            collapsed_verts = []
-            for vert in verts_local_to_camera:
-                if not [True for v in collapsed_verts if (vert.xy - v.xy).length < 1e-2]:
-                    collapsed_verts.append(mathutils.Vector((vert.x, vert.y, -camera.data.clip_start - 0.05)))
-            # 4. The first two vertices is the section line
-            section_line = collapsed_verts[0:2]
-            # 5. Sort the vertices in the +X direction so that the vertices are
-            # ordered to "point" in the direction of the section cut.
-            section_line = sorted(
-                section_line, key=lambda co: (reference_obj.matrix_world.inverted() @ camera.matrix_world @ co).x
-            )
-            global_section_line = [camera.matrix_world @ v for v in section_line]
-            local_section_line = [obj_matrix.inverted() @ v for v in global_section_line]
-
-            mesh = bpy.data.meshes.new(name="Annotation")
-            mesh.from_pydata(local_section_line, [(0, 1)], [])
-            bm = bmesh.new()
-            bm.from_mesh(mesh)
-            bm = clip_to_camera_boundary(bm, bounds)
-            bm.to_mesh(mesh)
-            bm.free()
-
-            obj = bpy.data.objects.new(reference_obj.name, mesh)
-            obj.matrix_world = obj_matrix
-
-            element = cls.run_root_assign_class(
-                obj=obj,
-                ifc_class="IfcAnnotation",
-                predefined_type="SECTION",
-                should_add_representation=True,
-                context=context,
-                ifc_representation_class=None,
-            )
-            if representation := ifcopenshell.util.representation.get_representation(element, context):
-                cls.reload_representation(obj=obj, representation=representation)
-            return element
+        if new_points:
+            if representation := ifcopenshell.util.representation.get_representation(annotation, context):
+                ifcopenshell.api.geometry.unassign_representation(
+                    tool.Ifc.get(), product=annotation, representation=representation
+                )
+            builder = ShapeBuilder(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            new_points = [p / unit_scale for p in new_points]
+            representation = builder.get_representation(context, [builder.polyline(new_points)])
+            ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), annotation, representation)
+            if obj := tool.Ifc.get_object(annotation):
+                obj.matrix_world = mw
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=representation
+                )
+            else:
+                ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), product=annotation, matrix=np.array(mw))
+        annotation.Name = section.Name or "Unnamed"
+        return annotation
 
     @classmethod
     def generate_elevation_reference_annotation(
         cls,
         drawing: ifcopenshell.entity_instance,
-        reference_element: ifcopenshell.entity_instance,
+        elevation: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-        reference_obj = tool.Ifc.get_object(reference_element)
-        reference_obj.matrix_world
         camera = tool.Ifc.get_object(drawing)
-
-        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
-            mat = reference_obj.matrix_world.copy()
-            xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
-            xyz[2] = 0
-            xyz = camera.matrix_world @ xyz
-            mat.translation = xyz
-            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
-            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat.translation += annotation_offset
-            return mat
-
-        if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
-            obj = bpy.data.objects.new(reference_obj.name, None)
+        if camera.data.type != "ORTHO":
+            return
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, elevation)
+        m = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+        if cls.is_matrix_perpendicular(camera.matrix_world, m) and cls.does_shape_intersect_camera(shape, camera):
+            obj = bpy.data.objects.new(elevation.Name or "Unnamed", None)
             obj.empty_display_size = 0.1
-            obj.matrix_world = to_camera_coords(camera, reference_obj)
-
+            obj.matrix_world = cls.get_default_annotation_matrix(camera, matrix_world=m)
             element = cls.run_root_assign_class(
-                obj=obj,
-                ifc_class="IfcAnnotation",
-                predefined_type="ELEVATION",
-                should_add_representation=False,
-                context=context,
-                ifc_representation_class=None,
+                obj=obj, ifc_class="IfcAnnotation", predefined_type="ELEVATION", should_add_representation=False
             )
-            if representation := ifcopenshell.util.representation.get_representation(element, context):
-                cls.reload_representation(obj=obj, representation=representation)
+            element.Name = elevation.Name or "Unnamed"
             return element
+
+    @classmethod
+    def regenerate_elevation_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        annotation: ifcopenshell.entity_instance,
+        elevation: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
+        camera = tool.Ifc.get_object(drawing)
+        if camera.data.type != "ORTHO":
+            return
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, elevation)
+        m = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+        if cls.is_matrix_perpendicular(camera.matrix_world, m) and cls.does_shape_intersect_camera(shape, camera):
+            existing_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(annotation.ObjectPlacement))
+            # The user is allowed to shift the elevation, but not rotate it
+            if not np.allclose(np.array(m.to_3x3()), np.array(existing_matrix.to_3x3()), atol=1e-4):
+                mw = cls.get_default_annotation_matrix(camera, matrix_world=m)
+                if obj := tool.Ifc.get_object(annotation):
+                    obj.matrix_world = mw
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                else:
+                    ifcopenshell.api.geometry.edit_object_placement(
+                        tool.Ifc.get(), product=annotation, matrix=np.array(mw)
+                    )
+            annotation.Name = elevation.Name or "Unnamed"
+            return annotation
+
+    @classmethod
+    def generate_grid_axis_reference_points(
+        cls, drawing: ifcopenshell.entity_instance, axis: ifcopenshell.entity_instance
+    ) -> list | None:
+        import bonsai.bim.module.drawing.helper as helper
+
+        camera = tool.Ifc.get_object(drawing)
+        if camera.data.type != "ORTHO":
+            return
+
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+        geometry = ifcopenshell.geom.create_shape(settings, axis.AxisCurve)
+        verts = ifcopenshell.util.shape.get_vertices(geometry)
+        grid = (axis.PartOfU or axis.PartOfV or axis.PartOfW)[0]
+        m = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
+        im = camera.matrix_world.inverted()
+        v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in verts[:2]]
+
+        target_view = tool.Drawing.get_drawing_target_view(drawing)
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+            bounds = helper.ortho_view_frame(camera.data)
+            if not (points := helper.clip_segment(bounds, [v1, v2])):
+                return
+        elif target_view in ("ELEVATION_VIEW", "SECTION_VIEW"):
+            bounds = helper.ortho_view_frame(camera.data)
+            if not (points := helper.elevate_segment(bounds, [v1, v2])):
+                return
+        else:
+            return
+        for v in points:
+            v.z = 0
+        return points
 
     @classmethod
     def generate_grid_axis_reference_annotation(
         cls,
         drawing: ifcopenshell.entity_instance,
-        reference_element: ifcopenshell.entity_instance,
+        axis: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> Union[ifcopenshell.entity_instance, None]:
-        import bonsai.bim.module.drawing.helper as helper
-
-        target_view = tool.Drawing.get_drawing_target_view(drawing)
+        if not (points := cls.generate_grid_axis_reference_points(drawing, axis)):
+            return
 
         camera = tool.Ifc.get_object(drawing)
-        assert isinstance(camera, bpy.types.Object)
-        assert isinstance(camera_data := camera.data, bpy.types.Camera)
-
-        is_ortho = camera_data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera_data) if is_ortho else None
-        clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
-        elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
-
-        def clone(src: bpy.types.Object) -> bpy.types.Object:
-            dst = src.copy()
-            assert isinstance(dst.data, bpy.types.Mesh)
-            dst.data = dst.data.copy()
-            dst.name = dst.name.replace("IfcGridAxis/", "")
-            tool.Blender.get_object_bim_props(dst).ifc_definition_id = 0
-            tool.Geometry.get_mesh_props(dst.data).ifc_definition_id = 0
-            return dst
-
-        def disassemble(obj: bpy.types.Object) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
-            assert isinstance(obj.data, bpy.types.Mesh)
-            mesh = bmesh.new()
-            mesh.verts.ensure_lookup_table()
-            mesh.from_mesh(obj.data)
-            return obj, mesh
-
-        def assemble(obj: bpy.types.Object, mesh: bmesh.types.BMesh) -> bpy.types.Object:
-            assert isinstance(obj.data, bpy.types.Mesh)
-            mesh.to_mesh(obj.data)
-            return obj
-
-        def to_camera_coords(
-            obj: bpy.types.Object, mesh: bmesh.types.BMesh
-        ) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
-            mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
-            obj.matrix_world = camera.matrix_world
-            annotation_offset = mathutils.Vector((0, 0, -camera_data.clip_start - 0.05))
-            annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            obj.matrix_world.translation += annotation_offset
-            return obj, mesh
-
-        def clip_to_camera_boundary(mesh: bmesh.types.BMesh) -> bmesh.types.BMesh:
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
-
-        def draw_grids_vertically(mesh: bmesh.types.BMesh) -> bmesh.types.BMesh:
-            mesh.verts.ensure_lookup_table()
-            points = [v.co for v in mesh.verts[0:2]]
-            points = helper.elevate_segment(bounds, points)
-            if points is None:
-                return None
-            points = helper.clip_segment(bounds, points)
-            if points is None:
-                return None
-            mesh.verts[0].co = points[0]
-            mesh.verts[1].co = points[1]
-            return mesh
-
-        obj = tool.Ifc.get_object(reference_element)
-        if not obj:
-            return
-        assert isinstance(obj, bpy.types.Object)
-        obj, mesh = to_camera_coords(*disassemble(clone(obj)))
-
-        if clipping:
-            mesh = clip_to_camera_boundary(mesh)
-        elif elevating:
-            mesh = draw_grids_vertically(mesh)
-
-        if mesh is None:
-            return
-
-        assemble(obj, mesh)
-
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new(axis.AxisTag or "-", mesh)
+        obj.matrix_world = cls.get_default_annotation_matrix(camera)
         element = cls.run_root_assign_class(
-            obj=obj,
-            ifc_class="IfcAnnotation",
-            predefined_type="GRID",
-            should_add_representation=True,
-            context=context,
-            ifc_representation_class=None,
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="GRID", should_add_representation=False
         )
-        if representation := ifcopenshell.util.representation.get_representation(element, context):
-            cls.reload_representation(obj=obj, representation=representation)
+        element.Name = axis.AxisTag or "-"
+        builder = ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        points = [p / unit_scale for p in points]
+        representation = builder.get_representation(context, [builder.polyline(points)])
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
         return element
+
+    @classmethod
+    def regenerate_grid_axis_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        annotation: ifcopenshell.entity_instance,
+        axis: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        if not (points := cls.generate_grid_axis_reference_points(drawing, axis)):
+            return
+
+        camera = tool.Ifc.get_object(drawing)
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+        shape = ifcopenshell.geom.create_shape(settings, annotation)
+        m = ifcopenshell.util.shape.get_shape_matrix(shape)
+        mw = cls.get_default_annotation_matrix(camera)
+        existing_verts = [Vector(v) for v in ifcopenshell.util.shape.get_vertices(shape.geometry)]
+
+        new_points = None
+        if not np.allclose(m, np.array(mw), atol=1e-4):
+            new_points = points
+        elif len(existing_verts) != 2:
+            new_points = points
+        else:
+            if not tool.Cad.are_edges_collinear(existing_verts, points):
+                # Attempt to update the section line by projecting existing verts onto the new line
+                v1 = tool.Cad.point_on_edge(existing_verts[0], points)
+                v2 = tool.Cad.point_on_edge(existing_verts[1], points)
+                existing_length = (existing_verts[0] - existing_verts[1]).length
+                new_length = (v2 - v1).length
+                if abs((existing_length - new_length) / existing_length) <= 0.10:
+                    # If the projected line is within 10% of the previous length ...
+                    new_points = (v1, v2)
+                else:
+                    new_points = points
+
+        if new_points:
+            if representation := ifcopenshell.util.representation.get_representation(annotation, context):
+                ifcopenshell.api.geometry.unassign_representation(
+                    tool.Ifc.get(), product=annotation, representation=representation
+                )
+            builder = ShapeBuilder(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            new_points = [p / unit_scale for p in new_points]
+            representation = builder.get_representation(context, [builder.polyline(new_points)])
+            ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), annotation, representation)
+            if obj := tool.Ifc.get_object(annotation):
+                obj.matrix_world = mw
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=representation
+                )
+            else:
+                ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), product=annotation, matrix=np.array(mw))
+        annotation.Name = axis.AxisTag or "-"
+        return annotation
+
+    @classmethod
+    def get_default_annotation_matrix(cls, camera, matrix_world=None):
+        if matrix_world is None:
+            matrix_world = camera.matrix_world.copy()
+        annotation_offset = Vector((0, 0, -camera.data.clip_start - 0.05))
+        annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+        matrix_world.translation += annotation_offset
+        return matrix_world
 
     @classmethod
     def is_perpendicular(cls, a: bpy.types.Object, b: bpy.types.Object) -> bool:
         axes = [mathutils.Vector((1, 0, 0)), mathutils.Vector((0, 1, 0)), mathutils.Vector((0, 0, 1))]
         a_quaternion = a.matrix_world.to_quaternion()
         b_quaternion = b.matrix_world.to_quaternion()
+        for axis in axes:
+            if abs((a_quaternion @ axis).angle(b_quaternion @ axis) - (math.pi / 2)) < 1e-5:
+                return True
+        return False
+
+    @classmethod
+    def is_matrix_perpendicular(cls, a: Matrix, b: Matrix) -> bool:
+        axes = [mathutils.Vector((1, 0, 0)), mathutils.Vector((0, 1, 0)), mathutils.Vector((0, 0, 1))]
+        a_quaternion = a.to_quaternion()
+        b_quaternion = b.to_quaternion()
         for axis in axes:
             if abs((a_quaternion @ axis).angle(b_quaternion @ axis) - (math.pi / 2)) < 1e-5:
                 return True
@@ -1921,6 +2036,16 @@ class Drawing(bonsai.core.tool.Drawing):
         a_tree = mathutils.bvhtree.BVHTree.FromPolygons(a_block["verts"], a_block["faces"])
         b_block = cls.get_camera_block(b)
         b_tree = mathutils.bvhtree.BVHTree.FromPolygons(b_block["verts"], b_block["faces"])
+        return bool(a_tree.overlap(b_tree))
+
+    @classmethod
+    def does_shape_intersect_camera(cls, shape, camera) -> bool:
+        a_block = cls.get_camera_block(camera)
+        a_tree = mathutils.bvhtree.BVHTree.FromPolygons(a_block["verts"], a_block["faces"])
+        m = ifcopenshell.util.shape.get_shape_matrix(shape)
+        verts = [(m @ np.append(v, 1.0))[:3] for v in ifcopenshell.util.shape.get_vertices(shape.geometry)]
+        faces = ifcopenshell.util.shape.get_faces(shape.geometry)
+        b_tree = mathutils.bvhtree.BVHTree.FromPolygons(verts, faces)
         return bool(a_tree.overlap(b_tree))
 
     @classmethod
@@ -2656,3 +2781,8 @@ class Drawing(bonsai.core.tool.Drawing):
         for element in tool.Ifc.get().by_type("IfcAnnotation"):
             if element.ObjectType == "DRAWING" and (obj := tool.Ifc.get_object(element)):
                 tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
+
+    @classmethod
+    def clear_annotation_relationships(cls, drawing: ifcopenshell.entity_instance) -> None:
+        for rel in drawing.ReferencedBy:
+            tool.Ifc.get().remove(rel)
