@@ -268,7 +268,7 @@ namespace IfcParse {
 
             // @todo is this still used
             IfcEntityInstanceData read(unsigned int index);
-            void read_from_stream(IfcParse::FileReader* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id);
+            void read_from_stream(IfcParse::FileReader* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
 
             file_open_status good_ = file_open_status::SUCCESS;
 

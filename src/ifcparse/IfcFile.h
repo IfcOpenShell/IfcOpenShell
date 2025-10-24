@@ -98,8 +98,10 @@ private:
     int progress_;
     IfcParse::unresolved_references references_to_resolve_;
     int yielded_header_instances_ = 0;
+    std::vector<const declaration*> types_to_bypass_;
+    std::vector<unsigned> bypassed_instances_;
 
-public:
+  public:
 	bool coerce_attribute_count = true;
 
     operator bool() const {
@@ -116,6 +118,11 @@ public:
 
     IfcParse::unresolved_references& references() {
         return references_to_resolve_;
+    }
+
+    const std::vector<unsigned>& bypassed_instances() {
+        std::sort(bypassed_instances_.begin(), bypassed_instances_.end());
+        return bypassed_instances_;
     }
 
     const IfcParse::impl::in_memory_file_storage::entities_by_ref_t& inverses() const {
@@ -142,6 +149,8 @@ public:
 
     InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
 
+    void bypassTypes(const std::set<std::string>& type_names);
+
     ~InstanceStreamer() {
         delete stream_;
         if (stream_) {
@@ -152,6 +161,9 @@ public:
 
     std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> readInstance();
 };
+
+class uninitialized_tag {};
+
 
 /// This class provides access to the entity instances in an IFC file
 /// The file takes ownership of instances added to this file and deletes them when the file is deleted.
@@ -179,7 +191,10 @@ public:
 
     // @todo temporarily public for header
     storage_t storage_;
-private:
+
+    std::set<std::string> types_to_bypass_loading_;
+
+  private:
     file_open_status good_ = file_open_status::SUCCESS;
 
     const IfcParse::schema_definition* schema_;
@@ -245,6 +260,20 @@ private:
     /// <param name="ty">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
     /// <param name="path">The file system path to the IFC file. Defaults to an empty string.</param>
     IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"), filetype ty = FT_AUTODETECT, const std::string& path = "");
+
+    /// <summary>
+    /// Constructs an unitialized IfcFile object. Call initialize() later on. Allows to specify which types to bypass during load.
+    /// </summary>
+    IfcFile(const uninitialized_tag&);
+
+    bool initialize(const std::string& path, filetype ty = FT_AUTODETECT, bool readonly = false);
+#ifdef USE_MMAP
+    bool initialize(const std::string& path, bool mmap);
+#endif
+
+    /// @brief Bypass loading of all instances of the specified type name. Only applies to parsed IFC-SPF files.
+    /// @param type_name case insensitive name of the type to bypass
+    void bypass_type(const std::string& type_name);
 
     ~IfcFile();
 
