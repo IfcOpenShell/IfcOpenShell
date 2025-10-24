@@ -2522,6 +2522,7 @@ class FlipClippingPlane(bpy.types.Operator):
         obj = context.active_object
         if obj in tool.Project.get_project_props().clipping_planes_objs:
             obj.rotation_euler[0] += radians(180)
+            obj.rotation_euler[0] %= radians(360)
             context.view_layer.update()
         return {"FINISHED"}
 
