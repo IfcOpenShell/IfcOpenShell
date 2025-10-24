@@ -471,55 +471,39 @@ def sync_references(
     if not drawing_tool.has_annotation(drawing):
         return
 
-    context = drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))
-    if not context:
+    if not (context := drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))):
         return
 
     group = drawing_tool.get_drawing_group(drawing)
     potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
+
+    for element in potential_reference_elements:
+        if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
+            drawing_tool.sync_object_placement(obj)
+
     for element in drawing_tool.get_group_elements(group):
-        if (
-            drawing_tool.is_auto_annotation(element)
-            and drawing_tool.get_assigned_product(element) not in potential_reference_elements
-        ):
+        if not drawing_tool.is_auto_annotation(element):
+            continue
+        if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
+            drawing_tool.sync_object_placement(obj)
+        reference_element = drawing_tool.get_assigned_product(element)
+        reference_obj = ifc.get_object(reference_element)
+        if reference_element not in potential_reference_elements:
+            # It was auto created, so it makes sense to auto delete
+            if obj := ifc.get_object(element):
+                drawing_tool.delete_object(obj)
+            ifc.run("root.remove_product", product=element)
+        elif not drawing_tool.regenerate_reference_annotation(drawing, element, reference_element, context):
             if obj := ifc.get_object(element):
                 drawing_tool.delete_object(obj)
             ifc.run("root.remove_product", product=element)
 
     for reference_element in potential_reference_elements:
-        reference_obj = ifc.get_object(reference_element)
-        annotation = drawing_tool.get_drawing_reference_annotation(drawing, reference_element)
-
-        should_delete_existing_annotation = False
-        should_create_annotation = False
-
-        # remove annotation only if the reference object was changed
-        # otherwise we rely on the existing annotation
-        if annotation:
-            if reference_obj and (ifc.is_moved(reference_obj) or ifc.is_edited(reference_obj)):
-                should_delete_existing_annotation = True
-
-        if should_delete_existing_annotation or not annotation:
-            should_create_annotation = True
-
-        if should_delete_existing_annotation:
-            annotation_obj = ifc.get_object(annotation)
-            if annotation_obj:
-                drawing_tool.delete_object(annotation_obj)
-            ifc.run("root.remove_product", product=annotation)
-
-        if should_create_annotation:
-            annotation = drawing_tool.generate_reference_annotation(drawing, reference_element, context)
-            if annotation:
+        if not drawing_tool.get_drawing_reference_annotation(drawing, reference_element):
+            if annotation := drawing_tool.generate_reference_annotation(drawing, reference_element, context):
                 ifc.run("drawing.assign_product", relating_product=reference_element, related_object=annotation)
                 ifc.run("group.assign_group", group=group, products=[annotation])
                 collector.assign(ifc.get_object(annotation))
-
-        if reference_obj and ifc.is_moved(reference_obj):
-            drawing_tool.sync_object_placement(reference_obj)
-
-        if reference_obj and ifc.is_edited(reference_obj):
-            drawing_tool.sync_object_representation(reference_obj)
 
 
 def select_assigned_product(drawing: type[tool.Drawing], context: bpy.types.Context) -> None:
