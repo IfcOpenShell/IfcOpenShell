@@ -100,13 +100,13 @@ else()
     set(SWIG_MODULE_ifcopenshell_wrapper_EXTRA_FLAGS "-interface" "_ifcopenshell_wrapper")
     swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
     set_target_properties(
-        ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES
+        ifcopenshell_wrapper PROPERTIES
         DEBUG_POSTFIX "${Python_DEBUG_POSTFIX}"
     )
 endif()
 
 swig_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
-SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
+SET_PROPERTY(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if (WASM_BUILD)
     # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
     # Since currently libIfcGeom.a seems to be linked twice it results in duplicated symbols and compilation errors.
@@ -123,7 +123,7 @@ if (WASM_BUILD)
         )
     endif()
     target_link_options(
-        ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}
+        ifcopenshell_wrapper
         PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2"
     )
 endif()
@@ -134,7 +134,7 @@ else()
 swig_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${LIBSVGFILL})
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
-    SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
+    SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
 endif()
 
 # Try to find the Python interpreter to get the site-packages
@@ -158,7 +158,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
         set(PYTHON_EXTENSION_SUFFIX ".${Python_SOABI}.so")
     endif()
     set_target_properties(
-        ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES
+        ifcopenshell_wrapper PROPERTIES
         SUFFIX ${PYTHON_EXTENSION_SUFFIX}
     )
     if (PYTHON_MODULE_INSTALL_DIR)
@@ -193,10 +193,10 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
         ENDFOREACH()
         INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
                 DESTINATION "${python_package_dir}/ifcopenshell")
-        INSTALL(TARGETS ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}
+        INSTALL(TARGETS ifcopenshell_wrapper
                 DESTINATION "${python_package_dir}/ifcopenshell")
 	if (MSVC)
-	    INSTALL(FILES $<TARGET_PDB_FILE:${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}> DESTINATION bin OPTIONAL)
+	    INSTALL(FILES $<TARGET_PDB_FILE:ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
 	endif()
     ENDIF()
 ELSE()
