@@ -1620,6 +1620,8 @@ class Drawing(bonsai.core.tool.Drawing):
         tool.Geometry.run_edit_object_placement(obj)
         element.Name = storey.Name or "Unnamed"
         builder = ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        points = [p / unit_scale for p in points]
         representation = builder.get_representation(context, [builder.polyline(points)])
         ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
         bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
@@ -1662,6 +1664,8 @@ class Drawing(bonsai.core.tool.Drawing):
                     tool.Ifc.get(), product=annotation, representation=representation
                 )
             builder = ShapeBuilder(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            new_points = [p / unit_scale for p in new_points]
             representation = builder.get_representation(context, [builder.polyline(new_points)])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), annotation, representation)
 
@@ -1727,6 +1731,8 @@ class Drawing(bonsai.core.tool.Drawing):
         )
         element.Name = section.Name or "Unnamed"
         builder = ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        points = [p / unit_scale for p in points]
         representation = builder.get_representation(context, [builder.polyline(points)])
         ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
         bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
@@ -1775,6 +1781,8 @@ class Drawing(bonsai.core.tool.Drawing):
                     tool.Ifc.get(), product=annotation, representation=representation
                 )
             builder = ShapeBuilder(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            new_points = [p / unit_scale for p in new_points]
             representation = builder.get_representation(context, [builder.polyline(new_points)])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), annotation, representation)
             if obj := tool.Ifc.get_object(annotation):
@@ -1893,6 +1901,8 @@ class Drawing(bonsai.core.tool.Drawing):
         )
         element.Name = axis.AxisTag or "-"
         builder = ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        points = [p / unit_scale for p in points]
         representation = builder.get_representation(context, [builder.polyline(points)])
         ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
         bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
@@ -1941,6 +1951,8 @@ class Drawing(bonsai.core.tool.Drawing):
                     tool.Ifc.get(), product=annotation, representation=representation
                 )
             builder = ShapeBuilder(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            new_points = [p / unit_scale for p in new_points]
             representation = builder.get_representation(context, [builder.polyline(new_points)])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), annotation, representation)
             if obj := tool.Ifc.get_object(annotation):
@@ -2769,3 +2781,8 @@ class Drawing(bonsai.core.tool.Drawing):
         for element in tool.Ifc.get().by_type("IfcAnnotation"):
             if element.ObjectType == "DRAWING" and (obj := tool.Ifc.get_object(element)):
                 tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
+
+    @classmethod
+    def clear_annotation_relationships(cls, drawing: ifcopenshell.entity_instance) -> None:
+        for rel in drawing.ReferencedBy:
+            tool.Ifc.get().remove(rel)

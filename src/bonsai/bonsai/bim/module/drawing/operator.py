@@ -210,12 +210,6 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
             should_duplicate_annotations=self.should_duplicate_annotations,
         )
 
-        # TODO: Why need to resync active drawing, if it wasn't changed.
-        drawing = props.get_active_drawing()
-        if drawing is None:
-            return
-        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
-
 
 class CreateDrawing(bpy.types.Operator):
     """Creates/refreshes a .svg drawing
