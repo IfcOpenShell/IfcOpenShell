@@ -3283,6 +3283,7 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_text"
     bl_label = "Enable Editing Text"
     bl_description = "Enable the text editing options for this\ntext annotation"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
