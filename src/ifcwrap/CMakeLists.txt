@@ -66,8 +66,8 @@ SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
 # Python 3.5 intaller and onwards will have an option to install the debug libraries too.
 # NOTE PYTHON_DEBUG_LIBRARIES appears to be a deprecated variable
-IF (WIN32 AND NOT PYTHON_DEBUG_LIBRARIES)
-	MESSAGE(STATUS "PYTHON_DEBUG_LIBRARIES not found, defining SWIG_PYTHON_INTERPRETER_NO_DEBUG workaround for IfcWrap.")
+IF (WIN32 AND NOT Python_LIBRARY_DEBUG)
+	MESSAGE(STATUS "Python debug libraries were not found, defining SWIG_PYTHON_INTERPRETER_NO_DEBUG workaround for IfcWrap.")
 	ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
 ENDIF()
 
