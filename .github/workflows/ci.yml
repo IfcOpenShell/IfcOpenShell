@@ -50,6 +50,7 @@ jobs:
           pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely
           pip install src/bcf --no-deps
           pip install git+https://github.com/zdhoward/aud
+          pip install pytest-xdist==3.8.0
 
       - name: Install C++ dependencies
         run: |
@@ -143,7 +144,7 @@ jobs:
           mv ifcopenshell ifcopenshell-local # Force testing on installed module
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
           ERROR=0
-          make test || ERROR=1
+          make test-parallel || ERROR=1
           cd ../bcf && make test || ERROR=1
           pip install requests
           cd ../bsdd && make test || ERROR=1

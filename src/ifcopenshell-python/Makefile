@@ -76,6 +76,11 @@ build-urls:
 test:
 	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
 
+.PHONY: test-parallel
+test-parallel:
+	@NPROCS=$$(nproc); \
+	pytest -p no:pytest-blender -n $$NPROCS test --ignore=test/util/test_shape_builder.py
+
 .PHONY: test-mathutils
 test-mathutils:
 	pytest -p no:pytest-blender test/util/test_shape_builder.py
