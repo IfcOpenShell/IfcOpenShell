@@ -78,7 +78,7 @@ test:
 
 .PHONY: test-parallel
 test-parallel:
-	@NPROCS=$$(nproc); \
+	@NPROCS=$$(nproc 2>/dev/null || sysctl -n hw.ncpu); \
 	pytest -p no:pytest-blender -n $$NPROCS test --ignore=test/util/test_shape_builder.py
 
 .PHONY: test-mathutils
