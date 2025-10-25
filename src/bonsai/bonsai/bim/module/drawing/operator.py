@@ -1284,8 +1284,7 @@ class CreateDrawing(bpy.types.Operator):
             value = ifcopenshell.util.selector.get_element_value(element, key)
             if value:
                 classes.append(
-                    tool.Drawing.canonicalise_class_name(key) + "-" +
-                    tool.Drawing.canonicalise_class_name(str(value))
+                    tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
                 )
 
         # ─── Target View ───────────────────────────────────────────
@@ -1294,7 +1293,6 @@ class CreateDrawing(bpy.types.Operator):
             classes.append(f"target-view-{target_view_class}")
 
         return classes
-
 
     def is_manifold(self, obj) -> bool:
         result = self.is_manifold_cache.get(obj.data.name, None)
@@ -1360,7 +1358,13 @@ class CreateDrawing(bpy.types.Operator):
             join_criteria = join_criteria.split(",")
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
-            join_criteria = ["class", "material.Name", "/Pset_.*Common/.Status", "EPset_Status.Status", "EPset_Status.UserDefinedStatus"]
+            join_criteria = [
+                "class",
+                "material.Name",
+                "/Pset_.*Common/.Status",
+                "EPset_Status.Status",
+                "EPset_Status.UserDefinedStatus",
+            ]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}
@@ -2349,17 +2353,18 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         camera_element = tool.Ifc.get_entity(camera)
         is_reflected = False
         if camera_element:
-            is_reflected = ifcopenshell.util.element.get_pset(camera_element, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW"
+            is_reflected = (
+                ifcopenshell.util.element.get_pset(camera_element, "EPset_Drawing", "TargetView")
+                == "REFLECTED_PLAN_VIEW"
+            )
             if is_reflected and camera.scale != (-1, -1, -1):
                 camera.scale = (-1, -1, -1)
-
 
         if camera_props.update_representation(camera.matrix_world):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
             # Restore the scale after update if needed
             if is_reflected:
                 camera.scale = (-1, -1, -1)
-
 
         return {"FINISHED"}
 
@@ -3776,6 +3781,6 @@ class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             return
         for obj in tool.Blender.get_selected_objects(include_active=False):
             if (element := tool.Ifc.get_entity(obj)) and tool.Drawing.is_auto_annotation(element):
-                if (referenced_element := tool.Drawing.get_annotation_element(element)):
+                if referenced_element := tool.Drawing.get_annotation_element(element):
                     tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)

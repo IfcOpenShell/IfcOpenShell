@@ -1439,16 +1439,16 @@ class Model(bonsai.core.tool.Model):
                 if current_tread_run is not None:
                     tread_offset = default_tread_offset.copy()
                     tread_offset.x = current_tread_run
-                    
+
                     # Handle zero-width treads
                     if current_tread_run == 0:
                         # For zero width, just return vertical offset with no horizontal tread
                         return tread_offset, ()
-                    
+
                     tread_verts = deepcopy(default_tread_verts)
                     tread_verts[-1].x = current_tread_run
                     return tread_offset, tread_verts
-                    
+
                 return default_tread_offset, default_tread_verts
 
             # treads
@@ -1456,13 +1456,13 @@ class Model(bonsai.core.tool.Model):
             for i in range(number_of_risers):
                 last_vert_i = len(vertices) - 1
                 tread_offset, tread_verts = get_tread_data(i)
-                
+
                 # Skip adding vertices/edges for zero-width treads
                 if tread_verts:
                     current_tread_verts = [v + current_offset for v in tread_verts]
                     edges.extend(default_tread_edges + last_vert_i)
                     vertices.extend(current_tread_verts)
-                
+
                 current_offset += tread_offset
 
         if stair_type == "WOOD/STEEL":
@@ -1487,14 +1487,14 @@ class Model(bonsai.core.tool.Model):
                 if current_tread_run is not None:
                     tread_offset = default_tread_offset.copy()
                     tread_offset.x = current_tread_run + nosing_tread_gap
-                    
+
                     # Handle zero-width treads
                     if current_tread_run == 0:
                         return tread_offset, ()
-                    
+
                     tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
                     return tread_offset, tread_verts
-                    
+
                 return default_tread_offset, default_tread_verts
 
             # each tread is a separate shape
@@ -1502,7 +1502,7 @@ class Model(bonsai.core.tool.Model):
             tread_index = 0
             for i in range(number_of_risers):
                 tread_offset, tread_verts = get_tread_data(i)
-                
+
                 # Skip adding vertices/edges for zero-width treads
                 if tread_verts:
                     cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
@@ -1517,7 +1517,7 @@ class Model(bonsai.core.tool.Model):
                     )
                     edges.extend(verts_to_add)
                     tread_index += 1
-                
+
                 cur_offset += tread_offset
 
         elif stair_type == "GENERIC":

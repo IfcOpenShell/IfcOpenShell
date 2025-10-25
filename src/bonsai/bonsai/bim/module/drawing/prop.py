@@ -499,9 +499,7 @@ class BIMCameraProperties(PropertyGroup):
         update=get_update_layer_callback("linework_mode", "LineworkMode"),
     )
     generate_material_layers: bpy.props.BoolProperty(
-        name="Generate Material Layers",
-        description="Generate material layer linework in drawings",
-        default=True
+        name="Generate Material Layers", description="Generate material layer linework in drawings", default=True
     )
     fill_mode: EnumProperty(
         items=[

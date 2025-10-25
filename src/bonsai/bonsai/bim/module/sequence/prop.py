@@ -523,8 +523,12 @@ class BIMWorkScheduleProperties(PropertyGroup):
     active_task_input_index: IntProperty(name="Active Task Input Index")
     task_outputs: CollectionProperty(name="Task Outputs", type=TaskProduct)
     active_task_output_index: IntProperty(name="Active Task Output Index")
-    show_nested_outputs: BoolProperty(name="Show Nested Task Elements", default=False, update=update_active_task_outputs)
-    show_nested_resources: BoolProperty(name="Show Nested Task Elements", default=False, update=update_active_task_resources)
+    show_nested_outputs: BoolProperty(
+        name="Show Nested Task Elements", default=False, update=update_active_task_outputs
+    )
+    show_nested_resources: BoolProperty(
+        name="Show Nested Task Elements", default=False, update=update_active_task_resources
+    )
     show_nested_inputs: BoolProperty(name="Show Nested Task Elements", default=False, update=update_active_task_inputs)
     product_input_tasks: CollectionProperty(name="Product Task Inputs", type=TaskProduct)
     product_output_tasks: CollectionProperty(name="Product Task Outputs", type=TaskProduct)

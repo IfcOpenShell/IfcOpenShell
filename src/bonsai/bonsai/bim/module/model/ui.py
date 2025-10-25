@@ -305,21 +305,23 @@ class BIM_PT_stair(bpy.types.Panel):
                     # Skip custom_tread_lock as it's handled with custom_first_last_tread_run
                     if prop_name == "custom_tread_lock":
                         continue
-                    
+
                     prop_value = getattr(props, prop_name)
-                    
+
                     # Special handling for custom_first_last_tread_run
                     if prop_name == "custom_first_last_tread_run":
                         # Draw the lock toggle
                         row_lock = self.layout.row(align=True)
-                        lock_text = "Lock First/Last Treads" if not props.custom_tread_lock else "Unlock First/Last Treads"
+                        lock_text = (
+                            "Lock First/Last Treads" if not props.custom_tread_lock else "Unlock First/Last Treads"
+                        )
                         row_lock.prop(
                             props,
                             "custom_tread_lock",
                             text=lock_text,
                             icon="LOCKED" if props.custom_tread_lock else "UNLOCKED",
                         )
-                        
+
                         # Only show the custom values input if unlocked
                         if not props.custom_tread_lock:
                             prop_readable_name = props.bl_rna.properties[prop_name].name
@@ -331,7 +333,7 @@ class BIM_PT_stair(bpy.types.Panel):
                         self.layout.prop(props, prop_name, text="")
                     else:
                         self.layout.prop(props, prop_name)
-                    
+
                     if prop_name == "height":  # Weak but we just want to insert this inside props drawing
                         row_length = self.layout.row(align=True)
                         row_length.prop(props, "total_length_target")
