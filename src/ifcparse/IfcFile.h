@@ -139,7 +139,9 @@ private:
 
     bool hasSemicolon() const;
 
-	void pushPage(const std::string& page);
+    size_t semicolonCount() const;
+
+    void pushPage(const std::string& page);
 
     InstanceStreamer();
 

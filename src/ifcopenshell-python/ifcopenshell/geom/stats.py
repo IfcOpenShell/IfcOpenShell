@@ -138,6 +138,8 @@ class StatsCollector:
 
     counters: list
 
+    num_semis: int = 0
+
     def __init__(self):
         self.streamer = ifcopenshell_wrapper.InstanceStreamer()
         self.needs_data = True
@@ -151,17 +153,19 @@ class StatsCollector:
     def feed(self, data: str):
         self.streamer.pushPage(data)
         self.needs_data = False
+        self.num_semis = self.streamer.semicolonCount()
 
     @staticmethod
-    def fromFilePath(fn, page_size: int = 4096):
+    def fromFilePath(fn, page_size: int = 102400):
         collector = StatsCollector()
         collector.page_size = page_size
         collector.feedFromFile(open(str(fn), encoding="ascii"))
         return collector
 
     def next(self):
-        if self.streamer.hasSemicolon():
+        if self.num_semis > 0:
             if inst := self.streamer.readInstancePy(True):
+                self.num_semis -= 1
                 return inst["type"], dict(list(inst.items())[2:])
             else:
                 self.finalized = True
