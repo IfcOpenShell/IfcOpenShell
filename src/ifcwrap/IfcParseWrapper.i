@@ -651,6 +651,8 @@ private:
 %extend IfcParse::IfcSpfHeader {
 	// Cast to base class pointers for SWIG, because
 	// it has no idea about the schema definitions.
+	// The code to access these methods as attributes
+	// is in file.py
 	IfcUtil::IfcBaseClass* file_description_py() {
 		return $self->file_description();
 	}
@@ -660,14 +662,6 @@ private:
 	IfcUtil::IfcBaseClass* file_schema_py() {
 		return $self->file_schema();
 	}
-
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
-		# self.file_ref is set in ifcopenshell.file.header()
-        file_description = property(lambda self: self.file_ref(self.file_description_py()))
-        file_name = property(lambda self: self.file_ref(self.file_name_py()))
-        file_schema = property(lambda self: self.file_ref(self.file_schema_py()))
-	%}
 };
 
 %extend IfcParse::FileDescription {

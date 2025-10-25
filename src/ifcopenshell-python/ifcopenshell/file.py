@@ -497,6 +497,24 @@ class rocksdb_file_storage:
         return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
 
 
+class file_header:
+    def __init__(self, file, header_data):
+        self.file = file
+        self.header_data = header_data
+
+    @property
+    def file_description(self) -> entity_instance:
+        return entity_instance.wrap_value(self.header_data.file_description_py(), file=self.file)
+
+    @property
+    def file_name(self) -> entity_instance:
+        return entity_instance.wrap_value(self.header_data.file_name_py(), file=self.file)
+
+    @property
+    def file_schema(self) -> entity_instance:
+        return entity_instance.wrap_value(self.header_data.file_schema_py(), file=self.file)
+
+
 class file:
     """Base class for containing IFC files.
 
@@ -514,7 +532,7 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
-    header: ifcopenshell_wrapper.IfcSpfHeader
+    header: file_header
     units: dict[str, entity_instance] = {}
     history_size: int = 64
     history: list[Transaction]
@@ -1029,12 +1047,7 @@ class file:
 
     @property
     def header(self):
-        try:  # Temporary workaround until new builds are ready. See #7131.
-            h = self.wrapped_data.header()
-        except:
-            return self.wrapped_data.header
-        object.__setattr__(h, "file_ref", lambda inst: entity_instance.wrap_value(inst, file=self))
-        return h
+        return file_header(self, self.wrapped_data.header())
 
     @property
     def storage(self) -> Optional[rocksdb_file_storage]:
