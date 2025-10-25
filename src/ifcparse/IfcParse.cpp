@@ -126,6 +126,9 @@ size_t IfcSpfLexer::skipWhitespace() const {
 }
 
 size_t IfcSpfLexer::skipComment() const {
+    if (stream->eof()) {
+        return 0;
+    }
     char character = stream->peek();
     if (character != '/') {
         return 0;
