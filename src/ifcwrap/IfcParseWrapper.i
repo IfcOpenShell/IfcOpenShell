@@ -1003,7 +1003,7 @@ private:
 %}
 
 %extend IfcParse::InstanceStreamer {
-	PyObject* readInstancePy() {
+	PyObject* readInstancePy(bool type_as_declaration_instance=false) {
 		auto simply_type_to_dictionary = [&](IfcUtil::IfcBaseClass* t) -> PyObject* {
 			const auto& nm = t->declaration().name();
 			auto ifc_val = t->get_attribute_value(0);
@@ -1089,7 +1089,13 @@ private:
 		{
 			const std::string& key_cpp = "type";
 			auto name_py = pythonize(key_cpp);
-			auto value_py = pythonize(std::get<1>(*inst)->name());
+			PyObject* value_py;
+			if (type_as_declaration_instance) {
+				// @todo should this just be the default behavior?
+				value_py = pythonize(std::get<1>(*inst));
+			} else {
+				value_py = pythonize(std::get<1>(*inst)->name());
+			}
 			PyDict_SetItem(d, name_py, value_py);
 			Py_DECREF(name_py);
 			Py_DECREF(value_py);
