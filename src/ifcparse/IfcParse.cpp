@@ -1371,6 +1371,30 @@ bool IfcParse::InstanceStreamer::hasSemicolon() const {
 	return false;
 }
 
+size_t IfcParse::InstanceStreamer::semicolonCount() const {
+    auto local_stream = stream_->clone();
+    auto local_lexer = IfcSpfLexer(&local_stream);
+    Token t;
+    size_t count = 0;
+    try {
+        t = local_lexer.Next();
+    } catch (const std::out_of_range&) {
+        return false;
+    }
+    while (t.type != Token_NONE) {
+        if (TokenFunc::isOperator(t, ';')) {
+            count++;
+        }
+        try {
+            t = local_lexer.Next();
+        } catch (const std::out_of_range&) {
+            // This most likely happens when a page boundary is contained within a string
+            break;
+        }
+    }
+    return count;
+}
+
 void IfcParse::InstanceStreamer::pushPage(const std::string& page)
 {
     stream_->pushNextPage(page);
