@@ -259,7 +259,11 @@ IfcEntityInstanceData IfcParse::parse_context::construct(boost::optional<size_t>
         expected_size && *expected_size != tokens_.size())
     {
         size_t expected = expected_size ? *expected_size : parameter_types.size();
-        Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + (name ? std::string(" for instance #" + std::to_string(*name)) : std::string("")));
+        if (decl != nullptr && decl->schema() == &Header_section_schema::get_schema()) {
+            Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for header entity " + decl->name());
+        } else {
+            Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + (name ? std::string(" for instance #" + std::to_string(*name)) : std::string("")));
+        }
     }
 
     if (tokens_.empty()) {
