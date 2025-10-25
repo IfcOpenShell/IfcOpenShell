@@ -199,7 +199,9 @@ Token IfcSpfLexer::Next() {
                 character == '/') {
                 break;
             }
-            str.push_back(character);
+            if (!(character == ' ' || character == '\r' || character == '\n' || character == '\t')) {
+                str.push_back(character);
+            }
             stream->increment();
         }
     }
