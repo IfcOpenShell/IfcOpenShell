@@ -1047,7 +1047,10 @@ class file:
 
     @property
     def header(self):
-        return file_header(self, self.wrapped_data.header())
+        try:
+            return file_header(self, self.wrapped_data.header())
+        except:
+            return self.wrapped_data.header
 
     @property
     def storage(self) -> Optional[rocksdb_file_storage]:
