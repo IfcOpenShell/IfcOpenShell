@@ -319,8 +319,8 @@ class Ifc5Dwriter:
         cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ):
         """
-        :param file: IFC file to exprot cost schedules from.
-        :param output: Output directory for csv files.
+        :param file: IFC file to export cost schedules from.
+        :param output: Output directory.
         :param cost_schedule: exported cost schedule. If not provided, will export all available schedules.
         """
         self.output = output
@@ -404,6 +404,7 @@ class Ifc5DCsvWriter(Ifc5Dwriter):
         import csv
 
         super().write()
+        os.makedirs(self.output, exist_ok=True)
         for sheet, data in self.sheet_data.items():
             with open(
                 os.path.join(self.output, "{}.csv".format(data["Name"])), "w", newline="", encoding="utf-8"
@@ -436,6 +437,7 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
         ns1.addElement(Number(decimalplaces="2", minintegerdigits="1", grouping="true"))
         self.doc.styles.addElement(ns1)
 
+        os.makedirs(self.output, exist_ok=True)
         file_name = ""
         for cost_schedule in self.cost_schedules:
             if file_name:
@@ -537,6 +539,7 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
         import xlsxwriter
 
         super().write()
+        os.makedirs(self.output, exist_ok=True)
         file_name = ""
         for cost_schedule in self.cost_schedules:
             if file_name:
@@ -683,7 +686,7 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Specify an IFC file to process")
-    parser.add_argument("output", help="The output directory for CSV or filename for other formats")
+    parser.add_argument("output", help="The output directory")
     parser.add_argument("-l", "--log", type=str, help="Specify where errors should be logged", default="process.log")
     parser.add_argument(
         "-f", "--format", type=str, help="Choose which format to export in (CSV/ODS/XLSX)", default="CSV"

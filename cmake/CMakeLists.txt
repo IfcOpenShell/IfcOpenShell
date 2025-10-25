@@ -428,7 +428,7 @@ if(WASM_BUILD)
 else()
     # @todo review this, shouldn't this be all possible header-only now?
     # ... or rewritten using C++17 features?
-    set(BOOST_COMPONENTS system program_options regex thread date_time)
+    set(BOOST_COMPONENTS system program_options regex thread date_time iostreams)
 endif()
 
 if(USE_MMAP)
