@@ -44,7 +44,7 @@ struct FullBufferImpl final : FileReader::Impl {
         const wchar_t* fn_wide = fn_ws.c_str();
         auto stream = _wfopen(fn_wide, L"rb");
 #else
-        auto stream = fopen(path.c_str(), "rb");
+        auto stream = fopen(fn.c_str(), "rb");
 #endif
         fseek(stream, 0, SEEK_END);
         buf_.resize((size_t)ftell(stream));
@@ -82,7 +82,7 @@ struct PagedFileImpl final : FileReader::Impl {
         const wchar_t* fn_wide = fn_ws.c_str();
         fp_ = _wfopen(fn_wide, L"rb");
 #else
-        fp_ = fopen(path.c_str(), "rb");
+        fp_ = fopen(fn.c_str(), "rb");
 #endif
         fseek(fp_, 0, SEEK_END);
         file_size_ = (size_t)ftell(fp_);
