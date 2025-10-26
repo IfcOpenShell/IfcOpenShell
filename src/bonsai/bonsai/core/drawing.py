@@ -487,7 +487,8 @@ def sync_references(
             continue
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
             drawing_tool.sync_object_placement(obj)
-        reference_element = drawing_tool.get_assigned_product(element)
+        if not (reference_element := drawing_tool.get_assigned_product(element)):
+            continue
         reference_obj = ifc.get_object(reference_element)
         if reference_element not in potential_reference_elements:
             # It was auto created, so it makes sense to auto delete
