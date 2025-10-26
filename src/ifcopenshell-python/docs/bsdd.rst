@@ -43,6 +43,7 @@ Examples
 Learning how to use the bSDD is best done by reading the official Swagger API docs.
 
 .. code-block:: python
+
     from bsdd import Client,apply_ifc_classification_properties
     from pprint import pprint
 
