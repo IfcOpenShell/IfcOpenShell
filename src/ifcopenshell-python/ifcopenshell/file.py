@@ -248,7 +248,10 @@ READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
-UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
+try:
+    UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
+except:
+    UNKNOWN = 5 # Workaround
 
 import struct
 
