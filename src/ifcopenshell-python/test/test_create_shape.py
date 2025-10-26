@@ -19,6 +19,7 @@ from typing import get_args
 
 fn = os.path.join(os.path.dirname(__file__), "fixtures/ColumnPSetsOfSets.ifc")
 
+
 class TestGeomSettings:
     def test_settings(self):
         settings = ifcopenshell.geom.settings()
@@ -198,8 +199,8 @@ def test_iterator():
     with_or_without_threads = [[], [multiprocessing.cpu_count()]]
     includes = [
         {},
-        {'include': ['IfcColumn']},
-        {'include': [file_or_filename[1].by_type('IfcColumn')[0]]},
+        {"include": ["IfcColumn"]},
+        {"include": [file_or_filename[1].by_type("IfcColumn")[0]]},
     ]
     for args in itertools.product(file_or_filename, with_or_without_threads, includes):
         kwargs = functools.reduce(operator.or_, (a for a in args if isinstance(a, dict)))
