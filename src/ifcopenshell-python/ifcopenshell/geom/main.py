@@ -22,7 +22,7 @@ import os
 import sys
 import operator
 
-from .. import ifcopenshell_wrapper
+from .. import open, ifcopenshell_wrapper
 from ..file import file
 from ..entity_instance import entity_instance
 
@@ -307,10 +307,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
             self.file = file
             file_or_filename = file_or_filename.wrapped_data
         else:
-            # @todo?
-            self.file = None
-            # Makes sure people are able to use python's platform agnostic paths
-            file_or_filename = os.path.abspath(file_or_filename)
+            file_or_filename = self.file = open(file_or_filename)
 
         if include is not None and exclude is not None:
             raise ValueError("include and exclude cannot be specified simultaneously")
@@ -342,7 +339,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 geometry_library, self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
             )
         else:
-            ifcopenshell_wrapper.Iterator.__init__(self, geometry_library, settings, file_or_filename, num_threads)
+            self.this = ifcopenshell_wrapper.construct_iterator(geometry_library, self.settings, file_or_filename, num_threads)
 
     if has_occ:
 
