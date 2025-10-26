@@ -339,7 +339,9 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 geometry_library, self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
             )
         else:
-            self.this = ifcopenshell_wrapper.construct_iterator(geometry_library, self.settings, file_or_filename, num_threads)
+            self.this = ifcopenshell_wrapper.construct_iterator(
+                geometry_library, self.settings, file_or_filename, num_threads
+            )
 
     if has_occ:
 
