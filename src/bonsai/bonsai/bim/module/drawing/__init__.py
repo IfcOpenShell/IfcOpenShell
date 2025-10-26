@@ -90,6 +90,7 @@ classes = (
     operator.SelectSimilarTextLiteralValue,
     operator.ToggleTargetView,
     operator.OpenDocumentationWebUi,
+    operator.FilterSelectedObjectsIfIntersectedByCamera,
     prop.Variable,
     prop.Drawing,
     prop.Document,

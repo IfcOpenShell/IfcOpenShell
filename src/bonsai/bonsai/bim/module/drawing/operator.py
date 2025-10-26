@@ -1359,11 +1359,17 @@ class CreateDrawing(bpy.types.Operator):
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
             join_criteria = [
+                
                 "class",
+               
                 "material.Name",
+               
                 "/Pset_.*Common/.Status",
+               
                 "EPset_Status.Status",
+               
                 "EPset_Status.UserDefinedStatus",
+            ,
             ]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
@@ -2354,8 +2360,11 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         is_reflected = False
         if camera_element:
             is_reflected = (
+                (
                 ifcopenshell.util.element.get_pset(camera_element, "EPset_Drawing", "TargetView")
+               
                 == "REFLECTED_PLAN_VIEW"
+            )
             )
             if is_reflected and camera.scale != (-1, -1, -1):
                 camera.scale = (-1, -1, -1)
@@ -4019,3 +4028,54 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
         )
 
         return {"FINISHED"}
+
+
+class FilterSelectedObjectsIfIntersectedByCamera(bpy.types.Operator):
+    bl_idname = "bim.filter_selected_objects_if_intersected_by_camera"
+    bl_label = "Filter Selected Objects If Intersected by Camera"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Deselect objects that are not intersected by the active camera view"
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera is not None and len(context.selected_objects) > 0
+
+    def execute(self, context):
+        self.filter_selected_objects_if_intersected_by_camera(context)
+        return {"FINISHED"}
+
+    def filter_selected_objects_if_intersected_by_camera(self, context: bpy.types.Context) -> None:
+        camera_obj = context.scene.camera
+        if not camera_obj:
+            return
+
+        camera = camera_obj.data
+        if not isinstance(camera, bpy.types.Camera):
+            return
+
+        cam_matrix = camera_obj.matrix_world
+        cam_origin = cam_matrix.translation
+        cam_direction = cam_matrix.to_quaternion() @ Vector((0.0, 0.0, -1.0))
+        plane_normal = cam_direction.normalized()
+        plane_point = cam_origin
+
+        def point_plane_distance(point):
+            return (point - plane_point).dot(plane_normal)
+
+        selected_objects = [obj for obj in context.selected_objects if obj != camera_obj]
+        
+        deselected = 0
+        for obj in selected_objects:
+            bbox_world = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+            distances = [point_plane_distance(p) for p in bbox_world]
+            min_d = min(distances)
+            max_d = max(distances)
+
+            intersects = (min_d <= 0.0 <= max_d) or (max_d <= 0.0 <= min_d)
+
+            if not intersects:
+                obj.select_set(False)
+                deselected += 1
+
+        remaining_selected = len([obj for obj in context.selected_objects if obj != camera_obj])
+        self.report({"INFO"}, f"Filtered to {remaining_selected} object(s) intersecting camera plane (deselected {deselected})")
