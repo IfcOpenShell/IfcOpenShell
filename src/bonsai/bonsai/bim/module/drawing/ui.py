@@ -639,13 +639,19 @@ class BIM_PT_text(Panel):
                 select_op.attribute_type = "text"
 
             if len(literal_props.attributes) > 1:
+                attr = literal_props.attributes[1]
                 row = box.row(align=True)
-                row.prop(literal_props.attributes[1], "enum_value", text="Path")
+                if getattr(attr, 'data_type', None) == "enum" and getattr(attr, 'enum_items', None):
+                    row.prop(attr, "enum_value", text="Path")
+                    select_value = attr.enum_value
+                else:
+                    row.prop(attr, "string_value", text="Path")
+                    select_value = attr.string_value
                 row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
                 select_op = row.operator(
                     "bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF"
                 )
-                select_op.literal_value = literal_props.attributes[1].enum_value
+                select_op.literal_value = select_value
                 select_op.literal_index = i
                 select_op.attribute_type = "path"
 
@@ -746,17 +752,22 @@ class BIM_PT_text(Panel):
                     click_op.display_text = literal_props.attributes[0].string_value
 
                 if len(literal_props.attributes) > 1:
+                    attr = literal_props.attributes[1]
                     row = box.row(align=True)
                     row.label(text="Path")
+                    if getattr(attr, 'data_type', None) == "enum" and getattr(attr, 'enum_items', None):
+                        display_value = attr.enum_value
+                    else:
+                        display_value = attr.string_value
                     click_op = row.operator(
                         "bim.select_similar_text_literal_value",
-                        text=literal_props.attributes[1].enum_value,
+                        text=display_value,
                         emboss=False,
                     )
-                    click_op.literal_value = literal_props.attributes[1].enum_value
+                    click_op.literal_value = display_value
                     click_op.literal_index = i
                     click_op.attribute_type = "path"
-                    click_op.display_text = literal_props.attributes[1].enum_value
+                    click_op.display_text = display_value
 
                 box_alignment_value = (
                     literal_props.attributes[
