@@ -92,7 +92,12 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
 
     # Support weird buildingSMART dictionary mappings which behave like enums
     items: list[tuple[str, str, str]] = []
-    data = json.loads(prop.enum_items)
+    if not prop.enum_items:
+        return items
+    try:
+        data = json.loads(prop.enum_items)
+    except Exception:
+        return items
 
     if isinstance(data, dict):
         for k, v in data.items():
