@@ -3182,7 +3182,7 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
         
         for i, literal in enumerate(props.literals):
             literal_data = {
-                'attributes': [(attr.string_value, attr.enum_value) for attr in literal.attributes],
+                'attributes': [(attr.string_value, attr.enum_value if attr.data_type == "enum" else attr.string_value) for attr in literal.attributes],
                 'box_alignment': literal.box_alignment[:] if hasattr(literal, 'box_alignment') else None
             }
             
@@ -3243,7 +3243,11 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 
                     if active_settings.apply_path_to_all:
                         if len(active_literal.attributes) > 1 and len(obj_literal.attributes) > 1:
-                            obj_literal.attributes[1].enum_value = active_literal.attributes[1].enum_value
+                            if (active_literal.attributes[1].data_type == "enum" and 
+                                obj_literal.attributes[1].data_type == "enum"):
+                                obj_literal.attributes[1].enum_value = active_literal.attributes[1].enum_value
+                            else:
+                                obj_literal.attributes[1].string_value = active_literal.attributes[1].string_value
                             needs_update = True
 
                     if active_settings.apply_box_alignment_to_all:
@@ -3294,8 +3298,11 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 
                 if captured_literal['apply_path_to_all']:
                     if len(captured_literal['attributes']) > 1 and len(obj_literal.attributes) > 1:
-                        new_value = captured_literal['attributes'][1][1]  # [1] = enum_value
-                        obj_literal.attributes[1].enum_value = new_value
+                        new_value = captured_literal['attributes'][1][1]  # [1] = enum_value or string_value
+                        if obj_literal.attributes[1].data_type == "enum":
+                            obj_literal.attributes[1].enum_value = new_value
+                        else:
+                            obj_literal.attributes[1].string_value = new_value
                         needs_update = True
 
                 if captured_literal['apply_box_alignment_to_all'] and captured_literal['box_alignment']:
