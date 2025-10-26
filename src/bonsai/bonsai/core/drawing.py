@@ -488,6 +488,9 @@ def sync_references(
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
             drawing_tool.sync_object_placement(obj)
         if not (reference_element := drawing_tool.get_assigned_product(element)):
+            if obj := ifc.get_object(element):
+                drawing_tool.delete_object(obj)
+            ifc.run("root.remove_product", product=element)
             continue
         reference_obj = ifc.get_object(reference_element)
         if reference_element not in potential_reference_elements:
