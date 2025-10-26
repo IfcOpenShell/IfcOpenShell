@@ -731,58 +731,29 @@ class BIM_PT_text(Panel):
             row.label(text="List_Separator")
             row.label(text=str(text_data["List_Separator"]))
 
-            for i, literal_props in enumerate(props.literals):
+            for i, literal_data in enumerate(text_data["Literals"]):
                 box = self.layout.box()
                 box.label(text=f"Literal[{i}]:")
-
-                if len(literal_props.attributes) > 0:
+                
+                for attribute in literal_data:
                     row = box.row(align=True)
-                    row.label(text="Literal")
+                    row.label(text=attribute)
                     click_op = row.operator(
                         "bim.select_similar_text_literal_value",
-                        text=literal_props.attributes[0].string_value,
+                        text=str(literal_data[attribute]),
                         emboss=False,
                     )
-                    click_op.literal_value = literal_props.attributes[0].string_value
+                    click_op.literal_value = str(literal_data[attribute])
                     click_op.literal_index = i
-                    click_op.attribute_type = "text"
-                    click_op.display_text = literal_props.attributes[0].string_value
-
-                if len(literal_props.attributes) > 1:
-                    attr = literal_props.attributes[1]
-                    row = box.row(align=True)
-                    row.label(text="Path")
-                    if getattr(attr, "data_type", None) == "enum" and getattr(attr, "enum_items", None):
-                        display_value = attr.enum_value
+                    if attribute == "Literal":
+                        click_op.attribute_type = "text"
+                    elif attribute == "Path":
+                        click_op.attribute_type = "path"
+                    elif attribute == "BoxAlignment":
+                        click_op.attribute_type = "box_alignment"
                     else:
-                        display_value = attr.string_value
-                    click_op = row.operator(
-                        "bim.select_similar_text_literal_value",
-                        text=display_value,
-                        emboss=False,
-                    )
-                    click_op.literal_value = display_value
-                    click_op.literal_index = i
-                    click_op.attribute_type = "path"
-                    click_op.display_text = display_value
-
-                box_alignment_value = (
-                    literal_props.attributes[
-                        next(
-                            (idx for idx, attr in enumerate(literal_props.attributes) if attr.name == "BoxAlignment"),
-                            -1,
-                        )
-                    ].string_value
-                    if any(attr.name == "BoxAlignment" for attr in literal_props.attributes)
-                    else "N/A"
-                )
-                row = box.row(align=True)
-                row.label(text="BoxAlignment")
-                click_op = row.operator("bim.select_similar_text_literal_value", text=box_alignment_value, emboss=False)
-                click_op.literal_value = box_alignment_value
-                click_op.literal_index = i
-                click_op.attribute_type = "box_alignment"
-                click_op.display_text = box_alignment_value
+                        click_op.attribute_type = "text"
+                    click_op.display_text = str(literal_data[attribute])
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
