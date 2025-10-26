@@ -786,17 +786,21 @@ class Model(bonsai.core.tool.Model):
             elif material.is_a("IfcMaterialLayerSet"):
                 axis = ifcopenshell.util.element.get_pset(element, "EPset_Parametric", "LayerSetDirection")
                 if axis is None:
-                    if element.is_a() in [
+                    if element.is_a() in (
                         "IfcSlabType",
                         "IfcRoofType",
                         "IfcRampType",
                         "IfcPlateType",
-                        "IfcCovering",
-                        "IfcFurniture",
-                    ]:
+                        "IfcSlab",
+                        "IfcRoof",
+                        "IfcRamp",
+                        "IfcPlate",
+                    ):
                         axis = "AXIS3"
-                    else:
+                    elif element.is_a() in ("IfcWallType", "IfcWall"):
                         axis = "AXIS2"
+                    else:
+                        return
                 return f"LAYER{axis[-1]}"
             elif material.is_a("IfcMaterialProfileSetUsage"):
                 # TODO: remove after we support editing profile usages with IfcRevolvedAreaSolid.
