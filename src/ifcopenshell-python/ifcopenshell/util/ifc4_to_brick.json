@@ -26,5 +26,10 @@
     "IfcFlowMeter.GASMETER": "Gas_Meter",
     "IfcFlowMeter.WATERMETER": "Water_Meter",
     "IfcElectricMotor": "Motor",
-    "IfcSolarDevice.SOLARPANEL": "PV_Panel"
+    "IfcSolarDevice.SOLARPANEL": "PV_Panel",
+    "IfcBuilding": "https://w3id.org/rec#Building",
+    "IfcBuildingStorey": "https://w3id.org/rec#Level",
+    "IfcSpace": "https://w3id.org/rec#Room",
+    "IfcSpatialZone": "https://w3id.org/rec#Zone",
+    "IfcSpatialZone.THERMAL": "https://w3id.org/rec#HVACZone"
 }
