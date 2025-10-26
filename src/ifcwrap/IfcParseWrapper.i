@@ -33,6 +33,10 @@ private:
 %ignore IfcParse::IfcFile::types_end;
 %ignore IfcParse::IfcFile::internal_guid_map;
 %ignore IfcParse::IfcFile::storage_;
+%ignore IfcParse::IfcFile::byguid_;
+%ignore IfcParse::IfcFile::byid_;
+%ignore IfcParse::IfcFile::byref_excl_;
+%ignore IfcParse::IfcFile::types_to_bypass_loading_;
 
 %ignore IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
 
