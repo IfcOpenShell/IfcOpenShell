@@ -633,9 +633,7 @@ class BIM_PT_text(Panel):
                 row = box.row(align=True)
                 row.prop(literal_props.attributes[0], "string_value", text="Text")
                 row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
-                select_op = row.operator(
-                    "bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF"
-                )
+                select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
                 select_op.literal_value = literal_props.attributes[0].string_value
                 select_op.literal_index = i
                 select_op.attribute_type = "text"
@@ -643,16 +641,14 @@ class BIM_PT_text(Panel):
             if len(literal_props.attributes) > 1:
                 attr = literal_props.attributes[1]
                 row = box.row(align=True)
-                if getattr(attr, 'data_type', None) == "enum" and getattr(attr, 'enum_items', None):
+                if getattr(attr, "data_type", None) == "enum" and getattr(attr, "enum_items", None):
                     row.prop(attr, "enum_value", text="Path")
                     select_value = attr.enum_value
                 else:
                     row.prop(attr, "string_value", text="Path")
                     select_value = attr.string_value
                 row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
-                select_op = row.operator(
-                    "bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF"
-                )
+                select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
                 select_op.literal_value = select_value
                 select_op.literal_index = i
                 select_op.attribute_type = "path"
@@ -661,7 +657,6 @@ class BIM_PT_text(Panel):
             if other_attributes:
                 bonsai.bim.helper.draw_attributes(other_attributes, box)
 
-            # Box alignment UI
             row = box.row(align=True)
             cols = [row.column(align=True) for j in range(3)]
             for j in range(9):
@@ -757,7 +752,7 @@ class BIM_PT_text(Panel):
                     attr = literal_props.attributes[1]
                     row = box.row(align=True)
                     row.label(text="Path")
-                    if getattr(attr, 'data_type', None) == "enum" and getattr(attr, 'enum_items', None):
+                    if getattr(attr, "data_type", None) == "enum" and getattr(attr, "enum_items", None):
                         display_value = attr.enum_value
                     else:
                         display_value = attr.string_value
