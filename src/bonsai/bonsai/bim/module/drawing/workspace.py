@@ -302,7 +302,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         related_objects = bpy.context.selected_objects
         created_objects = []
-        
+
         for related_object in related_objects:
             obj = core.add_annotation(
                 tool.Ifc,
@@ -317,14 +317,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             )
             tool.Drawing.setup_annotation_object(obj, object_type, related_object, props.tag_rotation_mode)
             created_objects.append(obj)
-        
+
         # Select the created annotation objects
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
         for obj in created_objects:
             obj.select_set(True)
         if created_objects:
             bpy.context.view_layer.objects.active = created_objects[-1]
-
 
     def hotkey_S_A(self):
         if bpy.ops.bim.add_annotation.poll():

@@ -499,9 +499,7 @@ class BIMCameraProperties(PropertyGroup):
         update=get_update_layer_callback("linework_mode", "LineworkMode"),
     )
     generate_material_layers: bpy.props.BoolProperty(
-        name="Generate Material Layers",
-        description="Generate material layer linework in drawings",
-        default=True
+        name="Generate Material Layers", description="Generate material layer linework in drawings", default=True
     )
     fill_mode: EnumProperty(
         items=[
@@ -777,8 +775,7 @@ class BIMTextProperties(PropertyGroup):
         name="Custom Symbol",
         description="Non-default symbol to use for this text.",
     )
-    
-    # Simple toggle properties
+
     apply_font_size_to_all: BoolProperty(
         name="Apply Font Size to All", description="Apply font size changes to all selected text objects", default=False
     )
@@ -786,16 +783,13 @@ class BIMTextProperties(PropertyGroup):
         name="Apply Newline to All", description="Apply newline changes to all selected text objects", default=False
     )
 
-    # Dynamic collection that grows with literals
     literal_apply_settings: CollectionProperty(name="Literal Apply Settings", type=LiteralApplySettings)
 
     def ensure_literal_apply_settings(self, literal_count: int):
         """Ensure we have apply settings for all literals"""
-        # Remove excess settings if we have fewer literals now
         while len(self.literal_apply_settings) > literal_count:
             self.literal_apply_settings.remove(len(self.literal_apply_settings) - 1)
 
-        # Add missing settings if we have more literals now
         while len(self.literal_apply_settings) < literal_count:
             setting = self.literal_apply_settings.add()
             setting.literal_index = len(self.literal_apply_settings) - 1
@@ -811,7 +805,6 @@ class BIMTextProperties(PropertyGroup):
         custom_symbol: str
         apply_font_size_to_all: bool
         apply_newline_to_all: bool
-        # Add type hints for literal-specific properties as needed
 
     def get_symbol(self) -> Union[str, None]:
         if self.symbol == "NO SYMBOL":
@@ -831,7 +824,6 @@ class BIMTextProperties(PropertyGroup):
         else:
             self.symbol = "CUSTOM SYMBOL"
             self.custom_symbol = symbol
-
 
     def get_text_edited_data(self) -> dict[str, Any]:
         """should be called only if `is_editing`

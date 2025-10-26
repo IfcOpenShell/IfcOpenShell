@@ -1284,8 +1284,7 @@ class CreateDrawing(bpy.types.Operator):
             value = ifcopenshell.util.selector.get_element_value(element, key)
             if value:
                 classes.append(
-                    tool.Drawing.canonicalise_class_name(key) + "-" +
-                    tool.Drawing.canonicalise_class_name(str(value))
+                    tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
                 )
 
         # ─── Target View ───────────────────────────────────────────
@@ -1294,7 +1293,6 @@ class CreateDrawing(bpy.types.Operator):
             classes.append(f"target-view-{target_view_class}")
 
         return classes
-
 
     def is_manifold(self, obj) -> bool:
         result = self.is_manifold_cache.get(obj.data.name, None)
@@ -1360,7 +1358,13 @@ class CreateDrawing(bpy.types.Operator):
             join_criteria = join_criteria.split(",")
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
-            join_criteria = ["class", "material.Name", "/Pset_.*Common/.Status", "EPset_Status.Status", "EPset_Status.UserDefinedStatus"]
+            join_criteria = [
+                "class",
+                "material.Name",
+                "/Pset_.*Common/.Status",
+                "EPset_Status.Status",
+                "EPset_Status.UserDefinedStatus",
+            ]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}
@@ -2349,17 +2353,18 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         camera_element = tool.Ifc.get_entity(camera)
         is_reflected = False
         if camera_element:
-            is_reflected = ifcopenshell.util.element.get_pset(camera_element, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW"
+            is_reflected = (
+                ifcopenshell.util.element.get_pset(camera_element, "EPset_Drawing", "TargetView")
+                == "REFLECTED_PLAN_VIEW"
+            )
             if is_reflected and camera.scale != (-1, -1, -1):
                 camera.scale = (-1, -1, -1)
-
 
         if camera_props.update_representation(camera.matrix_world):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
             # Restore the scale after update if needed
             if is_reflected:
                 camera.scale = (-1, -1, -1)
-
 
         return {"FINISHED"}
 
@@ -3061,33 +3066,36 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = tool.Drawing.get_text_props(obj)
-        
+
         captured_apply_settings = {
-            'apply_font_size_to_all': props.apply_font_size_to_all,
-            'apply_newline_to_all': props.apply_newline_to_all,
-            'font_size': props.font_size,
-            'newline_at': props.newline_at,
-            'literals': []
+            "apply_font_size_to_all": props.apply_font_size_to_all,
+            "apply_newline_to_all": props.apply_newline_to_all,
+            "font_size": props.font_size,
+            "newline_at": props.newline_at,
+            "literals": [],
         }
-        
+
         for i, literal in enumerate(props.literals):
             literal_data = {
-                'attributes': [(attr.string_value, attr.enum_value if attr.data_type == "enum" else attr.string_value) for attr in literal.attributes],
-                'box_alignment': literal.box_alignment[:] if hasattr(literal, 'box_alignment') else None
+                "attributes": [
+                    (attr.string_value, attr.enum_value if attr.data_type == "enum" else attr.string_value)
+                    for attr in literal.attributes
+                ],
+                "box_alignment": literal.box_alignment[:] if hasattr(literal, "box_alignment") else None,
             }
-            
+
             if i < len(props.literal_apply_settings):
                 apply_settings = props.literal_apply_settings[i]
-                literal_data['apply_text_to_all'] = apply_settings.apply_text_to_all
-                literal_data['apply_path_to_all'] = apply_settings.apply_path_to_all
-                literal_data['apply_box_alignment_to_all'] = apply_settings.apply_box_alignment_to_all
+                literal_data["apply_text_to_all"] = apply_settings.apply_text_to_all
+                literal_data["apply_path_to_all"] = apply_settings.apply_path_to_all
+                literal_data["apply_box_alignment_to_all"] = apply_settings.apply_box_alignment_to_all
             else:
-                literal_data['apply_text_to_all'] = False
-                literal_data['apply_path_to_all'] = False
-                literal_data['apply_box_alignment_to_all'] = False
-                
-            captured_apply_settings['literals'].append(literal_data)
-        
+                literal_data["apply_text_to_all"] = False
+                literal_data["apply_path_to_all"] = False
+                literal_data["apply_box_alignment_to_all"] = False
+
+            captured_apply_settings["literals"].append(literal_data)
+
         core.edit_text(tool.Drawing, obj=obj)
 
         self.apply_to_selected_objects_with_captured_data(context, obj, captured_apply_settings)
@@ -3133,8 +3141,10 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 
                     if active_settings.apply_path_to_all:
                         if len(active_literal.attributes) > 1 and len(obj_literal.attributes) > 1:
-                            if (active_literal.attributes[1].data_type == "enum" and 
-                                obj_literal.attributes[1].data_type == "enum"):
+                            if (
+                                active_literal.attributes[1].data_type == "enum"
+                                and obj_literal.attributes[1].data_type == "enum"
+                            ):
                                 obj_literal.attributes[1].enum_value = active_literal.attributes[1].enum_value
                             else:
                                 obj_literal.attributes[1].string_value = active_literal.attributes[1].string_value
@@ -3150,7 +3160,7 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
     def apply_to_selected_objects_with_captured_data(self, context, active_obj, captured_data):
         """Apply changes to other selected text objects using captured apply settings"""
         selected_objects = [obj for obj in context.selected_objects if obj != active_obj]
-        
+
         for obj in selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -3159,44 +3169,44 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             obj_props = tool.Drawing.get_text_props(obj)
-            
+
             if len(obj_props.literals) == 0:
                 core.enable_editing_text(tool.Drawing, obj=obj)
                 obj_props.ensure_literal_apply_settings(len(obj_props.literals))
-            
+
             needs_update = False
 
-            if captured_data['apply_font_size_to_all']:
-                obj_props.font_size = captured_data['font_size']
+            if captured_data["apply_font_size_to_all"]:
+                obj_props.font_size = captured_data["font_size"]
                 needs_update = True
 
-            if captured_data['apply_newline_to_all']:
-                obj_props.newline_at = captured_data['newline_at']
+            if captured_data["apply_newline_to_all"]:
+                obj_props.newline_at = captured_data["newline_at"]
                 needs_update = True
 
-            for i, captured_literal in enumerate(captured_data['literals']):
+            for i, captured_literal in enumerate(captured_data["literals"]):
                 if i >= len(obj_props.literals):
                     continue
 
                 obj_literal = obj_props.literals[i]
 
-                if captured_literal['apply_text_to_all']:
-                    if len(captured_literal['attributes']) > 0 and len(obj_literal.attributes) > 0:
-                        new_value = captured_literal['attributes'][0][0]  # [0] = string_value
+                if captured_literal["apply_text_to_all"]:
+                    if len(captured_literal["attributes"]) > 0 and len(obj_literal.attributes) > 0:
+                        new_value = captured_literal["attributes"][0][0]  # [0] = string_value
                         obj_literal.attributes[0].string_value = new_value
                         needs_update = True
 
-                if captured_literal['apply_path_to_all']:
-                    if len(captured_literal['attributes']) > 1 and len(obj_literal.attributes) > 1:
-                        new_value = captured_literal['attributes'][1][1]  # [1] = enum_value or string_value
+                if captured_literal["apply_path_to_all"]:
+                    if len(captured_literal["attributes"]) > 1 and len(obj_literal.attributes) > 1:
+                        new_value = captured_literal["attributes"][1][1]  # [1] = enum_value or string_value
                         if obj_literal.attributes[1].data_type == "enum":
                             obj_literal.attributes[1].enum_value = new_value
                         else:
                             obj_literal.attributes[1].string_value = new_value
                         needs_update = True
 
-                if captured_literal['apply_box_alignment_to_all'] and captured_literal['box_alignment']:
-                    obj_literal.box_alignment = captured_literal['box_alignment']
+                if captured_literal["apply_box_alignment_to_all"] and captured_literal["box_alignment"]:
+                    obj_literal.box_alignment = captured_literal["box_alignment"]
                     needs_update = True
 
             if needs_update:
@@ -3916,6 +3926,7 @@ class OpenDocumentationWebUi(bpy.types.Operator):
             bpy.ops.bim.open_web_browser(page="documentation")
         return {"FINISHED"}
 
+
 class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.exclude_annotation"
     bl_label = "Exclude Annotation"
@@ -3927,7 +3938,7 @@ class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             return
         for obj in tool.Blender.get_selected_objects(include_active=False):
             if (element := tool.Ifc.get_entity(obj)) and tool.Drawing.is_auto_annotation(element):
-                if (referenced_element := tool.Drawing.get_annotation_element(element)):
+                if referenced_element := tool.Drawing.get_annotation_element(element):
                     tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
 
@@ -3969,7 +3980,7 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
                 was_editing = len(obj_props.literals) > 0
                 if not was_editing:
                     core.enable_editing_text(tool.Drawing, obj=obj)
-                
+
                 if self.attribute_type == "font_size":
                     should_select = str(obj_props.font_size) == self.literal_value
                 elif self.literal_index < len(obj_props.literals):
@@ -3988,15 +3999,13 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
                         )
                         if box_alignment_attr:
                             should_select = box_alignment_attr.string_value == self.literal_value
-                
+
                 if not was_editing:
                     core.disable_editing_text(tool.Drawing, obj=obj)
 
             if should_select:
                 obj.select_set(not self.remove_from_selection)
                 count += 1
-                
-
 
         if self.attribute_type in ["text", "path", "box_alignment"]:
             result = f'literal[{self.literal_index}].{self.attribute_type} = "{self.literal_value}"'
