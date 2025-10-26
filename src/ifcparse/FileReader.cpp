@@ -11,7 +11,12 @@
 #include <vector>
 #include <deque>
 
+#ifdef USE_MMAP
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <boost/filesystem/path.hpp>
+#endif
+
+#include "utils.h"
 
 namespace {
 
@@ -34,15 +39,18 @@ using namespace IfcParse;
 struct FullBufferImpl final : FileReader::Impl {
     std::vector<char> buf_;
     explicit FullBufferImpl(const std::string& fn) {
-        std::ifstream ifs(fn, std::ios::binary);
-        if (!ifs) throw std::runtime_error("Failed to open: " + fn);
-        ifs.seekg(0, std::ios::end);
-        const std::streamsize sz = ifs.tellg();
-        ifs.seekg(0, std::ios::beg);
-        buf_.resize(static_cast<size_t>(sz));
-        if (sz > 0 && !ifs.read(buf_.data(), sz)) {
-            throw std::runtime_error("Failed to read file into buffer");
-        }
+#ifdef _MSC_VER
+        std::wstring fn_ws = IfcUtil::path::from_utf8(fn);
+        const wchar_t* fn_wide = fn_ws.c_str();
+        auto stream = _wfopen(fn_wide, L"rb");
+#else
+        auto stream = fopen(fn.c_str(), "rb");
+#endif
+        fseek(stream, 0, SEEK_END);
+        buf_.resize((size_t)ftell(stream));
+        rewind(stream);
+        buf_.resize((size_t) fread(buf_.data(), 1, buf_.capacity(), stream));
+        fclose(stream);
     }
     size_t size() const override { return buf_.size(); }
     char get(size_t pos) const override {
@@ -67,12 +75,18 @@ struct PagedFileImpl final : FileReader::Impl {
     mutable std::unordered_map<size_t, Entry> map_;
 
     PagedFileImpl(const std::string& fn, size_t page_size, size_t cap)
-        : fn_(fn), page_size_(std::max<size_t>(512, page_size)), capacity_(std::max<size_t>(2, cap)) {
-        namespace fs = std::filesystem;
-        if (!fs::exists(fn_)) throw std::runtime_error("File not found: " + fn_);
-        file_size_ = static_cast<size_t>(fs::file_size(fn_));
-        fp_ = std::fopen(fn_.c_str(), "rb");
-        if (!fp_) throw std::runtime_error("Failed to fopen: " + fn_);
+        : fn_(fn), page_size_(std::max<size_t>(512, page_size)), capacity_(std::max<size_t>(2, cap))
+    {
+#ifdef _MSC_VER
+        std::wstring fn_ws = IfcUtil::path::from_utf8(fn);
+        const wchar_t* fn_wide = fn_ws.c_str();
+        fp_ = _wfopen(fn_wide, L"rb");
+#else
+        fp_ = fopen(fn.c_str(), "rb");
+#endif
+        fseek(fp_, 0, SEEK_END);
+        file_size_ = (size_t)ftell(fp_);
+        rewind(fp_);
     }
 
     ~PagedFileImpl() override {
@@ -135,16 +149,13 @@ private:
     }
 };
 
+#ifdef USE_MMAP
 struct MMapImpl final : FileReader::Impl {
     boost::iostreams::mapped_file_source map_;
     size_t size_ = 0;
 
     explicit MMapImpl(const std::string& fn) {
-        namespace fs = std::filesystem;
-        if (!fs::exists(fn)) throw std::runtime_error("File not found: " + fn);
-        size_ = static_cast<size_t>(fs::file_size(fn));
-        if (size_ == 0) return; // empty file: map_ stays closed
-        map_.open(fn);
+        map_.open(boost::filesystem::path(IfcUtil::path::from_utf8(fn)));
         if (!map_.is_open()) throw std::runtime_error("Failed to open mapped_file_source");
         size_ = static_cast<size_t>(map_.size());
     }
@@ -156,6 +167,7 @@ struct MMapImpl final : FileReader::Impl {
         return map_.data()[pos];
     }
 };
+#endif
 
 /// User-pushed sequential backend with an arbitrary-length queue of future pages.
 /// We keep a deque of pages; when reads move forward, we drop fully-consumed
@@ -185,9 +197,8 @@ struct PushedSequentialImpl final : std::enable_shared_from_this<PushedSequentia
     }
 
     char get(size_t pos) const override {
-        auto self = const_cast<PushedSequentialImpl*>(this);
-
         /*
+        auto self = const_cast<PushedSequentialImpl*>(this);
         // We do not do this automatically because all variable width tokens:
         // ENUM/STRING/BINARY/KEYWORD are stored as file offsets until a full
         // entity instance is finalized.
@@ -231,7 +242,12 @@ IfcParse::FileReader::FileReader(const std::string& fn)
 IfcParse::FileReader::FileReader(const std::string& fn, const mmap_tag&)
     : cursor_(0)
 {
+#ifdef USE_MMAP
 	impl_ = std::make_shared<MMapImpl>(fn);
+#else
+    (void)fn;
+    throw std::runtime_error("IfcParse::FileReader: mmap_tag specified but library not compiled with USE_MMAP");
+#endif
 }
 
 IfcParse::FileReader::FileReader(const caller_fed_tag&)

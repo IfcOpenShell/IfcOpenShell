@@ -126,6 +126,9 @@ size_t IfcSpfLexer::skipWhitespace() const {
 }
 
 size_t IfcSpfLexer::skipComment() const {
+    if (stream->eof()) {
+        return 0;
+    }
     char character = stream->peek();
     if (character != '/') {
         return 0;
@@ -199,7 +202,9 @@ Token IfcSpfLexer::Next() {
                 character == '/') {
                 break;
             }
-            str.push_back(character);
+            if (!(character == ' ' || character == '\r' || character == '\n' || character == '\t')) {
+                str.push_back(character);
+            }
             stream->increment();
         }
     }
@@ -1178,15 +1183,19 @@ IfcUtil::IfcBaseClass::set_attribute_value(const std::string& s, const T& t) {
 //
 #ifdef USE_MMAP
 IfcFile::IfcFile(const std::string& fn, bool mmap) {
-	std::unique_ptr<FileReader> s;
+    initialize(fn, mmap);
+}
+
+bool IfcParse::IfcFile::initialize(const std::string& fn, bool mmap) {
+    std::unique_ptr<FileReader> s;
     if (mmap) {
         s = std::make_unique<FileReader>(fn, FileReader::mmap_tag{});
     } else {
         s = std::make_unique<FileReader>(fn);
-	}   
+    }
 
     storage_.emplace<1>(this);
-    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&*s, schema_, max_id_);
+    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&*s, schema_, max_id_, types_to_bypass_loading_);
 
     if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
         // @todo unify these names, it's already confusing enough as it stands
@@ -1196,28 +1205,27 @@ IfcFile::IfcFile(const std::string& fn, bool mmap) {
     }
 
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
+    return good_ == file_open_status::SUCCESS;
 }
 #endif
 
-IfcFile::IfcFile(const std::string& path, filetype ty, bool readonly)
-    : schema_(nullptr)
-    , max_id_(0)
-    , _header(this)
-{
-    // @todo allow for rocksdb from path
+IfcFile::IfcFile(const uninitialized_tag&)
+    : schema_(nullptr), max_id_(0), _header(this), good_(file_open_status::UNKNOWN), ifcroot_type_(nullptr) {}
+
+bool IfcParse::IfcFile::initialize(const std::string& path, filetype ty, bool readonly) {
     if (ty == FT_AUTODETECT) {
         ty = guess_file_type(path);
     }
     if (ty == FT_IFCSPF) {
         FileReader s(path);
         storage_.emplace<1>(this);
-        std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
+        std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
 
         if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
             // @todo unify these names, it's already confusing enough as it stands
             byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
             byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
-			byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
+            byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
         }
         // byidentity_ = decltype(byidentity_)(&std::get<impl::in_memory_file_storage>(storage_).byidentity_);
     } else if (ty == FT_ROCKSDB) {
@@ -1246,6 +1254,19 @@ IfcFile::IfcFile(const std::string& path, filetype ty, bool readonly)
         // throw std::runtime_error("Unsupported file format");
     }
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
+    return good_ == file_open_status::SUCCESS;
+}
+
+void IfcParse::IfcFile::bypass_type(const std::string& type_name) {
+    types_to_bypass_loading_.insert(type_name);
+}
+
+IfcFile::IfcFile(const std::string& path, filetype ty, bool readonly)
+    : schema_(nullptr)
+    , max_id_(0)
+    , _header(this)
+{
+    initialize(path, ty, readonly);
 }
 
 IfcFile::IfcFile(std::istream& stream, int length)
@@ -1260,7 +1281,7 @@ IfcFile::IfcFile(std::istream& stream, int length)
     s.pushNextPage(string_data);
 
     storage_.emplace<1>(this);
-    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
+    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
@@ -1276,7 +1297,7 @@ IfcFile::IfcFile(void* data, int length)
 	FileReader s(std::string((char*)data, length), FileReader::caller_fed_tag{});
     
     storage_.emplace<1>(this);
-    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
+    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
@@ -1290,7 +1311,7 @@ IfcFile::IfcFile(IfcParse::FileReader* s)
     , max_id_(0)
 {
     storage_.emplace<1>(this);
-    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_);
+    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
@@ -1330,8 +1351,7 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
     setDefaultHeaderValues();
 }
 
-bool IfcParse::InstanceStreamer::hasSemicolon() const
-{
+bool IfcParse::InstanceStreamer::hasSemicolon() const {
     auto local_stream = stream_->clone();
 	auto local_lexer = IfcSpfLexer(&local_stream);
     Token t;
@@ -1352,6 +1372,30 @@ bool IfcParse::InstanceStreamer::hasSemicolon() const
         }
     }
 	return false;
+}
+
+size_t IfcParse::InstanceStreamer::semicolonCount() const {
+    auto local_stream = stream_->clone();
+    auto local_lexer = IfcSpfLexer(&local_stream);
+    Token t;
+    size_t count = 0;
+    try {
+        t = local_lexer.Next();
+    } catch (const std::out_of_range&) {
+        return false;
+    }
+    while (t.type != Token_NONE) {
+        if (TokenFunc::isOperator(t, ';')) {
+            count++;
+        }
+        try {
+            t = local_lexer.Next();
+        } catch (const std::out_of_range&) {
+            // This most likely happens when a page boundary is contained within a string
+            break;
+        }
+    }
+    return count;
 }
 
 void IfcParse::InstanceStreamer::pushPage(const std::string& page)
@@ -1452,7 +1496,7 @@ IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* 
     storage_.references_to_resolve = &references_to_resolve_;
 }
 
-void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileReader* s, const IfcParse::schema_definition*& schema, unsigned int& max_id) {
+void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileReader* s, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass) {
     // Initialize a "C" locale for locale-independent
     // number parsing. See comment above on line 41.
     init_locale();
@@ -1499,6 +1543,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
     auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
 
 	InstanceStreamer streamer(schema, tokens);
+    streamer.bypassTypes(typed_to_bypass);
 
     Logger::Status("Scanning file...");
 
@@ -1510,6 +1555,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
             // No more instances to read
             break;
 		}
+
         auto current_id = std::get<0>(*inst);
 
         auto instance = schema->instantiate(std::get<1>(*inst), std::move(std::get<2>(*inst)));
@@ -1569,11 +1615,16 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
         return;
     }
 
+    const auto& bypassed = streamer.bypassed_instances();
+
     for (const auto& p : streamer.references()) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
         if (auto* v = std::get_if<reference_or_simple_type>(&p.second)) {
             if (auto* name = std::get_if<InstanceReference>(v)) {
+                if (std::binary_search(bypassed.begin(), bypassed.end(), *name)) {
+                    continue;
+                }
                 auto it = byid_.find(*name);
                 if (it == byid_.end()) {
                     Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
@@ -1604,6 +1655,9 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
             instances->reserve(vv->size());
             for (const auto& vi : *vv) {
                 if (auto* name = std::get_if<InstanceReference>(&vi)) {
+                    if (std::binary_search(bypassed.begin(), bypassed.end(), *name)) {
+                        continue;
+                    }
                     auto it = byid_.find(*name);
                     if (it == byid_.end()) {
                         Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
@@ -1638,6 +1692,9 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 std::vector<IfcUtil::IfcBaseClass*> inner;
                 for (const auto& vii : vi) {
                     if (auto* name = std::get_if<InstanceReference>(&vii)) {
+                        if (std::binary_search(bypassed.begin(), bypassed.end(), *name)) {
+                            continue;
+                        }
                         auto it = byid_.find(*name);
                         if (it == byid_.end()) {
                             Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));

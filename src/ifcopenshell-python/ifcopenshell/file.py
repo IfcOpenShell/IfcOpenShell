@@ -248,6 +248,10 @@ READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
+try:
+    UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
+except:
+    UNKNOWN = 5  # Workaround
 
 import struct
 
@@ -496,6 +500,24 @@ class rocksdb_file_storage:
         return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
 
 
+class file_header:
+    def __init__(self, file, header_data):
+        self.file = file
+        self.header_data = header_data
+
+    @property
+    def file_description(self) -> entity_instance:
+        return entity_instance.wrap_value(self.header_data.file_description_py(), file=self.file)
+
+    @property
+    def file_name(self) -> entity_instance:
+        return entity_instance.wrap_value(self.header_data.file_name_py(), file=self.file)
+
+    @property
+    def file_schema(self) -> entity_instance:
+        return entity_instance.wrap_value(self.header_data.file_schema_py(), file=self.file)
+
+
 class file:
     """Base class for containing IFC files.
 
@@ -513,7 +535,7 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
-    header: ifcopenshell_wrapper.IfcSpfHeader
+    header: file_header
     units: dict[str, entity_instance] = {}
     history_size: int = 64
     history: list[Transaction]
@@ -586,8 +608,11 @@ class file:
                         "Unsupported schema: %s" % ",".join(self.header.file_schema.schema_identifiers),
                     ),
                     INVALID_SYNTAX: lambda: (Error, "Syntax error during parse, check logs"),
+                    # This is the case when passing uninitialized_tag
+                    UNKNOWN: lambda: (None, None),
                 }[f.good().value()]()
-                raise exc(msg)
+                if exc is not None:
+                    raise exc(msg)
         else:
             args = filter(None, [schema])
             args = map(ifcopenshell_wrapper.schema_by_name, args)
@@ -1025,12 +1050,10 @@ class file:
 
     @property
     def header(self):
-        try:  # Temporary workaround until new builds are ready. See #7131.
-            h = self.wrapped_data.header()
+        try:
+            return file_header(self, self.wrapped_data.header())
         except:
             return self.wrapped_data.header
-        object.__setattr__(h, "file_ref", lambda inst: entity_instance.wrap_value(inst, file=self))
-        return h
 
     @property
     def storage(self) -> Optional[rocksdb_file_storage]:

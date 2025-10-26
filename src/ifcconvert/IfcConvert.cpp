@@ -207,7 +207,7 @@ size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_t
 void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap);
+bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false);
 
 // from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
 struct verbosity_counter {
@@ -965,7 +965,10 @@ int main(int argc, char** argv) {
 	time_t start,end;
 	time(&start);
 	
-    if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+	// @nb last argument true -> bypass_properties which are not read by any of the geometry serializers
+    // XML, RocksDB, IFC are already special-cased above
+    // SVG requires properties for IfcAnnotation/DRAWING properties
+    if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, output_extension != SVG)) {
         write_log(!quiet);
 		serializer.reset();
         IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename)); /**< @todo Windows Unicode support */
@@ -1336,7 +1339,7 @@ void write_log(bool header) {
 
 #include <boost/algorithm/string/predicate.hpp>
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap) {
+bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool bypass_properties) {
     time_t start, end;
 
     // Prevent IfcFile::Init() prints by setting output to null temporarily
@@ -1344,20 +1347,36 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 
     time(&start);
 
+	bool requires_init = false;
+
 #ifdef WITH_IFCXML
 	if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
 		ifc_file = IfcParse::parse_ifcxml(filename);
-	} else
+    } else
 #endif
+    {
+        ifc_file = new IfcParse::IfcFile(IfcParse::uninitialized_tag{});
+        requires_init = true;
+    }
 
-	{
+	ifc_file->bypass_type("IfcRelDefinesByProperties");
+    ifc_file->bypass_type("IfcPropertySetDefinition");
+    ifc_file->bypass_type("IfcProperty");
+    ifc_file->bypass_type("IfcMaterialProperties");
+    ifc_file->bypass_type("IfcProfileProperties");
+    ifc_file->bypass_type("IfcPhysicalQuantity");
+    
 #ifdef USE_MMAP
-		ifc_file = new IfcParse::IfcFile(filename, mmap);
+    if (mmap) {
+        ifc_file->initialize(filename, mmap);
+        requires_init = false;
+    }
 #else
-		(void)mmap;
-		ifc_file = new IfcParse::IfcFile(filename);
+    (void)mmap;
 #endif
-	}
+    if (requires_init) {
+        ifc_file->initialize(filename);
+    }
 
 	if (!ifc_file || !ifc_file->good()) {
         Logger::Error("Unable to parse input file '" + filename + "'");

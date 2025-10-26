@@ -320,14 +320,16 @@ def log_internal_cpp_errors(
 
     chr_offset_re = re.compile(r"at offset (\d+)\s*")
     for_instance_re = re.compile(r"\s*for instance #(\d+)\s*")
+    for_header_ent_re = re.compile(r"\s*for header entity (\w+)")
 
     if log_content is None:
         log_content = ifcopenshell.get_log()
     msgs = list(map(json.loads, filter(None, log_content.split("\n"))))
     chr_offsets = [chr_offset_re.findall(m["message"]) for m in msgs]
     instance_messages = [for_instance_re.findall(m["message"]) for m in msgs]
+    header_messages = [for_header_ent_re.findall(m["message"]) for m in msgs]
 
-    if chr_offsets or (instance_messages and f is None):
+    if any(chr_offsets) or (any(instance_messages) and f is None):
         # The file is opened in binary mode, in order
         # to correspond with the offsets reported by
         # IfcOpenShell C++
@@ -348,7 +350,7 @@ def log_internal_cpp_errors(
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
 
-    if instance_messages:
+    if any(instance_messages):
         for instid, msg in zip(instance_messages, msgs):
             if instid:
                 m = for_instance_re.sub("", msg["message"])
@@ -375,6 +377,12 @@ def log_internal_cpp_errors(
                     logger.error("For instance:\n    %s\n%s", inst, m)
                 else:
                     logger.error(m)
+
+    if any(header_messages):
+        for hent, msg in zip(header_messages, msgs):
+            if hent:
+                m = msg["message"]
+                logger.error(m)
 
 
 entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute, ...]]] = {}

@@ -196,6 +196,7 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, type=Foo") == {element}
         assert subject.filter_elements(self.file, 'IfcWall, type="Foo"') == {element}
         assert subject.filter_elements(self.file, "IfcWall, type=/Fo.*/") == {element}
+        assert subject.filter_elements(self.file, f"IfcWall, type={element_type.GlobalId}") == {element}
 
     def test_selecting_by_material(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -273,6 +274,7 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, location=G") == {element, element2}
         assert subject.filter_elements(self.file, "IfcWall, location=Building") == {element, element2}
         assert subject.filter_elements(self.file, "IfcWall, location!=Space") == {element2}
+        assert subject.filter_elements(self.file, f"IfcWall, location={space.GlobalId}") == {element}
 
     def test_selecting_by_group(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -281,6 +283,7 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.group.assign_group(self.file, products=[element], group=group)
         assert subject.filter_elements(self.file, "IfcWall, group=Foo") == {element}
         assert subject.filter_elements(self.file, "IfcWall, group!=Foo") == {element2}
+        assert subject.filter_elements(self.file, f"IfcWall, group={group.GlobalId}") == {element}
 
     def test_selecting_by_parent(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Element1")
@@ -300,6 +303,7 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, parent=Space") == {element}
         assert subject.filter_elements(self.file, "IfcWall, parent=G") == {element, element2, element3}
         assert subject.filter_elements(self.file, "IfcWall, parent=Element2") == {element3}
+        assert subject.filter_elements(self.file, "IfcWall, parent=Space") == {element}
 
     def test_selecting_multiple_filter_groups(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

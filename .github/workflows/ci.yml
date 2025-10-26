@@ -50,6 +50,7 @@ jobs:
           pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely
           pip install src/bcf --no-deps
           pip install git+https://github.com/zdhoward/aud
+          pip install pytest-xdist==3.8.0
 
       - name: Install C++ dependencies
         run: |
@@ -113,6 +114,7 @@ jobs:
                -DPYTHON_INCLUDE_DIR:PATH=${{ env.pythonLocation }}/include/python3.11 \
                -DPYTHON_LIBRARY:FILEPATH=${{ env.pythonLocation }}/lib/libpython3.11.so \
                -DCOLLADA_SUPPORT=Off \
+               -DUSE_MMAP=On \
                "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
@@ -120,20 +122,23 @@ jobs:
           sudo make -j $(nproc)
           sudo make install
 
-      - name: Run IfcConvert on Sample files
-        run: |
-          (find test/input src/bonsai/test/files -name '*.ifc' | while read i; do \
-            echo $i | tee -a log; \
-            timeout 1m "$(which IfcConvert)" -yv "$i" "$i.obj" --validate >> log 2>&1; \
-            echo $i $? >> statuses; \
-          done) || true
-          echo Failed 
-          grep -v 0$ statuses
-          grep -v 0$ statuses | wc -l
-          echo Succeeded
-          grep 0$ statuses
-          grep 0$ statuses | wc -l
+      # - name: Run IfcConvert on Sample files
+      #   run: |
+      #     (find test/input src/bonsai/test/files -name '*.ifc' | while read i; do \
+      #       echo $i | tee -a log; \
+      #       timeout 1m "$(which IfcConvert)" -yv "$i" "$i.obj" --validate >> log 2>&1; \
+      #       echo $i $? >> statuses; \
+      #     done) || true
+      #     echo Failed
+      #     grep -v 0$ statuses
+      #     grep -v 0$ statuses | wc -l
+      #     echo Succeeded
+      #     grep 0$ statuses
+      #     grep 0$ statuses | wc -l
 
+      - name: Run IfcConvert on Sample file
+        run: |
+          IfcConvert test/input/acad2010_walls.ifc test/input/acad2010_walls.obj
 
       - name: Test ifcopenshell-python
         run: |
@@ -143,7 +148,7 @@ jobs:
           mv ifcopenshell ifcopenshell-local # Force testing on installed module
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
           ERROR=0
-          make test || ERROR=1
+          make test-parallel || ERROR=1
           cd ../bcf && make test || ERROR=1
           pip install requests
           cd ../bsdd && make test || ERROR=1

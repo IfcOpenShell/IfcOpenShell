@@ -259,7 +259,11 @@ IfcEntityInstanceData IfcParse::parse_context::construct(boost::optional<size_t>
         expected_size && *expected_size != tokens_.size())
     {
         size_t expected = expected_size ? *expected_size : parameter_types.size();
-        Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + (name ? std::string(" for instance #" + std::to_string(*name)) : std::string("")));
+        if (decl != nullptr && decl->schema() == &Header_section_schema::get_schema()) {
+            Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for header entity " + decl->name());
+        } else {
+            Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + (name ? std::string(" for instance #" + std::to_string(*name)) : std::string("")));
+        }
     }
 
     if (tokens_.empty()) {
@@ -651,6 +655,17 @@ IfcParse::filetype IfcParse::guess_file_type(const std::string& fn) {
     }
 }
 
+void IfcParse::InstanceStreamer::bypassTypes(const std::set<std::string>& type_names) {
+    for (auto& name : type_names) {
+        try {
+            types_to_bypass_.push_back(schema_->declaration_by_name(name));
+        } catch (const IfcException&) {
+            continue;
+        }
+    }
+ }
+
+
 std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> IfcParse::InstanceStreamer::readInstance() {
     std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> return_value;
 
@@ -696,6 +711,15 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
             if (entity_type->as_entity() == nullptr) {
                 Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].startPos));
                 goto advance;
+            }
+
+            for (auto& ty : types_to_bypass_) {
+                if (entity_type->is(*ty)) {
+                    bypassed_instances_.push_back(current_id);
+                    // Why is this a conditional clause in the loop?
+                    current_id = 0;
+                    goto advance;
+                }
             }
 
             parse_context ps;

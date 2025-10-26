@@ -43,7 +43,7 @@ import ifcopenshell.util.element as subject
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
-class TestIFC2X3MaterialProfilePsts(test.bootstrap.IFC2X3):
+class TestIFC2X3MaterialProfilePsets(test.bootstrap.IFC2X3):
     def test_get_profile_pset(self):
         profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, "IfcRectangleProfileDef")
         pset = ifcopenshell.api.pset.add_pset(self.file, profile, "")
@@ -159,6 +159,15 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
         assert subject.get_pset(self.file.create_entity("IfcPerson"), "name") is None
         assert subject.get_pset(self.file.create_entity("IfcPerson"), "name", "a") is None
 
+    def test_getting_predefined_psets(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoorType")
+        pset = self.file.create_entity("IfcDoorLiningProperties", ifcopenshell.guid.new())
+        pset.Name = "My Lining"
+        pset.LiningDepth = 42
+        element.HasPropertySets = [pset]
+        assert subject.get_pset(element, "My Lining") == {"LiningDepth": 42, "id": pset.id()}
+        assert subject.get_pset(element, "My Lining", psets_only=True) == {"LiningDepth": 42, "id": pset.id()}
+
 
 class TestGetPsetsIFC4(test.bootstrap.IFC4):
     def test_getting_the_psets_of_a_product_as_a_dictionary(self):
@@ -221,6 +230,15 @@ class TestGetPsetsIFC4(test.bootstrap.IFC4):
         qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="qto")
         ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"x": 42})
         assert subject.get_psets(element, qtos_only=True) == {"qto": {"x": 42, "id": qto.id()}}
+
+    def test_getting_predefined_psets(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoorType")
+        pset = self.file.create_entity("IfcDoorLiningProperties", ifcopenshell.guid.new())
+        pset.Name = "My Lining"
+        pset.LiningDepth = 42
+        element.HasPropertySets = [pset]
+        assert subject.get_psets(element) == {"My Lining": {"LiningDepth": 42, "id": pset.id()}}
+        assert subject.get_psets(element, psets_only=True) == {"My Lining": {"LiningDepth": 42, "id": pset.id()}}
 
 
 class TestGetPropertyDefinitionIFC4(test.bootstrap.IFC4):

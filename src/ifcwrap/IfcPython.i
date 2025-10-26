@@ -93,6 +93,10 @@
 %ignore curve_to_face_upgrade_impl;
 %ignore loop_to_function_item_upgrade_impl;
 
+%ignore IfcGeom::geometry_exception;
+%ignore IfcGeom::too_many_faces_exception;
+%ignore ifcopenshell::geometry::taxonomy::topology_error;
+
 // settings, can this done more generally?
 // GeometrySerializer.h
 %ignore UseElementNames;
