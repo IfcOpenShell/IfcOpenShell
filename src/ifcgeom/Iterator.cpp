@@ -367,11 +367,13 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 	}));
 
 	if (!brep) {
+        Logger::SetProduct(boost::none);
 		return;
 	}
 
 	auto elem = process_based_on_settings(settings, brep);
 	if (!elem) {
+        Logger::SetProduct(boost::none);
 		return;
 	}
 
@@ -394,6 +396,8 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 			}
 		}
 	}
+
+	Logger::SetProduct(boost::none);
 }
 
 IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geometry::Settings settings, IfcGeom::BRepElement* elem, IfcGeom::TriangulationElement* previous)
