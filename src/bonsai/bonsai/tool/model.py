@@ -1399,7 +1399,6 @@ class Model(bonsai.core.tool.Model):
 
         number_of_risers = number_of_treads + 1
         tread_rise = height / number_of_risers
-        custom_tread_run = any(run != 0 for run in custom_first_last_tread_run)
         nosing_overlap = max(nosing_length, 0)
         nosing_tread_gap = -min(nosing_length, 0)
         nosing_overlap_offset = -V_(nosing_overlap, 0)
@@ -1430,19 +1429,26 @@ class Model(bonsai.core.tool.Model):
             default_tread_offset = Vector([tread_run, tread_rise])
 
             def get_tread_data(i):
-                if custom_tread_run:
-                    current_tread_run = None
-                    if i == 0:
-                        current_tread_run = custom_first_last_tread_run[0]
-                    elif i == number_of_risers - 1:
-                        current_tread_run = custom_first_last_tread_run[1]
+                # Check if this is first or last tread with custom run
+                current_tread_run = None
+                if i == 0 and custom_first_last_tread_run[0] is not None:
+                    current_tread_run = custom_first_last_tread_run[0]
+                elif i == number_of_risers - 1 and custom_first_last_tread_run[1] is not None:
+                    current_tread_run = custom_first_last_tread_run[1]
 
-                    if current_tread_run:
-                        tread_offset = default_tread_offset.copy()
-                        tread_offset.x = current_tread_run
-                        tread_verts = deepcopy(default_tread_verts)
-                        tread_verts[-1].x = current_tread_run
-                        return tread_offset, tread_verts
+                if current_tread_run is not None:
+                    tread_offset = default_tread_offset.copy()
+                    tread_offset.x = current_tread_run
+
+                    # Handle zero-width treads
+                    if current_tread_run == 0:
+                        # For zero width, just return vertical offset with no horizontal tread
+                        return tread_offset, ()
+
+                    tread_verts = deepcopy(default_tread_verts)
+                    tread_verts[-1].x = current_tread_run
+                    return tread_offset, tread_verts
+
                 return default_tread_offset, default_tread_verts
 
             # treads
@@ -1450,9 +1456,13 @@ class Model(bonsai.core.tool.Model):
             for i in range(number_of_risers):
                 last_vert_i = len(vertices) - 1
                 tread_offset, tread_verts = get_tread_data(i)
-                current_tread_verts = [v + current_offset for v in tread_verts]
-                edges.extend(default_tread_edges + last_vert_i)
-                vertices.extend(current_tread_verts)
+
+                # Skip adding vertices/edges for zero-width treads
+                if tread_verts:
+                    current_tread_verts = [v + current_offset for v in tread_verts]
+                    edges.extend(default_tread_edges + last_vert_i)
+                    vertices.extend(current_tread_verts)
+
                 current_offset += tread_offset
 
         if stair_type == "WOOD/STEEL":
@@ -1467,35 +1477,47 @@ class Model(bonsai.core.tool.Model):
             default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
 
             def get_tread_data(i):
-                if custom_tread_run:
-                    current_tread_run = None
-                    if i == 0 and custom_first_last_tread_run[0] != 0:
-                        current_tread_run = custom_first_last_tread_run[0]
-                    elif i == number_of_risers - 1 and custom_first_last_tread_run[1] != 0:
-                        current_tread_run = custom_first_last_tread_run[1]
+                # Check if this is first or last tread with custom run
+                current_tread_run = None
+                if i == 0 and custom_first_last_tread_run[0] is not None:
+                    current_tread_run = custom_first_last_tread_run[0]
+                elif i == number_of_risers - 1 and custom_first_last_tread_run[1] is not None:
+                    current_tread_run = custom_first_last_tread_run[1]
 
-                    if current_tread_run:
-                        tread_offset = default_tread_offset.copy()
-                        tread_offset.x = current_tread_run + nosing_tread_gap
-                        tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
-                        return tread_offset, tread_verts
+                if current_tread_run is not None:
+                    tread_offset = default_tread_offset.copy()
+                    tread_offset.x = current_tread_run + nosing_tread_gap
+
+                    # Handle zero-width treads
+                    if current_tread_run == 0:
+                        return tread_offset, ()
+
+                    tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
+                    return tread_offset, tread_verts
+
                 return default_tread_offset, default_tread_verts
 
             # each tread is a separate shape
             cur_offset = V_(0, 0)
+            tread_index = 0
             for i in range(number_of_risers):
                 tread_offset, tread_verts = get_tread_data(i)
-                cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
-                vertices.extend(cur_trade_shape)
 
-                cur_vertex = i * 4
-                verts_to_add = (
-                    (cur_vertex, cur_vertex + 1),
-                    (cur_vertex + 1, cur_vertex + 2),
-                    (cur_vertex + 2, cur_vertex + 3),
-                    (cur_vertex + 3, cur_vertex),
-                )
-                edges.extend(verts_to_add)
+                # Skip adding vertices/edges for zero-width treads
+                if tread_verts:
+                    cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
+                    vertices.extend(cur_trade_shape)
+
+                    cur_vertex = tread_index * 4
+                    verts_to_add = (
+                        (cur_vertex, cur_vertex + 1),
+                        (cur_vertex + 1, cur_vertex + 2),
+                        (cur_vertex + 2, cur_vertex + 3),
+                        (cur_vertex + 3, cur_vertex),
+                    )
+                    edges.extend(verts_to_add)
+                    tread_index += 1
+
                 cur_offset += tread_offset
 
         elif stair_type == "GENERIC":

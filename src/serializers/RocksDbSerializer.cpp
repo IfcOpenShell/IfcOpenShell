@@ -135,7 +135,7 @@ void RocksDbSerializer::write_streaming_() {
 	streamer.coerce_attribute_count = false;
 
 	while (streamer) {
-		auto inst = streamer.read_instance();
+		auto inst = streamer.readInstance();
 		if (inst) {
 			// name can be zero in case of header instances
 			auto name = std::get<0>(*inst);
@@ -259,7 +259,8 @@ void RocksDbSerializer::write_streaming_() {
 				}
 
 				// @nb we also need to delete them
-				delete inst;
+				// not anymore, as they are now registered as unique_ptr in the in_memory_file_storage
+				// delete inst;
 			}
 
 			// Entity type as numeric ref to index_in_schema

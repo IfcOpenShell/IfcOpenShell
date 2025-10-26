@@ -109,8 +109,9 @@ def block_scale(scene: bpy.types.Scene) -> None:
             if obj.type == "CAMERA":
                 camera = tool.Ifc.get_entity(obj)
                 if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
-                    obj.scale = (-1, -1, -1)
-                    obj.rotation_euler = (0.0, 0.0, math.radians(180))
+                    # Only update if scale isn't already (-1, -1, -1)
+                    if obj.scale != (-1, -1, -1):
+                        obj.scale = (-1, -1, -1)
             else:
                 if obj.scale != (1, 1, 1):
                     obj.scale = (1, 1, 1)

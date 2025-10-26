@@ -450,9 +450,9 @@ class BIMProjectProperties(PropertyGroup):
         self.mvd = header_data.mvd
         self.author_name = header_data.author_name
         self.author_email = header_data.author_email
-        self.organisation_name = header_data.organization_name
-        self.organisation_email = header_data.organization_email
-        self.authorisation = header_data.authorization
+        self.organisation_name = header_data.organisation_name
+        self.organisation_email = header_data.organisation_email
+        self.authorisation = header_data.authorisation
 
     if TYPE_CHECKING:
         is_editing: bool

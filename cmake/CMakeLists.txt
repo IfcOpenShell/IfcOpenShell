@@ -426,7 +426,7 @@ if(WASM_BUILD)
 else()
     # @todo review this, shouldn't this be all possible header-only now?
     # ... or rewritten using C++17 features?
-    set(BOOST_COMPONENTS system program_options regex thread date_time)
+    set(BOOST_COMPONENTS system program_options regex thread date_time iostreams)
 endif()
 
 if(USE_MMAP)
@@ -1044,11 +1044,7 @@ if(BUILD_IFCGEOM)
 	foreach(schema ${SCHEMA_VERSIONS})
 		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} geometry_mapping_ifc${schema})
 	endforeach()
-	if(WASM_BUILD)
-	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
-	else()
-	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
-	endif()
+    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
@@ -1177,7 +1173,10 @@ if(BUILD_IFCGEOM)
 
         add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
         set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        target_link_libraries(geometry_mapping_ifc${schema} IfcParse IfcGeom)
+        target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
+        if (NOT BUILD_SHARED_LIBS)
+            target_link_libraries(geometry_mapping_ifc${schema} IfcGeom)
+        endif()
         list(APPEND mapping_libraries geometry_mapping_ifc${schema})
     endforeach()
 

@@ -38,7 +38,7 @@ namespace {
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
-            T val;
+            T val = T{};
             const bool is_header = entity_or_type->schema() == &Header_section_schema::get_schema();
             if constexpr (
                 // the following types cannot be directly deserialized from rocksdb, but need to be constructed
@@ -51,6 +51,12 @@ namespace {
                     (is_header ? entity_or_type->name() : std::to_string(instance_name_)) + "|" +
                     std::to_string(index_), &str);
                 impl::deserialize(array_.db_ptr, str, val);
+            } else {
+                static_assert(
+                    std::is_same_v<T, EnumerationReference> ||
+                    std::is_same_v<std::remove_cv_t<std::remove_pointer_t<T>>, IfcUtil::IfcBaseClass>,
+                    "RocksDB deserialization must be specialized for this EnumerationReference and IfcBaseClass*"
+                );
             }
             return val;
         }
@@ -194,13 +200,15 @@ AttributeValue::operator IfcUtil::IfcBaseClass* () const
             std::to_string(index_), &str);
         size_t v;
         memcpy(&v, str.data() + 2, sizeof(size_t));
-        if (str[1] == 'i') {
+        if (str.size() > 1 && str[1] == 'i') {
             // entity reference, by #Name
             return array_.db_ptr->assert_existance(v, IfcParse::impl::rocks_db_file_storage::entityinstance_ref);
-        } else if (str[1] == 't') {
+        } else if (str.size() > 1 && str[1] == 't') {
             // type reference by Identity
             return array_.db_ptr->assert_existance(v, IfcParse::impl::rocks_db_file_storage::typedecl_ref);
-        }     
+        } else {
+            throw std::runtime_error("Invalid data encountered");
+        }
     }
 #endif
 }
@@ -339,28 +347,28 @@ bool impl::serialize(std::string& val, const aggregate_of_aggregate_of_instance:
     return true;
 }
 
-bool impl::serialize(std::string& val, const Blank& t)
+bool impl::serialize(std::string& val, const Blank&)
 {
     val.resize(1);
     val[0] = TypeEncoder::encode_type<Blank>();
     return true;
 }
 
-bool impl::serialize(std::string& val, const Derived& t)
+bool impl::serialize(std::string& val, const Derived&)
 {
     val.resize(1);
     val[0] = TypeEncoder::encode_type<Derived>();
     return true;
 }
 
-bool impl::serialize(std::string& val, const empty_aggregate_t& t)
+bool impl::serialize(std::string& val, const empty_aggregate_t&)
 {
     val.resize(1);
     val[0] = TypeEncoder::encode_type<empty_aggregate_t>();
     return true;
 }
 
-bool impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t& t)
+bool impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t&)
 {
     val.resize(1);
     val[0] = TypeEncoder::encode_type<empty_aggregate_of_aggregate_t>();
@@ -397,6 +405,7 @@ bool impl::deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string
     } else {
         return false;
     }
+    return true;
 }
 
 bool impl::deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, boost::dynamic_bitset<>& t) {

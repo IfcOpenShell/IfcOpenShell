@@ -82,7 +82,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 			rot = taxonomy::matrix4(
 				Eigen::Vector3d(0, 0, 0),
 				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
-		}
+        } else if (csp->RefDirection()) {
+            rot = taxonomy::matrix4(
+                      Eigen::Vector3d(0, 0, 0),
+                      Eigen::Vector3d(0, 0, 1),
+                      taxonomy::cast<taxonomy::direction3>(map(csp->RefDirection()))->ccomponents())
+                      .ccomponents()
+                      .block<3, 3>(0, 0);
+        }
 		profile_rotations.push_back(rot);
 	}
 #else

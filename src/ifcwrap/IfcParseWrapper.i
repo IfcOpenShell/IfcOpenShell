@@ -36,7 +36,8 @@ private:
 
 %ignore IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
 
-%ignore IfcParse::InstanceStreamer::read_instance;
+%ignore IfcParse::InstanceStreamer::readInstance;
+%ignore IfcParse::InstanceStreamer::stealInstances;
 
 %ignore in_memory_file_storage;
 %ignore rocks_db_file_storage;
@@ -650,6 +651,8 @@ private:
 %extend IfcParse::IfcSpfHeader {
 	// Cast to base class pointers for SWIG, because
 	// it has no idea about the schema definitions.
+	// The code to access these methods as attributes
+	// is in file.py
 	IfcUtil::IfcBaseClass* file_description_py() {
 		return $self->file_description();
 	}
@@ -659,14 +662,6 @@ private:
 	IfcUtil::IfcBaseClass* file_schema_py() {
 		return $self->file_schema();
 	}
-
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
-		# self.file_ref is set in ifcopenshell.file.header()
-        file_description = property(lambda self: self.file_ref(self.file_description_py()))
-        file_name = property(lambda self: self.file_ref(self.file_name_py()))
-        file_schema = property(lambda self: self.file_ref(self.file_schema_py()))
-	%}
 };
 
 %extend IfcParse::FileDescription {
@@ -1002,7 +997,7 @@ private:
 %}
 
 %extend IfcParse::InstanceStreamer {
-	PyObject* read_instance_py() {
+	PyObject* readInstancePy(bool type_as_declaration_instance=false) {
 		auto simply_type_to_dictionary = [&](IfcUtil::IfcBaseClass* t) -> PyObject* {
 			const auto& nm = t->declaration().name();
 			auto ifc_val = t->get_attribute_value(0);
@@ -1070,7 +1065,7 @@ private:
 			Py_INCREF(Py_None);
 			return Py_None;
 		}
-		auto inst = self->read_instance();
+		auto inst = self->readInstance();
 		if (!inst) {
 			Py_INCREF(Py_None);
 			return Py_None;
@@ -1088,7 +1083,13 @@ private:
 		{
 			const std::string& key_cpp = "type";
 			auto name_py = pythonize(key_cpp);
-			auto value_py = pythonize(std::get<1>(*inst)->name());
+			PyObject* value_py;
+			if (type_as_declaration_instance) {
+				// @todo should this just be the default behavior?
+				value_py = pythonize(std::get<1>(*inst));
+			} else {
+				value_py = pythonize(std::get<1>(*inst)->name());
+			}
 			PyDict_SetItem(d, name_py, value_py);
 			Py_DECREF(name_py);
 			Py_DECREF(value_py);

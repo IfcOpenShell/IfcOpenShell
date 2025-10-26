@@ -30,12 +30,12 @@ static const char* const DATA = "DATA";
 using namespace IfcParse;
 
 namespace {
-    IfcEntityInstanceData read_from_spf_file(IfcParse::impl::in_memory_file_storage* storage, size_t s) {
+    IfcEntityInstanceData read_from_spf_file(IfcParse::impl::in_memory_file_storage* storage, const IfcParse::entity* decl) {
         if (storage != nullptr) {
             parse_context pc;
             storage->tokens->Next();
             storage->load(-1, nullptr, pc, -1);
-            return pc.construct(-1, *storage->references_to_resolve, nullptr, s, -1);
+            return pc.construct(boost::none, *storage->references_to_resolve, decl, decl->as_entity()->attribute_count(), -1);
         } else {
             // std::unreachable();
             return IfcEntityInstanceData(in_memory_attribute_storage(10));
@@ -153,19 +153,19 @@ void IfcSpfHeader::read() {
 
     readTerminal(Header_section_schema::file_description::Class().name_uc(), NONE);
     delete file_description_;
-    file_description_ = new Header_section_schema::file_description(read_from_spf_file(storage_, Header_section_schema::file_description::Class().attribute_count()));
+    file_description_ = new Header_section_schema::file_description(read_from_spf_file(storage_, &Header_section_schema::file_description::Class()));
     file_description_->file_ = file_;
     readSemicolon();
 
     readTerminal(Header_section_schema::file_name::Class().name_uc(), NONE);
     delete file_name_;
-    file_name_ = new Header_section_schema::file_name(read_from_spf_file(storage_, Header_section_schema::file_name::Class().attribute_count()));
+    file_name_ = new Header_section_schema::file_name(read_from_spf_file(storage_, &Header_section_schema::file_name::Class()));
     file_name_->file_ = file_;
     readSemicolon();
 
     readTerminal(Header_section_schema::file_schema::Class().name_uc(), NONE);
     delete file_schema_;
-    file_schema_ = new Header_section_schema::file_schema(read_from_spf_file(storage_, Header_section_schema::file_schema::Class().attribute_count()));
+    file_schema_ = new Header_section_schema::file_schema(read_from_spf_file(storage_, &Header_section_schema::file_schema::Class()));
     file_schema_->file_ = file_;
     readSemicolon();
 }

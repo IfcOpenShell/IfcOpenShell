@@ -61,6 +61,7 @@ classes = (
     operator.EnableEditingAssignedProduct,
     operator.EnableEditingElementFilter,
     operator.EnableEditingText,
+    operator.ExcludeAnnotation,
     operator.ExpandSheet,
     operator.LoadDrawings,
     operator.LoadReferences,

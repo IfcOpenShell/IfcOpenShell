@@ -373,7 +373,12 @@ class BIMStairProperties(PropertyGroup):
         if self.stair_type != "WOOD/STEEL" and self.nosing_length < 0:
             self["nosing_length"] = 0
 
-    non_si_units_props = ("is_editing", "number_of_treads", "has_top_nib", "stair_type")
+    def update_custom_tread_lock(self, context: bpy.types.Context) -> None:
+        """When lock is enabled, sync custom treads with tread_run"""
+        if self.custom_tread_lock:
+            self["custom_first_last_tread_run"] = (self.tread_run, self.tread_run)
+
+    non_si_units_props = ("is_editing", "number_of_treads", "has_top_nib", "stair_type", "custom_tread_lock")
 
     is_editing: bpy.props.BoolProperty(default=False)
     width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
@@ -406,6 +411,12 @@ class BIMStairProperties(PropertyGroup):
         items=[(i, i.replace("/", " / ").title(), "") for i in get_args(StairType)],
         default="CONCRETE",
         update=validate_nosing_value,
+    )
+    custom_tread_lock: bpy.props.BoolProperty(
+        name="Lock First/Last Treads to Tread Run",
+        description="When enabled, first and last treads automatically use the Tread Run value",
+        default=True,
+        update=update_custom_tread_lock,
     )
     custom_first_last_tread_run: bpy.props.FloatVectorProperty(
         name="Custom First / Last Treads Widths",
@@ -442,6 +453,7 @@ class BIMStairProperties(PropertyGroup):
         top_slab_depth: float
         has_top_nib: bool
         stair_type: str
+        custom_tread_lock: bool
         custom_first_last_tread_run: tuple[float, float]
         nosing_length: float
         nosing_depth: float
@@ -480,8 +492,11 @@ class BIMStairProperties(PropertyGroup):
             }
             stair_kwargs.update(generic_props)
 
-        # defined here to appear last in UI
-        stair_kwargs["custom_first_last_tread_run"] = self.custom_first_last_tread_run
+        # If locked, use tread_run for both first and last treads
+        if self.custom_tread_lock:
+            stair_kwargs["custom_first_last_tread_run"] = (self.tread_run, self.tread_run)
+        else:
+            stair_kwargs["custom_first_last_tread_run"] = self.custom_first_last_tread_run
 
         if not convert_to_project_units:
             return stair_kwargs
@@ -489,8 +504,24 @@ class BIMStairProperties(PropertyGroup):
         stair_kwargs = tool.Model.convert_data_to_project_units(stair_kwargs, self.non_si_units_props)
         return stair_kwargs
 
+    def get_props_kwargs_for_ifc_export(self, convert_to_project_units=False, stair_type=None):
+        """Get props including custom_tread_lock for saving to IFC"""
+        stair_kwargs = self.get_props_kwargs(convert_to_project_units, stair_type)
+        # Add the lock state for IFC storage (after getting base kwargs to avoid passing to generate function)
+        stair_kwargs["custom_tread_lock"] = self.custom_tread_lock
+        return stair_kwargs
+
     def set_props_kwargs_from_ifc_data(self, kwargs):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
+
+        # Determine lock state based on whether custom treads match tread_run
+        # If custom_tread_lock wasn't saved (old files), infer it from the data
+        if "custom_tread_lock" not in kwargs:
+            custom_treads = kwargs.get("custom_first_last_tread_run", (0.0, 0.0))
+            tread_run = kwargs.get("tread_run", 0.3)
+            # Lock is off if either custom tread differs from tread_run and is not 0
+            kwargs["custom_tread_lock"] = not any(ct != 0.0 and ct != tread_run for ct in custom_treads)
+
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
 

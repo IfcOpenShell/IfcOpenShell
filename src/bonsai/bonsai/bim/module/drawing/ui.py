@@ -99,12 +99,13 @@ class BIM_PT_camera(Panel):
 
         row = self.layout.row()
         row.prop(props, "linework_mode")
+        row = self.layout.row()
+        row.prop(props, "generate_material_layers")
         if props.linework_mode == "OPENCASCADE":
             row = self.layout.row()
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
-
         row = self.layout.row()
         row.prop(props, "width")
         row = self.layout.row()
@@ -193,6 +194,7 @@ class BIM_PT_element_filters(Panel):
             text = "Exclude Filter" if ElementFiltersData.data["has_exclude_filter"] else "No Exclude Filter Found"
             icon = "GREASEPENCIL" if ElementFiltersData.data["has_exclude_filter"] else "ADD"
             row.label(text=text, icon="FILTER")
+            row.operator("bim.exclude_annotation", icon="REMOVE", text="")
             row.operator("bim.enable_editing_element_filter", icon=icon, text="").filter_mode = "EXCLUDE"
 
 

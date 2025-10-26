@@ -51,9 +51,13 @@ class Collector(bonsai.core.tool.Collector):
             if tool.Geometry.is_locked(element):
                 tool.Geometry.lock_object(obj)
             element = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
+            if not tool.Spatial.get_grid_props().is_visible:
+                obj.hide_viewport = True
         elif element.is_a("IfcGrid"):
             if tool.Geometry.is_locked(element):
                 tool.Geometry.lock_object(obj)
+            if not tool.Spatial.get_grid_props().is_visible:
+                obj.hide_viewport = True
 
         if element.is_a("IfcProject"):
             if tool.Geometry.is_locked(element):
@@ -69,7 +73,8 @@ class Collector(bonsai.core.tool.Collector):
                 tool.Geometry.lock_object(obj)
             collection = cls._create_project_child_collection("IfcSpace")
             cls.link_collection_object_safe(collection, obj)
-            obj.hide_viewport = True
+            if not tool.Spatial.get_spatial_props().is_visible:
+                obj.hide_viewport = True
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
             cls.link_collection_object_safe(collection, obj)
@@ -93,7 +98,8 @@ class Collector(bonsai.core.tool.Collector):
                 cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
                 cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
-            obj.hide_viewport = True
+            if not tool.Spatial.get_spatial_props().is_visible:
+                obj.hide_viewport = True
         elif (
             tool.Ifc.get_schema() != "IFC2X3"
             and element.is_a("IfcSpatialElement")
@@ -105,7 +111,8 @@ class Collector(bonsai.core.tool.Collector):
                 cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
                 cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
-            obj.hide_viewport = True
+            if not tool.Spatial.get_spatial_props().is_visible:
+                obj.hide_viewport = True
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             if collection := cls._create_own_collection(obj):
                 cls.link_collection_object_safe(collection, obj)

@@ -175,7 +175,6 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def select_products(cls, products: Iterable[ifcopenshell.entity_instance], unhide: bool = False) -> None:
-        bpy.ops.object.select_all(action="DESELECT")
         for product in products:
             obj = tool.Ifc.get_object(product)
             if obj and bpy.context.view_layer.objects.get(obj.name):

@@ -210,12 +210,6 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
             should_duplicate_annotations=self.should_duplicate_annotations,
         )
 
-        # TODO: Why need to resync active drawing, if it wasn't changed.
-        drawing = props.get_active_drawing()
-        if drawing is None:
-            return
-        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
-
 
 class CreateDrawing(bpy.types.Operator):
     """Creates/refreshes a .svg drawing
@@ -442,6 +436,8 @@ class CreateDrawing(bpy.types.Operator):
         context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
         assert (drawing_style := self.cprops.get_active_drawing_style())
 
+        tool.Blender.sync_render_visibility()
+
         if drawing_style.render_type == "DEFAULT":
             bpy.ops.render.render(write_still=True)
         else:
@@ -625,7 +621,7 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = d
             group.append(g)
 
-    def generate_wall_layers(self, context: bpy.types.Context, root) -> None:
+    def generate_material_layers(self, context: bpy.types.Context, root) -> None:
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             if "projection" in el.get("class", "").split():
                 continue
@@ -794,8 +790,9 @@ class CreateDrawing(bpy.types.Operator):
         edge_bm.to_mesh(edge_mesh)
         edge_bm.free()
 
-        actual_path = svg_path[0:-4] + "0001.svg"
+        freestyle_svg_exporter = tool.Blender.get_addon("freestyle_svg_exporter")
         context.scene.render.filepath = svg_path[0:-4]
+        actual_path = freestyle_svg_exporter.create_path(bpy.context.scene)
         bpy.ops.render.render(write_still=False)
 
         os.replace(actual_path, svg_path)
@@ -839,6 +836,8 @@ class CreateDrawing(bpy.types.Operator):
 
         if tool.Drawing.is_camera_orthographic():
             self.generate_bisect_linework(context, root)
+            if self.cprops.generate_material_layers:
+                self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
 
@@ -936,12 +935,14 @@ class CreateDrawing(bpy.types.Operator):
         if self.cprops.cut_mode == "BISECT":
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
-            self.generate_wall_layers(context, root)
+            if self.cprops.generate_material_layers:
+                self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
         elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
-            self.generate_wall_layers(context, root)
+            if self.cprops.generate_material_layers:
+                self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
 
@@ -1251,6 +1252,8 @@ class CreateDrawing(bpy.types.Operator):
 
     def get_svg_classes(self, element, layer=None):
         classes = [element.is_a()]
+
+        # ─── Material ──────────────────────────────────────────────
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         material_name = ""
         if material:
@@ -1263,6 +1266,7 @@ class CreateDrawing(bpy.types.Operator):
         else:
             classes.append("material-null")
 
+        # ─── Layer ─────────────────────────────────────────────────
         if layer:
             classes.append(layer.is_a())
             layer_material = layer.Material
@@ -1275,12 +1279,19 @@ class CreateDrawing(bpy.types.Operator):
                 layer_material_category = tool.Drawing.canonicalise_class_name(layer_material.Category)
                 classes.append(f"layer-material-category-{layer_material_category}")
 
+        # ─── Metadata ──────────────────────────────────────────────
         for key in self.metadata:
             value = ifcopenshell.util.selector.get_element_value(element, key)
             if value:
                 classes.append(
                     tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
                 )
+
+        # ─── Target View ───────────────────────────────────────────
+        if getattr(self.cprops, "target_view", None):
+            target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
+            classes.append(f"target-view-{target_view_class}")
+
         return classes
 
     def is_manifold(self, obj) -> bool:
@@ -1347,7 +1358,13 @@ class CreateDrawing(bpy.types.Operator):
             join_criteria = join_criteria.split(",")
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
-            join_criteria = ["class", "material.Name", "/Pset_.*Common/.Status", "EPset_Status.Status", "Material.Name"]
+            join_criteria = [
+                "class",
+                "material.Name",
+                "/Pset_.*Common/.Status",
+                "EPset_Status.Status",
+                "EPset_Status.UserDefinedStatus",
+            ]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}
@@ -1476,11 +1493,10 @@ class CreateDrawing(bpy.types.Operator):
                 joined_paths.setdefault(hash_keys, []).append(el)
 
         for key, els in joined_paths.items():
-            polygons = []
-            classes = set()
+            queue = []
 
             for el in els:
-                classes.update(el.attrib["class"].split())
+                classes = set(el.attrib["class"].split())
                 classes.add(el.attrib["{http://www.ifcopenshell.org/ns}guid"])
                 is_closed_polygon = False
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
@@ -1495,31 +1511,30 @@ class CreateDrawing(bpy.types.Operator):
                             coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:
                             is_closed_polygon = True
-                            polygons.append(shapely.Polygon(coords))
+                            queue.append((shapely.Polygon(coords), classes))
                 if is_closed_polygon:
                     el.getparent().remove(el)
 
-            try:
-                merged_polygons = shapely.ops.unary_union(polygons)
-            except:
-                print("Warning. Portions of the merge failed. Please report a bug!", polygons)
-                merged_polygons = polygons
+            while queue:
+                polygon, polygon_classes = queue.pop()
+                for polygon2, polygon2_classes in queue[:]:
+                    try:
+                        merged_polygon = shapely.union(polygon, polygon2)
+                    except:
+                        print("Warning. Portions of the merge failed. Please report a bug!", polygon, polygon2)
+                        continue
+                    if type(merged_polygon) == shapely.Polygon:
+                        polygon = merged_polygon
+                        polygon_classes.update(polygon2_classes)
+                        queue.remove((polygon2, polygon2_classes))
 
-            if type(merged_polygons) == shapely.MultiPolygon:
-                merged_polygons = merged_polygons.geoms
-            elif type(merged_polygons) == shapely.Polygon:
-                merged_polygons = [merged_polygons]
-            else:
-                merged_polygons = []
-
-            for polygon in merged_polygons:
                 g = etree.Element("g")
                 path = etree.SubElement(g, "path")
                 d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
                 for interior in polygon.interiors:
                     d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
                 path.attrib["d"] = d
-                g.set("class", " ".join(list(classes)))
+                g.set("class", " ".join(list(polygon_classes)))
                 group.append(g)
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
@@ -1861,12 +1876,14 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = tool.Drawing.get_document_props()
-        # Won't be visible in UI anyway.
-        prefs = tool.Blender.get_addon_preferences()
-        if not props.sheets or not prefs.data_dir:
-            return False
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
+            return False
+        if not props.sheets:
+            cls.poll_message_set("No sheets available.")
+            return False
+        if not tool.Blender.get_user_data_dir():
+            cls.poll_message_set("BIM data directory not set.")
             return False
         return True
 
@@ -2221,6 +2238,7 @@ class ActivateModel(bpy.types.Operator):
             )
 
         tool.Blender.reset_object_visibility()
+        tool.Drawing.hide_all_drawing_collections()
         tool.Blender.update_viewport()
         bonsai.bim.handler.refresh_ui_data()
 
@@ -2317,9 +2335,8 @@ class ActivateDrawingBase(tool.Ifc.Operator):
 
         dprops.active_drawing_id = self.drawing
         dprops.drawing_styles.clear()
-        if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
-            bpy.ops.bim.reload_drawing_styles()
-            bpy.ops.bim.activate_drawing_style()
+        bpy.ops.bim.reload_drawing_styles()
+        bpy.ops.bim.activate_drawing_style()
 
         if tool.Drawing.is_camera_orthographic():
             core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
@@ -2332,10 +2349,22 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         camera = context.scene.camera
         assert camera
         camera_props = tool.Drawing.get_camera_props(camera)
+        # Check if this is a reflected ceiling camera and preserve its scale
+        camera_element = tool.Ifc.get_entity(camera)
+        is_reflected = False
+        if camera_element:
+            is_reflected = (
+                ifcopenshell.util.element.get_pset(camera_element, "EPset_Drawing", "TargetView")
+                == "REFLECTED_PLAN_VIEW"
+            )
+            if is_reflected and camera.scale != (-1, -1, -1):
+                camera.scale = (-1, -1, -1)
+
         if camera_props.update_representation(camera.matrix_world):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
-        # See 6452 and 6478.
-        # bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
+            # Restore the scale after update if needed
+            if is_reflected:
+                camera.scale = (-1, -1, -1)
 
         return {"FINISHED"}
 
@@ -2811,8 +2840,13 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         if not props.schedules:
             cls.poll_message_set("No schedule selected.")
             return False
-        prefs = tool.Blender.get_addon_preferences()
-        return props.schedules and props.sheets and prefs.data_dir
+        if not props.sheets:
+            cls.poll_message_set("No sheets available.")
+            return False
+        if not tool.Blender.get_user_data_dir():
+            cls.poll_message_set("BIM data directory not set.")
+            return False
+        return True
 
     def _execute(self, context):
         props = tool.Drawing.get_document_props()
@@ -2879,8 +2913,13 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         if not props.references:
             cls.poll_message_set("No reference selected.")
             return False
-        bim_props = tool.Blender.get_bim_props()
-        return props.references and props.sheets and bim_props.data_dir
+        if not props.sheets:
+            cls.poll_message_set("No sheets available.")
+            return False
+        if not tool.Blender.get_user_data_dir():
+            cls.poll_message_set("BIM data directory not set.")
+            return False
+        return True
 
     def _execute(self, context):
         props = tool.Drawing.get_document_props()
@@ -3729,3 +3768,19 @@ class OpenDocumentationWebUi(bpy.types.Operator):
         else:
             bpy.ops.bim.open_web_browser(page="documentation")
         return {"FINISHED"}
+
+
+class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.exclude_annotation"
+    bl_label = "Exclude Annotation"
+    bl_description = "Excludes the automatic annotation reference from the drawing"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        if not (obj := bpy.context.scene.camera) or not (drawing := tool.Ifc.get_entity(obj)):
+            return
+        for obj in tool.Blender.get_selected_objects(include_active=False):
+            if (element := tool.Ifc.get_entity(obj)) and tool.Drawing.is_auto_annotation(element):
+                if referenced_element := tool.Drawing.get_annotation_element(element):
+                    tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
+        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)

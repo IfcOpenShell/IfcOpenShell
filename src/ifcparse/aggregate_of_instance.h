@@ -48,8 +48,8 @@ class IFC_PARSE_API aggregate_of_instance {
     it begin();
     it end();
     IfcUtil::IfcBaseClass* operator[](int index);
-    unsigned int size() const;
-    void reserve(unsigned capacity);
+    size_t size() const;
+    void reserve(size_t capacity);
     bool contains(IfcUtil::IfcBaseClass*) const;
     
     template <class U>
@@ -81,7 +81,7 @@ class aggregate_of {
     }
     it begin() { return list_.begin(); }
     it end() { return list_.end(); }
-    unsigned int size() const { return (unsigned int)list_.size(); }
+    size_t size() const { return list_.size(); }
     aggregate_of_instance::ptr generalize() {
         aggregate_of_instance::ptr result(new aggregate_of_instance());
         for (it i = begin(); i != end(); ++i) {

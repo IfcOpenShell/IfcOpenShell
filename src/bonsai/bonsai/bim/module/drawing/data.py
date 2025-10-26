@@ -235,13 +235,18 @@ class DecoratorData:
     cut_cache = {}
     slice_cache = {}
     fill_cache = {}
+    camera_location_checksum = None
+    camera_rotation_checksum = None
+
+    @classmethod
+    def clear_cache(cls):
+        cls.cut_cache = {}
+        cls.layerset_cache = {}
+        cls.fill_cache = {}
 
     @classmethod
     def load(cls, handler):
         cls.is_loaded = True
-        cls.cut_cache = {}
-        cls.layerset_cache = {}
-        cls.fill_cache = {}
 
         text = {}
         dimension = {}

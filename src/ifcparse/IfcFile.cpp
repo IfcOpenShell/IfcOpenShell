@@ -56,7 +56,7 @@ namespace {
     constexpr bool is_type_in_variant_v = is_type_in_variant<Variant, T>::value;
 
     template <typename Fn>
-    void dispatch_token(int instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
+    void dispatch_token(boost::optional<size_t> instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
         if (t.type == IfcParse::Token_BINARY) {
             fn(IfcParse::TokenFunc::asBinary(t));
         } else if (IfcParse::TokenFunc::isBool(t)) {
@@ -89,7 +89,7 @@ namespace {
     }
 
     template <size_t Depth, typename Fn>
-    void construct_(int instance_id, int attribute_id, IfcParse::parse_context& p, const IfcParse::aggregation_type* aggr, Fn fn) {
+    void construct_(boost::optional<size_t> instance_id, int attribute_id, IfcParse::parse_context& p, const IfcParse::aggregation_type* aggr, Fn fn) {
         if (p.tokens_.empty()) {
             // @todo instead of ugly if-else we could also default initialize the respective
             // variant types below.
@@ -234,7 +234,7 @@ namespace {
     }
 }
 
-IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count) {
+IfcEntityInstanceData IfcParse::parse_context::construct(boost::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count) {
     std::vector<const IfcParse::parameter_type*> parameter_types;
     std::unique_ptr<IfcParse::named_type> transient_named_type;
 
@@ -259,7 +259,11 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
         expected_size && *expected_size != tokens_.size())
     {
         size_t expected = expected_size ? *expected_size : parameter_types.size();
-        Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for instance #" + std::to_string(name > 0 ? name : 0));
+        if (decl != nullptr && decl->schema() == &Header_section_schema::get_schema()) {
+            Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for header entity " + decl->name());
+        } else {
+            Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + (name ? std::string(" for instance #" + std::to_string(*name)) : std::string("")));
+        }
     }
 
     if (tokens_.empty()) {
@@ -289,12 +293,12 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                 dispatch_token(name, index, v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index, resolve_reference_index](auto v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::reference_or_simple_type>) {
-                        if (name > 0) {
+                        if (name) {
                             references_to_resolve.push_back(std::make_pair(
                                 // @todo previously this was storage but apparently the 
                                 // pointer is not constant with the moving and temporary nature
                                 // maybe it ought to be and in that case a pointer is more direct
-                                MutableAttributeValue{ name, resolve_reference_index == -1 ? index : (uint8_t) resolve_reference_index },
+                                MutableAttributeValue{ (uint32_t) *name, resolve_reference_index == -1 ? index : (uint8_t) resolve_reference_index },
                                 v
                             ));
                         }
@@ -311,12 +315,12 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
                 }
                 construct_<0>(name, index, *v, pt ? pt->as_aggregation_type() : nullptr, [this, &storage, name, &references_to_resolve, index, resolve_reference_index](const auto& v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<reference_or_simple_type>>) {
-                        if (name > 0) {
-                            references_to_resolve.push_back({ {name, resolve_reference_index == -1 ? index : (uint8_t)resolve_reference_index }, v });
+                        if (name) {
+                            references_to_resolve.push_back({ { (uint32_t) *name, resolve_reference_index == -1 ? index : (uint8_t)resolve_reference_index }, v });
                         }
                     } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<std::vector<reference_or_simple_type>>>) {
-                        if (name > 0) {
-                            references_to_resolve.push_back({ {name, resolve_reference_index == -1 ? index : (uint8_t)resolve_reference_index }, v });
+                        if (name) {
+                            references_to_resolve.push_back({ { (uint32_t) *name, resolve_reference_index == -1 ? index : (uint8_t)resolve_reference_index }, v });
                         }
                     } else {
                         storage.set(index, v);
@@ -651,7 +655,18 @@ IfcParse::filetype IfcParse::guess_file_type(const std::string& fn) {
     }
 }
 
-std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> IfcParse::InstanceStreamer::read_instance() {
+void IfcParse::InstanceStreamer::bypassTypes(const std::set<std::string>& type_names) {
+    for (auto& name : type_names) {
+        try {
+            types_to_bypass_.push_back(schema_->declaration_by_name(name));
+        } catch (const IfcException&) {
+            continue;
+        }
+    }
+ }
+
+
+std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> IfcParse::InstanceStreamer::readInstance() {
     std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> return_value;
 
     if (header_ && yielded_header_instances_ < 3) {
@@ -679,7 +694,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
     }
 
     unsigned current_id = 0;
-    while (good_ && !lexer_->stream->eof && !current_id) {
+    while (good_ && !lexer_->stream->eof() && !current_id) {
         if (token_stream_[0].type == IfcParse::Token_IDENTIFIER &&
             token_stream_[1].type == IfcParse::Token_OPERATOR &&
             token_stream_[1].value_char == '=' &&
@@ -696,6 +711,15 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
             if (entity_type->as_entity() == nullptr) {
                 Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].startPos));
                 goto advance;
+            }
+
+            for (auto& ty : types_to_bypass_) {
+                if (entity_type->is(*ty)) {
+                    bypassed_instances_.push_back(current_id);
+                    // Why is this a conditional clause in the loop?
+                    current_id = 0;
+                    goto advance;
+                }
             }
 
             parse_context ps;
@@ -734,7 +758,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
             Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
         }
 
-        if (!lexer_->stream->eof && next_token.type == Token_NONE) {
+        if (!lexer_->stream->eof() && next_token.type == Token_NONE) {
             good_ = file_open_status::INVALID_SYNTAX;
             break;
         }
@@ -742,13 +766,17 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
         token_stream_.push_back(next_token);
     }
 
+    // Free pages in front of cursor when variable-width tokens are materialized into entity instance data objects
+    (stream_ ? stream_ : (lexer_)->stream)->dropPages();
+
     return return_value;
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl) {
     if (decl->as_entity() || decl->as_type_declaration()) {
         auto* inst = file->schema()->instantiate(decl, rocks_db_attribute_storage{});
-        inst->file_ = file;
+		// @todo maybe this needs to be set to file? In order to have a context (ie. rocksdb::db*) to write to?
+        inst->file_ = nullptr;
         return file->addEntity(inst);
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
@@ -764,6 +792,7 @@ IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::create(const IfcP
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
     }
-    inst->file_ = file;
+	// file_ should be nullptr in order not to bypass addEntity() behaviour of registration in maps
+    inst->file_ = nullptr;
     return file->addEntity(inst);
 }

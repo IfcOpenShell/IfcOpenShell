@@ -222,8 +222,6 @@ def refresh_ui_data():
     if isinstance(ifc_file := tool.Ifc.get(), ifcopenshell.sqlite):
         ifc_file.clear_cache()
 
-    props = tool.Drawing.get_document_props()
-    props.should_draw_decorations = props.should_draw_decorations
     if tool.Web.get_web_props().is_connected:
         tool.Web.send_webui_data()
 

@@ -274,7 +274,7 @@ public:
         }
 
         iterator& operator++() {
-#if IFOPSH_WITH_ROCKSDB
+#ifdef IFOPSH_WITH_ROCKSDB
             if (it_) {
                 it_->Next();
                 check_valid();

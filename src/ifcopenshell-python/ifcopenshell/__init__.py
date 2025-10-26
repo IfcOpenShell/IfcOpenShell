@@ -60,6 +60,7 @@ import zipfile
 import tempfile
 from pathlib import Path
 from typing import Optional, Union, TYPE_CHECKING, Any, overload, Literal
+from collections.abc import Sequence
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -138,7 +139,12 @@ def open(
     path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: bool = False, readonly: bool = False
 ) -> Union[_file, sqlite, _stream]: ...
 def open(
-    path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False, readonly: bool = False
+    path: Union[os.PathLike, str],
+    format: Optional[str] = None,
+    should_stream: bool = False,
+    readonly: bool = False,
+    mmap: bool = False,
+    bypass_types: Optional[Sequence[str]] = None,
 ) -> Union[_file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
@@ -186,7 +192,17 @@ def open(
     if should_stream:
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
-        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly)
+        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly=readonly)
+    elif bypass_types:
+        f = ifcopenshell_wrapper.file(ifcopenshell_wrapper.uninitialized_tag())
+        for ty in bypass_types:
+            f.bypass_type(ty)
+        if mmap:
+            f.initialize(str(path.absolute()), mmap=mmap)
+        else:
+            f.initialize(str(path.absolute()))
+    elif mmap:
+        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)
     else:
         f = ifcopenshell_wrapper.open(str(path.absolute()))
     return file(f)
@@ -299,20 +315,44 @@ def guess_format(path: Path) -> Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON"
     return None
 
 
-def stream2(path: Union[Path, str]):
+def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
     """Streams the content of a file path from disk, yielding each instance
     as a dictionary.
 
     Args:
         path (Union[Path, str]): input file path
+        mmap (bool): open the file contents using memory mapping
+        page_size (int): open file in python and feed chunks to the parser
 
     Yields:
         dict: entity instance dictionaries
     """
-    streamer = ifcopenshell_wrapper.InstanceStreamer(str(path))
-    while streamer:
-        if inst := streamer.read_instance_py():
-            yield inst
+    if page_size:
+        import builtins
+
+        f = builtins.open(path, encoding="ascii")
+        strm = ifcopenshell_wrapper.InstanceStreamer()
+        strm.pushPage(f.read(page_size))
+        finished = False
+        while True:
+            while strm.hasSemicolon():
+                if inst := strm.readInstancePy():
+                    yield inst
+                else:
+                    finished = True
+                    break
+            if finished:
+                break
+            else:
+                if data := f.read(page_size):
+                    strm.pushPage(data)
+                else:
+                    break
+    else:
+        streamer = ifcopenshell_wrapper.InstanceStreamer(str(path), mmap)
+        while streamer:
+            if inst := streamer.readInstancePy():
+                yield inst
 
 
 def stream2_from_string(data: str):

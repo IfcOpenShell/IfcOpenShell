@@ -858,6 +858,10 @@ class OverrideDelete(bpy.types.Operator):
         objects_to_remove = context.selected_objects
 
         self.process_arrays(context)
+
+        # Track aggregates before deleting their parts
+        aggregates_to_check = self.track_aggregates(objects_to_remove)
+
         clear_active_object = True
 
         for i, obj in enumerate(objects_to_remove, 1):
@@ -882,12 +886,27 @@ class OverrideDelete(bpy.types.Operator):
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
-                    return {"FINISHED"}
+                    continue
+                if element.is_a("IfcGridAxis"):
+                    # Deleting the last W axis is OK
+                    if ((grid := element.PartOfU) and len(grid[0].UAxes) == 1) or (
+                        (grid := element.PartOfV) and len(grid[0].VAxes) == 1
+                    ):
+                        self.report(
+                            {"INFO"}, "The last grid axis of a grid cannot be deleted. Delete the grid instead."
+                        )
+                        continue
+                if tool.Drawing.is_auto_annotation(element):
+                    self.report({"INFO"}, "References cannot be deleted. Exclude the referenced element instead.")
+                    continue
                 tool.Geometry.delete_ifc_object(obj)
             elif tool.Geometry.is_representation_item(obj):
                 tool.Geometry.delete_ifc_item(obj)
             else:
                 bpy.data.objects.remove(obj)
+
+        # Delete empty aggregates after deleting their parts
+        self.delete_empty_aggregates(aggregates_to_check)
 
         for opening in tool.Model.get_model_props().openings:
             if opening.obj is not None and not tool.Ifc.get_entity(opening.obj):
@@ -920,6 +939,49 @@ class OverrideDelete(bpy.types.Operator):
     def commit(self, data):
         data["old_file"].redo()
         tool.Ifc.set(data["new_file"])
+
+    def track_aggregates(self, objects_to_remove):
+        """Track aggregates that contain objects being deleted"""
+        aggregates_to_check = set()
+        for obj in objects_to_remove:
+            if not tool.Blender.is_valid_data_block(obj):
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if aggregate:
+                aggregates_to_check.add(aggregate)
+        return aggregates_to_check
+
+    def delete_empty_aggregates(self, aggregates_to_check):
+        """Delete aggregates that now have no parts"""
+        deleted_aggregates = []
+        for aggregate in aggregates_to_check:
+            # Check if aggregate still exists (might have been deleted already)
+            try:
+                aggregate.id()
+            except:
+                continue
+
+            related_objects = ifcopenshell.util.element.get_parts(aggregate)
+            if len(related_objects) == 0:
+                aggregate_name = aggregate.Name or f"{aggregate.is_a()} #{aggregate.id()}"
+                deleted_aggregates.append(aggregate_name)
+
+                aggregate_obj = tool.Ifc.get_object(aggregate)
+                if aggregate_obj and tool.Blender.is_valid_data_block(aggregate_obj):
+                    tool.Geometry.delete_ifc_object(aggregate_obj)
+
+        # Show info message if aggregates were deleted
+        if deleted_aggregates:
+            if len(deleted_aggregates) == 1:
+                self.report(
+                    {"INFO"}, f"Aggregate '{deleted_aggregates[0]}' was deleted because it had no remaining parts"
+                )
+            else:
+                aggregate_list = ", ".join(f"'{name}'" for name in deleted_aggregates)
+                self.report({"INFO"}, f"Aggregates {aggregate_list} were deleted because they had no remaining parts")
 
     def process_arrays(self, context: bpy.types.Context) -> None:
         ifc_file = tool.Ifc.get()
@@ -2973,6 +3035,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             item_mesh = bpy.data.meshes.new("tmp")
             tool.Ifc.link(item, item_mesh)
             item_obj = bpy.data.objects.new("tmp", item_mesh)
+            tool.Geometry.lock_scale(item_obj)
             tool.Geometry.name_item_object(item_obj, item)
             item_obj.matrix_world = obj.matrix_world
             bpy.context.collection.objects.link(item_obj)

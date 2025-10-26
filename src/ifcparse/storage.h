@@ -125,7 +125,7 @@ namespace IfcParse {
 
     class IfcFile;
     class IfcSpfLexer;
-    class IfcSpfStream;
+    class FileReader;
 
     enum TokenType {
         Token_NONE,
@@ -142,7 +142,7 @@ namespace IfcParse {
 
     struct Token {
         IfcSpfLexer* lexer; //TODO: remove it from here
-        unsigned startPos;
+        size_t startPos;
         TokenType type;
         union {
             char value_char;     //types: OPERATOR
@@ -154,7 +154,7 @@ namespace IfcParse {
             startPos(0),
             type(Token_NONE) {
         }
-        Token(IfcSpfLexer* _lexer, unsigned _startPos, unsigned /*_endPos*/, TokenType _type)
+        Token(IfcSpfLexer* _lexer, size_t _startPos, TokenType _type)
             : lexer(_lexer),
             startPos(_startPos),
             type(_type) {
@@ -184,15 +184,18 @@ namespace IfcParse {
 
         void push(IfcUtil::IfcBaseClass* inst);
 
-        IfcEntityInstanceData construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count=true);
+        IfcEntityInstanceData construct(boost::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count=true);
     };
 
     namespace impl {
         struct IFC_PARSE_API in_memory_file_storage {
-            std::vector<IfcUtil::IfcBaseClass*> read_simple_type_instances;
+            std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> read_simple_type_instances;
+            std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> steal_instances() {
+                return std::move(read_simple_type_instances);
+            }
 
             IfcParse::IfcSpfLexer* tokens;
-            // IfcParse::IfcSpfStream* stream;
+            // IfcParse::FileReader* stream;
 
             // Either one of these needs to be set
             IfcParse::IfcFile* file;
@@ -214,13 +217,9 @@ namespace IfcParse {
             typedef entity_instance_by_name_t::iterator iterator;
 
             in_memory_file_storage(IfcParse::IfcFile* f = nullptr) : tokens(nullptr), file(f), schema(nullptr) {}
-            ~in_memory_file_storage() {
-                for (auto* inst : read_simple_type_instances) {
-                    delete inst;
-                }
-            }
             in_memory_file_storage(const in_memory_file_storage&) = delete;
             in_memory_file_storage(const in_memory_file_storage&&) = delete;
+
 
             class type_iterator : public entities_by_type_t::const_iterator {
             public:
@@ -261,7 +260,7 @@ namespace IfcParse {
             entities_by_ref_t byref_excl_;
             entity_instance_by_guid_t byguid_;
 
-            void load(unsigned entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
+            void load(boost::optional<size_t> entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
             void try_read_semicolon() const;
 
             void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
@@ -269,7 +268,7 @@ namespace IfcParse {
 
             // @todo is this still used
             IfcEntityInstanceData read(unsigned int index);
-            void read_from_stream(IfcParse::IfcSpfStream* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id);
+            void read_from_stream(IfcParse::FileReader* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
 
             file_open_status good_ = file_open_status::SUCCESS;
 

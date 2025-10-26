@@ -27,7 +27,7 @@
 #ifndef IFCCHARACTERDECODER_H
 #define IFCCHARACTERDECODER_H
 
-#include "IfcSpfStream.h"
+#include "FileReader.h"
 
 #include <string>
 
@@ -41,7 +41,7 @@ namespace IfcParse {
 
 class IFC_PARSE_API IfcCharacterDecoder {
   private:
-    IfcParse::IfcSpfStream* stream_;
+    IfcParse::FileReader* stream_;
     int codepage_;
 
   public:
@@ -52,7 +52,7 @@ class IFC_PARSE_API IfcCharacterDecoder {
     };
     static ConversionMode mode;
     static char substitution_character;
-    IfcCharacterDecoder(IfcParse::IfcSpfStream* stream);
+    IfcCharacterDecoder(IfcParse::FileReader* stream);
     ~IfcCharacterDecoder();
     // Only advances the underlying token stream read pointer
     // to the next token.
@@ -62,7 +62,7 @@ class IFC_PARSE_API IfcCharacterDecoder {
     operator std::string();
     // Gets a decoded string representation at the offset provided,
     // does not mutate the underlying token stream read pointer.
-    std::string get(unsigned int&);
+    std::string get(size_t&);
 };
 
 } // namespace IfcParse

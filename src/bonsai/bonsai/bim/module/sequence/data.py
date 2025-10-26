@@ -243,6 +243,9 @@ class SequenceData:
             data["NestingIndex"] = None
             for rel in task.Nests or []:
                 data["NestingIndex"] = rel.RelatedObjects.index(task)
+            data["TotalInputs"] = len(tool.Sequence.get_task_inputs(task))
+            data["TotalOutputs"] = len(tool.Sequence.get_task_outputs(task))
+            data["TotalElements"] = data["TotalInputs"] + data["TotalOutputs"]
             cls.data["tasks"][task.id()] = data
 
     @classmethod

@@ -512,14 +512,12 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def get_task_inputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         props = cls.get_work_schedule_props()
-        is_deep = props.show_nested_inputs
-        return ifcopenshell.util.sequence.get_task_inputs(task, is_deep)
+        return ifcopenshell.util.sequence.get_task_inputs(task, is_recursive=props.show_nested_inputs)
 
     @classmethod
     def get_task_outputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         props = cls.get_work_schedule_props()
-        is_deep = props.show_nested_outputs
-        return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
+        return ifcopenshell.util.sequence.get_task_outputs(task, is_recursive=props.show_nested_outputs)
 
     @classmethod
     def are_entities_same_class(cls, entities: list[ifcopenshell.entity_instance]) -> bool:
@@ -540,8 +538,7 @@ class Sequence(bonsai.core.tool.Sequence):
         if not task:
             return
         props = cls.get_work_schedule_props()
-        is_deep = props.show_nested_resources
-        return ifcopenshell.util.sequence.get_task_resources(task, is_deep)
+        return ifcopenshell.util.sequence.get_task_resources(task, props.show_nested_resources)
 
     @classmethod
     def load_task_inputs(cls, inputs: list[ifcopenshell.entity_instance]) -> None:
@@ -1582,7 +1579,7 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def create_new_task_json(cls, task, json, type_map=None, baseline_schedule=None):
         task_time = task.TaskTime
-        resources = ifcopenshell.util.sequence.get_task_resources(task, is_deep=False)
+        resources = ifcopenshell.util.sequence.get_task_resources(task, is_recursive=False)
 
         string_resources = ""
         resources_usage = ""
@@ -1689,8 +1686,8 @@ class Sequence(bonsai.core.tool.Sequence):
     ) -> list[ifcopenshell.entity_instance]:
         products = []
         for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
-            products.extend(ifcopenshell.util.sequence.get_task_inputs(task, is_deep=True))
-            products.extend(ifcopenshell.util.sequence.get_task_outputs(task, is_deep=True))
+            products.extend(ifcopenshell.util.sequence.get_task_inputs(task, is_recursive=True))
+            products.extend(ifcopenshell.util.sequence.get_task_outputs(task, is_recursive=True))
         return products
 
     @classmethod
@@ -1788,6 +1785,16 @@ class Sequence(bonsai.core.tool.Sequence):
         cls.load_task_inputs(inputs)
         cls.load_task_outputs(outputs)
         cls.load_task_resources(task)
+
+    @classmethod
+    def select_active_task_elements(cls, task):
+        if not task:
+            return
+        bpy.ops.object.select_all(action="DESELECT")
+        props = cls.get_work_schedule_props()
+        for element in cls.get_task_inputs(task) | cls.get_task_outputs(task):
+            if obj := tool.Ifc.get_object(element):
+                obj.select_set(True)
 
     @classmethod
     def refresh_task_resources(cls):
