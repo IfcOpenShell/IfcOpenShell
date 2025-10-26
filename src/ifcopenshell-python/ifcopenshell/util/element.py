@@ -117,6 +117,7 @@ def get_pset(
         if (
             psets_only
             and not pset.is_a("IfcPropertySet")
+            and not pset.is_a("IfcPreDefinedPropertySet")
             and not (is_ifc2x3 and pset.is_a("IfcExtendedMaterialProperties"))
         ):
             pset = None
@@ -126,7 +127,11 @@ def get_pset(
     if type_pset is not None and not prop:
         if psets_only or qtos_only:
             type_pset_element = element.file.by_id(type_pset["id"])
-            if psets_only and not type_pset_element.is_a("IfcPropertySet"):
+            if (
+                psets_only
+                and not type_pset_element.is_a("IfcPropertySet")
+                and not type_pset_element.is_a("IfcPreDefinedPropertySet")
+            ):
                 type_pset = None
             elif qtos_only and not type_pset_element.is_a("IfcElementQuantity"):
                 type_pset = None
@@ -177,7 +182,7 @@ def get_psets(
     psets = {}
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
-            if psets_only and not definition.is_a("IfcPropertySet"):
+            if psets_only and not definition.is_a("IfcPropertySet") and not definition.is_a("IfcPreDefinedPropertySet"):
                 continue
             if qtos_only and not definition.is_a("IfcElementQuantity"):
                 continue
@@ -213,7 +218,11 @@ def get_psets(
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
-                if psets_only and not definition.is_a("IfcPropertySet"):
+                if (
+                    psets_only
+                    and not definition.is_a("IfcPropertySet")
+                    and not definition.is_a("IfcPreDefinedPropertySet")
+                ):
                     continue
                 if qtos_only and not definition.is_a("IfcElementQuantity"):
                     continue
