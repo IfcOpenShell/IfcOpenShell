@@ -594,9 +594,6 @@ class BIM_PT_text(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "font_size")
         row.prop(props, "apply_font_size_to_all", text="", icon="COPYDOWN")
-        select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
-        select_op.literal_value = props.font_size
-        select_op.attribute_type = "font_size"
 
         row = self.layout.row(align=True)
         row.prop(props, "newline_at")
@@ -632,11 +629,6 @@ class BIM_PT_text(Panel):
                 row = box.row(align=True)
                 row.prop(literal_props.attributes[0], "string_value", text="Literal")
                 row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
-                select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
-                select_op.literal_value = literal_props.attributes[0].string_value
-                select_op.literal_index = i
-                select_op.attribute_type = "literal"
-
                 element = tool.Ifc.get_entity(obj)
                 assigned_element = tool.Drawing.get_assigned_product(element) or element
                 resolved_value = tool.Drawing.replace_text_literal_variables(
@@ -648,10 +640,6 @@ class BIM_PT_text(Panel):
                 row = box.row(align=True)
                 row.label(text="CurrentValue:")
                 row.label(text=str(resolved_value))
-                select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
-                select_op.literal_value = str(resolved_value)
-                select_op.literal_index = i
-                select_op.attribute_type = "resolved_text"  # Search by resolved value
 
             if len(literal_props.attributes) > 1:
                 attr = literal_props.attributes[1]
@@ -664,10 +652,6 @@ class BIM_PT_text(Panel):
                     select_value = attr.string_value
                 if i < len(props.literal_apply_settings):
                     row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
-                select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
-                select_op.literal_value = select_value
-                select_op.literal_index = i
-                select_op.attribute_type = "path"
 
             other_attributes = [a for a in literal_props.attributes[2:] if a.name != "BoxAlignment"]
             if other_attributes:
@@ -702,12 +686,6 @@ class BIM_PT_text(Panel):
                 if any(attr.name == "BoxAlignment" for attr in literal_props.attributes)
                 else "N/A"
             )
-            select_op = alignment_label_row.operator(
-                "bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF"
-            )
-            select_op.literal_value = box_alignment_value
-            select_op.literal_index = i
-            select_op.attribute_type = "box_alignment"
 
             col.label(text=f"    {box_alignment_value}")
 
