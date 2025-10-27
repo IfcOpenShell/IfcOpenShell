@@ -211,6 +211,7 @@ assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
 WASM = "wasm" in flags
 """Build WASM outside pyodide build environment."""
 WASM_DEBUG = False
+WASM_CMAKE_IS_USING_INIT_VARS = False
 if WASM:
     if "WASM_PYTHON_PATH" in os.environ:
         wasm_python_path = os.environ["WASM_PYTHON_PATH"]
@@ -237,6 +238,19 @@ if WASM:
     )
     missing_vars = [v for v in required_vars if v not in os.environ]
     assert not missing_vars, f"Some variables required for WASM compilation are missing: {', '.join(missing_vars)}"
+
+    def get_pyodide_build_version() -> "tuple[int, ...]":
+        pyodide_build_suffix = "pyodide-build version:"
+        output = sp.check_output(["pyodide", "--version"], encoding="utf-8").strip()
+        assert pyodide_build_suffix in output, output
+        version_line = next(l for l in output.splitlines() if l.startswith(pyodide_build_suffix))
+        version = version_line.partition(":")[2].strip()
+        return tuple(map(int, version.split(".")))
+
+    # Pyodide still in transition from `FLAGS` to `FLAGS_INIT`.
+    # `FLAGS_INIT` allow us to provide flags using environment variables
+    # and providing `FLAGS` directly would break pyodide toolchain.
+    WASM_CMAKE_IS_USING_INIT_VARS = get_pyodide_build_version() >= (0, 30, 8)
 
     # pyodide provide empty `CXXFLAGS`, leading to issues using C++ files compiled with `-fexceptions`
     # which is used by OCCT.
@@ -431,6 +445,7 @@ required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make,
 if "wasm" in flags:
     # Skip swig build for WASM.
     required_commands.append("swig")
+    required_commands.append("pyodide")
     required_commands.remove(yacc)
 
 for cmd in required_commands:
@@ -572,16 +587,27 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
     if "wasm" in flags:
         wasm.append("emcmake")
 
+    cmake_flags: "list[str]" = []
+    if not WASM or not WASM_CMAKE_IS_USING_INIT_VARS:
+        # For WASM we provide flags using just environment variables.
+        # If we provide them using cmake vars, it will override emscripten toolchain flags.
+        # Unsure if we need this in general even for non-WASM builds.
+        cmake_flags.extend(
+            [
+                f"-DCMAKE_CXX_FLAGS='{os.environ['CXXFLAGS']}'",
+                f"-DCMAKE_C_FLAGS='{os.environ['CFLAGS']}'",
+            ]
+        )
+
     run(
         [
             *wasm,
             "cmake",
             P,
+            *cmake_flags,
             *cmake_args,
             f"-DCMAKE_BUILD_TYPE={BUILD_CFG}",
             f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
-            f"-DCMAKE_CXX_FLAGS='{os.environ['CXXFLAGS']}'",
-            f"-DCMAKE_C_FLAGS='{os.environ['CFLAGS']}'",
             f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}",
         ],
         cwd=cwd,
