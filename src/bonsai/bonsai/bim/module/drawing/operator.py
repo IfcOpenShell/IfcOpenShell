@@ -4256,72 +4256,98 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
 
         return self.execute(context)
 
+
     def execute(self, context):
-            if not self.literal_value and self.attribute_type in ["text", "path", "box_alignment", "font_size"]:
-                return {"CANCELLED"}
+        if not self.literal_value and self.attribute_type in ["text", "path", "box_alignment", "font_size"]:
+            return {"CANCELLED"}
 
-            count = 0
-            for obj in context.visible_objects:
-                element = tool.Ifc.get_entity(obj)
-                if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                    continue
+        editing_status = {}
+        for obj in context.visible_objects:
+            obj_props = tool.Drawing.get_text_props(obj)
+            editing_status[obj] = obj_props.is_editing if hasattr(obj_props, "is_editing") else False
 
-                obj_props = tool.Drawing.get_text_props(obj)
-                should_select = False
+        count = 0
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
+                continue
 
-                if self.attribute_type in ["text", "path", "box_alignment", "font_size"]:
-                    was_editing = len(obj_props.literals) > 0
-                    if not was_editing:
-                        core.enable_editing_text(tool.Drawing, obj=obj)
+            obj_props = tool.Drawing.get_text_props(obj)
+            should_select = False
 
-                    if self.attribute_type == "font_size":
-                        should_select = str(obj_props.font_size) == self.literal_value
-                    else:
-                        for idx, literal in enumerate(obj_props.literals):
-                            if self.attribute_type == "text" and len(literal.attributes) > 0:
-                                raw_value = literal.attributes[0].string_value
-                                assigned_element = tool.Drawing.get_assigned_product(element) or element
-                                resolved_value = tool.Drawing.replace_text_literal_variables(raw_value, assigned_element)
-                                if resolved_value == self.literal_value:
+            if self.attribute_type in ["text", "path", "box_alignment", "font_size", "literal", "resolved_text"]:
+                was_editing = obj_props.is_editing if hasattr(obj_props, "is_editing") else False
+                if not was_editing:
+                    core.enable_editing_text(tool.Drawing, obj=obj)
+
+                if self.attribute_type == "font_size":
+                    should_select = str(obj_props.font_size) == self.literal_value
+                elif self.attribute_type == "literal":
+                    for idx, literal in enumerate(obj_props.literals):
+                        if len(literal.attributes) > 0:
+                            if literal.attributes[0].string_value == self.literal_value:
+                                should_select = True
+                                break
+                elif self.attribute_type == "resolved_text":
+                    for idx, literal in enumerate(obj_props.literals):
+                        if len(literal.attributes) > 0:
+                            raw_value = literal.attributes[0].string_value
+                            assigned_element = tool.Drawing.get_assigned_product(element) or element
+                            resolved_value = tool.Drawing.replace_text_literal_variables(raw_value, assigned_element)
+                            if resolved_value == self.literal_value:
+                                should_select = True
+                                break
+                else:
+                    for idx, literal in enumerate(obj_props.literals):
+                        if self.attribute_type == "text" and len(literal.attributes) > 0:
+                            raw_value = literal.attributes[0].string_value
+                            assigned_element = tool.Drawing.get_assigned_product(element) or element
+                            resolved_value = tool.Drawing.replace_text_literal_variables(raw_value, assigned_element)
+                            if resolved_value == self.literal_value:
+                                should_select = True
+                                break
+                        elif self.attribute_type == "path" and len(literal.attributes) > 1:
+                            attr = literal.attributes[1]
+                            if attr.data_type == "enum":
+                                if attr.enum_value == self.literal_value:
                                     should_select = True
                                     break
-                            elif self.attribute_type == "path" and len(literal.attributes) > 1:
-                                attr = literal.attributes[1]
-                                if attr.data_type == "enum":
-                                    if attr.enum_value == self.literal_value:
-                                        should_select = True
-                                        break
-                                else:
-                                    if attr.string_value == self.literal_value:
-                                        should_select = True
-                                        break
-                            elif self.attribute_type == "box_alignment":
-                                box_alignment_attr = next(
-                                    (attr for attr in literal.attributes if attr.name == "BoxAlignment"), None
-                                )
-                                if box_alignment_attr and box_alignment_attr.string_value == self.literal_value:
+                            else:
+                                if attr.string_value == self.literal_value:
                                     should_select = True
                                     break
+                        elif self.attribute_type == "box_alignment":
+                            box_alignment_attr = next(
+                                (attr for attr in literal.attributes if attr.name == "BoxAlignment"), None
+                            )
+                            if box_alignment_attr and box_alignment_attr.string_value == self.literal_value:
+                                should_select = True
+                                break
 
-                    if not was_editing:
-                        core.disable_editing_text(tool.Drawing, obj=obj)
+            if should_select:
+                obj.select_set(not self.remove_from_selection)
+                count += 1
 
-                if should_select:
-                    obj.select_set(not self.remove_from_selection)
-                    count += 1
+        for obj, was_editing in editing_status.items():
+            obj_props = tool.Drawing.get_text_props(obj)
+            if hasattr(obj_props, "is_editing"):
+                if was_editing and not obj_props.is_editing:
+                    core.enable_editing_text(tool.Drawing, obj=obj)
+                elif not was_editing and obj_props.is_editing:
+                    core.disable_editing_text(tool.Drawing, obj=obj)
 
-            if self.attribute_type in ["text", "path", "box_alignment"]:
-                result = f'literal[{self.literal_index}].{self.attribute_type} = "{self.literal_value}"'
-            else:
-                result = f'{self.attribute_type} = "{self.literal_value}"'
+        if self.attribute_type in ["text", "path", "box_alignment"]:
+            result = f'literal[{self.literal_index}].{self.attribute_type} = "{self.literal_value}"'
+        else:
+            result = f'{self.attribute_type} = "{self.literal_value}"'
 
-            verb = "Deselected" if self.remove_from_selection else "Selected"
-            self.report(
-                {"INFO"},
-                f"{verb} {count} objects with {self.attribute_type} '{self.literal_value}'.",
-            )
+        verb = "Deselected" if self.remove_from_selection else "Selected"
+        self.report(
+            {"INFO"},
+            f"{verb} {count} objects with {self.attribute_type} '{self.literal_value}'.",
+        )
 
-            return {"FINISHED"}
+        return {"FINISHED"}
 
 
 class FilterSelectedObjectsIfIntersectedByCamera(bpy.types.Operator):

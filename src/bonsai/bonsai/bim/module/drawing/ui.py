@@ -579,8 +579,6 @@ class BIM_PT_text(Panel):
         assert obj
         props = tool.Drawing.get_text_props(obj)
 
-        if props.is_editing:
-            props.ensure_literal_apply_settings(len(props.literals))
 
         row = self.layout.row(align=True)
 
@@ -615,6 +613,7 @@ class BIM_PT_text(Panel):
             select_op.literal_value = str(props.newline_at)
             select_op.attribute_type = "newline"
 
+
         for i, literal_props in enumerate(props.literals):
             box = self.layout.box()
             row = self.layout.row(align=True)
@@ -627,14 +626,30 @@ class BIM_PT_text(Panel):
                 row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
             row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
 
-            if len(literal_props.attributes) > 0:
+            if len(literal_props.attributes) > 0 and i < len(props.literal_apply_settings):
                 row = box.row(align=True)
-                row.prop(literal_props.attributes[0], "string_value", text="Text")
+                row.prop(literal_props.attributes[0], "string_value", text="Literal")
                 row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
                 select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
                 select_op.literal_value = literal_props.attributes[0].string_value
                 select_op.literal_index = i
-                select_op.attribute_type = "text"
+                select_op.attribute_type = "literal"
+
+                element = tool.Ifc.get_entity(obj)
+                assigned_element = tool.Drawing.get_assigned_product(element) or element
+                resolved_value = tool.Drawing.replace_text_literal_variables(
+                    literal_props.attributes[0].string_value,
+                    assigned_element,
+                    props.reverse_list,
+                    props.list_separator,
+                )
+                row = box.row(align=True)
+                row.label(text="CurrentValue:")
+                row.label(text=str(resolved_value))
+                select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
+                select_op.literal_value = str(resolved_value)
+                select_op.literal_index = i
+                select_op.attribute_type = "resolved_text"  # Search by resolved value
 
             if len(literal_props.attributes) > 1:
                 attr = literal_props.attributes[1]
@@ -645,7 +660,8 @@ class BIM_PT_text(Panel):
                 else:
                     row.prop(attr, "string_value", text="Path")
                     select_value = attr.string_value
-                row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
+                if i < len(props.literal_apply_settings):
+                    row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
                 select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
                 select_op.literal_value = select_value
                 select_op.literal_index = i
@@ -669,9 +685,10 @@ class BIM_PT_text(Panel):
             col = row.column(align=True)
             alignment_label_row = col.row(align=True)
             alignment_label_row.label(text="    Text box alignment:")
-            alignment_label_row.prop(
-                props.literal_apply_settings[i], "apply_box_alignment_to_all", text="", icon="COPYDOWN"
-            )
+            if i < len(props.literal_apply_settings):
+                alignment_label_row.prop(
+                    props.literal_apply_settings[i], "apply_box_alignment_to_all", text="", icon="COPYDOWN"
+                )
 
             box_alignment_value = (
                 literal_props.attributes[
@@ -744,7 +761,7 @@ class BIM_PT_text(Panel):
                     click_op.literal_value = str(literal_data[attribute])
                     click_op.literal_index = i
                     if attribute == "Literal":
-                        click_op.attribute_type = "text"
+                        click_op.attribute_type = "literal"
                     elif attribute == "Path":
                         click_op.attribute_type = "path"
                     elif attribute == "BoxAlignment":
