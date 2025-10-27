@@ -856,8 +856,10 @@ class FacetTransformer(lark.Transformer):
         comparison, value = args
 
         def filter_function(element: ifcopenshell.entity_instance) -> bool:
-            element_value = getattr(ifcopenshell.util.element.get_type(element), "Name", None)
-            return self.compare(element_value, comparison, value)
+            element_type = ifcopenshell.util.element.get_type(element)
+            return self.compare(getattr(element_type, "Name", None), comparison, value) or self.compare(
+                getattr(element_type, "GlobalId", None), comparison, value
+            )
 
         self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
@@ -940,7 +942,7 @@ class FacetTransformer(lark.Transformer):
             containers = self.get_container_tree(container)
             result = False if containers else None
             for container in containers:
-                if self.compare(container.Name, "=", value):
+                if self.compare(container.Name, "=", value) or self.compare(container.GlobalId, "=", value):
                     result = True
             if result is not None:
                 return result if comparison == "=" else not result
@@ -958,6 +960,8 @@ class FacetTransformer(lark.Transformer):
                 if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
                     if self.compare(rel.RelatingGroup.Name, "=", value):
                         result = True
+                    elif self.compare(rel.RelatingGroup.GlobalId, "=", value):
+                        result = True
             return result if comparison == "=" else not result
 
         self.add_default_elements()
@@ -969,32 +973,44 @@ class FacetTransformer(lark.Transformer):
         parents = set()
         for rel in self.file.by_type("IfcRelAggregates"):
             parent = rel.RelatingObject
-            if parent and self.compare(parent.Name, comparison, value):
+            if parent and (
+                self.compare(parent.Name, comparison, value) or self.compare(parent.GlobalId, comparison, value)
+            ):
                 parents.add(parent)
 
         for rel in self.file.by_type("IfcRelContainedInSpatialStructure"):
             parent = rel.RelatingStructure
-            if parent and self.compare(parent.Name, comparison, value):
+            if parent and (
+                self.compare(parent.Name, comparison, value) or self.compare(parent.GlobalId, comparison, value)
+            ):
                 parents.add(parent)
 
         for rel in self.file.by_type("IfcRelNests"):
             parent = rel.RelatingObject
-            if parent and self.compare(parent.Name, comparison, value):
+            if parent and (
+                self.compare(parent.Name, comparison, value) or self.compare(parent.GlobalId, comparison, value)
+            ):
                 parents.add(parent)
 
         for rel in self.file.by_type("IfcRelVoidsElement"):
             parent = rel.RelatingBuildingElement
-            if parent and self.compare(parent.Name, comparison, value):
+            if parent and (
+                self.compare(parent.Name, comparison, value) or self.compare(parent.GlobalId, comparison, value)
+            ):
                 parents.add(parent)
 
         for rel in self.file.by_type("IfcRelVoidsElement"):
             parent = rel.RelatingBuildingElement
-            if parent and self.compare(parent.Name, comparison, value):
+            if parent and (
+                self.compare(parent.Name, comparison, value) or self.compare(parent.GlobalId, comparison, value)
+            ):
                 parents.add(parent)
 
         for rel in self.file.by_type("IfcRelFillsElement"):
             parent = rel.RelatingOpeningElement
-            if parent and self.compare(parent.Name, comparison, value):
+            if parent and (
+                self.compare(parent.Name, comparison, value) or self.compare(parent.GlobalId, comparison, value)
+            ):
                 parents.add(parent)
 
         children: set[ifcopenshell.entity_instance] = set()

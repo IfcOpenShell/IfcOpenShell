@@ -251,7 +251,7 @@ INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 try:
     UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
 except:
-    UNKNOWN = 5 # Workaround
+    UNKNOWN = 5  # Workaround
 
 import struct
 

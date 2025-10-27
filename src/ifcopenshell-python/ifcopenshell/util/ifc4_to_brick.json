@@ -27,10 +27,9 @@
     "IfcFlowMeter.WATERMETER": "Water_Meter",
     "IfcElectricMotor": "Motor",
     "IfcSolarDevice.SOLARPANEL": "PV_Panel",
-    "IfcBuilding": "Building",
-    "IfcBuildingStorey": "Floor",
-    "IfcSpace": "Space",
-    "IfcSpatialZone": "Zone",
-    "IfcSpatialZone.THERMAL": "HVAC_Zone",
-    "IfcSpatialZone.LIGHTING": "Lighting_Zone"
+    "IfcBuilding": "https://w3id.org/rec#Building",
+    "IfcBuildingStorey": "https://w3id.org/rec#Level",
+    "IfcSpace": "https://w3id.org/rec#Room",
+    "IfcSpatialZone": "https://w3id.org/rec#Zone",
+    "IfcSpatialZone.THERMAL": "https://w3id.org/rec#HVACZone"
 }

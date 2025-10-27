@@ -24,7 +24,8 @@ import importlib
 import ifcopenshell.util.selector
 from pathlib import Path
 from collections import defaultdict
-from typing import Literal, Union, Any, Callable, TYPE_CHECKING
+from typing import Literal, Union, Any, TYPE_CHECKING
+from collections.abc import Callable
 
 try:
     from openpyxl import Workbook
