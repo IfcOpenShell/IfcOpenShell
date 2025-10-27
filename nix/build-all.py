@@ -238,6 +238,16 @@ if WASM:
     missing_vars = [v for v in required_vars if v not in os.environ]
     assert not missing_vars, f"Some variables required for WASM compilation are missing: {', '.join(missing_vars)}"
 
+    # pyodide provide empty `CXXFLAGS`, leading to issues using C++ files compiled with `-fexceptions`
+    # which is used by OCCT.
+    # https://github.com/pyodide/pyodide-build/issues/251
+    side_module_cxx_flags = os.environ.get("SIDE_MODULE_CXXFLAGS", "")
+    if side_module_cxx_flags.strip():
+        print("SIDE_MODULE_CXXFLAGS are already passed from pyodide build ('{side_module_cxx_flags}').")
+        print("Maybe it's time to stop overriding them in the script?")
+
+    os.environ["SIDE_MODULE_CXXFLAGS"] = os.environ["SIDE_MODULE_CFLAGS"]
+
 # Set defaults for missing empty environment variables
 
 USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
