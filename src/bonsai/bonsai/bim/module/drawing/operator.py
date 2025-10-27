@@ -4276,25 +4276,32 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
 
                     if self.attribute_type == "font_size":
                         should_select = str(obj_props.font_size) == self.literal_value
-                    elif self.literal_index < len(obj_props.literals):
-                        literal = obj_props.literals[self.literal_index]
-                        if self.attribute_type == "text" and len(literal.attributes) > 0:
-                            raw_value = literal.attributes[0].string_value
-                            assigned_element = tool.Drawing.get_assigned_product(element) or element
-                            resolved_value = tool.Drawing.replace_text_literal_variables(raw_value, assigned_element)
-                            should_select = resolved_value == self.literal_value
-                        elif self.attribute_type == "path" and len(literal.attributes) > 1:
-                            attr = literal.attributes[1]
-                            if attr.data_type == "enum":
-                                should_select = attr.enum_value == self.literal_value
-                            else:
-                                should_select = attr.string_value == self.literal_value
-                        elif self.attribute_type == "box_alignment":
-                            box_alignment_attr = next(
-                                (attr for attr in literal.attributes if attr.name == "BoxAlignment"), None
-                            )
-                            if box_alignment_attr:
-                                should_select = box_alignment_attr.string_value == self.literal_value
+                    else:
+                        for idx, literal in enumerate(obj_props.literals):
+                            if self.attribute_type == "text" and len(literal.attributes) > 0:
+                                raw_value = literal.attributes[0].string_value
+                                assigned_element = tool.Drawing.get_assigned_product(element) or element
+                                resolved_value = tool.Drawing.replace_text_literal_variables(raw_value, assigned_element)
+                                if resolved_value == self.literal_value:
+                                    should_select = True
+                                    break
+                            elif self.attribute_type == "path" and len(literal.attributes) > 1:
+                                attr = literal.attributes[1]
+                                if attr.data_type == "enum":
+                                    if attr.enum_value == self.literal_value:
+                                        should_select = True
+                                        break
+                                else:
+                                    if attr.string_value == self.literal_value:
+                                        should_select = True
+                                        break
+                            elif self.attribute_type == "box_alignment":
+                                box_alignment_attr = next(
+                                    (attr for attr in literal.attributes if attr.name == "BoxAlignment"), None
+                                )
+                                if box_alignment_attr and box_alignment_attr.string_value == self.literal_value:
+                                    should_select = True
+                                    break
 
                     if not was_editing:
                         core.disable_editing_text(tool.Drawing, obj=obj)
