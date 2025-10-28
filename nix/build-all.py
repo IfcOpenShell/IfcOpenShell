@@ -210,31 +210,26 @@ assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
 
 WASM = "wasm" in flags
 """Build WASM outside pyodide build environment."""
-WASM_DEBUG = False
 WASM_CMAKE_IS_USING_INIT_VARS = False
 if WASM:
-    if "WASM_PYTHON_PATH" in os.environ:
-        wasm_python_path = os.environ["WASM_PYTHON_PATH"]
-        # Deduce version from path, assuming format .../python-X.Y.Z
-        version_match = re.search(r"python-(\d+)\.(\d+)\.(\d+)", wasm_python_path)
-        assert version_match, f"Could not deduce python version from '{wasm_python_path}'"
-        python_version = version_match.group(1)
-        os.environ["PYVERSION"] = python_version
-        os.environ["PYTHONINCLUDE"] = f"{wasm_python_path}/include/python{python_version.rpartition('.')[0]}"
-        os.environ["SIDE_MODULE_CFLAGS"] = ""
-        # Required, otherwise library will compile as .a, not .so.
-        os.environ["SIDE_MODULE_LDFLAGS"] = "-s SIDE_MODULE=1"
-        # We're outside pyodide build environment, so need to provide toolchain file ourselves.
-        assert "WASM_TOOLCHAIN_FILE" in os.environ, "WASM_TOOLCHAIN_FILE must be set when WASM_PYTHON_PATH is provided"
-        WASM_DEBUG = True
+
+    def get_pyodide_config_var(var_name: str) -> str:
+        output = sp.check_output(["pyodide", "config", "get", var_name], encoding="utf-8").strip()
+        return output
+
+    if "PYODIDE_ROOT" not in os.environ:
+        cecho("WARNING. Couldn't find 'PYODIDE_ROOT' in environment variables.", YELLOW)
+        cecho("Assuming building wasm outside pyodide build environment and resetting necessary variables.", YELLOW)
+        os.environ["SIDE_MODULE_CFLAGS"] = get_pyodide_config_var("cflags")
+        os.environ["SIDE_MODULE_LDFLAGS"] = get_pyodide_config_var("ldflags")
+        # Override cmake toolchain for all `emcmake` calls,
+        # needed for shared libraries (resulting .so wrapper)
+        # and to ensure compilation is pyodide compatible (e.g. `-fwasm-exceptions` is used in compilation flags).
+        os.environ["CMAKE_TOOLCHAIN_FILE"] = get_pyodide_config_var("cmake_toolchain_file")
     required_vars = (
-        # E.g. '3.13.2'.
-        "PYVERSION",
-        # 'include' folder in WASM-Python installation.
-        # e.g. '/pyodide/cpython/installs/python-3.13.2/include/python3.13'
-        "PYTHONINCLUDE",
         "SIDE_MODULE_CFLAGS",
         "SIDE_MODULE_LDFLAGS",
+        "CMAKE_TOOLCHAIN_FILE",
     )
     missing_vars = [v for v in required_vars if v not in os.environ]
     assert not missing_vars, f"Some variables required for WASM compilation are missing: {', '.join(missing_vars)}"
@@ -1459,9 +1454,6 @@ if "IfcOpenShell-Python" in targets:
 
     if "wasm" in flags:
         ADDITIONAL_ARGS = "-Wl,-undefined,suppress"
-        # Override CMAKE_TOOLCHAIN_FILE because by default emscripten doesn't support building shared binaries.
-        if WASM_DEBUG:
-            os.environ["CMAKE_TOOLCHAIN_FILE"] = os.environ["WASM_TOOLCHAIN_FILE"]
 
     # NOTE: We don't use `CXXFLAGS` for wrappers, so wrapper is compiled with different flags
     # (e.g. ` -fdata-sections` is missing, which is set by default for executables)
@@ -1552,7 +1544,10 @@ if "IfcOpenShell-Python" in targets:
             return module_dir
 
     if "wasm" in flags:
-        compile_python_wrapper(os.environ["PYVERSION"], os.environ["PYTHONINCLUDE"])
+        compile_python_wrapper(
+            run(["pyodide", "config", "get", "python_version"]),
+            run(["pyodide", "config", "get", "python_include_dir"]),
+        )
         # Copy setup.py where pyodide build system expects it.
         shutil.copy(REPO_PATH / "pyodide" / "setup.py", REPO_PATH)
 
