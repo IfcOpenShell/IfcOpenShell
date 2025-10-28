@@ -49,6 +49,19 @@ jobs:
             ifcopenshell_build/*/*/logs/*.log
           retention-days: 30
 
+      - name: Run wheel tests
+        run: |
+          cp -r IfcOpenShell/pyodide/test test
+          # venv set up in build_pyodide.sh.
+          source .venv/bin/activate
+          uv pip install pytest-pyodide
+          PYODIDE_ROOT_DIST=`pyodide config get pyodide_root`/dist
+          # `pytest-pyodide` requires pyodide in 'pyodide' directory in cwd, when running `pytest`.
+          cp -r $PYODIDE_ROOT_DIST test/pyodide
+          cp dist/ifcopenshell-*.whl test/pyodide
+          cd test
+          pytest --capture=no
+
       - name: Pack Dependencies
         run: |
           cd ifcopenshell_build
