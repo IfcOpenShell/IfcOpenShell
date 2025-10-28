@@ -26,6 +26,7 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           uv tool install ruff
           uv tool install black
+          uv tool install poethepoet
 
       # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
@@ -40,15 +41,16 @@ jobs:
       - name: Black formatter
         id: black
         run: |
-          uvx black --diff --check .
+          black --diff --check .
         continue-on-error: true
 
       - name: Ruff check
         id: ruff
         run: |
-          uvx ruff check
-          # It's actually Python 3.6, but ruff only supports 3.7+, but it should do.
-          uvx ruff check nix/build-all.py --target-version py37
+          ERROR=0
+          poe ruff-main || ERROR=1
+          poe ruff-old || ERROR=1
+          exit $ERROR
         continue-on-error: true
 
       - name: Final check

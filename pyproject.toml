@@ -62,3 +62,14 @@ ignore = [
     "UP031", # Replace % with .format
     "UP032", # Replace .format with f-string
 ]
+
+[tool.poe.tasks]
+
+ruff-main = "ruff check --extend-exclude nix/build-all.py"
+# It's actually Python 3.6, but ruff only supports 3.7+, but it should do.
+ruff-old = "ruff check nix/build-all.py --target-version py37"
+ruff.sequence = ["ruff-main", "ruff-old"]
+
+black = "black ."
+
+format.sequence = ["black", "ruff-main", "ruff-old"]
