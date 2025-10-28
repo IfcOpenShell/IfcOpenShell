@@ -5,8 +5,7 @@ import os
 from pathlib import Path
 
 import tomllib
-from setuptools import Extension, setup
-
+from setuptools import Extension, find_packages, setup
 
 REPO_FOLDER = Path(__file__).parent
 
@@ -37,7 +36,7 @@ setup(
     author_email="thomas@aecgeeks.com",
     url="https://ifcopenshell.org",
     install_requires=get_dependencies(),
-    packages=["ifcopenshell"],
+    packages=find_packages(include=["ifcopenshell", "ifcopenshell.*"]),
     package_data={
         # "*.so" is needed to include prebuilt binary extension. Otherwise it would try to build it and fail.
         "ifcopenshell": ["util/schema/*.json", "util/schema/*.ifc", "*.so"],
