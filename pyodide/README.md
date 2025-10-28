@@ -26,7 +26,6 @@ since it's pure cmake without any additional moving parts.
 
 - setup pyodide environment, see above
 - clone IfcOpenShell repo next to it to `IfcOpenShell` folder
-- setup debug build environment using `source pyodide/debug_build_env.sh /path/to/pyodide_root`
 - run `python nix/build-all.py -wasm -py-313` in `IfcOpenShell`
     - it will produce Python package in `IfcOpenShell/ifcopenshell`
 - run `pyodide build`
