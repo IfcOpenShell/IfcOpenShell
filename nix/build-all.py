@@ -582,7 +582,7 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
     if "wasm" in flags:
         wasm.append("emcmake")
 
-    cmake_flags: "list[str]" = []
+    cmake_flags: list[str] = []
     if not WASM or not WASM_CMAKE_IS_USING_INIT_VARS:
         # For WASM we provide flags using just environment variables.
         # If we provide them using cmake vars, it will override emscripten toolchain flags.
