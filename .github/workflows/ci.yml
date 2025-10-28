@@ -74,7 +74,9 @@ jobs:
         with:
           key: ubuntu-22.04-${{ runner.arch }}
 
-      # rocksdb on debian distros misses RTTI?
+      # RTTI is only enabled by default in Debug builds of rocksdb.
+      # Distros are using Release builds, so we're compiling it ourselves with RTTI forced on.
+      # https://github.com/facebook/rocksdb/blob/a3aa44a7167b8336f9bc15c8aba063260268ff68/CMakeLists.txt#L433
       - name: build rocksdb
         run: |
           git clone https://github.com/facebook/rocksdb --branch v9.11.2
