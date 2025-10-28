@@ -41,7 +41,7 @@ def pack_dependencies(install_dir: Path) -> None:
 def unpack_dependencies(install_dir: Path) -> None:
     # `filter` argument was fully introduced in 3.12
     # and results in deprecation warnings in 3.12-3.13, if not provided.
-    tar_filter: "dict[Literal['filter'], Literal['data']]" = (
+    tar_filter: dict[Literal["filter"], Literal["data"]] = (
         {"filter": "data"} if bool(sys.version_info >= (3, 12)) else {}
     )
     for tar_path in install_dir.glob(f"{CACHE_PREFIX}*.tar.gz"):
