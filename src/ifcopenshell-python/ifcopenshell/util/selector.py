@@ -148,13 +148,16 @@ format_grammar = lark.Lark(
     int: "int(" function ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
-    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
+    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING ["," boolean]] ")"
     lower: "lower(" function ")"
     upper: "upper(" function ")"
     title: "title(" function ")"
     concat: "concat(" function ("," function)* ")"
     substr: "substr(" function "," SIGNED_INT ["," SIGNED_INT] ")"
+    boolean: TRUE | FALSE
 
+    TRUE: "true" | "True" | "TRUE"
+    FALSE: "false" | "False" | "FALSE"
     // Embed common.lark for packaging
     DIGIT: "0".."9"
     HEXDIGIT: "a".."f"|"A".."F"|DIGIT
@@ -218,6 +221,17 @@ class FormatTransformer(lark.Transformer):
         elif len(args) == 2:
             return str(args[0])[int(args[1]) :]
 
+    def boolean(self, args):
+        if not args:
+            return True
+        token = args[0]
+        if hasattr(token, 'type'):
+            return token.type == 'TRUE'
+        value = str(token).lower()
+        if hasattr(token, 'value'):
+            value = str(token.value).lower()
+        return value in ("true", "1", "yes")
+
     def round(self, args):
         value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
         nearest = Decimal(args[1])
@@ -248,13 +262,26 @@ class FormatTransformer(lark.Transformer):
         if len(args) == 2:
             input_unit, output_unit = "foot", "foot"
             value, precision = args
-        else:
+            suppress_zero_inches = True
+        elif len(args) == 3:
+            value, precision, suppress_zero_inches = args
+            input_unit, output_unit = "foot", "foot"
+        elif len(args) == 4:
             value, precision, input_unit, output_unit = args
             input_unit = "inch" if input_unit == "inch" else "foot"
             output_unit = "inch" if output_unit == "inch" else "foot"
-
+            suppress_zero_inches = True
+        else:
+            value, precision, input_unit, output_unit, suppress_zero_inches = args
+            input_unit = "inch" if input_unit == "inch" else "foot"
+            output_unit = "inch" if output_unit == "inch" else "foot"
+        
         return ifcopenshell.util.unit.format_length(
-            float(value), int(precision), unit_system="imperial", input_unit=input_unit, output_unit=output_unit
+            float(value), int(precision), 
+            suppress_zero_inches=suppress_zero_inches,
+            unit_system="imperial", 
+            input_unit=input_unit, 
+            output_unit=output_unit
         )
 
     def int(self, args: list[str]) -> str:
