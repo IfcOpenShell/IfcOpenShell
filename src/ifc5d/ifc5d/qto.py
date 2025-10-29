@@ -59,15 +59,15 @@ for name in get_args(RULE_SET):
     with open(os.path.join(cwd, name + ".json"), "r") as f:
         rules[name] = json.load(f)
 
-
 @functools.cache
 def lower_case_entity_names(schema_iden: str):
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden)
-    return set(n.name().lower() for n in schema.entities())
+    return {n.name().lower() for n in schema.entities()}
 
 
 @functools.cache
 def entity_supertypes(schema_iden: str, entity_name: str):
+    """Return all supertypes (lowercased) for a given entity."""
     def visit(decl):
         yield decl.name().lower()
         if ty := decl.supertype():
@@ -78,39 +78,50 @@ def entity_supertypes(schema_iden: str, entity_name: str):
 
 
 def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> ResultsDict:
-    """Quantify elements from a rules using preset quantification rules
-
-    Rules placed as a JSON configuration file in the ``ifc5d`` folder will be
-    autodetected and loaded with the module for convenience.
-
-    :param rules: Set of rules from `ifc5d.qto.rules`.
-    """
+    """Quantify elements from a rule set using preset quantification rules."""
     results: ResultsDict = {}
-    elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
-    for element in elements:
-        elements_by_classes[element.is_a()].add(element)
 
-    for calculator, queries in rules["calculators"].items():
-        calculator = calculators[calculator]
-        if not set(m.lower() for m in queries.keys()) - lower_case_entity_names(ifc_file.schema_identifier):
-            # all defined queries are actually simple entity names: instead of looping over all
-            # calculators we loop over the entity types so that we don't have to repeatedly query
-            # the model, especially when the set of elements is small.
+    # Precompute entity names once
+    schema_id = ifc_file.schema_identifier
+    entity_names_lower = lower_case_entity_names(schema_id)
+
+    # Pre-group elements by type (avoids sorting/groupby)
+    elements_by_class: dict[str, list[ifcopenshell.entity_instance]] = defaultdict(list)
+    for element in elements:
+        elements_by_class[element.is_a().lower()].append(element)
+
+    for calculator_name, queries in rules["calculators"].items():
+        calculator = calculators[calculator_name]
+        queries_lower = {k.lower(): v for k, v in queries.items()}
+
+        # Determine if all queries are direct entity types (simple case)
+        if not (set(queries_lower.keys()) - entity_names_lower):
             casenorm = {k.lower(): k for k in queries.keys()}
-            pred = lambda inst: inst.is_a().lower()
-            for ty, elements in itertools.groupby(sorted(elements, key=pred), key=pred):
-                for sty in entity_supertypes(ifc_file.schema_identifier, ty):
-                    if qtos := queries.get(casenorm.get(sty)):
-                        calculator.calculate(ifc_file, list(elements), qtos, results)
-        for query, qtos in queries.items():
-            if query.lower() in lower_case_entity_names(ifc_file.schema_identifier):
-                # by_type is faster than selector parsing
-                filtered_elements = ifc_file.by_type(query)
-            else:
-                filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
-            if filtered_elements:
-                calculator.calculate(ifc_file, filtered_elements, qtos, results)
+            # Cache supertypes per entity to avoid recomputation
+            supertype_cache = {}
+
+            for entity_type, elems in elements_by_class.items():
+                if entity_type not in supertype_cache:
+                    supertype_cache[entity_type] = entity_supertypes(schema_id, entity_type)
+
+                for sty in supertype_cache[entity_type]:
+                    if (sty in casenorm) and (qtos := queries.get(casenorm[sty])):
+                        calculator.calculate(ifc_file, elems, qtos, results)
+        else:
+            # Fallback: complex queries using selector
+            for query, qtos in queries.items():
+                if query.lower() in entity_names_lower:
+                    filtered_elements = ifc_file.by_type(query)
+                else:
+                    filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
+
+                if filtered_elements:
+                    calculator.calculate(ifc_file, filtered_elements, qtos, results)
+
     return results
+
+
+
 
 
 def edit_qtos(ifc_file: ifcopenshell.file, results: ResultsDict) -> None:
