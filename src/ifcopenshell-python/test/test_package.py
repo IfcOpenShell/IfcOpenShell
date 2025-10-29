@@ -18,13 +18,8 @@
 
 import http.client
 from pathlib import Path
+from typing_extensions import assert_never
 from urllib.parse import urlparse
-
-import pytest
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.element
-import test.bootstrap
 
 # Where it's also reflected:
 # - .github/workflows/ci-ifcopenshell-python.yml
@@ -32,6 +27,10 @@ import test.bootstrap
 # - src/ifcopenshell-python/Makefile (PYVERSION check)
 SUPPORTED_PY_VERSIONS = ("39", "310", "311", "312", "313", "314")
 SUPPORTED_PLATFORMS = ("win64", "linux64", "macos64", "macosm164")
+
+WASM_SUPPORTED_PY_VERSIONS = ("313",)
+WASM_PLATFORM = "pyodide_2025_0_wasm32"
+WASM_TEMPLATE = "https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-{BINARY_VERSION}%2B{BUILD_COMMIT}-cp{PYNUMBER}-cp{PYNUMBER}-{PLATFORM}.whl"
 
 
 class TestPackageSupportedPlatforms:
@@ -52,16 +51,49 @@ class TestPackageSupportedPlatforms:
             return line.partition(":=")[2]
 
         BINARY_VERSION = find_make_var("BINARY_VERSION")
-        URL_TYPES = ("IOS_URL", "IFCCONVERT_URL")
+        BUILD_COMMIT = find_make_var("BUILD_COMMIT")
 
-        missing_urls: set[str] = set()
+        required_urls: list[str] = []
+
+        base_kwargs = {
+            "BINARY_VERSION": BINARY_VERSION,
+            "BUILD_COMMIT": BUILD_COMMIT,
+        }
+
+        # Non-WASM binaries.
+        URL_TYPES = ("IOS_URL", "IFCCONVERT_URL")
         for url_type in URL_TYPES:
             url_template = find_make_var(url_type)
             url_template = url_template.replace("$(", "{").replace(")", "}")
             for platform in SUPPORTED_PLATFORMS:
-                for pyver in SUPPORTED_PY_VERSIONS:
-                    url = url_template.format(PYNUMBER=pyver, PLATFORM=platform, BINARY_VERSION=BINARY_VERSION)
-                    if url not in build_html:
-                        missing_urls.add(url)
+                kwargs = base_kwargs | {"PLATFORM": platform}
+
+                if url_type == "IOS_URL":
+                    for pyver in SUPPORTED_PY_VERSIONS:
+                        url = url_template.format(**kwargs, PYNUMBER=pyver)
+                        required_urls.append(url)
+
+                elif url_type == "IFCCONVERT_URL":
+                    url = url_template.format(**kwargs)
+                    required_urls.append(url)
+
+                else:
+                    assert_never(url_type)
+
+        # WASM wheels.
+        for pyver in WASM_SUPPORTED_PY_VERSIONS:
+            url = WASM_TEMPLATE.format(
+                PYNUMBER=pyver,
+                PLATFORM=WASM_PLATFORM,
+                BINARY_VERSION=BINARY_VERSION,
+                BUILD_COMMIT=BUILD_COMMIT,
+            )
+            required_urls.append(url)
+
+        # Verify all required URLs are present in the build HTML.
+        missing_urls: list[str] = []
+        for url in required_urls:
+            if url not in build_html:
+                missing_urls.append(url)
 
         assert not missing_urls
