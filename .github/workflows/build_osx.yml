@@ -14,10 +14,6 @@ jobs:
             runner: macos-14
             arch: x64
             oldarch: 
-          - os: macos
-            runner: macos-14
-            arch: arm64
-            oldarch: m1
 
     steps:
       - name: Checkout Repository
@@ -47,6 +43,7 @@ jobs:
 
       - name: Unpack Dependencies
         run: |
+          rm -rf ./build/*/*/*/install/gmp* ./build/*/*/*/install/cgal* ./build/*/*/*/install/mpfr*
           install_root=$(find ./build -maxdepth 4 -type d -name install 2>/dev/null | head -n 1 || true)
           [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \; || true
 
@@ -75,8 +72,8 @@ jobs:
             /usr/local/bin/brew install gettext openssl
           fi
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
-            python3 ./nix/build-all.py -v --diskcleanup ${MAC_INTEL} \
+          IFCOS_SCHEMAS=4 CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
+            python3 ./nix/build-all.py -v -py-313 --diskcleanup ${MAC_INTEL} \
             | tee build.log
 
       - name: Upload Build Logs
