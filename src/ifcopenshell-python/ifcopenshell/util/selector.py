@@ -225,10 +225,10 @@ class FormatTransformer(lark.Transformer):
         if not args:
             return True
         token = args[0]
-        if hasattr(token, 'type'):
-            return token.type == 'TRUE'
+        if hasattr(token, "type"):
+            return token.type == "TRUE"
         value = str(token).lower()
-        if hasattr(token, 'value'):
+        if hasattr(token, "value"):
             value = str(token.value).lower()
         return value in ("true", "1", "yes")
 
@@ -275,13 +275,14 @@ class FormatTransformer(lark.Transformer):
             value, precision, input_unit, output_unit, suppress_zero_inches = args
             input_unit = "inch" if input_unit == "inch" else "foot"
             output_unit = "inch" if output_unit == "inch" else "foot"
-        
+
         return ifcopenshell.util.unit.format_length(
-            float(value), int(precision), 
+            float(value),
+            int(precision),
             suppress_zero_inches=suppress_zero_inches,
-            unit_system="imperial", 
-            input_unit=input_unit, 
-            output_unit=output_unit
+            unit_system="imperial",
+            input_unit=input_unit,
+            output_unit=output_unit,
         )
 
     def int(self, args: list[str]) -> str:
