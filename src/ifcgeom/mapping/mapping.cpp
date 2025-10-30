@@ -670,12 +670,23 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle* style) {
         if (rendering_style->TransmissionColour()) {
             // Not supported
         }
+#ifndef SCHEMA_IfcSurfaceStyleShading_HAS_Transparency
+        // ifc2x3
         if (rendering_style->Transparency()) {
             const double d = *rendering_style->Transparency();
             surface_style->transparency = d;
         }
+#endif
     }
-    
+
+#ifdef SCHEMA_IfcSurfaceStyleShading_HAS_Transparency
+    // ifc4 and onwards
+    if (shading->Transparency()) {
+        const double d = *shading->Transparency();
+        surface_style->transparency = d;
+    }
+#endif
+
     return surface_style;
 }
 
