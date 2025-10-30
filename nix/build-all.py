@@ -1454,9 +1454,6 @@ if "IfcOpenShell-Python" in targets:
     if platform.system() == "Darwin":
         ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
 
-    if "wasm" in flags:
-        ADDITIONAL_ARGS = "-Wl,-undefined,suppress"
-
     # NOTE: We don't use `CXXFLAGS` for wrappers, so wrapper is compiled with different flags
     # (e.g. ` -fdata-sections` is missing, which is set by default for executables)
     # So cache doesn't match and running build-all.py builds most of ifcopenshell libraries twice.
