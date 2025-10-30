@@ -1452,7 +1452,7 @@ if "IfcOpenShell-Python" in targets:
     # On OSX the actual Python library is not linked against.
     ADDITIONAL_ARGS = ""
     if platform.system() == "Darwin":
-        ADDITIONAL_ARGS = "-Wl,-flat_namespace,-undefined,suppress"
+        ADDITIONAL_ARGS = "-Wl,-undefined,dynamic_lookup"
 
     # NOTE: We don't use `CXXFLAGS` for wrappers, so wrapper is compiled with different flags
     # (e.g. ` -fdata-sections` is missing, which is set by default for executables)
