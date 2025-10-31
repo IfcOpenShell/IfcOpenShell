@@ -834,6 +834,7 @@ def get_end_area(obj: bpy.types.Object) -> float:
 
     return end_area
 
+
 def get_gross_top_area(obj: bpy.types.Object, angle: float = 45) -> float:
     """_summary_: Returns the gross top area of the object.
 
@@ -858,7 +859,7 @@ def get_gross_top_area(obj: bpy.types.Object, angle: float = 45) -> float:
 
                 entity = ifc.by_guid(opening_id)
                 open_obj = tool.Ifc.get_object(entity)
-                
+
                 # Check if the opening has a Blender object representation
                 if open_obj is None:
                     # If no Blender object exists, create a temporary mesh from the IFC geometry
@@ -886,7 +887,6 @@ def get_gross_top_area(obj: bpy.types.Object, angle: float = 45) -> float:
     return area + opening_area
 
 
-    
 # curently net top area is larger then projected area, because its taking into account internal polygons, or window sills
 def get_net_top_area(obj: bpy.types.Object, angle: float = 45, ignore_internal: bool = True) -> float:
     """_summary_: Returns the net top area of the object.
