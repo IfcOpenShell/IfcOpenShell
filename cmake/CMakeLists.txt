@@ -1309,7 +1309,7 @@ if(BUILD_GEOMSERVER)
     file(GLOB H_FILES ../src/ifcgeomserver/*.h)
     set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
     add_executable(IfcGeomServer ${SOURCE_FILES})
-    target_link_libraries(IfcGeomServer IfcGeom IfcParse Serializers ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(IfcGeomServer IfcGeom IfcParse ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
 
     if((NOT WIN32) AND BUILD_SHARED_LIBS)
         SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
