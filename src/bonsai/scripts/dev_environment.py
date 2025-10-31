@@ -47,7 +47,7 @@ elif sys.platform == "darwin":
 elif sys.platform == "linux":
     BLENDER_PATH = Path.home() / f".config/blender/{BLENDER_VERSION}"
 else:
-    raise RuntimeError("Unsupported platform")
+    raise RuntimeError(f"Unsupported platform: {sys.platform}")
 
 
 BONSAI_PATH_CANDIDATES = (
