@@ -678,6 +678,32 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Default parameters for BIM elements",
     )
 
+    addon_instance = None
+    @classmethod
+    def set_addon_instance(cls):
+        import bpy
+        instance = None
+        for key in bpy.context.preferences.addons.keys():
+            if ".bonsai" in key:
+                instance = bpy.context.preferences.addons.get(key)
+                break
+        cls.addon_instance = instance
+
+    @classmethod
+    def get_addon_instance(cls):
+        if cls.addon_instance is None:
+            cls.set_addon_instance()
+        return cls.addon_instance
+
+    def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.prop(self, "container_hide_show_isolate")
+
+    container_hide_show_isolate: BoolProperty(
+        name="Container hide/show/isolate",
+        description="Enable container hide/show/isolate feature in the UI",
+        default=False,
+    )
+
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -738,6 +764,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Directories", self.draw_directories)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Drawing", self.draw_drawing_settings)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Other", self.draw_other_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Extras", self.draw_extras_settings)
 
     def draw_commands(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "svg2pdf_command")
