@@ -88,7 +88,8 @@ SET_PROPERTY(
 )
 
 # On Windows there is '_d' prefix for debug builds - e.g. `_d.cp311-win_amd64.pyd`.
-if(WIN32)
+# In 4.2+ it's done automatically when discovering `Development.Module`.
+if(WIN32 AND CMAKE_VERSION VERSION_LESS "4.2")
     set(Python_DEBUG_POSTFIX "_d")
 endif()
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "4.2")
@@ -113,8 +114,8 @@ if (WASM_BUILD)
     # Possibly in the future we can clean up linked libs and try `=1`.
     # SIDE_MODULE=2 - add to .so only explicitly exported functions (`-s EXPORTED_FUNCTIONS).
     # Have to provide it here to override possible `=1` coming from pyodide.
-    if(CMAKE_GENERATOR MATCHES "Makefile")
-        # Accomodate bug in cmake makefile generator:
+    if(CMAKE_GENERATOR MATCHES "Makefile" AND CMAKE_VERSION VERSION_LESS "4.2")
+        # Accomodate bug in cmake makefile generator (fixed in 4.2+).
         # https://gitlab.kitware.com/cmake/cmake/-/issues/27326
         string(
             REPLACE "SIDE_MODULE=1" "SIDE_MODULE=2"
