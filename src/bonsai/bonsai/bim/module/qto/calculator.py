@@ -25,11 +25,11 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifc5d.qto
-from mathutils import Vector, Matrix
+from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from typing import Literal, Union, Optional, assert_never
+from typing import Literal, Optional, Union, assert_never
 
 
 AxisType = Literal["x", "y", "z"]
@@ -79,8 +79,10 @@ def get_length(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
         e
         for e in o.data.edges
         if (
-            vg_index in [g.group for g in o.data.vertices[e.vertices[0]].groups]
-            and vg_index in [g.group for g in o.data.vertices[e.vertices[1]].groups]
+            vg_index
+            in [g.group for g in o.data.vertices[e.vertices[0]].groups]
+            and vg_index
+            in [g.group for g in o.data.vertices[e.vertices[1]].groups]
         )
     ]
     for e in edges:
@@ -780,7 +782,9 @@ def get_lateral_area(
         assert_never(main_axis_guess)
 
     area = 0
-    total_opening_area = 0 if subtract_openings else get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
+    total_opening_area = 0 if subtract_openings else get_opening_area(
+        obj, angle_z1=angle_z1, angle_z2=angle_z2
+    )
     assert isinstance(obj.data, bpy.types.Mesh)
     polygons = obj.data.polygons
 
@@ -804,7 +808,9 @@ def get_gross_side_area(obj: bpy.types.Object) -> float:
     if not has_openings(obj):
         return get_net_side_area(obj)
 
-    gross_side_area = get_lateral_area(obj, exclude_end_areas=True, subtract_openings=False, main_axis="x") / 2
+    gross_side_area = get_lateral_area(
+        obj, exclude_end_areas=True, subtract_openings=False, main_axis="x"
+    ) / 2
 
     return gross_side_area
 
@@ -870,7 +876,6 @@ def get_gross_top_area(obj: bpy.types.Object, angle: float = 45) -> float:
         if angle_to_z_axis < angle:
             area += polygon.area
     return area + opening_area
-
 
 # curently net top area is larger then projected area, because its taking into account internal polygons, or window sills
 def get_net_top_area(obj: bpy.types.Object, angle: float = 45, ignore_internal: bool = True) -> float:
@@ -1203,7 +1208,7 @@ def get_intersection_between_polygons(
     # touching polygons should be coplanar:
     plane_intersection = mathutils.geometry.intersect_plane_plane(center1, normal1, center2, normal2)
 
-    # sometimes coplanar planes will interesect far off into the distance.  This is a crude way of filtering out those intersections.
+    # sometimes coplanar planes will interesct far off into the distance.  This is a crude way of filtering out those intersections.
     if plane_intersection[0] is None or (plane_intersection[0] - center1).magnitude > 20:
         return 0
 
@@ -1300,36 +1305,3 @@ def delete_mesh(mesh: bpy.types.Mesh) -> None:
 
 def delete_obj(obj: bpy.types.Object) -> None:
     bpy.data.objects.remove(obj, do_unlink=True)
-
-
-# # Following code is here temporarily to test newly created functions:
-
-# qto = QtoCalculator()
-# o = bpy.context.active_object
-# sel = bpy.context.selected_objects
-#
-# nl = '\n'
-# print(
-#     f"get_linear_length: {qto.get_linear_length(o)}{nl}{nl}"
-#     f"get_width: {qto.get_width(o)}{nl}{nl}"
-#     f"get_height: {qto.get_height(o)}{nl}{nl}"
-#     f"get_perimeter: {qto.get_perimeter(o)}{nl}{nl}"
-#     f"get_lowest_polygons: {qto.get_lowest_polygons(o)}{nl}{nl}"
-#     f"get_highest_polygons: {qto.get_highest_polygons(o)}{nl}{nl}"
-#     f"get_net_footprint_area: {qto.get_net_footprint_area(o)}{nl}{nl}"
-#     f"get_net_roofprint_area: {qto.get_net_roofprint_area(o)}{nl}{nl}"
-#     f"get_side_area: {qto.get_side_area(o)}{nl}{nl}"
-#     f"get_gross_surface_area: {qto.get_gross_surface_area(o)}{nl}{nl}"
-#     f"get_volume: {qto.get_volume(o)}{nl}{nl}"
-#     f"get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False): {qto.get_opening_area(o, angle_z1=45, angle_z2=135, min_area=0, ignore_recesses=False)}{nl}{nl}"
-#     f"get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135): {qto.get_lateral_area(o, subtract_openings=True, exclude_end_areas=False, exclude_side_areas=False, angle_z1=45, angle_z2=135)}{nl}{nl}"
-#     f"get_gross_top_area: {qto.get_gross_top_area(o, angle=45)}{nl}{nl}"
-#     f"get_net_top_area(o, angle=45, ignore_internal=True): {qto.get_net_top_area(o, angle=45, ignore_internal=True)}{nl}{nl}"
-#     f"get_projected_area(o, projection_axis='z', is_gross=True): {qto.get_projected_area(o, projection_axis='z', is_gross=True)}{nl}{nl}"
-#     f"get_OBB_object: {qto.get_OBB_object(o)}{nl}{nl}"
-#     f"get_AABB_object: {qto.get_AABB_object(o)}{nl}{nl}"
-#     f"get_bisected_obj(o, plane_co_pos=(0,0,1), plane_no_pos=(0,0,1), plane_co_neg=(0,0,1), plane_no_neg=(0,0,1)): {qto.get_bisected_obj(o, plane_co_pos=(0,0,1), plane_no_pos=(0,0,1), plane_co_neg=(0,0,1), plane_no_neg=(0,0,1))}{nl}{nl}"
-#     f"get_total_contact_area(o, class_filter=['IfcWall', 'IfcSlab']): {qto.get_total_contact_area(o, class_filter=['IfcWall', 'IfcSlab'])}{nl}{nl}"
-#     f"get_touching_objects(o, ['IfcElement']): {qto.get_touching_objects(o, ['IfcElement'])}{nl}{nl}"
-#     #f"get_contact_area: {qto.get_contact_area(o)}{nl}{nl}"
-#     )
