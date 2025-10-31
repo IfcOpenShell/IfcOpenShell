@@ -51,7 +51,7 @@ else:
 
 
 BONSAI_PATH_CANDIDATES = (
-    # Installed from Bonsai Unstalble Repo.
+    # Installed from Bonsai Unstable Repo.
     BLENDER_PATH / r"extensions/raw_githubusercontent_com/bonsai",
     # Installed via offline installation.
     BLENDER_PATH / r"extensions/user_default/bonsai",
