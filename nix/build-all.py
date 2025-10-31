@@ -1445,7 +1445,7 @@ if not WASM and (not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServe
 
     logger.info("\rBuilding executables...   ")
 
-    run([make, f"-j{IFCOS_NUM_BUILD_PROCS}"], cwd=executables_dir)
+    run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=executables_dir)
     run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
 
 if "IfcOpenShell-Python" in targets:
