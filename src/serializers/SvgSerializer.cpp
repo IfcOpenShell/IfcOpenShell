@@ -496,6 +496,9 @@ namespace {
 		for (auto& rel : *rels) {
 			if (rel->declaration().is("IfcRelDefinesByProperties")) {
 				auto pset = ((IfcUtil::IfcBaseClass*) ((IfcUtil::IfcBaseEntity*) rel)->get("RelatingPropertyDefinition"))->as<IfcUtil::IfcBaseEntity>();
+				if (!pset->declaration().is("IfcPropertySet")) {
+					continue;
+                }
 				std::string pset_name;
 				if (!pset->get("Name").isNull()) {
 					pset_name = (std::string) pset->get("Name");
