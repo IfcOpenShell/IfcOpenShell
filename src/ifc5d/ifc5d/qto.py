@@ -124,8 +124,6 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
             if filtered_elements:
                 calculator.calculate(ifc_file, filtered_elements, qtos, results)
 
-
-
     return results
 
 
