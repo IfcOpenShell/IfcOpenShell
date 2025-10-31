@@ -20,7 +20,11 @@ import ifcopenshell
 import ifcopenshell.util.pset
 import bonsai.tool as tool
 import bpy
-import bpy_restrict_state
+
+if bpy.app.version >= (5, 0, 0):
+    import _bpy_restrict_state as bpy_restrict_state
+else:
+    import bpy_restrict_state
 
 
 class IfcSchema:
