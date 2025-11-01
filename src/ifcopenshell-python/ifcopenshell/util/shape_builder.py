@@ -1039,6 +1039,12 @@ class ShapeBuilder:
                                     new_indices.reverse()
                                     new_inner_indices.append(new_indices)
                                 face.InnerCoordIndices = new_inner_indices
+                elif c.is_a("IfcBoundingBox"):
+                    old_corner = c.Corner.Coordinates
+                    new_corner_2d = self.mirror_2d_point([old_corner[0], old_corner[1]], mirror_axes, mirror_point)
+                    x_correction = c.XDim if mirror_axes[0] > 0.0 else 0.0
+                    y_correction = c.YDim if mirror_axes[1] > 0.0 else 0.0
+                    c.Corner.Coordinates = [float(new_corner_2d[0] - x_correction), float(new_corner_2d[1]) - y_correction, old_corner[2]]
                 elif c.is_a("IfcGeometricSet"):
                     self.mirror(c.Elements, mirror_axes, mirror_point)
                 else:

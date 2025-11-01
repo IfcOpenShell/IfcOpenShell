@@ -731,9 +731,6 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry,
             obj=obj,
             representation=ifcopenshell.util.representation.get_representation(element, active_context),
-            should_reload=False,
-            is_global=False,
-            should_sync_changes_first=False,
         )
 
     def invert_general_object(self, element):
