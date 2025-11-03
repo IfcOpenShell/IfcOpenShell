@@ -69,6 +69,8 @@ classes = (
     operator.ToggleElementValuesCategory,
     operator.SelectElementValues,
     operator.InsertFormattedLiteralPopup,
+    operator.ShowCategoryHelp,
+    operator.ShowElementValuesInstructions,
     operator.LoadDrawings,
     operator.LoadReferences,
     operator.LoadSchedules,

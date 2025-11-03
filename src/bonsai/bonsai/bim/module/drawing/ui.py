@@ -30,7 +30,7 @@ from bonsai.bim.module.drawing.data import (
     DecoratorData,
     ElementValuesData,
 )
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Optional
 
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import DocProperties, Drawing, Sheet
@@ -566,9 +566,25 @@ def get_category_icon(category_name):
         "Systems": "SYSTEM",
         "Zones": "MESH_CIRCLE",
         "Material": "MATERIAL",
+        "Profiles": "MESH_DATA",
         "Coordinates": "EMPTY_ARROWS",
     }
     return icons.get(category_name, "DOT")
+
+
+def get_current_product_for_element_values(obj: bpy.types.Object, literal_props) -> Optional[bpy.types.Object]:
+    """Get the product to use for element values - either ProductUsed or assigned product"""
+    if hasattr(literal_props, 'product_used') and literal_props.product_used:
+        return literal_props.product_used
+    
+    element = tool.Ifc.get_entity(obj)
+    if element:
+        assigned_product = tool.Drawing.get_assigned_product(element)
+        if assigned_product:
+            return tool.Ifc.get_object(assigned_product)
+    
+    return None
+
 
 class BIM_PT_text(Panel):
     bl_label = "Text"
@@ -587,19 +603,6 @@ class BIM_PT_text(Panel):
         if not element:
             return False
         return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
-
-    def get_current_product_for_element_values(self, obj: bpy.types.Object, literal_props) -> Optional[bpy.types.Object]:
-        """Get the product to use for element values - either ProductUsed or assigned product"""
-        if hasattr(literal_props, 'product_used') and literal_props.product_used:
-            return literal_props.product_used
-        
-        element = tool.Ifc.get_entity(obj)
-        if element:
-            assigned_product = tool.Drawing.get_assigned_product(element)
-            if assigned_product:
-                return tool.Ifc.get_object(assigned_product)
-        
-        return None
 
     def draw_text_editing_ui(
         self: Union[bpy.types.Panel, bpy.types.Operator],
