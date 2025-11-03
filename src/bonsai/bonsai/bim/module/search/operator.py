@@ -28,6 +28,7 @@ import ifcopenshell.util.selector
 import bonsai.tool as tool
 import bonsai.core.search as core
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.prop import StrProperty
 from natsort import natsorted
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (
@@ -41,6 +42,317 @@ from bpy.props import (
     CollectionProperty,
 )
 from typing import TYPE_CHECKING, Literal, get_args, assert_never
+
+
+def update_filter_search_value(self: "FilterValueSuggestions", context: bpy.types.Context) -> None:
+    filter_groups = tool.Search.get_filter_groups(self.module)
+    ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
+    
+    value = self.search_value
+    
+    if ifc_filter.type == "instance" and " > " in value:
+        value = value.split(" > ")[0]
+    
+    if ifc_filter.type == "property":
+        if self.suggestion_type == "pset":
+            ifc_filter.pset = value
+        elif self.suggestion_type == "property_name":
+            ifc_filter.name = value
+        else:
+            ifc_filter.value = value
+    elif ifc_filter.type == "attribute":
+        if self.suggestion_type == "attribute_name":
+            ifc_filter.name = value
+        else:
+            ifc_filter.value = value
+    else:
+        ifc_filter.value = value
+    
+    if self.first_launch:
+        self.first_launch = False
+    else:
+        context.window.screen = context.window.screen
+
+
+class FilterValueSuggestions(Operator):
+    bl_idname = "bim.filter_value_suggestions"
+    bl_label = "Filter Value Suggestions"
+    bl_description = "Get suggestions for filter values from the current IFC file"
+    bl_options = {"REGISTER", "UNDO"}
+
+    group_index: IntProperty()
+    filter_index: IntProperty()
+    module: StringProperty()
+    filter_type: StringProperty()
+    suggestion_type: StringProperty(default="value") 
+    
+    first_launch: BoolProperty(default=True, options={"SKIP_SAVE"})
+    search_value: StringProperty(
+        name="Search",
+        description="Search for filter values",
+        update=update_filter_search_value,
+        default="",
+        options={"SKIP_SAVE"},
+    )
+    collection_values: CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file loaded")
+            return {"CANCELLED"}
+
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
+
+        if ifc_filter.type == "property":
+            if self.suggestion_type == "pset":
+                self.search_value = ifc_filter.pset or ""
+            elif self.suggestion_type == "property_name":
+                self.search_value = ifc_filter.name or ""
+            else:
+                self.search_value = ifc_filter.value or ""
+        elif ifc_filter.type == "attribute":
+            if self.suggestion_type == "attribute_name":
+                self.search_value = ifc_filter.name or ""
+            else:
+                self.search_value = ifc_filter.value or ""
+        else:
+            self.search_value = ifc_filter.value or ""
+
+        if ifc_filter.type == "property":
+            if self.suggestion_type == "property_value" and ifc_filter.pset and ifc_filter.name:
+                suggestions = self.get_property_values(ifc_file, ifc_filter.pset, ifc_filter.name)
+            elif self.suggestion_type == "property_name" and ifc_filter.pset:
+                suggestions = self.get_property_names(ifc_file, ifc_filter.pset)
+            else:
+                suggestions = self.get_suggestions(ifc_file, ifc_filter.type)
+        elif ifc_filter.type == "attribute":
+            if self.suggestion_type == "attribute_value" and ifc_filter.name:
+                suggestions = self.get_attribute_values(ifc_file, ifc_filter.name)
+            else:
+                suggestions = self.get_attribute_names(ifc_file)
+        else:
+            suggestions = self.get_suggestions(ifc_file, ifc_filter.type)
+        
+        if not suggestions:
+            self.report({"INFO"}, f"No suggestions available")
+            return {"CANCELLED"}
+
+        self.collection_values.clear()
+        for suggestion in natsorted(suggestions):
+            self.collection_values.add().name = suggestion
+
+        return context.window_manager.invoke_props_dialog(self, width=300)
+
+    def draw(self, context):
+        layout = self.layout
+        
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
+        
+        if ifc_filter.type == "entity":
+            label = "Select IFC Class"
+        elif ifc_filter.type == "attribute":
+            if self.suggestion_type == "attribute_value":
+                label = f"Select Value for {ifc_filter.name}"
+            else:
+                label = "Select Attribute Name"
+        elif ifc_filter.type == "property":
+            if self.suggestion_type == "property_value":
+                label = f"Select Value for {ifc_filter.pset}.{ifc_filter.name}"
+            elif self.suggestion_type == "property_name":
+                label = f"Select Property from {ifc_filter.pset}"
+            else:
+                label = "Select Property Set"
+        elif ifc_filter.type == "type":
+            label = "Select Type"
+        elif ifc_filter.type == "material":
+            label = "Select Material"
+        elif ifc_filter.type == "location":
+            label = "Select Location"
+        elif ifc_filter.type == "group":
+            label = "Select Group"
+        elif ifc_filter.type == "classification":
+            label = "Select Classification"
+        elif ifc_filter.type == "parent":
+            label = "Select Parent"
+        else:
+            label = "Select Value"
+        
+        row = layout.row()
+        row.label(text=label)
+        row = layout.row()
+        row.prop_search(
+            self,
+            "search_value",
+            self,
+            "collection_values",
+            text="",
+            results_are_suggestions=True,
+        )
+
+    def get_property_names(self, ifc_file, pset_name):
+        property_names = set()
+        
+        for pset in ifc_file.by_type("IfcPropertySet"):
+            if pset.Name == pset_name and pset.HasProperties:
+                for prop in pset.HasProperties:
+                    if hasattr(prop, "Name") and prop.Name:
+                        property_names.add(prop.Name)
+        
+        return property_names
+
+    def get_property_values(self, ifc_file, pset_name, property_name):
+        property_values = set()
+        
+        for pset in ifc_file.by_type("IfcPropertySet"):
+            if pset.Name == pset_name and pset.HasProperties:
+                for prop in pset.HasProperties:
+                    if hasattr(prop, "Name") and prop.Name == property_name:
+                        if hasattr(prop, "NominalValue") and prop.NominalValue:
+                            try:
+                                value = prop.NominalValue.wrappedValue
+                                if value is not None and value != "":
+                                    if hasattr(value, 'is_a'):
+                                        continue
+                                    if isinstance(value, (tuple, list)):
+                                        continue
+                                    str_value = str(value)
+                                    if str_value.startswith("#") or str_value.startswith("("):
+                                        continue
+                                    property_values.add(str_value)
+                            except:
+                                continue
+        
+        return property_values
+
+    def get_attribute_names(self, ifc_file):
+        attribute_names = set()
+        
+        schema = tool.Ifc.schema()
+        
+        ifc_classes = set(element.is_a() for element in ifc_file)
+        
+        for ifc_class in ifc_classes:
+            try:
+                entity = schema.declaration_by_name(ifc_class).as_entity()
+                attributes = entity.all_attributes()
+                for attr in attributes:
+                    attribute_names.add(attr.name())
+            except:
+                continue
+        
+        return attribute_names
+
+    def get_attribute_values(self, ifc_file, attribute_name):
+        attribute_values = set()
+        
+        def should_skip_element(element):
+            element_class = element.is_a()
+            
+            if element_class.startswith("IfcRel"):
+                return True
+            
+            if element.is_a("IfcTypeObject"):
+                return True
+            if element.is_a("IfcMaterial"):
+                return True
+            if element.is_a("IfcSpatialStructureElement"):
+                return True
+            if element.is_a("IfcGroup"):
+                return True
+            if element.is_a("IfcClassificationReference"):
+                return True
+            if element.is_a("IfcPropertySet") or element.is_a("IfcElementQuantity"):
+                return True
+            
+            return False
+        
+        for element in ifc_file:
+            try:
+                if should_skip_element(element):
+                    continue
+                
+                if hasattr(element, attribute_name):
+                    value = getattr(element, attribute_name, None)
+                    
+                    if value is None or value == "":
+                        continue
+                    
+                    if hasattr(value, 'is_a'):
+                        continue
+                    
+                    if isinstance(value, (tuple, list)):
+                        continue
+                    
+                    str_value = str(value)
+                    
+                    if str_value.startswith("#") or str_value.startswith("("):
+                        continue
+                    
+                    attribute_values.add(str_value)
+            except:
+                continue
+        
+        return attribute_values
+
+    def get_suggestions(self, ifc_file, filter_type):
+        suggestions = set()
+        
+        if filter_type == "entity":
+            for element in ifc_file:
+                suggestions.add(element.is_a())
+        
+        elif filter_type == "type":
+            for element_type in ifc_file.by_type("IfcTypeObject"):
+                if element_type.Name:
+                    suggestions.add(element_type.Name)
+        
+        elif filter_type == "material":
+            for material in ifc_file.by_type("IfcMaterial"):
+                if material.Name:
+                    suggestions.add(material.Name)
+        
+        elif filter_type == "location":
+            for spatial in ifc_file.by_type("IfcSpatialStructureElement"):
+                if spatial.Name:
+                    suggestions.add(spatial.Name)
+        
+        elif filter_type == "group":
+            for group in ifc_file.by_type("IfcGroup"):
+                if group.Name:
+                    suggestions.add(group.Name)
+        
+        elif filter_type == "classification":
+            for ref in ifc_file.by_type("IfcClassificationReference"):
+                if ref.Identification:
+                    suggestions.add(ref.Identification)
+        
+        elif filter_type == "parent":
+            for element in ifc_file.by_type("IfcElement"):
+                if element.Name:
+                    suggestions.add(element.Name)
+        
+        elif filter_type == "property":
+            for pset in ifc_file.by_type("IfcPropertySet"):
+                if pset.Name:
+                    suggestions.add(pset.Name)
+        
+        elif filter_type == "instance":
+            for element in ifc_file.by_type("IfcRoot"):
+                if element.GlobalId:
+                    element_class = element.is_a()
+                    element_name = element.Name if hasattr(element, 'Name') and element.Name else ""
+                    if element_name:
+                        suggestions.add(f"{element.GlobalId} > {element_class} > {element_name}")
+                    else:
+                        suggestions.add(f"{element.GlobalId} > {element_class}")
+        
+        return suggestions
 
 
 class AddFilterGroup(Operator):

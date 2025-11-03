@@ -525,34 +525,102 @@ def draw_filter(
             if ifc_filter.type == "entity":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="FILE_3D")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "attribute":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "name", text="", icon="COPY_ID")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+                op.suggestion_type = "attribute_name"
                 row.prop(ifc_filter, "value", text="")
+                if ifc_filter.name:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "attribute_value"
             elif ifc_filter.type == "type":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="FILE_VOLUME")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "material":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="MATERIAL")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "property":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+                op.suggestion_type = "pset"
                 row.prop(ifc_filter, "name", text="")
+                if ifc_filter.pset:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "property_name"
                 row.prop(ifc_filter, "comparison", text="")
                 row.prop(ifc_filter, "value", text="")
+                if ifc_filter.pset and ifc_filter.name:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "property_value"
             elif ifc_filter.type == "classification":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="OUTLINER")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "location":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="PACKAGE")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "group":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="OUTLINER_COLLECTION")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "parent":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="FILE_PARENT")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "query":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")
@@ -561,6 +629,11 @@ def draw_filter(
             elif ifc_filter.type == "instance":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="GRIP")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
                 op = row.operator("bim.select_filter_elements", text="", icon="EYEDROPPER")
                 op.group_index = i
                 op.index = j
