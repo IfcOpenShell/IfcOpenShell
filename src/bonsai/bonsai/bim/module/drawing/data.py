@@ -235,8 +235,8 @@ class DecoratorData:
     cut_cache = {}
     slice_cache = {}
     fill_cache = {}
-    camera_location_checksum = None
-    camera_rotation_checksum = None
+    camera_location_checksum = ""
+    camera_rotation_checksum = ""
 
     @classmethod
     def clear_cache(cls):

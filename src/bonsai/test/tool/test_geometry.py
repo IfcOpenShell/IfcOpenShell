@@ -321,8 +321,8 @@ class TestRecordObjectPosition(NewFile):
         obj = bpy.data.objects.new("Object", None)
         props = tool.Blender.get_object_bim_props(obj)
         subject.record_object_position(obj)
-        assert props.location_checksum == repr(np.array(obj.matrix_world.translation).tobytes())
-        assert props.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+        assert props.location_checksum == repr(np.array(obj.matrix_world.translation, dtype=np.float32).tobytes())
+        assert props.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3(), dtype=np.float32).tobytes())
 
 
 class TestRemoveConnection(NewFile):
