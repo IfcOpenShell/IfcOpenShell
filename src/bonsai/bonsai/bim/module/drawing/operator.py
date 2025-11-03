@@ -4060,7 +4060,7 @@ class InsertFormattedLiteralPopup(bpy.types.Operator):
         elif self.formatting_type == "METRIC_LENGTH":
             return f"``metric_length({base_value}, {self.metric_precision}, {self.metric_decimals})`` "
         elif self.formatting_type == "IMPERIAL_LENGTH":
-            return f"``imperial_length({base_value}, {self.imperial_precision}, {self.imperial_input_unit}, {self.imperial_output_unit})`` "
+            return f"``imperial_length({base_value}, {self.imperial_precision}, \"{self.imperial_input_unit}\", \"{self.imperial_output_unit}\")`` "
         elif self.formatting_type == "CUSTOM":
             custom_expr = self.custom_expression.replace("{{value}}", base_value)
             
@@ -4128,4 +4128,273 @@ class InsertFormattedLiteralPopup(bpy.types.Operator):
                 break
         
         tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ShowCategoryHelp(bpy.types.Operator):
+    bl_idname = "bim.show_category_help"
+    bl_label = "Category Help"
+    bl_description = "Show help for this element value category"
+    bl_options = {"REGISTER"}
+    
+    category_name: bpy.props.StringProperty()
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=600)
+    
+    def draw(self, context):
+        layout = self.layout
+        
+        category_help = {
+            "Basic": {
+                "title": "BASIC KEYS",
+                "icon": "DOT",
+                "items": [
+                    ("id", "IFC entity ID", "{{id}} → '12345'"),
+                    ("class", "IFC class name", "{{class}} → 'IfcWall'"),
+                    ("predefined_type", "Predefined type", "{{predefined_type}} → 'SOLIDWALL'"),
+                ]
+            },
+            "Attributes": {
+                "title": "ATTRIBUTES",
+                "icon": "PROPERTIES",
+                "items": [
+                    ("Name", "Element name", "{{Name}} → 'Wall-001'"),
+                    ("Description", "Element description", "{{Description}} → 'Exterior wall'"),
+                    ("Tag", "Element tag", "{{Tag}} → 'W-01'"),
+                    ("ObjectType", "Object type", "{{ObjectType}} → 'Load Bearing'"),
+                ],
+                "note": "All IFC attributes are accessible by their name"
+            },
+            "Property Sets": {
+                "title": "PROPERTY SETS",
+                "icon": "ALIGN_JUSTIFY",
+                "items": [
+                    ("Pset_*.PropertyName", "Property value", "{{Pset_WallCommon.FireRating}} → 'REI 120'"),
+                    ("Pset_*.IsExternal", "Boolean property", "{{Pset_WallCommon.IsExternal}} → 'True'"),
+                ],
+                "note": "Access any property from any property set using Pset_Name.PropertyName syntax"
+            },
+            "Quantity Sets": {
+                "title": "QUANTITY SETS",
+                "icon": "ALIGN_JUSTIFY",
+                "items": [
+                    ("Qto_*.QuantityName", "Quantity value", "{{Qto_WallBaseQuantities.NetArea}} → '45.5'"),
+                    ("Qto_*.NetVolume", "Volume quantity", "{{Qto_WallBaseQuantities.NetVolume}} → '9.1'"),
+                ],
+                "note": "Access any quantity from quantity sets using Qto_Name.QuantityName syntax"
+            },
+            "Type": {
+                "title": "TYPE INFORMATION",
+                "icon": "OUTLINER_OB_MESH",
+                "items": [
+                    ("type.Name", "Type element name", "{{type.Name}} → 'WT-200mm-Concrete'"),
+                    ("types.count", "Number of instances of this type", "{{types.count}} → '15'"),
+                    ("occurrences.count", "Same as types.count", "{{occurrences.count}} → '15'"),
+                ],
+                "example": "Type: {{type.Name}} ({{types.count}} instances)"
+            },
+            "Spatial": {
+                "title": "SPATIAL HIERARCHY",
+                "icon": "HOME",
+                "items": [
+                    ("container.Name", "Immediate spatial container", "{{container.Name}} → 'Level 2'"),
+                    ("space.Name", "Containing space", "{{space.Name}} → 'Office 205'"),
+                    ("storey.Name", "Building storey", "{{storey.Name}} → 'Level 2'"),
+                    ("building.Name", "Building", "{{building.Name}} → 'Building A'"),
+                    ("site.Name", "Site", "{{site.Name}} → 'Main Campus'"),
+                ],
+                "example": "{{building.Name}} / {{storey.Name}} / {{space.Name}}"
+            },
+            "Parent": {
+                "title": "PARENT (AGGREGATION)",
+                "icon": "OUTLINER_DATA_GP_LAYER",
+                "items": [
+                    ("parent.name", "Aggregate parent element", "{{parent.name}} → 'Curtain Wall-01'"),
+                ],
+                "note": "Used for aggregated elements like mullions in curtain walls"
+            },
+            "Material": {
+                "title": "MATERIALS",
+                "icon": "MATERIAL",
+                "items": [
+                    ("material.Name", "Material name", "{{material.Name}} → 'Concrete'"),
+                    ("materials.count", "Number of layers/profiles", "{{materials.count}} → '3'"),
+                    ("material.item.Material.Name.0", "First layer material", "{{material.item.Material.Name.0}} → 'Brick'"),
+                    ("material.item.Material.Name.1", "Second layer material", "{{material.item.Material.Name.1}} → 'Insulation'"),
+                    ("material.item.0.LayerThickness", "Layer thickness", "{{material.item.0.LayerThickness}} → '0.1'"),
+                ],
+                "example": "{{materials.count}} layers: {{material.item.Material.Name.0}}"
+            },
+            "Styles": {
+                "title": "PRESENTATION STYLES",
+                "icon": "COLOR",
+                "items": [
+                    ("styles.count", "Number of styles", "{{styles.count}} → '1'"),
+                    ("styles.0.Name", "Style name (indexed)", "{{styles.0.Name}} → 'Red'"),
+                    ("styles.0.Color", "RGB color value", "{{styles.0.Color}} → 'RGB(1.00, 0.00, 0.00)'"),
+                ]
+            },
+            "Profiles": {
+                "title": "PROFILES",
+                "icon": "OUTLINER_DATA_CURVES",
+                "items": [
+                    ("profiles.count", "Number of profiles", "{{profiles.count}} → '2'"),
+                    ("profiles.0.ProfileName", "Profile name (indexed)", "{{profiles.0.ProfileName}} → 'HEA200'"),
+                    ("profiles.0.ProfileType", "Profile type (indexed)", "{{profiles.0.ProfileType}} → 'AREA'"),
+                    ("profile.ProfileName", "Single swept profile", "{{profile.ProfileName}} → 'Rectangle'"),
+                ]
+            },
+            "Groups": {
+                "title": "GROUPS",
+                "icon": "OUTLINER_OB_GROUP_INSTANCE",
+                "items": [
+                    ("group.Name", "Group name", "{{group.Name}} → 'Phase 1'"),
+                    ("groups.count", "Number of group assignments", "{{groups.count}} → '2'"),
+                ]
+            },
+            "Systems": {
+                "title": "SYSTEMS",
+                "icon": "OUTLINER_OB_GROUP_INSTANCE",
+                "items": [
+                    ("system.Name", "System name", "{{system.Name}} → 'HVAC-01'"),
+                    ("systems.count", "Number of system assignments", "{{systems.count}} → '1'"),
+                ]
+            },
+            "Zones": {
+                "title": "ZONES",
+                "icon": "OUTLINER_OB_GROUP_INSTANCE",
+                "items": [
+                    ("zone.Name", "Zone name", "{{zone.Name}} → 'Fire Zone A'"),
+                    ("zones.count", "Number of zone assignments", "{{zones.count}} → '1'"),
+                ]
+            },
+            "Classification": {
+                "title": "CLASSIFICATION",
+                "icon": "PRESET",
+                "items": [
+                    ("classification.0.Name", "Classification name (indexed)", "{{classification.0.Name}} → 'Walls'"),
+                    ("classification.0.Identification", "Classification code (indexed)", "{{classification.0.Identification}} → 'E20'"),
+                    ("classification.count", "Number of classification references", "{{classification.count}} → '2'"),
+                ]
+            },
+            "Coordinates": {
+                "title": "COORDINATES",
+                "icon": "ORIENTATION_VIEW",
+                "items": [
+                    ("x", "Local X coordinate", "{{x}} → '10.5'"),
+                    ("y", "Local Y coordinate", "{{y}} → '5.2'"),
+                    ("z", "Local Z coordinate", "{{z}} → '3.0'"),
+                    ("easting", "Map easting coordinate", "{{easting}} → '500123.45'"),
+                    ("northing", "Map northing coordinate", "{{northing}} → '6750234.56'"),
+                    ("elevation", "Map elevation", "{{elevation}} → '123.45'"),
+                ]
+            }
+        }
+        
+        if self.category_name in category_help:
+            info = category_help[self.category_name]
+            layout.label(text=info["title"], icon=info["icon"])
+            
+            box = layout.box()
+            for key, desc, example in info["items"]:
+                col = box.column(align=True)
+                col.scale_y = 0.85
+                col.label(text=f"{key} - {desc}")
+                col.label(text=f"  {example}")
+                box.separator(factor=0.3)
+            
+            if "note" in info:
+                note_box = layout.box()
+                note_box.label(text="Note:", icon="INFO")
+                note_box.label(text=info["note"])
+            
+            if "example" in info:
+                ex_box = layout.box()
+                ex_box.label(text="Example:", icon="SCRIPTPLUGINS")
+                ex_box.label(text=info["example"])
+        else:
+            layout.label(text=f"No help available for '{self.category_name}'")
+    
+    def execute(self, context):
+        return {"FINISHED"}
+
+
+class ShowElementValuesInstructions(bpy.types.Operator):
+    bl_idname = "bim.show_element_values_instructions"
+    bl_label = "Element Values - Quick Start Guide"
+    bl_description = "Show general tips and formatting instructions for element values"
+    bl_options = {"REGISTER"}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=700)
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Intelligent Text Annotations - Quick Start", icon="INFO")
+        
+        box = layout.box()
+        row = box.row()
+        row.label(text="Full Online Documentation:", icon="URL")
+        row.operator("wm.url_open", text="IFC Selector Syntax Guide", icon="URL").url = (
+            "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html#getting-element-values"
+        )
+        
+        box = layout.box()
+        box.label(text="SELECTING SOURCE ELEMENT", icon="EYEDROPPER")
+        col = box.column(align=True)
+        col.scale_y = 0.85
+        col.label(text="Use the eyedropper tool (next to 'Element Values:') to select any object.")
+        col.label(text="This populates the categories with actual values from that element.")
+        col.label(text="Useful for type-based annotations where the product is not yet assigned,")
+        col.label(text="or when you want to reference values from a different element.")
+        
+        box = layout.box()
+        box.label(text="CATEGORY-SPECIFIC HELP", icon="HELP")
+        col = box.column(align=True)
+        col.scale_y = 0.85
+        col.label(text="Each category below has a '?' button with detailed examples.")
+        col.label(text="Click the '?' next to any category name (Basic, Attributes, Property Sets, etc.)")
+        col.label(text="to see all available keys and usage examples for that category.")
+        
+        box = layout.box()
+        box.label(text="FORMATTING FUNCTIONS (wrap in backticks ``)", icon="SYNTAX_ON")
+        col = box.column(align=True)
+        col.scale_y = 0.8
+        
+        col.label(text="upper(value) - Uppercase: ``upper({{Name}})`` → 'WALL-001'")
+        col.label(text="lower(value) - Lowercase: ``lower({{Name}})`` → 'wall-001'")
+        col.label(text="title(value) - Title case: ``title({{Name}})`` → 'Wall-001'")
+        
+        col.separator(factor=0.5)
+        col.label(text="concat(a, b, ...) - Combine: ``concat({{storey.Name}}, '-', {{Name}})`` → 'L2-Wall-001'")
+        col.label(text="substr(value, start, end) - Substring: ``substr({{Name}}, 0, 4)`` → 'Wall'")
+        
+        col.separator(factor=0.5)
+        col.label(text="int(value) - Integer: ``int({{Qto_WallBaseQuantities.NetArea}})`` → '45'")
+        col.label(text="round(value, nearest) - Round: ``round({{NetArea}}, 0.5)`` → '45.5'")
+        col.label(text="number(value, dec_sep, thou_sep) - Format: ``number({{NetArea}}, '.', ',')`` → '1,234.56'")
+        
+        col.separator(factor=0.5)
+        col.label(text="metric_length(value, precision, decimals):")
+        col.label(text="  ``metric_length({{NetArea}}, 0.01, 2)`` → '45.50 m²'")
+        
+        col.separator(factor=0.5)
+        col.label(text="imperial_length(value, precision, \"input_unit\", \"output_unit\"):")
+        col.label(text="  ``imperial_length({{Height}}, 4, \"foot\", \"foot\")`` → \"10' - 6\\\"\"")
+        col.label(text="  Units: \"foot\" or \"inch\" (must be quoted)")
+        
+        box = layout.box()
+        box.label(text="USAGE TIPS", icon="LIGHTPROBE_VOLUME")
+        col = box.column(align=True)
+        col.scale_y = 0.8
+        col.label(text="• Click '+' icon next to values to insert with {{valueN}} placeholder")
+        col.label(text="• Use {{value1}}, {{value2}} for numbered references that update automatically")
+        col.label(text="• Wrap formatting functions in double backticks: ``function({{key}})``")
+        col.label(text="• Combine multiple functions: ``upper(concat({{storey.Name}}, '-', {{Name}}))``")
+        col.label(text="• Use eyedropper to select different source objects for values")
+        col.label(text="• Search filter helps find specific properties quickly")
+        col.label(text="• Regex patterns work for property sets: /Pset_.*Common/")
+    
+    def execute(self, context):
         return {"FINISHED"}
