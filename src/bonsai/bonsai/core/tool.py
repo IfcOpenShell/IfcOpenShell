@@ -486,6 +486,19 @@ class Georeference:
 
 
 @interface
+class Group:
+    def get_group_props(cls): pass
+    def get_groups_data(cls, group_type): pass
+    def import_groups(cls, group_type): pass
+    def enable_group_editing_ui(cls)    : pass
+    def disable_group_editing_ui(cls): pass
+    def disable_editing_group(cls): pass
+    def set_active_group_to_edit(cls, group): pass
+    def toggle_group(cls, group, group_type, option): pass
+    def update_uilist_index(cls, group_type): pass
+
+
+@interface
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
