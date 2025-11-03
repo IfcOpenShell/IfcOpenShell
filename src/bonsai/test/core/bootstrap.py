@@ -108,6 +108,13 @@ def georeference():
 
 
 @pytest.fixture
+def group():
+    prophet = Prophecy(bonsai.core.tool.Group)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def library():
     prophet = Prophecy(bonsai.core.tool.Library)
     yield prophet
