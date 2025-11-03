@@ -3758,6 +3758,16 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             )
             tool.Blender.remove_data_block(temp_mesh)
 
+
+        element = tool.Ifc.get_entity(obj)
+        if element and isinstance(obj.data, bpy.types.Mesh):
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if representation and representation.Items:
+                item_id = representation.Items[0].id()
+                num_faces = len(obj.data.polygons)
+                obj.data["ios_item_ids"] = [item_id] * num_faces
+                tool.Blender.Attribute.fill_attribute(obj.data, "ios_item_ids", "FACE", "INT", [item_id] * num_faces)
+
         tool.Blender.set_active_object(obj)
 
         material = bpy.data.materials.new(name=image_filepath.stem)
