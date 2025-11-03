@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bl_ui_utils.layout
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
@@ -36,7 +35,12 @@ from bonsai.bim.module.model.stair import regenerate_stair_mesh
 from bonsai.bim.module.model.railing import update_railing_modifier_bmesh
 from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
+    import _bl_ui_utils.layout as bl_ui_utils_layout
+else:
+    import bl_ui_utils.layout as bl_ui_utils_layout
 
 
 class BIM_MT_type_manager_menu(bpy.types.Menu):
@@ -56,7 +60,7 @@ class BIM_MT_type_menu(bpy.types.Menu):
     def draw(self, context):
         props = tool.Model.get_model_props()
         layout = self.layout
-        with bl_ui_utils.layout.operator_context(layout, "INVOKE_REGION_WIN"):
+        with bl_ui_utils_layout.operator_context(layout, "INVOKE_REGION_WIN"):
             op = layout.operator("bim.rename_type", icon="GREASEPENCIL", text="Rename Type")
             op.element = props.menu_relating_type_id
         op = layout.operator("bim.select_type", icon="OBJECT_DATA")
