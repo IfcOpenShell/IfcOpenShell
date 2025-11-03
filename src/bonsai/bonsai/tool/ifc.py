@@ -110,11 +110,11 @@ class Ifc(bonsai.core.tool.Ifc):
         oprops = tool.Blender.get_object_bim_props(obj)
         if not oprops.location_checksum:
             return True  # Let's be conservative
-        loc_check = np.frombuffer(eval(oprops.location_checksum))
+        loc_check = np.frombuffer(eval(oprops.location_checksum), dtype=np.float32)
         loc_real = np.array(obj.matrix_world.translation).flatten()
         if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             return True
-        rot_check = np.frombuffer(eval(oprops.rotation_checksum)).reshape(3, 3)
+        rot_check = np.frombuffer(eval(oprops.rotation_checksum), dtype=np.float32).reshape(3, 3)
         rot_real = np.array(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))

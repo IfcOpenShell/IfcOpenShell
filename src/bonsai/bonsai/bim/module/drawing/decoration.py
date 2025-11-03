@@ -1731,20 +1731,23 @@ class CutDecorator:
 
     def cache_camera_matrix(self):
         obj = bpy.context.scene.camera
-        DecoratorData.camera_location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
-        DecoratorData.camera_rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+        # Explicit `dtype` for Blender <5.0 compatibility.
+        DecoratorData.camera_location_checksum = repr(
+            np.array(obj.matrix_world.translation, dtype=np.float32).tobytes()
+        )
+        DecoratorData.camera_rotation_checksum = repr(np.array(obj.matrix_world.to_3x3(), dtype=np.float32).tobytes())
 
     def is_camera_moved(self):
         if not DecoratorData.camera_location_checksum:
             self.cache_camera_matrix()
             return True  # Let's be conservative
         obj = bpy.context.scene.camera
-        loc_check = np.frombuffer(eval(DecoratorData.camera_location_checksum))
+        loc_check = np.frombuffer(eval(DecoratorData.camera_location_checksum), dtype=np.float32)
         loc_real = np.array(obj.matrix_world.translation).flatten()
         if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             self.cache_camera_matrix()
             return True
-        rot_check = np.frombuffer(eval(DecoratorData.camera_rotation_checksum)).reshape(3, 3)
+        rot_check = np.frombuffer(eval(DecoratorData.camera_rotation_checksum), dtype=np.float32).reshape(3, 3)
         rot_real = np.array(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
