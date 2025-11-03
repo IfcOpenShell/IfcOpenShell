@@ -173,7 +173,8 @@ class IteratorForTypes:
     element: Union[ifcopenshell.entity_instance, None] = None
     shape: Union[ifcopenshell.geom.ShapeType, None] = None
 
-    def __init__(self,
+    def __init__(
+        self,
         ifc_file: ifcopenshell.file,
         settings: ifcopenshell.geom.settings,
         elements: Iterable[ifcopenshell.entity_instance],
