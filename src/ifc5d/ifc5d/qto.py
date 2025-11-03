@@ -36,6 +36,9 @@ import multiprocessing
 from collections import defaultdict
 from typing import Any, Literal, get_args, Union, NamedTuple
 from collections.abc import Iterable
+from collections import defaultdict
+
+import time
 
 
 class Function(NamedTuple):
@@ -60,21 +63,21 @@ for name in get_args(RULE_SET):
         rules[name] = json.load(f)
 
 
-@functools.cache
-def lower_case_entity_names(schema_iden: str):
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden)
-    return set(n.name().lower() for n in schema.entities())
-
-
-@functools.cache
-def entity_supertypes(schema_iden: str, entity_name: str):
-    def visit(decl):
-        yield decl.name().lower()
-        if ty := decl.supertype():
-            yield from visit(ty)
-
-    decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden).declaration_by_name(entity_name)
-    return list(visit(decl))
+#@functools.cache
+#def lower_case_entity_names(schema_iden: str):
+#    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden)
+#    return set(n.name().lower() for n in schema.entities())
+#
+#
+#@functools.cache
+#def entity_supertypes(schema_iden: str, entity_name: str):
+#    def visit(decl):
+#        yield decl.name().lower()
+#        if ty := decl.supertype():
+#            yield from visit(ty)
+#
+#    decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden).declaration_by_name(entity_name)
+#    return list(visit(decl))
 
 
 def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> ResultsDict:
@@ -85,47 +88,73 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
     :param rules: Set of rules from `ifc5d.qto.rules`.
     """
-    results: ResultsDict = {}
-    elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
-    for element in elements:
-        elements_by_classes[element.is_a()].add(element)
+#    results: ResultsDict = {}
+#    elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
+#    for element in elements:
+#        elements_by_classes[element.is_a()].add(element)
+#
+#    for calculator, queries in rules["calculators"].items():
+#        calculator = calculators[calculator]
+#        # Cache schema entity names once per file
+#        schema_entity_names = lower_case_entity_names(ifc_file.schema_identifier)
+#
+#        # Fast path: all queries are simple entity names
+#        if not set(m.lower() for m in queries.keys()) - schema_entity_names:
+#            casenorm = {k.lower(): k for k in queries.keys()}
+#            pred = lambda inst: inst.is_a().lower()
+#
+#            for ty, group in itertools.groupby(sorted(elements, key=pred), key=pred):
+#                group_elements = list(group)
+#                # check entity type and its supertypes for matching QTO rules
+#                for sty in entity_supertypes(ifc_file.schema_identifier, ty):
+#                    if qtos := queries.get(casenorm.get(sty)):
+#                        calculator.calculate(ifc_file, group_elements, qtos, results)
+#
+#        # Fallback: per-query evaluation
+#        for query, qtos in queries.items():
+#            # Simple entity name: use by_type but restrict to incoming elements
+#            if query.lower() in schema_entity_names:
+#                by_type_all = ifc_file.by_type(query)
+#                # ensure we don't expand beyond provided elements subset
+#                if isinstance(elements, set):
+#                    filtered_elements = [e for e in by_type_all if e in elements]
+#                else:
+#                    elements_set = set(elements)
+#                    filtered_elements = [e for e in by_type_all if e in elements_set]
+#            else:
+#                filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
+#
+#            if filtered_elements:
+#                calculator.calculate(ifc_file, filtered_elements, qtos, results)
+#
+#    return results
 
+    start = time.perf_counter()
+    results: ResultsDict = {}
+#    elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
+#    for element in elements:
+#        elements_by_classes[element.is_a()].add(element)
+
+
+    grouped_elements = defaultdict(list)
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
-        # Cache schema entity names once per file
-        schema_entity_names = lower_case_entity_names(ifc_file.schema_identifier)
+        for element in elements:
+            if element.is_a() in queries:
+                grouped_elements[element.is_a()].append(element)
 
-        # Fast path: all queries are simple entity names
-        if not set(m.lower() for m in queries.keys()) - schema_entity_names:
-            casenorm = {k.lower(): k for k in queries.keys()}
-            pred = lambda inst: inst.is_a().lower()
+        for query, elements in grouped_elements.items():
+            qtos = queries[query]
+            calculator.calculate(ifc_file, list(elements), qtos, results)
 
-            for ty, group in itertools.groupby(sorted(elements, key=pred), key=pred):
-                group_elements = list(group)
-                # check entity type and its supertypes for matching QTO rules
-                for sty in entity_supertypes(ifc_file.schema_identifier, ty):
-                    if qtos := queries.get(casenorm.get(sty)):
-                        calculator.calculate(ifc_file, group_elements, qtos, results)
+#                qtos = queries[element.is_a()]
+#                filtered_elements.append(element)
+#                calculator.calculate(ifc_file, list(filtered_elements), qtos, results)
+#                filtered_elements = []
 
-        # Fallback: per-query evaluation
-        for query, qtos in queries.items():
-            # Simple entity name: use by_type but restrict to incoming elements
-            if query.lower() in schema_entity_names:
-                by_type_all = ifc_file.by_type(query)
-                # ensure we don't expand beyond provided elements subset
-                if isinstance(elements, set):
-                    filtered_elements = [e for e in by_type_all if e in elements]
-                else:
-                    elements_set = set(elements)
-                    filtered_elements = [e for e in by_type_all if e in elements_set]
-            else:
-                filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
-
-            if filtered_elements:
-                calculator.calculate(ifc_file, filtered_elements, qtos, results)
-
+    end = time.perf_counter()
+    print(f"TIME: {end-start:.6f} seconds")
     return results
-
 
 def edit_qtos(ifc_file: ifcopenshell.file, results: ResultsDict) -> None:
     """Apply quantification results as quantity sets."""
