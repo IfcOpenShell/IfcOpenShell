@@ -30,7 +30,7 @@ from bonsai.bim.module.drawing.data import (
     DecoratorData,
     ElementValuesData,
 )
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Optional
 
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import DocProperties, Drawing, Sheet
@@ -564,9 +564,25 @@ def get_category_icon(category_name):
         "Systems": "SYSTEM",
         "Zones": "MESH_CIRCLE",
         "Material": "MATERIAL",
+        "Profiles": "MESH_DATA",
         "Coordinates": "EMPTY_ARROWS",
     }
     return icons.get(category_name, "DOT")
+
+
+def get_current_product_for_element_values(obj: bpy.types.Object, literal_props) -> Optional[bpy.types.Object]:
+    """Get the product to use for element values - either ProductUsed or assigned product"""
+    if hasattr(literal_props, 'product_used') and literal_props.product_used:
+        return literal_props.product_used
+    
+    element = tool.Ifc.get_entity(obj)
+    if element:
+        assigned_product = tool.Drawing.get_assigned_product(element)
+        if assigned_product:
+            return tool.Ifc.get_object(assigned_product)
+    
+    return None
+
 
 class BIM_PT_text(Panel):
     bl_label = "Text"
@@ -585,19 +601,6 @@ class BIM_PT_text(Panel):
         if not element:
             return False
         return tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
-
-    def get_current_product_for_element_values(self, obj: bpy.types.Object, literal_props) -> Optional[bpy.types.Object]:
-        """Get the product to use for element values - either ProductUsed or assigned product"""
-        if hasattr(literal_props, 'product_used') and literal_props.product_used:
-            return literal_props.product_used
-        
-        element = tool.Ifc.get_entity(obj)
-        if element:
-            assigned_product = tool.Drawing.get_assigned_product(element)
-            if assigned_product:
-                return tool.Ifc.get_object(assigned_product)
-        
-        return None
 
     def draw_text_editing_ui(
         self: Union[bpy.types.Panel, bpy.types.Operator],
@@ -660,11 +663,14 @@ class BIM_PT_text(Panel):
             if getattr(literal_props, "show_element_values", False):
                 values_box = box.box()
                 
+                help_row = values_box.row(align=True)
+                help_row.operator("bim.show_element_values_instructions", text="Instructions", icon="QUESTION")
+                
                 element_values_row = values_box.row(align=True)
                 element_values_row.label(text="Element Values:", icon="PROPERTIES")
                 element_values_row.prop(literal_props, "product_used", text="", icon="EYEDROPPER")
                 
-                current_product = self.get_current_product_for_element_values(obj, literal_props)
+                current_product = get_current_product_for_element_values(obj, literal_props)
                 if current_product:
                     product_name = current_product.name if hasattr(current_product, 'name') else str(current_product)
                     source_row = values_box.row()
@@ -701,7 +707,7 @@ class BIM_PT_text(Panel):
                             if filter_text and not filtered_keys:
                                 continue
                             
-                            header_row = values_box.row()
+                            header_row = values_box.row(align=True)
                             is_expanded = (expanded_category == category_name)
                             expand_icon = "TRIA_DOWN" if is_expanded else "TRIA_RIGHT"
                             
@@ -714,6 +720,14 @@ class BIM_PT_text(Panel):
                             op.category_name = category_name
                             op.literal_prop_id = i
                             op.is_currently_expanded = is_expanded
+                            
+                            help_op = header_row.operator(
+                                "bim.show_category_help",
+                                text="",
+                                icon="QUESTION",
+                                emboss=False
+                            )
+                            help_op.category_name = category_name
                             
                             if is_expanded and filtered_keys:
                                 category_box = values_box.box()
