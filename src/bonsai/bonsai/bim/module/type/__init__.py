@@ -23,8 +23,11 @@ classes = (
     operator.AssignType,
     operator.AutoRenameOccurrences,
     operator.DisableEditingType,
+    operator.DisableEditingTypeAttributes,
     operator.DuplicateType,
+    operator.EditTypeAttributes,
     operator.EnableEditingType,
+    operator.EnableEditingTypeAttributes,
     operator.RemoveType,
     operator.RenameType,
     operator.SelectSimilarType,
@@ -33,6 +36,7 @@ classes = (
     operator.UnassignType,
     prop.BIMTypeProperties,
     ui.BIM_PT_type,
+    ui.BIM_PT_type_attributes,
 )
 
 
