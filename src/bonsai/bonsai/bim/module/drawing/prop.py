@@ -726,27 +726,21 @@ class LiteralProps(PropertyGroup):
         return text_data
 
     show_element_values: bpy.props.BoolProperty(
-        name="Show Element Values",
-        description="Show/hide the element values panel",
-        default=False
+        name="Show Element Values", description="Show/hide the element values panel", default=False
     )
-    
+
     expanded_category: bpy.props.StringProperty(
-        name="Expanded Category",
-        description="Currently expanded category in the element values panel",
-        default=""
+        name="Expanded Category", description="Currently expanded category in the element values panel", default=""
     )
-    
+
     element_values_filter: bpy.props.StringProperty(
-        name="Element Values Filter",
-        description="Search filter for element values",
-        default=""
+        name="Element Values Filter", description="Search filter for element values", default=""
     )
 
     product_used: PointerProperty(
         name="Product Used",
         type=bpy.types.Object,
-        description="Object to use for fetching element values. If empty, uses assigned product"
+        description="Object to use for fetching element values. If empty, uses assigned product",
     )
 
     if TYPE_CHECKING:

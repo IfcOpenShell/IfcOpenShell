@@ -551,12 +551,13 @@ class BIM_PT_product_assignments(Panel):
             col.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
             col.enabled = bool(ProductAssignmentsData.data["relating_product"])
 
+
 def get_category_icon(category_name):
     """Get appropriate icon for each category"""
     icons = {
         "Basic": "OBJECT_DATA",
         "Attributes": "PROPERTIES",
-        "Property Sets": "PROPERTIES", 
+        "Property Sets": "PROPERTIES",
         "Quantity Sets": "SNAP_VOLUME",
         "Type": "OUTLINER_OB_MESH",
         "Spatial": "HOME",
@@ -574,15 +575,15 @@ def get_category_icon(category_name):
 
 def get_current_product_for_element_values(obj: bpy.types.Object, literal_props) -> Optional[bpy.types.Object]:
     """Get the product to use for element values - either ProductUsed or assigned product"""
-    if hasattr(literal_props, 'product_used') and literal_props.product_used:
+    if hasattr(literal_props, "product_used") and literal_props.product_used:
         return literal_props.product_used
-    
+
     element = tool.Ifc.get_entity(obj)
     if element:
         assigned_product = tool.Drawing.get_assigned_product(element)
         if assigned_product:
             return tool.Ifc.get_object(assigned_product)
-    
+
     return None
 
 
@@ -616,7 +617,6 @@ class BIM_PT_text(Panel):
         assert obj
         props = tool.Drawing.get_text_props(obj)
 
-
         row = self.layout.row(align=True)
 
         if popup_mode:
@@ -646,7 +646,6 @@ class BIM_PT_text(Panel):
             select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
             select_op.literal_value = str(props.newline_at)
             select_op.attribute_type = "newline"
-
 
         for i, literal_props in enumerate(props.literals):
             box = self.layout.box()
