@@ -264,6 +264,14 @@ class BIMSearchProperties(PropertyGroup):
         default=False,
         update=update_show_flat_colours,
     )
+    
+    search_from_outliner: BoolProperty(
+        name="Search From Outliner",
+        description="When enabled, filter suggestions will only include elements visible in the Blender outliner.\n"
+        "When disabled, suggestions will include all elements in the IFC file.\n\n"
+        "Default: Enabled (faster and more relevant for most use cases)",
+        default=True,
+    )
 
     if TYPE_CHECKING:
         element_key: str
@@ -285,3 +293,4 @@ class BIMSearchProperties(PropertyGroup):
         filter_items: bpy.types.bpy_prop_collection_idprop[BIMFilterItem]
         filter_items_index: int
         show_flat_colours: bool
+        search_from_outliner: bool

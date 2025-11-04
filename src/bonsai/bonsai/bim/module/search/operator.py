@@ -107,6 +107,9 @@ class FilterValueSuggestions(Operator):
 
         filter_groups = tool.Search.get_filter_groups(self.module)
         ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
+        
+        props = tool.Search.get_search_props()
+        search_from_outliner = props.search_from_outliner
 
         if ifc_filter.type == "property":
             if self.suggestion_type == "pset":
@@ -125,18 +128,18 @@ class FilterValueSuggestions(Operator):
 
         if ifc_filter.type == "property":
             if self.suggestion_type == "property_value" and ifc_filter.pset and ifc_filter.name:
-                suggestions = self.get_property_values(ifc_file, ifc_filter.pset, ifc_filter.name)
+                suggestions = self.get_property_values(ifc_file, ifc_filter.pset, ifc_filter.name, search_from_outliner)
             elif self.suggestion_type == "property_name" and ifc_filter.pset:
-                suggestions = self.get_property_names(ifc_file, ifc_filter.pset)
+                suggestions = self.get_property_names(ifc_file, ifc_filter.pset, search_from_outliner)
             else:
-                suggestions = self.get_suggestions(ifc_file, ifc_filter.type)
+                suggestions = self.get_suggestions(ifc_file, ifc_filter.type, search_from_outliner)
         elif ifc_filter.type == "attribute":
             if self.suggestion_type == "attribute_value" and ifc_filter.name:
-                suggestions = self.get_attribute_values(ifc_file, ifc_filter.name)
+                suggestions = self.get_attribute_values(ifc_file, ifc_filter.name, search_from_outliner)
             else:
-                suggestions = self.get_attribute_names(ifc_file)
+                suggestions = self.get_attribute_names(ifc_file, search_from_outliner)
         else:
-            suggestions = self.get_suggestions(ifc_file, ifc_filter.type)
+            suggestions = self.get_suggestions(ifc_file, ifc_filter.type, search_from_outliner)
         
         if not suggestions:
             self.report({"INFO"}, f"No suggestions available")
@@ -195,22 +198,54 @@ class FilterValueSuggestions(Operator):
             results_are_suggestions=True,
         )
 
-    def get_property_names(self, ifc_file, pset_name):
+    def get_property_names(self, ifc_file, pset_name, search_from_outliner=True):
         property_names = set()
         
-        for pset in ifc_file.by_type("IfcPropertySet"):
-            if pset.Name == pset_name and pset.HasProperties:
+        if search_from_outliner:
+            from bonsai.bim.ifc import IfcStore
+            psets_to_check = []
+            for element_id in IfcStore.id_map.keys():
+                try:
+                    element = ifc_file.by_id(element_id)
+                    for definition in getattr(element, 'IsDefinedBy', []):
+                        if definition.is_a('IfcRelDefinesByProperties'):
+                            pset = definition.RelatingPropertyDefinition
+                            if pset.is_a("IfcPropertySet") and pset.Name == pset_name:
+                                psets_to_check.append(pset)
+                except:
+                    continue
+        else:
+            psets_to_check = [pset for pset in ifc_file.by_type("IfcPropertySet") if pset.Name == pset_name]
+        
+        for pset in psets_to_check:
+            if pset.HasProperties:
                 for prop in pset.HasProperties:
                     if hasattr(prop, "Name") and prop.Name:
                         property_names.add(prop.Name)
         
         return property_names
 
-    def get_property_values(self, ifc_file, pset_name, property_name):
+    def get_property_values(self, ifc_file, pset_name, property_name, search_from_outliner=True):
         property_values = set()
         
-        for pset in ifc_file.by_type("IfcPropertySet"):
-            if pset.Name == pset_name and pset.HasProperties:
+        if search_from_outliner:
+            from bonsai.bim.ifc import IfcStore
+            psets_to_check = []
+            for element_id in IfcStore.id_map.keys():
+                try:
+                    element = ifc_file.by_id(element_id)
+                    for definition in getattr(element, 'IsDefinedBy', []):
+                        if definition.is_a('IfcRelDefinesByProperties'):
+                            pset = definition.RelatingPropertyDefinition
+                            if pset.is_a("IfcPropertySet") and pset.Name == pset_name:
+                                psets_to_check.append(pset)
+                except:
+                    continue
+        else:
+            psets_to_check = [pset for pset in ifc_file.by_type("IfcPropertySet") if pset.Name == pset_name]
+        
+        for pset in psets_to_check:
+            if pset.HasProperties:
                 for prop in pset.HasProperties:
                     if hasattr(prop, "Name") and prop.Name == property_name:
                         if hasattr(prop, "NominalValue") and prop.NominalValue:
@@ -230,12 +265,22 @@ class FilterValueSuggestions(Operator):
         
         return property_values
 
-    def get_attribute_names(self, ifc_file):
+    def get_attribute_names(self, ifc_file, search_from_outliner=True):
         attribute_names = set()
         
         schema = tool.Ifc.schema()
         
-        ifc_classes = set(element.is_a() for element in ifc_file)
+        if search_from_outliner:
+            from bonsai.bim.ifc import IfcStore
+            ifc_classes = set()
+            for element_id in IfcStore.id_map.keys():
+                try:
+                    element = ifc_file.by_id(element_id)
+                    ifc_classes.add(element.is_a())
+                except:
+                    continue
+        else:
+            ifc_classes = set(element.is_a() for element in ifc_file)
         
         for ifc_class in ifc_classes:
             try:
@@ -248,7 +293,7 @@ class FilterValueSuggestions(Operator):
         
         return attribute_names
 
-    def get_attribute_values(self, ifc_file, attribute_name):
+    def get_attribute_values(self, ifc_file, attribute_name, search_from_outliner=True):
         attribute_values = set()
         
         def should_skip_element(element):
@@ -272,7 +317,19 @@ class FilterValueSuggestions(Operator):
             
             return False
         
-        for element in ifc_file:
+        if search_from_outliner:
+            from bonsai.bim.ifc import IfcStore
+            elements_to_check = []
+            for element_id in IfcStore.id_map.keys():
+                try:
+                    element = ifc_file.by_id(element_id)
+                    elements_to_check.append(element)
+                except:
+                    continue
+        else:
+            elements_to_check = ifc_file
+        
+        for element in elements_to_check:
             try:
                 if should_skip_element(element):
                     continue
@@ -300,12 +357,26 @@ class FilterValueSuggestions(Operator):
         
         return attribute_values
 
-    def get_suggestions(self, ifc_file, filter_type):
+    def get_suggestions(self, ifc_file, filter_type, search_from_outliner=True):
         suggestions = set()
         
+        outliner_elements = set()
+        if search_from_outliner:
+            from bonsai.bim.ifc import IfcStore
+            for element_id in IfcStore.id_map.keys():
+                try:
+                    element = ifc_file.by_id(element_id)
+                    outliner_elements.add(element)
+                except:
+                    continue
+        
         if filter_type == "entity":
-            for element in ifc_file:
-                suggestions.add(element.is_a())
+            if search_from_outliner:
+                for element in outliner_elements:
+                    suggestions.add(element.is_a())
+            else:
+                for element in ifc_file:
+                    suggestions.add(element.is_a())
         
         elif filter_type == "type":
             for element_type in ifc_file.by_type("IfcTypeObject"):
@@ -333,24 +404,47 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(ref.Identification)
         
         elif filter_type == "parent":
-            for element in ifc_file.by_type("IfcElement"):
-                if element.Name:
-                    suggestions.add(element.Name)
+            if search_from_outliner:
+                for element in outliner_elements:
+                    if element.is_a("IfcElement") and element.Name:
+                        suggestions.add(element.Name)
+            else:
+                for element in ifc_file.by_type("IfcElement"):
+                    if element.Name:
+                        suggestions.add(element.Name)
         
         elif filter_type == "property":
-            for pset in ifc_file.by_type("IfcPropertySet"):
-                if pset.Name:
-                    suggestions.add(pset.Name)
+            if search_from_outliner:
+                for element in outliner_elements:
+                    for definition in getattr(element, 'IsDefinedBy', []):
+                        if definition.is_a('IfcRelDefinesByProperties'):
+                            pset = definition.RelatingPropertyDefinition
+                            if pset.is_a("IfcPropertySet") and pset.Name:
+                                suggestions.add(pset.Name)
+            else:
+                for pset in ifc_file.by_type("IfcPropertySet"):
+                    if pset.Name:
+                        suggestions.add(pset.Name)
         
         elif filter_type == "instance":
-            for element in ifc_file.by_type("IfcRoot"):
-                if element.GlobalId:
-                    element_class = element.is_a()
-                    element_name = element.Name if hasattr(element, 'Name') and element.Name else ""
-                    if element_name:
-                        suggestions.add(f"{element.GlobalId} > {element_class} > {element_name}")
-                    else:
-                        suggestions.add(f"{element.GlobalId} > {element_class}")
+            if search_from_outliner:
+                for element in outliner_elements:
+                    if hasattr(element, 'GlobalId') and element.GlobalId:
+                        element_class = element.is_a()
+                        element_name = element.Name if hasattr(element, 'Name') and element.Name else ""
+                        if element_name:
+                            suggestions.add(f"{element.GlobalId} > {element_class} > {element_name}")
+                        else:
+                            suggestions.add(f"{element.GlobalId} > {element_class}")
+            else:
+                for element in ifc_file.by_type("IfcRoot"):
+                    if element.GlobalId:
+                        element_class = element.is_a()
+                        element_name = element.Name if hasattr(element, 'Name') and element.Name else ""
+                        if element_name:
+                            suggestions.add(f"{element.GlobalId} > {element_class} > {element_name}")
+                        else:
+                            suggestions.add(f"{element.GlobalId} > {element_class}")
         
         return suggestions
 
