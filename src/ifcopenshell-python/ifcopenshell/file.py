@@ -25,6 +25,7 @@ import zipfile
 import functools
 import ifcopenshell
 import weakref
+import types
 from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict
 from collections.abc import Callable, Generator
@@ -248,6 +249,8 @@ READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
+
+# TODO: Workaround for old builds, remove after build stabilizes.
 try:
     UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
 except:
@@ -535,7 +538,6 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
-    header: file_header
     units: dict[str, entity_instance] = {}
     history_size: int = 64
     history: list[Transaction]
@@ -1049,10 +1051,13 @@ class file:
         return self.wrapped_data.to_string()
 
     @property
-    def header(self):
-        try:
+    def header(self) -> file_header:
+        # TODO: Workaround for old builds, remove after build stabilizes.
+        # TODO: No need for `wrapped_data.header` to be a method - should use `@property`?
+        header = self.wrapped_data.header
+        if isinstance(header, types.MethodType):
             return file_header(self, self.wrapped_data.header())
-        except:
+        else:
             return self.wrapped_data.header
 
     @property
