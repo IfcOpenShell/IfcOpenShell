@@ -786,7 +786,7 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         material = bpy.data.materials.get("Section Override")
         if not material:
             material = bpy.data.materials.new("Section Override")
-            material.use_nodes = True
+            tool.Style.set_use_nodes(material, True)
 
         props = tool.Blender.get_bim_props()
         if props.should_section_selected_objects:
@@ -809,7 +809,7 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
     def override_materials(self):
         override = bpy.data.node_groups.get("Section Override")
         for material in bpy.data.materials:
-            material.use_nodes = True
+            tool.Style.set_use_nodes(material, True)
             if material.node_tree.nodes.get("Section Override"):
                 continue
             # In EEVEE rendering engine, `blend_mode` is deprecated and replaced by `surface_render_method`

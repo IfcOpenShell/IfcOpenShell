@@ -455,7 +455,7 @@ class ActivateExternalStyle(bpy.types.Operator):
             return {"CANCELLED"}
 
         self.copy_material_attributes(db["data_block"], material)
-        if material.use_nodes:
+        if tool.Style.get_use_nodes(material):
             tool.Blender.copy_node_graph(material, db["data_block"])
         bpy.data.materials.remove(db["data_block"])
         return {"FINISHED"}

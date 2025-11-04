@@ -1262,7 +1262,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if tool.Ifc.get().schema == "IFC2X3":
             return False
         for slot in obj.material_slots:
-            if slot.material and slot.material.use_nodes:
+            if slot.material and tool.Style.get_use_nodes(slot.material):
                 for node in slot.material.node_tree.nodes:
                     if node.type == "TEX_COORD" and node.outputs["UV"].links:
                         return True
@@ -2021,7 +2021,7 @@ class Geometry(bonsai.core.tool.Geometry):
                     continue
                 if not (style := tool.Ifc.get_entity(material)):
                     style = ifcopenshell.api.style.add_style(ifc_file, name=material.name)
-                    if material.use_nodes:
+                    if tool.Style.get_use_nodes(material):
                         ifc_class = "IfcSurfaceStyleRendering"
                         attributes = tool.Style.get_surface_rendering_attributes(material)
                     else:

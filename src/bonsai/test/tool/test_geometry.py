@@ -488,7 +488,7 @@ class TestShouldGenerateUVs(NewFile):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)
-        material.use_nodes = False
+        tool.Style.set_use_nodes(material, False)
         assert subject.should_generate_uvs(obj) is False
 
     def test_needs_texture_coordinates_with_a_uv_output(self):
@@ -497,7 +497,7 @@ class TestShouldGenerateUVs(NewFile):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)
-        material.use_nodes = True
+        tool.Style.set_use_nodes(material, True)
 
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
@@ -513,7 +513,7 @@ class TestShouldGenerateUVs(NewFile):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)
-        material.use_nodes = True
+        tool.Style.set_use_nodes(material, True)
 
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         node = material.node_tree.nodes.new(type="ShaderNodeTexImage")

@@ -64,8 +64,22 @@ class Style(bonsai.core.tool.Style):
         return material.BIMStyleProperties
 
     @classmethod
+    def get_use_nodes(cls, obj: bpy.types.Material) -> bool:
+        """Since Blender 5.0 ``use_nodes`` are always ``True`` and considered deprecated."""
+        if tool.Blender.BLENDER_5:
+            return True
+        return obj.use_nodes
+
+    @classmethod
+    def set_use_nodes(cls, obj: bpy.types.Material, use_nodes: bool) -> None:
+        """Since Blender 5.0 ``use_nodes`` are always ``True`` and considered deprecated."""
+        if tool.Blender.BLENDER_5:
+            return
+        obj.use_nodes = use_nodes
+
+    @classmethod
     def can_support_rendering_style(cls, obj: bpy.types.Material) -> bool:
-        return obj.use_nodes and hasattr(obj.node_tree, "nodes")
+        return tool.Blender.BLENDER_5 or (obj.use_nodes and hasattr(obj.node_tree, "nodes"))
 
     @classmethod
     def delete_object(cls, obj: bpy.types.Material) -> None:

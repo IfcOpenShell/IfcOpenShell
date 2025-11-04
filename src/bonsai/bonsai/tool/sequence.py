@@ -1020,7 +1020,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
         def set_material(name, r, g, b):
             material = bpy.data.materials.new(name)
-            material.use_nodes = True
+            tool.Style.set_use_nodes(material, True)
             tool.Blender.get_material_node(material, "BSDF_PRINCIPLED").inputs[0].default_value = (r, g, b, 1.0)
             return material
 

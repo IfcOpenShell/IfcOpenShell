@@ -100,6 +100,7 @@ class Blender(bonsai.core.tool.Blender):
     - (identifier, name, description, icon, number)
     """
     BLENDER_ENUM_ITEMS = Iterable[BLENDER_ENUM_ITEM]
+    BLENDER_5 = bpy.app.version >= (5, 0, 0)
 
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:
@@ -416,7 +417,7 @@ class Blender(bonsai.core.tool.Blender):
         cls, blender_material: bpy.types.Material, node_type: str, kwargs: Optional[dict] = {}
     ) -> Union[bpy.types.ShaderNode, None]:
         """returns first node from the `blender_material` shader graph with type `node_type`"""
-        if not blender_material.use_nodes:
+        if not tool.Style.get_use_nodes(blender_material):
             return
         nodes = blender_material.node_tree.nodes
         for node in nodes:

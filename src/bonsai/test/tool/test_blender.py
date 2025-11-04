@@ -37,7 +37,7 @@ class TestImplementsTool(NewFile):
 class TestCopyNodeGraph(NewFile):
     def test_run(self):
         material_to = bpy.data.materials.new("material_to")
-        material_to.use_nodes = True
+        tool.Style.set_use_nodes(material_to, True)
         assert material_to.node_tree
         material_to_nodes = material_to.node_tree.nodes
         assert len(material_to_nodes) == 2
@@ -46,7 +46,7 @@ class TestCopyNodeGraph(NewFile):
         assert len(material_to_nodes) == 0
 
         material_from = bpy.data.materials.new("material_from")
-        material_from.use_nodes = True
+        tool.Style.set_use_nodes(material_from, True)
 
         subject.copy_node_graph(material_to, material_from)
         assert len(material_to_nodes) == 2
