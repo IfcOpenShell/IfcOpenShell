@@ -42,6 +42,7 @@ from mathutils import geometry, Vector
 from typing import Optional, Self, Union
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from markdown_it import MarkdownIt
 
 
 class External(svgwrite.container.Group):
@@ -59,6 +60,72 @@ class External(svgwrite.container.Group):
 
     def get_xml(self):
         return self.xml
+
+
+def parse_markdown_links(text: str) -> list[dict[str, Union[str, int]]]:
+    """
+    Parse markdown links from text and return structured information.
+    Returns a list of dicts with 'text', 'url', 'start', and 'end' keys.
+    Example: "[Label](https://example.com)" -> {'text': 'Label', 'url': 'https://example.com', 'start': 0, 'end': 29}
+    """
+    md = MarkdownIt()
+    tokens = md.parse(text)
+    links = []
+    
+    for i, token in enumerate(tokens):
+        if token.type == "inline":
+            link_opening = None
+            link_text = None
+            for j, child in enumerate(token.children or []):
+                if child.type == "link_open":
+                    link_opening = child
+                elif child.type == "text" and link_opening:
+                    link_text = child.content
+                elif child.type == "link_close" and link_opening:
+                    url = link_opening.attrGet("href")
+                    if url and link_text:
+                        pattern = re.escape(f"[{link_text}]({url})")
+                        match = re.search(pattern, text)
+                        if match:
+                            links.append({
+                                "text": link_text,
+                                "url": url,
+                                "start": match.start(),
+                                "end": match.end()
+                            })
+                    link_opening = None
+                    link_text = None
+    
+    return links
+
+
+def split_text_with_links(text: str) -> list[dict[str, Union[str, None]]]:
+    """
+    Split text into segments, marking which are links and which are plain text.
+    Returns a list of dicts with 'text' and 'url' keys (url is None for plain text).
+    Example: "Hello [World](http://ex.com) end" -> 
+        [{'text': 'Hello ', 'url': None}, {'text': 'World', 'url': 'http://ex.com'}, {'text': ' end', 'url': None}]
+    """
+    links = parse_markdown_links(text)
+    if not links:
+        return [{"text": text, "url": None}]
+    
+    segments = []
+    last_end = 0
+    
+    for link in sorted(links, key=lambda x: int(x["start"])):
+        link_start = int(link["start"])
+        link_end = int(link["end"])
+        if link_start > last_end:
+            segments.append({"text": text[last_end:link_start], "url": None})
+        
+        segments.append({"text": str(link["text"]), "url": str(link["url"])})
+        last_end = link_end
+    
+    if last_end < len(text):
+        segments.append({"text": text[last_end:], "url": None})
+    
+    return segments
 
 
 class SvgWriter:
@@ -836,10 +903,6 @@ class SvgWriter:
         text_literals = tool.Drawing.get_text_literal(text_obj, return_list=True)
         product = tool.Drawing.get_assigned_product(element)
 
-        text_data = DecoratorData.get_text_data(text_obj)
-        hyperlink_url = text_data.get("HyperlinkURL", "")
-        hyperlink_target = text_data.get("HyperlinkTarget", "_blank")
-
         text_position = self.project_point_onto_camera(position)
         text_position = Vector(((x_offset + text_position.x), (y_offset - text_position.y)))
         text_position_svg = text_position * self.svg_scale
@@ -897,29 +960,49 @@ class SvgWriter:
             text = tool.Drawing.replace_text_literal_variables(
                 text_literal.Literal, product or element, reverse_list, list_separator
             )
-            text_tags = self.create_text_tag(
-                text,
-                text_position_svg,
-                angle,
-                text_literal.BoxAlignment,
-                classes_str,
-                fill_bg=fill_bg,
-                line_number_start=line_number,
-                newline_at=newline_at,
-            )
-
-            if hyperlink_url:
-                for tag in text_tags:
-                    link_element = self.svg.a(href=hyperlink_url, target=hyperlink_target)
-                    if hasattr(tag, "xml") and tag.xml in self.svg.elements:
-                        self.svg.elements.remove(tag.xml)
-                    link_element.add(tag)
-                    self.svg.add(link_element)
-            else:
+            
+            text_segments = split_text_with_links(text)
+            
+            if len(text_segments) == 1 and text_segments[0]["url"] is None:
+                text_tags = self.create_text_tag(
+                    text,
+                    text_position_svg,
+                    angle,
+                    text_literal.BoxAlignment,
+                    classes_str,
+                    fill_bg=fill_bg,
+                    line_number_start=line_number,
+                    newline_at=newline_at,
+                )
                 for tag in text_tags:
                     self.svg.add(tag)
-
-            line_number += len(text_tags)
+                line_number += len(text_tags)
+            else:
+                base_text_attrs = SvgWriter.get_box_alignment_parameters(text_literal.BoxAlignment)
+                text_position_svg_str = ", ".join(map(str, text_position_svg))
+                text_transform = f"translate({text_position_svg_str}) rotate({angle})"
+                
+                text_tag = self.svg.text("", transform=text_transform, class_=classes_str, **base_text_attrs)
+                
+                for segment in text_segments:
+                    segment_text = segment["text"]
+                    segment_url = segment["url"]
+                    
+                    if segment_url:
+                        link_element = self.svg.a(href=segment_url, target="_blank")
+                        tspan = self.svg.tspan(segment_text, class_=classes_str)
+                        link_element.add(tspan)
+                        text_tag.add(link_element)
+                    else:
+                        tspan = self.svg.tspan(segment_text, class_=classes_str)
+                        text_tag.add(tspan)
+                
+                if fill_bg:
+                    fill_bg_tag = self.add_fill_bg(text_tag)
+                    self.svg.add(fill_bg_tag)
+                
+                self.svg.add(text_tag)
+                line_number += 1
 
     def draw_empty_annotation(self, obj: bpy.types.Object, classes: list[str]) -> None:
         x_offset = self.raw_width / 2
