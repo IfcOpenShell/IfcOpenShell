@@ -175,9 +175,12 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def select_products(cls, products: Iterable[ifcopenshell.entity_instance], unhide: bool = False) -> None:
+        assert (view_layer := bpy.context.view_layer)
+        # Update view layer, otherwise `objects` might be missing just created objects.
+        view_layer.update()
         for product in products:
             obj = tool.Ifc.get_object(product)
-            if obj and bpy.context.view_layer.objects.get(obj.name):
+            if obj and view_layer.objects.get(obj.name):
                 if unhide:
                     obj.hide_set(False)
                 obj.select_set(True)
