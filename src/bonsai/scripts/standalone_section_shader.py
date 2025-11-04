@@ -89,10 +89,17 @@ class SectionCutawayManager:
             SectionCutawayManager.offset_previous_nodes(previous_section_compare, offset_x, offset_y)
 
     @staticmethod
-    def override_materials():
+    def set_use_nodes(obj: bpy.types.Material, use_nodes: bool) -> None:
+        if bpy.app.version >= (5, 0, 0):
+            # Since Blender 5.0 `use_nodes` are always `True` and considered deprecated.
+            return
+        obj.use_nodes = use_nodes
+
+    @classmethod
+    def override_materials(cls):
         override = SectionCutawayManager.get_section_tree()
         for material in bpy.data.materials:
-            material.use_nodes = True
+            cls.set_use_nodes(material, True)
             if material.node_tree.nodes.get(override.name):
                 continue
             material.blend_method = "HASHED"
@@ -261,12 +268,12 @@ class SectionCutawayManager:
 
         section_compare.name = "Last Section Compare"
 
-    @staticmethod
-    def add_default_material_if_none_exists(context):
+    @classmethod
+    def add_default_material_if_none_exists(cls, context):
         material = bpy.data.materials.get("Section Override")
         if not material:
             material = bpy.data.materials.new("Section Override")
-            material.use_nodes = True
+            cls.set_use_nodes(material, True)
 
         if context.scene.SectionProperties.should_section_selected_objects:
             objects = list(context.selected_objects)

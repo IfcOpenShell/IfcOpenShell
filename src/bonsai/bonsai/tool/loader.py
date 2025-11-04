@@ -116,7 +116,7 @@ class Loader(bonsai.core.tool.Loader):
         if transparency := surface_style.get("Transparency", None):
             alpha = 1 - transparency
         blender_material.diffuse_color = surface_style["SurfaceColour"] + (alpha,)
-        blender_material.use_nodes = False
+        tool.Style.set_use_nodes(blender_material, False)
 
     @classmethod
     def restart_material_node_tree(cls, blender_material: bpy.types.Material) -> None:
@@ -204,7 +204,7 @@ class Loader(bonsai.core.tool.Loader):
 
         # TODO: reset pins to default values if no values passed
         if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
-            blender_material.use_nodes = True
+            tool.Style.set_use_nodes(blender_material, True)
             cls.restart_material_node_tree(blender_material)
             bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
             assert bsdf
@@ -231,7 +231,7 @@ class Loader(bonsai.core.tool.Loader):
                 blender_material.blend_method = "BLEND"
 
         elif reflectance_method == "FLAT":
-            blender_material.use_nodes = True
+            tool.Style.set_use_nodes(blender_material, True)
             cls.restart_material_node_tree(blender_material)
 
             output = tool.Blender.get_material_node(blender_material, "OUTPUT_MATERIAL")

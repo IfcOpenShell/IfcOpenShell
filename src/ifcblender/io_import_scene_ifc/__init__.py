@@ -176,7 +176,8 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
                             mat.blend_method = "HASHED"
                             mat.use_screen_refraction = True
                             mat.refraction_depth = 0.1
-                            mat.use_nodes = True
+                            if bpy.app.version >= (5, 0, 0):
+                                mat.use_nodes = True
                             bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
                             bsdf.inputs[15].default_value = v
                         else:
