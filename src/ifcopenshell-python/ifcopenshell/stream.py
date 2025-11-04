@@ -295,6 +295,10 @@ try:
             )
 
         @property
+        def header(self) -> NoReturn:
+            raise NotImplementedError("`stream.header` is not implemented yet.")
+
+        @property
         def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
             return self._schema
 
