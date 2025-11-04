@@ -300,8 +300,9 @@ class sqlite(file):
         # Override to avoid clean up data unrelated to sqlite file.
         pass
 
-    def wrapped_data(self) -> NoReturn:
-        class_name = str(type(self))
+    @property
+    def wrapped_data(self) -> NoReturn:  # pyright: ignore[reportIncompatibleVariableOverride]
+        class_name = type(self).__name__
         raise Exception(
             f"No `wrapped_data` for {class_name}. `ifcopenshell.{class_name}` is probably confused with `ifcopenshell.file`."
         )
