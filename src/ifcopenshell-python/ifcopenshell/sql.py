@@ -18,6 +18,7 @@
 from __future__ import annotations
 import re
 import json
+import types
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
@@ -315,6 +316,14 @@ class sqlite(file):
     def schema_identifier(self) -> str:
         # The best option we've got for mimicing `file.schema_identifier`.
         return self._schema
+
+    @property
+    def header(self) -> types.SimpleNamespace:
+        # Mimicking `file_header` object from `ifcopenshell.file`.
+        header = types.SimpleNamespace(
+            file_description=types.SimpleNamespace(description=(self.mvd_str,)),
+        )
+        return header
 
 
 class sqlite_entity(entity_instance):
