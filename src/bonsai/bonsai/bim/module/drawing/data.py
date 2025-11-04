@@ -368,10 +368,6 @@ class DecoratorData:
             }
             literals_data.append(literal_data)
 
-        pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
-        hyperlink_url = pset_data.get("HyperlinkURL", "")
-        hyperlink_target = pset_data.get("HyperlinkTarget", "_blank")
-
         return {
             "Literals": literals_data,
             "FontSize": font_size,
@@ -379,8 +375,6 @@ class DecoratorData:
             "Newline_At": newline_at,
             "Reverse_List": reverse_list,
             "List_Separator": list_separator,
-            "HyperlinkURL": hyperlink_url,
-            "HyperlinkTarget": hyperlink_target,
         }
 
     @classmethod

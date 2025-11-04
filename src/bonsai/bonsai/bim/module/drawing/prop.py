@@ -764,19 +764,6 @@ class BIMTextProperties(PropertyGroup):
         name="Custom Symbol",
         description="Non-default symbol to use for this text.",
     )
-    hyperlink_url: StringProperty(
-        name="Hyperlink URL", description="URL to link to when the annotation is clicked", default=""
-    )
-    hyperlink_target: EnumProperty(
-        name="Hyperlink Target",
-        items=[
-            ("_blank", "New Window", "Open link in new window"),
-            ("_self", "Same Window", "Open link in same window"),
-            ("_parent", "Parent Frame", "Open link in parent frame"),
-            ("_top", "Top Frame", "Open link in top frame"),
-        ],
-        default="_blank",
-    )
 
     if TYPE_CHECKING:
         is_editing: bool
