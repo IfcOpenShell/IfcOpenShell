@@ -3144,6 +3144,7 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+<<<<<<< HEAD
         element = tool.Ifc.get_entity(obj)
         props = tool.Drawing.get_text_props(obj)
 
@@ -3176,24 +3177,13 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 
             captured_apply_settings["literals"].append(literal_data)
 
+=======
+>>>>>>> 13dbe7063 (refactor to use markdown-it-py to use multiple links per annotation and future-proof for other md featrues like bold, italic, etc.)
         core.edit_text(tool.Drawing, obj=obj)
 
         self.apply_to_selected_objects_with_captured_data(context, obj, captured_apply_settings)
 
         tool.Blender.update_viewport()
-        props = tool.Drawing.get_text_props(obj)
-        if props.hyperlink_url:
-            pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
-            pset_data["HyperlinkURL"] = props.hyperlink_url
-            pset_data["HyperlinkTarget"] = props.hyperlink_target
-
-            pset = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", should_inherit=False)
-            if pset:
-                pset = tool.Ifc.get().by_id(pset["id"])
-            else:
-                pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Annotation")
-
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=pset_data)
 
         return {"FINISHED"}
 
