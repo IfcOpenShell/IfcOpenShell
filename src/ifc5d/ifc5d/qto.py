@@ -36,6 +36,7 @@ import multiprocessing
 from collections import defaultdict
 from typing import Any, Literal, get_args, Union, NamedTuple
 from collections.abc import Iterable
+import time
 
 
 class Function(NamedTuple):
@@ -85,6 +86,7 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
     :param rules: Set of rules from `ifc5d.qto.rules`.
     """
+    start = time.perf_counter()
     results: ResultsDict = {}
     elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
     for element in elements:
@@ -124,6 +126,8 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
             if filtered_elements:
                 calculator.calculate(ifc_file, filtered_elements, qtos, results)
 
+    end = time.perf_counter()
+    print(f"Quantify function TIME: {end-start:.6f} seconds")
     return results
 
 
