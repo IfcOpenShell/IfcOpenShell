@@ -48,7 +48,6 @@ def build() -> None:
                 "-DGLTF_SUPPORT=ON",
                 "-DADD_COMMIT_SHA=ON",
                 "-DVERSION_OVERRIDE=ON",
-                "-DSCHEMA_VERSIONS=4",
             ]
         )
         run([str(REPO_WIN / "install-ifcopenshell.bat"), "vs2022-x64", "Release"])
