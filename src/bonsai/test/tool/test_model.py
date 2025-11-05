@@ -160,7 +160,7 @@ class TestStairCalculatedParams(NewFile):
             "number_of_treads": 3,
             "height": 1.0,
             "tread_run": 0.3,
-            "custom_first_last_tread_run": (0.0, 0.0),
+            "custom_first_last_tread_run": (None, None),
             "nosing_length": 0.0,
         }
         calculated_data_base = {
