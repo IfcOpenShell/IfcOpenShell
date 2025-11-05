@@ -710,7 +710,7 @@ class Blender(bonsai.core.tool.Blender):
 
         new_selected_objects = [o for o in selected_objects if cls.is_valid_data_block(o) and o in view_layer_objects]
 
-        if active_object and (not cls.is_valid_data_block(active_object) or active_object not in view_layer_objects):
+        if active_object and not cls.is_valid_data_block(active_object):
             active_object = None
 
         return context, active_object, new_selected_objects
