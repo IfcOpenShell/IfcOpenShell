@@ -19,6 +19,7 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union, Literal
+import ifcopenshell.util.element
 
 if TYPE_CHECKING:
     import bpy
@@ -464,25 +465,42 @@ def build_schedule(drawing: type[tool.Drawing], schedule: ifcopenshell.entity_in
 
 
 def sync_references(
-    ifc: type[tool.Ifc],
-    collector: type[tool.Collector],
-    drawing_tool: type[tool.Drawing],
-    drawing: ifcopenshell.entity_instance,
+    ifc: tool.Ifc, collector: tool.Collector, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance
 ) -> None:
-    if not drawing_tool.has_annotation(drawing):
-        return
-
-    if not (context := drawing_tool.get_annotation_context(drawing_tool.get_drawing_target_view(drawing))):
-        return
-
     group = drawing_tool.get_drawing_group(drawing)
     potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
+    context = drawing_tool.get_body_context()
+    moved_elements = set()
 
     for element in potential_reference_elements:
-        if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
+        obj = ifc.get_object(element)
+        if obj and ifc.is_moved(obj):
             drawing_tool.sync_object_placement(obj)
+            moved_elements.add(element)
 
-    for element in drawing_tool.get_group_elements(group):
+    group_elements = drawing_tool.get_group_elements(group)
+
+    try:
+        camera = ifc.get_object(drawing)
+        if camera:
+            import bpy
+            visible_elements = drawing_tool.get_elements_in_camera_view(camera, list(bpy.data.objects))
+            
+            for element in visible_elements:
+                if element and element not in group_elements:  # Avoid duplicates with group elements
+                    obj = ifc.get_object(element)
+                    if obj and ifc.is_moved(obj):
+                        drawing_tool.sync_object_placement(obj)
+                        moved_elements.add(element)
+    except Exception:
+        pass  # Silently handle errors in visible element checking
+
+    for element in group_elements:
+        obj = ifc.get_object(element)
+        if obj and ifc.is_moved(obj):
+            drawing_tool.sync_object_placement(obj)
+            moved_elements.add(element)
+        
         if not drawing_tool.is_auto_annotation(element):
             continue
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
@@ -502,13 +520,6 @@ def sync_references(
             if obj := ifc.get_object(element):
                 drawing_tool.delete_object(obj)
             ifc.run("root.remove_product", product=element)
-
-    for reference_element in potential_reference_elements:
-        if not drawing_tool.get_drawing_reference_annotation(drawing, reference_element):
-            if annotation := drawing_tool.generate_reference_annotation(drawing, reference_element, context):
-                ifc.run("drawing.assign_product", relating_product=reference_element, related_object=annotation)
-                ifc.run("group.assign_group", group=group, products=[annotation])
-                collector.assign(ifc.get_object(annotation))
 
 
 def select_assigned_product(drawing: type[tool.Drawing], context: bpy.types.Context) -> None:
