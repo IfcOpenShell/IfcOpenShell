@@ -52,6 +52,8 @@ def update_filter_search_value(self: "FilterValueSuggestions", context: bpy.type
     
     if ifc_filter.type == "instance" and " > " in value:
         value = value.split(" > ")[0]
+    elif ifc_filter.type == "parent" and " > " in value:
+        value = value.split(" > ")[-1]
     
     if ifc_filter.type == "property":
         if self.suggestion_type == "pset":
@@ -404,14 +406,74 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(ref.Identification)
         
         elif filter_type == "parent":
+            schema = tool.Ifc.schema()
+            parent_classes = set()
+            
             if search_from_outliner:
-                for element in outliner_elements:
-                    if element.is_a("IfcElement") and element.Name:
-                        suggestions.add(element.Name)
+                elements_to_check = outliner_elements
             else:
-                for element in ifc_file.by_type("IfcElement"):
-                    if element.Name:
-                        suggestions.add(element.Name)
+                elements_to_check = ifc_file
+            
+            for element in elements_to_check:
+                try:
+                    class_name = element.is_a()
+                    declaration = schema.declaration_by_name(class_name)
+                    
+                    current = declaration
+                    while current:
+                        parent_class = current.name()
+                        if parent_class.startswith('Ifc'):
+                            parent_classes.add(parent_class)
+                        try:
+                            current = current.supertype()
+                        except:
+                            break
+                except:
+                    continue
+            
+            def get_spatial_hierarchy(element):
+                hierarchy = []
+                current = element
+                
+                while current:
+                    if hasattr(current, 'Name') and current.Name:
+                        hierarchy.insert(0, current.Name)
+                    
+                    parent = None
+                    
+                    if hasattr(current, 'Decomposes') and current.Decomposes:
+                        for rel in current.Decomposes:
+                            if hasattr(rel, 'RelatingObject'):
+                                parent = rel.RelatingObject
+                                break
+                    
+                    if not parent and hasattr(current, 'Decomposes'):
+                        for rel in current.Decomposes:
+                            if rel.is_a('IfcRelAggregates') and hasattr(rel, 'RelatingObject'):
+                                parent = rel.RelatingObject
+                                break
+                    
+                    if not parent and hasattr(current, 'ContainedInStructure'):
+                        for rel in current.ContainedInStructure:
+                            if hasattr(rel, 'RelatingStructure'):
+                                parent = rel.RelatingStructure
+                                break
+                    
+                    current = parent
+                
+                return hierarchy
+            
+            for parent_class in parent_classes:
+                try:
+                    elements_of_type = ifc_file.by_type(parent_class)
+                    for element in elements_of_type:
+                        if hasattr(element, 'Name') and element.Name:
+                            hierarchy = get_spatial_hierarchy(element)
+                            if hierarchy:
+                                hierarchy_str = " > ".join(hierarchy)
+                                suggestions.add(hierarchy_str)
+                except:
+                    continue
         
         elif filter_type == "property":
             if search_from_outliner:
