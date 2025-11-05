@@ -53,11 +53,40 @@ def update_filter_search_value(self: "FilterValueSuggestions", context: bpy.type
     if ifc_filter.type == "instance":
         if ": " in value:
             value = value.split(": ")[-1]
+        else:
+            if " (" in value:
+                hierarchy_class = value.split(" (")
+                element_class = hierarchy_class[-1].rstrip(")")
+                if len(hierarchy_class) > 1 and " < " in hierarchy_class[0]:
+                    element_name = hierarchy_class[0].split(" < ")[-1]
+                else:
+                    element_name = hierarchy_class[0] if len(hierarchy_class) > 1 else None
+            else:
+                element_class = value.strip("()")
+                element_name = None
+            
+            ifc_file = tool.Ifc.get()
+            if ifc_file:
+                from bonsai.bim.ifc import IfcStore
+                for element_id in IfcStore.id_map.keys():
+                    try:
+                        element = ifc_file.by_id(element_id)
+                        if element.is_a() == element_class:
+                            if element_name is None or (hasattr(element, 'Name') and element.Name == element_name):
+                                value = element.GlobalId
+                                break
+                    except:
+                        continue
     elif ifc_filter.type == "parent":
         if " (" in value:
             value = value.split(" (")[0]
             if " < " in value:
                 value = value.split(" < ")[-1]
+    elif ifc_filter.type == "entity":
+        if " (superclass)" in value:
+            value = value.replace(" (superclass)", "")
+        if " > " in value:
+            value = value.split(" > ")[-1]
     elif " < " in value:
         value = value.split(" < ")[-1]
     
@@ -163,7 +192,7 @@ class FilterValueSuggestions(Operator):
         ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
         
         if ifc_filter.type == "entity":
-            label = "Select IFC Class"
+            label = "Select Class"
         elif ifc_filter.type == "attribute":
             if self.suggestion_type == "attribute_value":
                 label = f"Select Value for {ifc_filter.name}"
@@ -188,6 +217,8 @@ class FilterValueSuggestions(Operator):
             label = "Select Classification"
         elif ifc_filter.type == "parent":
             label = "Select Parent"
+        elif ifc_filter.type == "instance":
+            label = "Select GlobalId"
         else:
             label = "Select Value"
         
@@ -394,8 +425,36 @@ class FilterValueSuggestions(Operator):
             return path
         
         if filter_type == "entity":
+            all_classes = set()
+            schema = tool.Ifc.schema()
+            
             for element in outliner_elements:
-                suggestions.add(element.is_a())
+                class_name = element.is_a()
+                
+                inheritance_chain = []
+                try:
+                    entity = schema.declaration_by_name(class_name).as_entity()
+                    current = entity
+                    
+                    chain_names = [class_name]
+                    while current.supertype():
+                        supertype = current.supertype()
+                        chain_names.insert(0, supertype.name())
+                        current = supertype
+                    
+                    if len(chain_names) > 1:
+                        all_classes.add(" > ".join(chain_names))
+                    else:
+                        all_classes.add(class_name)
+                    
+                    for i in range(len(chain_names) - 1):
+                        superclass_chain = " > ".join(chain_names[:i+1])
+                        all_classes.add(f"{superclass_chain} (superclass)")
+                except:
+                    all_classes.add(class_name)
+                    continue
+            
+            suggestions.update(all_classes)
         
         elif filter_type == "type":
             for element_type in ifc_file.by_type("IfcTypeObject"):
@@ -482,6 +541,7 @@ class FilterValueSuggestions(Operator):
                             suggestions.add(pset.Name)
         
         elif filter_type == "instance":
+            element_data = []
             for element in outliner_elements:
                 if hasattr(element, 'GlobalId') and element.GlobalId:
                     hierarchy_path = build_hierarchy_path(element)
@@ -489,9 +549,21 @@ class FilterValueSuggestions(Operator):
                     
                     if len(hierarchy_path) > 0:
                         hierarchy_str = " < ".join(hierarchy_path)
-                        suggestions.add(f"{hierarchy_str} ({element_class}): {element.GlobalId}")
+                        display_str = f"{hierarchy_str} ({element_class})"
                     else:
-                        suggestions.add(f"({element_class}): {element.GlobalId}")
+                        display_str = f"({element_class})"
+                    
+                    element_data.append((display_str, element.GlobalId))
+            
+            display_counts = {}
+            for display_str, global_id in element_data:
+                display_counts[display_str] = display_counts.get(display_str, 0) + 1
+            
+            for display_str, global_id in element_data:
+                if display_counts[display_str] > 1:
+                    suggestions.add(f"{display_str}: {global_id}")
+                else:
+                    suggestions.add(display_str)
         
         return suggestions
 
