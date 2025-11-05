@@ -179,14 +179,14 @@ class TestStairCalculatedParams(NewFile):
         # zero-width first tread
         pset_data = pset_data_base.copy()
         calculated_data = calculated_data_base.copy()
-        pset_data["custom_first_last_tread_run"] = (0.0, 0.0)
+        pset_data["custom_first_last_tread_run"] = (0.0, None)
         calculated_data["Length"] = 0.9  # Only 3 treads at 0.3 each
         self.compare_data(pset_data, calculated_data)
 
         # zero-width last tread
         pset_data = pset_data_base.copy()
         calculated_data = calculated_data_base.copy()
-        pset_data["custom_first_last_tread_run"] = (0.3, 0.0)
+        pset_data["custom_first_last_tread_run"] = (None, 0.0)
         calculated_data["Length"] = 0.9  # Only 3 treads at 0.3 each
         self.compare_data(pset_data, calculated_data)
 
