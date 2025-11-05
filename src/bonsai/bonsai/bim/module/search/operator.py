@@ -50,14 +50,15 @@ def update_filter_search_value(self: "FilterValueSuggestions", context: bpy.type
     
     value = self.search_value
     
-    # Extract the appropriate part based on filter type
     if ifc_filter.type == "instance":
-        # For instance filter: format is "hierarchy (IfcClass): GlobalId"
-        # Extract GlobalId after the colon
         if ": " in value:
-            value = value.split(": ")[-1]  # Get GlobalId (after colon)
+            value = value.split(": ")[-1]
+    elif ifc_filter.type == "parent":
+        if " (" in value:
+            value = value.split(" (")[0]
+            if " < " in value:
+                value = value.split(" < ")[-1]
     elif " < " in value:
-        # For other filters with hierarchy, get the element name (last part)
         value = value.split(" < ")[-1]
     
     if ifc_filter.type == "property":
@@ -461,14 +462,14 @@ class FilterValueSuggestions(Operator):
                     
                     if has_children:
                         hierarchy_path = build_hierarchy_path(element)
+                        element_class = element.is_a()
                         
-                        if len(hierarchy_path) > 1:
+                        if len(hierarchy_path) > 0:
                             hierarchy_str = " < ".join(hierarchy_path)
-                            suggestions.add(hierarchy_str)
-                        elif len(hierarchy_path) == 1:
-                            suggestions.add(hierarchy_path[0])
-                        elif hasattr(element, 'Name') and element.Name:
-                            suggestions.add(element.Name)
+                            suggestions.add(f"{hierarchy_str} ({element_class})")
+                        else:
+                            element_name = element.Name if hasattr(element, 'Name') and element.Name else element_class
+                            suggestions.add(f"{element_name} ({element_class})")
                 except:
                     continue
         
@@ -486,12 +487,10 @@ class FilterValueSuggestions(Operator):
                     hierarchy_path = build_hierarchy_path(element)
                     element_class = element.is_a()
                     
-                    # Build instance suggestion with hierarchy (IfcClass): GlobalId
                     if len(hierarchy_path) > 0:
                         hierarchy_str = " < ".join(hierarchy_path)
                         suggestions.add(f"{hierarchy_str} ({element_class}): {element.GlobalId}")
                     else:
-                        # No hierarchy path - just class and GlobalId
                         suggestions.add(f"({element_class}): {element.GlobalId}")
         
         return suggestions
