@@ -472,6 +472,27 @@ def sync_references(
     context = drawing_tool.get_body_context()
     moved_elements = set()
 
+    import bpy
+    gizmo_enabled = False
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D':
+                for space in area.spaces:
+                    if space.type == 'VIEW_3D':
+                        if hasattr(space, 'show_gizmo_object_translate') and space.show_gizmo_object_translate:
+                            gizmo_enabled = True
+                            break
+                if gizmo_enabled:
+                    break
+        if gizmo_enabled:
+            break
+
+    if gizmo_enabled:
+        import bonsai.tool as tool
+        for obj in bpy.data.objects:
+            if ifc.get_entity(obj) and ifc.is_moved(obj):
+                tool.Geometry.record_object_position(obj)
+
     for element in potential_reference_elements:
         obj = ifc.get_object(element)
         if obj and ifc.is_moved(obj):
@@ -482,8 +503,6 @@ def sync_references(
 
     camera = ifc.get_object(drawing)
     if camera:
-        import bpy
-
         visible_elements = drawing_tool.get_elements_in_camera_view(camera, list(bpy.data.objects))
 
         for element in visible_elements:
