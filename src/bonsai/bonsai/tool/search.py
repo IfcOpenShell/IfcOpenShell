@@ -145,7 +145,7 @@ class Search(bonsai.core.tool.Search):
         for filter_group in filter_groups:
             group_results = set()
             
-            for ifc_filter in filter_group.filters:
+            for filter_index, ifc_filter in enumerate(filter_group.filters):
                 if not ifc_filter.value:
                     continue
                 
@@ -154,7 +154,7 @@ class Search(bonsai.core.tool.Search):
                     continue
                 
                 if ifc_filter.type in ("entity", "instance"):
-                    mode = ifc_filter.filter_mode
+                    mode = "ADD" if filter_index == 0 else ifc_filter.filter_mode
                 else:
                     mode = "FILTER" if group_results else "ADD"
                 
