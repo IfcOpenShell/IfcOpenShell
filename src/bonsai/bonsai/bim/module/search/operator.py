@@ -386,33 +386,15 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(ref.Identification)
         
         elif filter_type == "parent":
-            schema = tool.Ifc.schema()
-            parent_classes = set()
-            
-            for element in outliner_elements:
-                try:
-                    class_name = element.is_a()
-                    declaration = schema.declaration_by_name(class_name)
-                    
-                    current = declaration
-                    while current:
-                        parent_class = current.name()
-                        if parent_class.startswith('Ifc'):
-                            parent_classes.add(parent_class)
-                        try:
-                            current = current.supertype()
-                        except:
-                            break
-                except:
-                    continue
-            
-            def get_spatial_hierarchy(element):
-                hierarchy = []
+            def build_hierarchy_path(element):
+                """Build hierarchy path from root to element using actual element names"""
+                path = []
                 current = element
                 
+                # Walk up the hierarchy collecting element names
                 while current:
                     if hasattr(current, 'Name') and current.Name:
-                        hierarchy.insert(0, current.Name)
+                        path.insert(0, current.Name)
                     
                     parent = None
                     
@@ -422,13 +404,7 @@ class FilterValueSuggestions(Operator):
                                 parent = rel.RelatingObject
                                 break
                     
-                    if not parent and hasattr(current, 'Decomposes'):
-                        for rel in current.Decomposes:
-                            if rel.is_a('IfcRelAggregates') and hasattr(rel, 'RelatingObject'):
-                                parent = rel.RelatingObject
-                                break
-                    
-                    if not parent and hasattr(current, 'ContainedInStructure'):
+                    if not parent and hasattr(current, 'ContainedInStructure') and current.ContainedInStructure:
                         for rel in current.ContainedInStructure:
                             if hasattr(rel, 'RelatingStructure'):
                                 parent = rel.RelatingStructure
@@ -436,17 +412,37 @@ class FilterValueSuggestions(Operator):
                     
                     current = parent
                 
-                return hierarchy
+                return path
             
-            for parent_class in parent_classes:
+            for element in outliner_elements:
                 try:
-                    elements_of_type = ifc_file.by_type(parent_class)
-                    for element in elements_of_type:
-                        if hasattr(element, 'Name') and element.Name:
-                            hierarchy = get_spatial_hierarchy(element)
-                            if hierarchy:
-                                hierarchy_str = " > ".join(hierarchy)
-                                suggestions.add(hierarchy_str)
+                    has_children = False
+                    
+                    if hasattr(element, 'IsDecomposedBy') and element.IsDecomposedBy:
+                        for rel in element.IsDecomposedBy:
+                            if hasattr(rel, 'RelatedObjects') and rel.RelatedObjects:
+                                has_children = True
+                                break
+                    
+                    if not has_children and hasattr(element, 'ContainsElements') and element.ContainsElements:
+                        for rel in element.ContainsElements:
+                            if hasattr(rel, 'RelatedElements') and rel.RelatedElements:
+                                has_children = True
+                                break
+                    
+                    if not has_children and hasattr(element, 'HasOpenings') and element.HasOpenings:
+                        has_children = True
+                    
+                    if has_children:
+                        hierarchy_path = build_hierarchy_path(element)
+                        
+                        if len(hierarchy_path) > 1:
+                            hierarchy_str = " > ".join(hierarchy_path)
+                            suggestions.add(hierarchy_str)
+                        elif len(hierarchy_path) == 1:
+                            suggestions.add(hierarchy_path[0])
+                        elif hasattr(element, 'Name') and element.Name:
+                            suggestions.add(element.Name)
                 except:
                     continue
         
