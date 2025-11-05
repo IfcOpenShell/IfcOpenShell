@@ -1333,9 +1333,12 @@ class Model(bonsai.core.tool.Model):
 
         return bool((DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"])
 
+    CustomTreadRunType = Union[tuple[float, float], tuple[None, None]]
+
     @classmethod
     def get_active_stair_calculated_params(cls, pset_data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
-        props = bpy.context.active_object.BIMStairProperties
+        assert (obj := bpy.context.active_object)
+        props = tool.Model.get_stair_props(obj)
 
         if props.is_editing:
             si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -1346,15 +1349,18 @@ class Model(bonsai.core.tool.Model):
             last_tread_run = props.custom_first_last_tread_run[1] / si_conversion
             nosing_length = props.nosing_length / si_conversion
         else:
-            number_of_treads = pset_data["number_of_treads"]
-            height = pset_data["height"]
-            tread_run = pset_data["tread_run"]
+            assert pset_data
+            number_of_treads: int = pset_data["number_of_treads"]
+            height: float = pset_data["height"]
+            tread_run: float = pset_data["tread_run"]
             # use .get to not break the old .ifc models
-            custom_first_last_tread_run = pset_data.get("custom_first_last_tread_run", (0, 0))
+            custom_first_last_tread_run: tool.Model.CustomTreadRunType = pset_data.get(
+                "custom_first_last_tread_run", (0, 0)
+            )
             first_tread_run, last_tread_run = custom_first_last_tread_run
             nosing_length = pset_data.get("nosing_length", 0)
 
-        calculated_params = {}
+        calculated_params: dict[str, Any] = {}
         number_of_rises = number_of_treads + 1
         calculated_params["Number of Risers"] = number_of_rises
         calculated_params["Tread Rise"] = round(height / number_of_rises, 5)
@@ -1362,15 +1368,15 @@ class Model(bonsai.core.tool.Model):
         # calculate stair length
         # Start with all treads using default tread_run
         n_default_tread_runs = number_of_rises
-        length = 0
+        length = 0.0
 
-        # If first tread has custom width (non-zero), use it instead of default
-        if first_tread_run != 0:
+        # If first tread has custom width (non-None), use it instead of default.
+        if first_tread_run is not None:
             n_default_tread_runs -= 1
             length += first_tread_run
 
-        # If last tread has custom width (non-zero), use it instead of default
-        if last_tread_run != 0:
+        # If last tread has custom width (non-None), use it instead of default
+        if last_tread_run is not None:
             n_default_tread_runs -= 1
             length += last_tread_run
 
