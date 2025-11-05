@@ -50,10 +50,15 @@ def update_filter_search_value(self: "FilterValueSuggestions", context: bpy.type
     
     value = self.search_value
     
-    if ifc_filter.type == "instance" and " > " in value:
-        value = value.split(" > ")[0]
-    elif ifc_filter.type == "parent" and " > " in value:
-        value = value.split(" > ")[-1]
+    # Extract the appropriate part based on filter type
+    if ifc_filter.type == "instance":
+        # For instance filter: format is "hierarchy (IfcClass): GlobalId"
+        # Extract GlobalId after the colon
+        if ": " in value:
+            value = value.split(": ")[-1]  # Get GlobalId (after colon)
+    elif " < " in value:
+        # For other filters with hierarchy, get the element name (last part)
+        value = value.split(" < ")[-1]
     
     if ifc_filter.type == "property":
         if self.suggestion_type == "pset":
@@ -356,6 +361,37 @@ class FilterValueSuggestions(Operator):
             except:
                 continue
         
+        # Helper function to build hierarchy path using element names
+        def build_hierarchy_path(element):
+            """Build hierarchy path from root to element using actual element names"""
+            path = []
+            current = element
+            
+            # Walk up the hierarchy collecting element names
+            while current:
+                if hasattr(current, 'Name') and current.Name:
+                    path.insert(0, current.Name)
+                
+                parent = None
+                
+                # Check Decomposes (inverse of IsDecomposedBy)
+                if hasattr(current, 'Decomposes') and current.Decomposes:
+                    for rel in current.Decomposes:
+                        if hasattr(rel, 'RelatingObject'):
+                            parent = rel.RelatingObject
+                            break
+                
+                # Check ContainedInStructure (inverse of ContainsElements)
+                if not parent and hasattr(current, 'ContainedInStructure') and current.ContainedInStructure:
+                    for rel in current.ContainedInStructure:
+                        if hasattr(rel, 'RelatingStructure'):
+                            parent = rel.RelatingStructure
+                            break
+                
+                current = parent
+            
+            return path
+        
         if filter_type == "entity":
             for element in outliner_elements:
                 suggestions.add(element.is_a())
@@ -363,7 +399,13 @@ class FilterValueSuggestions(Operator):
         elif filter_type == "type":
             for element_type in ifc_file.by_type("IfcTypeObject"):
                 if element_type.Name:
-                    suggestions.add(element_type.Name)
+                    hierarchy_path = build_hierarchy_path(element_type)
+                    if len(hierarchy_path) > 1:
+                        suggestions.add(" < ".join(hierarchy_path))
+                    elif len(hierarchy_path) == 1:
+                        suggestions.add(hierarchy_path[0])
+                    else:
+                        suggestions.add(element_type.Name)
         
         elif filter_type == "material":
             for material in ifc_file.by_type("IfcMaterial"):
@@ -373,12 +415,24 @@ class FilterValueSuggestions(Operator):
         elif filter_type == "location":
             for spatial in ifc_file.by_type("IfcSpatialStructureElement"):
                 if spatial.Name:
-                    suggestions.add(spatial.Name)
+                    hierarchy_path = build_hierarchy_path(spatial)
+                    if len(hierarchy_path) > 1:
+                        suggestions.add(" < ".join(hierarchy_path))
+                    elif len(hierarchy_path) == 1:
+                        suggestions.add(hierarchy_path[0])
+                    else:
+                        suggestions.add(spatial.Name)
         
         elif filter_type == "group":
             for group in ifc_file.by_type("IfcGroup"):
                 if group.Name:
-                    suggestions.add(group.Name)
+                    hierarchy_path = build_hierarchy_path(group)
+                    if len(hierarchy_path) > 1:
+                        suggestions.add(" < ".join(hierarchy_path))
+                    elif len(hierarchy_path) == 1:
+                        suggestions.add(hierarchy_path[0])
+                    else:
+                        suggestions.add(group.Name)
         
         elif filter_type == "classification":
             for ref in ifc_file.by_type("IfcClassificationReference"):
@@ -386,34 +440,6 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(ref.Identification)
         
         elif filter_type == "parent":
-            def build_hierarchy_path(element):
-                """Build hierarchy path from root to element using actual element names"""
-                path = []
-                current = element
-                
-                # Walk up the hierarchy collecting element names
-                while current:
-                    if hasattr(current, 'Name') and current.Name:
-                        path.insert(0, current.Name)
-                    
-                    parent = None
-                    
-                    if hasattr(current, 'Decomposes') and current.Decomposes:
-                        for rel in current.Decomposes:
-                            if hasattr(rel, 'RelatingObject'):
-                                parent = rel.RelatingObject
-                                break
-                    
-                    if not parent and hasattr(current, 'ContainedInStructure') and current.ContainedInStructure:
-                        for rel in current.ContainedInStructure:
-                            if hasattr(rel, 'RelatingStructure'):
-                                parent = rel.RelatingStructure
-                                break
-                    
-                    current = parent
-                
-                return path
-            
             for element in outliner_elements:
                 try:
                     has_children = False
@@ -437,7 +463,7 @@ class FilterValueSuggestions(Operator):
                         hierarchy_path = build_hierarchy_path(element)
                         
                         if len(hierarchy_path) > 1:
-                            hierarchy_str = " > ".join(hierarchy_path)
+                            hierarchy_str = " < ".join(hierarchy_path)
                             suggestions.add(hierarchy_str)
                         elif len(hierarchy_path) == 1:
                             suggestions.add(hierarchy_path[0])
@@ -457,12 +483,16 @@ class FilterValueSuggestions(Operator):
         elif filter_type == "instance":
             for element in outliner_elements:
                 if hasattr(element, 'GlobalId') and element.GlobalId:
+                    hierarchy_path = build_hierarchy_path(element)
                     element_class = element.is_a()
-                    element_name = element.Name if hasattr(element, 'Name') and element.Name else ""
-                    if element_name:
-                        suggestions.add(f"{element.GlobalId} > {element_class} > {element_name}")
+                    
+                    # Build instance suggestion with hierarchy (IfcClass): GlobalId
+                    if len(hierarchy_path) > 0:
+                        hierarchy_str = " < ".join(hierarchy_path)
+                        suggestions.add(f"{hierarchy_str} ({element_class}): {element.GlobalId}")
                     else:
-                        suggestions.add(f"{element.GlobalId} > {element_class}")
+                        # No hierarchy path - just class and GlobalId
+                        suggestions.add(f"({element_class}): {element.GlobalId}")
         
         return suggestions
 
