@@ -345,22 +345,24 @@ class BIMArrayProperties(PropertyGroup):
         method: Literal["OFFSET", "DISTRIBUTE"]
         sync_children: bool
         relating_array_object: Union[bpy.types.Object, None]
+
+
 def update_total_length_target(self: "BIMStairProperties", context: bpy.types.Context) -> None:
     """Update tread_run when total_length_target changes"""
     # Calculate available length for default treads
     available_length = self.total_length_target
     n_default_treads = self.number_of_treads + 1  # number of risers
-    
+
     # Subtract custom first tread if not locked and not zero
     if not self.custom_tread_lock and self.custom_first_last_tread_run[0] != 0:
         available_length -= self.custom_first_last_tread_run[0]
         n_default_treads -= 1
-    
+
     # Subtract custom last tread if not locked and not zero
     if not self.custom_tread_lock and self.custom_first_last_tread_run[1] != 0:
         available_length -= self.custom_first_last_tread_run[1]
         n_default_treads -= 1
-    
+
     # Calculate tread_run for remaining treads
     if n_default_treads > 0:
         self["tread_run"] = available_length / n_default_treads
@@ -375,7 +377,7 @@ def update_tread_run(self: "BIMStairProperties", context: bpy.types.Context) -> 
         # Calculate how much length custom treads take up
         custom_length = 0
         n_custom_treads = 0
-        
+
         if not self.custom_tread_lock:
             if self.custom_first_last_tread_run[0] != 0:
                 custom_length += self.custom_first_last_tread_run[0]
@@ -383,7 +385,7 @@ def update_tread_run(self: "BIMStairProperties", context: bpy.types.Context) -> 
             if self.custom_first_last_tread_run[1] != 0:
                 custom_length += self.custom_first_last_tread_run[1]
                 n_custom_treads += 1
-        
+
         # Calculate how many default treads fit in remaining space
         available_length = self.total_length_target - custom_length
         if self.tread_run > 0:
@@ -395,7 +397,7 @@ def update_tread_run(self: "BIMStairProperties", context: bpy.types.Context) -> 
         # Calculate total length from current settings
         n_default_treads = self.number_of_treads + 1
         total_length = 0
-        
+
         if not self.custom_tread_lock:
             if self.custom_first_last_tread_run[0] != 0:
                 total_length += self.custom_first_last_tread_run[0]
@@ -403,7 +405,7 @@ def update_tread_run(self: "BIMStairProperties", context: bpy.types.Context) -> 
             if self.custom_first_last_tread_run[1] != 0:
                 total_length += self.custom_first_last_tread_run[1]
                 n_default_treads -= 1
-        
+
         total_length += n_default_treads * self.tread_run
         self["total_length_target"] = total_length
 
@@ -414,7 +416,7 @@ def update_number_of_treads(self: "BIMStairProperties", context: bpy.types.Conte
         # Calculate available length for default treads
         available_length = self.total_length_target
         n_default_treads = self.number_of_treads + 1
-        
+
         if not self.custom_tread_lock:
             if self.custom_first_last_tread_run[0] != 0:
                 available_length -= self.custom_first_last_tread_run[0]
@@ -422,7 +424,7 @@ def update_number_of_treads(self: "BIMStairProperties", context: bpy.types.Conte
             if self.custom_first_last_tread_run[1] != 0:
                 available_length -= self.custom_first_last_tread_run[1]
                 n_default_treads -= 1
-        
+
         if n_default_treads > 0:
             self["tread_run"] = available_length / n_default_treads
         else:
@@ -431,7 +433,7 @@ def update_number_of_treads(self: "BIMStairProperties", context: bpy.types.Conte
         # Calculate total length from current settings
         n_default_treads = self.number_of_treads + 1
         total_length = 0
-        
+
         if not self.custom_tread_lock:
             if self.custom_first_last_tread_run[0] != 0:
                 total_length += self.custom_first_last_tread_run[0]
@@ -439,7 +441,7 @@ def update_number_of_treads(self: "BIMStairProperties", context: bpy.types.Conte
             if self.custom_first_last_tread_run[1] != 0:
                 total_length += self.custom_first_last_tread_run[1]
                 n_default_treads -= 1
-        
+
         total_length += n_default_treads * self.tread_run
         self["total_length_target"] = total_length
 
@@ -450,7 +452,7 @@ def update_custom_first_last_tread_run(self: "BIMStairProperties", context: bpy.
         # Recalculate tread_run to maintain total length
         available_length = self.total_length_target
         n_default_treads = self.number_of_treads + 1
-        
+
         if not self.custom_tread_lock:
             if self.custom_first_last_tread_run[0] != 0:
                 available_length -= self.custom_first_last_tread_run[0]
@@ -458,14 +460,14 @@ def update_custom_first_last_tread_run(self: "BIMStairProperties", context: bpy.
             if self.custom_first_last_tread_run[1] != 0:
                 available_length -= self.custom_first_last_tread_run[1]
                 n_default_treads -= 1
-        
+
         if n_default_treads > 0:
             self["tread_run"] = available_length / n_default_treads
     else:
         # Recalculate total length
         n_default_treads = self.number_of_treads + 1
         total_length = 0
-        
+
         if not self.custom_tread_lock:
             if self.custom_first_last_tread_run[0] != 0:
                 total_length += self.custom_first_last_tread_run[0]
@@ -473,9 +475,10 @@ def update_custom_first_last_tread_run(self: "BIMStairProperties", context: bpy.
             if self.custom_first_last_tread_run[1] != 0:
                 total_length += self.custom_first_last_tread_run[1]
                 n_default_treads -= 1
-        
+
         total_length += n_default_treads * self.tread_run
         self["total_length_target"] = total_length
+
 
 StairType = Literal["CONCRETE", "WOOD/STEEL", "GENERIC"]
 
@@ -531,14 +534,14 @@ class BIMStairProperties(PropertyGroup):
         update=update_custom_tread_lock,
     )
     custom_first_last_tread_run: bpy.props.FloatVectorProperty(
-            name="Custom First / Last Treads Widths",
-            description='Specify custom first / last treads widths, different from the general "Tread Run". Leave 0 to disable.',
-            default=(0, 0),
-            min=0,
-            unit="LENGTH",
-            size=2,
-            update=update_custom_first_last_tread_run,  # Added update callback
-        )
+        name="Custom First / Last Treads Widths",
+        description='Specify custom first / last treads widths, different from the general "Tread Run". Leave 0 to disable.',
+        default=(0, 0),
+        min=0,
+        unit="LENGTH",
+        size=2,
+        update=update_custom_first_last_tread_run,  # Added update callback
+    )
     nosing_length: bpy.props.FloatProperty(
         name="Nosing Length",
         description=(
