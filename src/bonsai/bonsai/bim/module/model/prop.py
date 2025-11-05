@@ -608,16 +608,18 @@ class BIMStairProperties(PropertyGroup):
             }
             stair_kwargs.update(generic_props)
 
+        non_si_units_props = self.non_si_units_props
         # If locked, use tread_run for both first and last treads
         if self.custom_tread_lock:
-            stair_kwargs["custom_first_last_tread_run"] = (self.tread_run, self.tread_run)
+            non_si_units_props += ("custom_first_last_tread_run",)
+            stair_kwargs["custom_first_last_tread_run"] = (None, None)
         else:
             stair_kwargs["custom_first_last_tread_run"] = self.custom_first_last_tread_run
 
         if not convert_to_project_units:
             return stair_kwargs
 
-        stair_kwargs = tool.Model.convert_data_to_project_units(stair_kwargs, self.non_si_units_props)
+        stair_kwargs = tool.Model.convert_data_to_project_units(stair_kwargs, non_si_units_props)
         return stair_kwargs
 
     def get_props_kwargs_for_ifc_export(self, convert_to_project_units=False, stair_type=None):

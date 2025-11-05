@@ -1398,7 +1398,7 @@ class Model(bonsai.core.tool.Model):
         has_top_nib=None,
         top_slab_depth=None,
         base_slab_depth=None,
-        custom_first_last_tread_run=(0, 0),
+        custom_first_last_tread_run: Union[tuple[float, float], tuple[None, None]] = (None, None),
         nosing_length=0,
         # CONCRETE GENERIC STAIR ARGUMENTS
         nosing_depth=0,
