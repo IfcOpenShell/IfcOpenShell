@@ -2184,12 +2184,9 @@ class ActivateModel(bpy.types.Operator):
         dprops = tool.Drawing.get_document_props()
         
         if dprops.active_drawing_id:
-            try:
-                active_drawing = tool.Ifc.get().by_id(dprops.active_drawing_id)
-                core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=active_drawing)
-            except Exception as e:
-                print(f"Error syncing references before activating model: {e}")
-        
+            active_drawing = tool.Ifc.get().by_id(dprops.active_drawing_id)
+            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=active_drawing)
+
         dprops.active_drawing_id = 0
         model_props = tool.Model.get_model_props()
         if model_props.show_cut_decorator:

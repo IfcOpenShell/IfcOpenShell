@@ -48,6 +48,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
+import ifcopenshell.util.placement
 import bonsai.bim.helper
 import bonsai.bim.import_ifc
 import bonsai.core.root
@@ -2084,7 +2085,6 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def sync_object_placement(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        import ifcopenshell.util.placement
         
         element = tool.Ifc.get_entity(obj)
         
@@ -2098,13 +2098,10 @@ class Drawing(bonsai.core.tool.Drawing):
             return
         
         delta_translation = None
-        try:
-            ifc_matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-            ifc_translation = ifc_matrix[:3, 3]
-            blender_translation = blender_matrix[:3, 3]
-            delta_translation = blender_translation - ifc_translation
-        except Exception:
-            pass  # Silently handle errors in delta calculation
+        ifc_matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        ifc_translation = ifc_matrix[:3, 3]
+        blender_translation = blender_matrix[:3, 3]
+        delta_translation = blender_translation - ifc_translation
         
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         
@@ -2119,18 +2116,14 @@ class Drawing(bonsai.core.tool.Drawing):
                         
                     part_obj = tool.Ifc.get_object(part)
                     if part_obj and hasattr(part_obj, 'matrix_world'):
-                        try:
-                            import bpy
-                            if isinstance(part_obj, bpy.types.Object):
-                                is_part_moved = tool.Ifc.is_moved(part_obj)
-                                
-                                if not is_part_moved:
-                                    part_obj.matrix_world.translation += mathutils.Vector(delta_translation)
-                                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=part_obj)
-                                else:
-                                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=part_obj)
-                        except Exception:
-                            pass
+                        if isinstance(part_obj, bpy.types.Object):
+                            is_part_moved = tool.Ifc.is_moved(part_obj)
+                            
+                            if not is_part_moved:
+                                part_obj.matrix_world.translation += mathutils.Vector(delta_translation)
+                                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=part_obj)
+                            else:
+                                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=part_obj)
         
         return element
 

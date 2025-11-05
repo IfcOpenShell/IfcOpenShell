@@ -480,20 +480,17 @@ def sync_references(
 
     group_elements = drawing_tool.get_group_elements(group)
 
-    try:
-        camera = ifc.get_object(drawing)
-        if camera:
-            import bpy
-            visible_elements = drawing_tool.get_elements_in_camera_view(camera, list(bpy.data.objects))
-            
-            for element in visible_elements:
-                if element and element not in group_elements:  # Avoid duplicates with group elements
-                    obj = ifc.get_object(element)
-                    if obj and ifc.is_moved(obj):
-                        drawing_tool.sync_object_placement(obj)
-                        moved_elements.add(element)
-    except Exception:
-        pass  # Silently handle errors in visible element checking
+    camera = ifc.get_object(drawing)
+    if camera:
+        import bpy
+        visible_elements = drawing_tool.get_elements_in_camera_view(camera, list(bpy.data.objects))
+        
+        for element in visible_elements:
+            if element and element not in group_elements:  # Avoid duplicates with group elements
+                obj = ifc.get_object(element)
+                if obj and ifc.is_moved(obj):
+                    drawing_tool.sync_object_placement(obj)
+                    moved_elements.add(element)
 
     for element in group_elements:
         obj = ifc.get_object(element)
