@@ -41,6 +41,7 @@ classes = (
     operator.SelectIfcClass,
     operator.SelectSimilar,
     operator.ShowAllElements,
+    operator.ToggleFilterInclusion,
     operator.ToggleFilterSelection,
     prop.BIMColour,
     prop.BIMFilterItem,

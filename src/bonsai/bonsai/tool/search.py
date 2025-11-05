@@ -83,11 +83,17 @@ class Search(bonsai.core.tool.Search):
                 if ifc_filter.type == "instance":
                     if "bpy.data.texts" in ifc_filter.value:
                         data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
-                        filter_group_query.append(bpy.data.texts[data_name].as_string())
+                        value = bpy.data.texts[data_name].as_string()
                     else:
-                        filter_group_query.append(ifc_filter.value)
+                        value = ifc_filter.value
+                    if ifc_filter.filter_mode == "SUBTRACT":
+                        value = f"!{value}"
+                    filter_group_query.append(value)
                 elif ifc_filter.type == "entity":
-                    filter_group_query.append(ifc_filter.value)
+                    value = ifc_filter.value
+                    if ifc_filter.filter_mode == "SUBTRACT":
+                        value = f"!{value}"
+                    filter_group_query.append(value)
                 elif ifc_filter.type == "attribute":
                     if not ifc_filter.name:
                         continue
@@ -126,6 +132,113 @@ class Search(bonsai.core.tool.Search):
                     filter_group_query.append(f"query:{keys}{comparison}{value}")
             query.append(", ".join(filter_group_query))
         return " + ".join(query)
+
+    @classmethod
+    def execute_filter_groups(cls, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]) -> set:
+        """
+        Execute filter groups with chaining support.
+        Within each group, filters chain: ADD builds the set, SUBTRACT/FILTER operate on that set.
+        Groups are combined with union (same as original " + " behavior).
+        """
+        all_group_results = []
+        
+        for filter_group in filter_groups:
+            group_results = set()
+            
+            for ifc_filter in filter_group.filters:
+                if not ifc_filter.value:
+                    continue
+                
+                query = cls._export_single_filter(ifc_filter, mode=ifc_filter.filter_mode if ifc_filter.type in ("entity", "instance") else "ADD")
+                if not query:
+                    continue
+                
+                if ifc_filter.type in ("entity", "instance"):
+                    mode = ifc_filter.filter_mode
+                else:
+                    mode = "FILTER" if group_results else "ADD"
+                
+                if mode == "ADD":
+                    results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+                    group_results.update(results)
+                    
+                elif mode == "SUBTRACT":
+                    if group_results:
+                        query_without_prefix = query[1:] if query.startswith("!") else query
+                        elements_to_remove = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query_without_prefix, elements=group_results)
+                        group_results -= elements_to_remove
+                    else:
+                        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+                        group_results.update(results)
+                        
+                elif mode == "FILTER":
+                    if group_results:
+                        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query, elements=group_results)
+                        group_results = results
+            
+            if group_results:
+                all_group_results.append(group_results)
+        
+        final_results = set()
+        for group_results in all_group_results:
+            final_results.update(group_results)
+        
+        return final_results
+
+    @classmethod
+    def _export_single_filter(cls, ifc_filter: BIMFacet, mode: str = "ADD") -> str:
+        """Export a single filter to query string based on its type and mode."""
+        if ifc_filter.type == "instance":
+            if "bpy.data.texts" in ifc_filter.value:
+                data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
+                value = bpy.data.texts[data_name].as_string()
+            else:
+                value = ifc_filter.value
+            if mode == "SUBTRACT":
+                value = f"!{value}"
+            return value
+        elif ifc_filter.type == "entity":
+            value = ifc_filter.value
+            if mode == "SUBTRACT":
+                value = f"!{value}"
+            return value
+        elif ifc_filter.type == "attribute":
+            if not ifc_filter.name:
+                return ""
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"{ifc_filter.name}{comparison}{value}"
+        elif ifc_filter.type == "type":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"type{comparison}{value}"
+        elif ifc_filter.type == "material":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"material{comparison}{value}"
+        elif ifc_filter.type == "property":
+            if not ifc_filter.pset or not ifc_filter.name:
+                return ""
+            pset = cls.wrap_value(ifc_filter, ifc_filter.pset)
+            name = cls.wrap_value(ifc_filter, ifc_filter.name)
+            comparison = ifc_filter.comparison
+            value = cls.wrap_value(ifc_filter, ifc_filter.value)
+            return f"{pset}.{name} {comparison} {value}"
+        elif ifc_filter.type == "classification":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"classification{comparison}{value}"
+        elif ifc_filter.type == "location":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"location{comparison}{value}"
+        elif ifc_filter.type == "group":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"group{comparison}{value}"
+        elif ifc_filter.type == "parent":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"parent{comparison}{value}"
+        elif ifc_filter.type == "query":
+            keys = cls.wrap_value(ifc_filter, ifc_filter.name)
+            comparison = ifc_filter.comparison or "="
+            value = cls.wrap_value(ifc_filter, ifc_filter.value)
+            return f"query:{keys}{comparison}{value}"
+        return ""
 
     @classmethod
     def get_comparison_and_value(

@@ -626,6 +626,33 @@ class AddFilter(Operator):
         return {"FINISHED"}
 
 
+class ToggleFilterInclusion(Operator):
+    bl_idname = "bim.toggle_filter_inclusion"
+    bl_label = "Toggle Filter Mode"
+    bl_description = "Cycle between Add (+), Subtract (-), and Filter modes for Class and GlobalId filters"
+    bl_options = {"REGISTER", "UNDO"}
+
+    group_index: IntProperty()
+    filter_index: IntProperty()
+    module: StringProperty()
+
+    def execute(self, context):
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        filter_group = filter_groups[self.group_index]
+        ifc_filter = filter_group.filters[self.filter_index]
+        
+        has_previous_filters = self.filter_index > 0
+        
+        if ifc_filter.filter_mode == "ADD":
+            ifc_filter.filter_mode = "SUBTRACT"
+        elif ifc_filter.filter_mode == "SUBTRACT":
+            ifc_filter.filter_mode = "FILTER"
+        else:
+            ifc_filter.filter_mode = "ADD"
+        
+        return {"FINISHED"}
+
+
 class SelectFilterElements(bpy.types.Operator):
     bl_idname = "bim.select_filter_elements"
     bl_label = "Select Filter Elements"
@@ -665,8 +692,26 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
             return
 
     def draw(self, context):
-        row = self.layout.row()
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        layout = self.layout
+        
+        row = layout.row()
         row.prop(self, "query", text="")
+        
+        layout.separator()
+        
+        box = layout.box()
+        box.label(text="Query Syntax:", icon="INFO")
+        box.label(text="• Search groups are joined with ' + ' (union)")
+        box.label(text="• Filters in a group are joined with ',' (sequential chaining)")
+        
+        layout.separator()
+        box = layout.box()
+        box.label(text="Filter Mode Behavior:", icon="QUESTION")
+        box.label(text="• ADD (+): Queries entire IFC file (elements=None)")
+        box.label(text="• FILTER: Filters down previous results in group")
+        box.label(text="• SUBTRACT (-): Removes matching elements from previous results")
+        box.label(text="Note: Same query text behaves differently based on mode!")
 
     def invoke(self, context, event):
         filter_groups = tool.Search.get_filter_groups(self.module)
@@ -674,7 +719,7 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
         self.query = tool.Search.export_filter_query(filter_groups)
         self.old_query = self.query
 
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(self, width=500)
 
 
 class Search(Operator):
@@ -699,9 +744,7 @@ class Search(Operator):
         else:
             assert_never(self.property_group)
 
-        results = ifcopenshell.util.selector.filter_elements(
-            tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
-        )
+        results = tool.Search.execute_filter_groups(props.filter_groups)
 
         objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
         for obj in objs:

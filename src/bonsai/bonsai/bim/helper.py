@@ -524,6 +524,16 @@ def draw_filter(
         for j, ifc_filter in enumerate(filter_group.filters):
             if ifc_filter.type == "entity":
                 row = box.row(align=True)
+                mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                op = row.operator(
+                    "bim.toggle_filter_inclusion",
+                    icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                    text="",
+                    depress=ifc_filter.filter_mode != "ADD",
+                )
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
                 row.prop(ifc_filter, "value", text="", icon="FILE_3D")
                 op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
                 op.group_index = i
@@ -628,6 +638,16 @@ def draw_filter(
                 row.prop(ifc_filter, "value", text="")
             elif ifc_filter.type == "instance":
                 row = box.row(align=True)
+                mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                op = row.operator(
+                    "bim.toggle_filter_inclusion",
+                    icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                    text="",
+                    depress=ifc_filter.filter_mode != "ADD",
+                )
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
                 row.prop(ifc_filter, "value", text="", icon="GRIP")
                 op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
                 op.group_index = i
