@@ -30,6 +30,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import numpy as np
 import json
+from typing import Any
 from test.bim.bootstrap import NewFile
 from bonsai.tool.model import Model as subject
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
@@ -222,18 +223,20 @@ class TestGenerateStair2DProfile(NewFile):
         for vert, vert_gen in zip(verts, verts_gen, strict=True):
             assert np.allclose(vert, V(vert_gen), atol=0.01)
 
+    CONCRETE_STAIR_KWARGS: dict[str, Any] = {
+        "base_slab_depth": 0.25,
+        "has_top_nib": False,
+        "height": 1.0,
+        "number_of_treads": 3,
+        "stair_type": "CONCRETE",
+        "top_slab_depth": 0.25,
+        "tread_depth": 0.25,
+        "tread_run": 0.3,
+        "width": 1.2,
+    }
+
     def test_create_concrete_stair(self):
-        kwargs = {
-            "base_slab_depth": 0.25,
-            "has_top_nib": False,
-            "height": 1.0,
-            "number_of_treads": 3,
-            "stair_type": "CONCRETE",
-            "top_slab_depth": 0.25,
-            "tread_depth": 0.25,
-            "tread_run": 0.3,
-            "width": 1.2,
-        }
+        kwargs = self.CONCRETE_STAIR_KWARGS.copy()
         verts_data = (
             V(0.0, 0, 0.0),
             V(0.0, 0, 0.25),
@@ -269,17 +272,8 @@ class TestGenerateStair2DProfile(NewFile):
         self.compare_data(generated_profile, expected_profile)
 
     def test_create_concrete_stair_nib(self):
-        kwargs = {
-            "base_slab_depth": 0.25,
-            "has_top_nib": True,
-            "height": 1.0,
-            "number_of_treads": 3,
-            "stair_type": "CONCRETE",
-            "top_slab_depth": 0.25,
-            "tread_depth": 0.25,
-            "tread_run": 0.3,
-            "width": 1.2,
-        }
+        kwargs = self.CONCRETE_STAIR_KWARGS.copy()
+        kwargs["has_top_nib"] = True
         verts_data = (
             V(0.0, 0, 0.0),
             V(0.0, 0, 0.25),
@@ -318,19 +312,8 @@ class TestGenerateStair2DProfile(NewFile):
         self.compare_data(generated_profile, expected_profile)
 
     def test_create_concrete_stair_zero_width_first_tread(self):
-        """Test concrete stair with zero-width first tread"""
-        kwargs = {
-            "base_slab_depth": 0.25,
-            "has_top_nib": False,
-            "height": 1.0,
-            "number_of_treads": 3,
-            "stair_type": "CONCRETE",
-            "top_slab_depth": 0.25,
-            "tread_depth": 0.25,
-            "tread_run": 0.3,
-            "width": 1.2,
-            "custom_first_last_tread_run": (0.0, 0.0),
-        }
+        kwargs = self.CONCRETE_STAIR_KWARGS.copy()
+        kwargs["custom_first_last_tread_run"] = (0.0, None)
         verts_data = (
             V(0.0, 0, 0.0),
             # First tread skipped - goes straight to second tread
@@ -361,19 +344,8 @@ class TestGenerateStair2DProfile(NewFile):
         self.compare_data(generated_profile, expected_profile)
 
     def test_create_concrete_stair_zero_width_last_tread(self):
-        """Test concrete stair with zero-width last tread"""
-        kwargs = {
-            "base_slab_depth": 0.25,
-            "has_top_nib": False,
-            "height": 1.0,
-            "number_of_treads": 3,
-            "stair_type": "CONCRETE",
-            "top_slab_depth": 0.25,
-            "tread_depth": 0.25,
-            "tread_run": 0.3,
-            "width": 1.2,
-            "custom_first_last_tread_run": (0.0, 0.0),
-        }
+        kwargs = self.CONCRETE_STAIR_KWARGS.copy()
+        kwargs["custom_first_last_tread_run"] = (None, 0.0)
         verts_data = (
             V(0.0, 0, 0.0),
             V(0.0, 0, 0.25),
@@ -405,15 +377,17 @@ class TestGenerateStair2DProfile(NewFile):
         generated_profile = subject.generate_stair_2d_profile(**kwargs)
         self.compare_data(generated_profile, expected_profile)
 
+    WOOD_STEEL_STAIR_KWARGS: dict[str, Any] = {
+        "height": 1.0,
+        "number_of_treads": 3,
+        "stair_type": "WOOD/STEEL",
+        "tread_depth": 0.25,
+        "tread_run": 0.3,
+        "width": 1.2,
+    }
+
     def test_create_wood_steel_stair(self):
-        kwargs = {
-            "height": 1.0,
-            "number_of_treads": 3,
-            "stair_type": "WOOD/STEEL",
-            "tread_depth": 0.25,
-            "tread_run": 0.3,
-            "width": 1.2,
-        }
+        kwargs = self.WOOD_STEEL_STAIR_KWARGS.copy()
         verts_data = (
             V(0.0, 0, 0.0),
             V(0.3, 0, 0.0),
@@ -458,16 +432,8 @@ class TestGenerateStair2DProfile(NewFile):
         self.compare_data(generated_profile, expected_profile)
 
     def test_create_wood_steel_stair_zero_width_first_tread(self):
-        """Test wood/steel stair with zero-width first tread"""
-        kwargs = {
-            "height": 1.0,
-            "number_of_treads": 3,
-            "stair_type": "WOOD/STEEL",
-            "tread_depth": 0.25,
-            "tread_run": 0.3,
-            "width": 1.2,
-            "custom_first_last_tread_run": (0.0, 0.0),
-        }
+        kwargs = self.WOOD_STEEL_STAIR_KWARGS.copy()
+        kwargs["custom_first_last_tread_run"] = (0.0, None)
         verts_data = (
             # First tread skipped - start at second tread
             V(0.0, 0, 0.25),
@@ -506,15 +472,9 @@ class TestGenerateStair2DProfile(NewFile):
 
     def test_create_wood_steel_stair_zero_width_last_tread(self):
         """Test wood/steel stair with zero-width last tread"""
-        kwargs = {
-            "height": 1.0,
-            "number_of_treads": 3,
-            "stair_type": "WOOD/STEEL",
-            "tread_depth": 0.25,
-            "tread_run": 0.3,
-            "width": 1.2,
-            "custom_first_last_tread_run": (0.0, 0.0),
-        }
+        kwargs = self.WOOD_STEEL_STAIR_KWARGS.copy()
+        kwargs["custom_first_last_tread_run"] = (None, 0.0)
+
         verts_data = (
             V(0.0, 0, 0.0),
             V(0.3, 0, 0.0),
@@ -551,8 +511,16 @@ class TestGenerateStair2DProfile(NewFile):
         generated_profile = subject.generate_stair_2d_profile(**kwargs)
         self.compare_data(generated_profile, expected_profile)
 
+    GENERIC_STAIR_KWARGS: dict[str, Any] = {
+        "height": 1.0,
+        "number_of_treads": 3,
+        "stair_type": "GENERIC",
+        "tread_run": 0.3,
+        "width": 1.2,
+    }
+
     def test_create_generic_stair(self):
-        kwargs = {"height": 1.0, "number_of_treads": 3, "stair_type": "GENERIC", "tread_run": 0.3, "width": 1.2}
+        kwargs = self.GENERIC_STAIR_KWARGS.copy()
         verts_data = (
             V(0.0, 0, 0.0),
             V(0.0, 0, 0.25),
@@ -585,15 +553,8 @@ class TestGenerateStair2DProfile(NewFile):
         self.compare_data(generated_profile, expected_profile)
 
     def test_create_generic_stair_zero_width_treads(self):
-        """Test generic stair with zero-width first and last treads"""
-        kwargs = {
-            "height": 1.0,
-            "number_of_treads": 3,
-            "stair_type": "GENERIC",
-            "tread_run": 0.3,
-            "width": 1.2,
-            "custom_first_last_tread_run": (0.0, 0.0),
-        }
+        kwargs = self.GENERIC_STAIR_KWARGS.copy()
+        kwargs["custom_first_last_tread_run"] = (0.0, 0.0)
         verts_data = (
             V(0.0, 0, 0.0),
             # First tread skipped
