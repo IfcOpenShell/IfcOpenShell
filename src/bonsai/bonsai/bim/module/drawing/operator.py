@@ -2182,7 +2182,7 @@ class ActivateModel(bpy.types.Operator):
         start_time = time.time()
 
         dprops = tool.Drawing.get_document_props()
-        
+
         if dprops.active_drawing_id:
             active_drawing = tool.Ifc.get().by_id(dprops.active_drawing_id)
             core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=active_drawing)

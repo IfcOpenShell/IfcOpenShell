@@ -2085,9 +2085,9 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def sync_object_placement(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        
+
         element = tool.Ifc.get_entity(obj)
-        
+
         blender_matrix = np.array(obj.matrix_world)
         if tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
@@ -2096,35 +2096,39 @@ class Drawing(bonsai.core.tool.Drawing):
             return cls.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
             return
-        
+
         delta_translation = None
         ifc_matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         ifc_translation = ifc_matrix[:3, 3]
         blender_translation = blender_matrix[:3, 3]
         delta_translation = blender_translation - ifc_translation
-        
+
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        
+
         if delta_translation is not None and not np.allclose(delta_translation, 0):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if aggregate:
                 all_parts = ifcopenshell.util.element.get_parts(aggregate)
-                
+
                 for part in all_parts:
                     if part.id() == element.id():
                         continue
-                        
+
                     part_obj = tool.Ifc.get_object(part)
-                    if part_obj and hasattr(part_obj, 'matrix_world'):
+                    if part_obj and hasattr(part_obj, "matrix_world"):
                         if isinstance(part_obj, bpy.types.Object):
                             is_part_moved = tool.Ifc.is_moved(part_obj)
-                            
+
                             if not is_part_moved:
                                 part_obj.matrix_world.translation += mathutils.Vector(delta_translation)
-                                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=part_obj)
+                                bonsai.core.geometry.edit_object_placement(
+                                    tool.Ifc, tool.Geometry, tool.Surveyor, obj=part_obj
+                                )
                             else:
-                                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=part_obj)
-        
+                                bonsai.core.geometry.edit_object_placement(
+                                    tool.Ifc, tool.Geometry, tool.Surveyor, obj=part_obj
+                                )
+
         return element
 
     @classmethod

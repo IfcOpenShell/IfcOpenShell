@@ -483,8 +483,9 @@ def sync_references(
     camera = ifc.get_object(drawing)
     if camera:
         import bpy
+
         visible_elements = drawing_tool.get_elements_in_camera_view(camera, list(bpy.data.objects))
-        
+
         for element in visible_elements:
             if element and element not in group_elements:  # Avoid duplicates with group elements
                 obj = ifc.get_object(element)
@@ -497,7 +498,7 @@ def sync_references(
         if obj and ifc.is_moved(obj):
             drawing_tool.sync_object_placement(obj)
             moved_elements.add(element)
-        
+
         if not drawing_tool.is_auto_annotation(element):
             continue
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
