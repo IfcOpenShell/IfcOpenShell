@@ -507,7 +507,6 @@ def draw_filter(
     row = layout.row(align=True)
     row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
     row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
-    row.prop(sprops, "search_from_outliner", text="", icon="OUTLINER" if sprops.search_from_outliner else "FILE")
 
     for i, filter_group in enumerate(filter_groups):
         box = layout.box()
