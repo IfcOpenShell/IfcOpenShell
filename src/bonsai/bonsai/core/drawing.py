@@ -468,17 +468,14 @@ def sync_references(
     ifc: tool.Ifc, collector: tool.Collector, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance
 ) -> None:
     import bpy
-
-    # Check if we're doing a full aggregate move (G key was pressed)
+    
     aggregate_move_active = bpy.context.window_manager.aggregate_move_active
     bpy.context.window_manager.aggregate_move_active = False
-
+    
     group = drawing_tool.get_drawing_group(drawing)
     potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
     context = drawing_tool.get_body_context()
-
-    # When aggregate_move_active is True, sync all parts of aggregates (visible + non-visible)
-    # When False, use original behavior (only sync what was actually moved)
+    
     if aggregate_move_active:
         moved_elements = set()
 
@@ -507,12 +504,10 @@ def sync_references(
                 drawing_tool.sync_object_placement(obj)
                 moved_elements.add(element)
     else:
-        # Original behavior: only sync elements that were actually moved
         for element in potential_reference_elements:
             if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
                 drawing_tool.sync_object_placement(obj)
 
-    # Handle auto annotations (both paths need this)
     for element in drawing_tool.get_group_elements(group):
         if not drawing_tool.is_auto_annotation(element):
             continue

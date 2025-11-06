@@ -3380,9 +3380,8 @@ class OverrideMoveSelect(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
-        # Set flag to indicate IFC Move Aggregate (G key) is active
         context.window_manager.aggregate_move_active = True
-
+        
         # Get filling objects
         selection: list[bpy.types.Object] = []
         for obj in context.selected_objects:
