@@ -489,6 +489,9 @@ class IfcCsv:
         bool_false: str,
         concat: str,
     ) -> None:
+        # Read-only attributes that should be skipped during import
+        READ_ONLY_ATTRIBUTES = {'count'}
+        
         try:
             element = ifc_file.by_guid(row[0])
         except:
@@ -506,6 +509,11 @@ class IfcCsv:
             elif value == bool_false:
                 value = False
             key = attributes[i] or headers[i]
+            
+            # Skip read-only attributes
+            if key.lower() in READ_ONLY_ATTRIBUTES:
+                continue
+                
             ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value, concat=concat)
 
 
