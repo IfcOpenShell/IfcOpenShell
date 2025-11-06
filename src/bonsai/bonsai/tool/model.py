@@ -1423,6 +1423,7 @@ class Model(bonsai.core.tool.Model):
         nosing_overlap = max(nosing_length, 0)
         nosing_tread_gap = -min(nosing_length, 0)
         nosing_overlap_offset = -V_(nosing_overlap, 0)
+        first_tread_run = custom_first_last_tread_run[0] if custom_first_last_tread_run[0] is not None else tread_run
 
         # ============ DEBUG LOGGING START ============
         print("\n" + "=" * 80)
@@ -1639,7 +1640,7 @@ class Model(bonsai.core.tool.Model):
             # s0 is just a sampled point from the bottom line
             # we stick to the third point as the first point
             # is affected by customized tread run
-            s0 = V_(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
+            s0 = V_(first_tread_run, tread_rise) + td_vector
             # comes from y = stair_tan * x + b
             b = s0.y - stair_tan * s0.x
 
