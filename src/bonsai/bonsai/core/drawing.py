@@ -469,47 +469,51 @@ def sync_references(
 ) -> None:
     import bpy
     
+    # Check if we're doing a full aggregate move (G key was pressed)
     aggregate_move_active = bpy.context.window_manager.aggregate_move_active
-    
     bpy.context.window_manager.aggregate_move_active = False
-    
-    if not aggregate_move_active:
-        import bonsai.tool as tool
-        for obj in bpy.data.objects:
-            if ifc.get_entity(obj) and ifc.is_moved(obj):
-                tool.Geometry.record_object_position(obj)
-        return
     
     group = drawing_tool.get_drawing_group(drawing)
     potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
     context = drawing_tool.get_body_context()
-    moved_elements = set()
+    
+    # When aggregate_move_active is True, sync all parts of aggregates (visible + non-visible)
+    # When False, use original behavior (only sync what was actually moved)
+    if aggregate_move_active:
+        moved_elements = set()
 
-    for element in potential_reference_elements:
-        obj = ifc.get_object(element)
-        if obj and ifc.is_moved(obj):
-            drawing_tool.sync_object_placement(obj)
-            moved_elements.add(element)
+        for element in potential_reference_elements:
+            obj = ifc.get_object(element)
+            if obj and ifc.is_moved(obj):
+                drawing_tool.sync_object_placement(obj)
+                moved_elements.add(element)
 
-    group_elements = drawing_tool.get_group_elements(group)
+        group_elements = drawing_tool.get_group_elements(group)
 
-    camera = ifc.get_object(drawing)
-    if camera:
-        visible_elements = drawing_tool.get_elements_in_camera_view(camera, list(bpy.data.objects))
+        camera = ifc.get_object(drawing)
+        if camera:
+            visible_elements = drawing_tool.get_elements_in_camera_view(camera, list(bpy.data.objects))
 
-        for element in visible_elements:
-            if element and element not in group_elements:  # Avoid duplicates with group elements
-                obj = ifc.get_object(element)
-                if obj and ifc.is_moved(obj):
-                    drawing_tool.sync_object_placement(obj)
-                    moved_elements.add(element)
+            for element in visible_elements:
+                if element and element not in group_elements:  # Avoid duplicates with group elements
+                    obj = ifc.get_object(element)
+                    if obj and ifc.is_moved(obj):
+                        drawing_tool.sync_object_placement(obj)
+                        moved_elements.add(element)
 
-    for element in group_elements:
-        obj = ifc.get_object(element)
-        if obj and ifc.is_moved(obj):
-            drawing_tool.sync_object_placement(obj)
-            moved_elements.add(element)
+        for element in group_elements:
+            obj = ifc.get_object(element)
+            if obj and ifc.is_moved(obj):
+                drawing_tool.sync_object_placement(obj)
+                moved_elements.add(element)
+    else:
+        # Original behavior: only sync elements that were actually moved
+        for element in potential_reference_elements:
+            if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
+                drawing_tool.sync_object_placement(obj)
 
+    # Handle auto annotations (both paths need this)
+    for element in drawing_tool.get_group_elements(group):
         if not drawing_tool.is_auto_annotation(element):
             continue
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
