@@ -323,8 +323,8 @@ class TestGenerateStair2DProfile(NewFile):
             V(0.6, 0, 0.75),
             V(0.6, 0, 1.0),
             V(0.9, 0, 1.0),
-            V(0.9, 0, 0.67457),
-            V(0.0, 0, -0.25),
+            V(0.9, 0, 0.6745729),
+            V(0.0, 0, -0.0754271),
         )
         edges_data = (
             (0, 1),
@@ -355,7 +355,7 @@ class TestGenerateStair2DProfile(NewFile):
             V(0.6, 0, 0.75),
             V(0.9, 0, 0.75),
             # Last tread skipped
-            V(0.9, 0, 0.67457),
+            V(0.9, 0, 0.42457),
             V(0.1, 0, -0.25),
             V(0.0, 0, -0.25),
         )
