@@ -468,15 +468,15 @@ def sync_references(
     ifc: tool.Ifc, collector: tool.Collector, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance
 ) -> None:
     import bpy
-    
+
     # Check if we're doing a full aggregate move (G key was pressed)
     aggregate_move_active = bpy.context.window_manager.aggregate_move_active
     bpy.context.window_manager.aggregate_move_active = False
-    
+
     group = drawing_tool.get_drawing_group(drawing)
     potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
     context = drawing_tool.get_body_context()
-    
+
     # When aggregate_move_active is True, sync all parts of aggregates (visible + non-visible)
     # When False, use original behavior (only sync what was actually moved)
     if aggregate_move_active:
