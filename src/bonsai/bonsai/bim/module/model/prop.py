@@ -480,9 +480,6 @@ def update_custom_first_last_tread_run(self: "BIMStairProperties", context: bpy.
         self["total_length_target"] = total_length
 
 
-StairType = Literal["CONCRETE", "WOOD/STEEL", "GENERIC"]
-
-
 class BIMStairProperties(PropertyGroup):
     def validate_nosing_value(self, context: bpy.types.Context) -> None:
         if self.stair_type != "WOOD/STEEL" and self.nosing_length < 0:
@@ -523,7 +520,7 @@ class BIMStairProperties(PropertyGroup):
     has_top_nib: bpy.props.BoolProperty(name="Has Top Nib", default=True)
     stair_type: bpy.props.EnumProperty(
         name="Stair Type",
-        items=[(i, i.replace("/", " / ").title(), "") for i in get_args(StairType)],
+        items=[(i, i.replace("/", " / ").title(), "") for i in get_args(tool.Model.StairType)],
         default="CONCRETE",
         update=validate_nosing_value,
     )

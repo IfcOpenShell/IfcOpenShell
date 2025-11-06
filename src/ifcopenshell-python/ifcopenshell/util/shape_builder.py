@@ -405,7 +405,8 @@ class ShapeBuilder:
         ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
-    def get_rectangle_coords(self, size: VectorType = (1.0, 1.0), position: Optional[VectorType] = None) -> np.ndarray:
+    @staticmethod
+    def get_rectangle_coords(size: VectorType = (1.0, 1.0), position: Optional[VectorType] = None) -> np.ndarray:
         """
         Get rectangle coords arranged as below:
 
