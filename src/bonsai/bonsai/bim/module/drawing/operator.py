@@ -52,6 +52,8 @@ import bonsai.bim.export_ifc
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData, ElementValuesData
+from bonsai.bim.module.drawing.ui import get_current_product_for_element_values
+from bonsai.bim.prop import StrProperty
 from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict, get_args
 from lxml import etree
 from math import radians
@@ -3188,6 +3190,16 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
                     for attr in literal.attributes
                 ],
                 "box_alignment": literal.box_alignment[:] if hasattr(literal, "box_alignment") else None,
+                "element_value_rows": [
+                    {
+                        "category": row.category,
+                        "element_key": row.element_key,
+                        "formatted_value": row.formatted_value,
+                        "separator": row.separator,
+                    }
+                    for row in literal.element_value_rows
+                ],
+                "product_used": literal.product_used.name if literal.product_used else None,
             }
 
             if i < len(props.literal_apply_settings):
@@ -3201,6 +3213,8 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
                 literal_data["apply_box_alignment_to_all"] = False
 
             captured_apply_settings["literals"].append(literal_data)
+
+        obj["_bonsai_element_value_rows_backup"] = json.dumps(captured_apply_settings["literals"])
 
         core.edit_text(tool.Drawing, obj=obj)
 
@@ -3332,6 +3346,39 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
         core.enable_editing_text(tool.Drawing, obj=obj)
 
         props.ensure_literal_apply_settings(len(props.literals))
+
+        text_element = tool.Ifc.get_entity(obj)
+        assigned_product_entity = tool.Drawing.get_assigned_product(text_element) if text_element else None
+        assigned_product_obj = tool.Ifc.get_object(assigned_product_entity) if assigned_product_entity else None
+
+        if "_bonsai_element_value_rows_backup" in obj:
+            try:
+                literals_backup = json.loads(obj["_bonsai_element_value_rows_backup"])
+                for i, literal_backup in enumerate(literals_backup):
+                    if i < len(props.literals):
+                        literal_props = props.literals[i]
+                        
+                        if assigned_product_obj:
+                            literal_props.product_used = assigned_product_obj
+                        elif "product_used" in literal_backup and literal_backup["product_used"]:
+                            product_name = literal_backup["product_used"]
+                            if product_name in bpy.data.objects:
+                                literal_props.product_used = bpy.data.objects[product_name]
+                        
+                        literal_props.element_value_rows.clear()
+                        if "element_value_rows" in literal_backup:
+                            for row_data in literal_backup["element_value_rows"]:
+                                new_row = literal_props.element_value_rows.add()
+                                new_row.category = row_data.get("category", "")
+                                new_row.element_key = row_data.get("element_key", "")
+                                new_row.formatted_value = row_data.get("formatted_value", "")
+                                new_row.separator = row_data.get("separator", "")
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"Failed to restore element_value_rows: {e}")
+        else:
+            if assigned_product_obj:
+                for literal_props in props.literals:
+                    literal_props.product_used = assigned_product_obj
 
         return {"FINISHED"}
 

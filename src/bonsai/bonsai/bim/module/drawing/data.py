@@ -367,10 +367,8 @@ class DecoratorData:
             literal_value = literal.Literal
 
             try:
-                if product and "{{value" in literal_value:
-                    current_value = cls.replace_numbered_values(literal_value, product)
-                else:
-                    current_value = tool.Drawing.replace_text_literal_variables(literal_value, product)
+                current_value = cls.evaluate_formatting_expressions(literal_value)
+                current_value = tool.Drawing.replace_text_literal_variables(current_value, product)
             except Exception:
                 current_value = literal_value
 
@@ -406,34 +404,6 @@ class DecoratorData:
             return assigned_product
 
         return element
-
-    @classmethod
-    def replace_numbered_values(cls, text: str, element: ifcopenshell.entity_instance) -> str:
-        if not ElementValuesData.is_loaded:
-            ElementValuesData.load()
-
-        available_keys = ElementValuesData.get_available_element_value_keys(element)
-        all_keys_flat = ElementValuesData.get_flattened_keys(available_keys)
-
-        import re
-
-        def replace_value(match):
-            try:
-                value_num = int(match.group(1))
-                if 1 <= value_num <= len(all_keys_flat):
-                    key, _ = all_keys_flat[value_num - 1]
-                    value = cls.get_element_value_by_key(element, key)
-                    return str(value) if value is not None else f"{{{{value{value_num}}}}}"
-                else:
-                    return match.group(0)
-            except (ValueError, IndexError):
-                return match.group(0)
-
-        text = re.sub(r"\{\{value(\d+)\}\}", replace_value, text)
-
-        text = cls.evaluate_formatting_expressions(text)
-
-        return text
 
     @classmethod
     def evaluate_formatting_expressions(cls, text: str) -> str:

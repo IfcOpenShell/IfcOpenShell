@@ -287,7 +287,8 @@ class FormatTransformer(lark.Transformer):
         )
 
     def int(self, args: list[str]) -> str:
-        return str(int(float(args[0])))
+        value = 0.0 if args[0] == "None" else args[0] or 0.0
+        return str(int(float(value)))
 
 
 class GetElementTransformer(lark.Transformer):

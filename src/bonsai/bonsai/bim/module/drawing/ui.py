@@ -574,17 +574,37 @@ def get_category_icon(category_name):
 
 
 def get_current_product_for_element_values(obj: bpy.types.Object, literal_props) -> Optional[bpy.types.Object]:
-    """Get the product to use for element values - either ProductUsed or assigned product"""
+    """Get the product to use for fetching element values - either explicitly set or assigned product"""
     if hasattr(literal_props, "product_used") and literal_props.product_used:
         return literal_props.product_used
 
     element = tool.Ifc.get_entity(obj)
     if element:
-        assigned_product = tool.Drawing.get_assigned_product(element)
-        if assigned_product:
-            return tool.Ifc.get_object(assigned_product)
+        return tool.Drawing.get_assigned_product(element) or obj
+    return obj
 
-    return None
+
+def get_category_icon(category: str) -> str:
+    """Get the icon for an element value category"""
+    icons = {
+        "Basic": "OBJECT_DATA",
+        "Attributes": "PROPERTIES",
+        "Property Sets": "ALIGN_JUSTIFY",
+        "Quantity Sets": "SNAP_VOLUME",
+        "Type": "FILE_VOLUME",
+        "Spatial": "HOME",
+        "Parent": "FILE_PARENT",
+        "Classification": "BOOKMARKS",
+        "Groups": "OUTLINER_COLLECTION",
+        "Systems": "SYSTEM",
+        "Zones": "MESH_CIRCLE",
+        "Material": "MATERIAL",
+        "Styles": "COLOR",
+        "Profiles": "OUTLINER_DATA_CURVES",
+        "Coordinates": "EMPTY_ARROWS",
+        "Custom String": "SMALL_CAPS",
+    }
+    return icons.get(category, "DOT")
 
 
 class BIM_PT_text(Panel):
