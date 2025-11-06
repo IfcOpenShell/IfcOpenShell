@@ -467,31 +467,23 @@ def build_schedule(drawing: type[tool.Drawing], schedule: ifcopenshell.entity_in
 def sync_references(
     ifc: tool.Ifc, collector: tool.Collector, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance
 ) -> None:
-    group = drawing_tool.get_drawing_group(drawing)
-    potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
-    context = drawing_tool.get_body_context()
-    moved_elements = set()
-
     import bpy
-    gizmo_enabled = False
-    for window in bpy.context.window_manager.windows:
-        for area in window.screen.areas:
-            if area.type == 'VIEW_3D':
-                for space in area.spaces:
-                    if space.type == 'VIEW_3D':
-                        if hasattr(space, 'show_gizmo_object_translate') and space.show_gizmo_object_translate:
-                            gizmo_enabled = True
-                            break
-                if gizmo_enabled:
-                    break
-        if gizmo_enabled:
-            break
-
-    if gizmo_enabled:
+    
+    aggregate_move_active = bpy.context.window_manager.aggregate_move_active
+    
+    bpy.context.window_manager.aggregate_move_active = False
+    
+    if not aggregate_move_active:
         import bonsai.tool as tool
         for obj in bpy.data.objects:
             if ifc.get_entity(obj) and ifc.is_moved(obj):
                 tool.Geometry.record_object_position(obj)
+        return
+    
+    group = drawing_tool.get_drawing_group(drawing)
+    potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
+    context = drawing_tool.get_body_context()
+    moved_elements = set()
 
     for element in potential_reference_elements:
         obj = ifc.get_object(element)
