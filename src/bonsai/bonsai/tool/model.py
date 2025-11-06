@@ -44,11 +44,8 @@ import mathutils
 from math import atan, cos, degrees, pi, radians
 from mathutils import Matrix, Vector
 from copy import deepcopy
-from functools import partial
 from bonsai.bim import import_ifc
 
-from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
 from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict, assert_never
 from collections.abc import Iterable, Sequence
@@ -1103,6 +1100,7 @@ class Model(bonsai.core.tool.Model):
             return
 
         from PIL import Image, ImageDraw
+        from bonsai.bim.module.model.data import AuthoringData
 
         obj = tool.Ifc.get_object(element)
         if not obj:
@@ -1208,6 +1206,8 @@ class Model(bonsai.core.tool.Model):
 
         Allows postponing the thumbnail update until it is actually needed by the user.
         """
+        from bonsai.bim.module.model.data import AuthoringData
+
         element_id = element.id()
         if element_id not in AuthoringData.type_thumbnails:
             return
@@ -1311,18 +1311,26 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def is_parametric_roof_active(cls) -> bool:
+        from bonsai.bim.module.model.data import RoofData
+
         return bool((RoofData.is_loaded or not RoofData.load()) and RoofData.data["pset_data"])
 
     @classmethod
     def is_parametric_railing_active(cls) -> bool:
+        from bonsai.bim.module.model.data import RailingData
+
         return bool((RailingData.is_loaded or not RailingData.load()) and RailingData.data["pset_data"])
 
     @classmethod
     def is_parametric_window_active(cls) -> bool:
+        from bonsai.bim.module.model.data import WindowData
+
         return bool((WindowData.is_loaded or not WindowData.load()) and WindowData.data["pset_data"])
 
     @classmethod
     def is_parametric_door_active(cls) -> bool:
+        from bonsai.bim.module.model.data import DoorData
+
         return bool((DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"])
 
     @classmethod
@@ -1384,29 +1392,31 @@ class Model(bonsai.core.tool.Model):
 
         return calculated_params
 
+    StairType = Literal["CONCRETE", "WOOD/STEEL", "GENERIC"]
+
     @classmethod
     def generate_stair_2d_profile(
         cls,
-        number_of_treads,
-        height,
-        width,
-        tread_run,
-        stair_type,
+        number_of_treads: int,
+        height: float,
+        width: float,
+        tread_run: float,
+        stair_type: StairType,
         # WOOD/STEEL CONCRETE STAIR ARGUMENTS
-        tread_depth=None,
+        tread_depth: Union[float, None] = None,
         # CONCRETE STAIR ARGUMENTS
-        has_top_nib=None,
-        top_slab_depth=None,
-        base_slab_depth=None,
+        has_top_nib: Union[bool, None] = None,
+        top_slab_depth: Union[float, None] = None,
+        base_slab_depth: Union[float, None] = None,
         custom_first_last_tread_run: Union[tuple[float, float], tuple[None, None]] = (None, None),
-        nosing_length=0,
+        nosing_length: float = 0.0,
         # CONCRETE GENERIC STAIR ARGUMENTS
-        nosing_depth=0,
-    ):
+        nosing_depth: float = 0.0,
+    ) -> tuple[list[Vector], list[tuple[int, ...]], list[[list[int]]]]:
         """returns a tuple of stair profile data: (vertices, edges, faces)"""
-        vertices = []
-        edges = []
-        faces = []
+        vertices: list[Vector] = []
+        edges: list[tuple[int, ...]] = []
+        faces: list[[list[int]]] = []
 
         number_of_risers = number_of_treads + 1
         tread_rise = height / number_of_risers
@@ -1450,7 +1460,12 @@ class Model(bonsai.core.tool.Model):
             elif nosing_depth == 0:
                 default_tread_verts = (V_(-nosing_overlap, tread_rise), V_(tread_run, tread_rise))
             else:  # nosing_overlap > 0 nosing_depth > 0
-                # kind of L shape
+                # kind of L shape:
+                # (2)●───────────────────────────●(3)
+                #    |
+                #    |
+                #    ●──────────────●
+                #  (1)              (0)
                 default_tread_verts = (
                     V_(0, tread_rise - nosing_depth),
                     V_(-nosing_overlap, tread_rise - nosing_depth),
@@ -1503,12 +1518,12 @@ class Model(bonsai.core.tool.Model):
             print("WOOD/STEEL STAIR GENERATION PROCESS")
             print("-" * 80)
 
-            builder = ShapeBuilder(None)
+            assert tread_depth is not None
 
             # full tread rectangle
-            def get_tread_verts(*args, **kwargs):
-                fn = partial(builder.get_rectangle_coords, position=V_(0, -(tread_depth - tread_rise)))
-                return [Vector(x) for x in fn(*args, **kwargs)]
+            def get_tread_verts(size: Vector) -> list[Vector]:
+                coords = ShapeBuilder.get_rectangle_coords(position=V_(0, -(tread_depth - tread_rise)), size=size)
+                return [Vector(x) for x in coords]
 
             default_tread_verts = get_tread_verts(size=V_(tread_run + nosing_overlap, tread_depth))
             default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
@@ -1606,6 +1621,11 @@ class Model(bonsai.core.tool.Model):
         elif stair_type == "CONCRETE":
             define_generic_stair_treads()
 
+            assert has_top_nib is not None
+            assert top_slab_depth is not None
+            assert base_slab_depth is not None
+            assert tread_depth is not None
+
             # add the nibs
             # basically we define stair bottom line as a line at `tread_depth` distance
             # from the tread diagonal line
@@ -1623,11 +1643,16 @@ class Model(bonsai.core.tool.Model):
             # comes from y = stair_tan * x + b
             b = s0.y - stair_tan * s0.x
 
-            def get_point_on_2d_line(x=None, y=None):
-                if y is None:
+            def get_point_on_2d_line(
+                x: Union[float, None] = None,
+                y: Union[float, None] = None,
+            ) -> Vector:
+                if x is not None and y is None:
                     y = stair_tan * x + b
-                elif x is None:
+                elif x is None and y is not None:
                     x = (y - b) / stair_tan
+                else:
+                    assert False
                 return V_(x, y)
 
             # top nib
@@ -1671,11 +1696,13 @@ class Model(bonsai.core.tool.Model):
         else:
             raise Exception(f"Unsupported stair type: {stair_type}")
 
-        vertices = (v.to_3d().xzy for v in vertices)
+        vertices = [v.to_3d().xzy for v in vertices]
         return (vertices, edges, faces)
 
     @classmethod
     def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
+        from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
         ifc_file = tool.Ifc.get()
         fillings = {e: tool.Ifc.get_object(e) for e in tool.Ifc.get_all_element_occurrences(element)}
 
@@ -2238,6 +2265,8 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def add_filled_opening(cls, voided_obj: bpy.types.Object, filling_obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
         FilledOpeningGenerator().generate(filling_obj, voided_obj)
 
     @classmethod
