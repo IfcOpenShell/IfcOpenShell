@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import calendar
 import bpy
 import bonsai.tool as tool
 from typing import TYPE_CHECKING
@@ -192,24 +193,7 @@ class BIM_PT_solar(bpy.types.Panel):
         row = self.layout.row()
         row.prop(props, "year")
         row = self.layout.row(align=True)
-        row.prop(
-            props,
-            "month",
-            text={
-                1: "January",
-                2: "February",
-                3: "March",
-                4: "April",
-                5: "May",
-                6: "June",
-                7: "July",
-                8: "August",
-                9: "September",
-                10: "October",
-                11: "November",
-                12: "December",
-            }[props.month],
-        )
+        row.prop(props, "month", text=calendar.month_name[props.month])
         row.prop(props, "day")
 
         row = self.layout.row(align=True)
