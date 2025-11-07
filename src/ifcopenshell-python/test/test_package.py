@@ -18,7 +18,7 @@
 
 import http.client
 from pathlib import Path
-from typing import Sequence
+from collections.abc import Sequence
 from typing_extensions import assert_never
 from urllib.parse import urlparse
 
