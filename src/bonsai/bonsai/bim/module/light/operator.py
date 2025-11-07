@@ -208,11 +208,10 @@ class PrepareRadianceScene(bpy.types.Operator):
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
 
-
         # Build datetime for Radiance gensky
         # Note: sun_pos_props and sun_props are synchronized by update_sun_path()
         dt = datetime(sun_pos_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
-        
+
         print(f"Sun position data for Radiance gensky:")
         print(f"  DateTime: {dt}")
         print(f"  Latitude: {sun_props.latitude}°")
