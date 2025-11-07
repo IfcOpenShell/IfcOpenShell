@@ -179,7 +179,7 @@ def update_sun_path(self: "BIMSolarProperties", context: Union[bpy.types.Context
     )
     sun_vector = sun_position.sun_calc.get_sun_vector(azimuth, elevation) * sun_props.sun_distance
     props.sun_position = sun_vector
-    
+
     # Update Blender viewport light direction for shadow visualization
     # This coordinate transformation converts from sun_position addon's coordinate system
     # to Blender's display.light_direction coordinate system
