@@ -179,8 +179,11 @@ def update_sun_path(self: "BIMSolarProperties", context: Union[bpy.types.Context
     )
     sun_vector = sun_position.sun_calc.get_sun_vector(azimuth, elevation) * sun_props.sun_distance
     props.sun_position = sun_vector
-    # sun_vector.z = max(0, sun_vector.z)
-    # Light direction is a bit weird?
+    
+    # Update Blender viewport light direction for shadow visualization
+    # This coordinate transformation converts from sun_position addon's coordinate system
+    # to Blender's display.light_direction coordinate system
+    # Note: This only affects viewport shading, not the Radiance rendering
     mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0))).inverted()
     rotation_euler = Euler((elevation - pi / 2, 0, -azimuth))
     rotation_quaternion = rotation_euler.to_quaternion()
@@ -191,6 +194,9 @@ def update_sun_path(self: "BIMSolarProperties", context: Union[bpy.types.Context
 
     assert bpy.context.scene
     assert bpy.context.scene.display
+    # Set viewport light direction based on sun position
+    # If sun is below horizon (z < 0), use default upward direction
+    # Otherwise, use calculated direction from sun position
     if sun_vector.z < 0:
         bpy.context.scene.display.light_direction = mat @ Vector((0, 0, 1))
     else:
@@ -332,9 +338,6 @@ class RadianceExporterProperties(PropertyGroup):
     materials: CollectionProperty(type=RadianceMaterial)
     active_material_index: IntProperty()
 
-    # material_mappings: bpy.props.CollectionProperty(type=bpy.types.PropertyGroup, name="Material Mappings")
-    # material_mappings: CollectionProperty(type=MaterialMapping)
-
     should_load_from_memory: BoolProperty(
         name="Load from Memory",
         default=False,
@@ -412,6 +415,34 @@ class RadianceExporterProperties(PropertyGroup):
         default="Noon",
     )
 
+    # Sky generation parameters
+    sky_condition: EnumProperty(
+        name="Sky Condition",
+        description="Type of sky condition to generate",
+        items=[
+            ("SUNNY_WITH_SUN", "Sunny with Sun", "Clear sky with direct sun"),
+            ("SUNNY_WITHOUT_SUN", "Sunny without Sun", "Clear sky without direct sun"),
+            ("CLOUDY", "Cloudy", "Overcast sky condition"),
+        ],
+        default="SUNNY_WITH_SUN",
+    )
+
+    ground_reflectance: FloatProperty(
+        name="Ground Reflectance",
+        description="Ground reflectance value (0.0 to 1.0)",
+        min=0.0,
+        max=1.0,
+        default=0.2,
+    )
+
+    turbidity: FloatProperty(
+        name="Turbidity",
+        description="Atmospheric turbidity (1.0 to 10.0). Lower values = clearer sky",
+        min=1.0,
+        max=10.0,
+        default=3.0,
+    )
+
     use_active_camera: BoolProperty(
         name="Use Active Camera", description="Use the active camera in the scene", default=True
     )
@@ -441,6 +472,9 @@ class RadianceExporterProperties(PropertyGroup):
         output_file_format: Literal["HDR"]
         use_hdr: bool
         choose_hdr_image: Literal["Noon"]
+        sky_condition: Literal["SUNNY_WITH_SUN", "SUNNY_WITHOUT_SUN", "CLOUDY"]
+        ground_reflectance: float
+        turbidity: float
         use_active_camera: bool
         selected_camera: Union[bpy.types.Object, None]
 
