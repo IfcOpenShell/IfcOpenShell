@@ -96,9 +96,10 @@ def update_shadow_mode(self: "BIMSolarProperties", context: bpy.types.Context) -
         sun_props = tool.Blender.get_sun_props()
         assert sun_props
         if sun_props.sun_object is None:
-            bpy.ops.object.light_add(type="SUN", radius=1, align="WORLD", location=(0, 0, 0), scale=(1, 1, 1))
-            bpy.ops.object.move_to_collection(collection_index=0)
-            sun_props.sun_object = bpy.context.active_object
+            light = bpy.data.lights.new(name="Sun", type="SUN")
+            sun = bpy.data.objects.new("Sun", light)
+            context.scene.collection.objects.link(sun)
+            sun_props.sun_object = sun
         update_sun_path(self)
         context.scene.render.engine = "BLENDER_EEVEE_NEXT"
         assert context.scene.display
