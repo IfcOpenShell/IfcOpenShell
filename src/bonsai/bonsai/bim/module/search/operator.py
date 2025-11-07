@@ -41,6 +41,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from bonsai.bim.module.search.data import SearchData
 from typing import TYPE_CHECKING, Literal, get_args, assert_never
 
 
@@ -811,12 +812,31 @@ class SaveSearch(Operator, tool.Ifc.Operator):
         try:
             query = tool.Search.export_filter_query(filter_groups)
             results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+            filter_structure = []
+            for filter_group in filter_groups:
+                group_data = []
+                for ifc_filter in filter_group.filters:
+                    filter_data = {
+                        "type": ifc_filter.type,
+                        "name": ifc_filter.name,
+                        "value": ifc_filter.value,
+                        "pset": ifc_filter.pset,
+                        "comparison": ifc_filter.comparison,
+                        "filter_mode": ifc_filter.filter_mode,
+                    }
+                    group_data.append(filter_data)
+                filter_structure.append(group_data)
+            
         except:
             print(traceback.format_exc())
             self.report({"ERROR"}, "Error occurred trying save search.")
             return
 
-        description = json.dumps({"type": "BBIM_Search", "query": query})
+        description = json.dumps({
+            "type": "BBIM_Search", 
+            "query": query,
+            "filter_structure": filter_structure
+        })
         ifc_file = tool.Ifc.get()
         group = next(
             (
@@ -857,7 +877,12 @@ class LoadSearch(Operator, tool.Ifc.Operator):
         filter_groups = tool.Search.get_filter_groups(self.module)
         props = tool.Search.get_search_props()
         group = tool.Ifc.get().by_id(int(props.saved_searches))
-        tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
+        
+        group_data = tool.Search.get_group_data(group)
+        if group_data and "filter_structure" in group_data:
+            tool.Search.import_filter_structure(group_data["filter_structure"], filter_groups)
+        else:
+            tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
 
     def draw(self, context):
         assert self.layout
@@ -867,6 +892,39 @@ class LoadSearch(Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         tool.Search.patch_search_ifcgroups()
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class RemoveSearch(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_search"
+    bl_label = "Remove Search"
+    bl_description = "Remove a saved search filter"
+    bl_options = {"REGISTER", "UNDO"}
+    module: StringProperty()
+
+    def _execute(self, context):
+        props = tool.Search.get_search_props()
+        group_id = props.saved_searches
+        if not group_id:
+            self.report({"ERROR"}, "No search selected for removal")
+            return
+        
+        group = tool.Ifc.get().by_id(int(group_id))
+        group_name = group.Name or "Unnamed"
+        ifcopenshell.api.group.remove_group(tool.Ifc.get(), group=group)
+        tool.Search.patch_search_ifcgroups()
+        self.report({"INFO"}, f"Removed saved search: {group_name}")
+
+    def draw(self, context):
+        self.layout.label(text="Select search to remove:", icon="ERROR")
+        row = self.layout.row()
+        props = tool.Search.get_search_props()
+        row.prop(props, "saved_searches", text="")
+
+    def invoke(self, context, event):
+        tool.Search.patch_search_ifcgroups()
+        if not SearchData.is_loaded:
+            SearchData.load()
         return context.window_manager.invoke_props_dialog(self)
 
 

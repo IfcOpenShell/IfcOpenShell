@@ -30,6 +30,7 @@ classes = (
     operator.LoadColourscheme,
     operator.LoadSearch,
     operator.RemoveFilter,
+    operator.RemoveSearch,
     operator.RemoveFilterGroup,
     operator.ResetObjectColours,
     operator.SaveColourscheme,

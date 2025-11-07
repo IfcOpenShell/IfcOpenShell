@@ -498,6 +498,8 @@ def draw_filter(
         if data.data["saved_searches"]:
             row.operator("bim.load_search", text="", icon="IMPORT").module = module
         row.operator("bim.save_search", text="", icon="EXPORT").module = module
+        if data.data["saved_searches"]:
+            row.operator("bim.remove_search", text="", icon="REMOVE").module = module
         if module != "search":
             if module == "drawing_include":
                 row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "INCLUDE"
