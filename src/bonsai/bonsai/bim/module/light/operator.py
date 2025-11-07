@@ -147,7 +147,7 @@ class PrepareRadianceScene(bpy.types.Operator):
         print("Starting Radiance scene preparation...")
         props = tool.Blender.get_radiance_exporter_props()
         output_dir = props.output_dir
-        
+
         # Check if OBJ file exists from previous export step
         obj_file_path = os.path.join(output_dir, "model.obj")
         if not os.path.exists(obj_file_path):
@@ -156,7 +156,7 @@ class PrepareRadianceScene(bpy.types.Operator):
             print(f"ERROR: {error_msg}")
             print(f"  Expected file: {obj_file_path}")
             return {"CANCELLED"}
-        
+
         resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
 
         assert context.scene
@@ -191,21 +191,6 @@ class PrepareRadianceScene(bpy.types.Operator):
         sun_pos_props = tool.Blender.get_sun_props()
         assert sun_pos_props
         sky_file_path = os.path.join(output_dir, "sky.rad")
-        # latitude = sun_props.latitude
-        # longitude = sun_props.longitude
-        # month = sun_props.month
-        # day = sun_props.day
-        # hour = sun_props.hour
-        # minute = sun_props.minute
-
-        # print("Sun Properties:")
-        # print("Latitude: ", latitude)
-        # print("Longitude: ", longitude)
-        # print("Timezone: ", timezone)
-        # print("Month: ", month)
-        # print("Day: ", day)
-        # print("Hour: ", hour)
-        # print("Minute: ", minute)
 
         print("Setting up camera...")
         if props.use_active_camera:
@@ -223,66 +208,43 @@ class PrepareRadianceScene(bpy.types.Operator):
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
 
-        #     azimuth, elevation = sun_position.sun_calc.get_sun_coordinates(
-        #     sun_pos_props.time,
-        #     sun_pos_props.latitude,
-        #     sun_pos_props.longitude,
-        #     -sun_pos_props.UTC_zone,
-        #     sun_pos_props.month,
-        #     sun_pos_props.day,
-        #     sun_pos_props.year,
-        # )
 
+        # Build datetime for Radiance gensky
+        # Note: sun_pos_props and sun_props are synchronized by update_sun_path()
         dt = datetime(sun_pos_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
-        print(dt)
-        print(sun_props.latitude)
-        print(sun_props.longitude)
-        print(sun_props.UTC_zone)
-        print(sun_pos_props.year)
+        
+        print(f"Sun position data for Radiance gensky:")
+        print(f"  DateTime: {dt}")
+        print(f"  Latitude: {sun_props.latitude}°")
+        print(f"  Longitude: {sun_props.longitude}°")
+        print(f"  UTC Zone: {sun_props.UTC_zone}")
+        print(f"  Year: {sun_pos_props.year}")
+        # Map sky condition enum to boolean parameters
+        sky_condition = props.sky_condition
+        sunny_with_sun = sky_condition == "SUNNY_WITH_SUN"
+        sunny_without_sun = sky_condition == "SUNNY_WITHOUT_SUN"
+        cloudy = sky_condition == "CLOUDY"
+
         sky_description = pr.gensky(
             dt=dt,
             latitude=sun_props.latitude,
             longitude=sun_props.longitude,
             year=sun_pos_props.year,
             timezone=-int(sun_props.UTC_zone),
-            # sunny_with_sun=True,
-            # sunny_without_sun=False,
-            # cloudy=False,
-            # ground_reflectance=0.2,
-            # turbidity=3.0,
+            sunny_with_sun=sunny_with_sun,
+            sunny_without_sun=sunny_without_sun,
+            cloudy=cloudy,
+            ground_reflectance=props.ground_reflectance,
+            turbidity=props.turbidity,
         )
 
         sky_description_str = sky_description.decode("utf-8")
-        # Write all this to file
-        # skyfunc glow sky_glow
-        # 0
-        # 0
-        # 4 .9 .9 1.15 0
-
-        # sky_glow source sky
-        # 0
-        # 0
-        # 4 0 0 1 180
-
-        # skyfunc glow ground_glow
-        # 0
-        # 0
-        # 4 1.4 .9 .6 0
-
-        # ground_glow source ground
-        # 0
-        # 0
-        # 4 0 0 -1 180
 
         if use_hdr and choose_hdr_image == "Noon":
 
             with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)
                 f.write("\n")
-                # f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
-                # f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
-                # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
-                # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
 
                 f.write(
                     '''void colorpict env_map
@@ -360,12 +322,6 @@ ground_glow source ground
             # Write default materials
             default_materials = [
                 "void plastic white\n0\n0\n5 0.8 0.8 0.8 0 0\n",
-                # "void plastic blue_plastic\n0\n0\n5 0.1 0.2 0.8 0.05 0.1\n",
-                # "void plastic red_plastic\n0\n0\n5 0.8 0.1 0.2 0.05 0.1\n",
-                # "void metal silver_metal\n0\n0\n5 0.8 0.8 0.8 0.9 0.1\n",
-                # "void glass clear_glass\n0\n0\n3 0.96 0.96 0.96\n",
-                # "void light white_light\n0\n0\n3 1.0 1.0 1.0\n",
-                # "void trans olive_trans\n0\n0\n7 0.6 0.7 0.4 0.05 0.05 0.7 0.2\n",
             ]
             for material in default_materials:
                 file.write(material)
@@ -389,7 +345,7 @@ ground_glow source ground
                     file.write(f"inherit alias {style_id} white\n")
 
         self.report({"INFO"}, f"Exported Materials Rad file to: {materials_file}")
-        
+
         print(f"OBJ file size: {os.path.getsize(obj_file_path)} bytes")
         print(f"Materials file size: {os.path.getsize(materials_file)} bytes")
         print(f"Converting OBJ to RTM format...")
@@ -429,7 +385,7 @@ ground_glow source ground
             vertical_fov = 2 * math.atan(math.tan(camera_fov / 2) / aspect_ratio)
 
             aview = pr.create_default_view()
-            aview.type = 'v'  # Perspective view
+            aview.type = "v"  # Perspective view
             aview.vp = camera_position
             aview.vdir = camera_direction
             aview.vu = (0, 0, 1)  # Assuming Z is up
@@ -443,7 +399,7 @@ ground_glow source ground
             view_height = ortho_scale / aspect_ratio
 
             aview = pr.create_default_view()
-            aview.type = 'l'  # Parallel projection (orthographic)
+            aview.type = "l"  # Parallel projection (orthographic)
             aview.vp = camera_position
             aview.vdir = camera_direction
             aview.vu = (0, 0, 1)  # Assuming Z is up
@@ -513,20 +469,6 @@ class RadianceRender(bpy.types.Operator):
         if output_file_format == "HDR_TIFF":
             self.report({"INFO"}, f"TIFF Output: {tiff_path}")
         return {"FINISHED"}
-
-    # def get_active_camera(self, context):
-    #     props = context.scene.radiance_exporter_properties
-    #     if props.use_active_camera:
-    #         return context.scene.camera
-    #     else:
-    #         return props.selected_camera
-
-    # def getResolution(self, context):
-    #     scene = context.scene
-    #     props = scene.radiance_exporter_properties
-    #     resolution_x = props.radiance_resolution_x
-    #     resolution_y = props.radiance_resolution_y
-    #     return resolution_x, resolution_y
 
 
 def save_obj2mesh_output(inp: Union[bytes, str, Path], output_file: str, **kwargs):
