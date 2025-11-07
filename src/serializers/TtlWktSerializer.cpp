@@ -31,6 +31,10 @@
 #include <TopoDS.hxx>
 #include <Bnd_Box.hxx>
 #include <gp_Pln.hxx>
+#include <TopoDS_Wire.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <GProp_GProps.hxx>
+#include <BRepGProp.hxx>
 
 #endif
 
@@ -396,56 +400,94 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
     filename_.stream << ttl_object_id(brep_obj) << " geo:hasMetricLength " << height << " .\n\n";
 
-    gp_Pln pln(gp_Pnt(0, 0, zmin + section_height), gp::DZ());
+    std::map<double, std::string> polygons_by_area;
 
-	Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+    double rectangle_area = (x2 - x1) * (y2 - y1);
+    bool emitted_warning = false;
 
-	size_t N = 0;
-	TopoDS_Iterator it(compound);
-	// Iterate over components of compound to have better chance of matching section edges to closed wires
-	for (; it.More(); it.Next()) {
-		Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
-		TopoDS_Shape result = BRepAlgoAPI_Section(it.Value(), pln);
+    for (int iter = 0; iter < 10; ++iter) {
 
-		{
-			TopExp_Explorer exp(result, TopAbs_EDGE);
-			for (; exp.More(); exp.Next()) {
-				edges->Append(exp.Current());
-			}
-		}
+        gp_Pln pln(gp_Pnt(0, 0, zmin + section_height + iter * (height - 1.) / 10.), gp::DZ());
 
-		ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-4, false, wires);
-		for (int i = 1; i <= wires->Length(); ++i) {
-			const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
-			BRepTools_WireExplorer it(wire);
-			std::vector<double> loop_coords;
-			for (; it.More(); it.Next()) {
-				const auto& v = it.CurrentVertex();
-				auto pnt = BRep_Tool::Pnt(v);
-				loop_coords.push_back(pnt.X());
-				loop_coords.push_back(pnt.Y());
-				loop_coords.push_back(pnt.Z());
-			}
-			std::vector<int> loop_idxs(loop_coords.size() / 3);
-			for (int i = 0; i < loop_idxs.size(); ++i) {
-				loop_idxs[i] = i;
-			}
+        Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
 
-			std::string postfix = "_section_geometry_" + std::to_string(N++);
+        size_t N = 0;
+        TopoDS_Iterator it(compound);
+        // Iterate over components of compound to have better chance of matching section edges to closed wires
+        for (; it.More(); it.Next()) {
+            Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
+            TopoDS_Shape result = BRepAlgoAPI_Section(it.Value(), pln);
 
-			filename_.stream << ttl_object_id(brep_obj) << " geo:hasGeometry " << ttl_object_id(brep_obj, postfix.c_str()) << " .\n\n";
-			filename_.stream << ttl_object_id(brep_obj, postfix.c_str()) << " a geo:Geometry ;\n";
-			filename_.stream << "    geo:asWKT " << escape_for_turtle(
-				IfcUtil::convert_utf8(
-					capture_output(
-						emit_line_component,
-						loop_coords,
-						loop_idxs,
-						true,
-						POLYGON))
-			) << "^^geo:wktLiteral .\n\n";
-		}
-	}
+            {
+                TopExp_Explorer exp(result, TopAbs_EDGE);
+                for (; exp.More(); exp.Next()) {
+                    edges->Append(exp.Current());
+                }
+            }
+
+            ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-4, false, wires);
+            for (int i = 1; i <= wires->Length(); ++i) {
+                const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
+                if (!wire.Closed()) {
+                    continue;
+                }
+
+                BRepBuilderAPI_MakeFace mf(wire);
+                if (!mf.IsDone()) {
+                    continue;
+                }
+
+                auto face = mf.Face();
+                // calculate face area
+                GProp_GProps props;
+                BRepGProp::SurfaceProperties(face, props);
+                auto area = props.Mass();
+
+                BRepTools_WireExplorer it(wire);
+                std::vector<double> loop_coords;
+                for (; it.More(); it.Next()) {
+                    const auto& v = it.CurrentVertex();
+                    auto pnt = BRep_Tool::Pnt(v);
+                    loop_coords.push_back(pnt.X());
+                    loop_coords.push_back(pnt.Y());
+                    loop_coords.push_back(pnt.Z());
+                }
+                std::vector<int> loop_idxs(loop_coords.size() / 3);
+                for (int i = 0; i < loop_idxs.size(); ++i) {
+                    loop_idxs[i] = i;
+                }
+
+                std::string postfix = "_section_geometry_" + std::to_string(N++);
+
+                std::ostringstream oss;
+
+                oss << ttl_object_id(brep_obj) << " geo:hasGeometry " << ttl_object_id(brep_obj, postfix.c_str()) << " .\n\n";
+                oss << ttl_object_id(brep_obj, postfix.c_str()) << " a geo:Geometry ;\n";
+                oss << "    geo:asWKT " << escape_for_turtle(IfcUtil::convert_utf8(capture_output(emit_line_component, loop_coords, loop_idxs, true, POLYGON))) << "^^geo:wktLiteral .\n\n";
+
+                polygons_by_area[area] = oss.str();
+            }
+        }
+
+        if (polygons_by_area.size() > 0) {
+            if ((polygons_by_area.rbegin()->first > (0.6 * rectangle_area)) || (height < (1. + 1.e-5))) {
+                // Found sufficiently large polygon
+                if (emitted_warning) {
+                    Logger::Warning("Found larger polygon area (" + std::to_string(polygons_by_area.rbegin()->first) + ").");
+                }
+                break;
+            } else if (!emitted_warning) {
+                Logger::Warning("Section polygon area is small compared to bounding box area (" + std::to_string(polygons_by_area.rbegin()->first) + " < " + std::to_string(0.6 * rectangle_area) + "). Trying again with different section height.");
+                emitted_warning = true;
+            }
+        }
+    }
+
+    if (polygons_by_area.size() > 0) {
+        // Emit polygon with largest area
+        auto it = polygons_by_area.rbegin();
+        filename_.stream << it->second;
+    }
 #endif
 }
 
