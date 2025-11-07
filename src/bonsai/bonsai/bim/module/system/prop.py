@@ -99,7 +99,8 @@ class BIMSystemProperties(PropertyGroup):
     systems: CollectionProperty(name="Systems", type=System)
     expanded_groups_json: StringProperty(name="Expanded Systems JSON", default="[]")
     """See `expanded_groups_json`. We name it "groups" for compatibility with Group UI code."""
-    active_system_index: IntProperty(name="Active System Index")
+    # Named not as `active_system_index` to match `BIMGroupProperties`.
+    active_group_index: IntProperty(name="Active System Index")
     active_system_id: IntProperty(name="Active System Id")
     edited_system_id: IntProperty(name="Edited System Id")
     system_class: EnumProperty(items=get_system_class, name="Class")
@@ -113,7 +114,7 @@ class BIMSystemProperties(PropertyGroup):
         is_adding: bool
         systems: bpy.types.bpy_prop_collection_idprop[System]
         expanded_groups_json: str
-        active_system_index: int
+        active_group_index: int
         active_system_id: int
         edited_system_id: int
         system_class: str
@@ -121,7 +122,7 @@ class BIMSystemProperties(PropertyGroup):
 
     @property
     def active_system_ui_item(self) -> Union[System, None]:
-        return tool.Blender.get_active_uilist_element(self.systems, self.active_system_index)
+        return tool.Blender.get_active_uilist_element(self.systems, self.active_group_index)
 
 
 def update_active_zone_index(self: "BIMZoneProperties", context: object) -> None:

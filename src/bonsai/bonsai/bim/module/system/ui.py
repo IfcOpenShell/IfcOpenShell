@@ -114,7 +114,7 @@ class BIM_PT_systems(Panel):
                 self.props,
                 "systems",
                 self.props,
-                "active_system_index",
+                "active_group_index",
             )
 
         if self.props.edited_system_id:
