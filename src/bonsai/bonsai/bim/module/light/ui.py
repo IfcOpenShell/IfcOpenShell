@@ -77,9 +77,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row = layout.row()
         row.template_list("MATERIAL_UL_radiance_materials", "", props, "materials", props, "active_material_index")
         row.operator("radiance.open_spectraldb", text="", icon="WORLD")  # Globe icon
-        # layout.use_property_split = True
-        # layout.use_property_decorate = False
-        # layout.width_hint = 350
         if len(props.materials) > 0:
             col = layout.column(align=True)
             prop_with_search(col, props, "category")
@@ -144,6 +141,17 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         if props.use_hdr:
             row = box.row()
             row.prop(props, "choose_hdr_image")
+
+        layout.separator()
+
+        # Sky Generation Settings
+        box = layout.box()
+        box.label(text="Sky Generation Settings")
+        box.prop(props, "sky_condition")
+        row = box.row()
+        row.prop(props, "ground_reflectance")
+        row = box.row()
+        row.prop(props, "turbidity")
 
         # Step 1: Export geometry for simulation
         box = layout.box()
