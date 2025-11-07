@@ -18,8 +18,14 @@
 
 import http.client
 from pathlib import Path
+from typing import Sequence
 from typing_extensions import assert_never
 from urllib.parse import urlparse
+
+try:
+    from bs4 import BeautifulSoup
+except:
+    pass
 
 # Where it's also reflected:
 # - .github/workflows/ci-ifcopenshell-python.yml
@@ -91,9 +97,13 @@ class TestPackageSupportedPlatforms:
             required_urls.append(url)
 
         # Verify all required URLs are present in the build HTML.
-        missing_urls: list[str] = []
-        for url in required_urls:
-            if url not in build_html:
-                missing_urls.append(url)
+        missing_urls: Sequence[str]
+        if "BeautifulSoup" in globals():
+            missing_urls = set(required_urls) - set(a["href"] for a in BeautifulSoup(build_html).find_all("a"))
+        else:
+            missing_urls = []
+            for url in required_urls:
+                if url not in build_html:
+                    missing_urls.append(url)
 
         assert not missing_urls
