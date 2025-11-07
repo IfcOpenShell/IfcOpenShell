@@ -2706,14 +2706,15 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         def preprocess(path: str, value: Any) -> tuple[str, Any, bool, bool]:
             warning = False
             skip = False
-            # @25.05.12
-            if path == "scene.render.engine" and value == "BLENDER_EEVEE":
-                value = "BLENDER_EEVEE_NEXT"
-                print(
-                    f"Warning: Value 'BLENDER_EEVEE' is outdated for property '{path}' "
-                    "since Blender 4.2 and should be replaced with 'BLENDER_EEVEE_NEXT' in shading_styles.json."
-                )
-                warning = True
+            # 25.11.07, Blender 5+
+            if path == "scene.render.engine" and value in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
+                if value == "BLENDER_EEVEE_NEXT":
+                    print(
+                        f"Warning: Value 'BLENDER_EEVEE_NEXT' is outdated for property '{path}' "
+                        "since Blender 5.0 and should be replaced with 'BLENDER_EEVEE' in shading_styles.json."
+                    )
+                    warning = True
+                value = tool.Blender.get_eevee_name()
             # @25.05.12
             if path == "scene.display.shading.wireframe_color_type" and value == "MATERIAL":
                 value = "THEME"

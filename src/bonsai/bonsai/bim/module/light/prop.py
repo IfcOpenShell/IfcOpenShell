@@ -101,7 +101,7 @@ def update_shadow_mode(self: "BIMSolarProperties", context: bpy.types.Context) -
             context.scene.collection.objects.link(sun)
             sun_props.sun_object = sun
         update_sun_path(self)
-        context.scene.render.engine = "BLENDER_EEVEE_NEXT"
+        context.scene.render.engine = tool.Blender.get_eevee_name()
         assert context.scene.display
         assert context.scene.display.shading
         context.scene.display.shading.light = "FLAT"
