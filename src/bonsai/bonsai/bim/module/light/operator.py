@@ -144,8 +144,19 @@ class PrepareRadianceScene(bpy.types.Operator):
         return (position.x, position.y, position.z), (direction.x, direction.y, direction.z)
 
     def execute(self, context):
-        print("Starting Radiance rendering process...")
+        print("Starting Radiance scene preparation...")
         props = tool.Blender.get_radiance_exporter_props()
+        output_dir = props.output_dir
+        
+        # Check if OBJ file exists from previous export step
+        obj_file_path = os.path.join(output_dir, "model.obj")
+        if not os.path.exists(obj_file_path):
+            error_msg = "OBJ file not found. Please run 'Export Geometry for Simulation' first."
+            self.report({"ERROR"}, error_msg)
+            print(f"ERROR: {error_msg}")
+            print(f"  Expected file: {obj_file_path}")
+            return {"CANCELLED"}
+        
         resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
 
         assert context.scene
@@ -157,7 +168,6 @@ class PrepareRadianceScene(bpy.types.Operator):
         quality = props.radiance_quality.upper()
         detail = props.radiance_detail.upper()
         variability = props.radiance_variability.upper()
-        output_dir = props.output_dir
         use_hdr = props.use_hdr
         choose_hdr_image = props.choose_hdr_image
 
@@ -167,6 +177,7 @@ class PrepareRadianceScene(bpy.types.Operator):
         print(f"Resolution: {resolution_x}x{resolution_y}")
         print(f"Quality: {quality}, Detail: {detail}, Variability: {variability}")
         print(f"Output directory: {output_dir}")
+        print(f"Found OBJ file: {obj_file_path} ({os.path.getsize(obj_file_path)} bytes)")
 
         if use_hdr:
             hdr_image = "noon_grass_2k.hdr"
@@ -175,8 +186,6 @@ class PrepareRadianceScene(bpy.types.Operator):
             hdr_image_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_image)
             hdr_mask_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_mask)
             sky_map_cal_path = os.path.join(os.path.dirname(__file__), "HDRs", sky_map_cal)
-
-        obj_file_path = os.path.join(output_dir, "model.obj")
 
         sun_props = tool.Blender.get_solar_props()
         sun_pos_props = tool.Blender.get_sun_props()
@@ -380,12 +389,22 @@ ground_glow source ground
                     file.write(f"inherit alias {style_id} white\n")
 
         self.report({"INFO"}, f"Exported Materials Rad file to: {materials_file}")
+        
+        print(f"OBJ file size: {os.path.getsize(obj_file_path)} bytes")
+        print(f"Materials file size: {os.path.getsize(materials_file)} bytes")
+        print(f"Converting OBJ to RTM format...")
 
         # Run obj2mesh
         rtm_file_path = os.path.join(output_dir, "model.rtm")
-        mesh_file_path = save_obj2mesh_output(obj_file_path, rtm_file_path, matfiles=[materials_file])
-        # subprocess.run(["obj2mesh", "-a", materials_file, obj_file_path, rtm_file_path])
-        self.report({"INFO"}, "obj2mesh output: {}".format(mesh_file_path))
+        try:
+            mesh_file_path = save_obj2mesh_output(obj_file_path, rtm_file_path, matfiles=[materials_file])
+            self.report({"INFO"}, "obj2mesh output: {}".format(mesh_file_path))
+        except Exception as e:
+            error_msg = f"Failed to convert OBJ to RTM: {str(e)}"
+            self.report({"ERROR"}, error_msg)
+            print(f"ERROR: {error_msg}")
+            print(f"Check the console output above for more details")
+            return {"CANCELLED"}
         scene_file = os.path.join(output_dir, "scene.rad")
         with open(scene_file, "w") as file:
             file.write('void mesh model\n1 "' + rtm_file_path + '"\n0\n0\n')
@@ -409,14 +428,13 @@ ground_glow source ground
             # Calculate vertical FOV based on the desired aspect ratio
             vertical_fov = 2 * math.atan(math.tan(camera_fov / 2) / aspect_ratio)
 
-            aview = pr.View(
-                vtype="v",  # Perspective view
-                position=camera_position,
-                direction=camera_direction,
-                vup=(0, 0, 1),  # Assuming Z is up
-                horiz=math.degrees(camera_fov),
-                vert=math.degrees(vertical_fov),
-            )
+            aview = pr.create_default_view()
+            aview.type = 'v'  # Perspective view
+            aview.vp = camera_position
+            aview.vdir = camera_direction
+            aview.vu = (0, 0, 1)  # Assuming Z is up
+            aview.horiz = math.degrees(camera_fov)
+            aview.vert = math.degrees(vertical_fov)
         else:  # 'ORTHO'
             # Orthographic camera
             # Calculate the view size based on the camera's orthographic scale
@@ -424,14 +442,13 @@ ground_glow source ground
             view_width = ortho_scale
             view_height = ortho_scale / aspect_ratio
 
-            aview = pr.View(
-                vtype="l",  # Parallel projection (orthographic)
-                position=camera_position,
-                direction=camera_direction,
-                vup=(0, 0, 1),  # Assuming Z is up
-                horiz=view_width,
-                vert=view_height,
-            )
+            aview = pr.create_default_view()
+            aview.type = 'l'  # Parallel projection (orthographic)
+            aview.vp = camera_position
+            aview.vdir = camera_direction
+            aview.vu = (0, 0, 1)  # Assuming Z is up
+            aview.horiz = view_width
+            aview.vert = view_height
         scene.add_view(aview)
         print("Starting render...")
 
@@ -447,7 +464,7 @@ class RadianceRender(bpy.types.Operator):
     bl_description = "Renders the scene using Radiance"
 
     def execute(self, context):
-        props = context.scene.radiance_exporter_properties
+        props = tool.Blender.get_radiance_exporter_props()
         resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
 
         context.scene.render.resolution_x = resolution_x
@@ -513,11 +530,18 @@ class RadianceRender(bpy.types.Operator):
 
 
 def save_obj2mesh_output(inp: Union[bytes, str, Path], output_file: str, **kwargs):
-    output_bytes = pr.obj2mesh(inp, **kwargs)
-
-    with open(output_file, "wb") as f:
-        f.write(output_bytes)
-    return output_file
+    try:
+        output_bytes = pr.obj2mesh(inp, **kwargs)
+        with open(output_file, "wb") as f:
+            f.write(output_bytes)
+        return output_file
+    except Exception as e:
+        print(f"ERROR in obj2mesh conversion:")
+        print(f"  Input file: {inp}")
+        print(f"  Output file: {output_file}")
+        print(f"  Additional args: {kwargs}")
+        print(f"  Error: {str(e)}")
+        raise
 
 
 class ImportTrueNorth(bpy.types.Operator):
