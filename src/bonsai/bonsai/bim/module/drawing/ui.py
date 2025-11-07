@@ -116,7 +116,7 @@ class BIM_PT_camera(Panel):
         # See #6686.
         if (
             props.has_underlay
-            and str(render.engine) == "BLENDER_EEVEE_NEXT"
+            and str(render.engine) == tool.Blender.get_eevee_name()
             and ((megapixels := (render.resolution_x * render.resolution_y / 10**6)) > MEGAPIXELS_WARNING_THRESHOLD)
         ):
             box = self.layout.box()

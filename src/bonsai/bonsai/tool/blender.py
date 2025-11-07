@@ -2084,3 +2084,14 @@ class Blender(bonsai.core.tool.Blender):
         assert bpy.context.preferences
         if props_updated and bpy.context.preferences.use_preferences_save:
             bpy.ops.wm.save_userpref()
+
+    @classmethod
+    def get_eevee_name(cls) -> Literal["BLENDER_EEVEE"] | Literal["BLENDER_EEVEE_NEXT"]:
+        """Convenience method to get correct eevee render engine name in multiple Blender versions.
+
+        In Blender 4.2 eevee was renamed to "eevee next".
+        In Blender 5 eevee next is now just "eevee" again.
+        """
+        if cls.BLENDER_5:
+            return "BLENDER_EEVEE"
+        return "BLENDER_EEVEE_NEXT"
