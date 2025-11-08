@@ -1969,7 +1969,8 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_default_annotation_matrix(cls, camera, matrix_world=None):
         if matrix_world is None:
-            matrix_world = camera.matrix_world.copy()
+            # Use normalized camera matrix (without scale) for RCP compatibility
+            matrix_world = cls.get_camera_matrix(camera)
         annotation_offset = Vector((0, 0, -camera.data.clip_start - 0.05))
         annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
         matrix_world.translation += annotation_offset
