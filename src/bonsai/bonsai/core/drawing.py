@@ -60,10 +60,21 @@ def edit_assigned_product(
 ) -> None:
     element = ifc.get_entity(obj)
     assert element
-    existing_product = drawing.get_assigned_product(element)
-    if existing_product != product:
-        if existing_product:
+    
+    # Get ALL existing products, not just one
+    existing_products = []
+    if hasattr(element, 'HasAssignments'):
+        for rel in element.HasAssignments:
+            if rel.is_a('IfcRelAssignsToProduct'):
+                existing_products.append(rel.RelatingProduct)
+    
+    # Only proceed if the assignment is different
+    if not (len(existing_products) == 1 and existing_products[0] == product):
+        # Unassign from ALL existing products
+        for existing_product in existing_products:
             ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
+        
+        # Assign to the new product
         if product:
             ifc.run("drawing.assign_product", relating_product=product, related_object=element)
 
