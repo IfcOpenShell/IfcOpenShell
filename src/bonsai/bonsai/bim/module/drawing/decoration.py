@@ -1641,6 +1641,13 @@ class CutDecorator:
         if not context.scene.camera:
             return
 
+        # Check if any viewport is in local view - skip decorations if so
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                space = area.spaces.active
+                if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
+                    return  # Don't draw decorations in local view
+
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         self.fallback_colour = (0.3, 0.3, 0.3, 1)
@@ -1986,6 +1993,13 @@ class DecorationsHandler:
                     decorator.font_id = font_id
 
     def __call__(self, context):
+        # Check if any viewport is in local view - skip decorations if so
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                space = area.spaces.active
+                if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
+                    return  # Don't draw decorations in local view
+
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
