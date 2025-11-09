@@ -69,11 +69,6 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     """
 
     results: ResultsDict = {}
-    elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
-    for element in elements:
-        elements_by_classes[element.is_a()].add(element)
-
-    results: ResultsDict = {}
 #    elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
 #    for element in elements:
 #        elements_by_classes[element.is_a()].add(element)
