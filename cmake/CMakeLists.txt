@@ -262,7 +262,7 @@ if(WITH_CGAL)
 	else()
 		set(CGAL_Boost_USE_STATIC_LIBS "${Boost_USE_STATIC_LIBS}")
 	endif()
-        find_package(CGAL REQUIRED)
+    find_package(CGAL REQUIRED)
         if(NOT CGAL_DIR)
             message(
                 FATAL_ERROR
@@ -957,6 +957,7 @@ if(NOT Boost_VERSION LESS 105800)
     add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
 endif()
 
+add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 
 if(BUILD_IFCGEOM)
@@ -987,52 +988,6 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
         target_link_libraries(geometry_serializer ${geometry_serializer_libraries} IfcParse)
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} geometry_serializer ${geometry_serializer_libraries})
     endif()
-endif()
-
-# IfcParse
-file(GLOB IFCPARSE_H_FILES_ALL ../src/ifcparse/*.h)
-file(GLOB IFCPARSE_CPP_FILES_ALL ../src/ifcparse/*.cpp)
-
-foreach(file ${IFCPARSE_H_FILES_ALL})
-    get_filename_component(filename "${file}" NAME)
-
-    if(NOT "${filename}" MATCHES "[0-9]")
-        list(APPEND IFCPARSE_H_FILES "${file}")
-    endif()
-endforeach()
-
-foreach(file ${IFCPARSE_CPP_FILES_ALL})
-    get_filename_component(filename "${file}" NAME)
-
-    if(NOT "${filename}" MATCHES "[0-9]")
-        list(APPEND IFCPARSE_CPP_FILES "${file}")
-    endif()
-endforeach()
-
-foreach(schema ${SCHEMA_VERSIONS})
-    list(APPEND IFCPARSE_H_FILES
-        ../src/ifcparse/Ifc${schema}.h
-        ../src/ifcparse/Ifc${schema}-definitions.h
-    )
-    list(APPEND IFCPARSE_CPP_FILES
-        ../src/ifcparse/Ifc${schema}.cpp
-        ../src/ifcparse/Ifc${schema}-schema.cpp
-    )
-endforeach()
-
-set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
-
-add_library(IfcParse ${IFCPARSE_FILES})
-target_link_libraries(IfcParse ${STDCPPFS})
-set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
-
-if(LibXml2_DIR)
-    target_compile_definitions(IfcParse PRIVATE ${LIBXML2_DEFINITIONS})
-endif()
-if(WASM_BUILD)
-    target_link_libraries(IfcParse ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
-else()
-    target_link_libraries(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
 endif()
 
 if(BUILD_IFCGEOM)
@@ -1324,17 +1279,6 @@ endif()
 if(BUILD_QTVIEWER)
     add_subdirectory(../src/qtviewer qtviewer)
 endif()
-
-# CMake installation targets
-install(FILES ${IFCPARSE_H_FILES}
-	DESTINATION ${INCLUDEDIR}/ifcparse
-)
-
-install(TARGETS IfcParse
-	ARCHIVE DESTINATION ${LIBDIR}
-	LIBRARY DESTINATION ${LIBDIR}
-	RUNTIME DESTINATION ${BINDIR}
-)
 
 if(BUILD_IFCGEOM)
     # install(FILES ${IFCGEOM_H_FILES}
