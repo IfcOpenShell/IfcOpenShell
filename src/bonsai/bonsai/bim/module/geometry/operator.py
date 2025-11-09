@@ -1204,7 +1204,6 @@ class DuplicateMoveLinkedAggregateMacro(bpy.types.Macro):
     bl_label = "IFC Duplicate and Move Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
-
 class DuplicateMoveLinkedAggregate(bpy.types.Operator):
     bl_idname = "bim.object_duplicate_move_linked_aggregate"
     bl_label = "IFC Duplicate and Move Linked Aggregate"
@@ -1227,7 +1226,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         self.new_active_obj = None
         self.group_name = "BBIM_Linked_Aggregate"
         self.pset_name = "BBIM_Linked_Aggregate"
-        old_to_new = {}
+        all_old_to_new = {}  # Track all duplicates created
 
         def select_objects_and_add_data(element):
             add_linked_aggregate_group(element)
@@ -1243,8 +1242,6 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         select_objects_and_add_data(part)
                     else:
                         index = add_linked_aggregate_pset(part, index)
-                        # index += 1
-
                     obj = tool.Ifc.get_object(part)
                     obj.select_set(True)
 
@@ -1257,17 +1254,12 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
             if not pset:
                 pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name=self.pset_name)
-
                 ifcopenshell.api.pset.edit_pset(
                     ifc_file,
                     pset=pset,
                     properties=properties,
                 )
-
                 index += 1
-            else:
-                pass
-
             return index
 
         def add_linked_aggregate_group(element):
@@ -1286,22 +1278,20 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         def custom_incremental_naming_for_element_assembly(old_to_new):
             for new in old_to_new.values():
                 if new[0].is_a("IfcElementAssembly"):
-                    group_elements: list[ifcopenshell.entity_instance] = next(
+                    group_elements = next(
                         r.RelatedObjects
                         for r in getattr(new[0], "HasAssignments", []) or []
                         if r.is_a("IfcRelAssignsToGroup")
                         if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                     )
-
                     pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
                     new_obj = tool.Ifc.get_object(new[0])
                     new_obj.name = pset["Name"] + "_" + str(pset["Aggregate_Index"])
 
         def get_max_index(parts):
-            psets = [ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate") for p in parts]
-            index = [i["Index"] for i in psets if i]
-            if len(index) > 0:
-                index = max(index)
+            psets = [ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate") for p in parts if ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate")]
+            if psets:
+                index = max([i["Index"] for i in psets if i])
                 return index
             else:
                 return 0
@@ -1315,23 +1305,24 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         if r.is_a("IfcRelAssignsToGroup")
                         if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                     ]
-                    ifcopenshell.api.group.assign_group(ifc_file, group=linked_aggregate_group[0], products=new)
-
-                    group_elements: list[ifcopenshell.entity_instance] = next(
-                        r.RelatedObjects
-                        for r in getattr(new[0], "HasAssignments", []) or []
-                        if r.is_a("IfcRelAssignsToGroup")
-                        if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-                    )
+                    if linked_aggregate_group:
+                        ifcopenshell.api.group.assign_group(ifc_file, group=linked_aggregate_group[0], products=new)
 
                 pset = ifcopenshell.util.element.get_pset(old, "BBIM_Linked_Aggregate")
                 if pset:
                     new_pset = ifcopenshell.api.pset.add_pset(ifc_file, product=new[0], name=self.pset_name)
                     if pset["Index"] == 0:
+                        group_elements = []
+                        if new[0].is_a("IfcElementAssembly"):
+                            group_elements = next(
+                                (r.RelatedObjects for r in getattr(new[0], "HasAssignments", []) or []
+                                if r.is_a("IfcRelAssignsToGroup") and "BBIM_Linked_Aggregate" in r.RelatingGroup.Name),
+                                []
+                            )
                         properties = {
                             "Index": pset["Index"],
                             "Name": pset["Name"],
-                            "Aggregate_Index": len(group_elements) - 1,
+                            "Aggregate_Index": len(group_elements) - 1 if group_elements else 0,
                         }
                     else:
                         properties = {"Index": pset["Index"]}
@@ -1351,44 +1342,73 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 location_diff = new_obj.location - base_obj_location
                 new_obj.location = context.scene.cursor.location + location_diff
 
-        if len(context.selected_objects) != 1:
+        # Process multiple selected aggregates
+        selected_aggregates = []
+        for obj in context.selected_objects:
+            selected_element = tool.Ifc.get_entity(obj)
+            if not selected_element:
+                continue
+
+            # Find the aggregate element
+            if selected_element.is_a("IfcElementAssembly"):
+                selected_aggregates.append(selected_element)
+            elif selected_element.Decomposes:
+                if selected_element.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
+                    selected_aggregates.append(selected_element.Decomposes[0].RelatingObject)
+        
+        # Remove duplicates
+        selected_aggregates = list(set(selected_aggregates))
+        
+        if not selected_aggregates:
+            self.report({"INFO"}, "No Linked Aggregates selected.")
             return {"FINISHED"}
 
-        selected_obj = context.selected_objects[0]
-        selected_element = tool.Ifc.get_entity(selected_obj)
-        assert selected_element
-
-        if selected_element.is_a("IfcElementAssembly"):
-            pass
-        elif selected_element.Decomposes:
-            if selected_element.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
-                selected_element = selected_element.Decomposes[0].RelatingObject
-                selected_obj = tool.Ifc.get_object(selected_element)
-        else:
-            self.report({"INFO"}, "Object is not part of a IfcElementAssembly.")
-            return {"FINISHED"}
-
-        select_objects_and_add_data(selected_element)
-
-        old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
-
-        tool.Root.recreate_aggregate(old_to_new)
-
-        copy_linked_aggregate_data(old_to_new)
-
-        custom_incremental_naming_for_element_assembly(old_to_new)
-
-        if location_from_3d_cursor:
-            get_location_from_3d_cursor(old_to_new, selected_element)
-
+        # Deselect all first
         bpy.ops.object.select_all(action="DESELECT")
-        new_aggregate = old_to_new[selected_element][0]
-        tool.Blender.set_active_object(tool.Ifc.get_object(new_aggregate))
+        
+        # Process each selected aggregate
+        for aggregate in selected_aggregates:
+            aggregate_obj = tool.Ifc.get_object(aggregate)
+            
+            # Select and prepare the aggregate for duplication
+            select_objects_and_add_data(aggregate)
+            
+            # Duplicate the aggregate
+            old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
+            all_old_to_new.update(old_to_new)  # Collect all duplicates
+            
+            # Recreate aggregate structure
+            tool.Root.recreate_aggregate(old_to_new)
+            
+            # Copy linked aggregate data
+            copy_linked_aggregate_data(old_to_new)
+            
+            # Apply custom naming
+            custom_incremental_naming_for_element_assembly(old_to_new)
+            
+            # Apply 3D cursor location if requested
+            if location_from_3d_cursor:
+                get_location_from_3d_cursor(old_to_new, aggregate)
+            
+            # Deselect for next iteration
+            bpy.ops.object.select_all(action="DESELECT")
+
+        # Select all newly created aggregates
+        for aggregate in selected_aggregates:
+            if aggregate in all_old_to_new:
+                new_aggregate = all_old_to_new[aggregate][0]
+                new_aggregate_obj = tool.Ifc.get_object(new_aggregate)
+                if new_aggregate_obj:
+                    new_aggregate_obj.select_set(True)
+
+        # Set active object to the first new aggregate
+        if all_old_to_new:
+            first_new_aggregate = list(all_old_to_new.values())[0][0]
+            context.view_layer.objects.active = tool.Ifc.get_object(first_new_aggregate)
 
         bonsai.bim.handler.refresh_ui_data()
 
-        return old_to_new
-
+        return all_old_to_new
 
 class DuplicateLinkedAggregateTo3dCursor(bpy.types.Operator):
     bl_idname = "bim.duplicate_linked_aggregate_to_3d_cursor"
