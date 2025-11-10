@@ -68,7 +68,7 @@ class PanelSpy:
             self.spied_labels: list[str] = []
             self.spied_props: list[dict[str, Any]] = []
             self.spied_operators: list[dict[str, Any]] = []
-            self.spied_lists: list[dict[str, Any]] = []
+            self.spied_lists: list[TemplateListSpy] = []
             if hasattr(self.blender_panel, "draw_header"):
                 self.blender_panel.draw_header(self, bpy.context)
             self.blender_panel.draw(self, bpy.context)
@@ -426,18 +426,21 @@ def i_dont_see_text_in_the_nth_list(text, nth):
 @given(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
 @when(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
 @then(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
-def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button, text, nth):
+def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button: str, text: str, nth: str) -> None:
     """
-    :param button: The text or icon of the button to click.
+    :param button: The text or icon or name of the button/prop to click.
+    :param text: The text to search for in the row.
+    :param nth: E.g. "1st", "2nd", "5th".
     """
+
     assert panel_spy
     panel_spy.refresh_spy()
-    nth = int("".join([c for c in nth if c.isnumeric()]))
-    if len(panel_spy.spied_lists) < nth:
-        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    nth_ = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth_:
+        assert False, f"{nth_} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
     debug = []
     for i, template_list in enumerate(panel_spy.spied_lists):
-        if i + 1 != nth:
+        if i + 1 != nth_:
             continue
         for row in template_list.rows:
             is_row = False
@@ -451,7 +454,8 @@ def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button, text, nth
                     is_row = True
             if is_row:
                 _i_click_button_on_panel(button, row)
-                return True
+                # Success.
+                return
     debug = "\n".join(debug)
     assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
 
@@ -556,7 +560,7 @@ def i_set_the_prop_property_to_value(prop: str, value: str):
     assert panel_spy
     panel_spy.refresh_spy()
     is_nth = False
-    if prop[0].isnumeric() and (prop.endswith("st") or prop.endswith("nd") or prop.endswith("th")):
+    if prop[0].isnumeric() and prop.endswith(("st", "nd", "th")):
         is_nth = True
     for nth, spied_prop in enumerate(panel_spy.spied_props):
         if is_nth and nth != int(prop[:-2]) - 1:
@@ -756,7 +760,7 @@ def i_press_operator_and_expect_error(operator, error_msg):
 
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
-def i_press_operator(operator):
+def i_press_operator(operator: str) -> types.NoneType:
     operator = replace_variables(operator)
     try:
         if "(" in operator:
@@ -768,7 +772,7 @@ def i_press_operator(operator):
         assert False, f"Failed to run operator bpy.ops.{operator} because of {e}"
 
 
-def _i_click_button_on_panel(button, panel_spy):
+def _i_click_button_on_panel(button: str, panel_spy: PanelSpy) -> None:
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["text"] == button or spied_operator["icon"] == button:
             spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
