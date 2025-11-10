@@ -1041,34 +1041,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 if(BUILD_CONVERT)
-    # IfcConvert
-	if (WITH_RELATIONSHIP_VALIDATION)
-		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
-		file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
-	else()
-		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/IfcConvert.cpp)
-		file(GLOB IFCCONVERT_H_FILES)
-	endif()
-    set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
-    add_executable(IfcConvert ${IFCCONVERT_FILES})
-
-    target_link_libraries(IfcConvert IfcGeom IfcParse Serializers ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
-	if (WITH_RELATIONSHIP_VALIDATION)
-        set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DWITH_RELATIONSHIP_VALIDATION")
-    endif()
-
-    if((NOT WIN32) AND BUILD_SHARED_LIBS)
-        # Only set RPATHs when building shared libraries (i.e. IfcParse and
-        # IfcGeom are dynamically linked). Not necessarily a perfect solution
-        # but probably a good indication of whether RPATHs are necessary.
-        SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
-    endif()
-
-    install(TARGETS IfcConvert
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
+    add_subdirectory(../src/ifcconvert ifcconvert)
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
