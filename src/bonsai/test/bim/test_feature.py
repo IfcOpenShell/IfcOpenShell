@@ -200,6 +200,9 @@ class TemplateListSpy(PanelSpy):
         except:
             assert False, f"Could not set active index {index}"
 
+    def __repr__(self) -> str:
+        return f"TemplateListSpy({self.spied_data['listtype_name']}, {len(self.items)} items, active_index={self.active_index})"
+
 
 class TemplateListItemSpy(PanelSpy):
     def __init__(self, parent: TemplateListSpy, item):
