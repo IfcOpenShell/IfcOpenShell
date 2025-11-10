@@ -240,7 +240,7 @@ def get_cost_assignments_by_type(
 ) -> list[ifcopenshell.entity_instance]:
     if filter_by_type is not None:
         if filter_by_type == "PRODUCT":
-            filter_by_type = "IfcElement"
+            filter_by_type = "IfcProduct"
         elif filter_by_type == "RESOURCE":
             filter_by_type = "IfcResource"
         elif filter_by_type == "PROCESS":
