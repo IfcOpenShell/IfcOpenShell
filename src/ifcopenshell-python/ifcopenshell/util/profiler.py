@@ -19,6 +19,7 @@
 
 from timeit import default_timer as timer
 
+
 class Profiler:
     """
     A python context manager timing utility, useful for measure functions performances

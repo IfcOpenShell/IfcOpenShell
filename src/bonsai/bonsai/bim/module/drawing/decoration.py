@@ -1643,7 +1643,7 @@ class CutDecorator:
 
         # Check if any viewport is in local view - skip decorations if so
         for area in context.screen.areas:
-            if area.type == 'VIEW_3D':
+            if area.type == "VIEW_3D":
                 space = area.spaces.active
                 if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
                     return  # Don't draw decorations in local view
@@ -1995,7 +1995,7 @@ class DecorationsHandler:
     def __call__(self, context):
         # Check if any viewport is in local view - skip decorations if so
         for area in context.screen.areas:
-            if area.type == 'VIEW_3D':
+            if area.type == "VIEW_3D":
                 space = area.spaces.active
                 if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
                     return  # Don't draw decorations in local view
