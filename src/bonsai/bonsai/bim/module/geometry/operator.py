@@ -809,9 +809,17 @@ class OverrideDelete(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) > 0
+        # Match `object.delete` poll for consistency.
+        # `object.delete` poll just checks for OBJECT mode.
+        poll = bpy.ops.object.delete.poll()
+        if poll:
+            return True
+        cls.poll_message_set("Only available in OBJECT mode")
+        return False
 
     def execute(self, context):
+        if not context.selected_objects:
+            return {"FINISHED"}
         # Deep magick from the dawn of time
         if tool.Ifc.get() is None:
             bpy.ops.object.delete(use_global=self.use_global, confirm=self.confirm)
@@ -823,6 +831,8 @@ class OverrideDelete(bpy.types.Operator):
             return IfcStore.execute_ifc_operator(self, context)
 
     def invoke(self, context, event):
+        if not context.selected_objects:
+            return {"FINISHED"}
         assert context.window_manager
         ifc_file = tool.Ifc.get()
         if ifc_file is None:
@@ -1030,9 +1040,18 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context) -> bool:
-        return len(getattr(context, "selected_ids", [])) > 0
+        # Match `outliner.delete` poll for consistency.
+        # `outliner.delete` just checks `area.type` == `OUTLINER`.
+        poll = bpy.ops.outliner.delete.poll()
+        if poll:
+            return True
+        cls.poll_message_set("Only available from Outliner.")
+        return False
 
     def execute(self, context):
+        if len(getattr(context, "selected_ids", [])) == 0:
+            return {"FINISHED"}
+
         # In this override, we don't check self.hierarchy. This effectively
         # makes Delete and Delete Hierarchy identical. This is on purpose, since
         # non-hierarchical deletion may imply a whole bunch of potentially
@@ -1051,6 +1070,9 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        if len(getattr(context, "selected_ids", [])) == 0:
+            return {"FINISHED"}
+
         assert context.window_manager
         ifc_file = tool.Ifc.get()
         if ifc_file:
