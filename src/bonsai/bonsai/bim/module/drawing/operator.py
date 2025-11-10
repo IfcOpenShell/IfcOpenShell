@@ -2706,6 +2706,21 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         def preprocess(path: str, value: Any) -> tuple[str, Any, bool, bool]:
             warning = False
             skip = False
+
+            BLENDER_5_REMOVED = (
+                "scene.render.bake_bias",
+                "scene.render.bake_margin",
+                "scene.render.bake_margin_type",
+                "scene.render.bake_samples",
+                "scene.render.bake_type",
+                "scene.render.bake_user_scale",
+                "scene.render.use_bake_clear",
+                "scene.render.use_bake_lores_mesh",
+                "scene.render.use_bake_multires",
+                "scene.render.use_bake_selected_to_active",
+                "scene.render.use_bake_user_scale",
+            )
+
             # 25.11.07, Blender 5+
             if path == "scene.render.engine" and value in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
                 if value == "BLENDER_EEVEE_NEXT":
@@ -2715,8 +2730,15 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                     )
                     warning = True
                 value = tool.Blender.get_eevee_name()
+            elif tool.Blender.BLENDER_5 and path in BLENDER_5_REMOVED:
+                print(
+                    f"Warning: Property '{path}' is removed "
+                    "since Blender 5.0 and should be also removed from shading_styles.json."
+                )
+                warning = True
+                skip = True
             # @25.05.12
-            if path == "scene.display.shading.wireframe_color_type" and value == "MATERIAL":
+            elif path == "scene.display.shading.wireframe_color_type" and value == "MATERIAL":
                 value = "THEME"
                 print(
                     f"Warning: Value 'MATERIAL' is outdated for property '{path}' "
