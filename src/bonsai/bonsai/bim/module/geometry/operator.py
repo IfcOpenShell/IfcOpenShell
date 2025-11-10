@@ -1412,7 +1412,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
         # Set active object to the first new aggregate
         if all_old_to_new:
-            first_new_aggregate = list(all_old_to_new.values())[0][0]
+            first_new_aggregate = next(iter(all_old_to_new.values()))[0]
             context.view_layer.objects.active = tool.Ifc.get_object(first_new_aggregate)
 
         bonsai.bim.handler.refresh_ui_data()
