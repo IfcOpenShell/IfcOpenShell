@@ -95,7 +95,7 @@ jobs:
             -DCMAKE_POSITION_INDEPENDENT_CODE=On \
             -DUSE_RTTI=On \
             ..
-          sudo make -j$(nproc) install
+          sudo make -j$(nproc) install VERBOSE=1
 
       - name: Build ifcopenshell
         run: |
@@ -120,7 +120,7 @@ jobs:
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
              ../cmake
-          sudo make -j $(nproc)
+          sudo make -j 1 VERBOSE=1
           sudo make install
 
       # - name: Run IfcConvert on Sample files

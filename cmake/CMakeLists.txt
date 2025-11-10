@@ -18,10 +18,10 @@
 ################################################################################
 
 cmake_minimum_required(VERSION 3.21)
-if (NOT DEFINED CMAKE_CXX_STANDARD)
+if(NOT DEFINED CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 17)
 endif()
-if (CMAKE_CXX_STANDARD LESS 17)
+if(CMAKE_CXX_STANDARD LESS 17)
     message(FATAL_ERROR "C++17 or newer is required.")
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
@@ -30,7 +30,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 if(POLICY CMP0141) # 3.25+
-  cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
+    cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
 endif()
 if(POLICY CMP0144) # 3.27
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
@@ -94,7 +94,7 @@ set(
     "Directory to install IfcPython package to. By default package is installed in found Python's site-packages."
 )
 
-if (VERSION_OVERRIDE)
+if(VERSION_OVERRIDE)
     file(READ "../VERSION" "RELEASE_VERSION_")
     string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
     message(STATUS "Detected version '${RELEASE_VERSION}'")
@@ -119,7 +119,7 @@ if(MINIMAL_BUILD)
     set(USD_SUPPORT OFF)
 endif()
 
-if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
+if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND (NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
     set(BUILD_IFCGEOM ON)
 endif()
@@ -236,48 +236,33 @@ endforeach()
 set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
 
 macro(clear_wasm_sysroot)
-if(WASM_BUILD)
-    # when using the nix/build-all.py build script we should not
-    # look into the sysroot for most of the dependencies but rather
-    # in the designated build/ folder created by the script.
-    set(CMAKE_FIND_ROOT_PATH "")
-endif()
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
+    if(WASM_BUILD)
+        # when using the nix/build-all.py build script we should not
+        # look into the sysroot for most of the dependencies but rather
+        # in the designated build/ folder created by the script.
+        set(CMAKE_FIND_ROOT_PATH "")
+    endif()
+    set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
 endmacro()
 
 macro(restore_wasm_sysroot)
-if(WASM_BUILD)
-    # reset to use sysroot
-    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
-endif()
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+    if(WASM_BUILD)
+        # reset to use sysroot
+        set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
+    endif()
+    set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 endmacro()
 
 if(WITH_CGAL)
-    if(NOT CGAL_INCLUDE_DIR)
-	# CGAL is not respecting default Boost_USE_STATIC_LIBS value
-	# and sometiems it's getting in the way.
-	if(NOT DEFINED Boost_USE_STATIC_LIBS)
-		set(CGAL_Boost_USE_STATIC_LIBS OFF)
-	else()
-		set(CGAL_Boost_USE_STATIC_LIBS "${Boost_USE_STATIC_LIBS}")
-	endif()
+    set(CMAKE_FIND_DEBUG_MODE TRUE)
     find_package(CGAL REQUIRED)
-        if(NOT CGAL_DIR)
-            message(
-                FATAL_ERROR
-                "CGAL_SUPPORT enabled, but CGAL_INCLUDE_DIR wasn't provided and CGAL package couldn't be found."
-            )
-        endif()
-        message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
-        link_libraries(CGAL::CGAL)
-    endif()
+    set(CMAKE_FIND_DEBUG_MODE FALSE)
 
     add_definitions(-DIFOPSH_WITH_CGAL)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
 
     if(CITYJSON_SUPPORT)
-		add_definitions(-DIFOPSH_WITH_CITYJSON)
+        add_definitions(-DIFOPSH_WITH_CITYJSON)
     endif()
 
     list(APPEND GEOMETRY_KERNELS cgal)
@@ -325,8 +310,8 @@ if(USD_SUPPORT)
     if("${USD_INCLUDE_DIR}" STREQUAL "")
         find_path(USD_INCLUDE_DIR pxr.h
             PATHS
-                /usr/include/pxr
-                /usr/local/include/pxr
+            /usr/include/pxr
+            /usr/local/include/pxr
             REQUIRED
         )
         if(USD_INCLUDE_DIR)
@@ -340,15 +325,15 @@ if(USD_SUPPORT)
     endif()
 
     set(USD_LIBRARIES
-            usd_usd
-            usd_usdGeom
-            usd_usdShade
-            usd_usdLux
-            usd_vt
-            usd_sdf
-            usd_tf
-            usd_gf
-        )
+        usd_usd
+        usd_usdGeom
+        usd_usdShade
+        usd_usdLux
+        usd_vt
+        usd_sdf
+        usd_tf
+        usd_gf
+    )
 
     find_library(USD_LIBRARY
         NAMES ${USD_LIBRARIES}
@@ -364,7 +349,7 @@ if(USD_SUPPORT)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_USD)
 endif(USD_SUPPORT)
 
-if (WITH_ROCKSDB)
+if(WITH_ROCKSDB)
     # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
     # find it's zstd dependency on Windows.
     # Only do it on Windows, otherwise it might create problems as
@@ -383,7 +368,7 @@ if (WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
     link_libraries(RocksDB::rocksdb)
 
-    if (WITH_ZSTD)
+    if(WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
@@ -398,7 +383,7 @@ endif()
 
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
 # runtime, when doing running conda-build we pick what conda prepared for us.
-if(WIN32 AND("$ENV{CONDA_BUILD}" STREQUAL ""))
+if(WIN32 AND ("$ENV{CONDA_BUILD}" STREQUAL ""))
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
@@ -495,141 +480,141 @@ if(BUILD_IFCGEOM)
 
     # Open CASCADE
     if(WITH_OPENCASCADE)
-    if(OCC_INCLUDE_DIR)
-        set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
-        message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-    endif()
+        if(OCC_INCLUDE_DIR)
+            set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
+            message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
+        endif()
 
-    if(OCC_LIBRARY_DIR)
-        set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
-        message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
-    endif()
+        if(OCC_LIBRARY_DIR)
+            set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
+            message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+        endif()
 
-    # No specific paths specified, try to find package.
-    if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
-        message(
-            STATUS
-            "Using provided OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
-            "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
-        )
-        # Parse OCC_VERSION_STRING.
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
-            REGEX "#define OCC_VERSION_MAJOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
-            REGEX "#define OCC_VERSION_MINOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
-            REGEX "#define OCC_VERSION_MAINTENANCE.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
-        set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
-    elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
-        # OCE is not supported for find_package, because it's using a different name (`oce`)
-        # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
-        find_package(OpenCASCADE CONFIG REQUIRED)
-        set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
-        # Do not use OpenCASCADE_LIBRARY_DIR for OCC_LIBRARY_DIR - check target property explicitly.
-        # On Windows there is a case with OpenCASCADE_LIBRARY_DIR points to `lib` folder,
-        # while TKernel is actually in `libi`.
-        get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
-        get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
-        set(OCC_VERSION_STRING ${OpenCASCADE_VERSION})
-        message(
-            STATUS
-            "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
-            "deducing from it OCC_INCLUDE_DIR: '${OCC_INCLUDE_DIR}' "
-            "and OCC_LIBRARY_DIR: '${OCC_LIBRARY_DIR}'."
-        )
-    else()
-        message(
-            FATAL_ERROR
-            "Couldn't find Open CASCADE installation. "
-            "Either both OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}') "
-            "must be specified or OpenCASCADE package should be discoverable. "
-            "If you're using OCE, then providing a package is not available "
-            "and you need to provide OCE_INCLUDE_DIR and OCE_LIBRARY_DIR directly."
-        )
-    endif()
-
-    set(
-        OPENCASCADE_LIBRARY_NAMES
-        TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-        TKFillet TKXSBase TKOffset TKHLR
-
-        # @todo investigate the exact conditions when this is necessary
-        TKBin
-    )
-
-    if(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-        list(APPEND OPENCASCADE_LIBRARY_NAMES  TKIGES TKSTEPBase TKSTEPAttr TKSTEP209 TKSTEP)
-    else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-        list(APPEND OPENCASCADE_LIBRARY_NAMES TKDESTEP TKDEIGES)
-    endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-
-    clear_wasm_sysroot()
-    find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
-    restore_wasm_sysroot()
-
-    if(libTKernel)
-        message(STATUS "Required Open Cascade Library files found")
-    else()
-        message(
-            FATAL_ERROR
-            "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting"
-        )
-    endif()
-
-    # Use the found libTKernel as a template for all other OCC libraries
-    # TODO Extract this into macro/function
-    foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
-        # Make sure we'll handle the Windows/MSVC debug postfix convention too.
-        string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
-        string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
-        list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
-    endforeach()
-
-    if(MSVC)
-        add_definitions(-DHAVE_NO_DLL)
-        add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" d)
-    endif()
-
-    if(WIN32)
-        # OCC might require linking to Winsock depending on the version and build configuration
-        list(APPEND OPENCASCADE_LIBRARIES ws2_32.lib)
-    endif()
-
-    # Make sure cross-referenced symbols between static OCC libraries get
-    # resolved. Also add thread and rt libraries.
-    get_filename_component(libTKernelExt ${libTKernel} EXT)
-    if("${libTKernelExt}" STREQUAL ".a")
-        set(OCCT_STATIC ON)
-    endif()
-
-    if(OCCT_STATIC)
-        find_package(Threads)
-
-        if(WASM_BUILD)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+        # No specific paths specified, try to find package.
+        if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
+            message(
+                STATUS
+                "Using provided OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
+                "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
+            )
+            # Parse OCC_VERSION_STRING.
+            file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
+                REGEX "#define OCC_VERSION_MAJOR.*"
+            )
+            string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
+            file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
+                REGEX "#define OCC_VERSION_MINOR.*"
+            )
+            string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
+            file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
+                REGEX "#define OCC_VERSION_MAINTENANCE.*"
+            )
+            string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
+            set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
+        elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
+            # OCE is not supported for find_package, because it's using a different name (`oce`)
+            # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
+            find_package(OpenCASCADE CONFIG REQUIRED)
+            set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
+            # Do not use OpenCASCADE_LIBRARY_DIR for OCC_LIBRARY_DIR - check target property explicitly.
+            # On Windows there is a case with OpenCASCADE_LIBRARY_DIR points to `lib` folder,
+            # while TKernel is actually in `libi`.
+            get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
+            get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
+            set(OCC_VERSION_STRING ${OpenCASCADE_VERSION})
+            message(
+                STATUS
+                "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
+                "deducing from it OCC_INCLUDE_DIR: '${OCC_INCLUDE_DIR}' "
+                "and OCC_LIBRARY_DIR: '${OCC_LIBRARY_DIR}'."
+            )
         else()
-            # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies
-            # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
-            if(APPLE)
-                set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+            message(
+                FATAL_ERROR
+                "Couldn't find Open CASCADE installation. "
+                "Either both OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}') "
+                "must be specified or OpenCASCADE package should be discoverable. "
+                "If you're using OCE, then providing a package is not available "
+                "and you need to provide OCE_INCLUDE_DIR and OCE_LIBRARY_DIR directly."
+            )
+        endif()
+
+        set(
+            OPENCASCADE_LIBRARY_NAMES
+            TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
+            TKFillet TKXSBase TKOffset TKHLR
+
+            # @todo investigate the exact conditions when this is necessary
+            TKBin
+        )
+
+        if(OCC_VERSION_STRING VERSION_LESS 7.8.0)
+            list(APPEND OPENCASCADE_LIBRARY_NAMES TKIGES TKSTEPBase TKSTEPAttr TKSTEP209 TKSTEP)
+        else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
+            list(APPEND OPENCASCADE_LIBRARY_NAMES TKDESTEP TKDEIGES)
+        endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
+
+        clear_wasm_sysroot()
+        find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
+        restore_wasm_sysroot()
+
+        if(libTKernel)
+            message(STATUS "Required Open Cascade Library files found")
+        else()
+            message(
+                FATAL_ERROR
+                "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting"
+            )
+        endif()
+
+        # Use the found libTKernel as a template for all other OCC libraries
+        # TODO Extract this into macro/function
+        foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
+            # Make sure we'll handle the Windows/MSVC debug postfix convention too.
+            string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
+            string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
+            list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
+        endforeach()
+
+        if(MSVC)
+            add_definitions(-DHAVE_NO_DLL)
+            add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" d)
+        endif()
+
+        if(WIN32)
+            # OCC might require linking to Winsock depending on the version and build configuration
+            list(APPEND OPENCASCADE_LIBRARIES ws2_32.lib)
+        endif()
+
+        # Make sure cross-referenced symbols between static OCC libraries get
+        # resolved. Also add thread and rt libraries.
+        get_filename_component(libTKernelExt ${libTKernel} EXT)
+        if("${libTKernelExt}" STREQUAL ".a")
+            set(OCCT_STATIC ON)
+        endif()
+
+        if(OCCT_STATIC)
+            find_package(Threads)
+
+            if(WASM_BUILD)
+                set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
             else()
-                set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
+                # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies
+                # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
+                if(APPLE)
+                    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+                else()
+                    set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
+                endif()
+            endif()
+
+            if(NOT APPLE AND NOT WIN32)
+                set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
+            endif()
+            if(NOT WIN32)
+                set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
             endif()
         endif()
-
-        if(NOT APPLE AND NOT WIN32)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
-        endif()
-        if(NOT WIN32)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
-        endif()
-    endif()
     endif(WITH_OPENCASCADE)
 endif(BUILD_IFCGEOM)
 
@@ -805,7 +790,7 @@ if(MSVC)
     endif()
 
     # Enforce standards-conformance on VS > 2015, older Boost versions fail to compile with this
-    if(MSVC_VERSION GREATER 1900 AND(Boost_MAJOR_VERSION GREATER 1 OR Boost_MINOR_VERSION GREATER 66))
+    if(MSVC_VERSION GREATER 1900 AND (Boost_MAJOR_VERSION GREATER 1 OR Boost_MINOR_VERSION GREATER 66))
         add_definitions(-permissive-)
     endif()
 
@@ -824,11 +809,11 @@ if(MSVC)
     #     endforeach()
     # endif()
 
-	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
-	# See #5158.
-	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
-		add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
-	endif()
+    add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+    # See #5158.
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
+        add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+    endif()
 else()
     add_definitions(-Wall -Wextra)
 
@@ -838,7 +823,7 @@ else()
         add_definitions(-Wno-maybe-uninitialized)
     endif()
 
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 9.0))
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 9.0))
         # OpenCascade spews a lot of deprecated-copy warnings
         add_definitions(-Wno-deprecated-copy)
     endif()
@@ -867,7 +852,7 @@ endif()
 
 
 include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
-	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIRS}
     ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
     ${TBB_INCLUDE_DIR}
 )
@@ -961,17 +946,17 @@ add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 
 if(BUILD_IFCGEOM)
-	foreach(schema ${SCHEMA_VERSIONS})
-		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} geometry_mapping_ifc${schema})
-	endforeach()
+    foreach(schema ${SCHEMA_VERSIONS})
+        set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} geometry_mapping_ifc${schema})
+    endforeach()
     set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-	foreach(schema ${SCHEMA_VERSIONS})
-		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${schema})
-	endforeach()
-	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
+    foreach(schema ${SCHEMA_VERSIONS})
+        set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${schema})
+    endforeach()
+    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
 
     if(WITH_OPENCASCADE)
         foreach(schema ${SCHEMA_VERSIONS})
@@ -992,23 +977,8 @@ endif()
 
 if(BUILD_IFCGEOM)
     # CGAL::CGAL target already has dependencies resolved.
-    if(WITH_CGAL AND CGAL_DIR)
+    if(WITH_CGAL)
         set(CGAL_LIBRARIES CGAL::CGAL)
-        message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
-    elseif(WITH_CGAL AND NOT CGAL_DIR)
-	clear_wasm_sysroot()
-        find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
-        find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-	restore_wasm_sysroot()
-        if(NOT libGMP)
-            message(FATAL_ERROR "Unable to find GMP library files, aborting")
-        endif()
-        if(NOT libMPFR)
-            message(FATAL_ERROR "Unable to find MPFR library files, aborting")
-        endif()
-
-        list(APPEND CGAL_LIBRARIES "${libMPFR}")
-        list(APPEND CGAL_LIBRARIES "${libGMP}")
     endif()
 
     foreach(kernel ${GEOMETRY_KERNELS})
@@ -1048,7 +1018,7 @@ if(BUILD_IFCGEOM)
         add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
         set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
         target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
-        if (NOT BUILD_SHARED_LIBS)
+        if(NOT BUILD_SHARED_LIBS)
             target_link_libraries(geometry_mapping_ifc${schema} IfcGeom)
         endif()
         list(APPEND mapping_libraries geometry_mapping_ifc${schema})
@@ -1095,7 +1065,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
     if(WITH_PROJ)
         target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
-        if (PROJ_STATIC)
+        if(PROJ_STATIC)
             target_compile_definitions(Serializers PRIVATE "PROJ_DLL=")
         endif()
         target_include_directories(Serializers PRIVATE ${PROJ_INCLUDE_DIR} ${SQLITE_INCLUDE_DIR})
@@ -1139,18 +1109,18 @@ if(BUILD_CONVERT)
     endif()
 
     # IfcConvert
-	if (WITH_RELATIONSHIP_VALIDATION)
-		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
-		file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
-	else()
-		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/IfcConvert.cpp)
-		file(GLOB IFCCONVERT_H_FILES)
-	endif()
+    if(WITH_RELATIONSHIP_VALIDATION)
+        file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
+        file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
+    else()
+        file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/IfcConvert.cpp)
+        file(GLOB IFCCONVERT_H_FILES)
+    endif()
     set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
     add_executable(IfcConvert ${IFCCONVERT_FILES})
 
     target_link_libraries(IfcConvert IfcGeom IfcParse Serializers ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
-	if (WITH_RELATIONSHIP_VALIDATION)
+    if(WITH_RELATIONSHIP_VALIDATION)
         set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DWITH_RELATIONSHIP_VALIDATION")
     endif()
 
@@ -1204,8 +1174,8 @@ if(ADD_COMMIT_SHA)
     endif()
 
     if(GIT_FOUND)
-        if (VERSION_OVERRIDE)
-            set (git_branch ${RELEASE_VERSION})
+        if(VERSION_OVERRIDE)
+            set(git_branch ${RELEASE_VERSION})
         else()
             message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
             execute_process(
@@ -1217,8 +1187,8 @@ if(ADD_COMMIT_SHA)
             string(REPLACE "\n" ";" git_branch_list "${git_branches}")
 
             foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-		        string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
-		        string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
+                string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
+                string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
                 if(NOT git_branch_candidate_2 MATCHES "^HEAD$")
                     string(REPLACE "/" ";" git_branch_candidate_2_list "${git_branch_candidate_2}")
                     list(GET git_branch_candidate_2_list -1 git_branch)
@@ -1236,7 +1206,7 @@ if(ADD_COMMIT_SHA)
         message(STATUS "IfcOpenShell branch: \"${git_branch}\"")
         message(STATUS "IfcOpenShell commit: \"${git_sha}\"")
 
-        if ("${git_branch}" STREQUAL "" OR "${git_sha}" STREQUAL "")
+        if("${git_branch}" STREQUAL "" OR "${git_sha}" STREQUAL "")
             message(FATAL_ERROR "Unable to determine commit sha and/or branch")
         endif()
 
@@ -1296,7 +1266,7 @@ if(BUILD_IFCGEOM)
 
     foreach(kernel ${GEOMETRY_KERNELS})
         file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
-         install(FILES ${IFCGEOM_H_FILES}
+        install(FILES ${IFCGEOM_H_FILES}
             DESTINATION ${INCLUDEDIR}/ifcgeom/kernels/${kernel}
         )
     endforeach()
