@@ -1237,7 +1237,6 @@ if "cgal" in targets:
             f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
             f"-DBoost_INCLUDE_DIR={DEPS_DIR}/install/boost-{BOOST_VERSION}",
             f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/cgal-{CGAL_VERSION}/",
-            f"-DCGAL_WITH_GMPXX=Off",
             f"-DCGAL_HEADER_ONLY=On",
             f"-DBUILD_SHARED_LIBS=Off",
         ],
@@ -1379,6 +1378,7 @@ if "cgal" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}")
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/gmp-{GMP_VERSION}")
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}")
+    cmake_args.append(f"-DCGAL_WITH_GMPXX=Off")
 
 if "occ" in targets and USE_OCCT:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
