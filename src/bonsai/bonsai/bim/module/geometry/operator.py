@@ -1204,6 +1204,7 @@ class DuplicateMoveLinkedAggregateMacro(bpy.types.Macro):
     bl_label = "IFC Duplicate and Move Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
+
 class DuplicateMoveLinkedAggregate(bpy.types.Operator):
     bl_idname = "bim.object_duplicate_move_linked_aggregate"
     bl_label = "IFC Duplicate and Move Linked Aggregate"
@@ -1289,7 +1290,11 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                     new_obj.name = pset["Name"] + "_" + str(pset["Aggregate_Index"])
 
         def get_max_index(parts):
-            psets = [ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate") for p in parts if ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate")]
+            psets = [
+                ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate")
+                for p in parts
+                if ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate")
+            ]
             if psets:
                 index = max([i["Index"] for i in psets if i])
                 return index
@@ -1315,9 +1320,13 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                         group_elements = []
                         if new[0].is_a("IfcElementAssembly"):
                             group_elements = next(
-                                (r.RelatedObjects for r in getattr(new[0], "HasAssignments", []) or []
-                                if r.is_a("IfcRelAssignsToGroup") and "BBIM_Linked_Aggregate" in r.RelatingGroup.Name),
-                                []
+                                (
+                                    r.RelatedObjects
+                                    for r in getattr(new[0], "HasAssignments", []) or []
+                                    if r.is_a("IfcRelAssignsToGroup")
+                                    and "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                                ),
+                                [],
                             )
                         properties = {
                             "Index": pset["Index"],
@@ -1355,41 +1364,41 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             elif selected_element.Decomposes:
                 if selected_element.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
                     selected_aggregates.append(selected_element.Decomposes[0].RelatingObject)
-        
+
         # Remove duplicates
         selected_aggregates = list(set(selected_aggregates))
-        
+
         if not selected_aggregates:
             self.report({"INFO"}, "No Linked Aggregates selected.")
             return {"FINISHED"}
 
         # Deselect all first
         bpy.ops.object.select_all(action="DESELECT")
-        
+
         # Process each selected aggregate
         for aggregate in selected_aggregates:
             aggregate_obj = tool.Ifc.get_object(aggregate)
-            
+
             # Select and prepare the aggregate for duplication
             select_objects_and_add_data(aggregate)
-            
+
             # Duplicate the aggregate
             old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
             all_old_to_new.update(old_to_new)  # Collect all duplicates
-            
+
             # Recreate aggregate structure
             tool.Root.recreate_aggregate(old_to_new)
-            
+
             # Copy linked aggregate data
             copy_linked_aggregate_data(old_to_new)
-            
+
             # Apply custom naming
             custom_incremental_naming_for_element_assembly(old_to_new)
-            
+
             # Apply 3D cursor location if requested
             if location_from_3d_cursor:
                 get_location_from_3d_cursor(old_to_new, aggregate)
-            
+
             # Deselect for next iteration
             bpy.ops.object.select_all(action="DESELECT")
 
@@ -1409,6 +1418,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
 
         return all_old_to_new
+
 
 class DuplicateLinkedAggregateTo3dCursor(bpy.types.Operator):
     bl_idname = "bim.duplicate_linked_aggregate_to_3d_cursor"
