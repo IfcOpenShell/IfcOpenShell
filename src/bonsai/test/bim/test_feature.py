@@ -69,6 +69,8 @@ class PanelSpy:
             self.spied_props: list[dict[str, Any]] = []
             self.spied_operators: list[dict[str, Any]] = []
             self.spied_lists: list[dict[str, Any]] = []
+            if hasattr(self.blender_panel, "draw_header"):
+                self.blender_panel.draw_header(self, bpy.context)
             self.blender_panel.draw(self, bpy.context)
 
     def __getattr__(self, attr: str) -> PanelSpy | Any:
