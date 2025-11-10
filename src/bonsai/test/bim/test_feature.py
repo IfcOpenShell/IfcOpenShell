@@ -170,7 +170,7 @@ class PanelSpy:
             panel = None if default_closed else self
             return header, panel
         else:
-            getattr(self.blender_panel, self.spied_attr)(self, *args, **kwargs)
+            return getattr(self.blender_panel, self.spied_attr)(self, *args, **kwargs)
 
 
 class OperatorSpy:
