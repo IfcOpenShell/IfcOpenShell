@@ -21,6 +21,7 @@ import os
 import types
 import bpy
 import pytest
+import pprint
 import traceback
 import webbrowser
 import numpy as np
@@ -522,7 +523,7 @@ def i_see_the_prop_property(prop):
     panel_spy.refresh_spy()
     assert [
         p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
-    ], f"Property {prop} not found in {panel_spy.spied_props}"
+    ], f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
 
 
 @given(parsers.parse('I don\'t see the "{prop}" property'))
@@ -533,7 +534,7 @@ def i_dont_see_the_prop_property(prop):
     panel_spy.refresh_spy()
     assert not [
         p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
-    ], f"Property {prop} not found in {panel_spy.spied_props}"
+    ], f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
 
 
 @given(parsers.parse('I see the "{prop}" property is "{value}"'))
@@ -548,7 +549,7 @@ def i_see_the_prop_property_is_value(prop, value):
                 spied_prop["value"] == value
             ), f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
             return
-    assert False, f"Property {prop} not found in {panel_spy.spied_props}"
+    assert False, f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
 
 
 @given(parsers.parse('I set the "{prop}" property to "{value}"'))
@@ -794,7 +795,8 @@ def _i_click_button_on_panel(button: str, panel_spy: PanelSpy) -> None:
         # Clicked confirm on an operator's draw dialog
         return i_press_operator(panel_spy.blender_panel.bl_idname)
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
-    debug += f"\nHere is the text we see:\n{panel_spy.spied_labels}\n... and props:\n {panel_spy.spied_props}"
+    debug_props = pprint.pformat(panel_spy.spied_props)
+    debug += f"\nHere is the text we see:\n{panel_spy.spied_labels}\n... and props:\n {debug_props}"
     assert False, f"Could not find {button}:\n{debug}"
 
 
