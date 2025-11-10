@@ -57,9 +57,9 @@ tool.Bsdd.client = test.bim.stub.bSDDClientStub()
 
 
 class PanelSpy:
-    def __init__(self, panel: type[bpy.types.Panel]):
+    def __init__(self, blender_panel: type[bpy.types.Panel]):
         self.is_spy_dirty = True
-        self.panel = panel
+        self.blender_panel = blender_panel
 
     def refresh_spy(self) -> None:
         if self.is_spy_dirty:
@@ -69,16 +69,16 @@ class PanelSpy:
             self.spied_props: list[dict[str, Any]] = []
             self.spied_operators: list[dict[str, Any]] = []
             self.spied_lists: list[dict[str, Any]] = []
-            self.panel.draw(self, bpy.context)
+            self.blender_panel.draw(self, bpy.context)
 
     def __getattr__(self, attr: str) -> PanelSpy | Any:
         self.spied_attr = attr
-        if annotation := self.panel.__annotations__.get(attr, None):
+        if annotation := self.blender_panel.__annotations__.get(attr, None):
             return annotation.keywords.get("default", None)  # An operator property
         if attr == "layout":
             return self
         sentinel = object()
-        attr_value = getattr(self.panel, attr, sentinel)
+        attr_value = getattr(self.blender_panel, attr, sentinel)
         if attr_value is not sentinel and not callable(attr_value):
             return attr_value
         return self
@@ -152,8 +152,13 @@ class PanelSpy:
             spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}, "after": after}
             self.spied_operators.append(spied_operator)
             return OperatorSpy(spied_operator)
+        elif self.spied_attr == "panel":
+            default_closed = kwargs.get("default_closed", False)
+            header = self
+            panel = None if default_closed else self
+            return header, panel
         else:
-            getattr(self.panel, self.spied_attr)(self, *args, **kwargs)
+            getattr(self.blender_panel, self.spied_attr)(self, *args, **kwargs)
 
 
 class OperatorSpy:
@@ -177,7 +182,7 @@ class TemplateListSpy(PanelSpy):
             self.active_item = self.items[self.active_index]
         except:
             self.active_item = None
-        self.panel = template_list
+        self.blender_panel = template_list
 
         self.rows: list[TemplateListItemSpy] = []
         for item in self.items:
@@ -194,13 +199,13 @@ class TemplateListSpy(PanelSpy):
 
 class TemplateListItemSpy(PanelSpy):
     def __init__(self, parent: TemplateListSpy, item):
-        self.panel = parent.panel
+        self.blender_panel = blender_panel = parent.blender_panel
         self.spied_attr: Union[str, None] = None
         self.spied_labels: list[str] = []
         self.spied_props: list[dict[str, Any]] = []
         self.spied_operators: list[dict[str, Any]] = []
-        if len(signature(parent.panel.draw_item).parameters) == 8:
-            parent.panel.draw_item(
+        if len(signature(blender_panel.draw_item).parameters) == 8:
+            blender_panel.draw_item(
                 self,
                 bpy.context,
                 self,
@@ -211,7 +216,7 @@ class TemplateListItemSpy(PanelSpy):
                 parent.spied_data["active_propname"],
             )
         else:
-            parent.panel.draw_item(
+            blender_panel.draw_item(
                 self,
                 bpy.context,
                 self,
@@ -770,9 +775,9 @@ def _i_click_button_on_panel(button, panel_spy):
             setattr(spied_prop["props"], spied_prop["name"], not bool(val))
             panel_spy.is_spy_dirty = True
             return
-    if button == "OK" and panel_spy.panel.bl_rna.base.name == "Operator":
+    if button == "OK" and panel_spy.blender_panel.bl_rna.base.name == "Operator":
         # Clicked confirm on an operator's draw dialog
-        return i_press_operator(panel_spy.panel.bl_idname)
+        return i_press_operator(panel_spy.blender_panel.bl_idname)
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
     debug += f"\nHere is the text we see:\n{panel_spy.spied_labels}\n... and props:\n {panel_spy.spied_props}"
     assert False, f"Could not find {button}:\n{debug}"
