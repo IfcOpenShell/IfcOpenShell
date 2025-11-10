@@ -167,14 +167,19 @@ Scenario: Copy a wall
 
 Scenario: Copy a storey - when locked
     Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
     And the object "IfcBuildingStorey/My Storey" is selected
     Then I expect an error "Error: 'IfcBuildingStorey/My Storey' is locked. Unlock it via the Spatial panel in the Project Overview tab." when "i_duplicate_the_selected_objects()"
     Then the object "IfcBuildingStorey/My Storey.001" does not exist
 
 Scenario: Copy a storey - when unlocked
     Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
+    And I set "scene.BIMSpatialDecompositionProperties.is_visible" to "True"
     And the object "IfcBuildingStorey/My Storey" is selected
-    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
+    And I set the "is_locked" property to "FALSE"
     When I duplicate the selected objects
     Then the object "IfcBuildingStorey/My Storey" and "IfcBuildingStorey/My Storey.001" are different elements
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
