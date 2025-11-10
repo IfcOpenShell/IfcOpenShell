@@ -55,6 +55,9 @@ endif
 ifeq ($(PLATFORM), linux64)
 PLATFORMTAG:=manylinux_2_31_x86_64
 endif
+ifeq ($(PLATFORM), linuxarm64)
+PLATFORMTAG:=manylinux_2_31_aarch64
+endif
 ifeq ($(PLATFORM), macos64)
 PLATFORMTAG:=macosx_10_15_x86_64
 endif
