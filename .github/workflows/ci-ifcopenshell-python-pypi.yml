@@ -35,6 +35,10 @@ jobs:
             short_name: linux64
           }
           - {
+            name: "Linux ARM 64bit",
+            short_name: linuxarm64
+          }
+          - {
             name: "MacOS Intel 64bit",
             short_name: macos64
           }
