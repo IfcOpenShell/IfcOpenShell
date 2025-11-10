@@ -1782,3 +1782,16 @@ def run_pdb():
     import pdb
 
     pdb.set_trace()
+
+
+@given(parsers.parse("I start debugpy"))
+@when(parsers.parse("I start debugpy"))
+@then(parsers.parse("I start debugpy"))
+def run_debugpy() -> types.NoneType:
+    import debugpy
+
+    debugpy.listen(5678)
+    debugpy.wait_for_client()
+
+    # Set a breakpoint here.
+    print("debugpy connected")
