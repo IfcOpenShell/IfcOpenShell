@@ -57,6 +57,13 @@ webbrowser.open = lambda x: True
 
 tool.Bsdd.client = test.bim.stub.bSDDClientStub()
 
+PYTEST_BLENDER_NO_BACKGROUND = bool(os.getenv("PYTEST_BLENDER_NO_BACKGROUND"))
+"""Option to run Blender not in background.
+
+Can be useful for debugging, but has caveats - can't use ``wm.read_homefile``
+as resets the ``bpy.context`` and some it's members become `None`.
+"""
+
 
 class PanelSpy:
     def __init__(self, blender_panel: type[bpy.types.Panel]):
@@ -288,7 +295,8 @@ def an_untestable_scenario():
 @when("an empty Blender session is started")
 def an_empty_blender_session():
     IfcStore.purge()
-    bpy.ops.wm.read_homefile(app_template="")
+    if not PYTEST_BLENDER_NO_BACKGROUND:
+        bpy.ops.wm.read_homefile(app_template="")
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
