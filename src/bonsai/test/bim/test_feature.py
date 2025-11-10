@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import pytest
@@ -60,7 +61,7 @@ class PanelSpy:
         self.is_spy_dirty = True
         self.panel = panel
 
-    def refresh_spy(self):
+    def refresh_spy(self) -> None:
         if self.is_spy_dirty:
             self.is_spy_dirty = False
             self.spied_attr: Union[str, None] = None
@@ -70,17 +71,19 @@ class PanelSpy:
             self.spied_lists: list[dict[str, Any]] = []
             self.panel.draw(self, bpy.context)
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> PanelSpy | Any:
         self.spied_attr = attr
         if annotation := self.panel.__annotations__.get(attr, None):
             return annotation.keywords.get("default", None)  # An operator property
         if attr == "layout":
             return self
-        if hasattr(self.panel, attr) and not callable(getattr(self.panel, attr)):
-            return getattr(self.panel, attr)
+        sentinel = object()
+        attr_value = getattr(self.panel, attr, sentinel)
+        if attr_value is not sentinel and not callable(attr_value):
+            return attr_value
         return self
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> PanelSpy | TemplateListSpy | OperatorSpy | Any:
         if self.spied_attr in ("row", "column", "box", "separator", "menu", "operator_menu_enum", "split"):
             return self
         elif self.spied_attr == "template_list":
@@ -154,10 +157,10 @@ class PanelSpy:
 
 
 class OperatorSpy:
-    def __init__(self, spied_data):
+    def __init__(self, spied_data: dict[str, Any]):
         self.spied_data = spied_data
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         if name == "spied_data":
             # Allow direct setting of spied_data only during initialization
             super().__setattr__(name, value)
@@ -166,7 +169,7 @@ class OperatorSpy:
 
 
 class TemplateListSpy(PanelSpy):
-    def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict) -> None:
+    def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict[str, Any]):
         self.spied_data = spied_data
         self.items = getattr(self.spied_data["dataptr"], self.spied_data["propname"])
         self.active_index = getattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"])
@@ -176,7 +179,7 @@ class TemplateListSpy(PanelSpy):
             self.active_item = None
         self.panel = template_list
 
-        self.rows = []
+        self.rows: list[TemplateListItemSpy] = []
         for item in self.items:
             self.rows.append(TemplateListItemSpy(self, item))
 
@@ -222,7 +225,8 @@ class TemplateListItemSpy(PanelSpy):
             )
 
 
-ui_name_cache = {}
+ui_name_cache: dict[str, str] = {}
+"""Mapping of UI panel names to their bl_idnames (e.g. `xxx` in `bpy.types.xxx`)."""
 panel_spy: Union[PanelSpy, None] = None
 
 
