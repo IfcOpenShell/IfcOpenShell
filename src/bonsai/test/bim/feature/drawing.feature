@@ -149,6 +149,7 @@ Scenario: Remove drawing
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     Then the collection "IfcAnnotation/PLAN_VIEW" exists
     When I press "bim.remove_drawing(drawing={drawing})"
