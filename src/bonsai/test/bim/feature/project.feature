@@ -872,8 +872,10 @@ Scenario: Export IFC - with basic contents and saving as a relative path
 
 Scenario: Export IFC - with deleted objects synchronised
     Given an empty IFC project
-    When the object "IfcBuildingStorey/My Storey" is selected
-    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
+    And I look at the "Spatial Decomposition" panel
+    When I set the "is_visible" property to "TRUE"
+    And the object "IfcBuildingStorey/My Storey" is selected
+    And I set the "is_locked" property to "FALSE"
     And I delete the selected objects
     And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started

@@ -15,6 +15,7 @@ Scenario: Set default container
 Scenario: Select container
     Given an empty IFC project
     And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
     When I select the row where I see "My Building" in the "1st" list
     And I click "OBJECT_DATA"
     Then the object "IfcBuilding/My Building" is selected
