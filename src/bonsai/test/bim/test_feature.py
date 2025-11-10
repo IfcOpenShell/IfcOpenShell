@@ -1015,11 +1015,9 @@ def the_object_name_exists(name: str) -> bpy.types.Object:
 
 
 @then(parsers.parse('the object "{name}" does not exist'))
-def the_object_name_does_not_exist(name) -> bpy.types.Object:
+def the_object_name_does_not_exist(name) -> None:
     obj = bpy.data.objects.get(name)
-    if not obj:
-        assert True, f'The object "{name}" exists'
-    return obj
+    assert obj is None, f'The object "{name}" exists'
 
 
 @given(parsers.parse('the collection "{name}" exists'))
