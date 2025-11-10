@@ -1174,26 +1174,7 @@ endif(BUILD_CONVERT)
 
 # IfcGeomServer
 if(BUILD_GEOMSERVER)
-
-    if(NOT WITH_OPENCASCADE)
-        message(FATAL_ERROR "Open CASCADE is required to build IfcGeomServer.")
-    endif()
-
-    file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
-    file(GLOB H_FILES ../src/ifcgeomserver/*.h)
-    set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
-    add_executable(IfcGeomServer ${SOURCE_FILES})
-    target_link_libraries(IfcGeomServer IfcGeom IfcParse ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
-
-    if((NOT WIN32) AND BUILD_SHARED_LIBS)
-        SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
-    endif()
-
-    install(TARGETS IfcGeomServer
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
+    add_subdirectory(../src/ifcgeomserver ifcgeomserver)
 endif(BUILD_GEOMSERVER)
 
 if(ADD_COMMIT_SHA)
