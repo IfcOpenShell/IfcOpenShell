@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 import os
+import types
 import bpy
 import pytest
 import traceback
@@ -81,7 +82,8 @@ class PanelSpy:
             return self
         sentinel = object()
         attr_value = getattr(self.blender_panel, attr, sentinel)
-        if attr_value is not sentinel and not callable(attr_value):
+        # Don't use `callable`, because we might have `Data` classes as panel attributes.
+        if attr_value is not sentinel and not isinstance(attr_value, types.FunctionType):
             return attr_value
         return self
 
