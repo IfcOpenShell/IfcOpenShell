@@ -486,7 +486,7 @@
             "scene.render.border_min_x": 0.0,
             "scene.render.border_min_y": 0.0,
             "scene.render.dither_intensity": 1.0,
-            "scene.render.engine": "BLENDER_EEVEE_NEXT",
+            "scene.render.engine": "BLENDER_EEVEE",
             "scene.render.film_transparent": false,
             "scene.render.filter_size": 1.5,
             "scene.render.fps": 24,
