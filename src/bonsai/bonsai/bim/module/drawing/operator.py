@@ -932,6 +932,31 @@ class CreateDrawing(bpy.types.Operator):
 
             return svg_path
 
+        # Add target_view and scale classes to the parent group from IFC data
+        if group is not None:
+            existing_classes = group.get("class", "").split()
+            
+            # Add target_view class
+            if hasattr(self, 'cprops') and getattr(self.cprops, "target_view", None):
+                target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
+                target_view_full_class = f"target-view-{target_view_class}"
+                if target_view_full_class not in existing_classes:
+                    existing_classes.append(target_view_full_class)
+            
+            # Add scale class from EPset_Drawing.Scale
+            drawing_pset = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing")
+            if drawing_pset and drawing_pset.get("Scale"):
+                scale_value = drawing_pset["Scale"]
+                # Remove "1/" prefix if it exists
+                if isinstance(scale_value, str) and scale_value.startswith("1/"):
+                    scale_value = scale_value[2:]
+                scale_class = tool.Drawing.canonicalise_class_name(str(scale_value))
+                scale_full_class = f"scale-{scale_class}"
+                if scale_full_class not in existing_classes:
+                    existing_classes.append(scale_full_class)
+            
+            group.set("class", " ".join(existing_classes))
+
         if self.cprops.cut_mode == "BISECT":
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
@@ -1286,11 +1311,6 @@ class CreateDrawing(bpy.types.Operator):
                 classes.append(
                     tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
                 )
-
-        # ─── Target View ───────────────────────────────────────────
-        if getattr(self.cprops, "target_view", None):
-            target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
-            classes.append(f"target-view-{target_view_class}")
 
         return classes
 
