@@ -398,6 +398,7 @@ class TestDuplicateDrawing:
         drawing.get_name("drawing").should_be_called().will_return("name")
         drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
         ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
+        drawing.clear_annotation_relationships("new_drawing").should_be_called()
         drawing.copy_representation("drawing", "new_drawing").should_be_called()
         drawing.set_name("new_drawing", "unique_name").should_be_called()
         drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")
