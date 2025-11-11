@@ -815,8 +815,9 @@ class TestDrawingMaintainingSheetPosition(NewFile):
     def test_run(self):
         props = tool.Drawing.get_document_props()
         bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
         ifc = tool.Ifc.get()
-        sheet_path = Path.cwd() / "layouts" / "A01 - UNTITLED.svg"
+        sheet_path = Path(tool.Ifc.get_path()).parent / "layouts" / "A01 - UNTITLED.svg"
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -870,6 +871,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
 class TestDrawingStyles(NewFile):
     def setup_project_with_drawing(self):
         bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
         bpy.ops.bim.load_drawings()
         bpy.ops.bim.add_drawing()
         ifc = tool.Ifc.get()

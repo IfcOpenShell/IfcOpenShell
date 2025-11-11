@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 import os
+import shutil
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
@@ -502,3 +503,11 @@ class Project(bonsai.core.tool.Project):
             d2 = v3 - v2
             normals.append((v1, d1.cross(d2).normalized()))
         return normals
+
+    @classmethod
+    def save_test_project(cls) -> None:
+        TMP = Path.cwd() / "test/files/temp"
+        # Clean up previous test project.
+        if TMP.exists():
+            shutil.rmtree(TMP)
+        bpy.ops.bim.save_project(filepath=(TMP / "test_project.ifc").__str__(), should_save_as=True)
