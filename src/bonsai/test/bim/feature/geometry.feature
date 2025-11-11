@@ -559,6 +559,9 @@ Scenario: Override paste buffer - with active IFC data
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
+    And I set the "is_locked" property to "FALSE"
     And additionally the object "IfcBuildingStorey/My Storey" is selected
     When I press "view3d.copybuffer"
     # IFC elements unlinked on paste for safety
