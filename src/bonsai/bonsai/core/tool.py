@@ -308,6 +308,7 @@ class Document:
 class Drawing:
     def activate_drawing(cls, camera): pass
     def add_literal(cls, **attributes): pass
+    def clear_annotation_relationships(cls, drawing): pass
     def copy_representation(cls, source, dest): pass
     def create_annotation_context(cls, target_view, object_type=None): pass
     def create_annotation_object(cls, drawing, object_type): pass
