@@ -2703,6 +2703,8 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         assert (space := tool.Blender.get_view3d_space())  # Do not remove. It is used in exec later
         style: dict[str, Any] = json.loads(self.drawing_style.raster_style)
 
+        VIEWPORT_SHADING_TYPE = "scene.display.shading.type"
+
         def preprocess(path: str, value: Any) -> tuple[str, Any, bool, bool]:
             warning = False
             skip = False
@@ -2737,6 +2739,19 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 warning = True
                 skip = True
+            # @25.11.11
+            elif (
+                path == "scene.display.shading.studio_light"
+                and value == "Default"
+                and style[VIEWPORT_SHADING_TYPE] in ("RENDERED", "MATERIAL")
+            ):
+                value = "forest.exr"
+                print(
+                    f"Warning: Value 'Default' for property '{path}' and "
+                    f"'{VIEWPORT_SHADING_TYPE}' = '{style[VIEWPORT_SHADING_TYPE]}' is outdated "
+                    "and should be replaced with 'forest.exr' in shading_styles.json."
+                )
+                warning = True
             # @25.05.12
             elif path == "scene.display.shading.wireframe_color_type" and value == "MATERIAL":
                 value = "THEME"
@@ -2772,7 +2787,16 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
 
             return path, value, warning, skip
 
-        for path, value in style.items():
+        paths = list(style.keys())
+        PRIORITY_PATHS = (
+            # `scene.display.shading.studio_light` values depend on `.type`
+            # so we got to set it first.
+            VIEWPORT_SHADING_TYPE,
+        )
+        paths.sort(key=lambda p: p not in PRIORITY_PATHS)
+
+        for path in paths:
+            value = style[path]
             path, value, warning, skip = preprocess(path, value)
             self.has_warnings_during_activation |= warning
 
