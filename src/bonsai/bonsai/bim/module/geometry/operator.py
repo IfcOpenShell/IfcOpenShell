@@ -1320,7 +1320,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                     )
                     pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
                     new_obj = tool.Ifc.get_object(new[0])
-                    new_obj.name = pset["Name"] + "_" + str(pset["Aggregate_Index"])
+                    new_obj.name = f"{pset['Name']}_{pset['Aggregate_Index']:02d}"
 
         def get_max_index(parts):
             psets = [
