@@ -1006,33 +1006,8 @@ if(BUILD_IFCGEOM)
         list(APPEND CGAL_LIBRARIES "${libGMP}")
     endif()
 
-    foreach(kernel ${GEOMETRY_KERNELS})
-        string(TOUPPER ${kernel} KERNEL_UPPER)
-        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
-        file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
-        set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
-
-        add_library(geometry_kernel_${kernel} ${IFCGEOM_FILES} ../src/ifcgeom/kernels/ifc_geomlibrary_api.h)
-        set_property(TARGET geometry_kernel_${kernel} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS")
-        # needed?
-        # if(NOT WASM_BUILD)
-        # endif()
-        target_link_libraries(geometry_kernel_${kernel} ${${KERNEL_UPPER}_LIBRARIES} IfcGeom IfcParse)
-        list(APPEND kernel_libraries geometry_kernel_${kernel})
-
-        if(${kernel} STREQUAL "cgal")
-            set_property(TARGET geometry_kernel_${kernel} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
-
-            add_library(geometry_kernel_${kernel}_simple ${IFCGEOM_FILES})
-            set_target_properties(geometry_kernel_${kernel}_simple PROPERTIES COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS")
-            # needed?
-            # if(NOT WASM_BUILD)
-            # endif()
-            target_link_libraries(geometry_kernel_${kernel}_simple ${${KERNEL_UPPER}_LIBRARIES} IfcGeom IfcParse)
-            list(APPEND kernel_libraries geometry_kernel_${kernel}_simple)
-        endif()
-    endforeach()
-
+    add_subdirectory(../src/ifcgeom ifcgeom)
+    
     # IfcGeom
     foreach(schema ${SCHEMA_VERSIONS})
         file(GLOB IFCGEOM_I_FILES ../src/ifcgeom/mapping/*.i)
