@@ -1312,12 +1312,6 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         def custom_incremental_naming_for_element_assembly(old_to_new: OldToNewType) -> None:
             for new in old_to_new.values():
                 if new[0].is_a("IfcElementAssembly"):
-                    group_elements = next(
-                        r.RelatedObjects
-                        for r in getattr(new[0], "HasAssignments", []) or []
-                        if r.is_a("IfcRelAssignsToGroup")
-                        if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-                    )
                     pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
                     new_obj = tool.Ifc.get_object(new[0])
                     new_obj.name = f"{pset['Name']}_{pset['Aggregate_Index']:02d}"
