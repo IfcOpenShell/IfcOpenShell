@@ -259,6 +259,7 @@ class FormatTransformer(lark.Transformer):
         )
 
     def imperial_length(self, args):
+        args = list(filter(lambda x: x is not None, args))
         if len(args) == 2:
             input_unit, output_unit = "foot", "foot"
             value, precision = args
@@ -279,7 +280,7 @@ class FormatTransformer(lark.Transformer):
         return ifcopenshell.util.unit.format_length(
             float(value),
             int(precision),
-            suppress_zero_inches=suppress_zero_inches,
+            suppress_zero_inches=(suppress_zero_inches if suppress_zero_inches is not None else False),
             unit_system="imperial",
             input_unit=input_unit,
             output_unit=output_unit,

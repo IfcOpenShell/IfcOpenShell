@@ -73,6 +73,10 @@ class TestFormat:
         assert subject.format('imperial_length("3.123", 2)') == "3' - 1 1/2\""
         assert subject.format('imperial_length("123.123", 2, "inch", "foot")') == "10' - 3\""
         assert subject.format('imperial_length("123.123", 2, "inch", "inch")') == '123"'
+        assert subject.format('imperial_length(3.0, 4, "foot", "foot", true)') == "3'"
+        assert subject.format('imperial_length(3.0, 4, "foot", "foot", True)') == "3'"
+        assert subject.format('imperial_length(3.0, 4, "foot", "foot", false)') == "3' - 0\""
+        assert subject.format('imperial_length(3.0, 4, "foot", "foot", False)') == "3' - 0\""
 
 
 class TestGetElementValue(test.bootstrap.IFC4):
