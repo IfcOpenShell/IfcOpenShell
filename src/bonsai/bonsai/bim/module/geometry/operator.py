@@ -1550,6 +1550,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             if parts:
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
+                        # TODO: unused expression.
                         original_data | get_original_data(part)
                     else:
                         try:
