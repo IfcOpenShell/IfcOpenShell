@@ -1143,10 +1143,18 @@ class OverrideDuplicateMove(bpy.types.Operator):
     is_interactive: bpy.props.BoolProperty(name="Is Interactive", default=True)
 
     @classmethod
-    def poll(cls, context):
-        return len(context.selected_objects) > 0
+    def poll(cls, context) -> bool:
+        # Match `object.duplicate_move` poll for consistency.
+        # `object.duplicate_move` poll checks for OBJECT mode.
+        poll = bpy.ops.object.duplicate_move.poll()
+        if poll:
+            return True
+        cls.poll_message_set("Only available in OBJECT mode")
+        return False
 
     def execute(self, context):
+        if not context.selected_objects:
+            return {"FINISHED"}
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
