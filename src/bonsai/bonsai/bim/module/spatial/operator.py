@@ -21,6 +21,7 @@ import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.spatial as core
 import bonsai.bim.handler
+from typing import TYPE_CHECKING
 
 
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
@@ -244,7 +245,11 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
     bl_options = {"REGISTER", "UNDO"}
-    container: bpy.props.IntProperty()
+
+    container: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        container: int
 
     def _execute(self, context):
         objs = tool.Spatial.get_selected_objects_without_containers()
