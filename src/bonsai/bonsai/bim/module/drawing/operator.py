@@ -3461,6 +3461,15 @@ class LoadDrawings(bpy.types.Operator, tool.Ifc.Operator):
 
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        # Operator is not accessible through UI if IFC project is not saved,
+        # but adding poll check to avoid using Drawings UI in scripts with unsaved project.
+        if tool.Ifc.get_path():
+            return True
+        cls.poll_message_set("IFC project is not saved.")
+        return False
+
     def _execute(self, context):
         core.load_drawings(tool.Drawing)
 

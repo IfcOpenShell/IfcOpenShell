@@ -157,13 +157,16 @@ Scenario: Remove drawing
 
 Scenario: Remove drawing - via object deletion
     Given an empty IFC project
+    And I save IFC project
     And I add a cube
     And the object "Cube" is selected
     And I look at the "Class" panel
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I press "bim.add_drawing"
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     And the collection "IfcAnnotation/PLAN_VIEW" exists
     And the object "IfcAnnotation/PLAN_VIEW" is selected
