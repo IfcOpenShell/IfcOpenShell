@@ -1169,7 +1169,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     @staticmethod
     def execute_ifc_duplicate_operator(operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False):
-        objects_to_remove = set()
+        objects_to_remove: set[bpy.types.Object] = set()
 
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -1227,6 +1227,9 @@ class DuplicateMoveLinkedAggregateMacro(bpy.types.Macro):
     bl_options = {"REGISTER", "UNDO"}
 
 
+OldToNewType = dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+
+
 class DuplicateMoveLinkedAggregate(bpy.types.Operator):
     bl_idname = "bim.object_duplicate_move_linked_aggregate"
     bl_label = "IFC Duplicate and Move Linked Aggregate"
@@ -1251,7 +1254,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         self.pset_name = "BBIM_Linked_Aggregate"
         all_old_to_new = {}  # Track all duplicates created
 
-        def select_objects_and_add_data(element):
+        def select_objects_and_add_data(element: ifcopenshell.entity_instance) -> None:
             add_linked_aggregate_group(element)
             obj = tool.Ifc.get_object(element)
             obj.select_set(True)
@@ -1285,7 +1288,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 index += 1
             return index
 
-        def add_linked_aggregate_group(element):
+        def add_linked_aggregate_group(element: ifcopenshell.entity_instance) -> None:
             linked_aggregate_group = None
             product_groups_name = [
                 r.RelatingGroup.Name
@@ -1298,7 +1301,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             linked_aggregate_group = ifcopenshell.api.group.add_group(ifc_file, name=self.group_name)
             ifcopenshell.api.group.assign_group(ifc_file, products=[element], group=linked_aggregate_group)
 
-        def custom_incremental_naming_for_element_assembly(old_to_new):
+        def custom_incremental_naming_for_element_assembly(old_to_new: OldToNewType) -> None:
             for new in old_to_new.values():
                 if new[0].is_a("IfcElementAssembly"):
                     group_elements = next(
@@ -1475,7 +1478,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
         self.pset_name = "BBIM_Linked_Aggregate"
         refresh_start_time = time()
         old_to_new = {}
-        original_data: dict[int, dict[int, str]] = {}
+        original_data: dict[int, dict[int, dict[str, Any]]] = {}
 
         def delete_objects(element: ifcopenshell.entity_instance) -> None:
             """Remove IfcElementAssembly and it's parts."""
@@ -1521,8 +1524,8 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                             )
                 tool.Blender.update_viewport()
 
-        def get_original_data(element: ifcopenshell.entity_instance) -> dict[int, dict[int, str]]:
-            group = next(
+        def get_original_data(element: ifcopenshell.entity_instance) -> dict[int, dict[int, dict[str, Any]]]:
+            group: int = next(
                 r.RelatingGroup
                 for r in getattr(element, "HasAssignments", []) or []
                 if r.is_a("IfcRelAssignsToGroup")
@@ -1530,8 +1533,8 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             ).id()
             original_data[group] = {}
 
-            pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
-            index = pset["Index"]
+            pset: dict[str, Any] = ifcopenshell.util.element.get_pset(element, self.pset_name)
+            index: int = pset["Index"]
             annotations = get_assignments(element)
             container = ifcopenshell.util.element.get_container(element)
             original_data[group][index] = {
