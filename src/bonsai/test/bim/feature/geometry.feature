@@ -292,10 +292,27 @@ Scenario: Override duplicate move - with active IFC data
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And additionally the object "IfcBuildingStorey/My Storey" is selected
-    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
     When I duplicate the selected objects
     Then the object "IfcWall/Cube" exists
+    And the object "IfcWall/Cube" is an "IfcWall"
+    And the object "IfcWall/Cube.001" exists
+    And the object "IfcWall/Cube.001" is an "IfcWall"
+    And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+
+Scenario: Override duplicate move - with locked elements
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube" is selected
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
+    And additionally the object "IfcBuildingStorey/My Storey" is selected
+    Then I press "bim.override_object_duplicate_move" and expect error "Error: 'IfcBuildingStorey/My Storey' is locked. Unlock it via the Spatial panel in the Project Overview tab."
+    And the object "IfcWall/Cube" exists
     And the object "IfcWall/Cube" is an "IfcWall"
     And the object "IfcWall/Cube.001" exists
     And the object "IfcWall/Cube.001" is an "IfcWall"
@@ -310,8 +327,10 @@ Scenario: Override duplicate move - with unlocked elements
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
+    And I set the "is_locked" property to "FALSE"
     And the object "IfcBuildingStorey/My Storey" is selected
-    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
     When I duplicate the selected objects
     Then the object "IfcBuildingStorey/My Storey.001" exists
     And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
@@ -507,6 +526,8 @@ Scenario: Override duplicate move linked - with active IFC data
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcBuildingStorey/My Storey" is selected
     When I press "object.duplicate_move_linked"
