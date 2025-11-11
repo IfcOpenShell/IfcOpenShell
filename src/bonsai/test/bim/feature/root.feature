@@ -177,7 +177,6 @@ Scenario: Copy a storey - when unlocked
     Given an empty IFC project
     And I look at the "Spatial Decomposition" panel
     And I set the "is_visible" property to "TRUE"
-    And I set "scene.BIMSpatialDecompositionProperties.is_visible" to "True"
     And the object "IfcBuildingStorey/My Storey" is selected
     And I set the "is_locked" property to "FALSE"
     When I duplicate the selected objects

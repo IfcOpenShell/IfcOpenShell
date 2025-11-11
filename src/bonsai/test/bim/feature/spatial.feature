@@ -223,6 +223,7 @@ Scenario: Set element visibility - Hide spatial container
 Scenario: Select spatial container
     Given an empty IFC project
     And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
     When I select the "My Site" item in the "BIM_UL_containers_manager" list
     And I click "OBJECT_DATA"
     Then the object "IfcSite/My Site" is selected
