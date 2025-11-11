@@ -155,6 +155,9 @@ class TestDisableEditingText(NewFile):
         props = tool.Drawing.get_text_props(obj)
         props.is_editing = True
         subject.disable_editing_text(obj)
+
+        # Props might get invalidated, since no properties set.
+        props = tool.Drawing.get_text_props(obj)
         assert props.is_editing == False
 
 
