@@ -792,6 +792,8 @@ def i_press_operator_and_expect_error(operator, error_msg):
     assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
 
 
+# TODO: We should rename 'I press' to 'I run' or 'I execute'
+# to avoid confusion with 'I click'.
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
 def i_press_operator(operator: str) -> types.NoneType:

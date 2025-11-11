@@ -82,10 +82,10 @@ Scenario: Copy to container
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And the object "IfcSite/My Site" is selected
-    And additionally the object "IfcWall/Cube" is selected
-    And I press "bim.enable_editing_container"
-    When I press "bim.copy_to_container"
+    And I look at the "Spatial Decomposition" panel
+    When I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And the object "IfcWall/Cube" is selected
+    When I click "MOD_DISPLACE"
     Then the object "IfcWall/Cube.001" is in the collection "IfcSite/My Site"
 
 Scenario: Reference structure

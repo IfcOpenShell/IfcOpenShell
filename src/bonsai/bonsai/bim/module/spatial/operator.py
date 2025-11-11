@@ -234,7 +234,7 @@ class RemoveContainer(bpy.types.Operator, tool.Ifc.Operator):
 
 class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
     """
-    Copies selected 3D elements in the viewport to the selected spatial containers
+    Copies selected 3D elements in the viewport to the container selected in Spatial Manager.
 
     Example: bulk copy a wall to multiple storeys
 
@@ -243,7 +243,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
     Copying containers to other containers currently is not supported."""
 
     bl_idname = "bim.copy_to_container"
-    bl_label = "Copy To Container"
+    bl_label = "Copy to Container"
     bl_options = {"REGISTER", "UNDO"}
 
     container: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
