@@ -881,19 +881,13 @@ class TestDrawingStyles(NewFile):
         props = tool.Drawing.get_document_props()
         self.drawing_styles = props.drawing_styles
 
-    def test_drawing_styles_not_loaded_if_underlay_is_inactive(self):
+    def test_drawing_styles_are_loaded_even_if_underlay_is_inactive(self):
         self.setup_project_with_drawing()
-        assert len(self.drawing_styles) == 0
-
-    def test_drawing_styles_loaded_on_underlay_enabled(self):
-        self.setup_project_with_drawing()
-        assert (scene := bpy.context.scene) and (camera := scene.camera)
-        props = tool.Drawing.get_camera_props(camera)
-        props.has_underlay = True
         assert len(self.drawing_styles) == 3
 
     def test_drawing_styles_reload(self):
         self.setup_project_with_drawing()
+        self.drawing_styles.clear()
         bpy.ops.bim.reload_drawing_styles()
         assert len(self.drawing_styles) == 3
 
