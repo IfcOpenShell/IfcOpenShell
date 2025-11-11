@@ -277,7 +277,7 @@ class Cost(bonsai.core.tool.Cost):
         props.cost_item_resources.clear()
         for rel in cost_item.Controls or []:
             for related_object in rel.RelatedObjects:
-                if related_object.is_a("IfcTypeProduct"):
+                if related_object.is_a("IfcProduct"):
                     new = props.cost_item_type_products.add()
                 elif related_object.is_a("IfcProcess"):
                     new = props.cost_item_processes.add()
