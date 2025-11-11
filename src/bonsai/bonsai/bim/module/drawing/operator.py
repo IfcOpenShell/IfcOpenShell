@@ -2701,7 +2701,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     def set_raster_style(self, context: bpy.types.Context) -> None:
         scene = context.scene  # Do not remove. It is used in exec later
         assert (space := tool.Blender.get_view3d_space())  # Do not remove. It is used in exec later
-        style = json.loads(self.drawing_style.raster_style)
+        style: dict[str, Any] = json.loads(self.drawing_style.raster_style)
 
         def preprocess(path: str, value: Any) -> tuple[str, Any, bool, bool]:
             warning = False

@@ -189,14 +189,16 @@ class OperatorSpy:
 
 
 class TemplateListSpy(PanelSpy):
+    items: bpy.types.bpy_prop_collection_idprop[bpy.types.PropertyGroup]
+    active_index: int
+    active_item: bpy.types.PropertyGroup | None
+    blender_panel: type[bpy.types.UIList]
+
     def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict[str, Any]):
         self.spied_data = spied_data
         self.items = getattr(self.spied_data["dataptr"], self.spied_data["propname"])
         self.active_index = getattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"])
-        try:
-            self.active_item = self.items[self.active_index]
-        except:
-            self.active_item = None
+        self.active_item = tool.Blender.get_active_uilist_element(self.items, self.active_index)
         self.blender_panel = template_list
 
         self.rows: list[TemplateListItemSpy] = []
@@ -637,12 +639,16 @@ def the_name_list_has_total_items(name, total):
 @given(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @then(parsers.parse('I can select the "{item_name}" item in the "{list_name}" list'))
-def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
+def i_select_the_item_name_item_in_the_list_name_list(item_name: str, list_name: str) -> None:
+    """
+    :param item_name: The ``.name`` of the item to select.
+    :param list_name: List type name, e.g. ``BIM_UL_containers_manager``.
+    """
     assert panel_spy
     panel_spy.refresh_spy()
     for template_list in panel_spy.spied_lists:
         if list_name == template_list.spied_data["listtype_name"]:
-            item_names = []
+            item_names: list[str] = []
             for i, item in enumerate(template_list.items):
                 item_names.append(item.name)
                 if item.name == item_name:
