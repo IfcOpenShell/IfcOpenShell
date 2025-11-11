@@ -21,6 +21,7 @@ import os
 import types
 import bpy
 import pytest
+import shutil
 import pprint
 import traceback
 import webbrowser
@@ -63,6 +64,8 @@ PYTEST_BLENDER_NO_BACKGROUND = bool(os.getenv("PYTEST_BLENDER_NO_BACKGROUND"))
 Can be useful for debugging, but has caveats - can't use ``wm.read_homefile``
 as resets the ``bpy.context`` and some it's members become `None`.
 """
+
+TMP = Path(f"{variables['cwd']}/test/files/temp")
 
 
 class PanelSpy:
@@ -323,6 +326,17 @@ def an_empty_ifc_2x3_project():
     props = tool.Project.get_project_props()
     props.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
+
+
+@given(parsers.parse("I save IFC project"))
+@when(parsers.parse("I save IFC project"))
+@then(parsers.parse("I save IFC project"))
+def saving_ifc_project() -> None:
+    # Remove old temp files to avoid conflicts with non-updated assets.
+    if TMP.exists():
+        shutil.rmtree(TMP)
+    filepath = TMP / "test_project.ifc"
+    bpy.ops.bim.save_project(filepath=filepath.__str__(), should_save_as=True)
 
 
 @given("the Brickschema is stubbed")
@@ -1761,19 +1775,19 @@ def i_fail():
 @given(parsers.parse("I save sample test files"))
 @when(parsers.parse("I save sample test files"))
 @then(parsers.parse("I save sample test files"))
-def saving_sample_test_files(and_open_in_blender=None):
-    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
+def saving_sample_test_files() -> None:
+    filepath = TMP / "sample_test_file"
     print(f"Saved to {filepath}")
-    bpy.ops.bim.save_project(filepath=f"{filepath}.ifc", should_save_as=True)
-    bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
+    bpy.ops.bim.save_project(filepath=filepath.with_suffix(".ifc").__str__(), should_save_as=True)
+    bpy.ops.wm.save_as_mainfile(filepath=filepath.with_suffix(".blend").__str__())
 
 
 @given(parsers.parse("I load test blend file"))
 @when(parsers.parse("I load test blend file"))
 @then(parsers.parse("I load test blend file"))
 def opening_sample_test_files_in_blender():
-    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file.blend"
-    bpy.ops.wm.open_mainfile(filepath=filepath, display_file_selector=False)
+    filepath = TMP / "sample_test_file.blend"
+    bpy.ops.wm.open_mainfile(filepath=filepath.__str__(), display_file_selector=False)
 
 
 # TODO: merge to single fixture with `saving_sample_test_files`; add "and wait"
