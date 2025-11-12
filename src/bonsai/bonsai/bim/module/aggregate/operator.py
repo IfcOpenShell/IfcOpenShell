@@ -321,6 +321,21 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
                     aggregate_obj.select_set(True)
                     bpy.context.view_layer.objects.active = aggregate_obj
 
+        # copy selection query to clipboard
+        result = ""
+        for aggregate in all_parts:
+            aggregate_class = aggregate.is_a()
+            aggregate_name = aggregate.Name or ""
+            query = f'parent = "{aggregate_name}"'
+            if not result:
+                result = query
+            else:
+                result += f' + {query}'
+        
+        if result:
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         self.one_level_deep = False  # <-- forcibly reset
         return {"FINISHED"}
 
