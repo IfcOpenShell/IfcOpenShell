@@ -16,7 +16,6 @@ classifiers = [
 requires-python = ">=3.11"
 dependencies = [
     "ifcopenshell",
-    "markdown-it-py",
 ]
 
 [project.optional-dependencies]

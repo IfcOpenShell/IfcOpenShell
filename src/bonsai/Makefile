@@ -155,9 +155,6 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download six --dest=./wheels
 	# Required by drawing module
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# Required by drawing module for markdown hyperlinks in annotations
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download markdown-it-py --dest=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download mdurl --dest=./wheels
 	# Required by qto and drawing module
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download shapely $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by the BIM type manager thumbnail generator
