@@ -106,7 +106,7 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
                 for sty in entity_supertypes(ifc_file.schema_identifier, ty):
                     if qtos := queries.get(casenorm.get(sty)):
                         calculator.calculate(ifc_file, group_elements, qtos, results)
-            continue # Skip general path to avoid duplicate calculations
+            continue  # Skip general path to avoid duplicate calculations
 
         # Fallback: per-query evaluation
         for query, qtos in queries.items():
