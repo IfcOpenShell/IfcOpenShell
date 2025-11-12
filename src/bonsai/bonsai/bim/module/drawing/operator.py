@@ -935,14 +935,14 @@ class CreateDrawing(bpy.types.Operator):
         # Add target_view and scale classes to the parent group from IFC data
         if group is not None:
             existing_classes = group.get("class", "").split()
-            
+
             # Add target_view class
-            if hasattr(self, 'cprops') and getattr(self.cprops, "target_view", None):
+            if hasattr(self, "cprops") and getattr(self.cprops, "target_view", None):
                 target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
                 target_view_full_class = f"target-view-{target_view_class}"
                 if target_view_full_class not in existing_classes:
                     existing_classes.append(target_view_full_class)
-            
+
             # Add scale class from EPset_Drawing.Scale
             drawing_pset = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing")
             if drawing_pset and drawing_pset.get("Scale"):
@@ -954,7 +954,7 @@ class CreateDrawing(bpy.types.Operator):
                 scale_full_class = f"scale-{scale_class}"
                 if scale_full_class not in existing_classes:
                     existing_classes.append(scale_full_class)
-            
+
             group.set("class", " ".join(existing_classes))
 
         if self.cprops.cut_mode == "BISECT":

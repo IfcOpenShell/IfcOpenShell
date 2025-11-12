@@ -330,8 +330,8 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
             if not result:
                 result = query
             else:
-                result += f' + {query}'
-        
+                result += f" + {query}"
+
         if result:
             bpy.context.window_manager.clipboard = result
             self.report({"INFO"}, f"({result}) was copied to the clipboard.")
