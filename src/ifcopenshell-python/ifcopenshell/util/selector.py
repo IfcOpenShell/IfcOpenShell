@@ -1028,13 +1028,6 @@ class FacetTransformer(lark.Transformer):
             ):
                 parents.add(parent)
 
-        for rel in self.file.by_type("IfcRelVoidsElement"):
-            parent = rel.RelatingBuildingElement
-            if parent and (
-                self.compare(parent.Name, comparison, value) or self.compare(parent.GlobalId, comparison, value)
-            ):
-                parents.add(parent)
-
         for rel in self.file.by_type("IfcRelFillsElement"):
             parent = rel.RelatingOpeningElement
             if parent and (
@@ -1042,15 +1035,19 @@ class FacetTransformer(lark.Transformer):
             ):
                 parents.add(parent)
 
+        # Get all children of the matched parents
         children: set[ifcopenshell.entity_instance] = set()
         for parent in parents:
             children |= set(ifcopenshell.util.element.get_decomposition(parent))
 
+        # Combine parents and children into a single result set
+        result = parents | children
+
         self.add_default_elements()
         if comparison == "=":
-            self.elements = self.elements & children
+            self.elements = self.elements & result
         else:
-            self.elements -= children
+            self.elements -= result
 
     def query(self, args):
         keys, comparison, value = args
