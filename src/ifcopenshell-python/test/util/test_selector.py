@@ -306,7 +306,7 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, parent=Project") == {element, element2, element3}
         assert subject.filter_elements(self.file, "IfcWall, parent=Space") == {element}
         assert subject.filter_elements(self.file, "IfcWall, parent=G") == {element, element2, element3}
-        assert subject.filter_elements(self.file, "IfcWall, parent=Element2") == {element3}
+        assert subject.filter_elements(self.file, "IfcWall, parent=Element2") == {element2, element3}
         assert subject.filter_elements(self.file, "IfcWall, parent=Space") == {element}
 
     def test_selecting_multiple_filter_groups(self):
