@@ -91,7 +91,7 @@ def update_filter_search_value(self: "FilterValueSuggestions", context: bpy.type
     elif " < " in value:
         value = value.split(" < ")[-1]
     
-    if ifc_filter.type == "property":
+    elif ifc_filter.type == "property":
         if self.suggestion_type == "pset":
             ifc_filter.pset = value
         elif self.suggestion_type == "property_name":
@@ -135,6 +135,102 @@ class FilterValueSuggestions(Operator):
     collection_values: CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
 
     def execute(self, context):
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
+        value = self.search_value
+
+        if ifc_filter.type == "instance":
+            if ": " in value:
+                value = value.split(": ")[-1]
+            else:
+                if " (" in value:
+                    hierarchy_class = value.split(" (")
+                    element_class = hierarchy_class[-1].rstrip(")")
+                    if len(hierarchy_class) > 1 and " < " in hierarchy_class[0]:
+                        element_name = hierarchy_class[0].split(" < ")[-1]
+                    else:
+                        element_name = hierarchy_class[0] if len(hierarchy_class) > 1 else None
+                else:
+                    element_class = value.strip("()")
+                    element_name = None
+
+                ifc_file = tool.Ifc.get()
+                if ifc_file:
+                    from bonsai.bim.ifc import IfcStore
+                    for element_id in IfcStore.id_map.keys():
+                        try:
+                            element = ifc_file.by_id(element_id)
+                            if element.is_a() == element_class:
+                                if element_name is None or (hasattr(element, 'Name') and element.Name == element_name):
+                                    value = element.GlobalId
+                                    break
+                        except:
+                            continue
+            ifc_filter.value = value
+
+        elif ifc_filter.type == "entity":
+            if " (superclass)" in value:
+                value = value.replace(" (superclass)", "")
+            if " > " in value:
+                value = value.split(" > ")[-1]
+            ifc_filter.value = value
+        elif ifc_filter.type == "location":
+            if " < " in value:
+                value = value.split(" < ")[-1]
+            ifc_filter.value = value
+        elif ifc_filter.type == "parent":
+            if " (" in value:
+                value = value.split(" (")[0]
+                if " < " in value:
+                    value = value.split(" < ")[-1]
+            ifc_filter.value = value
+        elif ifc_filter.type == "systems":
+            selected_suggestion = value
+            chain_mode = getattr(self, "suggestion_to_chain_mode", None)
+            if chain_mode and selected_suggestion in chain_mode:
+                chain_list, filter_mode = chain_mode[selected_suggestion]
+                if filter_mode == "instance":
+                    globalid = chain_list[-1][1]
+                    ifc_filter.value = globalid if globalid else ""
+                elif filter_mode == "parent":
+                    parent = chain_list[-1][1]
+                    child_globalids = []
+                    ifc_file = tool.Ifc.get()
+                    if ifc_file and parent:
+                        from bonsai.bim.ifc import IfcStore
+                        parent_entity = ifc_file.by_guid(parent)
+                        children = []
+                        if hasattr(parent_entity, "IsDecomposedBy") and parent_entity.IsDecomposedBy:
+                            for rel in parent_entity.IsDecomposedBy:
+                                if rel.is_a("IfcRelAggregates") or rel.is_a("IfcRelNests"):
+                                    children.extend(rel.RelatedObjects)
+                        if hasattr(parent_entity, "IsGroupedBy") and parent_entity.IsGroupedBy:
+                            for rel in parent_entity.IsGroupedBy:
+                                if rel.is_a("IfcRelAssignsToGroup"):
+                                    children.extend(rel.RelatedObjects)
+                        if parent_entity.is_a("IfcSystem") and hasattr(parent_entity, "ServicesBuildings"):
+                            for rel in parent_entity.ServicesBuildings:
+                                if rel.is_a("IfcRelServicesBuildings"):
+                                    children.extend(rel.RelatedBuildings)
+                        if hasattr(parent_entity, "ContainsElements") and parent_entity.ContainsElements:
+                            for rel in parent_entity.ContainsElements:
+                                if rel.is_a("IfcRelContainedInSpatialStructure"):
+                                    children.extend(rel.RelatedElements)
+                        if hasattr(parent_entity, "IsDefinedBy") and parent_entity.IsDefinedBy:
+                            for rel in parent_entity.IsDefinedBy:
+                                if hasattr(rel, "RelatingType") and rel.RelatingType:
+                                    children.append(rel.RelatingType)
+                        for child in children:
+                            gid = getattr(child, "GlobalId", None)
+                            if gid:
+                                child_globalids.append(gid)
+                    ifc_filter.value = ",".join(child_globalids)
+                else:
+                    ifc_filter.value = selected_suggestion
+            else:
+                ifc_filter.value = selected_suggestion
+        else:
+            ifc_filter.value = value
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -146,21 +242,7 @@ class FilterValueSuggestions(Operator):
         filter_groups = tool.Search.get_filter_groups(self.module)
         ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
 
-        if ifc_filter.type == "property":
-            if self.suggestion_type == "pset":
-                self.search_value = ifc_filter.pset or ""
-            elif self.suggestion_type == "property_name":
-                self.search_value = ifc_filter.name or ""
-            else:
-                self.search_value = ifc_filter.value or ""
-        elif ifc_filter.type == "attribute":
-            if self.suggestion_type == "attribute_name":
-                self.search_value = ifc_filter.name or ""
-            else:
-                self.search_value = ifc_filter.value or ""
-        else:
-            self.search_value = ifc_filter.value or ""
-
+        # Only populate suggestions, do not set filter value here
         if ifc_filter.type == "property":
             if self.suggestion_type == "property_value" and ifc_filter.pset and ifc_filter.name:
                 suggestions = self.get_property_values(ifc_file, ifc_filter.pset, ifc_filter.name)
@@ -173,15 +255,26 @@ class FilterValueSuggestions(Operator):
                 suggestions = self.get_attribute_values(ifc_file, ifc_filter.name)
             else:
                 suggestions = self.get_attribute_names(ifc_file)
+        elif ifc_filter.type == "systems":
+            suggestions_tuple = self.get_suggestions(ifc_file, ifc_filter.type)
+            if isinstance(suggestions_tuple, tuple):
+                suggestions, all_chains = suggestions_tuple
+                self.suggestion_to_chain_mode = {}
+                for chain_list, filter_mode in all_chains:
+                    suggestion_str = " < ".join([name for name, gid in chain_list if name])
+                    self.suggestion_to_chain_mode[suggestion_str] = (chain_list, filter_mode)
+            else:
+                suggestions = suggestions_tuple
         else:
             suggestions = self.get_suggestions(ifc_file, ifc_filter.type)
-        
+
         if not suggestions:
             self.report({"INFO"}, f"No suggestions available")
             return {"CANCELLED"}
 
         self.collection_values.clear()
-        for suggestion in natsorted(suggestions):
+        string_suggestions = [s for s in suggestions if isinstance(s, str)]
+        for suggestion in natsorted(string_suggestions):
             self.collection_values.add().name = suggestion
 
         return context.window_manager.invoke_props_dialog(self, width=300)
@@ -220,6 +313,8 @@ class FilterValueSuggestions(Operator):
             label = "Select Parent"
         elif ifc_filter.type == "instance":
             label = "Select GlobalId"
+        elif ifc_filter.type == "systems":
+            label = "Select Systems instances"
         else:
             label = "Select Value"
         
@@ -566,6 +661,84 @@ class FilterValueSuggestions(Operator):
                 else:
                     suggestions.add(display_str)
         
+        elif filter_type == "systems":
+            system_types = [
+                "IfcBuildingSystem",
+                "IfcDistributionCircuit",
+                "IfcDistributionSystem",
+                "IfcSystem",
+                "IfcZone",
+            ]
+            systems = []
+            for stype in system_types:
+                try:
+                    systems.extend(ifc_file.by_type(stype))
+                except Exception:
+                    continue
+
+            def traverse(element, chain=None):
+                if chain is None:
+                    chain = []
+                name = getattr(element, "Name", None) or element.is_a()
+                globalid = getattr(element, "GlobalId", None)
+                chain = chain + [(name, globalid)]
+
+                # Find children via IFC relationships
+                children = []
+                if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
+                    for rel in element.IsDecomposedBy:
+                        if rel.is_a("IfcRelAggregates") or rel.is_a("IfcRelNests"):
+                            children.extend(rel.RelatedObjects)
+                if hasattr(element, "IsGroupedBy") and element.IsGroupedBy:
+                    for rel in element.IsGroupedBy:
+                        if rel.is_a("IfcRelAssignsToGroup"):
+                            children.extend(rel.RelatedObjects)
+                if element.is_a("IfcSystem") and hasattr(element, "ServicesBuildings"):
+                    for rel in element.ServicesBuildings:
+                        if rel.is_a("IfcRelServicesBuildings"):
+                            children.extend(rel.RelatedBuildings)
+                if hasattr(element, "ContainsElements") and element.ContainsElements:
+                    for rel in element.ContainsElements:
+                        if rel.is_a("IfcRelContainedInSpatialStructure"):
+                            children.extend(rel.RelatedElements)
+                if hasattr(element, "IsDefinedBy") and element.IsDefinedBy:
+                    for rel in element.IsDefinedBy:
+                        if hasattr(rel, "RelatingType") and rel.RelatingType:
+                            children.append(rel.RelatingType)
+
+                if not children:
+                    yield chain
+                else:
+                    for child in children:
+                        yield from traverse(child, chain)
+
+            leaf_to_chain = {}
+            for system in systems:
+                for chain in traverse(system):
+                    if not chain:
+                        continue
+                    leaf_name, leaf_globalid = chain[-1]
+                    if leaf_globalid:
+                        if (leaf_globalid not in leaf_to_chain) or (len(chain) > len(leaf_to_chain[leaf_globalid][0])):
+                            leaf_to_chain[leaf_globalid] = (chain, "instance") 
+
+            all_chains = []
+            seen = set()
+            for chain, mode in leaf_to_chain.values():
+                for i in range(1, len(chain) + 1):
+                    subchain = tuple(chain[:i])
+                    filter_mode = "instance" if i == len(chain) else "parent"
+                    if subchain not in seen:
+                        all_chains.append((list(chain[:i]), filter_mode))
+                        seen.add(subchain)
+
+            for chain_list, is_longest in all_chains:
+                names = [name for name, gid in chain_list if name]
+                if names:
+                    suggestions.add(" < ".join(names))
+            return suggestions, all_chains
+
+
         return suggestions
 
 

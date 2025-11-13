@@ -112,7 +112,10 @@ class Search(bonsai.core.tool.Search):
             for ifc_filter in filter_group.filters:
                 if not ifc_filter.value:
                     continue
-                if ifc_filter.type == "instance":
+                filter_type = ifc_filter.type
+                if filter_type == "systems":
+                    filter_type = "instance"
+                if filter_type == "instance":
                     if "bpy.data.texts" in ifc_filter.value:
                         data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
                         value = bpy.data.texts[data_name].as_string()
@@ -121,23 +124,23 @@ class Search(bonsai.core.tool.Search):
                     if ifc_filter.filter_mode == "SUBTRACT":
                         value = f"!{value}"
                     filter_group_query.append(value)
-                elif ifc_filter.type == "entity":
+                elif filter_type == "entity":
                     value = ifc_filter.value
                     if ifc_filter.filter_mode == "SUBTRACT":
                         value = f"!{value}"
                     filter_group_query.append(value)
-                elif ifc_filter.type == "attribute":
+                elif filter_type == "attribute":
                     if not ifc_filter.name:
                         continue
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"{ifc_filter.name}{comparison}{value}")
-                elif ifc_filter.type == "type":
+                elif filter_type == "type":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"type{comparison}{value}")
-                elif ifc_filter.type == "material":
+                elif filter_type == "material":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"material{comparison}{value}")
-                elif ifc_filter.type == "property":
+                elif filter_type == "property":
                     if not ifc_filter.pset or not ifc_filter.name:
                         continue
                     pset = cls.wrap_value(ifc_filter, ifc_filter.pset)
@@ -145,19 +148,19 @@ class Search(bonsai.core.tool.Search):
                     comparison = ifc_filter.comparison
                     value = cls.wrap_value(ifc_filter, ifc_filter.value)
                     filter_group_query.append(f"{pset}.{name} {comparison} {value}")
-                elif ifc_filter.type == "classification":
+                elif filter_type == "classification":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"classification{comparison}{value}")
-                elif ifc_filter.type == "location":
+                elif filter_type == "location":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"location{comparison}{value}")
-                elif ifc_filter.type == "group":
+                elif filter_type == "group":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"group{comparison}{value}")
-                elif ifc_filter.type == "parent":
+                elif filter_type == "parent":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"parent{comparison}{value}")
-                elif ifc_filter.type == "query":
+                    filter_group_query.append(f'parent{comparison}{value}')
+                elif filter_type == "query":
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison = ifc_filter.comparison or "="
                     value = cls.wrap_value(ifc_filter, ifc_filter.value)
@@ -220,7 +223,10 @@ class Search(bonsai.core.tool.Search):
     @classmethod
     def _export_single_filter(cls, ifc_filter: BIMFacet, mode: str = "ADD") -> str:
         """Export a single filter to query string based on its type and mode."""
-        if ifc_filter.type == "instance":
+        filter_type = ifc_filter.type
+        if filter_type == "systems":
+            filter_type = "instance"
+        if filter_type == "instance":
             if "bpy.data.texts" in ifc_filter.value:
                 data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
                 value = bpy.data.texts[data_name].as_string()
@@ -229,23 +235,23 @@ class Search(bonsai.core.tool.Search):
             if mode == "SUBTRACT":
                 value = f"!{value}"
             return value
-        elif ifc_filter.type == "entity":
+        elif filter_type == "entity":
             value = ifc_filter.value
             if mode == "SUBTRACT":
                 value = f"!{value}"
             return value
-        elif ifc_filter.type == "attribute":
+        elif filter_type == "attribute":
             if not ifc_filter.name:
                 return ""
             comparison, value = cls.get_comparison_and_value(ifc_filter)
             return f"{ifc_filter.name}{comparison}{value}"
-        elif ifc_filter.type == "type":
+        elif filter_type == "type":
             comparison, value = cls.get_comparison_and_value(ifc_filter)
             return f"type{comparison}{value}"
-        elif ifc_filter.type == "material":
+        elif filter_type == "material":
             comparison, value = cls.get_comparison_and_value(ifc_filter)
             return f"material{comparison}{value}"
-        elif ifc_filter.type == "property":
+        elif filter_type == "property":
             if not ifc_filter.pset or not ifc_filter.name:
                 return ""
             pset = cls.wrap_value(ifc_filter, ifc_filter.pset)
@@ -253,19 +259,19 @@ class Search(bonsai.core.tool.Search):
             comparison = ifc_filter.comparison
             value = cls.wrap_value(ifc_filter, ifc_filter.value)
             return f"{pset}.{name} {comparison} {value}"
-        elif ifc_filter.type == "classification":
+        elif filter_type == "classification":
             comparison, value = cls.get_comparison_and_value(ifc_filter)
             return f"classification{comparison}{value}"
-        elif ifc_filter.type == "location":
+        elif filter_type == "location":
             comparison, value = cls.get_comparison_and_value(ifc_filter)
             return f"location{comparison}{value}"
-        elif ifc_filter.type == "group":
+        elif filter_type == "group":
             comparison, value = cls.get_comparison_and_value(ifc_filter)
             return f"group{comparison}{value}"
-        elif ifc_filter.type == "parent":
+        elif filter_type == "parent":
             comparison, value = cls.get_comparison_and_value(ifc_filter)
-            return f"parent{comparison}{value}"
-        elif ifc_filter.type == "query":
+            return f'parent{comparison}{value}'
+        elif filter_type == "query":
             keys = cls.wrap_value(ifc_filter, ifc_filter.name)
             comparison = ifc_filter.comparison or "="
             value = cls.wrap_value(ifc_filter, ifc_filter.value)

@@ -662,6 +662,14 @@ def draw_filter(
                 op.group_index = i
                 op.index = j
                 op.module = module
+            elif ifc_filter.type == "systems":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="NETWORK_DRIVE")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             op = row.operator("bim.remove_filter", text="", icon="X")
             op.group_index = i
             op.index = j

@@ -208,6 +208,7 @@ class BIMSearchProperties(PropertyGroup):
                 9,
             ),
             ("instance", "GlobalId", "Search entity by guid.\n\nExample: '2W83_qKWvEGgeo5v66dTxG'.", "GRIP", 10),
+            ("systems", "Systems", "Search by system assignments.\n\nExample: 'HVAC', 'Electrical', etc.", "NETWORK_DRIVE", 11),
         ],
     )
     saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
