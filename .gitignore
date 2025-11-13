@@ -17,6 +17,7 @@
 # General Python residue
 __pycache__
 *.py.bak
+venv
 
 # Visual Studio Code files
 .vscode
