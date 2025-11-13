@@ -136,11 +136,11 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 					}
 					
 					auto interpolated_offset = lerp(offset_a, offset_b, relative_dist_along);
-					if (rotation_a && rotation_b) {
-						// @todo we don't support an overridden rotation on only one of the placements
-						// in which case we would need to lerp with the rotation component below in m4b.
-						interpolated_rotation = lerp(*rotation_a, *rotation_b, relative_dist_along);
-					} else {
+                    if (rotation_a == rotation_b && rotation_a) {
+                        // @todo we don't support an overridden rotation on only one of the placements
+                        // in which case we would need to lerp with the rotation component below in m4b.
+                        interpolated_rotation = lerp(*rotation_a, *rotation_b, relative_dist_along);
+                    } else if (rotation_a != rotation_b) {
 						Logger::Error("Direction vectors on cross section placements only supported when used consistently");
 					}
 					taxonomy::loop::ptr w1, w2;
@@ -165,10 +165,18 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 							// auto p4 = (interpolated_rotation * p3).eval();
 							points.push_back(taxonomy::make<taxonomy::point3>(p3));
 						}
-						if (!points.empty()) {
-							// close polygon by referencing first point
-							// @todo add a closed=true|false to polygon_from_points()?
-							points.push_back(points.front());
+                        if (!points.empty()) {
+							if (!w1->closed.get_value_or(true) && !w2->closed.get_value_or(true)) {
+                                // open polygon, add last point
+                                auto& p1 = boost::get<taxonomy::point3::ptr>(w1->children.back()->end);
+                                auto& p2 = boost::get<taxonomy::point3::ptr>(w2->children.back()->end);
+                                auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
+                                points.push_back(taxonomy::make<taxonomy::point3>(p3));
+                            } else if (w1->closed.get_value_or(true) && w2->closed.get_value_or(true)) {
+                                // close polygon by referencing first point
+                                // @todo add a closed=true|false to polygon_from_points()?
+                                points.push_back(points.front());
+                            }
 						}
 
 						auto interpolated_loop = polygon_from_points(points);
