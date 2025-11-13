@@ -63,7 +63,6 @@ class TestEditAssignedProduct:
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
-        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(True)
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
@@ -74,7 +73,6 @@ class TestEditAssignedProduct:
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
-        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(False)
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
