@@ -343,6 +343,7 @@ class Drawing:
     def get_annotation_context(cls, target_view, object_type=None): pass
     def get_annotation_representation(cls, element_type): pass
     def get_assigned_product(cls, element): pass
+    def get_assigned_product_workaround(cls, element): pass
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass

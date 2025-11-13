@@ -58,7 +58,7 @@ class TestDisableEditingAssignedProduct:
 class TestEditAssignedProduct:
     def test_text_annotation(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
+        drawing.get_assigned_product_workaround("element").should_be_called().will_return(["existing_product"])
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
@@ -68,7 +68,7 @@ class TestEditAssignedProduct:
 
     def test_non_text_annotation(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
+        drawing.get_assigned_product_workaround("element").should_be_called().will_return(["existing_product"])
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
