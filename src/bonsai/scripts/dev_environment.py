@@ -38,7 +38,7 @@ REPO_PATH = r""
 
 # BLENDER_PATH: Path to Blender's configuration folder.
 # Usually don't need to change, just ensure Blender version matches.
-BLENDER_VERSION = "4.5"
+BLENDER_VERSION = "5.0"
 
 if sys.platform == "win32":
     BLENDER_PATH = Path.home() / f"AppData/Roaming/Blender Foundation/Blender/{BLENDER_VERSION}"
