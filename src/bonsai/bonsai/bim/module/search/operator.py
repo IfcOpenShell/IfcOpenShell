@@ -28,7 +28,6 @@ import ifcopenshell.util.selector
 import bonsai.tool as tool
 import bonsai.core.search as core
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.prop import StrProperty
 from natsort import natsorted
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (
@@ -41,7 +40,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from bonsai.bim.module.search.data import SearchData
 from typing import TYPE_CHECKING, Literal, get_args, assert_never
 
 
