@@ -1431,28 +1431,6 @@ class Model(bonsai.core.tool.Model):
         nosing_overlap_offset = -V_(nosing_overlap, 0)
         first_tread_run = custom_first_last_tread_run[0] if custom_first_last_tread_run[0] is not None else tread_run
 
-        # ============ DEBUG LOGGING START ============
-        print("\n" + "=" * 80)
-        print("STAIR GENERATION DEBUG - WOOD/STEEL TYPE")
-        print("=" * 80)
-        print(f"Input Parameters:")
-        print(f"  stair_type: {stair_type}")
-        print(f"  number_of_treads: {number_of_treads}")
-        print(f"  height: {height}")
-        print(f"  width: {width}")
-        print(f"  tread_run: {tread_run}")
-        print(f"  tread_depth: {tread_depth}")
-        print(f"  custom_first_last_tread_run: {custom_first_last_tread_run}")
-        print(f"  nosing_length: {nosing_length}")
-        print(f"\nCalculated Parameters:")
-        print(f"  number_of_risers: {number_of_risers}")
-        print(f"  tread_rise: {tread_rise}")
-        print(f"  nosing_overlap: {nosing_overlap}")
-        print(f"  nosing_tread_gap: {nosing_tread_gap}")
-        print(f"  nosing_overlap_offset: {nosing_overlap_offset}")
-        print("=" * 80 + "\n")
-        # ============ DEBUG LOGGING END ============
-
         def define_generic_stair_treads():
             vertices.append(Vector([0, 0]))
             nonlocal nosing_depth, nosing_overlap
@@ -1521,10 +1499,6 @@ class Model(bonsai.core.tool.Model):
                 current_offset += tread_offset
 
         if stair_type == "WOOD/STEEL":
-            print("\n" + "-" * 80)
-            print("WOOD/STEEL STAIR GENERATION PROCESS")
-            print("-" * 80)
-
             assert tread_depth is not None
 
             # full tread rectangle
@@ -1535,11 +1509,6 @@ class Model(bonsai.core.tool.Model):
             default_tread_verts = get_tread_verts(size=V_(tread_run + nosing_overlap, tread_depth))
             default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
 
-            print(f"\nDefault Tread Configuration:")
-            print(f"  default_tread_verts: {default_tread_verts}")
-            print(f"  default_tread_offset: {default_tread_offset}")
-            print(f"  tread rectangle size: ({tread_run + nosing_overlap}, {tread_depth})")
-
             def get_tread_data(i):
                 # Check if this is first or last tread with custom run
                 current_tread_run = None
@@ -1548,38 +1517,22 @@ class Model(bonsai.core.tool.Model):
                 elif i == number_of_risers - 1 and custom_first_last_tread_run[1] is not None:
                     current_tread_run = custom_first_last_tread_run[1]
 
-                print(f"\n  Tread {i}:")
-                print(f"    Is first tread: {i == 0}")
-                print(f"    Is last tread: {i == number_of_risers - 1}")
-                print(f"    current_tread_run: {current_tread_run}")
-
                 if current_tread_run is not None:
                     tread_offset = default_tread_offset.copy()
                     tread_offset.x = current_tread_run + nosing_tread_gap
 
                     # Handle zero-width treads
                     if current_tread_run == 0:
-                        print(f"    → Zero-width tread, skipping geometry")
-                        print(f"    → tread_offset: {tread_offset}")
                         return tread_offset, ()
 
                     tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
-                    print(f"    → Custom tread")
-                    print(f"    → tread_offset: {tread_offset}")
-                    print(f"    → tread_verts: {tread_verts}")
-                    print(f"    → tread rectangle size: ({current_tread_run + nosing_overlap}, {tread_depth})")
                     return tread_offset, tread_verts
 
-                print(f"    → Using default tread")
-                print(f"    → tread_offset: {default_tread_offset}")
                 return default_tread_offset, default_tread_verts
 
             # each tread is a separate shape
             cur_offset = V_(0, 0)
             tread_index = 0
-
-            print(f"\nGenerating Treads:")
-            print(f"  Number of risers to process: {number_of_risers}")
 
             for i in range(number_of_risers):
                 tread_offset, tread_verts = get_tread_data(i)
@@ -1587,9 +1540,6 @@ class Model(bonsai.core.tool.Model):
                 # Skip adding vertices/edges for zero-width treads
                 if tread_verts:
                     cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
-                    print(f"    Adding geometry at cur_offset: {cur_offset}")
-                    print(f"    Final vertices (after offset): {cur_trade_shape}")
-
                     vertices.extend(cur_trade_shape)
 
                     cur_vertex = tread_index * 4
@@ -1600,19 +1550,9 @@ class Model(bonsai.core.tool.Model):
                         (cur_vertex + 3, cur_vertex),
                     )
                     edges.extend(verts_to_add)
-                    print(f"    Edges added: {verts_to_add}")
                     tread_index += 1
-                else:
-                    print(f"    Skipped (no geometry)")
 
                 cur_offset += tread_offset
-                print(f"    New cur_offset: {cur_offset}")
-
-            print(f"\nFinal Results:")
-            print(f"  Total vertices: {len(vertices)}")
-            print(f"  Total edges: {len(edges)}")
-            print(f"  Total treads generated: {tread_index}")
-            print("-" * 80 + "\n")
 
         elif stair_type == "GENERIC":
             define_generic_stair_treads()
