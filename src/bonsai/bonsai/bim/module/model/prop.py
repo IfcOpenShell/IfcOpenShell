@@ -628,14 +628,19 @@ class BIMStairProperties(PropertyGroup):
 
     def set_props_kwargs_from_ifc_data(self, kwargs):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
+        tread_run = kwargs.get("tread_run", 0.3)
 
         # Determine lock state based on whether custom treads match tread_run
         # If custom_tread_lock wasn't saved (old files), infer it from the data
         if "custom_tread_lock" not in kwargs:
             custom_treads = kwargs.get("custom_first_last_tread_run", (0.0, 0.0))
-            tread_run = kwargs.get("tread_run", 0.3)
             # Lock is off if either custom tread differs from tread_run and is not 0
-            kwargs["custom_tread_lock"] = not any(ct != 0.0 and ct != tread_run for ct in custom_treads)
+            kwargs["custom_tread_lock"] = all(ct not in (0.0, tread_run) for ct in custom_treads)
+
+        if "custom_first_last_tread_run" in kwargs:
+            custom_treads = kwargs["custom_first_last_tread_run"]
+            custom_treads = [tread_run if v is None else v for v in custom_treads]
+            kwargs["custom_first_last_tread_run"] = custom_treads
 
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])

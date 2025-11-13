@@ -142,9 +142,10 @@ class Model(bonsai.core.tool.Model):
         for prop_name in data:
             if prop_name in non_si_props:
                 continue
-            prop_value = data[prop_name]
+            # `None` is used by `custom_first_last_tread_run`.
+            prop_value: Iterable[float | None] | float = data[prop_name]
             if isinstance(prop_value, collections.abc.Iterable):
-                data[prop_name] = [v * si_conversion for v in prop_value]
+                data[prop_name] = [v if v is None else v * si_conversion for v in prop_value]
             else:
                 data[prop_name] = prop_value * si_conversion
         return data
