@@ -894,6 +894,33 @@ class Drawing(bonsai.core.tool.Drawing):
                 return product
 
     @classmethod
+    def get_assigned_product_workaround(
+        cls, element: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
+        """Get all products assigned to the element.
+
+        A workaround allowing to unassign accumulated products until we properly resolve #4014.
+        In theory annotations should have more than one product assigned,
+        but there's still undefined bug causing that in some cases.
+        """
+
+        assigned_products: list[ifcopenshell.entity_instance] = []
+        for rel in element.HasAssignments:
+            if not rel.is_a("IfcRelAssignsToProduct"):
+                continue
+            assigned_products.append(rel.RelatingProduct)
+
+        if len(assigned_products) > 1:
+            print(
+                f"WARNING. Detected multiple assigned products ({len(assigned_products)}) for annotation '{element}'."
+                "\nIf you can reproduce this, please report it to Bonsai developers "
+                "at https://github.com/IfcOpenShell/IfcOpenShell/issues/4014."
+                "\nAssigned products:\n" + "\n".join([str(p) for p in assigned_products])
+            )
+
+        return assigned_products
+
+    @classmethod
     def import_annotations_in_group(cls, group: ifcopenshell.entity_instance) -> None:
         elements = set(
             [
