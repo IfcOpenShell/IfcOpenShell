@@ -24,5 +24,11 @@
 using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef* inst) {
-	return map(inst->Curve());
+	auto mapped = map(inst->Curve());
+    if (mapped->kind() == taxonomy::LOOP) {
+        auto r = taxonomy::loop::ptr((taxonomy::loop*)mapped->clone_());
+        r->closed = false;
+        return r;
+    }
+    return mapped;
 }
