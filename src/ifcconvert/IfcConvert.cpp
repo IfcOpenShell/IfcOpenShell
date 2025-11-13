@@ -49,10 +49,6 @@
 
 #include "../ifcparse/utils.h"
 
-#ifdef IFOPSH_WITH_CITYJSON
-#include "./cityjson/geobim.h"
-#endif
-
 #ifdef IFOPSH_WITH_OPENCASCADE
 
 #include <Standard_Version.hxx>
@@ -132,9 +128,6 @@ void print_usage(bool suggest_help = true)
 		<< "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 #ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
-#endif
-#ifdef IFOPSH_WITH_CITYJSON
-		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
 		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
@@ -656,7 +649,6 @@ int main(int argc, char** argv) {
 		XML = IfcUtil::path::from_utf8(".xml"),
 		// @todo this is just temporary as it doesn't make sense to require an extension for a DB
 		RDB = IfcUtil::path::from_utf8(".rdb"),
-		CITY_JSON = IfcUtil::path::from_utf8(".cityjson"),
 		IFC = IfcUtil::path::from_utf8(".ifc"),
 		USD = IfcUtil::path::from_utf8(".usd"),
 		USDA = IfcUtil::path::from_utf8(".usda"),
@@ -740,84 +732,6 @@ int main(int argc, char** argv) {
 		}
 		write_log(!quiet);
 		return exit_code;
-	}
-#endif
-#ifdef IFOPSH_WITH_CITYJSON
-	else if (output_extension == CITY_JSON || (output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only") && exterior_only_algo != "none") {
-
-		// none, convex-decomposition, minkowski-triangles or halfspace-snapping
-		boost::to_lower(exterior_only_algo);
-
-		if (exterior_only_algo == "halfspace-snapping") {
-			cerr_ << "[Error] halfspace-snapping not implemented yet" << std::endl;
-			print_usage();
-			return EXIT_FAILURE;
-		} else if (exterior_only_algo == "minkowski-triangles") {
-			// 
-		} else if (exterior_only_algo == "convex-decomposition") {
-			// 
-		} else if (exterior_only_algo == "none") {
-			// 
-		} else {
-			cerr_ << "[Error] --exterior-only should be convex-decomposition|minkowski-triangles|halfspace-snapping" << std::endl;
-			print_usage();
-			return EXIT_FAILURE;
-		}
-
-		geobim_settings settings;
-		settings.input_filenames = { IfcUtil::path::to_utf8(input_filename) };
-		settings.file = { new IfcParse::IfcFile(IfcUtil::path::to_utf8(input_filename)) };
-		
-		/*
-		// No longer set, because we pass to real serializers now, awaiting a proper iterator adaptor
-		if (output_extension == OBJ) {
-			settings.obj_output_filename = IfcUtil::path::to_utf8(output_filename);
-		}
-		*/
-	
-		if (output_extension == CITY_JSON) {
-			// we don't have a cityjson serializer though
-			settings.cityjson_output_filename = IfcUtil::path::to_utf8(output_filename);
-		}
-
-		// @todo
-		settings.radii = { "0.05" };
-		settings.apply_openings = false;
-		settings.apply_openings_posthoc = true;
-		settings.debug = false;
-		settings.exact_segmentation = true;
-		settings.minkowski_triangles = exterior_only_algo == "minkowski-triangles";
-		settings.no_erosion = false;
-		settings.spherical_padding = false;
-		if (num_threads != 1) {
-			settings.threads = num_threads;
-		}
-
-		settings.settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-		settings.settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-		settings.settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-		settings.settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-		settings.settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		settings.settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = !settings.apply_openings;
-
-		if (include_filter.type != geom_filter::UNUSED) {
-			settings.entity_names = include_filter.values;
-			settings.entity_names_included = true;
-		} else if (exclude_filter.type != geom_filter::UNUSED) {
-			settings.entity_names = exclude_filter.values;
-			settings.entity_names_included = false;
-		} else {
-			settings.entity_names = { { "IfcSpace", "IfcOpeningElement" } };
-			settings.entity_names_included = false;
-		}
-		
-		elems_from_adaptor.emplace();
-		perform(settings, *elems_from_adaptor);
-		
-		if (output_extension == CITY_JSON) {
-			return 0;
-		}
-		// else ... continue on to serialize elems_from_adaptor
 	}
 #endif
 
