@@ -40,6 +40,8 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from bonsai.bim.prop import StrProperty
+from bonsai.bim.module.search.prop import SearchData
 from typing import TYPE_CHECKING, Literal, get_args, assert_never
 
 
