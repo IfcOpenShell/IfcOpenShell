@@ -478,7 +478,7 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
 
 class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_door"
-    bl_label = "Door"
+    bl_label = "Add Door"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod

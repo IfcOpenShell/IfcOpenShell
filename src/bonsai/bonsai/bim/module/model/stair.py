@@ -131,7 +131,7 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
 
 class BIM_OT_add_stair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_stair"
-    bl_label = "Stair"
+    bl_label = "Add Stair"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod

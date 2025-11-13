@@ -351,13 +351,19 @@ def the_brickschema_is_stubbed():
 @given(parsers.parse('I look at the "{panel}" panel'))
 @when(parsers.parse('I look at the "{panel}" panel'))
 @then(parsers.parse('I look at the "{panel}" panel'))
-def i_look_at_the_panel_panel(panel):
-    global ui_name_cache
+def i_look_at_the_panel_panel(panel: str) -> None:
+    # Option to provide explicit panel name if panel names overlap.
+    panel_class = getattr(bpy.types, panel, None)
+
+    if panel_class is None:
+        global ui_name_cache
+        create_ui_name_cache()
+        if panel not in ui_name_cache:
+            assert False, f"Panel '{panel}' not found in `bpy.types` and in {ui_name_cache}"
+        panel_class = getattr(bpy.types, ui_name_cache[panel])
+
     global panel_spy
-    create_ui_name_cache()
-    if panel not in ui_name_cache:
-        assert False, f"Panel {panel} not found in {ui_name_cache}"
-    panel_spy = PanelSpy(getattr(bpy.types, ui_name_cache[panel]))
+    panel_spy = PanelSpy(panel_class)
     panel_spy.refresh_spy()
 
 

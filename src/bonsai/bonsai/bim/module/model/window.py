@@ -399,7 +399,7 @@ def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
 
 class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_window"
-    bl_label = "Window"
+    bl_label = "Add Window"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
