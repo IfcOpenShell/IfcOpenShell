@@ -79,7 +79,6 @@ option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
-option(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." OFF)
 option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate geometrical relationships." OFF)
 option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcOpenShell" OFF)
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
@@ -276,10 +275,6 @@ if(WITH_CGAL)
     add_definitions(-DIFOPSH_WITH_CGAL)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
 
-    if(CITYJSON_SUPPORT)
-		add_definitions(-DIFOPSH_WITH_CITYJSON)
-    endif()
-
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
@@ -289,7 +284,7 @@ if(WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
 endif()
 
-if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
+if(GLTF_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
     if(NOT JSON_INCLUDE_DIR)
         find_package(nlohmann_json CONFIG)
@@ -1107,37 +1102,6 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 if(BUILD_CONVERT)
-    if(WITH_CGAL AND CITYJSON_SUPPORT)
-        message(STATUS "Building CityJSON support")
-        set(CITYJSON_CONVERT_FILES
-            ../src/ifcconvert/cityjson/geobim.cpp
-            ../src/ifcconvert/cityjson/global_execution_context.cpp
-            ../src/ifcconvert/cityjson/opening_collector.cpp
-            ../src/ifcconvert/cityjson/processing.cpp
-            ../src/ifcconvert/cityjson/radius_comparison.cpp
-            ../src/ifcconvert/cityjson/radius_execution_context.cpp
-            ../src/ifcconvert/cityjson/settings.cpp
-            ../src/ifcconvert/cityjson/writer.cpp
-        )
-        add_library(cityjson_converter ${CITYJSON_CONVERT_FILES})
-        target_include_directories(cityjson_converter PRIVATE ../src)
-        set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
-
-        install(TARGETS cityjson_converter
-            ARCHIVE DESTINATION ${LIBDIR}
-            LIBRARY DESTINATION ${LIBDIR}
-        )
-
-        add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
-        set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
-        target_include_directories(cityjson_converter_exe PRIVATE ../src)
-        target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
-
-        install(TARGETS cityjson_converter_exe
-            RUNTIME DESTINATION ${BINDIR}
-        )
-    endif()
-
     # IfcConvert
 	if (WITH_RELATIONSHIP_VALIDATION)
 		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
@@ -1152,10 +1116,6 @@ if(BUILD_CONVERT)
     target_link_libraries(IfcConvert IfcGeom IfcParse Serializers ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
 	if (WITH_RELATIONSHIP_VALIDATION)
         set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DWITH_RELATIONSHIP_VALIDATION")
-    endif()
-
-    if(WITH_CGAL AND CITYJSON_SUPPORT)
-        set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DIFOPSH_WITH_CITYJSON")
     endif()
 
     if((NOT WIN32) AND BUILD_SHARED_LIBS)
