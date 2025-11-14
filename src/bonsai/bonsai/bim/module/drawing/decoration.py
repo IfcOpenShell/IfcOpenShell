@@ -42,7 +42,7 @@ from bonsai.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
 from functools import cache
 from typing import Optional, Union
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 
@@ -186,7 +186,7 @@ class BaseDecorator:
     def camera_zoom_to_factor(self, zoom):
         return math.pow(((zoom / 50) + math.sqrt(2)) / 2, 2)
 
-    def get_splines(self, obj):
+    def get_splines(self, obj: bpy.types.Object) -> Generator[list[Vector]]:
         """Iterates through splines
         Args:
           obj: Blender object with Curve data
@@ -194,13 +194,14 @@ class BaseDecorator:
         Yields:
           verts: points of each spline, world coords
         """
+        assert type(obj.data) is bpy.types.Curve
         for spline in obj.data.splines:
             spline_points = spline.bezier_points if spline.bezier_points else spline.points
             if len(spline_points) < 2:
                 continue
             yield [obj.matrix_world @ p.co for p in spline_points]
 
-    def get_path_geom(self, obj, topo=True):
+    def get_path_geom(self, obj: bpy.types.Object, topo: bool = True):
         """Parses path geometry into line segments
 
         Args:
