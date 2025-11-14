@@ -1359,12 +1359,14 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
         requires_init = true;
     }
 
-	ifc_file->bypass_type("IfcRelDefinesByProperties");
-    ifc_file->bypass_type("IfcPropertySetDefinition");
-    ifc_file->bypass_type("IfcProperty");
-    ifc_file->bypass_type("IfcMaterialProperties");
-    ifc_file->bypass_type("IfcProfileProperties");
-    ifc_file->bypass_type("IfcPhysicalQuantity");
+	if (bypass_properties) {
+        ifc_file->bypass_type("IfcRelDefinesByProperties");
+        ifc_file->bypass_type("IfcPropertySetDefinition");
+        ifc_file->bypass_type("IfcProperty");
+        ifc_file->bypass_type("IfcMaterialProperties");
+        ifc_file->bypass_type("IfcProfileProperties");
+        ifc_file->bypass_type("IfcPhysicalQuantity");
+    }
     
 #ifdef USE_MMAP
     if (mmap) {
