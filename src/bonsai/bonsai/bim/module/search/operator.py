@@ -194,37 +194,42 @@ class FilterValueSuggestions(Operator):
                     ifc_filter.value = globalid if globalid else ""
                 elif filter_mode == "parent":
                     parent = chain_list[-1][1]
-                    child_globalids = []
                     ifc_file = tool.Ifc.get()
-                    if ifc_file and parent:
-                        from bonsai.bim.ifc import IfcStore
-                        parent_entity = ifc_file.by_guid(parent)
+                    all_globalids = []
+                    def collect_descendant_globalids(entity):
+                        gids = []
+                        gid = getattr(entity, "GlobalId", None)
+                        if gid:
+                            gids.append(gid)
                         children = []
-                        if hasattr(parent_entity, "IsDecomposedBy") and parent_entity.IsDecomposedBy:
-                            for rel in parent_entity.IsDecomposedBy:
+                        if hasattr(entity, "IsDecomposedBy") and entity.IsDecomposedBy:
+                            for rel in entity.IsDecomposedBy:
                                 if rel.is_a("IfcRelAggregates") or rel.is_a("IfcRelNests"):
                                     children.extend(rel.RelatedObjects)
-                        if hasattr(parent_entity, "IsGroupedBy") and parent_entity.IsGroupedBy:
-                            for rel in parent_entity.IsGroupedBy:
+                        if hasattr(entity, "IsGroupedBy") and entity.IsGroupedBy:
+                            for rel in entity.IsGroupedBy:
                                 if rel.is_a("IfcRelAssignsToGroup"):
                                     children.extend(rel.RelatedObjects)
-                        if parent_entity.is_a("IfcSystem") and hasattr(parent_entity, "ServicesBuildings"):
-                            for rel in parent_entity.ServicesBuildings:
+                        if entity.is_a("IfcSystem") and hasattr(entity, "ServicesBuildings"):
+                            for rel in entity.ServicesBuildings:
                                 if rel.is_a("IfcRelServicesBuildings"):
                                     children.extend(rel.RelatedBuildings)
-                        if hasattr(parent_entity, "ContainsElements") and parent_entity.ContainsElements:
-                            for rel in parent_entity.ContainsElements:
+                        if hasattr(entity, "ContainsElements") and entity.ContainsElements:
+                            for rel in entity.ContainsElements:
                                 if rel.is_a("IfcRelContainedInSpatialStructure"):
                                     children.extend(rel.RelatedElements)
-                        if hasattr(parent_entity, "IsDefinedBy") and parent_entity.IsDefinedBy:
-                            for rel in parent_entity.IsDefinedBy:
+                        if hasattr(entity, "IsDefinedBy") and entity.IsDefinedBy:
+                            for rel in entity.IsDefinedBy:
                                 if hasattr(rel, "RelatingType") and rel.RelatingType:
                                     children.append(rel.RelatingType)
                         for child in children:
-                            gid = getattr(child, "GlobalId", None)
-                            if gid:
-                                child_globalids.append(gid)
-                    ifc_filter.value = ",".join(child_globalids)
+                            gids.extend(collect_descendant_globalids(child))
+                        return gids
+                    if ifc_file and parent:
+                        from bonsai.bim.ifc import IfcStore
+                        parent_entity = ifc_file.by_guid(parent)
+                        all_globalids = collect_descendant_globalids(parent_entity)
+                    ifc_filter.value = ",".join(all_globalids)
                 else:
                     ifc_filter.value = selected_suggestion
             else:
