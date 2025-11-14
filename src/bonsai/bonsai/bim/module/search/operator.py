@@ -185,56 +185,8 @@ class FilterValueSuggestions(Operator):
                     value = value.split(" < ")[-1]
             ifc_filter.value = value
         elif ifc_filter.type == "systems":
-            if "|" in value:
-                global_id = value.split("|")[-1].strip()
-                ifc_filter.value = global_id
-            else:
-                def collect_descendant_globalids(system_ifc):
-                    ids = set()
-                    def recurse(current):
-                        gid = getattr(current, 'GlobalId', None)
-                        if gid:
-                            ids.add(gid)
-                        children = []
-                        if hasattr(current, "IsGroupedBy") and current.IsGroupedBy:
-                            for rel in current.IsGroupedBy:
-                                if rel.is_a("IfcRelAssignsToGroup"):
-                                    children.extend(rel.RelatedObjects)
-                        if current.is_a("IfcBuildingSystem") and hasattr(current, "ServicesBuildings") and current.ServicesBuildings:
-                            for rel in current.ServicesBuildings:
-                                if rel.is_a("IfcRelServicesBuildings"):
-                                    children.extend(rel.RelatedBuildings)
-                        for child in children:
-                            child_gid = getattr(child, 'GlobalId', None)
-                            if child_gid and child_gid not in ids:
-                                recurse(child)
-                    recurse(system_ifc)
-                    return ids
-
-                # Try to resolve the parent system from the suggestion string
-                # The suggestion string is the chain of names, so we need to match it to the chain in get_suggestions
-                ifc_file = tool.Ifc.get()
-                # Find the matching chain in get_suggestions (all_chains)
-                suggestions_tuple = self.get_suggestions(ifc_file, ifc_filter.type)
-                if isinstance(suggestions_tuple, tuple):
-                    _, all_chains = suggestions_tuple
-                    for chain_list, filter_mode in all_chains:
-                        chain_str = " < ".join([name for name, gid in chain_list if name])
-                        if chain_str == value:
-                            # The last element in chain_list is the parent system
-                            last_gid = chain_list[-1][1] if chain_list and chain_list[-1][1] else None
-                            if last_gid:
-                                system_ifc = ifc_file.by_guid(last_gid)
-                                all_ids = collect_descendant_globalids(system_ifc)
-                                ifc_filter.value = ",".join(sorted(all_ids))
-                            else:
-                                ifc_filter.value = value
-                            break
-                    else:
-                        # Fallback: assign value as is
-                        ifc_filter.value = value
-                else:
-                    ifc_filter.value = value
+            globalids = self.suggestion_to_globalids.get(value, [])
+            ifc_filter.value = ",".join(globalids)
         else:
             ifc_filter.value = value
         return {"FINISHED"}
@@ -248,38 +200,12 @@ class FilterValueSuggestions(Operator):
         filter_groups = tool.Search.get_filter_groups(self.module)
         ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
 
-        # Only populate suggestions, do not set filter value here
-        if ifc_filter.type == "property":
-            if self.suggestion_type == "property_value" and ifc_filter.pset and ifc_filter.name:
-                suggestions = self.get_property_values(ifc_file, ifc_filter.pset, ifc_filter.name)
-            elif self.suggestion_type == "property_name" and ifc_filter.pset:
-                suggestions = self.get_property_names(ifc_file, ifc_filter.pset)
-            else:
-                suggestions = self.get_suggestions(ifc_file, ifc_filter.type)
-        elif ifc_filter.type == "attribute":
-            if self.suggestion_type == "attribute_value" and ifc_filter.name:
-                suggestions = self.get_attribute_values(ifc_file, ifc_filter.name)
-            else:
-                suggestions = self.get_attribute_names(ifc_file)
-        elif ifc_filter.type == "systems":
-            suggestions_tuple = self.get_suggestions(ifc_file, ifc_filter.type)
-            if isinstance(suggestions_tuple, tuple):
-                suggestions, all_chains = suggestions_tuple
-                self.suggestion_to_chain_mode = {}
-                for chain_list, filter_mode in all_chains:
-                    suggestion_str = " < ".join([name for name, gid in chain_list if name])
-                    self.suggestion_to_chain_mode[suggestion_str] = (chain_list, filter_mode)
-            else:
-                suggestions = suggestions_tuple
-        else:
-            suggestions = self.get_suggestions(ifc_file, ifc_filter.type)
-
-        if not suggestions:
+        string_suggestions = self.get_suggestions(ifc_file, ifc_filter.type)
+        if not string_suggestions:
             self.report({"INFO"}, f"No suggestions available")
             return {"CANCELLED"}
 
         self.collection_values.clear()
-        string_suggestions = [s for s in suggestions if isinstance(s, str)]
         for suggestion in natsorted(string_suggestions):
             self.collection_values.add().name = suggestion
 
@@ -484,6 +410,7 @@ class FilterValueSuggestions(Operator):
         return attribute_values
 
     def get_suggestions(self, ifc_file, filter_type):
+        self.suggestion_to_globalids = {}
         suggestions = set()
         
         from bonsai.bim.ifc import IfcStore
@@ -673,27 +600,15 @@ class FilterValueSuggestions(Operator):
             scene = bpy.data.scenes["Scene"]
             systems_props = scene.BIMSystemProperties
             roots = [s for s in getattr(systems_props, "systems", []) if (not hasattr(s, "parent") or not s.parent)]
-            all_chains = []
-            for idx, r in enumerate(roots):
-                root_id = getattr(r, 'ifc_definition_id', None)
-                root_ifc = ifc_file.by_id(root_id) if root_id else None
-                global_id = getattr(root_ifc, 'GlobalId', None) if root_ifc else None
-            from collections import deque
-            for idx, r in enumerate(roots):
-                root_id = getattr(r, 'ifc_definition_id', None)
-                root_ifc = ifc_file.by_id(root_id) if root_id else None
-                root_name = getattr(r, 'name', None)
-                global_id = getattr(root_ifc, 'GlobalId', None) if root_ifc else None
-                if not root_ifc:
-                    continue
-                queue = deque()
-                queue.append(([root_ifc], [root_name]))
-                chains = dict()  # key: tuple of globalIds, value: (chain_names, chain_objs, filter_mode)
+            
+            def collect_descendant_globalids(obj):
+                result = set()
+                queue = [obj]
                 while queue:
-                    chain_objs, chain_names = queue.popleft()
-                    chain_globalids = tuple(getattr(obj, 'GlobalId', None) for obj in chain_objs)
-                    chain_str = " < ".join([n for n in chain_names if n])
-                    current = chain_objs[-1]
+                    current = queue.pop()
+                    gid = getattr(current, 'GlobalId', None)
+                    if gid:
+                        result.add(gid)
                     children = []
                     if hasattr(current, "IsGroupedBy") and current.IsGroupedBy:
                         for rel in current.IsGroupedBy:
@@ -703,27 +618,47 @@ class FilterValueSuggestions(Operator):
                         for rel in current.ServicesBuildings:
                             if rel.is_a("IfcRelServicesBuildings"):
                                 children.extend(rel.RelatedBuildings)
+                    children = [c for c in children if hasattr(c, 'GlobalId')]
+                    queue.extend(children)
+                return list(result)
+            from collections import deque
+            for idx, r in enumerate(roots):
+                root_id = getattr(r, 'ifc_definition_id', None)
+                root_ifc = ifc_file.by_id(root_id) if root_id else None
+                root_name = getattr(r, 'name', None)
+                global_id = getattr(root_ifc, 'GlobalId', None) if root_ifc else None
+                if not root_ifc:
+                    continue
+                queue = deque()
+                queue.append((root_ifc, [root_name]))
+                visited = set()
+                while queue:
+                    current_obj, names_list = queue.popleft()
+                    chain_str = " < ".join([n for n in names_list if n])
+                    current_gid = getattr(current_obj, 'GlobalId', None)
+                    children = []
+                    if hasattr(current_obj, "IsGroupedBy") and current_obj.IsGroupedBy:
+                        for rel in current_obj.IsGroupedBy:
+                            if rel.is_a("IfcRelAssignsToGroup"):
+                                children.extend(rel.RelatedObjects)
+                    if current_obj.is_a("IfcBuildingSystem") and hasattr(current_obj, "ServicesBuildings") and current_obj.ServicesBuildings:
+                        for rel in current_obj.ServicesBuildings:
+                            if rel.is_a("IfcRelServicesBuildings"):
+                                children.extend(rel.RelatedBuildings)
                     children = list({getattr(c, 'GlobalId', None): c for c in children if hasattr(c, 'GlobalId')}.values())
-                    filter_mode = 'instance' if not children else 'parent'
-                    if chain_globalids not in chains:
-                        chains[chain_globalids] = (chain_names, chain_objs, filter_mode)
-                    for child in children:
-                        child_name = getattr(child, 'Name', None)
-                        queue.append((chain_objs + [child], chain_names + [child_name]))
-                sorted_chains = sorted(
-                    chains.items(),
-                    key=lambda x: " < ".join([n for n in x[1][0] if n])
-                )
-                for i, (gids_chain, (chain_names, chain_objs, filter_mode)) in enumerate(sorted_chains):
-                    chain_str = " < ".join([n for n in chain_names if n])
-                    last_gid = gids_chain[-1] if gids_chain and gids_chain[-1] else None
-                    if filter_mode == 'instance' and last_gid:
-                        suggestion = f"{chain_str} | {last_gid}"
-                    else:
+                    if not children and current_gid:
+                        suggestion = f"{chain_str} | {current_gid}"
+                        all_gids = [current_gid]
+                        suggestions.add(suggestion)
+                        self.suggestion_to_globalids[suggestion] = all_gids
+                    elif children:
+                        all_gids = collect_descendant_globalids(current_obj)
                         suggestion = chain_str
-                    suggestions.add(suggestion)
-                    all_chains.append(([(n, g) for n, g in zip(chain_names, gids_chain)], filter_mode))
-            return suggestions, all_chains
+                        suggestions.add(suggestion)
+                        self.suggestion_to_globalids[suggestion] = all_gids
+                        for child in children:
+                            child_name = getattr(child, 'Name', None)
+                            queue.append((child, names_list + [child_name]))
 
         return suggestions
 
