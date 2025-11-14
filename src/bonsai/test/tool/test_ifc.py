@@ -319,7 +319,7 @@ class TestUri(test.bim.bootstrap.NewFile):
 
     def test_normalize_path(self):
         # Posix format.
-        if os.name == 'nt':
+        if os.name == "nt":
             # Limit to windows (#7348)
             path = r"test\test.txt"
             assert subject.normalize_path(path) == "test/test.txt"
