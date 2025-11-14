@@ -185,55 +185,56 @@ class FilterValueSuggestions(Operator):
                     value = value.split(" < ")[-1]
             ifc_filter.value = value
         elif ifc_filter.type == "systems":
-            selected_suggestion = value
-            chain_mode = getattr(self, "suggestion_to_chain_mode", None)
-            if chain_mode and selected_suggestion in chain_mode:
-                chain_list, filter_mode = chain_mode[selected_suggestion]
-                if filter_mode == "instance":
-                    globalid = chain_list[-1][1]
-                    ifc_filter.value = globalid if globalid else ""
-                elif filter_mode == "parent":
-                    parent = chain_list[-1][1]
-                    ifc_file = tool.Ifc.get()
-                    all_globalids = []
-                    def collect_descendant_globalids(entity):
-                        gids = []
-                        gid = getattr(entity, "GlobalId", None)
+            if "|" in value:
+                global_id = value.split("|")[-1].strip()
+                ifc_filter.value = global_id
+            else:
+                def collect_descendant_globalids(system_ifc):
+                    ids = set()
+                    def recurse(current):
+                        gid = getattr(current, 'GlobalId', None)
                         if gid:
-                            gids.append(gid)
+                            ids.add(gid)
                         children = []
-                        if hasattr(entity, "IsDecomposedBy") and entity.IsDecomposedBy:
-                            for rel in entity.IsDecomposedBy:
-                                if rel.is_a("IfcRelAggregates") or rel.is_a("IfcRelNests"):
-                                    children.extend(rel.RelatedObjects)
-                        if hasattr(entity, "IsGroupedBy") and entity.IsGroupedBy:
-                            for rel in entity.IsGroupedBy:
+                        if hasattr(current, "IsGroupedBy") and current.IsGroupedBy:
+                            for rel in current.IsGroupedBy:
                                 if rel.is_a("IfcRelAssignsToGroup"):
                                     children.extend(rel.RelatedObjects)
-                        if entity.is_a("IfcSystem") and hasattr(entity, "ServicesBuildings"):
-                            for rel in entity.ServicesBuildings:
+                        if current.is_a("IfcBuildingSystem") and hasattr(current, "ServicesBuildings") and current.ServicesBuildings:
+                            for rel in current.ServicesBuildings:
                                 if rel.is_a("IfcRelServicesBuildings"):
                                     children.extend(rel.RelatedBuildings)
-                        if hasattr(entity, "ContainsElements") and entity.ContainsElements:
-                            for rel in entity.ContainsElements:
-                                if rel.is_a("IfcRelContainedInSpatialStructure"):
-                                    children.extend(rel.RelatedElements)
-                        if hasattr(entity, "IsDefinedBy") and entity.IsDefinedBy:
-                            for rel in entity.IsDefinedBy:
-                                if hasattr(rel, "RelatingType") and rel.RelatingType:
-                                    children.append(rel.RelatingType)
                         for child in children:
-                            gids.extend(collect_descendant_globalids(child))
-                        return gids
-                    if ifc_file and parent:
-                        from bonsai.bim.ifc import IfcStore
-                        parent_entity = ifc_file.by_guid(parent)
-                        all_globalids = collect_descendant_globalids(parent_entity)
-                    ifc_filter.value = ",".join(all_globalids)
+                            child_gid = getattr(child, 'GlobalId', None)
+                            if child_gid and child_gid not in ids:
+                                recurse(child)
+                    recurse(system_ifc)
+                    return ids
+
+                # Try to resolve the parent system from the suggestion string
+                # The suggestion string is the chain of names, so we need to match it to the chain in get_suggestions
+                ifc_file = tool.Ifc.get()
+                # Find the matching chain in get_suggestions (all_chains)
+                suggestions_tuple = self.get_suggestions(ifc_file, ifc_filter.type)
+                if isinstance(suggestions_tuple, tuple):
+                    _, all_chains = suggestions_tuple
+                    for chain_list, filter_mode in all_chains:
+                        chain_str = " < ".join([name for name, gid in chain_list if name])
+                        if chain_str == value:
+                            # The last element in chain_list is the parent system
+                            last_gid = chain_list[-1][1] if chain_list and chain_list[-1][1] else None
+                            if last_gid:
+                                system_ifc = ifc_file.by_guid(last_gid)
+                                all_ids = collect_descendant_globalids(system_ifc)
+                                ifc_filter.value = ",".join(sorted(all_ids))
+                            else:
+                                ifc_filter.value = value
+                            break
+                    else:
+                        # Fallback: assign value as is
+                        ifc_filter.value = value
                 else:
-                    ifc_filter.value = selected_suggestion
-            else:
-                ifc_filter.value = selected_suggestion
+                    ifc_filter.value = value
         else:
             ifc_filter.value = value
         return {"FINISHED"}
@@ -667,82 +668,62 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(display_str)
         
         elif filter_type == "systems":
-            system_types = [
-                "IfcBuildingSystem",
-                "IfcDistributionCircuit",
-                "IfcDistributionSystem",
-                "IfcSystem",
-                "IfcZone",
-            ]
-            systems = []
-            for stype in system_types:
-                try:
-                    systems.extend(ifc_file.by_type(stype))
-                except Exception:
-                    continue
-
-            def traverse(element, chain=None):
-                if chain is None:
-                    chain = []
-                name = getattr(element, "Name", None) or element.is_a()
-                globalid = getattr(element, "GlobalId", None)
-                chain = chain + [(name, globalid)]
-
-                # Find children via IFC relationships
-                children = []
-                if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
-                    for rel in element.IsDecomposedBy:
-                        if rel.is_a("IfcRelAggregates") or rel.is_a("IfcRelNests"):
-                            children.extend(rel.RelatedObjects)
-                if hasattr(element, "IsGroupedBy") and element.IsGroupedBy:
-                    for rel in element.IsGroupedBy:
-                        if rel.is_a("IfcRelAssignsToGroup"):
-                            children.extend(rel.RelatedObjects)
-                if element.is_a("IfcSystem") and hasattr(element, "ServicesBuildings"):
-                    for rel in element.ServicesBuildings:
-                        if rel.is_a("IfcRelServicesBuildings"):
-                            children.extend(rel.RelatedBuildings)
-                if hasattr(element, "ContainsElements") and element.ContainsElements:
-                    for rel in element.ContainsElements:
-                        if rel.is_a("IfcRelContainedInSpatialStructure"):
-                            children.extend(rel.RelatedElements)
-                if hasattr(element, "IsDefinedBy") and element.IsDefinedBy:
-                    for rel in element.IsDefinedBy:
-                        if hasattr(rel, "RelatingType") and rel.RelatingType:
-                            children.append(rel.RelatingType)
-
-                if not children:
-                    yield chain
-                else:
-                    for child in children:
-                        yield from traverse(child, chain)
-
-            leaf_to_chain = {}
-            for system in systems:
-                for chain in traverse(system):
-                    if not chain:
-                        continue
-                    leaf_name, leaf_globalid = chain[-1]
-                    if leaf_globalid:
-                        if (leaf_globalid not in leaf_to_chain) or (len(chain) > len(leaf_to_chain[leaf_globalid][0])):
-                            leaf_to_chain[leaf_globalid] = (chain, "instance") 
-
+            import bpy
+            bpy.ops.bim.load_systems()
+            scene = bpy.data.scenes["Scene"]
+            systems_props = scene.BIMSystemProperties
+            roots = [s for s in getattr(systems_props, "systems", []) if (not hasattr(s, "parent") or not s.parent)]
             all_chains = []
-            seen = set()
-            for chain, mode in leaf_to_chain.values():
-                for i in range(1, len(chain) + 1):
-                    subchain = tuple(chain[:i])
-                    filter_mode = "instance" if i == len(chain) else "parent"
-                    if subchain not in seen:
-                        all_chains.append((list(chain[:i]), filter_mode))
-                        seen.add(subchain)
-
-            for chain_list, is_longest in all_chains:
-                names = [name for name, gid in chain_list if name]
-                if names:
-                    suggestions.add(" < ".join(names))
+            for idx, r in enumerate(roots):
+                root_id = getattr(r, 'ifc_definition_id', None)
+                root_ifc = ifc_file.by_id(root_id) if root_id else None
+                global_id = getattr(root_ifc, 'GlobalId', None) if root_ifc else None
+            from collections import deque
+            for idx, r in enumerate(roots):
+                root_id = getattr(r, 'ifc_definition_id', None)
+                root_ifc = ifc_file.by_id(root_id) if root_id else None
+                root_name = getattr(r, 'name', None)
+                global_id = getattr(root_ifc, 'GlobalId', None) if root_ifc else None
+                if not root_ifc:
+                    continue
+                queue = deque()
+                queue.append(([root_ifc], [root_name]))
+                chains = dict()  # key: tuple of globalIds, value: (chain_names, chain_objs, filter_mode)
+                while queue:
+                    chain_objs, chain_names = queue.popleft()
+                    chain_globalids = tuple(getattr(obj, 'GlobalId', None) for obj in chain_objs)
+                    chain_str = " < ".join([n for n in chain_names if n])
+                    current = chain_objs[-1]
+                    children = []
+                    if hasattr(current, "IsGroupedBy") and current.IsGroupedBy:
+                        for rel in current.IsGroupedBy:
+                            if rel.is_a("IfcRelAssignsToGroup"):
+                                children.extend(rel.RelatedObjects)
+                    if current.is_a("IfcBuildingSystem") and hasattr(current, "ServicesBuildings") and current.ServicesBuildings:
+                        for rel in current.ServicesBuildings:
+                            if rel.is_a("IfcRelServicesBuildings"):
+                                children.extend(rel.RelatedBuildings)
+                    children = list({getattr(c, 'GlobalId', None): c for c in children if hasattr(c, 'GlobalId')}.values())
+                    filter_mode = 'instance' if not children else 'parent'
+                    if chain_globalids not in chains:
+                        chains[chain_globalids] = (chain_names, chain_objs, filter_mode)
+                    for child in children:
+                        child_name = getattr(child, 'Name', None)
+                        queue.append((chain_objs + [child], chain_names + [child_name]))
+                sorted_chains = sorted(
+                    chains.items(),
+                    key=lambda x: " < ".join([n for n in x[1][0] if n])
+                )
+                for i, (gids_chain, (chain_names, chain_objs, filter_mode)) in enumerate(sorted_chains):
+                    chain_str = " < ".join([n for n in chain_names if n])
+                    last_gid = gids_chain[-1] if gids_chain and gids_chain[-1] else None
+                    if filter_mode == 'instance' and last_gid:
+                        suggestion = f"{chain_str} | {last_gid}"
+                    else:
+                        suggestion = chain_str
+                    suggestions.add(suggestion)
+                    all_chains.append(([(n, g) for n, g in zip(chain_names, gids_chain)], filter_mode))
             return suggestions, all_chains
-
 
         return suggestions
 
