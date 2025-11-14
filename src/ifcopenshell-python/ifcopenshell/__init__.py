@@ -60,7 +60,7 @@ import zipfile
 import tempfile
 from pathlib import Path
 from typing import Optional, Union, TYPE_CHECKING, Any, overload, Literal
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -355,7 +355,7 @@ def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
                 yield inst
 
 
-def stream2_from_string(data: str):
+def stream2_from_string(data: str) -> Generator[dict]:
     """Streams the content of a file path from string, yielding each instance
     as a dictionary.
 
@@ -371,7 +371,7 @@ def stream2_from_string(data: str):
             yield inst
 
 
-def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[Path, str]):
+def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[Path, str]) -> None:
     """Converts an IFC-SPF file on disk to the IfcOpenShell-specific
     RocksDB encoding. RocksDB is an embedded key-value store that allows
     partial reads and is therefore more memory efficient with larger files.

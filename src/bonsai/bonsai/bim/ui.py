@@ -535,6 +535,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         should_setup_workspace: bool
         activate_workspace: bool
         should_setup_toolbar: bool
+        should_use_snap: bool
         should_play_chaching_sound: bool
         tmp_dir: str
         decorations_colour: tuple[float, float, float, float]
