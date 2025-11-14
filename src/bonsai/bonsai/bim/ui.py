@@ -327,6 +327,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description=(
             "print sheet to pdf together with svg. Leave blank svg is just created, "
             'E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]'
+            '\n `"svg"`, `"pdf"` will be replaced automatically.'
         ),
     )
     svg2dxf_command: StringProperty(
@@ -334,6 +335,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description=(
             'E.g. `[["inkscape", "svg", "-o", "eps"], '
             '["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]`'
+            '\n `"svg"`, `"eps"`, `"dxf"` will be replaced automatically.'
         ),
     )
     svg_command: StringProperty(
@@ -341,6 +343,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description=(
             "Software to open generated drawing and sheets. Leave blank system default for .svg is used "
             'E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]'
+            '\n `"path"` will be replaced with the path to the generated .svg file.'
         ),
     )
     layout_svg_command: StringProperty(
@@ -348,6 +351,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description=(
             "Software to open layouts, before generated. Leave blank system default for .svg is used. "
             'E.g. `[["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]`'
+            '\n `"path"` will be replaced with the path to the generated .svg file.'
         ),
     )
     pdf_command: StringProperty(
@@ -355,9 +359,16 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description=(
             "Software to open .pdf, leave blank uses system default. "
             'E.g. `[["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]`'
+            '\n `"path"` will be replaced with the path to the generated .pdf file.'
         ),
     )
-    spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
+    spreadsheet_command: StringProperty(
+        name="Spreadsheet Command",
+        description=(
+            'E.g. [["libreoffice", "path"]]'
+            '\n `"path"` will be replaced with the path to the generated spreadsheet file.'
+        ),
+    )
     should_hide_empty_props: BoolProperty(
         name="Hide Empty Properties",
         default=True,
