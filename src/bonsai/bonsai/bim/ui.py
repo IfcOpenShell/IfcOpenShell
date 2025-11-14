@@ -324,23 +324,38 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = tool.Blender.get_blender_addon_package_name()
     svg2pdf_command: StringProperty(
         name="SVG to PDF Command",
-        description='print sheet to pdf together with svg. Leave blank svg is just created, E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]',
+        description=(
+            "print sheet to pdf together with svg. Leave blank svg is just created, "
+            'E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]'
+        ),
     )
     svg2dxf_command: StringProperty(
         name="SVG to DXF Command",
-        description='E.g. [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]',
+        description=(
+            'E.g. `[["inkscape", "svg", "-o", "eps"], '
+            '["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]`'
+        ),
     )
     svg_command: StringProperty(
         name="SVG Command",
-        description='Software to open generated drawing and sheets. Leave blank system default for .svg is used E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]',
+        description=(
+            "Software to open generated drawing and sheets. Leave blank system default for .svg is used "
+            'E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]'
+        ),
     )
     layout_svg_command: StringProperty(
         name="Layout SVG Command",
-        description='Software to open layouts, before generated. Leave blank system default for .svg is used E.g.  [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+        description=(
+            "Software to open layouts, before generated. Leave blank system default for .svg is used. "
+            'E.g. `[["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]`'
+        ),
     )
     pdf_command: StringProperty(
         name="PDF Command",
-        description='Software to open .pdf, leave blank uses system default. E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+        description=(
+            "Software to open .pdf, leave blank uses system default. "
+            'E.g. `[["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]`'
+        ),
     )
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
     should_hide_empty_props: BoolProperty(
@@ -351,12 +366,18 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_setup_workspace: BoolProperty(
         name="Setup Workspace Layout for BIM",
         default=True,
-        description="If enabled, this will add a default workspace dedicated to working with BIM models.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, this will add a default workspace dedicated to working with BIM models.\n"
+            "It is recommended to keep this `Enabled`"
+        ),
     )
     activate_workspace: BoolProperty(
         name="Activate BIM Workspace on Startup",
         default=True,
-        description="If enabled, this will automatically activate the BIM workspace when opening a project.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, this will automatically activate the BIM workspace when opening a project.\n"
+            "It is recommended to keep this `Enabled`"
+        ),
     )
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
@@ -366,7 +387,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_use_snap: BoolProperty(
         name="Enable Snapping on Startup",
         default=True,
-        description="If enabled, snapping will be enabled on new sessions.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, snapping will be enabled on new sessions.\n" "It is recommended to keep this `Enabled`"
+        ),
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     tmp_dir: StringProperty(
@@ -428,7 +451,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         max=100,
         subtype="PERCENTAGE",
         name="Non-Openings Opacity",
-        description="When modifying openings, other elements of the model will display with some transparency.\n0 is fully transparent and 100 is fully opaque",
+        description=(
+            "When modifying openings, other elements of the model will display with some transparency.\n"
+            "0 is fully transparent and 100 is fully opaque"
+        ),
     )
 
     bsdd_load_preview_dictionaries: BoolProperty(
