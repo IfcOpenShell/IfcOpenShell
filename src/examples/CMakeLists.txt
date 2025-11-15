@@ -18,22 +18,22 @@
 ################################################################################
 
 if(SCHEMA_VERSIONS MATCHES "2x3")
-ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
-TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
-set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
-target_compile_features(IfcParseExamples PUBLIC cxx_std_17)
+    ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
+    TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
+    set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
+    target_compile_features(IfcParseExamples PUBLIC cxx_std_17)
 
-if (WITH_OPENCASCADE)
+    if(WITH_OPENCASCADE)
 
-ADD_EXECUTABLE(IfcOpenHouse IfcOpenHouse.cpp)
-TARGET_LINK_LIBRARIES(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
-set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
+        ADD_EXECUTABLE(IfcOpenHouse IfcOpenHouse.cpp)
+        TARGET_LINK_LIBRARIES(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
+        set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
 
-ADD_EXECUTABLE(IfcAdvancedHouse IfcAdvancedHouse.cpp)
-TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
-set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
+        ADD_EXECUTABLE(IfcAdvancedHouse IfcAdvancedHouse.cpp)
+        TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
+        set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
 
-endif()
+    endif()
 endif(SCHEMA_VERSIONS MATCHES "2x3")
 
 if(SCHEMA_VERSIONS MATCHES "4x3_add2")
