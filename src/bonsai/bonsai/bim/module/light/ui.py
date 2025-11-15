@@ -142,16 +142,63 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
             row = box.row()
             row.prop(props, "choose_hdr_image")
 
+        
+
         layout.separator()
 
         # Sky Generation Settings
         box = layout.box()
-        box.label(text="Sky Generation Settings")
-        box.prop(props, "sky_condition")
         row = box.row()
-        row.prop(props, "ground_reflectance")
+        row.prop(props, "use_sun")
+        if props.use_sun:
+            box.label(text="Sky Generation Settings")
+            box.prop(props, "sky_condition")
+            row = box.row()
+            row.prop(props, "ground_reflectance")
+            row = box.row()
+            row.prop(props, "turbidity")
+
+
+        layout.separator()
+
+        # IES Light Fixtures
+        box = layout.box()
+        box.label(text="IES Light Fixtures")
         row = box.row()
-        row.prop(props, "turbidity")
+        row.template_list("MATERIAL_UL_ies_lights", "", props, "ies_lights", props, "active_ies_light_index")
+        col = row.column(align=True)
+        col.operator("radiance.add_ies_light", text="", icon="ADD")
+
+        # Properties panel for selected IES light
+        if len(props.ies_lights) > 0 and props.active_ies_light_index >= 0 and props.active_ies_light_index < len(
+            props.ies_lights
+        ):
+            active_light = props.ies_lights[props.active_ies_light_index]
+
+            box = layout.box()
+            box.label(text="Selected Light Properties")
+
+            # Rotation Z
+            row = box.row()
+            row.prop(active_light, "rotation_z")
+
+            # Lamp Type
+            row = box.row()
+            row.prop(active_light, "lamp_type")
+
+            # Lamp Color
+            row = box.row()
+            row.prop(active_light, "lamp_color")
+
+            # Brightness Factor
+            row = box.row()
+            row.prop(active_light, "multiply_factor")
+
+            # Illum Sphere Radius
+            row = box.row()
+            row.prop(active_light, "radius")
+
+        layout.separator()
 
         # Step 1: Export geometry for simulation
         box = layout.box()
@@ -175,6 +222,52 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row = box.row()
         row.operator("render_scene.radiance", text="Radiance Render")
         row.enabled = not props.is_exporting
+
+        layout.separator()
+
+        # Step 4: Generate false color image
+        box = layout.box()
+        box.label(text="Step 4: Generate False Color Image")
+        row = box.row()
+        row.prop(props, "use_false_color")
+
+        if props.use_false_color:
+            row = box.row()
+            row.prop(props, "false_color_label")
+
+            row = box.row()
+            row.label(text="Scale Factor")
+            row.prop(props, "false_color_scale", text="")
+
+            row = box.row()
+            row.prop(props, "false_color_contour_lines")
+
+            row = box.row()
+            row.label(text="Multiplier")
+            row.prop(props, "false_color_multiplier", text="")
+
+            row = box.row()
+            row.label(text="Output Name")
+            row.prop(props, "false_color_output_name", text="")
+
+            row = box.row()
+            row.operator("render_scene.false_color_radiance", text="Generate False Color Image")
+
+        layout.separator()
+
+        # Step 5: Convert to foot-candles
+        box = layout.box()
+        box.label(text="Step 5: Convert HDR to Foot-Candles")
+        row = box.row()
+        row.prop(props, "convert_hdr_to_fc")
+
+        if props.convert_hdr_to_fc:
+            row = box.row()
+            row.label(text="Output Name")
+            row.prop(props, "hdr_to_fc_output_name", text="")
+
+            row = box.row()
+            row.operator("render_scene.convert_hdr_to_fc", text="Convert to Foot-Candles")
 
 
 class BIM_PT_solar(bpy.types.Panel):

@@ -38,6 +38,8 @@ classes = (
     operator.ImportTrueNorth,
     operator.MoveSunPathTo3DCursor,
     operator.RadianceRender,
+    operator.FalseColorRadiance,
+    operator.ConvertHDRToFootCandles,
     operator.ViewFromSun,
     operator.LightPickCoordinates,
     operator.LightSetTimeToNow,
@@ -50,12 +52,17 @@ classes = (
     operator.EnumPropertySearch,
     operator.PrepareRadianceScene,
     operator.SetEnumProperty,
+    operator.AddIESLight,
+    operator.RemoveIESLight,
+    operator.SetIESLightObject,
     prop.RadianceMaterial,
+    prop.IESLight,
     prop.BIMSolarProperties,
     prop.RadianceExporterProperties,
     ui.BIM_PT_radiance_exporter,
     ui.BIM_PT_solar,
     list.MATERIAL_UL_radiance_materials,
+    list.MATERIAL_UL_ies_lights,
 )
 
 

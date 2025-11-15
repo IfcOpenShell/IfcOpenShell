@@ -141,7 +141,32 @@ class PrepareRadianceScene(bpy.types.Operator):
         direction = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
         direction.normalize()
 
-        return (position.x, position.y, position.z), (direction.x, direction.y, direction.z)
+        # Get camera up vector
+        up = camera.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+        up.normalize()
+
+        # Ensure up vector is perpendicular to view direction
+        # If they're parallel, use a different reference vector
+        if abs(direction.dot(up)) > 0.99:  # Nearly parallel
+            # Use world Y axis as reference, or X axis if that's also parallel
+            if abs(direction.dot(Vector((0, 1, 0)))) > 0.99:
+                reference = Vector((1, 0, 0))
+            else:
+                reference = Vector((0, 1, 0))
+            # Compute perpendicular up vector using cross product
+            right = direction.cross(reference)
+            if right.length < 0.01:  # Still parallel, try another reference
+                reference = Vector((0, 0, 1))
+                right = direction.cross(reference)
+            right.normalize()
+            up = right.cross(direction)
+            up.normalize()
+
+        return (
+            (position.x, position.y, position.z),
+            (direction.x, direction.y, direction.z),
+            (up.x, up.y, up.z),
+        )
 
     def execute(self, context):
         print("Starting Radiance scene preparation...")
@@ -187,9 +212,6 @@ class PrepareRadianceScene(bpy.types.Operator):
             hdr_mask_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_mask)
             sky_map_cal_path = os.path.join(os.path.dirname(__file__), "HDRs", sky_map_cal)
 
-        sun_props = tool.Blender.get_solar_props()
-        sun_pos_props = tool.Blender.get_sun_props()
-        assert sun_pos_props
         sky_file_path = os.path.join(output_dir, "sky.rad")
 
         print("Setting up camera...")
@@ -202,56 +224,71 @@ class PrepareRadianceScene(bpy.types.Operator):
             self.report({"ERROR"}, "No active camera found in the scene. Please add a camera and set it as active.")
             return {"CANCELLED"}
 
-        # Get camera position and direction
-        camera_position, camera_direction = self.get_camera_data(camera)
+        # Get camera position, direction, and up vector
+        camera_position, camera_direction, camera_up = self.get_camera_data(camera)
 
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
+        print(f"Camera up: {camera_up}")
 
-        # Build datetime for Radiance gensky
-        # Note: sun_pos_props and sun_props are synchronized by update_sun_path()
-        dt = datetime(sun_pos_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
+        # Generate sky file based on use_sun setting
+        if props.use_sun:
+            # Use sun position data to generate sky
+            sun_props = tool.Blender.get_solar_props()
+            sun_pos_props = tool.Blender.get_sun_props()
+            if not sun_pos_props:
+                self.report({"ERROR"}, "Sun position addon not available. Enable 'Sun Position' addon or disable 'Use Sun'.")
+                return {"CANCELLED"}
 
-        print(f"Sun position data for Radiance gensky:")
-        print(f"  DateTime: {dt}")
-        print(f"  Latitude: {sun_props.latitude}°")
-        print(f"  Longitude: {sun_props.longitude}°")
-        print(f"  UTC Zone: {sun_props.UTC_zone}")
-        print(f"  Year: {sun_pos_props.year}")
-        # Map sky condition enum to boolean parameters
-        sky_condition = props.sky_condition
-        sunny_with_sun = sky_condition == "SUNNY_WITH_SUN"
-        sunny_without_sun = sky_condition == "SUNNY_WITHOUT_SUN"
-        cloudy = sky_condition == "CLOUDY"
+            # Build datetime for Radiance gensky
+            # Note: sun_pos_props and sun_props are synchronized by update_sun_path()
+            dt = datetime(sun_pos_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
 
-        sky_description = pr.gensky(
-            dt=dt,
-            latitude=sun_props.latitude,
-            longitude=sun_props.longitude,
-            year=sun_pos_props.year,
-            timezone=-int(sun_props.UTC_zone),
-            sunny_with_sun=sunny_with_sun,
-            sunny_without_sun=sunny_without_sun,
-            cloudy=cloudy,
-            ground_reflectance=props.ground_reflectance,
-            turbidity=props.turbidity,
-        )
+            print(f"Sun position data for Radiance gensky:")
+            print(f"  DateTime: {dt}")
+            print(f"  Latitude: {sun_props.latitude}°")
+            print(f"  Longitude: {sun_props.longitude}°")
+            print(f"  UTC Zone: {sun_props.UTC_zone}")
+            print(f"  Year: {sun_pos_props.year}")
+            # Map sky condition enum to boolean parameters
+            sky_condition = props.sky_condition
+            sunny_with_sun = sky_condition == "SUNNY_WITH_SUN"
+            sunny_without_sun = sky_condition == "SUNNY_WITHOUT_SUN"
+            cloudy = sky_condition == "CLOUDY"
 
-        sky_description_str = sky_description.decode("utf-8")
+            sky_description = pr.gensky(
+                dt=dt,
+                latitude=sun_props.latitude,
+                longitude=sun_props.longitude,
+                year=sun_pos_props.year,
+                timezone=-int(sun_props.UTC_zone),
+                sunny_with_sun=sunny_with_sun,
+                sunny_without_sun=sunny_without_sun,
+                cloudy=cloudy,
+                ground_reflectance=props.ground_reflectance,
+                turbidity=props.turbidity,
+            )
 
-        if use_hdr and choose_hdr_image == "Noon":
+            sky_description_str = sky_description.decode("utf-8")
+        else:
+            # Skip sky generation when use_sun is False
+            print("Skipping sky generation (use_sun is False)...")
+            sky_description_str = None
 
-            with open(sky_file_path, "w") as f:
-                f.write(sky_description_str)
-                f.write("\n")
-
-                f.write(
-                    '''void colorpict env_map
+        # Only generate sky.rad file when use_sun is True
+        if props.use_sun:
+            if use_hdr and choose_hdr_image == "Noon":
+                with open(sky_file_path, "w") as f:
+                    f.write(sky_description_str)
+                    f.write("\n")
+                    # When using sun, skyfunc is defined by gensky, so we can use it
+                    f.write(
+                        '''void colorpict env_map
 7 red green blue "'''
-                    + hdr_image_path
-                    + '''"  "'''
-                    + sky_map_cal_path
-                    + '''" map_u map_v
+                        + hdr_image_path
+                        + '''"  "'''
+                        + sky_map_cal_path
+                        + '''" map_u map_v
 0
 1 0.5
  
@@ -271,10 +308,10 @@ skyfunc colorfunc sky_colour
  
 void mixpict composite
 7 env_colour sky_colour grey "'''
-                    + hdr_mask_path
-                    + '''"  "'''
-                    + sky_map_cal_path
-                    + """" map_u map_v
+                        + hdr_mask_path
+                        + '''"  "'''
+                        + sky_map_cal_path
+                        + """" map_u map_v
 0
 2 0.5 1
  
@@ -297,16 +334,17 @@ ground_glow source ground
 0
 0
 4 0 0 -1 180"""
-                )
+                    )
 
-        elif not use_hdr:
-            with open(sky_file_path, "w") as f:
-                f.write(sky_description_str)
-                f.write("\n")
-                f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
-                f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
-                f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
-                f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
+            elif not use_hdr:
+                with open(sky_file_path, "w") as f:
+                    f.write(sky_description_str)
+                    f.write("\n")
+                    # When using sun, skyfunc is defined by gensky
+                    f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
+                    f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
+                    f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
+                    f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
 
         props = tool.Blender.get_radiance_exporter_props()
 
@@ -345,6 +383,27 @@ ground_glow source ground
 
         self.report({"INFO"}, f"Exported Materials Rad file to: {materials_file}")
 
+        # Convert IES light files to Radiance format
+        print("Processing IES light files...")
+        converted_ies_lights = {}  # {index: (rad_path, dat_path)}
+        for idx, ies_light in enumerate(props.ies_lights):
+            if not ies_light.is_enabled or not ies_light.ies_file_path or not ies_light.target_object:
+                continue
+            try:
+                rad_file, dat_file = convert_ies_to_radiance(
+                    ies_light.ies_file_path,
+                    output_dir,
+                    lamp_type=ies_light.lamp_type,
+                    lamp_color=ies_light.lamp_color,
+                    multiply_factor=ies_light.multiply_factor,
+                    radius=ies_light.radius,
+                )
+                converted_ies_lights[idx] = (rad_file, dat_file)
+                print(f"  Converted IES light {idx}: {Path(ies_light.ies_file_path).name}")
+            except Exception as e:
+                print(f"  ERROR converting IES light {idx}: {str(e)}")
+                self.report({"WARNING"}, f"Failed to convert IES light: {str(e)}")
+
         print(f"OBJ file size: {os.path.getsize(obj_file_path)} bytes")
         print(f"Materials file size: {os.path.getsize(materials_file)} bytes")
         print(f"Converting OBJ to RTM format...")
@@ -363,8 +422,41 @@ ground_glow source ground
         scene_file = os.path.join(output_dir, "scene.rad")
         with open(scene_file, "w") as file:
             file.write('void mesh model\n1 "' + rtm_file_path + '"\n0\n0\n')
+            file.write("\n")
+
+            # Add IES light fixtures
+            if len(props.ies_lights) > 0:
+                file.write("\n# IES Light Fixtures\n")
+                for idx, ies_light in enumerate(props.ies_lights):
+                    if ies_light.ies_file_path and ies_light.target_object:
+                        obj = ies_light.target_object
+                        pos = obj.location
+                        z_rot = ies_light.rotation_z
+
+                        if idx in converted_ies_lights:
+                            # Light is enabled and was converted
+                            rad_path = converted_ies_lights[idx][0]
+                            rad_filename = Path(rad_path).name
+                            xform_line = f"!xform -rz {z_rot} -t {pos.x} {pos.y} {pos.z} {rad_filename}\n"
+                            file.write(xform_line)
+                        else:
+                            # Light is disabled or not converted - write as comment
+                            rad_base = Path(ies_light.ies_file_path).stem
+                            rad_filename = f"{rad_base}.rad"
+                            xform_line = f"# !xform -rz {z_rot} -t {pos.x} {pos.y} {pos.z} {rad_filename}\n"
+                            file.write(xform_line)
 
         self.report({"INFO"}, "Exported Scene file to: {}".format(scene_file))
+
+        # Validate that at least one light source will be available
+        has_sky = props.use_sun
+        has_ies_lights = len(converted_ies_lights) > 0
+
+        if not has_sky and not has_ies_lights:
+            error_msg = "ERROR: No light sources available. Please enable 'Use Sun' or add and map IES light fixtures."
+            self.report({"ERROR"}, error_msg)
+            print(error_msg)
+            return {"CANCELLED"}
 
         print("Setting up Radiance scene...")
         scene = pr.Scene("ascene")
@@ -374,7 +466,14 @@ ground_glow source ground
 
         scene.add_material(material_path)
         scene.add_surface(scene_path)
-        scene.add_source(sky_file_path)
+
+        # Add light source(s)
+        if props.use_sun:
+            scene.add_source(sky_file_path)
+            print(f"Added sky light source")
+
+        if has_ies_lights:
+            print(f"Added {len(converted_ies_lights)} IES light source(s)")
         print("Setting up view...")
         assert isinstance(camera.data, bpy.types.Camera)
         if camera.data.type == "PERSP":
@@ -387,7 +486,7 @@ ground_glow source ground
             aview.type = "v"  # Perspective view
             aview.vp = camera_position
             aview.vdir = camera_direction
-            aview.vu = (0, 0, 1)  # Assuming Z is up
+            aview.vu = camera_up  # Use computed up vector perpendicular to view direction
             aview.horiz = math.degrees(camera_fov)
             aview.vert = math.degrees(vertical_fov)
         else:  # 'ORTHO'
@@ -401,7 +500,7 @@ ground_glow source ground
             aview.type = "l"  # Parallel projection (orthographic)
             aview.vp = camera_position
             aview.vdir = camera_direction
-            aview.vu = (0, 0, 1)  # Assuming Z is up
+            aview.vu = camera_up  # Use computed up vector perpendicular to view direction
             aview.horiz = view_width
             aview.vert = view_height
         scene.add_view(aview)
@@ -468,6 +567,224 @@ class RadianceRender(bpy.types.Operator):
         if output_file_format == "HDR_TIFF":
             self.report({"INFO"}, f"TIFF Output: {tiff_path}")
         return {"FINISHED"}
+
+
+class FalseColorRadiance(bpy.types.Operator):
+    """Generate false color HDR image for illuminance analysis"""
+
+    bl_idname = "render_scene.false_color_radiance"
+    bl_label = "Generate False Color Image"
+    bl_description = "Generate a false color HDR image for illuminance analysis"
+
+    def execute(self, context):
+        props = tool.Blender.get_radiance_exporter_props()
+        output_dir = props.output_dir
+        output_file_name = props.output_file_name
+
+        # Check if the main render HDR exists
+        hdr_path = os.path.join(output_dir, f"{output_file_name}.hdr")
+        if not os.path.exists(hdr_path):
+            error_msg = f"HDR file not found at: {hdr_path}. Please run 'Radiance Render' first to generate the HDR output."
+            self.report({"ERROR"}, error_msg)
+            print(f"ERROR: {error_msg}")
+            return {"CANCELLED"}
+
+        print(f"Generating false color image from: {hdr_path}")
+
+        # Build false color parameters
+        fc_scale = str(int(props.false_color_scale)) if props.false_color_scale == int(props.false_color_scale) else str(props.false_color_scale)
+
+        # Determine contour mode
+        contour_mode = "l" if props.false_color_contour_lines else None
+
+        # Get multiplier based on label selection
+        if props.false_color_label == "fc":
+            multiplier = props.false_color_multiplier  # Foot-candles default: 16.6295
+        elif props.false_color_label == "lux":
+            multiplier = props.false_color_multiplier if props.false_color_multiplier != 16.629505759940542 else 179.0
+        else:  # cd/m2
+            multiplier = props.false_color_multiplier if props.false_color_multiplier != 16.629505759940542 else 179.0
+
+        print(f"False color parameters:")
+        print(f"  Label: {props.false_color_label}")
+        print(f"  Scale: {fc_scale}")
+        print(f"  Contour lines: {props.false_color_contour_lines}")
+        print(f"  Multiplier: {multiplier}")
+
+        try:
+            import subprocess
+
+            # Build command line arguments for falsecolor
+            # Format: falsecolor [options] -ip input.hdr > output.hdr
+            fc_output_name = props.false_color_output_name
+            fc_hdr_path = os.path.join(output_dir, f"{fc_output_name}.hdr")
+
+            # Get path to bundled falsecolor executable
+            light_module_dir = os.path.dirname(__file__)
+            falsecolor_exe = os.path.join(light_module_dir, "Radiance", "bin", "falsecolor.exe")
+            radiance_lib = os.path.join(light_module_dir, "Radiance", "lib")
+            falsecolor_bin = falsecolor_exe if os.path.exists(falsecolor_exe) else "falsecolor"
+
+            cmd = [falsecolor_bin]
+
+            # Add multiplier
+            cmd.extend(["-m", str(multiplier)])
+
+            # Add scale
+            cmd.extend(["-s", fc_scale])
+
+            # Add label
+            cmd.extend(["-l", props.false_color_label])
+
+            # Add contour lines if enabled
+            if props.false_color_contour_lines:
+                cmd.append("-cl")
+
+            # Add -ip flag (use same image for intensity and overlay)
+            cmd.append("-ip")
+            cmd.append(hdr_path)
+
+            print(f"Running falsecolor command: {' '.join(cmd)}")
+            print(f"Using falsecolor binary: {falsecolor_bin}")
+
+            # Setup environment for Radiance tools
+            env = os.environ.copy()
+            env["RAYPATH"] = "." + os.pathsep + radiance_lib
+
+            # Execute falsecolor and capture output
+            try:
+                result = subprocess.run(cmd, capture_output=True, check=True, env=env)
+                fc_image = result.stdout
+
+                print(f"Saving false color HDR to: {fc_hdr_path}")
+                with open(fc_hdr_path, "wb") as f:
+                    f.write(fc_image)
+
+                print(f"False color HDR generated successfully: {fc_hdr_path}")
+                self.report({"INFO"}, f"False color image generated: {fc_hdr_path}")
+
+            except FileNotFoundError:
+                # falsecolor binary not found in PATH or bundled location
+                # Fallback: use pcond as an alternative visualization
+                print("WARNING: falsecolor binary not found")
+                print(f"  Checked locations:")
+                print(f"    1. Bundled: {falsecolor_exe}")
+                print(f"    2. System PATH: falsecolor")
+                print("Using alternative method: Tone-mapped HDR for luminance visualization...")
+                print("Note: This is a fallback visualization without false color overlay")
+
+                fc_image = pr.pcond(hdr=hdr_path, human=True)
+
+                # Still save as HDR for consistency
+                with open(fc_hdr_path, "wb") as f:
+                    f.write(fc_image)
+
+                print(f"Tone-mapped HDR saved to: {fc_hdr_path}")
+                self.report({"WARNING"},
+                    "falsecolor binary not found. Generated tone-mapped HDR instead. "
+                    "Ensure Radiance/bin folder is present in the light module directory."
+                )
+
+            except subprocess.CalledProcessError as e:
+                error_msg = f"falsecolor failed: {e.stderr.decode() if e.stderr else str(e)}"
+                print(f"ERROR: {error_msg}")
+                raise RuntimeError(error_msg)
+
+            # Generate TIFF version for convenience
+            try:
+                print("Generating TIFF version of false color image...")
+                pcond_fc_image = pr.pcond(hdr=fc_hdr_path, human=True)
+                fc_tiff_path = os.path.join(output_dir, f"{fc_output_name}.tiff")
+                print(f"Saving false color TIFF to: {fc_tiff_path}")
+                pr.ra_tiff(inp=pcond_fc_image, out=fc_tiff_path, lzw=True)
+                print(f"False color TIFF generated successfully: {fc_tiff_path}")
+                self.report({"INFO"}, f"False color TIFF also generated: {fc_tiff_path}")
+            except Exception as e:
+                print(f"Warning: Failed to generate false color TIFF: {str(e)}")
+                self.report({"WARNING"}, f"TIFF generation failed: {str(e)}")
+
+            return {"FINISHED"}
+
+        except Exception as e:
+            error_msg = f"Failed to generate false color image: {str(e)}"
+            self.report({"ERROR"}, error_msg)
+            print(f"ERROR: {error_msg}")
+            print(f"Traceback:")
+            import traceback
+            traceback.print_exc()
+            return {"CANCELLED"}
+
+
+class ConvertHDRToFootCandles(bpy.types.Operator):
+    """Convert HDR image to foot-candles unit"""
+
+    bl_idname = "render_scene.convert_hdr_to_fc"
+    bl_label = "Convert HDR to Foot-Candles"
+    bl_description = "Convert the main render HDR to foot-candles unit for illuminance verification"
+
+    def execute(self, context):
+        props = tool.Blender.get_radiance_exporter_props()
+        output_dir = props.output_dir
+        output_file_name = props.output_file_name
+
+        # Check if the main render HDR exists
+        hdr_path = os.path.join(output_dir, f"{output_file_name}.hdr")
+        if not os.path.exists(hdr_path):
+            error_msg = f"HDR file not found at: {hdr_path}. Please run 'Radiance Render' first."
+            self.report({"ERROR"}, error_msg)
+            print(f"ERROR: {error_msg}")
+            return {"CANCELLED"}
+
+        print(f"Converting HDR to foot-candles: {hdr_path}")
+
+        # Conversion factor from cd/m² to foot-candles
+        # 1 foot-candle = 10.764 lux = 10.764 cd/m²
+        # So to convert: multiply by 1/10.764 ≈ 0.0929
+        fc_scale_factor = 0.0929005
+
+        try:
+            # Use pyradiance Pcomb to convert
+            print(f"Applying pcomb with scale factor {fc_scale_factor} and original flag...")
+
+            # Create Pcomb command with original=True (-o flag) and scaler for unit conversion
+            # Note: fout=False ensures the output is a proper HDR file with headers, not raw data
+            pcomb_result = pr.Pcomb(fout=False).add(hdr_path, original=True, scaler=fc_scale_factor)()
+
+            # Save the converted HDR
+            fc_output_name = props.hdr_to_fc_output_name
+            fc_hdr_path = os.path.join(output_dir, f"{fc_output_name}.hdr")
+
+            print(f"Saving foot-candles HDR to: {fc_hdr_path}")
+            with open(fc_hdr_path, "wb") as f:
+                f.write(pcomb_result)
+
+            print(f"HDR converted to foot-candles successfully: {fc_hdr_path}")
+            self.report({"INFO"}, f"HDR converted to foot-candles: {fc_hdr_path}")
+
+            # Also generate TIFF version for convenient viewing
+            try:
+                print("Generating TIFF version of foot-candles image...")
+                pcond_fc_image = pr.pcond(hdr=fc_hdr_path, human=True)
+                fc_tiff_path = os.path.join(output_dir, f"{fc_output_name}.tiff")
+                print(f"Saving foot-candles TIFF to: {fc_tiff_path}")
+                pr.ra_tiff(inp=pcond_fc_image, out=fc_tiff_path, lzw=True)
+                print(f"TIFF version generated: {fc_tiff_path}")
+                self.report({"INFO"}, f"TIFF version also generated: {fc_tiff_path}")
+            except Exception as e:
+                print(f"Warning: Failed to generate foot-candles TIFF: {str(e)}")
+                self.report({"WARNING"}, f"TIFF generation failed: {str(e)}")
+
+            print("Foot-candles conversion completed successfully.")
+            return {"FINISHED"}
+
+        except Exception as e:
+            error_msg = f"Failed to convert HDR to foot-candles: {str(e)}"
+            self.report({"ERROR"}, error_msg)
+            print(f"ERROR: {error_msg}")
+            print(f"Traceback:")
+            import traceback
+            traceback.print_exc()
+            return {"CANCELLED"}
 
 
 def save_obj2mesh_output(inp: Union[bytes, str, Path], output_file: str, **kwargs):
@@ -768,3 +1085,141 @@ class SetEnumProperty(bpy.types.Operator):
         data = context.space_data.context_pointer_get("data")
         setattr(data, self.prop_name, self.enum_value)
         return {"FINISHED"}
+
+
+def convert_ies_to_radiance(
+    ies_file_path: str,
+    output_dir: str,
+    lamp_type: str = "",
+    lamp_color: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    multiply_factor: float = 1.0,
+    radius: float = 0.0,
+) -> tuple[str, str]:
+    """
+    Convert IES file to Radiance format using pyradiance.
+
+    Args:
+        ies_file_path: Path to the .ies file
+        output_dir: Directory where .rad and .dat files will be saved
+        lamp_type: Type of lamp (e.g., 'LED', 'metal halide')
+        lamp_color: RGB color tuple (0.0-1.0 each)
+        multiply_factor: Brightness multiplier (0.1-10.0)
+        radius: Illum sphere radius (0 = use IES geometry)
+
+    Returns:
+        Tuple of (rad_file_path, dat_file_path)
+    """
+    try:
+        import pyradiance as pr
+
+        ies_path = Path(ies_file_path)
+        base_name = ies_path.stem
+
+        # ies2rad creates .rad and .dat files
+        # We pass the output name root (without extension)
+        output_path = os.path.join(output_dir, base_name)
+
+        # Build ies2rad parameters
+        kwargs = {"outname": output_path}
+
+        if lamp_type:
+            kwargs["lamp_type"] = lamp_type
+
+        if lamp_color != (1.0, 1.0, 1.0):
+            kwargs["lamp_color"] = lamp_color
+
+        if multiply_factor != 1.0:
+            kwargs["multiply_factor"] = multiply_factor
+
+        if radius > 0.0:
+            kwargs["radius"] = radius
+
+        # Call ies2rad to convert the file
+        pr.ies2rad(ies_path, **kwargs)
+
+        rad_file = os.path.join(output_dir, f"{base_name}.rad")
+        dat_file = os.path.join(output_dir, f"{base_name}.dat")
+
+        return rad_file, dat_file
+
+    except Exception as e:
+        raise RuntimeError(f"Failed to convert IES file '{ies_file_path}': {str(e)}")
+
+
+class AddIESLight(bpy.types.Operator, ImportHelper):
+    """Upload and add an IES light fixture to the scene"""
+
+    bl_idname = "radiance.add_ies_light"
+    bl_label = "Add IES Light"
+    bl_options = {"REGISTER", "UNDO"}
+
+    filename_ext = ".ies"
+    filter_glob: bpy.props.StringProperty(default="*.ies;*.IES", options={"HIDDEN"})
+
+    def execute(self, context):
+        props = tool.Blender.get_radiance_exporter_props()
+
+        # Create new IES light entry
+        ies_light = props.ies_lights.add()
+        ies_light.ies_file_path = self.filepath
+        ies_light.rotation_z = 0.0
+        ies_light.is_enabled = True
+
+        # Set as active
+        props.active_ies_light_index = len(props.ies_lights) - 1
+
+        self.report({"INFO"}, f"Added IES light: {Path(self.filepath).name}")
+        return {"FINISHED"}
+
+
+class RemoveIESLight(bpy.types.Operator):
+    """Remove an IES light fixture mapping"""
+
+    bl_idname = "radiance.remove_ies_light"
+    bl_label = "Remove IES Light"
+    bl_options = {"REGISTER", "UNDO"}
+
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Blender.get_radiance_exporter_props()
+
+        if 0 <= self.index < len(props.ies_lights):
+            props.ies_lights.remove(self.index)
+
+            # Adjust active index if needed
+            if props.active_ies_light_index >= len(props.ies_lights):
+                props.active_ies_light_index = len(props.ies_lights) - 1
+
+            self.report({"INFO"}, "IES light removed")
+            return {"FINISHED"}
+
+        self.report({"WARNING"}, "Invalid IES light index")
+        return {"CANCELLED"}
+
+
+class SetIESLightObject(bpy.types.Operator):
+    """Set the target Empty object for an IES light via eyedropper"""
+
+    bl_idname = "radiance.set_ies_light_object"
+    bl_label = "Set IES Light Object"
+    bl_options = {"REGISTER", "UNDO"}
+
+    index: bpy.props.IntProperty(description="Index of IES light to set object for")
+
+    def execute(self, context):
+        if context.object is None or context.object.type != "EMPTY":
+            self.report({"WARNING"}, "Please select an Empty object")
+            return {"CANCELLED"}
+
+        props = tool.Blender.get_radiance_exporter_props()
+
+        if 0 <= self.index < len(props.ies_lights):
+            ies_light = props.ies_lights[self.index]
+            ies_light.target_object = context.object
+            props.active_ies_light_index = self.index
+            self.report({"INFO"}, f"Set target object to: {context.object.name}")
+            return {"FINISHED"}
+
+        self.report({"WARNING"}, "Invalid IES light index")
+        return {"CANCELLED"}

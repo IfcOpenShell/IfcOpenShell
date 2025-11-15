@@ -21,9 +21,10 @@ import bpy
 import json
 import os
 from typing import TYPE_CHECKING
+from pathlib import Path
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.light.prop import RadianceExporterProperties, RadianceMaterial
+    from bonsai.bim.module.light.prop import RadianceExporterProperties, RadianceMaterial, IESLight
 
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
     spectraldb = json.load(f)
@@ -59,3 +60,42 @@ class MATERIAL_UL_radiance_materials(bpy.types.UIList):
                 op.material_index = index
             else:
                 row.label(text="Not Mapped (White)")
+
+
+class MATERIAL_UL_ies_lights(bpy.types.UIList):
+    """UIList for displaying IES light fixtures."""
+
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: RadianceExporterProperties,
+        item: IESLight,
+        icon,
+        active_data,
+        active_propname,
+        index,
+    ) -> None:
+        if self.layout_type in {"DEFAULT", "COMPACT"}:
+            row = layout.row(align=True)
+
+            # Enable/disable checkbox (visible toggle)
+            row.prop(item, "is_enabled", text="", emboss=True)
+
+            # IES file name
+            if item.ies_file_path:
+                filename = Path(item.ies_file_path).name
+                row.label(text=filename, icon="FILE")
+            else:
+                row.label(text="(No file selected)", icon="ERROR")
+
+            # Target object property (displays object name)
+            row.prop(item, "target_object", text="", emboss=False)
+
+            # Object eyedropper picker button (like in modifiers)
+            op = row.operator("radiance.set_ies_light_object", text="", icon="EYEDROPPER")
+            op.index = index
+
+            # Remove button (X icon - negative action)
+            op = row.operator("radiance.remove_ies_light", text="", icon="X")
+            op.index = index
