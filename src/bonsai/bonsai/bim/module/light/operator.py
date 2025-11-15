@@ -237,7 +237,9 @@ class PrepareRadianceScene(bpy.types.Operator):
             sun_props = tool.Blender.get_solar_props()
             sun_pos_props = tool.Blender.get_sun_props()
             if not sun_pos_props:
-                self.report({"ERROR"}, "Sun position addon not available. Enable 'Sun Position' addon or disable 'Use Sun'.")
+                self.report(
+                    {"ERROR"}, "Sun position addon not available. Enable 'Sun Position' addon or disable 'Use Sun'."
+                )
                 return {"CANCELLED"}
 
             # Build datetime for Radiance gensky
@@ -584,7 +586,9 @@ class FalseColorRadiance(bpy.types.Operator):
         # Check if the main render HDR exists
         hdr_path = os.path.join(output_dir, f"{output_file_name}.hdr")
         if not os.path.exists(hdr_path):
-            error_msg = f"HDR file not found at: {hdr_path}. Please run 'Radiance Render' first to generate the HDR output."
+            error_msg = (
+                f"HDR file not found at: {hdr_path}. Please run 'Radiance Render' first to generate the HDR output."
+            )
             self.report({"ERROR"}, error_msg)
             print(f"ERROR: {error_msg}")
             return {"CANCELLED"}
@@ -592,7 +596,11 @@ class FalseColorRadiance(bpy.types.Operator):
         print(f"Generating false color image from: {hdr_path}")
 
         # Build false color parameters
-        fc_scale = str(int(props.false_color_scale)) if props.false_color_scale == int(props.false_color_scale) else str(props.false_color_scale)
+        fc_scale = (
+            str(int(props.false_color_scale))
+            if props.false_color_scale == int(props.false_color_scale)
+            else str(props.false_color_scale)
+        )
 
         # Determine contour mode
         contour_mode = "l" if props.false_color_contour_lines else None
@@ -680,9 +688,10 @@ class FalseColorRadiance(bpy.types.Operator):
                     f.write(fc_image)
 
                 print(f"Tone-mapped HDR saved to: {fc_hdr_path}")
-                self.report({"WARNING"},
+                self.report(
+                    {"WARNING"},
                     "falsecolor binary not found. Generated tone-mapped HDR instead. "
-                    "Ensure Radiance/bin folder is present in the light module directory."
+                    "Ensure Radiance/bin folder is present in the light module directory.",
                 )
 
             except subprocess.CalledProcessError as e:
@@ -711,6 +720,7 @@ class FalseColorRadiance(bpy.types.Operator):
             print(f"ERROR: {error_msg}")
             print(f"Traceback:")
             import traceback
+
             traceback.print_exc()
             return {"CANCELLED"}
 
@@ -783,6 +793,7 @@ class ConvertHDRToFootCandles(bpy.types.Operator):
             print(f"ERROR: {error_msg}")
             print(f"Traceback:")
             import traceback
+
             traceback.print_exc()
             return {"CANCELLED"}
 

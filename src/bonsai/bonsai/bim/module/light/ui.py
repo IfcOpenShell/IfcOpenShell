@@ -142,8 +142,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
             row = box.row()
             row.prop(props, "choose_hdr_image")
 
-        
-
         layout.separator()
 
         # Sky Generation Settings
@@ -158,7 +156,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
             row = box.row()
             row.prop(props, "turbidity")
 
-
         layout.separator()
 
         # IES Light Fixtures
@@ -170,8 +167,10 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         col.operator("radiance.add_ies_light", text="", icon="ADD")
 
         # Properties panel for selected IES light
-        if len(props.ies_lights) > 0 and props.active_ies_light_index >= 0 and props.active_ies_light_index < len(
-            props.ies_lights
+        if (
+            len(props.ies_lights) > 0
+            and props.active_ies_light_index >= 0
+            and props.active_ies_light_index < len(props.ies_lights)
         ):
             active_light = props.ies_lights[props.active_ies_light_index]
 
