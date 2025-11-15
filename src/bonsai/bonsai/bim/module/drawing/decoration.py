@@ -19,6 +19,7 @@
 import gpu
 import bpy
 import blf
+import os
 import math
 import bmesh
 import shapely
@@ -1980,13 +1981,38 @@ class DecorationsHandler:
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
         self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
+
         prefs = tool.Blender.get_addon_preferences()
+
         if drawing_font := prefs.doc.drawing_font:
+            # Try Blender addon font folder
             drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
-            if drawing_font_path.is_file():
-                font_id = blf.load(drawing_font_path.__str__())
-                for decorator in self.decorators.values():
-                    decorator.font_id = font_id
+
+            if not drawing_font_path.is_file():
+                # 2 — Fallback search: Windows font directories
+                # TODO - Linux
+                win_font_dirs = [
+                    Path(os.environ.get("WINDIR", "C:\\Windows")) / "Fonts",
+                    # Add any custom enterprise paths here if needed
+                ]
+
+                found_font = None
+                for font_dir in win_font_dirs:
+                    candidate = font_dir / drawing_font
+                    if candidate.is_file():
+                        found_font = candidate
+                        break
+
+                if found_font:
+                    drawing_font_path = found_font
+                else:
+                    print(f"[BIM] Font '{drawing_font}' not found in addon or Windows fonts.")
+                    return  # Bail out without assigning fonts
+
+            font_id = blf.load(str(drawing_font_path))
+
+            for decorator in self.decorators.values():
+                decorator.font_id = font_id
 
     def __call__(self, context):
         # Check if any viewport is in local view - skip decorations if so
