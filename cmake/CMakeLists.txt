@@ -208,6 +208,9 @@ if(WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OPENCASCADE_LIBRARIES used by kernel generic cmake file
     set(OPENCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
+    find_package(OpenCASCADE REQUIRED)
+    # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OPENCASCADE_LIBRARIES used by kernel generic cmake file
+    set(OPENCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
     add_definitions(-DIFOPSH_WITH_OPENCASCADE)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
@@ -326,6 +329,25 @@ endif()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+
+if(NOT MINIMAL_BUILD)
+    # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
+    if(IFCXML_SUPPORT)
+        find_package(LibXml2 REQUIRED)
+    endif()
+endif()
+
+if(IFCXML_SUPPORT)
+    add_definitions(-DWITH_IFCXML)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
+endif()
+
+if(BUILD_IFCGEOM)
+    # Open CASCADE
+    if(WITH_OPENCASCADE)
+        find_package(OpenCASCADE REQUIRED)
+    endif(WITH_OPENCASCADE)
+endif(BUILD_IFCGEOM)
 
 if(COLLADA_SUPPORT)
     find_package(OpenCOLLADA REQUIRED)
