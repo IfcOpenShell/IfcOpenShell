@@ -2009,8 +2009,16 @@ class Drawing(bonsai.core.tool.Drawing):
         if matrix_world is None:
             # Use normalized camera matrix (without scale) for RCP compatibility
             matrix_world = cls.get_camera_matrix(camera)
-        annotation_offset = Vector((0, 0, -camera.data.clip_start - 0.05))
-        annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+        
+        # Check if this is an RCP (reflected ceiling plan) by checking for negative scale
+        camera_scale = camera.matrix_world.to_scale()
+        is_rcp = camera_scale.x < 0 or camera_scale.y < 0 or camera_scale.z < 0
+        
+        # For RCP, the offset needs to be positive instead of negative
+        # because the Z axis is flipped 180° in get_camera_matrix
+        offset_direction = 1 if is_rcp else -1
+        annotation_offset = Vector((0, 0, offset_direction * (camera.data.clip_start + 0.05)))
+        annotation_offset = matrix_world.to_quaternion() @ annotation_offset
         matrix_world.translation += annotation_offset
         return matrix_world
 
