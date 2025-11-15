@@ -227,6 +227,76 @@ class RadianceMaterial(PropertyGroup):
         color: tuple[float, float, float]
 
 
+class IESLight(PropertyGroup):
+    """Represents a mapping between an IES light file and a scene Empty object."""
+
+    ies_file_path: StringProperty(
+        name="IES File Path",
+        description="Path to the IES luminaire data file",
+        subtype="FILE_PATH",
+        default="",
+    )
+    target_object: PointerProperty(
+        type=bpy.types.Object,
+        name="Target Object",
+        description="Empty object where the light fixture will be placed",
+        poll=lambda self, obj: obj.type == "EMPTY",
+    )
+    rotation_z: FloatProperty(
+        name="Rotation Z",
+        description="Rotation around Z-axis in degrees (-180 to 180)",
+        min=-180.0,
+        max=180.0,
+        default=0.0,
+        subtype="ANGLE",
+    )
+    is_enabled: BoolProperty(
+        name="Enabled",
+        description="Include this light in the Radiance export",
+        default=True,
+    )
+
+    # Additional lamp properties for customization
+    lamp_type: StringProperty(
+        name="Lamp Type",
+        description="Type of lamp (e.g., 'LED', 'metal halide', 'fluorescent')",
+        default="",
+    )
+    lamp_color: FloatVectorProperty(
+        name="Lamp Color",
+        description="Lamp color (RGB) for custom color adjustments",
+        subtype="COLOR",
+        default=(1.0, 1.0, 1.0),
+        min=0.0,
+        max=1.0,
+        size=3,
+    )
+    multiply_factor: FloatProperty(
+        name="Brightness Factor",
+        description="Multiply all output quantities by this factor (0.1 to 10.0)",
+        min=0.1,
+        max=10.0,
+        default=1.0,
+    )
+    radius: FloatProperty(
+        name="Illum Sphere Radius",
+        description="Radius of illum sphere (ignores geometry from IES file). 0 = use IES geometry",
+        min=0.0,
+        max=10.0,
+        default=0.0,
+    )
+
+    if TYPE_CHECKING:
+        ies_file_path: str
+        target_object: Union[bpy.types.Object, None]
+        rotation_z: float
+        is_enabled: bool
+        lamp_type: str
+        lamp_color: tuple[float, float, float]
+        multiply_factor: float
+        radius: float
+
+
 class RadianceExporterProperties(PropertyGroup):
 
     def update_output_dir(self, context) -> None:
@@ -415,6 +485,12 @@ class RadianceExporterProperties(PropertyGroup):
         default="Noon",
     )
 
+    use_sun: BoolProperty(
+        name="Use Sun",
+        description="Use sun position data to generate sky. If disabled, generates a default sky without sun",
+        default=True,
+    )
+
     # Sky generation parameters
     sky_condition: EnumProperty(
         name="Sky Condition",
@@ -454,6 +530,76 @@ class RadianceExporterProperties(PropertyGroup):
         poll=lambda self, object: object.type == "CAMERA",
     )
 
+    ies_lights: CollectionProperty(
+        type=IESLight,
+        name="IES Lights",
+        description="Collection of IES light fixtures mapped to scene objects",
+    )
+    active_ies_light_index: IntProperty(
+        name="Active IES Light Index",
+        description="Index of the active IES light in the collection",
+        default=-1,
+    )
+
+    # False color analysis properties
+    use_false_color: BoolProperty(
+        name="Generate False Color Image",
+        description="Generate a false color HDR image for illuminance analysis",
+        default=False,
+    )
+
+    false_color_label: EnumProperty(
+        name="Legend Label Unit",
+        description="Unit for the false color legend",
+        items=[
+            ("fc", "Foot-Candles", "US lighting standard unit"),
+            ("lux", "Lux", "International lighting standard unit"),
+            ("cd/m2", "Candela per m²", "Luminance unit"),
+        ],
+        default="fc",
+    )
+
+    false_color_scale: FloatProperty(
+        name="Scale Factor",
+        description="Maximum scale value for the false color legend",
+        min=0.1,
+        max=100.0,
+        default=3.0,
+    )
+
+    false_color_contour_lines: BoolProperty(
+        name="Contour Lines",
+        description="Add contour lines to the false color image",
+        default=True,
+    )
+
+    false_color_multiplier: FloatProperty(
+        name="Multiplier",
+        description="Conversion multiplier (179.0 for lux, 16.6295 for foot-candles)",
+        min=0.1,
+        max=1000.0,
+        default=16.629505759940542,
+    )
+
+    false_color_output_name: StringProperty(
+        name="False Color Output Name",
+        description="Name of the false color output file (without extension)",
+        default="false_color",
+    )
+
+    # HDR to foot-candles conversion properties
+    convert_hdr_to_fc: BoolProperty(
+        name="Convert to Foot-Candles",
+        description="Convert the main render HDR to foot-candles unit for illuminance verification",
+        default=False,
+    )
+
+    hdr_to_fc_output_name: StringProperty(
+        name="FC Output Name",
+        description="Name of the foot-candles converted HDR file (without extension)",
+        default="render_fc",
+    )
+
     if TYPE_CHECKING:
         is_exporting: bool
         category: str
@@ -472,11 +618,22 @@ class RadianceExporterProperties(PropertyGroup):
         output_file_format: Literal["HDR"]
         use_hdr: bool
         choose_hdr_image: Literal["Noon"]
+        use_sun: bool
         sky_condition: Literal["SUNNY_WITH_SUN", "SUNNY_WITHOUT_SUN", "CLOUDY"]
         ground_reflectance: float
         turbidity: float
         use_active_camera: bool
         selected_camera: Union[bpy.types.Object, None]
+        ies_lights: bpy.types.bpy_prop_collection_idprop[IESLight]
+        active_ies_light_index: int
+        use_false_color: bool
+        false_color_label: Literal["fc", "lux", "cd/m2"]
+        false_color_scale: float
+        false_color_contour_lines: bool
+        false_color_multiplier: float
+        false_color_output_name: str
+        convert_hdr_to_fc: bool
+        hdr_to_fc_output_name: str
 
 
 class BIMSolarProperties(PropertyGroup):
