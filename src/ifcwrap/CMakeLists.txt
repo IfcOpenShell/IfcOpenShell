@@ -130,7 +130,7 @@ if (WASM_BUILD)
 endif()
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
-target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
+target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
 else()
 target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${LIBSVGFILL})
 endif()

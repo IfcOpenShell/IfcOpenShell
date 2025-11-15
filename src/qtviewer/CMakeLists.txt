@@ -84,7 +84,7 @@ set_target_properties(${targetName} PROPERTIES
 
 target_link_libraries(${targetName}
     ${IFCOPENSHELL_LIBRARIES}
-    ${OPENCASCADE_LIBRARIES}
+    ${OpenCASCADE_LIBRARIES}
     ${OPENSCENEGRAPH_LIBRARIES}
     Qt${QT_VERSION}::Core
     Qt${QT_VERSION}::Gui

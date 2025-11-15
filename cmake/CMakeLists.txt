@@ -490,141 +490,7 @@ if(BUILD_IFCGEOM)
 
     # Open CASCADE
     if(WITH_OPENCASCADE)
-    if(OCC_INCLUDE_DIR)
-        set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
-        message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-    endif()
-
-    if(OCC_LIBRARY_DIR)
-        set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
-        message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
-    endif()
-
-    # No specific paths specified, try to find package.
-    if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
-        message(
-            STATUS
-            "Using provided OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
-            "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
-        )
-        # Parse OCC_VERSION_STRING.
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
-            REGEX "#define OCC_VERSION_MAJOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
-            REGEX "#define OCC_VERSION_MINOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
-            REGEX "#define OCC_VERSION_MAINTENANCE.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
-        set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
-    elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
-        # OCE is not supported for find_package, because it's using a different name (`oce`)
-        # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
-        find_package(OpenCASCADE CONFIG REQUIRED)
-        set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
-        # Do not use OpenCASCADE_LIBRARY_DIR for OCC_LIBRARY_DIR - check target property explicitly.
-        # On Windows there is a case with OpenCASCADE_LIBRARY_DIR points to `lib` folder,
-        # while TKernel is actually in `libi`.
-        get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
-        get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
-        set(OCC_VERSION_STRING ${OpenCASCADE_VERSION})
-        message(
-            STATUS
-            "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
-            "deducing from it OCC_INCLUDE_DIR: '${OCC_INCLUDE_DIR}' "
-            "and OCC_LIBRARY_DIR: '${OCC_LIBRARY_DIR}'."
-        )
-    else()
-        message(
-            FATAL_ERROR
-            "Couldn't find Open CASCADE installation. "
-            "Either both OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}') "
-            "must be specified or OpenCASCADE package should be discoverable. "
-            "If you're using OCE, then providing a package is not available "
-            "and you need to provide OCE_INCLUDE_DIR and OCE_LIBRARY_DIR directly."
-        )
-    endif()
-
-    set(
-        OPENCASCADE_LIBRARY_NAMES
-        TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-        TKFillet TKXSBase TKOffset TKHLR
-
-        # @todo investigate the exact conditions when this is necessary
-        TKBin
-    )
-
-    if(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-        list(APPEND OPENCASCADE_LIBRARY_NAMES  TKIGES TKSTEPBase TKSTEPAttr TKSTEP209 TKSTEP)
-    else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-        list(APPEND OPENCASCADE_LIBRARY_NAMES TKDESTEP TKDEIGES)
-    endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-
-    clear_wasm_sysroot()
-    find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
-    restore_wasm_sysroot()
-
-    if(libTKernel)
-        message(STATUS "Required Open Cascade Library files found")
-    else()
-        message(
-            FATAL_ERROR
-            "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting"
-        )
-    endif()
-
-    # Use the found libTKernel as a template for all other OCC libraries
-    # TODO Extract this into macro/function
-    foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
-        # Make sure we'll handle the Windows/MSVC debug postfix convention too.
-        string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
-        string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
-        list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
-    endforeach()
-
-    if(MSVC)
-        add_definitions(-DHAVE_NO_DLL)
-        add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" d)
-    endif()
-
-    if(WIN32)
-        # OCC might require linking to Winsock depending on the version and build configuration
-        list(APPEND OPENCASCADE_LIBRARIES ws2_32.lib)
-    endif()
-
-    # Make sure cross-referenced symbols between static OCC libraries get
-    # resolved. Also add thread and rt libraries.
-    get_filename_component(libTKernelExt ${libTKernel} EXT)
-    if("${libTKernelExt}" STREQUAL ".a")
-        set(OCCT_STATIC ON)
-    endif()
-
-    if(OCCT_STATIC)
-        find_package(Threads)
-
-        if(WASM_BUILD)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-        else()
-            # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies
-            # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
-            if(APPLE)
-                set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-            else()
-                set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
-            endif()
-        endif()
-
-        if(NOT APPLE AND NOT WIN32)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
-        endif()
-        if(NOT WIN32)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
-        endif()
-    endif()
+        find_package(OpenCASCADE REQUIRED)
     endif(WITH_OPENCASCADE)
 endif(BUILD_IFCGEOM)
 
@@ -969,7 +835,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
             add_library(geometry_serializer_ifc${schema} STATIC ../src/ifcgeom/Serialization/schema/Serialization.cpp)
             set_target_properties(geometry_serializer_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS -DIfcSchema=Ifc${schema}")
-            target_link_libraries(geometry_serializer_ifc${schema} ${OPENCASCADE_LIBRARIES})
+            target_link_libraries(geometry_serializer_ifc${schema} ${OpenCASCADE_LIBRARIES})
             list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
         endforeach()
 
@@ -1041,6 +907,37 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 if(BUILD_CONVERT)
+    if(WITH_CGAL AND CITYJSON_SUPPORT)
+        message(STATUS "Building CityJSON support")
+        set(CITYJSON_CONVERT_FILES
+            ../src/ifcconvert/cityjson/geobim.cpp
+            ../src/ifcconvert/cityjson/global_execution_context.cpp
+            ../src/ifcconvert/cityjson/opening_collector.cpp
+            ../src/ifcconvert/cityjson/processing.cpp
+            ../src/ifcconvert/cityjson/radius_comparison.cpp
+            ../src/ifcconvert/cityjson/radius_execution_context.cpp
+            ../src/ifcconvert/cityjson/settings.cpp
+            ../src/ifcconvert/cityjson/writer.cpp
+        )
+        add_library(cityjson_converter ${CITYJSON_CONVERT_FILES})
+        target_include_directories(cityjson_converter PRIVATE ../src)
+        set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
+
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+        )
+
+        add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
+        set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
+        target_include_directories(cityjson_converter_exe PRIVATE ../src)
+        target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+
+        install(TARGETS cityjson_converter_exe
+            RUNTIME DESTINATION ${BINDIR}
+        )
+    endif()
+
     # IfcConvert
 	if (WITH_RELATIONSHIP_VALIDATION)
 		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
@@ -1052,7 +949,7 @@ if(BUILD_CONVERT)
     set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
     add_executable(IfcConvert ${IFCCONVERT_FILES})
 
-    target_link_libraries(IfcConvert IfcGeom IfcParse Serializers ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+    target_link_libraries(IfcConvert IfcGeom IfcParse Serializers ${kernel_libraries} ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
 	if (WITH_RELATIONSHIP_VALIDATION)
         set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DWITH_RELATIONSHIP_VALIDATION")
     endif()
