@@ -963,12 +963,7 @@ if(BUILD_IFCGEOM)
 endif()
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-	foreach(schema ${SCHEMA_VERSIONS})
-		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${schema})
-	endforeach()
-	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
-
-    if(WITH_OPENCASCADE)
+	if(WITH_OPENCASCADE)
         foreach(schema ${SCHEMA_VERSIONS})
             set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${schema})
 
@@ -1041,39 +1036,8 @@ if(BUILD_IFCGEOM)
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-    # Serializers
-    file(GLOB SERIALIZERS_H_FILES ../src/serializers/*.h)
-    file(GLOB SERIALIZERS_CPP_FILES ../src/serializers/*.cpp)
-    set(SERIALIZERS_FILES ${SERIALIZERS_H_FILES} ${SERIALIZERS_CPP_FILES})
-    file(GLOB SERIALIZERS_S_H_FILES ../src/serializers/schema_dependent/*.h)
-    file(GLOB SERIALIZERS_S_CPP_FILES ../src/serializers/schema_dependent/*.cpp)
-    set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
-
-    foreach(schema ${SCHEMA_VERSIONS})
-        add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
-        set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORTS -DIfcSchema=Ifc${schema}")
-
-        if(WASM_BUILD)
-            target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
-        else()
-            target_link_libraries(Serializers_ifc${schema} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
-        endif()
-    endforeach()
-
-    add_library(Serializers ${SERIALIZERS_FILES})
-    set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
-
-    if(WITH_PROJ)
-        target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
-        if (PROJ_STATIC)
-            target_compile_definitions(Serializers PRIVATE "PROJ_DLL=")
-        endif()
-        target_include_directories(Serializers PRIVATE ${PROJ_INCLUDE_DIR} ${SQLITE_INCLUDE_DIR})
-        target_link_libraries(Serializers ${PROJ_LIBRARIES})
-    endif()
-
-    target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES} IfcGeom ${OPENCASCADE_LIBRARIES} ${kernel_libraries} IfcParse)
-
+    add_subdirectory(../src/serializers serializers)
+    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} ${SERIALIZER_SCHEMA_LIBRARIES})
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 if(BUILD_CONVERT)
@@ -1223,22 +1187,6 @@ if(BUILD_IFCGEOM)
         RUNTIME DESTINATION ${BINDIR}
     )
 endif(BUILD_IFCGEOM)
-
-if(BUILD_CONVERT)
-    install(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES}
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
-
-    install(FILES ${SERIALIZERS_H_FILES}
-        DESTINATION ${INCLUDEDIR}/serializers/
-    )
-
-    install(FILES ${SERIALIZERS_S_H_FILES}
-        DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
-    )
-endif(BUILD_CONVERT)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
     if(WITH_OPENCASCADE)
