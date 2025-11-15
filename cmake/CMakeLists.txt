@@ -205,6 +205,9 @@ if(WITH_CGAL)
 endif()
 
 if(WITH_OPENCASCADE)
+    find_package(OpenCASCADE REQUIRED)
+    # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OPENCASCADE_LIBRARIES used by kernel generic cmake file
+    set(OPENCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
     add_definitions(-DIFOPSH_WITH_OPENCASCADE)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
@@ -323,13 +326,6 @@ endif()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
-
-if(BUILD_IFCGEOM)
-    # Open CASCADE
-    if(WITH_OPENCASCADE)
-        find_package(OpenCASCADE REQUIRED)
-    endif(WITH_OPENCASCADE)
-endif(BUILD_IFCGEOM)
 
 if(COLLADA_SUPPORT)
     find_package(OpenCOLLADA REQUIRED)
@@ -557,24 +553,6 @@ if(BUILD_IFCGEOM)
     set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
 
-if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-	if(WITH_OPENCASCADE)
-        foreach(schema ${SCHEMA_VERSIONS})
-            set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${schema})
-
-            add_library(geometry_serializer_ifc${schema} OBJECT ../src/ifcgeom/Serialization/schema/Serialization.cpp)
-            set_target_properties(geometry_serializer_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS -DIfcSchema=Ifc${schema}")
-            target_link_libraries(geometry_serializer_ifc${schema} ${OpenCASCADE_LIBRARIES})
-            list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
-        endforeach()
-
-        add_library(geometry_serializer OBJECT ../src/ifcgeom/Serialization/Serialization.h ../src/ifcgeom/Serialization/Serialization.cpp)
-        set_target_properties(geometry_serializer PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS")
-        target_link_libraries(geometry_serializer ${geometry_serializer_libraries} IfcParse)
-        set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} geometry_serializer ${geometry_serializer_libraries})
-    endif()
-endif()
-
 if(BUILD_IFCGEOM)
     # CGAL::CGAL target already has dependencies resolved.
     if(WITH_CGAL AND CGAL_DIR)
@@ -746,12 +724,6 @@ if(BUILD_IFCGEOM)
 
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
 endif(BUILD_IFCGEOM)
-
-if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-    if(WITH_OPENCASCADE)
-        install(TARGETS geometry_serializer ${geometry_serializer_libraries})
-    endif()
-endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 # Cmake uninstall target
 if(NOT TARGET uninstall)
