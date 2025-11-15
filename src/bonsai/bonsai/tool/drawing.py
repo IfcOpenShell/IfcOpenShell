@@ -1732,11 +1732,22 @@ class Drawing(bonsai.core.tool.Drawing):
         im = camera.matrix_world.inverted()
         v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in [v1, v2]]
 
+        target_view = cls.get_drawing_target_view(drawing)
         bounds = helper.ortho_view_frame(camera.data)
-        if not (points := helper.clip_segment(bounds, [v1, v2])):
+
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+            # For plan views, clip to XY bounds and set Z=0
+            if not (points := helper.clip_segment(bounds, [v1, v2])):
+                return
+            for v in points:
+                v.z = 0
+        elif target_view in ("ELEVATION_VIEW", "SECTION_VIEW"):
+            # For section/elevation views, elevate the segment vertically
+            if not (points := helper.elevate_segment(bounds, [v1, v2])):
+                return
+        else:
             return
-        for v in points:
-            v.z = 0
+
         return points
 
     @classmethod
