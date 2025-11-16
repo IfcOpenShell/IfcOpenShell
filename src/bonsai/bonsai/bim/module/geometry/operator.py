@@ -2544,153 +2544,246 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         props.is_changing_mode = False
 
 
+
 class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.direct_profile_edit"
     bl_label = "IFC Direct Profile Edit"
     bl_description = "Directly enter profile/axis edit mode, or exit back to object mode"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        # Only allow in OBJECT or EDIT modes
+        if context.mode not in ("OBJECT", "EDIT_MESH", "EDIT_CURVE"):
+            return False
+        
+        # Must have an active object
+        if not context.active_object:
+            return False
+        
+        # In edit mode, we're good to go (we'll exit)
+        if context.mode in ("EDIT_MESH", "EDIT_CURVE"):
+            return True
+        
+        # In object mode, check if it's an editable object type
+        obj = context.active_object
+        
+        # Only mesh and curve objects are editable
+        if obj.type not in ("MESH", "CURVE"):
+            return False
+        
+        return True
+
     def _execute(self, context):
         # If we're already in edit mode, exit to object mode and SAVE changes
         if context.mode in ("EDIT_MESH", "EDIT_CURVE"):
-            obj = context.active_object
-            if obj and tool.Geometry.is_representation_item(obj):
-                # We're editing a representation item (SweptAreaSolid)
-                item = tool.Geometry.get_active_representation(obj)
-                if item and item.is_a("IfcSweptAreaSolid"):
-                    # Use the standard save workflow for items
-                    from bonsai.bim.module.model.decorator import ProfileDecorator
-                    ProfileDecorator.uninstall()
-                    tool.Blender.toggle_edit_mode(context)
-                    
-                    profile = tool.Model.export_profile(obj)
-                    if not profile:
-                        def msg(self, context):
-                            self.layout.label(text="INVALID PROFILE")
-                        context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                        tool.Blender.toggle_edit_mode(context)
-                        ProfileDecorator.install(context)
-                        return {"CANCELLED"}
-                    
-                    old_profile = item.SweptArea
-                    profile.ProfileName = old_profile.ProfileName
-                    
-                    ifc_file = tool.Ifc.get()
-                    for inverse in ifc_file.get_inverse(old_profile):
-                        ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
-                    
-                    tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
-                    ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
-                    
-                    props = tool.Geometry.get_geometry_props()
-                    if props.representation_obj:
-                        tool.Geometry.reload_representation(props.representation_obj)
-                        tool.Geometry.disable_item_mode()
-                    
-                    return {"FINISHED"}
-            else:
-                # We're editing either an extrusion profile or axis (element-level)
-                element = tool.Ifc.get_entity(obj)
-                if element and tool.Geometry.has_mesh_properties(obj.data):
-                    mesh_props = tool.Geometry.get_mesh_props(obj.data)
-                    
-                    # Check if we're editing axis
-                    if mesh_props.subshape_type == "AXIS":
-                        return bpy.ops.bim.edit_extrusion_axis()
-                    
-                    # Otherwise, we're editing a profile
-                    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-                    if body:
-                        body = ifcopenshell.util.representation.resolve_representation(body)
-                        extrusion = tool.Model.get_extrusion(body)
-                        if extrusion:
-                            return bpy.ops.bim.edit_extrusion_profile()
-            
-            # For other edit modes, use standard operator
-            return bpy.ops.bim.override_mode_set_object()
+            return self.handle_exit_edit_mode(context)
         
         # We're in object mode, try to enter profile/axis edit
+        return self.handle_enter_edit_mode(context)
+
+    def handle_exit_edit_mode(self, context):
+        """Handle exiting from edit mode and saving changes."""
         obj = context.active_object
         if not obj:
-            self.report({"ERROR"}, "No active object")
+            return {"CANCELLED"}
+        
+        # Check if we're editing a representation item
+        if tool.Geometry.is_representation_item(obj):
+            return self.exit_item_edit_mode(context, obj)
+        
+        # Check if we're editing an element-level profile or axis
+        element = tool.Ifc.get_entity(obj)
+        if element and tool.Geometry.has_mesh_properties(obj.data):
+            return self.exit_element_edit_mode(context, obj, element)
+        
+        # For other edit modes, use standard operator
+        return bpy.ops.bim.override_mode_set_object()
+
+    def exit_item_edit_mode(self, context, obj):
+        """Exit from SweptAreaSolid item editing."""
+        try:
+            item = tool.Geometry.get_active_representation(obj)
+            if not item or not item.is_a("IfcSweptAreaSolid"):
+                return bpy.ops.bim.override_mode_set_object()
+            
+            # Use the standard save workflow for items
+            from bonsai.bim.module.model.decorator import ProfileDecorator
+            ProfileDecorator.uninstall()
+            tool.Blender.toggle_edit_mode(context)
+            
+            profile = tool.Model.export_profile(obj)
+            if not profile:
+                def msg(self, context):
+                    self.layout.label(text="INVALID PROFILE")
+                context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                tool.Blender.toggle_edit_mode(context)
+                ProfileDecorator.install(context)
+                return {"CANCELLED"}
+            
+            old_profile = item.SweptArea
+            profile.ProfileName = old_profile.ProfileName
+            
+            ifc_file = tool.Ifc.get()
+            for inverse in ifc_file.get_inverse(old_profile):
+                ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+            
+            tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
+            ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
+            
+            props = tool.Geometry.get_geometry_props()
+            if props.representation_obj:
+                tool.Geometry.reload_representation(props.representation_obj)
+                tool.Geometry.disable_item_mode()
+            
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({"ERROR"}, f"Failed to save item changes: {str(e)}")
+            return {"CANCELLED"}
+
+    def exit_element_edit_mode(self, context, obj, element):
+        """Exit from element-level profile or axis editing."""
+        try:
+            mesh_props = tool.Geometry.get_mesh_props(obj.data)
+            
+            # Check if we're editing axis
+            if mesh_props.subshape_type == "AXIS":
+                return bpy.ops.bim.edit_extrusion_axis()
+            
+            # Otherwise, we're editing a profile
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if body:
+                body = ifcopenshell.util.representation.resolve_representation(body)
+                extrusion = tool.Model.get_extrusion(body)
+                if extrusion:
+                    return bpy.ops.bim.edit_extrusion_profile()
+        except Exception as e:
+            self.report({"ERROR"}, f"Failed to save profile/axis changes: {str(e)}")
+            return {"CANCELLED"}
+        
+        # Fallback to standard operator
+        return bpy.ops.bim.override_mode_set_object()
+
+    def handle_enter_edit_mode(self, context):
+        """Handle entering edit mode from object mode."""
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+        
+        # Check if object has mesh or curve data
+        if not hasattr(obj, 'data') or not obj.data:
+            self.report({"INFO"}, "Object has no editable data")
             return {"CANCELLED"}
         
         element = tool.Ifc.get_entity(obj)
         if not element:
-            self.report({"ERROR"}, "Active object is not an IFC element")
+            self.report({"INFO"}, "Active object is not an IFC element")
             return {"CANCELLED"}
         
         # Check if this is a LAYER2 element (wall, railing, etc.)
-        material_usage = tool.Model.get_usage_type(element)
+        try:
+            material_usage = tool.Model.get_usage_type(element)
+        except:
+            material_usage = None
+        
         if material_usage == "LAYER2":
-            self.report({"ERROR"}, "LAYER2 elements (walls, railings, etc.) cannot use profile editing.")
+            self.report({"ERROR"}, "LAYER2 elements (walls, railings, etc.) cannot use profile editing. Use axis editing instead (Alt+E).")
             return {"CANCELLED"}
         
-        representation = tool.Geometry.get_active_representation(obj)
+        # Try to get representation
+        try:
+            representation = tool.Geometry.get_active_representation(obj)
+        except:
+            representation = None
+        
         if not representation:
-            self.report({"ERROR"}, "Object has no active representation")
+            self.report({"INFO"}, "Object has no active representation")
             return {"CANCELLED"}
         
         # Check for PROFILE usage (beams, columns, members) - should edit axis
         if material_usage == "PROFILE":
-            return bpy.ops.bim.enable_editing_extrusion_axis()
+            try:
+                return bpy.ops.bim.enable_editing_extrusion_axis()
+            except Exception as e:
+                self.report({"ERROR"}, f"Failed to enable axis editing: {str(e)}")
+                return {"CANCELLED"}
         
         # Check if this is an element with an extrusion profile (LAYER3, etc)
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if body:
-            body = ifcopenshell.util.representation.resolve_representation(body)
-            extrusion = tool.Model.get_extrusion(body)
-            if extrusion and not tool.Geometry.is_representation_item(obj):
-                # This is an element-level extrusion, use enable_editing_extrusion_profile
-                return bpy.ops.bim.enable_editing_extrusion_profile()
-        
-        # Otherwise, enter item mode and edit SweptAreaSolid
-        props = tool.Geometry.get_geometry_props()
-        if not props.representation_obj:
-            bpy.ops.bim.import_representation_items()
-            props = tool.Geometry.get_geometry_props()
-        
-        # Find the SweptAreaSolid item
-        swept_solid_obj = None
-        for item_obj_data in props.item_objs:
-            item_obj = item_obj_data.obj
-            if not item_obj:
-                continue
-            item = tool.Geometry.get_active_representation(item_obj)
-            if item and item.is_a("IfcSweptAreaSolid"):
-                swept_solid_obj = item_obj
-                break
-        
-        if not swept_solid_obj:
-            self.report({"ERROR"}, "No IfcSweptAreaSolid item found in representation")
-            tool.Geometry.disable_item_mode()
+        try:
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if body:
+                body = ifcopenshell.util.representation.resolve_representation(body)
+                extrusion = tool.Model.get_extrusion(body)
+                if extrusion and not tool.Geometry.is_representation_item(obj):
+                    return bpy.ops.bim.enable_editing_extrusion_profile()
+        except Exception as e:
+            self.report({"ERROR"}, f"Failed to enable profile editing: {str(e)}")
             return {"CANCELLED"}
         
-        # Select and activate the swept solid object
-        bpy.ops.object.select_all(action='DESELECT')
-        swept_solid_obj.select_set(True)
-        context.view_layer.objects.active = swept_solid_obj
-        
-        # Import the profile to prepare for editing
-        item = tool.Geometry.get_active_representation(swept_solid_obj)
-        if item and item.is_a("IfcSweptAreaSolid"):
-            profile = item.SweptArea
-            res = tool.Model.import_profile(profile, obj=swept_solid_obj)
-            if res is None:
-                self.report({"ERROR"}, f"Couldn't import profile for editing")
+        # Otherwise, try to enter item mode and edit SweptAreaSolid
+        return self.enter_item_edit_mode(context, obj)
+
+    def enter_item_edit_mode(self, context, obj):
+        """Enter item mode for SweptAreaSolid editing."""
+        try:
+            props = tool.Geometry.get_geometry_props()
+            if not props.representation_obj:
+                bpy.ops.bim.import_representation_items()
+                props = tool.Geometry.get_geometry_props()
+            
+            # Find the SweptAreaSolid item
+            swept_solid_obj = None
+            for item_obj_data in props.item_objs:
+                item_obj = item_obj_data.obj
+                if not item_obj:
+                    continue
+                try:
+                    item = tool.Geometry.get_active_representation(item_obj)
+                    if item and item.is_a("IfcSweptAreaSolid"):
+                        swept_solid_obj = item_obj
+                        break
+                except:
+                    continue
+            
+            if not swept_solid_obj:
+                self.report({"INFO"}, "No editable SweptAreaSolid item found")
                 tool.Geometry.disable_item_mode()
                 return {"CANCELLED"}
             
-            tool.Ifc.link(item, swept_solid_obj.data)
-            tool.Blender.toggle_edit_mode(context)
+            # Select and activate the swept solid object
+            bpy.ops.object.select_all(action='DESELECT')
+            swept_solid_obj.select_set(True)
+            context.view_layer.objects.active = swept_solid_obj
             
-            from bonsai.bim.module.model.decorator import ProfileDecorator
-            ProfileDecorator.install(context)
-            
-            if not bpy.app.background:
-                tool.Blender.set_viewport_tool("bim.cad_tool")
+            # Import the profile to prepare for editing
+            item = tool.Geometry.get_active_representation(swept_solid_obj)
+            if item and item.is_a("IfcSweptAreaSolid"):
+                profile = item.SweptArea
+                res = tool.Model.import_profile(profile, obj=swept_solid_obj)
+                if res is None:
+                    self.report({"ERROR"}, "Couldn't import profile for editing")
+                    tool.Geometry.disable_item_mode()
+                    return {"CANCELLED"}
+                
+                tool.Ifc.link(item, swept_solid_obj.data)
+                tool.Blender.toggle_edit_mode(context)
+                
+                from bonsai.bim.module.model.decorator import ProfileDecorator
+                ProfileDecorator.install(context)
+                
+                if not bpy.app.background:
+                    tool.Blender.set_viewport_tool("bim.cad_tool")
+                
+                return {"FINISHED"}
+        except Exception as e:
+            self.report({"ERROR"}, f"Failed to enter item edit mode: {str(e)}")
+            try:
+                tool.Geometry.disable_item_mode()
+            except:
+                pass
+            return {"CANCELLED"}
         
-        return {"FINISHED"}
+        return {"CANCELLED"}
 
 
 
