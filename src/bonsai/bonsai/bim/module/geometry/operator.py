@@ -2544,7 +2544,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         props.is_changing_mode = False
 
 
-
 class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.direct_profile_edit"
     bl_label = "IFC Direct Profile Edit"
@@ -2615,6 +2614,12 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Active object is not an IFC element")
             return {"CANCELLED"}
         
+        # Check if this is a LAYER2 element (wall, railing, etc.)
+        material_usage = tool.Model.get_usage_type(element)
+        if material_usage == "LAYER2":
+            self.report({"ERROR"}, "LAYER2 elements (walls, railings, etc.) cannot use profile editing.")
+            return {"CANCELLED"}
+        
         representation = tool.Geometry.get_active_representation(obj)
         if not representation:
             self.report({"ERROR"}, "Object has no active representation")
@@ -2677,7 +2682,6 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Blender.set_viewport_tool("bim.cad_tool")
         
         return {"FINISHED"}
-
 
 class FlipObject(bpy.types.Operator):
     bl_idname = "bim.flip_object"
