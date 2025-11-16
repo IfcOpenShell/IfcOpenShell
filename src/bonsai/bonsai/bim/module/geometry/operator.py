@@ -2547,7 +2547,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.direct_profile_edit"
     bl_label = "IFC Direct Profile Edit"
-    bl_description = "Directly enter profile edit mode for profiles and extrusions, or exit back to object mode"
+    bl_description = "Directly enter profile/axis edit mode, or exit back to object mode"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2589,21 +2589,27 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                     
                     return {"FINISHED"}
             else:
-                # We're editing an extrusion profile (element-level)
+                # We're editing either an extrusion profile or axis (element-level)
                 element = tool.Ifc.get_entity(obj)
-                if element:
+                if element and tool.Geometry.has_mesh_properties(obj.data):
+                    mesh_props = tool.Geometry.get_mesh_props(obj.data)
+                    
+                    # Check if we're editing axis
+                    if mesh_props.subshape_type == "AXIS":
+                        return bpy.ops.bim.edit_extrusion_axis()
+                    
+                    # Otherwise, we're editing a profile
                     body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                     if body:
                         body = ifcopenshell.util.representation.resolve_representation(body)
                         extrusion = tool.Model.get_extrusion(body)
                         if extrusion:
-                            # Use the edit_extrusion_profile workflow
                             return bpy.ops.bim.edit_extrusion_profile()
             
             # For other edit modes, use standard operator
             return bpy.ops.bim.override_mode_set_object()
         
-        # We're in object mode, try to enter profile edit
+        # We're in object mode, try to enter profile/axis edit
         obj = context.active_object
         if not obj:
             self.report({"ERROR"}, "No active object")
@@ -2625,8 +2631,11 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Object has no active representation")
             return {"CANCELLED"}
         
+        # Check for PROFILE usage (beams, columns, members) - should edit axis
+        if material_usage == "PROFILE":
+            return bpy.ops.bim.enable_editing_extrusion_axis()
+        
         # Check if this is an element with an extrusion profile (LAYER3, etc)
-        # These should use enable_editing_extrusion_profile
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if body:
             body = ifcopenshell.util.representation.resolve_representation(body)
@@ -2682,6 +2691,8 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Blender.set_viewport_tool("bim.cad_tool")
         
         return {"FINISHED"}
+
+
 
 class FlipObject(bpy.types.Operator):
     bl_idname = "bim.flip_object"
