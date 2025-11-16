@@ -2544,6 +2544,135 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         props.is_changing_mode = False
 
 
+class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.direct_profile_edit"
+    bl_label = "IFC Direct Profile Edit"
+    bl_description = "Directly enter profile edit mode for IfcSweptAreaSolid items, or exit back to object mode"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        # If we're already in edit mode, exit to object mode and SAVE changes
+        if context.mode in ("EDIT_MESH", "EDIT_CURVE"):
+            obj = context.active_object
+            if obj and tool.Geometry.is_representation_item(obj):
+                item = tool.Geometry.get_active_representation(obj)
+                if item and item.is_a("IfcSweptAreaSolid"):
+                    # First, uninstall the decorator
+                    from bonsai.bim.module.model.decorator import ProfileDecorator
+                    ProfileDecorator.uninstall()
+                    
+                    # Toggle back to object mode
+                    tool.Blender.toggle_edit_mode(context)
+                    
+                    # Export the profile changes back to IFC
+                    profile = tool.Model.export_profile(obj)
+                    
+                    if not profile:
+                        def msg(self, context):
+                            self.layout.label(text="INVALID PROFILE")
+                        context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                        
+                        # Re-enter edit mode if save failed
+                        tool.Blender.toggle_edit_mode(context)
+                        ProfileDecorator.install(context)
+                        return {"CANCELLED"}
+                    
+                    # Replace the old profile with the new one
+                    old_profile = item.SweptArea
+                    profile.ProfileName = old_profile.ProfileName
+                    
+                    ifc_file = tool.Ifc.get()
+                    for inverse in ifc_file.get_inverse(old_profile):
+                        ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+                    
+                    # Update profile in the UI
+                    tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
+                    
+                    # Remove the old profile
+                    ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
+                    
+                    # Reload the representation to see the changes
+                    props = tool.Geometry.get_geometry_props()
+                    if props.representation_obj:
+                        tool.Geometry.reload_representation(props.representation_obj)
+                        
+                        # Exit item mode back to object mode
+                        tool.Geometry.disable_item_mode()
+                    
+                    return {"FINISHED"}
+            
+            # For other edit modes, use standard operator
+            return bpy.ops.bim.override_mode_set_object()
+        
+        # We're in object mode, try to enter profile edit
+        obj = context.active_object
+        if not obj:
+            self.report({"ERROR"}, "No active object")
+            return {"CANCELLED"}
+        
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            self.report({"ERROR"}, "Active object is not an IFC element")
+            return {"CANCELLED"}
+        
+        representation = tool.Geometry.get_active_representation(obj)
+        if not representation:
+            self.report({"ERROR"}, "Object has no active representation")
+            return {"CANCELLED"}
+        
+        # First, enter item mode if not already in it
+        props = tool.Geometry.get_geometry_props()
+        if not props.representation_obj:
+            bpy.ops.bim.import_representation_items()
+            props = tool.Geometry.get_geometry_props()  # Refresh after import
+        
+        # Find the SweptAreaSolid item
+        swept_solid_obj = None
+        for item_obj_data in props.item_objs:
+            item_obj = item_obj_data.obj
+            if not item_obj:
+                continue
+            item = tool.Geometry.get_active_representation(item_obj)
+            if item and item.is_a("IfcSweptAreaSolid"):
+                swept_solid_obj = item_obj
+                break
+        
+        if not swept_solid_obj:
+            self.report({"ERROR"}, "No IfcSweptAreaSolid item found in representation")
+            tool.Geometry.disable_item_mode()
+            return {"CANCELLED"}
+        
+        # Select and activate the swept solid object
+        bpy.ops.object.select_all(action='DESELECT')
+        swept_solid_obj.select_set(True)
+        context.view_layer.objects.active = swept_solid_obj
+        
+        # Import the profile to prepare for editing
+        item = tool.Geometry.get_active_representation(swept_solid_obj)
+        if item and item.is_a("IfcSweptAreaSolid"):
+            profile = item.SweptArea
+            res = tool.Model.import_profile(profile, obj=swept_solid_obj)
+            if res is None:
+                self.report({"ERROR"}, f"Couldn't import profile for editing")
+                tool.Geometry.disable_item_mode()
+                return {"CANCELLED"}
+            
+            tool.Ifc.link(item, swept_solid_obj.data)
+            
+            # Now toggle to edit mode
+            tool.Blender.toggle_edit_mode(context)
+            
+            # Install the profile decorator for CAD tools
+            from bonsai.bim.module.model.decorator import ProfileDecorator
+            ProfileDecorator.install(context)
+            
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
+        
+        return {"FINISHED"}
+
+
+
 class FlipObject(bpy.types.Operator):
     bl_idname = "bim.flip_object"
     bl_label = "Flip Object"
