@@ -2544,10 +2544,11 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         props.is_changing_mode = False
 
 
+
 class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.direct_profile_edit"
     bl_label = "IFC Direct Profile Edit"
-    bl_description = "Directly enter profile edit mode for IfcSweptAreaSolid items, or exit back to object mode"
+    bl_description = "Directly enter profile edit mode for profiles and extrusions, or exit back to object mode"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2555,29 +2556,23 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         if context.mode in ("EDIT_MESH", "EDIT_CURVE"):
             obj = context.active_object
             if obj and tool.Geometry.is_representation_item(obj):
+                # We're editing a representation item (SweptAreaSolid)
                 item = tool.Geometry.get_active_representation(obj)
                 if item and item.is_a("IfcSweptAreaSolid"):
-                    # First, uninstall the decorator
+                    # Use the standard save workflow for items
                     from bonsai.bim.module.model.decorator import ProfileDecorator
                     ProfileDecorator.uninstall()
-                    
-                    # Toggle back to object mode
                     tool.Blender.toggle_edit_mode(context)
                     
-                    # Export the profile changes back to IFC
                     profile = tool.Model.export_profile(obj)
-                    
                     if not profile:
                         def msg(self, context):
                             self.layout.label(text="INVALID PROFILE")
                         context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                        
-                        # Re-enter edit mode if save failed
                         tool.Blender.toggle_edit_mode(context)
                         ProfileDecorator.install(context)
                         return {"CANCELLED"}
                     
-                    # Replace the old profile with the new one
                     old_profile = item.SweptArea
                     profile.ProfileName = old_profile.ProfileName
                     
@@ -2585,21 +2580,26 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                     for inverse in ifc_file.get_inverse(old_profile):
                         ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
                     
-                    # Update profile in the UI
                     tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
-                    
-                    # Remove the old profile
                     ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
                     
-                    # Reload the representation to see the changes
                     props = tool.Geometry.get_geometry_props()
                     if props.representation_obj:
                         tool.Geometry.reload_representation(props.representation_obj)
-                        
-                        # Exit item mode back to object mode
                         tool.Geometry.disable_item_mode()
                     
                     return {"FINISHED"}
+            else:
+                # We're editing an extrusion profile (element-level)
+                element = tool.Ifc.get_entity(obj)
+                if element:
+                    body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                    if body:
+                        body = ifcopenshell.util.representation.resolve_representation(body)
+                        extrusion = tool.Model.get_extrusion(body)
+                        if extrusion:
+                            # Use the edit_extrusion_profile workflow
+                            return bpy.ops.bim.edit_extrusion_profile()
             
             # For other edit modes, use standard operator
             return bpy.ops.bim.override_mode_set_object()
@@ -2620,11 +2620,21 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Object has no active representation")
             return {"CANCELLED"}
         
-        # First, enter item mode if not already in it
+        # Check if this is an element with an extrusion profile (LAYER3, etc)
+        # These should use enable_editing_extrusion_profile
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if body:
+            body = ifcopenshell.util.representation.resolve_representation(body)
+            extrusion = tool.Model.get_extrusion(body)
+            if extrusion and not tool.Geometry.is_representation_item(obj):
+                # This is an element-level extrusion, use enable_editing_extrusion_profile
+                return bpy.ops.bim.enable_editing_extrusion_profile()
+        
+        # Otherwise, enter item mode and edit SweptAreaSolid
         props = tool.Geometry.get_geometry_props()
         if not props.representation_obj:
             bpy.ops.bim.import_representation_items()
-            props = tool.Geometry.get_geometry_props()  # Refresh after import
+            props = tool.Geometry.get_geometry_props()
         
         # Find the SweptAreaSolid item
         swept_solid_obj = None
@@ -2658,11 +2668,8 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                 return {"CANCELLED"}
             
             tool.Ifc.link(item, swept_solid_obj.data)
-            
-            # Now toggle to edit mode
             tool.Blender.toggle_edit_mode(context)
             
-            # Install the profile decorator for CAD tools
             from bonsai.bim.module.model.decorator import ProfileDecorator
             ProfileDecorator.install(context)
             
@@ -2670,7 +2677,6 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Blender.set_viewport_tool("bim.cad_tool")
         
         return {"FINISHED"}
-
 
 
 class FlipObject(bpy.types.Operator):
