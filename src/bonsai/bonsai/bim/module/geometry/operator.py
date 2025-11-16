@@ -2697,7 +2697,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
             material_usage = None
         
         if material_usage == "LAYER2":
-            self.report({"ERROR"}, "LAYER2 elements (walls, railings, etc.) cannot use profile editing. Use axis editing instead (Alt+E).")
+            self.report({"ERROR"}, "LAYER2 elements (walls, railings, etc.) cannot use profile editing.")
             return {"CANCELLED"}
         
         # Try to get representation
