@@ -2575,6 +2575,16 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
+        # Ensure we're only working with the active object
+        # Deselect all other objects if multiple are selected
+        active_obj = context.active_object
+        if active_obj and context.mode == "OBJECT":
+            if len(context.selected_objects) > 1:
+                self.report({"WARNING"}, "Currently Direct Profile Edit only works on one object at a time. Operating on active object only.")
+                bpy.ops.object.select_all(action='DESELECT')
+                active_obj.select_set(True)
+                context.view_layer.objects.active = active_obj
+        
         # If we're already in edit mode, exit to object mode and SAVE changes
         if context.mode in ("EDIT_MESH", "EDIT_CURVE"):
             return self.handle_exit_edit_mode(context)
