@@ -319,13 +319,11 @@ def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
     """Streams the content of a file path from disk, yielding each instance
     as a dictionary.
 
-    Args:
-        path (Union[Path, str]): input file path
-        mmap (bool): open the file contents using memory mapping
-        page_size (int): open file in python and feed chunks to the parser
+    :param path: Input file path
+    :param mmap: Open the file contents using memory mapping
+    :param page_size: Open file in python and feed chunks to the parser.
 
-    Yields:
-        dict: entity instance dictionaries
+    :yield: Entity instance dictionaries
     """
     if page_size:
         import builtins
@@ -359,11 +357,8 @@ def stream2_from_string(data: str) -> Generator[dict]:
     """Streams the content of a file path from string, yielding each instance
     as a dictionary.
 
-    Args:
-        data (str): input data
-
-    Yields:
-        dict: entity instance dictionaries
+    :param data: Input data string
+    :yield: entity instance dictionaries
     """
     streamer = ifcopenshell_wrapper.stream_from_string(data)
     while streamer:
@@ -376,9 +371,8 @@ def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[P
     RocksDB encoding. RocksDB is an embedded key-value store that allows
     partial reads and is therefore more memory efficient with larger files.
 
-    Args:
-        ifcspf_path (Union[Path, str]): Input file path - needs to exist
-        rocksdb_path (Union[Path, str]): RocksDB file path (directory) - may exist, but result may then be invalid
+    :param ifcspf_path: Input file path - needs to exist
+    :param rocksdb_path: RocksDB file path (directory) - may exist, but result may then be invalid
     """
     ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), True)
     ser.finalize()

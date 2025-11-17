@@ -422,8 +422,8 @@ def ortho_view_frame(
 
     Similar to `bpy.types.Camera.view_frame`
 
-    :arg camera: camera of drawing
-    :arg margin: margins, in scene units
+    :param camera: camera of drawing
+    :param margin: margins, in scene units
     :return: (xmin, xmax, ymin, ymax, zmin, zmax) in local camera coordinates
     """
     props = tool.Drawing.get_camera_props(camera)
@@ -444,8 +444,8 @@ def almost_zero(v):
 def clip_segment(bounds, segm):
     """Clipping line segment to bounds
 
-    :arg bounds: (xmin, xmax, ymin, ymax)
-    :arg segm: 2 vertices of the segment
+    :param bounds: (xmin, xmax, ymin, ymax)
+    :param segm: 2 vertices of the segment
     :return: 2 new vertices of segment or None if segment outside the bounding box
     """
     # Liang–Barsky algorithm
@@ -494,8 +494,8 @@ def clip_segment(bounds, segm):
 def elevate_segment(bounds, segm):
     """Elevate line xy-perpendicular segment vertically
 
-    :arg bounds: (xmin, xmax, ymin, ymax)
-    :arg segm: 2 vertices of the segment
+    :param bounds: (xmin, xmax, ymin, ymax)
+    :param segm: 2 vertices of the segment
     :return: 2 new vertices of segment or None if segment outside the bounding box
     """
     _, _, ymin, ymax, zmin, _ = bounds
@@ -545,13 +545,11 @@ def add_newline_between_words(text: str, newline_at: int) -> str:
 def get_relative_z(obj: bpy.types.Object, element, abs_z: float) -> float:
     """Return relative Z of an element, accounting for its spatial container.
 
-    Args:
-        obj: The Blender object representing the element.
-        element: The IFC entity for the object.
-        abs_z: The absolute Z value in world coordinates.
+    :param obj: The Blender object representing the element.
+    :param element: The IFC entity for the object.
+    :param abs_z: The absolute Z value in world coordinates.
 
-    Returns:
-        Relative Z value if the element is inside a spatial container,
+    :return: Relative Z value if the element is inside a spatial container,
         otherwise the absolute Z.
     """
     z = abs_z

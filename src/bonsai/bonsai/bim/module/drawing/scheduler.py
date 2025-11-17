@@ -544,11 +544,10 @@ class Scheduler:
         """
         Adds text to svg.
 
-        Args:
-            p_tags: list of cell's P tags from odt file
-            box_alignment: alignment of text in box
-            wrap_text: if True, text will be wrapped to fit in cell
-            cell_width: width of cell, used for wrapping text
+        :param p_tags: list of cell's P tags from odt file
+        :param box_alignment: alignment of text in box
+        :param wrap_text: if True, text will be wrapped to fit in cell
+        :param cell_width: width of cell, used for wrapping text
         """
         text_lines = [str(p) for p in p_tags]
         box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)

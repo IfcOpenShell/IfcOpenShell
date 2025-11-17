@@ -188,11 +188,9 @@ class BaseDecorator:
 
     def get_splines(self, obj: bpy.types.Object) -> Generator[list[Vector]]:
         """Iterates through splines
-        Args:
-          obj: Blender object with Curve data
 
-        Yields:
-          verts: points of each spline, world coords
+        :param obj: Blender object with Curve data
+        :yield: points of each spline, world coords
         """
         assert type(obj.data) is bpy.types.Curve
         for spline in obj.data.splines:
@@ -204,12 +202,10 @@ class BaseDecorator:
     def get_path_geom(self, obj: bpy.types.Object, topo: bool = True):
         """Parses path geometry into line segments
 
-        Args:
-          obj: Blender object with data of type Curve
-          topo: bool; if types of vertices are needed
+        :param obj: Blender object with data of type Curve
+        :param topo: if types of vertices are needed
 
-        Returns:
-          vertices: 3-tuples of coords
+        :return: vertices: 3-tuples of coords
           indices: 2-tuples of each segment verices' indices
           topology: types of vertices
             0: internal
@@ -240,11 +236,9 @@ class BaseDecorator:
     def get_mesh_geom(self, obj, check_mode=True):
         """Parses mesh geometry into line segments
 
-        Args:
-          obj: Blender object with data of type Mesh
+        :param obj: Blender object with data of type Mesh
 
-        Returns:
-          vertices: 3-tuples of coords
+        :return: vertices: 3-tuples of coords
           indices: 2-tuples of each segment verices' indices
         """
         if check_mode and obj.data.is_editmode:
@@ -375,11 +369,9 @@ class BaseDecorator:
     ):
         """Draw text label
 
-        Args:
-          pos: bottom-center
-          multiline: \n characters will be interpreted as line breaks
-
-        aligned and centered at segment middle
+        :param pos: bottom-center
+        :param multiline: ``\n`` characters will be interpreted as line breaks
+            aligned and centered at segment middle
 
         NOTE: `blf.draw` seems to ignore the \n character, so we have to split the text ourselves
         and use the `line_no` argument of `draw_label`

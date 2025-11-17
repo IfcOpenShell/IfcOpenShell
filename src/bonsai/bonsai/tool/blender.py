@@ -1065,7 +1065,7 @@ class Blender(bonsai.core.tool.Blender):
             """Tries to validate the current BIM modifier parameters for the active object
             Goes into path editing mode if the modifier supports it
 
-            Returns True if an action was taken, False otherwise
+            :return: True if an action was taken, False otherwise
             """
             if cls.is_roof(element):
                 if cls.is_editing_roof_parameters(obj):
@@ -1089,7 +1089,7 @@ class Blender(bonsai.core.tool.Blender):
         def try_canceling_editing_modifier_parameters_or_path(cls, obj: bpy.types.Object) -> bool:
             """Tries to cancel the current BIM modifier parameters or path edition for the active object
 
-            Returns True if an action was taken, False otherwise
+            :return: True if an action was taken, False otherwise
             """
             if cls.is_editing_railing_path(obj):
                 bpy.ops.bim.cancel_editing_railing_path()
@@ -1672,12 +1672,10 @@ class Blender(bonsai.core.tool.Blender):
             - "user_interface.wcol_menu.text"  (Menu Text)
             - "user_interface.wcol_menu.text_sel"  (Menu Text Selected)
 
-        Args:
-            color_path (str, optional): The attribute path relative to bpy.context.preferences.themes[0].
-            threshold (float, optional): The RGB sum threshold for determining dark mode. Default is 1.671.
+        :param color_path: The attribute path relative to bpy.context.preferences.themes[0].
+        :param threshold: The RGB sum threshold for determining dark mode. Default is 1.671.
 
-        Returns:
-            str: 'dm' (dark mode) if the RGB sum is > threshold, otherwise 'lm' (light mode).
+        :return: 'dm' (dark mode) if the RGB sum is > threshold, otherwise 'lm' (light mode).
         """
         full_path = f"bpy.context.preferences.themes[0].{color_path}"
 
