@@ -941,8 +941,6 @@ if "pcre2" in targets:
         download_name=f"pcre2-{PCRE2_VERSION}.tar.bz2",
     )
 
-# An issue exists with swig-1.3 and python >= 3.2
-# Therefore, build a recent copy from source
 if "swig" in targets:
     build_dependency(
         name="swig",
