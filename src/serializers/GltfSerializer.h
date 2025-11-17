@@ -38,6 +38,8 @@ private:
 	json json_, node_array_;
 	boost::optional<json> ecef_transform_, north_rotation_;
 	int bufferViewId;
+    std::map<const IfcUtil::IfcBaseEntity*, size_t> node_indices_;
+    std::vector<size_t> roots_;
 
 	int writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style);
 public:
