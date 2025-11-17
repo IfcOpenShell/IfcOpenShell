@@ -80,8 +80,7 @@ class Web(bonsai.core.tool.Web):
         This method creates a temporary socket to bind to a free port.
         It then retrieves the port number, and returns it.
 
-        Returns:
-            int: The port number that was generated.
+        :return: The port number that was generated.
         """
         print("Generating port number")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -97,11 +96,9 @@ class Web(bonsai.core.tool.Web):
 
         If the connection is refused, the port is available for use; otherwise, it is in use.
 
-        Args:
-           port (int): The port number to check.
+        :param port: The port number to check.
 
-        Returns:
-            bool: True if the port is available, False if it is in use.
+        :return: bool: True if the port is available, False if it is in use.
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # connect_ex returns errno.SUCCESS (0) if the connection succeeds
@@ -116,8 +113,7 @@ class Web(bonsai.core.tool.Web):
         This method sets up the environment, locates paths, and starts
         the WebSocket server process.
 
-        Args:
-           port (int): The port number on which to start the WebSocket server.
+        :param port: The port number on which to start the WebSocket server.
         """
         import addon_utils
 
@@ -156,8 +152,7 @@ class Web(bonsai.core.tool.Web):
         This method sets up an asynchronous Socket.IO client with
         reconnection attempts, starts an asyncio thread, connects to the WebSocket server, and sets the connection status.
 
-        Args:
-           port (int): The port number to connect to the WebSocket server.
+        :param port: The port number to connect to the WebSocket server.
         """
         global ws_thread, sio
 
@@ -239,11 +234,9 @@ class Web(bonsai.core.tool.Web):
         this method continuously checks for the existence of the WebSocket server's process ID (PID) in the running_pid JSON file.
         It waits for a maximum of 5 seconds before returning False.
 
-        Args:
-            port (int): The port number on which the WebSocket server is expected to be running.
+        :param port: The port number on which the WebSocket server is expected to be running.
 
-        Returns:
-            bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
+        :return: bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
         """
         pid = ws_process.pid
         max_time = 5
@@ -273,12 +266,11 @@ class Web(bonsai.core.tool.Web):
         """
         Sends data to the Web UI via Websocket connection.
 
-        Args:
-            data (Optional[Any]): The data to send. If None, just sends data from WebData.
-            data_key (str): The key under which to store the data in the payload. Defaults to "data".
-            event (str): The WebSocket event to emit. Defaults to "data".
-            namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
-            use_web_data (bool): Whether to use data from WebData. Defaults to True.
+        :param data: The data to send. If None, just sends data from WebData.
+        :param data_key: The key under which to store the data in the payload. Defaults to "data".
+        :param event: The WebSocket event to emit. Defaults to "data".
+        :param namespace: The namespace for the WebSocket event. Defaults to "/blender".
+        :param use_web_data: Whether to use data from WebData. Defaults to True.
         """
 
         global ws_thread
@@ -302,8 +294,7 @@ class Web(bonsai.core.tool.Web):
         If the WebProperties.is_connected is False, it clears the queue and returns None to unregister the timer.
         If the queue is not empty, it processes each operator by calling the corresponding handling function.
 
-        Returns:
-            (Optional[float]): Returns None if the WebProperties.is_connected is False, otherwise returns 1.0 to continue the timer.
+        :return: Returns None if the WebProperties.is_connected is False, otherwise returns 1.0 to continue the timer.
         """
         if not tool.Web.get_web_props().is_connected:
             with web_operator_queue.mutex:
@@ -332,8 +323,7 @@ class Web(bonsai.core.tool.Web):
         """
         this method handles the Schedules page operators.
 
-        Args:
-            operator_data (dict): A dictionary containing the operator data.
+        :param operator_data: A dictionary containing the operator data.
         """
         if operator_data["type"] == "selection":
             bpy.ops.object.select_all(action="DESELECT")
@@ -348,8 +338,7 @@ class Web(bonsai.core.tool.Web):
         """
         this method handles the Cost page operators.
 
-        Args:
-            operator_data (dict): A dictionary containing the operator data.
+        :param operator_data: A dictionary containing the operator data.
         """
 
         ifc_file = tool.Ifc.get()
@@ -701,8 +690,7 @@ class Web(bonsai.core.tool.Web):
         """
         this method handles the Sequencing page operators.
 
-        Args:
-            operator_data (dict): A dictionary containing the operator data.
+        :param operator_data: A dictionary containing the operator data.
         """
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "getWorkSchedules":
@@ -741,8 +729,7 @@ class Web(bonsai.core.tool.Web):
         """
         this method handles the Documentation page operators.
 
-        Args:
-            operator_data (dict): A dictionary containing the operator data.
+        :param operator_data: A dictionary containing the operator data.
         """
         if operator_data["type"] == "getDrawings":
             drawings_data = []
@@ -778,9 +765,8 @@ class Web(bonsai.core.tool.Web):
         """
         Opens a web browser and navigates to the specified URL.
 
-        Args:
-            port (int): The port number to be used in the URL.
-            page (str): The page name to be appended to the URL. Default is an empty string which points to the index page.
+        :param port: The port number to be used in the URL.
+        :param page: The page name to be appended to the URL. Default is an empty string which points to the index page.
         """
         webbrowser.open(f"http://127.0.0.1:{port}/{page}")
 
@@ -859,8 +845,7 @@ class Web(bonsai.core.tool.Web):
         This method connects to the specified URL using WebSocket transport and registers
         an event listener for the `web_operator` event within the `/blender` namespace.
 
-        Args:
-            url (str): The URL of the WebSocket server to connect to.
+        :param url: The URL of the WebSocket server to connect to.
         """
         await sio.connect(url, transports=["websocket"], namespaces="/blender")
         sio.on("web_operator", cls.sio_listen_web_operator, namespace="/blender")
@@ -881,10 +866,9 @@ class Web(bonsai.core.tool.Web):
 
         This method emits an event with the provided data to the WebSocket server within the specified namespace.
 
-        Args:
-            data (Any): The data to send to the WebSocket server.
-            event (Optional[str]): The WebSocket event to emit. Defaults to "data".
-            namespace (Optional[str]): The namespace for the WebSocket event. Defaults to "/blender".
+        :param data: The data to send to the WebSocket server.
+        :param event: The WebSocket event to emit. Defaults to "data".
+        :param namespace: The namespace for the WebSocket event. Defaults to "/blender".
         """
         await sio.emit(event, data, namespace=namespace)
 
@@ -896,8 +880,7 @@ class Web(bonsai.core.tool.Web):
         This method receives data from the WebSocket server and attempts to place it into the
         `web_operator_queue`. If the queue is full, the data is discarded.
 
-        Args:
-            data (dict): The data received from the `web_operator` event.
+        :param data: The data received from the `web_operator` event.
         """
         try:
             web_operator_queue.put_nowait(data)
@@ -923,10 +906,9 @@ class AsyncioThread(threading.Thread):
         This class represents a thread that runs an asyncio event loop. It is used to handle asynchronous tasks
         in a separate thread from the main thread.
 
-        Args:
-           *args: Variable length argument list. These arguments are passed to the superclass constructor.
-           loop: An existing asyncio event loop. If None, a new event loop is created.
-           **kwargs: Arbitrary keyword arguments. These arguments are passed to the superclass constructor.
+        :param args: Variable length argument list. These arguments are passed to the superclass constructor.
+        :param loop: An existing asyncio event loop. If None, a new event loop is created.
+        :param kwargs: Arbitrary keyword arguments. These arguments are passed to the superclass constructor.
         """
         super().__init__(*args, **kwargs)
         self.loop = loop or asyncio.new_event_loop()
@@ -943,11 +925,9 @@ class AsyncioThread(threading.Thread):
         """
         Run a coroutine in the asyncio event loop from a separate thread.
 
-        Args:
-           coro: The coroutine to be run.
+        :param coro: The coroutine to be run.
 
-        Returns:
-            The result of the coroutine.
+        :return: The result of the coroutine.
         """
         return asyncio.run_coroutine_threadsafe(coro, loop=self.loop).result()
 

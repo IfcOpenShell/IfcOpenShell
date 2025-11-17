@@ -70,8 +70,7 @@ def assign_class(
     ifc_representation_class: Optional[str] = None,
 ) -> Optional[ifcopenshell.entity_instance]:
     """
-    Args:
-        context: is not optional if `should_add_representation` is True
+    :param context: is not optional if ``should_add_representation`` is True
 
     TODO: Do NOT use should_add_representation. Because it internally calls
     geometry.add_representation which is 1,000 lines of Blender -> IFC magic.

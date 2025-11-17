@@ -411,8 +411,7 @@ class IfcCsv:
         concat: str = ", ",
     ) -> None:
         """
-        Args:
-            table: filepath to the table.
+        :param table: filepath to the table.
         """
         ext: FILE_FORMAT = table.split(".")[-1].lower()
 
