@@ -22,6 +22,8 @@ Scenario: Add boundary from space
     And the cursor is at "0.5,0.5,0"
     And I deselect all objects
     And I press "bim.generate_space"
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
     When I select the object "IfcSpace/Space"
     And I press "bim.add_boundary"
     Then the object "IfcRelSpaceBoundary/None" exists
