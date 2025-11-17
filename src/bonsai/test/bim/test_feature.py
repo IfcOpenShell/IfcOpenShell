@@ -50,6 +50,7 @@ variables = {
     "ifc": "tool.Ifc.get()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
+    "temp_project_path": tool.Project.TEMP_PROJECT_PATH.as_posix(),
 }
 
 # Monkey-patch webbrowser opening since we want to test headlessly
@@ -330,15 +331,19 @@ def an_empty_ifc_2x3_project():
     bpy.ops.bim.create_project()
 
 
+@given(parsers.parse("I load previously saved IFC project"))
+@when(parsers.parse("I load previously saved IFC project"))
+@then(parsers.parse("I load previously saved IFC project"))
+def load_previously_saved_ifc_project() -> None:
+    filepath = tool.Project.TEMP_PROJECT_PATH
+    bpy.ops.bim.load_project(filepath=filepath.__str__())
+
+
 @given(parsers.parse("I save IFC project"))
 @when(parsers.parse("I save IFC project"))
 @then(parsers.parse("I save IFC project"))
 def saving_ifc_project() -> None:
-    # Remove old temp files to avoid conflicts with non-updated assets.
-    if TMP.exists():
-        shutil.rmtree(TMP)
-    filepath = TMP / "test_project.ifc"
-    bpy.ops.bim.save_project(filepath=filepath.__str__(), should_save_as=True)
+    tool.Project.save_test_project()
 
 
 @given("the Brickschema is stubbed")
