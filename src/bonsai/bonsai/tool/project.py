@@ -504,10 +504,12 @@ class Project(bonsai.core.tool.Project):
             normals.append((v1, d1.cross(d2).normalized()))
         return normals
 
+    TEMP_PROJECT_PATH = Path.cwd() / "test/files/temp/test_project.ifc"
+
     @classmethod
     def save_test_project(cls) -> None:
-        TMP = Path.cwd() / "test/files/temp"
-        # Clean up previous test project.
-        if TMP.exists():
-            shutil.rmtree(TMP)
-        bpy.ops.bim.save_project(filepath=(TMP / "test_project.ifc").__str__(), should_save_as=True)
+        tmp = cls.TEMP_PROJECT_PATH.parent
+        # Clean up previous test project to avoid conflicts with non-updated assets.
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        bpy.ops.bim.save_project(filepath=cls.TEMP_PROJECT_PATH.__str__(), should_save_as=True)

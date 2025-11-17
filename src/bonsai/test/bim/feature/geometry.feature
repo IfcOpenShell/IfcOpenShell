@@ -352,9 +352,8 @@ Scenario: Override duplicate move - copying a coloured representation
     And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
     And I press "bim.assign_style_to_selected(style_id={style})"
     When I duplicate the selected objects
-    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
+    And I save IFC project
+    And I load previously saved IFC project
     Then the material "Style" colour is "1,0,0,1"
     And the object "IfcWall/Cube" has the material "Style"
     And the object "IfcWall/Cube.001" has the material "Style"
