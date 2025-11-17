@@ -2015,6 +2015,10 @@ class DecorationsHandler:
                 if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
                     return  # Don't draw decorations in local view
 
+        # disable decorations when not in camera view
+        if context.region_data.view_perspective != 'CAMERA':
+            return
+
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
