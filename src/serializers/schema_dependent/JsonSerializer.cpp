@@ -78,17 +78,6 @@ class get_type_visitor : public boost::static_visitor<std::string> {
     }
 };
 
-// A function to be called recursively. Template specialization is used
-// to descend into decomposition, containment and property relationships.
-template <typename A>
-void descend(A* instance, json& tree, IfcUtil::IfcBaseEntity* parent = nullptr) {
-    if (instance->declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
-        return descend(instance->template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
-    } else {
-        return format_entity_instance(instance, tree);
-    }
-}
-
 // Returns related entity instances using IFC's objectified relationship
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
@@ -171,6 +160,18 @@ void format_entity_instance(IfcUtil::IfcBaseEntity* instance, json& tree, IfcUti
     }
 
     tree.push_back(child);
+}
+
+
+// A function to be called recursively. Template specialization is used
+// to descend into decomposition, containment and property relationships.
+template <typename A>
+void descend(A* instance, json& tree, IfcUtil::IfcBaseEntity* parent = nullptr) {
+    if (instance->declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
+        descend(instance->template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
+    } else {
+        format_entity_instance(instance, tree);
+    }
 }
 
 // @todo would be nice to generalize this with the XML version
