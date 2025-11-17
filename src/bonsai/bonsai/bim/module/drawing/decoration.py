@@ -175,10 +175,10 @@ class BaseDecorator:
         # https://blender.stackexchange.com/questions/16493/is-there-a-way-to-fit-the-viewport-to-the-current-field-of-view
         camera = bpy.context.scene.camera
         render = bpy.context.scene.render
-        
+
         # Always use the camera's ortho_scale as the width in model space
         camera_width_model = camera.data.ortho_scale
-        
+
         scale = tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
         camera_width_mm = scale * camera_width_model
         return camera_width_mm
