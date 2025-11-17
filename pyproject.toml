@@ -12,7 +12,6 @@ extend-exclude = '''
     |src/ifcconvert/cityjson/*
     |src/svgfill
     |src/exterior-shell-extractor
-    |src/pyodide
 '''
 
 [tool.pyright]

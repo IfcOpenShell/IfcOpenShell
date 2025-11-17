@@ -27,7 +27,9 @@ class Context:
 
     def open(self, file_content):
         self.model = ifcopenshell.file.from_string(file_content)
-        body = [ctx for ctx in self.model.by_type('IfcGeometricRepresentationContext') if ctx.ContextIdentifier == 'Body']
+        body = [
+            ctx for ctx in self.model.by_type("IfcGeometricRepresentationContext") if ctx.ContextIdentifier == "Body"
+        ]
         if body:
             self.body = body[0]
         else:
@@ -40,7 +42,9 @@ class Context:
                 target_view="MODEL_VIEW",
                 parent=context,
             )
-        axis = [ctx for ctx in self.model.by_type('IfcGeometricRepresentationContext') if ctx.ContextIdentifier == 'Axis']
+        axis = [
+            ctx for ctx in self.model.by_type("IfcGeometricRepresentationContext") if ctx.ContextIdentifier == "Axis"
+        ]
         if body:
             self.axis = axis[0]
         else:
@@ -53,15 +57,13 @@ class Context:
                 target_view="GRAPH_VIEW",
                 parent=context,
             )
-        self.storey = self.model.by_type('IfcBuildingStorey')[0]
+        self.storey = self.model.by_type("IfcBuildingStorey")[0]
 
     def _create_empty_model(self):
         # Create a blank model
         self.model = ifcopenshell.file()
         # All projects must have one IFC Project element
-        project = ifcopenshell.api.run(
-            "root.create_entity", self.model, ifc_class="IfcProject", name="My Project"
-        )
+        project = ifcopenshell.api.run("root.create_entity", self.model, ifc_class="IfcProject", name="My Project")
         # Geometry is optional in IFC, but because we want to use geometry in this example, let's define units
         # Assigning without arguments defaults to metric units
         ifcopenshell.api.run("unit.assign_unit", self.model)
@@ -85,12 +87,8 @@ class Context:
             parent=context,
         )
         # Create a site, building, and storey. Many hierarchies are possible.
-        site = ifcopenshell.api.run(
-            "root.create_entity", self.model, ifc_class="IfcSite", name="My Site"
-        )
-        building = ifcopenshell.api.run(
-            "root.create_entity", self.model, ifc_class="IfcBuilding", name="Building A"
-        )
+        site = ifcopenshell.api.run("root.create_entity", self.model, ifc_class="IfcSite", name="My Site")
+        building = ifcopenshell.api.run("root.create_entity", self.model, ifc_class="IfcBuilding", name="Building A")
         self.storey = ifcopenshell.api.run(
             "root.create_entity",
             self.model,
@@ -118,9 +116,7 @@ class Context:
             products=[self.storey],
         )
 
-    def create_2pt_wall(
-        self, p1, p2, elevation, height, thickness, container, wall_type=None
-    ):
+    def create_2pt_wall(self, p1, p2, elevation, height, thickness, container, wall_type=None):
         p1 = np.array([p1[0], p1[1]])
         p2 = np.array([p2[0], p2[1]])
 
@@ -188,26 +184,22 @@ class Context:
     def create_fill(self, ty, pt, wall):
         if isinstance(wall, str):
             wall = self.model[wall]
-        if not wall.is_a('IfcWall'):
+        if not wall.is_a("IfcWall"):
             raise ValueError("Only 'wall' hosts are supported")
-        if ty == 'door':
+        if ty == "door":
             props = propertygroups.BIMDoorProperties()
-        elif ty == 'window':
+        elif ty == "window":
             props = propertygroups.BIMWindowProperties()
         else:
             raise ValueError("Only 'door' or 'window' fills are supported")
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.model)
-        body = ifcopenshell.util.representation.get_context(
-            self.model, "Model", "Body", "MODEL_VIEW"
-        )
+        body = ifcopenshell.util.representation.get_context(self.model, "Model", "Body", "MODEL_VIEW")
         representation_data = props.to_dict(si_conversion=si_conversion)
         representation_data["context"] = body
         door_representation = ifcopenshell.api.run(
             f"geometry.add_{ty}_representation", self.model, **representation_data
         )
-        door = ifcopenshell.api.run(
-            "root.create_entity", self.model, ifc_class=f"ifc{ty}"
-        )
+        door = ifcopenshell.api.run("root.create_entity", self.model, ifc_class=f"ifc{ty}")
         door.OverallWidth = props.overall_width / si_conversion
         door.OverallHeight = props.overall_height / si_conversion
         ifcopenshell.api.run(
@@ -223,11 +215,7 @@ class Context:
             products=[door],
         )
 
-        r = [
-            r
-            for r in wall.Representation.Representations
-            if r.RepresentationIdentifier == "Axis"
-        ]
+        r = [r for r in wall.Representation.Representations if r.RepresentationIdentifier == "Axis"]
         if not r:
             raise ValueError("Axis representation is needed")
         r = r[0]
@@ -260,9 +248,7 @@ class Context:
 
         position_3d = None
         if self.model.schema == "IFC2X3":
-            position_3d = self.model.createIfcAxis2Placement2D(
-                self.model.createIfcCartesianPoint([0.0, 0.0, 0.0])
-            )
+            position_3d = self.model.createIfcAxis2Placement2D(self.model.createIfcCartesianPoint([0.0, 0.0, 0.0]))
         position_2d = self.model.createIfcAxis2Placement2D(
             self.model.createIfcCartesianPoint([door.OverallWidth / 2.0, 0.0])
         )
@@ -294,10 +280,7 @@ class Context:
         ifcopenshell.api.feature.add_feature(self.model, feature=opening, element=wall)
         ifcopenshell.api.feature.add_filling(self.model, opening=opening, element=door)
 
-        z_offsets = {
-            'door': 0,
-            'window': 1
-        }
+        z_offsets = {"door": 0, "window": 1}
         opening.ObjectPlacement = self.model.createIfcLocalPlacement(
             wall.ObjectPlacement,
             self.model.createIfcAxis2Placement3D(
@@ -307,9 +290,7 @@ class Context:
 
         door.ObjectPlacement = self.model.createIfcLocalPlacement(
             opening.ObjectPlacement,
-            self.model.createIfcAxis2Placement3D(
-                self.model.createIfcCartesianPoint((0.0, 0.0, 0.0))
-            ),
+            self.model.createIfcAxis2Placement3D(self.model.createIfcCartesianPoint((0.0, 0.0, 0.0))),
         )
 
         return door
@@ -317,9 +298,7 @@ class Context:
     def to_obj_file(self, fn):
         st = ifcopenshell.geom.settings(USE_WORLD_COORDS=True, WELD_VERTICES=False)
         it = ifcopenshell.geom.iterator(st, self.model, exclude=("IfcOpeningElement",))
-        sr = ifcopenshell.geom.serializers.obj(
-            fn, fn + ".mtl", st, ifcopenshell.geom.serializer_settings()
-        )
+        sr = ifcopenshell.geom.serializers.obj(fn, fn + ".mtl", st, ifcopenshell.geom.serializer_settings())
         if it.initialize():
             for el in ifcopenshell.geom.consume_iterator(it):
                 sr.write(el)
@@ -330,7 +309,7 @@ if __name__ == "__main__":
     m = Context()
     w1 = m.create_2pt_wall((0.0, 0.0), (4.0, 0.0), 0.0, 3.0, 0.1, m.storey)
     w2 = m.create_2pt_wall((1.0, 3.0), (1.0, 0.0), 0.0, 3.0, 0.1, m.storey)
-    m.create_fill('door', [2, 0.0], w1)
-    m.create_fill('window', [1, 1.5], w2)
+    m.create_fill("door", [2, 0.0], w1)
+    m.create_fill("window", [1, 1.5], w2)
     m.model.write("out.ifc")
     m.to_obj_file("out.obj")
