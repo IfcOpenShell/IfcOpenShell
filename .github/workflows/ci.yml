@@ -64,7 +64,7 @@ jobs:
           libboost-regex-dev \
           libboost-system-dev \
           libboost-thread-dev \
-          swig libpcre3-dev libxml2-dev \
+          libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
           libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
           libhdf5-dev libcgal-dev libeigen3-dev
@@ -113,6 +113,23 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_FLAGS_INIT="-fPIC"
+          sudo make -j$(nproc) install
+
+      # Ubuntu has `swig` package, but we build it to match the version we use in the main build.
+      # To avoid failing tests when checking stub generation.
+      - name: build swig
+        run: |
+          # Remove default swig to avoid conflicts.
+          sudo apt remove --purge swig swig4.0
+          sudo apt-get install -y libpcre2-dev bison
+          git clone https://github.com/swig/swig
+          cd swig
+          git checkout v4.1.0
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           sudo make -j$(nproc) install
 
       - name: Build ifcopenshell
