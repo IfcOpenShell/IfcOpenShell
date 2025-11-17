@@ -1360,6 +1360,8 @@ class Geometry(bonsai.core.tool.Geometry):
 
         If no other representation present, will replace object with an empty.
         Method assumes that `obj` does have a current representation (it could be not `representation`).
+
+        Will clean up old ``obj.data`` if no other users exist.
         """
         element = tool.Ifc.get_entity(obj)
         assert element
@@ -1378,7 +1380,11 @@ class Geometry(bonsai.core.tool.Geometry):
 
         # `representation` is the only representation for object.
         if new_representation is None:
+            old_data = obj.data
+            assert old_data is not None
             cls.recreate_object_with_data(obj, None)
+            if not cls.has_data_users(old_data):
+                cls.delete_data(old_data)
             return
 
         bonsai.core.geometry.switch_representation(

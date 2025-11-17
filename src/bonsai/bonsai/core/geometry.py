@@ -147,7 +147,7 @@ def remove_representation(
     assert element
     element_type = geometry.get_element_type(element)
     data = None
-    has_switched_from_data = False
+    data_removed_by_switch_representation = False
     if element_type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
@@ -155,7 +155,7 @@ def remove_representation(
             for element in geometry.get_elements_of_type(element_type):
                 obj = ifc.get_object(element)
                 if obj:
-                    has_switched_from_data = True
+                    data_removed_by_switch_representation = True
                     geometry.switch_from_representation(obj, representation)
             obj = ifc.get_object(element_type)
             if obj:
@@ -164,12 +164,13 @@ def remove_representation(
     else:
         data = geometry.get_representation_data(representation)
         if data and geometry.has_data_users(data):
-            has_switched_from_data = True
+            data_removed_by_switch_representation = True
             geometry.switch_from_representation(obj, representation)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
 
     ifc.run("geometry.remove_representation", representation=representation)
-    if data and not has_switched_from_data:
+
+    if data and not data_removed_by_switch_representation:
         geometry.delete_data(data)
 
 

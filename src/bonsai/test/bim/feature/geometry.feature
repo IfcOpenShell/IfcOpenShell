@@ -102,8 +102,10 @@ Scenario: Remove representation - remove an active representation
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When the variable "representation_body" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And the variable "representation_context" is "{ifc}.by_type('IfcShapeRepresentation')[0].ContextOfItems.id()"
     And I press "bim.remove_representation(representation_id={representation_body})"
     Then the object "IfcWall/Cube" has no data
+    And the mesh "{representation_context}/{representation_body}" does not exist
 
 Scenario: Remove representation - remove an unloaded representation
     Given an empty IFC project
