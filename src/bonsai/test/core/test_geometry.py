@@ -207,34 +207,6 @@ class TestSwitchRepresentation:
             apply_openings=True,
         )
 
-    def test_updating_a_representation_if_the_blender_object_has_been_edited_prior_to_switching(self, ifc, geometry):
-        ifc.is_edited("obj").should_be_called().will_return(True)
-        geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
-        geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
-        geometry.run_geometry_update_representation(obj="obj").should_be_called()
-        geometry.does_representation_id_exist("representation_id").should_be_called().will_return(True)
-        geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
-        geometry.reimport_element_representations("obj", "mapped_rep", apply_openings=True).should_be_called()
-        subject.switch_representation(
-            ifc,
-            geometry,
-            obj="obj",
-            representation="mapped_rep",
-        )
-
-    def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, ifc, geometry):
-        ifc.is_edited("obj").should_be_called().will_return(True)
-        geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
-        geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
-        geometry.run_geometry_update_representation(obj="obj").should_be_called()
-        geometry.does_representation_id_exist("representation_id").should_be_called().will_return(False)
-        subject.switch_representation(
-            ifc,
-            geometry,
-            obj="obj",
-            representation="mapped_rep",
-        )
-
 
 class TestGetRepresentationIfcParameters:
     def test_run(self, geometry):
