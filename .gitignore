@@ -85,6 +85,7 @@ src/bonsai/bonsai/bim/data/gantt/index.html
 src/bonsai/bonsai/bim/data/gantt/jsgantt.js
 src/bonsai/bonsai/bim/data/gantt/jsgantt.css
 src/bonsai/bonsai/bim/data/webui/static/js/jquery.min.js
+src/bonsai/bonsai/bim/data/webui/running_pid.json
 
 # ifcopenshell swig and compiled files
 src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper*.so
