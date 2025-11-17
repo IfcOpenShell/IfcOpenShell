@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.aggregate as core

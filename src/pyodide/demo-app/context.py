@@ -1,7 +1,15 @@
 import ifcopenshell
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
 import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.type
+import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.api
+import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 
 import numpy as np
@@ -33,9 +41,8 @@ class Context:
         if body:
             self.body = body[0]
         else:
-            context = ifcopenshell.api.run("context.add_context", self.model, context_type="Model")
-            self.body = ifcopenshell.api.run(
-                "context.add_context",
+            context = ifcopenshell.api.context.add_context(self.model, context_type="Model")
+            self.body = ifcopenshell.api.context.add_context(
                 self.model,
                 context_type="Model",
                 context_identifier="Body",
@@ -48,9 +55,8 @@ class Context:
         if body:
             self.axis = axis[0]
         else:
-            context = ifcopenshell.api.run("context.add_context", self.model, context_type="Model")
-            self.axis = ifcopenshell.api.run(
-                "context.add_context",
+            context = ifcopenshell.api.context.add_context(self.model, context_type="Model")
+            self.axis = ifcopenshell.api.context.add_context(
                 self.model,
                 context_type="Model",
                 context_identifier="Axis",
@@ -63,23 +69,21 @@ class Context:
         # Create a blank model
         self.model = ifcopenshell.file()
         # All projects must have one IFC Project element
-        project = ifcopenshell.api.run("root.create_entity", self.model, ifc_class="IfcProject", name="My Project")
+        project = ifcopenshell.api.root.create_entity(self.model, ifc_class="IfcProject", name="My Project")
         # Geometry is optional in IFC, but because we want to use geometry in this example, let's define units
         # Assigning without arguments defaults to metric units
-        ifcopenshell.api.run("unit.assign_unit", self.model)
+        ifcopenshell.api.unit.assign_unit(self.model)
         # Let's create a modeling geometry context, so we can store 3D geometry (note: IFC supports 2D too!)
-        context = ifcopenshell.api.run("context.add_context", self.model, context_type="Model")
+        context = ifcopenshell.api.context.add_context(self.model, context_type="Model")
         # In particular, in this example we want to store the 3D "body" geometry of objects, i.e. the body shape
-        self.body = ifcopenshell.api.run(
-            "context.add_context",
+        self.body = ifcopenshell.api.context.add_context(
             self.model,
             context_type="Model",
             context_identifier="Body",
             target_view="MODEL_VIEW",
             parent=context,
         )
-        self.axis = ifcopenshell.api.run(
-            "context.add_context",
+        self.axis = ifcopenshell.api.context.add_context(
             self.model,
             context_type="Model",
             context_identifier="Axis",
@@ -87,30 +91,26 @@ class Context:
             parent=context,
         )
         # Create a site, building, and storey. Many hierarchies are possible.
-        site = ifcopenshell.api.run("root.create_entity", self.model, ifc_class="IfcSite", name="My Site")
-        building = ifcopenshell.api.run("root.create_entity", self.model, ifc_class="IfcBuilding", name="Building A")
-        self.storey = ifcopenshell.api.run(
-            "root.create_entity",
+        site = ifcopenshell.api.root.create_entity(self.model, ifc_class="IfcSite", name="My Site")
+        building = ifcopenshell.api.root.create_entity(self.model, ifc_class="IfcBuilding", name="Building A")
+        self.storey = ifcopenshell.api.root.create_entity(
             self.model,
             ifc_class="IfcBuildingStorey",
             name="Ground Floor",
         )
         # Since the site is our top level location, assign it to the project
         # Then place our building on the site, and our storey in the building
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             self.model,
             relating_object=project,
             products=[site],
         )
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             self.model,
             relating_object=site,
             products=[building],
         )
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             self.model,
             relating_object=building,
             products=[self.storey],
@@ -120,30 +120,26 @@ class Context:
         p1 = np.array([p1[0], p1[1]])
         p2 = np.array([p2[0], p2[1]])
 
-        wall = ifcopenshell.api.run("root.create_entity", self.model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(self.model, ifc_class="IfcWall")
         length = float(np.linalg.norm(p2 - p1))
-        representation = ifcopenshell.api.run(
-            "geometry.add_wall_representation",
+        representation = ifcopenshell.api.geometry.add_wall_representation(
             self.model,
             context=self.body,
             length=length,
             height=height,
             thickness=thickness,
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation",
+        ifcopenshell.api.geometry.assign_representation(
             self.model,
             product=wall,
             representation=representation,
         )
-        representation = ifcopenshell.api.run(
-            "geometry.add_axis_representation",
+        representation = ifcopenshell.api.geometry.add_axis_representation(
             self.model,
             context=self.axis,
             axis=[(0.0, 0.0), (length, 0.0)],
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation",
+        ifcopenshell.api.geometry.assign_representation(
             self.model,
             product=wall,
             representation=representation,
@@ -158,16 +154,14 @@ class Context:
                 [0, 0, 0, 1],
             ]
         )
-        ifcopenshell.api.run("geometry.edit_object_placement", self.model, product=wall, matrix=matrix)
-        ifcopenshell.api.run(
-            "spatial.assign_container",
+        ifcopenshell.api.geometry.edit_object_placement(self.model, product=wall, matrix=matrix)
+        ifcopenshell.api.spatial.assign_container(
             self.model,
             relating_structure=container,
             products=[wall],
         )
         if wall_type:
-            ifcopenshell.api.run(
-                "type.assign_type",
+            ifcopenshell.api.type.assign_type(
                 self.model,
                 related_object=wall,
                 relating_type=wall_type,
@@ -196,20 +190,19 @@ class Context:
         body = ifcopenshell.util.representation.get_context(self.model, "Model", "Body", "MODEL_VIEW")
         representation_data = props.to_dict(si_conversion=si_conversion)
         representation_data["context"] = body
-        door_representation = ifcopenshell.api.run(
-            f"geometry.add_{ty}_representation", self.model, **representation_data
-        )
-        door = ifcopenshell.api.run("root.create_entity", self.model, ifc_class=f"ifc{ty}")
+        if ty == "door":
+            door_representation = ifcopenshell.api.geometry.add_door_representation(self.model, **representation_data)
+        else:
+            door_representation = ifcopenshell.api.geometry.add_window_representation(self.model, **representation_data)
+        door = ifcopenshell.api.root.create_entity(self.model, ifc_class=f"ifc{ty}")
         door.OverallWidth = props.overall_width / si_conversion
         door.OverallHeight = props.overall_height / si_conversion
-        ifcopenshell.api.run(
-            "geometry.assign_representation",
+        ifcopenshell.api.geometry.assign_representation(
             self.model,
             product=door,
             representation=door_representation,
         )
-        ifcopenshell.api.run(
-            "spatial.assign_container",
+        ifcopenshell.api.spatial.assign_container(
             self.model,
             relating_structure=self.storey,
             products=[door],
@@ -238,8 +231,7 @@ class Context:
         v_dot_v = np.dot(v, v)
         t = AP_dot_v / v_dot_v * np.linalg.norm(v) / si_conversion
 
-        opening = ifcopenshell.api.run(
-            "root.create_entity",
+        opening = ifcopenshell.api.root.create_entity(
             self.model,
             ifc_class="IfcOpeningElement",
             predefined_type="OPENING",

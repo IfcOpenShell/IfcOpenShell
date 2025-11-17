@@ -38,12 +38,15 @@ import bonsai.core.geometry
 import bonsai.core.type
 import bonsai.tool as tool
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.api.context
 import ifcopenshell.api.drawing
 import ifcopenshell.api.document
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.geom
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
