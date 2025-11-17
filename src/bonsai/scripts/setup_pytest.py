@@ -28,22 +28,21 @@ base_python_path = str(Path(sys.executable).parent.parent)  # path without bin/p
 
 print("Detected executable:", py_exec)
 
-subprocess.call([py_exec, "-m", "ensurepip", "--user"])
-subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
+subprocess.check_call([py_exec, "-m", "ensurepip", "--user"])
+subprocess.check_call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
 
 sys_paths = [p for p in sys.path if "site-packages" in p and p.startswith(base_python_path)]
+dependencies = ["pytest", "pytest-bdd", "pytest-blender", "pygments"]
+
 if sys_paths:
     print("Detected installation directory:", sys_paths[-1])
-    subprocess.call([py_exec, "-m", "pip", "install", f"--target={sys_paths[-1]}", "--upgrade", "pytest"])
-    subprocess.call([py_exec, "-m", "pip", "install", f"--target={sys_paths[-1]}", "--upgrade", "pytest-bdd"])
-    subprocess.call([py_exec, "-m", "pip", "install", f"--target={sys_paths[-1]}", "--upgrade", "pytest-blender"])
-    subprocess.call([py_exec, "-m", "pip", "install", f"--target={sys_paths[-1]}", "--upgrade", "pygments"])
+    command = [py_exec, "-m", "pip", "install", f"--target={sys_paths[-1]}", "--upgrade"]
 else:
     print("Could not detect installation directory. Good luck.")
-    subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pytest"])
-    subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pytest-bdd"])
-    subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pytest-blender"])
-    subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pygments"])
+    command = [py_exec, "-m", "pip", "install", "--upgrade"]
+
+for dep in dependencies:
+    subprocess.check_call(command + [dep])
 
 try:
     import pytest
