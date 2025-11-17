@@ -1194,6 +1194,11 @@ def the_material_name_does_not_exist(name):
     assert bpy.data.materials.get(name) is None, "Material exists"
 
 
+@then(parsers.parse('the mesh "{name}" does not exist'))
+def the_mesh_name_does_not_exist(name: str) -> None:
+    assert bpy.data.meshes.get(name) is None, f"Mesh '{name}' exists"
+
+
 def get_ifc_material_by_name(name: str) -> Union[ifcopenshell.entity_instance, None]:
     ifc_file = tool.Ifc.get()
     material = next((m for m in ifc_file.by_type("IfcMaterial") if m.Name == name), None)
