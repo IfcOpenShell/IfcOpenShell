@@ -18,6 +18,7 @@
 
 import bpy
 import math
+import ifcopenshell.util.element
 import mathutils.geometry
 import ifcopenshell
 import ifcopenshell.util.unit

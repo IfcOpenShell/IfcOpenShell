@@ -25,6 +25,7 @@ import ifcopenshell.api.classification
 import ifcopenshell.api.group
 import ifcopenshell.api.material
 import ifcopenshell.api.nest
+import ifcopenshell.api.owner.settings
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial

@@ -25,6 +25,7 @@ import zipfile
 import tempfile
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
 import bonsai.tool as tool
