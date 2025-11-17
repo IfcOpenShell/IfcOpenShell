@@ -41,6 +41,7 @@
 #include "../serializers/USDSerializer.h"
 #include "../serializers/TtlWktSerializer.h"
 #include "../serializers/RocksDbSerializer.h"
+#include "../serializers/JsonSerializer.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -128,7 +129,10 @@ void print_usage(bool suggest_help = true)
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
         << "  .xml   XML            Property definitions and decomposition tree\n"
-		<< "  .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data\n"
+#ifdef WITH_GLTF
+        << "  .json  JSON           Property definitions and decomposition tree in xeokit json format\n"
+#endif
+        << "  .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data\n"
 		<< "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 #ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
@@ -654,7 +658,8 @@ int main(int argc, char** argv) {
 		CACHE = IfcUtil::path::from_utf8(".cache"),
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
-		// @todo this is just temporary as it doesn't make sense to require an extension for a DB
+        JSON = IfcUtil::path::from_utf8(".json"),
+        // @todo this is just temporary as it doesn't make sense to require an extension for a DB
 		RDB = IfcUtil::path::from_utf8(".rdb"),
 		CITY_JSON = IfcUtil::path::from_utf8(".cityjson"),
 		IFC = IfcUtil::path::from_utf8(".ifc"),
@@ -665,15 +670,23 @@ int main(int argc, char** argv) {
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
-	if (output_extension == XML) {
+	if (output_extension == XML || output_extension == JSON) {
 		int exit_code = EXIT_FAILURE;
 		try {
 			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
 				time_t start, end;
 				time(&start);
-				XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
-				Logger::Status("Writing XML output...");
-				s.finalize();
+                if (output_extension == XML) {
+                    XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
+                    Logger::Status("Writing XML output...");
+                    s.finalize();
+                } else {
+#ifdef WITH_GLTF
+                    JsonSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename), JsonSerializer::JSON_DIALECT_CREOOX);
+                    Logger::Status("Writing JSON output...");
+                    s.finalize();
+#endif
+                }
 				time(&end);
 				Logger::Status("Done! Conversion took " +  format_duration(start, end));
 
