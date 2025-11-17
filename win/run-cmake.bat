@@ -99,7 +99,9 @@ for /f "usebackq delims=" %%v in (`
 set PYTHON_INCLUDE_DIR=%PYTHONHOME%\include
 set PYTHON_LIBRARY=%PYTHONHOME%\libs\python%PY_VER_MAJOR_MINOR%.lib
 
-set SWIG_INSTALL_DIR=%INSTALL_DIR%\swigwin
+:: `swigwin` is a legacy installation folder name, before we started using versioned folders.
+:: we can remove it later.
+if not defined SWIG_INSTALL_DIR set SWIG_INSTALL_DIR=%INSTALL_DIR%\swigwin
 set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
 if not defined ADD_COMMIT_SHA set ADD_COMMIT_SHA=Off
 

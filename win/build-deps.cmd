@@ -572,15 +572,21 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 
 :SWIG
+set DEPENDENCY_NAME=SWIG
+set SWIG_VERSION=4.1.0
+set DEPENDENCY_DIR=%DEPS_DIR%\swig-%SWIG_VERSION%
+set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\swig-%SWIG_VERSION%
+echo SWIG_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
-IF EXIST "%INSTALL_DIR%\swigwin" (
-    echo Found existing "%INSTALL_DIR%\swigwin", skipping
+IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
+    echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
     goto :cgal
 )
 
 cd "%DEPS_DIR%"
 
 :: Install bizon dependency for SWIG.
+set SWIG_DEPENDENCY_NAME=%DEPENDENCY_NAME%
 set DEPENDENCY_NAME=win_flex_bison
 set WIN_FLEX_BIZON=win_flex_bison-2.5.25
 set WIN_FLEX_BIZON_ZIP=%WIN_FLEX_BIZON%.zip
@@ -589,10 +595,8 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 echo test %WIN_FLEX_BIZON%
 call :ExtractArchive %WIN_FLEX_BIZON_ZIP% "%DEPS_DIR%\%WIN_FLEX_BIZON%" "%DEPS_DIR%\%WIN_FLEX_BIZON%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+set DEPENDENCY_NAME=%SWIG_DEPENDENCY_NAME%
 
-set SWIG_VERSION=4.1.0
-set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
-set DEPENDENCY_DIR=%DEPS_DIR%\swig-%SWIG_VERSION%
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 call :DownloadFile https://github.com/swig/swig/archive/refs/tags/v%SWIG_VERSION%.zip "%DEPS_DIR%" swig-%SWIG_VERSION%.zip
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -601,7 +605,7 @@ call :ExtractArchive swig-%SWIG_VERSION%.zip "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\swigwin" ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DWITH_PCRE=OFF ^
                -DBISON_EXECUTABLE="%DEPS_DIR%\%WIN_FLEX_BIZON%\win_bison.exe"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
