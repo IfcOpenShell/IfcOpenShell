@@ -54,27 +54,20 @@ class Patcher:
         entire IFC model.
 
         :param x: The X coordinate to offset by in project length units.
-        :type x: typing.Union[str, float]
         :param y: The Y coordinate to offset by in project length units.
-        :type y: typing.Union[str, float]
         :param z: The Z coordinate to offset by in project length units.
-        :type z: typing.Union[str, float]
         :param should_rotate_first: Whether or not to rotate first and then
             translate, or to first translate and rotate afterwards. Defaults to
             rotate first then translate.
-        :type should_rotate_first: bool
         :param ax: An optional angle to rotate by. If only this angle is
             specified, it is treated as the angle to rotate in plan view (i.e.
             around the Z axis). If all angle parameters are specified, then it
             is treated as the angle to rotate around the X axis. Angles are in
             decimal degrees and positive is anticlockwise.
-        :type ax: typing.Union[str, float],optional
         :param ay: An optional angle to rotate by for 3D rotations along the Y
             axis. Angles are in decimal degrees and positive is anticlockwise.
-        :type ay: typing.Union[str, float],optional
         :param az: An optional angle to rotate by for 3D rotations along the Z
             axis. Angles are in decimal degrees and positive is anticlockwise.
-        :type az: typing.Union[str, float],optional
 
         Example:
 

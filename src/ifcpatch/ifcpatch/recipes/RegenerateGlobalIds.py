@@ -36,7 +36,6 @@ class Patcher:
         :param only_duplicates: If set to True, new GlobalIds will only be
             generated for duplicate IDs. This is a safe thing to run to ensure
             IFCs are valid. If False, all GlobalIds will be regenerated.
-        :type only_duplicates: bool
 
         Example:
 
