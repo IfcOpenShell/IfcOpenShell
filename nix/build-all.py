@@ -943,7 +943,7 @@ if "pcre2" in targets:
 
 if "swig" in targets:
     build_dependency(
-        name="swig",
+        name=f"swig-{SWIG_VERSION}",
         mode="autoconf",
         build_tool_args=["--disable-ccache", f"--with-pcre2-prefix={DEPS_DIR}/install/pcre2-{PCRE2_VERSION}"],
         download_url="https://github.com/swig/swig.git",
@@ -1429,6 +1429,9 @@ if "rocksdb" in targets:
         ]
     )
 
+if "swig" in targets:
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/swig-{SWIG_VERSION}")
+
 if not WASM and (not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets)):
     logger.info("\rConfiguring executables...")
 
@@ -1481,9 +1484,6 @@ if "IfcOpenShell-Python" in targets:
         if os.path.exists(cache_path):
             os.remove(cache_path)
 
-        prefix_paths: list[str] = []
-        if "swig" in targets:
-            prefix_paths.append(f"{DEPS_DIR}/install/swig")
         if python_path:
             # We couldn't just prefix PATH and have to provide all variables explicitly,
             # see ifcwrap/cmake for the details.
@@ -1500,7 +1500,7 @@ if "IfcOpenShell-Python" in targets:
         run_cmake(
             "",
             cmake_args
-            + get_cmake_args_prefix_path(prefix_paths)
+            + get_cmake_args_prefix_path()
             + [
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
                 # Needed because pyodide is expecting setup.py to be in the root.
