@@ -48,6 +48,8 @@ void MAKE_INIT_FN(JsonSerializer)(JsonSerializerFactory::Factory* mapping) {
 	mapping->bind(schema_name, factory);
 }
 
+namespace {
+
 class format_value_visitor : public boost::static_visitor<std::string> {
   public:
     template <typename T>
@@ -253,6 +255,8 @@ IfcSchema::IfcUnit* get_unit_from_prop(const IfcSchema::IfcProperty* prop) {
     // @todo other unit typs
     return nullptr;
 }
+
+} // namespace
 
 void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
     json output;
