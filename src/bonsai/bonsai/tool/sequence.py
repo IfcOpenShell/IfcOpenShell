@@ -567,14 +567,6 @@ class Sequence(bonsai.core.tool.Sequence):
             return tool.Ifc.get().by_id(tasks[props.active_task_index].ifc_definition_id)
 
     @classmethod
-    def get_direct_nested_tasks(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        return ifcopenshell.util.sequence.get_nested_tasks(task)
-
-    @classmethod
-    def get_direct_task_outputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        return ifcopenshell.util.sequence.get_direct_task_outputs(task)
-
-    @classmethod
     def enable_editing_work_calendar_times(cls, work_calendar: ifcopenshell.entity_instance) -> None:
         props = cls.get_work_calendar_props()
         props.active_work_calendar_id = work_calendar.id()
