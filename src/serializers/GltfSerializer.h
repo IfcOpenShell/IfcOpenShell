@@ -36,7 +36,7 @@ private:
 	std::ofstream fstream_, tmp_fstream1_, tmp_fstream2_;
 	std::map<std::string, int> materials_, meshes_;
 	json json_, node_array_;
-	boost::optional<json> ecef_transform_, north_rotation_;
+	boost::optional<json> ecef_transform_, north_rotation_, z_up_transform_;
 	int bufferViewId;
     std::map<const IfcUtil::IfcBaseEntity*, size_t> node_indices_;
     std::vector<size_t> roots_;
