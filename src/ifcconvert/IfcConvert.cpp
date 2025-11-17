@@ -867,8 +867,8 @@ int main(int argc, char** argv) {
 		geometry_settings.get<ifcopenshell::geometry::settings::NoParallelMapping>().value = true;
 	}
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
-		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
+	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC && output_extension != GLB) {
+		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd or .glb output.\n";
 		/// @todo Lots of duplicate error-and-exit code.
 		write_log(!quiet);
 		print_usage();
