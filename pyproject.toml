@@ -20,7 +20,7 @@ disableBytesTypePromotions = true
 reportUnnecessaryTypeIgnoreComment = true
 
 # Define here general ruff settings,
-# then they will be inherited projects .toml files.
+# then they will be inherited by projects' .toml files.
 # This allows using assuming different Python version for different projects.
 [tool.ruff]
 exclude = [
