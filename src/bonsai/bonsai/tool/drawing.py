@@ -223,6 +223,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def exclude_annotation_from_drawing(
         cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance
     ) -> None:
+        ifc_file = tool.Ifc.get()
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
