@@ -72,6 +72,10 @@ TEST_FILES_DIR = Path.cwd() / "test/files"
 
 CLEAN_LINKED_FILES_CACHE = False
 
+EPSET_DRAWING = Path.cwd() / "bonsai/bim/data/pset/EPset_Drawing.ifc"
+EPSET_DRAWING_BYTES = EPSET_DRAWING.read_bytes()
+RELOAD_EPSET_DRAWING = False
+
 
 class PanelSpy:
     def __init__(self, blender_panel: type[bpy.types.Panel]):
@@ -307,6 +311,12 @@ def run_for_each_test() -> Generator[None]:
         for filepath in TEST_FILES_DIR.glob("*.ifc.cache.*"):
             filepath.unlink()
         CLEAN_LINKED_FILES_CACHE = False
+
+    # pset_template tests are editing EPset_Drawing.ifc, so we need to restore it.
+    global RELOAD_EPSET_DRAWING
+    if RELOAD_EPSET_DRAWING:
+        EPSET_DRAWING.write_bytes(EPSET_DRAWING_BYTES)
+        RELOAD_EPSET_DRAWING = False
 
 
 @given("an untestable scenario")
@@ -699,6 +709,8 @@ def i_select_the_item_name_item_in_the_list_name_list(item_name: str, list_name:
 
 @when("I load a new pset template file")
 def i_load_a_new_pset_template_file():
+    global RELOAD_EPSET_DRAWING
+    RELOAD_EPSET_DRAWING = True
     props = tool.PsetTemplate.get_pset_template_props()
     IfcStore.pset_template_path = props.pset_template_files
     IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
