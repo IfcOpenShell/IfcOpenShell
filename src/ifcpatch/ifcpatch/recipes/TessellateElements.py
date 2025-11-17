@@ -47,10 +47,8 @@ class Patcher:
         See example bug: https://github.com/Autodesk/revit-ifc/issues/707
 
         :param query: Query string to filter out elements to convert, defaults to "IfcBeam"
-        :type query: str
         :param force_faceted_brep: Force using IfcFacetedBreps instead of IfcPolygonalFaceSets,
             defaults to `False`
-        :type force_faceted_brep: bool
 
         Example:
 
