@@ -35,7 +35,7 @@ class SERIALIZERS_API JsonSerializer : public Serializer {
 };
 
 struct SERIALIZERS_API JsonSerializerFactory {
-    typedef boost::function2<JsonSerializer*, IfcParse::IfcFile*, std::string, JsonSerializer::Dialect> fn;
+    typedef boost::function3<JsonSerializer*, IfcParse::IfcFile*, std::string, JsonSerializer::Dialect> fn;
 
     class Factory : public std::map<std::string, fn> {
       public:
