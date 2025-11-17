@@ -32,6 +32,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import bonsai.tool as tool
 import bonsai.bim.handler
+from collections.abc import Generator
 from bonsai.bim.ifc import IfcStore
 from bonsai.tool.brick import BrickStore
 from bonsai.bim.module.model.data import AuthoringData
@@ -66,7 +67,10 @@ Can be useful for debugging, but has caveats - can't use ``wm.read_homefile``
 as resets the ``bpy.context`` and some it's members become `None`.
 """
 
-TMP = Path(f"{variables['cwd']}/test/files/temp")
+TMP = Path.cwd() / "test/files/temp"
+TEST_FILES_DIR = Path.cwd() / "test/files"
+
+CLEAN_LINKED_FILES_CACHE = False
 
 
 class PanelSpy:
@@ -292,6 +296,19 @@ def vectors_are_equal(v1, v2):
     return all(is_x(v1[i], v2[i]) for i in range(len(v1)))
 
 
+@pytest.fixture(scope="function", autouse=True)
+def run_for_each_test() -> Generator[None]:
+    # Code before this runs before each test
+    yield
+    # Code after this runs after each test
+
+    global CLEAN_LINKED_FILES_CACHE
+    if CLEAN_LINKED_FILES_CACHE:
+        for filepath in TEST_FILES_DIR.glob("*.ifc.cache.*"):
+            filepath.unlink()
+        CLEAN_LINKED_FILES_CACHE = False
+
+
 @given("an untestable scenario")
 def an_untestable_scenario():
     pass
@@ -344,6 +361,16 @@ def load_previously_saved_ifc_project() -> None:
 @then(parsers.parse("I save IFC project"))
 def saving_ifc_project() -> None:
     tool.Project.save_test_project()
+
+
+@given(parsers.parse('I link IFC project from "{filepath}"'))
+@when(parsers.parse('I link IFC project from "{filepath}"'))
+@then(parsers.parse('I link IFC project from "{filepath}"'))
+def i_link_ifc_project_from_filepath(filepath: str) -> None:
+    global CLEAN_LINKED_FILES_CACHE
+    filepath = replace_variables(filepath)
+    CLEAN_LINKED_FILES_CACHE = True
+    bpy.ops.bim.link_ifc(filepath=filepath, use_cache=False)
 
 
 @given("the Brickschema is stubbed")
