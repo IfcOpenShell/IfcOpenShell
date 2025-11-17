@@ -869,8 +869,6 @@ class Sequence:
     def get_animation_product_frames(cls, work_schedule, settings): pass
     def get_animation_settings(cls): pass
     def get_checked_tasks(cls): pass
-    def get_direct_nested_tasks(cls, task):pass
-    def get_direct_task_outputs(cls, task): pass
     def get_finish_date(cls): pass
     def get_highlighted_task(cls): pass
     def get_lag_time_attributes(cls): pass
