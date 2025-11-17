@@ -195,8 +195,9 @@ class TestAddRepresentation:
 
 class TestSwitchRepresentation:
     def test_switching_to_a_representation(self, ifc, geometry):
-        ifc.is_edited("obj").should_be_called().will_return(False)
         geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        geometry.clear_cache("element").should_be_called()
         geometry.reimport_element_representations("obj", "mapped_rep", apply_openings=True).should_be_called()
         subject.switch_representation(
             ifc,
