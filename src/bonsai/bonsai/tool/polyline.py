@@ -172,11 +172,11 @@ class Polyline(bonsai.core.tool.Polyline):
             angle = tool.Cad.angle_3_vectors(
                 second_to_last_point, last_point, mouse_vector, new_angle=None, degrees=True
             )
-            angle_round_threshold = 1000 # Avoids rounding when distance is too big
+            angle_round_threshold = 1000  # Avoids rounding when distance is too big
 
             # Round angle to the nearest 0.05
             angle = round(angle / 0.05) * 0.05 if distance < angle_round_threshold else angle
- 
+
             orientation_angle = tool.Cad.angle_3_vectors(
                 world_second_to_last_point, last_point, mouse_vector, new_angle=None, degrees=True
             )
