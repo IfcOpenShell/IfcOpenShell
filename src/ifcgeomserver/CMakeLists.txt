@@ -1,4 +1,4 @@
-find_package(Boost COMPONENTS chrono REQUIRED)
+find_package(Boost REQUIRED)
 
 file(GLOB CPP_FILES *.cpp)
 file(GLOB H_FILES *.h)
