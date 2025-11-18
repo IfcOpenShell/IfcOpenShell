@@ -401,7 +401,9 @@ call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" %DEPENDENCY_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: top-level folder name changed when migrating to github releases
-ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
+if exist "%DEPS_DIR%\boost-%BOOST_VERSION%". (
+    ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
+)
 
 :: Build Boost build script
 if not exist "%DEPENDENCY_DIR%\project-config.jam". (
