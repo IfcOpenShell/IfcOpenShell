@@ -389,6 +389,10 @@ popd
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
+set DEPENDENCY_INSTALL_DIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%
+echo BOOST_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+:: Needed for CGAL build.
+set BOOST_ROOT=%DEPENDENCY_DIR%
 set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
@@ -423,7 +427,7 @@ call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, 
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
 
 call .\b2 toolset=%BOOST_TOOLSET% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
-    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND%
+    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=%DEPENDENCY_INSTALL_DIR%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -633,13 +637,13 @@ cd "%DEPENDENCY_DIR%"
 git reset --hard
 git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
-               -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
+               -DBOOST_ROOT="%BOOST_ROOT%"    ^
                -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
                -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
                -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
                -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
                -DCGAL_HEADER_ONLY=On                          ^
-               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+               -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
