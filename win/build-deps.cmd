@@ -768,7 +768,7 @@ echo.
 call :PrintUsage
 :Error
 echo.
-call "%~dp0\utils\cecho.cmd" 0 12 "An error occurred! Aborting!"
+call "%~dp0\utils\cecho.cmd" 0 12 "An error occurred! Aborting! Last logged action: %LAST_ACTION%"
 set IFCOS_SCRIPT_RET=1
 goto :Finish
 
@@ -808,6 +808,7 @@ if not exist "%~3". (
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
 )
+set LAST_ACTION=DownloadFile '%DEPENDENCY_NAME%'.
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
@@ -821,6 +822,7 @@ if not exist "%~3". (
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
 )
+set LAST_ACTION=ExtractArchive '%DEPENDENCY_NAME%'.
 exit /b %ERRORLEVEL%
 
 :: GitCloneOrPullRepository - Clones or pulls (if repository already cloned) a Git repository
