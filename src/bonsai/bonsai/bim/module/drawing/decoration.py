@@ -2016,7 +2016,7 @@ class DecorationsHandler:
                     return  # Don't draw decorations in local view
 
         # disable decorations when not in camera view
-        if context.region_data.view_perspective != 'CAMERA':
+        if context.region_data.view_perspective != "CAMERA":
             return
 
         if not DrawingsData.is_loaded:

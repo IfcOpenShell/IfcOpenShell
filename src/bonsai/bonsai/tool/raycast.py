@@ -181,7 +181,9 @@ class Raycast(bonsai.core.tool.Raycast):
             mouse_pos = event.mouse_region_x, event.mouse_region_y
 
         view_vector = tool.Cad.region_2d_to_vector_3d_np(region, rv3d, mouse_pos)
-        ray_origin = tool.Cad.region_2d_to_origin_3d_np(region, rv3d, mouse_pos, clamp=10) # TODO clamp is hardcoded but might be necessary to adapt
+        ray_origin = tool.Cad.region_2d_to_origin_3d_np(
+            region, rv3d, mouse_pos, clamp=10
+        )  # TODO clamp is hardcoded but might be necessary to adapt
 
         ray_target = ray_origin + view_vector
         ray_direction = ray_target - ray_origin
