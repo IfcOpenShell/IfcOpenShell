@@ -74,7 +74,7 @@ if(HAS_MAX)
             tessint.lib
             viewfile.lib
             zlibdll.lib
-            ${OPENCASCADE_LIBRARIES}
+            ${OpenCASCADE_LIBRARIES}
         )
 
         set_target_properties(IfcMax_${max_year} PROPERTIES SUFFIX ".dli")
