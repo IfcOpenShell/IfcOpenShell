@@ -230,26 +230,6 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
-set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
-
-macro(clear_wasm_sysroot)
-if(WASM_BUILD)
-    # when using the nix/build-all.py build script we should not
-    # look into the sysroot for most of the dependencies but rather
-    # in the designated build/ folder created by the script.
-    set(CMAKE_FIND_ROOT_PATH "")
-endif()
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
-endmacro()
-
-macro(restore_wasm_sysroot)
-if(WASM_BUILD)
-    # reset to use sysroot
-    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
-endif()
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-endmacro()
-
 if(WITH_CGAL)
     if(NOT CGAL_INCLUDE_DIR)
 	# CGAL is not respecting default Boost_USE_STATIC_LIBS value
@@ -294,9 +274,7 @@ if(GLTF_SUPPORT)
     endif()
 
     if(NOT nlohmann_json_DIR)
-        clear_wasm_sysroot()
         find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
-        restore_wasm_sysroot()
         set(JSON_INCLUDE_DIR ${json_header_path})
 
         if(json_header_path)
@@ -394,19 +372,15 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
-clear_wasm_sysroot()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-restore_wasm_sysroot()
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 if(NOT MINIMAL_BUILD)
     # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
-    clear_wasm_sysroot()
     if(IFCXML_SUPPORT)
         find_package(LibXml2 REQUIRED)
     endif()
-    restore_wasm_sysroot()
 endif()
 
 if(IFCXML_SUPPORT)
@@ -783,10 +757,8 @@ if(BUILD_IFCGEOM)
         set(CGAL_LIBRARIES CGAL::CGAL)
         message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
     elseif(WITH_CGAL AND NOT CGAL_DIR)
-	clear_wasm_sysroot()
         find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
         find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-	restore_wasm_sysroot()
         if(NOT libGMP)
             message(FATAL_ERROR "Unable to find GMP library files, aborting")
         endif()
