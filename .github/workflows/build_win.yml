@@ -12,12 +12,12 @@ jobs:
         arch: ['x64']
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           repository: IfcOpenShell/build-outputs
           path: _deps-vs2022-x64-installed
@@ -37,8 +37,8 @@ jobs:
           }
 
       - name: ccache
-        # Use fork to resolve cache misses / duplicated cache entries on Windows.
-        uses: Andrej730/ccache-action@main
+        # TODO: Use tag after 1.2.20 releases.
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
         with:
           key: win-${{ matrix.arch }}
           # Windows ccache needs ~1GB
@@ -73,7 +73,7 @@ jobs:
           git push || echo "Push failed"
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
