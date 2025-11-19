@@ -88,9 +88,7 @@ else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
     list(APPEND OpenCASCADE_LIBRARIES TKDESTEP TKDEIGES)
 endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
 
-clear_wasm_sysroot()
 find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
-restore_wasm_sysroot()
 
 if(libTKernel)
     message(STATUS "Required Open Cascade Library files found")
