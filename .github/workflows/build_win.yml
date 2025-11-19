@@ -37,8 +37,8 @@ jobs:
           }
 
       - name: ccache
-        # Use fork to resolve cache misses / duplicated cache entries on Windows.
-        uses: Andrej730/ccache-action@main
+        # TODO: Use tag after 1.2.20 releases.
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
         with:
           key: win-${{ matrix.arch }}
           # Windows ccache needs ~1GB

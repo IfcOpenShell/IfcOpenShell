@@ -70,7 +70,10 @@ jobs:
           libhdf5-dev libcgal-dev libeigen3-dev
           
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        # TODO: temporarily pointing to 1.2.19 to get notified by dependabot when 1.2.20 is released
+        # to update hardcoded references to commits in some other workflows.
+        # Then we can switch back to 1.2 in all actions.
+        uses: hendrikmuhs/ccache-action@v1.2.19
         with:
           key: ubuntu-22.04-${{ runner.arch }}
 

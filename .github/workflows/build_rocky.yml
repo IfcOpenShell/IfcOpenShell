@@ -48,8 +48,8 @@ jobs:
           [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \; || true
 
       - name: ccache
-        # Latest release (1.2.19) doesn't support Rocky, so using a specific commit.
-        uses: hendrikmuhs/ccache-action@eca11c308176d48942455b9e5b1b70ff6950a778
+        # TODO: Use tag after 1.2.20 releases.
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
         with:
           key: ubuntu-22.04-${{ runner.arch }}-rockylinux8
 
