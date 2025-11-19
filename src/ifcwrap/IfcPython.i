@@ -162,6 +162,10 @@
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
+%ignore SeparateZUpNode;
+
+%ignore XmlSerializerFactory;
+%ignore JsonSerializerFactory;
 
 // Triangulated representation helper struct
 %ignore EdgeKey;
