@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: activate
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v5
       with:
         submodules: recursive
 
@@ -89,7 +89,7 @@ jobs:
     name: Docker Build, Tag, Push
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v5
       with:
         lfs: true
     
