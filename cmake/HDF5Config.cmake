@@ -86,3 +86,6 @@ if(NOT HDF5_INCLUDE_DIR OR NOT HDF5_LIBRARY_DIR)
         endif()
     endif()
 endif()
+
+# Restore module path.
+list(PREPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
