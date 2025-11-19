@@ -62,64 +62,48 @@ class External(svgwrite.container.Group):
         return self.xml
 
 
-def parse_markdown_links(text: str) -> list[dict[str, Union[str, int]]]:
+def parse_markdown_links_and_breaks(text: str) -> list[dict[str, Union[str, None]]]:
     """
-    Parse markdown links from text and return structured information.
-    Returns a list of dicts with 'text', 'url', 'start', and 'end' keys.
-    Example: "[Label](https://example.com)" -> {'text': 'Label', 'url': 'https://example.com', 'start': 0, 'end': 29}
+    Parse markdown links and breaks (\n or <br>) from text and return structured information.
+    Returns a list of dicts with 'text', 'url', and 'break' keys.
+    Example: "Hello [World](http://ex.com) end\nNext line <br>Another [Link](http://foo.com)" ->
+        [
+            {'text': 'Hello ', 'url': None, 'break': False},
+            {'text': 'World', 'url': 'http://ex.com', 'break': False},
+            {'text': ' end', 'url': None, 'break': False},
+            {'text': None, 'url': None, 'break': True},  # for \n
+            {'text': 'Next line ', 'url': None, 'break': False},
+            {'text': None, 'url': None, 'break': True},  # for <br>
+            {'text': 'Another ', 'url': None, 'break': False},
+            {'text': 'Link', 'url': 'http://foo.com', 'break': False}
+        ]
     """
-    md = MarkdownIt()
+    md = MarkdownIt("commonmark", {"breaks": True})
     tokens = md.parse(text)
-    links = []
-
-    for i, token in enumerate(tokens):
+    segments = []
+    for token in tokens:
         if token.type == "inline":
             link_opening = None
             link_text = None
-            for j, child in enumerate(token.children or []):
-                if child.type == "link_open":
+            for child in token.children or []:
+                if child.type == "softbreak":
+                    segments.append({"text": None, "url": None, "break": True})
+                elif child.type == "html_inline" and child.content.strip().lower() == "<br>":
+                    segments.append({"text": None, "url": None, "break": True})
+                elif child.type == "link_open":
                     link_opening = child
                 elif child.type == "text" and link_opening:
                     link_text = child.content
                 elif child.type == "link_close" and link_opening:
                     url = link_opening.attrGet("href")
                     if url and link_text:
-                        pattern = re.escape(f"[{link_text}]({url})")
-                        match = re.search(pattern, text)
-                        if match:
-                            links.append({"text": link_text, "url": url, "start": match.start(), "end": match.end()})
+                        segments.append({"text": link_text, "url": url, "break": False})
                     link_opening = None
                     link_text = None
-
-    return links
-
-
-def split_text_with_links(text: str) -> list[dict[str, Union[str, None]]]:
-    """
-    Split text into segments, marking which are links and which are plain text.
-    Returns a list of dicts with 'text' and 'url' keys (url is None for plain text).
-    Example: "Hello [World](http://ex.com) end" ->
-        [{'text': 'Hello ', 'url': None}, {'text': 'World', 'url': 'http://ex.com'}, {'text': ' end', 'url': None}]
-    """
-    links = parse_markdown_links(text)
-    if not links:
-        return [{"text": text, "url": None}]
-
-    segments = []
-    last_end = 0
-
-    for link in sorted(links, key=lambda x: int(x["start"])):
-        link_start = int(link["start"])
-        link_end = int(link["end"])
-        if link_start > last_end:
-            segments.append({"text": text[last_end:link_start], "url": None})
-
-        segments.append({"text": str(link["text"]), "url": str(link["url"])})
-        last_end = link_end
-
-    if last_end < len(text):
-        segments.append({"text": text[last_end:], "url": None})
-
+                elif child.type == "text" and not link_opening:
+                    segments.append({"text": child.content, "url": None, "break": False})
+    if not segments:
+        return [{"text": text, "url": None, "break": False}]
     return segments
 
 
@@ -956,9 +940,9 @@ class SvgWriter:
                 text_literal.Literal, product or element, reverse_list, list_separator
             )
 
-            text_segments = split_text_with_links(text)
+            text_segments = parse_markdown_links_and_breaks(text)
 
-            if len(text_segments) == 1 and text_segments[0]["url"] is None:
+            if len(text_segments) == 1 and text_segments[0]["url"] is None and not text_segments[0].get("break", False):
                 text_tags = self.create_text_tag(
                     text,
                     text_position_svg,
@@ -979,17 +963,37 @@ class SvgWriter:
 
                 text_tag = self.svg.text("", transform=text_transform, class_=classes_str, **base_text_attrs)
 
+                first_segment = True
+                next_line = False
                 for segment in text_segments:
-                    segment_text = segment["text"]
-                    segment_url = segment["url"]
+                    if segment.get("break", False):
+                        next_line = True
+                        continue
+                    if segment["text"] is None:
+                        continue
+                    if next_line:
+                        dy, x, y = "1em", 0, 0
+                        next_line = False
+                        first_segment = False
+                    elif first_segment:
+                        dy, x, y = "0em", 0, 0
+                        first_segment = False
+                    else:
+                        dy, x, y = None, None, None
 
-                    if segment_url:
-                        link_element = self.svg.a(href=segment_url, target="_blank")
-                        tspan = self.svg.tspan(segment_text, class_=classes_str)
+                    tspan = self.svg.tspan(segment["text"], class_=classes_str)
+                    if dy is not None:
+                        tspan.attribs["dy"] = dy
+                    if x is not None:
+                        tspan.attribs["x"] = x
+                    if y is not None:
+                        tspan.attribs["y"] = y
+
+                    if segment["url"]:
+                        link_element = self.svg.a(href=segment["url"], target="_blank")
                         link_element.add(tspan)
                         text_tag.add(link_element)
                     else:
-                        tspan = self.svg.tspan(segment_text, class_=classes_str)
                         text_tag.add(tspan)
 
                 if fill_bg:
