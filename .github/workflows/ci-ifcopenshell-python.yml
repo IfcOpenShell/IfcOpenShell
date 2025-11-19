@@ -38,7 +38,7 @@ jobs:
             short_name: macosm164
           }
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
