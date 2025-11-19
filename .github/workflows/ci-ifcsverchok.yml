@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+      - uses: actions/setup-python@v6 # https://github.com/actions/setup-python
         with:
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
           python-version: '3.11'
