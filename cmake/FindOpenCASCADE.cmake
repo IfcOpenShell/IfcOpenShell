@@ -1,3 +1,19 @@
+#
+# Input variables:
+# - `OCC_INCLUDE_DIR`
+# - `OCC_LIBRARY_DIR`
+# If input variables are not specified, try to find OpenCASCADE config.
+# Input variables could also be provided as environment variables.
+#
+# Output variables:
+# - `OCC_INCLUDE_DIR`
+# - `OCC_LIBRARY_DIR`
+# - `OpenCASCADE_LIBRARIES`
+#
+
+UNIFY_ENVVARS_AND_CACHE(OCC_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(OCC_LIBRARY_DIR)
+
 if(OCC_INCLUDE_DIR)
     set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
     message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
