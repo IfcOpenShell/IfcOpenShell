@@ -243,7 +243,9 @@ if WASM:
     # Pyodide still in transition from `FLAGS` to `FLAGS_INIT`.
     # `FLAGS_INIT` allow us to provide flags using environment variables
     # and providing `FLAGS` directly would break pyodide toolchain.
-    WASM_CMAKE_IS_USING_INIT_VARS = get_pyodide_build_version() >= (0, 30, 8)
+    # NOTE: changes in pyodide-build currently got postponed:
+    # https://github.com/pyodide/pyodide-build/pull/249
+    WASM_CMAKE_IS_USING_INIT_VARS = get_pyodide_build_version() >= (99, 0, 0)
 
     # pyodide provide empty `CXXFLAGS`, leading to issues using C++ files compiled with `-fexceptions`
     # which is used by OCCT.
