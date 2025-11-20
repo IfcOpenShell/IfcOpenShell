@@ -13,6 +13,9 @@
 # To avoid cyclic calls to this file
 list(REMOVE_ITEM CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
 
+UNIFY_ENVVARS_AND_CACHE(LIBXML2_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(LIBXML2_LIBRARIES)
+
 if((NOT LIBXML2_INCLUDE_DIR AND NOT LIBXML2_LIBRARIES))
     # First try config mode (probably works with vcpkg, Conan, macOS brew installs, but not on ubuntu 22.04)
     # CONFIG is provided using root path, so no need to clear sysroot here.
