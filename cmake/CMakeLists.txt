@@ -200,7 +200,6 @@ endif()
 
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
 UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
-UNIFY_ENVVARS_AND_CACHE(EIGEN_DIR)
 
 if(NOT MINIMAL_BUILD)
     UNIFY_ENVVARS_AND_CACHE(PYTHON_INCLUDE_DIR)
@@ -487,25 +486,12 @@ else()
 endif(MSVC)
 
 
-# Ensure other dependencies are provided.
-if(NOT EXISTS "${EIGEN_DIR}")
-    find_package(Eigen3 CONFIG)
-    if(Eigen3_DIR)
-        message(STATUS "Eigen3: found config at '${Eigen3_DIR}'.")
-    else()
-        message(
-            FATAL_ERROR
-            "EIGEN_DIR is not provided or provided folder doesn't exist (current value: '${EIGEN_DIR}'). "
-            "Also couldn't find Eigen3 as a package."
-        )
-    endif()
-    link_libraries(Eigen3::Eigen)
-endif()
-
+find_package(Eigen3 REQUIRED)
+link_libraries(Eigen3::Eigen)
 
 include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
-    ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
+    ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
     ${TBB_INCLUDE_DIR}
 )
 
