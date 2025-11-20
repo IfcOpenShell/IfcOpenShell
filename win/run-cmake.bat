@@ -110,6 +110,8 @@ set GMP_INCLUDE_DIR=%INSTALL_DIR%\mpir
 set GMP_LIBRARY_DIR=%INSTALL_DIR%\mpir
 set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
 set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
+:: We don't install Eigen currently,
+:: so there's no Eigen3config.cmake and therefore we provide path explicitly.
 set EIGEN_DIR=%INSTALL_DIR%\Eigen
 set USD_INCLUDE_DIR=%INSTALL_DIR%\usd\include
 set USD_LIBRARY_DIR=%INSTALL_DIR%\usd\lib
