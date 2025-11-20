@@ -206,12 +206,6 @@ if(NOT MINIMAL_BUILD)
     UNIFY_ENVVARS_AND_CACHE(PYTHON_INCLUDE_DIR)
     UNIFY_ENVVARS_AND_CACHE(PYTHON_LIBRARY)
     UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
-    UNIFY_ENVVARS_AND_CACHE(CGAL_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(CGAL_LIBRARY_DIR)
-    UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
-    UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
 
 # Get a list of all OPTION flags from the CMakeLists.txt
@@ -223,28 +217,12 @@ foreach(option_flag IN LISTS option_flags)
 endforeach()
 
 if(WITH_CGAL)
-    if(NOT CGAL_INCLUDE_DIR)
-	# CGAL is not respecting default Boost_USE_STATIC_LIBS value
-	# and sometiems it's getting in the way.
-	if(NOT DEFINED Boost_USE_STATIC_LIBS)
-		set(CGAL_Boost_USE_STATIC_LIBS OFF)
-	else()
-		set(CGAL_Boost_USE_STATIC_LIBS "${Boost_USE_STATIC_LIBS}")
-	endif()
     find_package(CGAL REQUIRED)
-        if(NOT CGAL_DIR)
-            message(
-                FATAL_ERROR
-                "CGAL_SUPPORT enabled, but CGAL_INCLUDE_DIR wasn't provided and CGAL package couldn't be found."
-            )
-        endif()
-        message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
+    if(TARGET CGAL::CGAL)
         link_libraries(CGAL::CGAL)
     endif()
-
     add_definitions(-DIFOPSH_WITH_CGAL)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
-
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
