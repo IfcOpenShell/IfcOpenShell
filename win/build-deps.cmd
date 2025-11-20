@@ -354,7 +354,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 set DEPENDENCY_NAME=hdf5
 set DEPENDENCY_DIR=%DEPS_DIR%\hdf5-%HDF5_VERSION%
-cd "%DEPENDENCY_DIR%"
 set HDF5_CMAKE_ZIP=hdf5-%HDF5_VERSION%.zip
 set HDF5_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
 
@@ -953,3 +952,4 @@ echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
 echo NB: This script needs to be ran from the directory directly containing it.
 echo.
+
