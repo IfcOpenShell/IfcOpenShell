@@ -389,10 +389,6 @@ if(IFCXML_SUPPORT)
 endif()
 
 if(BUILD_IFCGEOM)
-    if(MSVC AND NOT LibXml2_DIR)
-        add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
-    endif()
-
     # Open CASCADE
     if(WITH_OPENCASCADE)
         find_package(OpenCASCADE REQUIRED)

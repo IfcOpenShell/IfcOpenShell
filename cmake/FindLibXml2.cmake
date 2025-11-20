@@ -38,5 +38,9 @@ else()
     find_package(LibXml2 REQUIRED)
 endif()
 
+if(MSVC AND NOT LibXml2_DIR)
+    add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
+endif()
+
 # Restore module path.
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
