@@ -814,8 +814,8 @@ if not exist "%~3". (
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
 )
-set LAST_ACTION=DownloadFile '%DEPENDENCY_NAME%'.
 set RET=%ERRORLEVEL%
+set LAST_ACTION=DownloadFile '%DEPENDENCY_NAME%'.
 popd
 exit /b %RET%
 
@@ -828,8 +828,9 @@ if not exist "%~3". (
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
 )
+set RET=%ERRORLEVEL%
 set LAST_ACTION=ExtractArchive '%DEPENDENCY_NAME%'.
-exit /b %ERRORLEVEL%
+exit /b %RET%
 
 :: GitCloneOrPullRepository - Clones or pulls (if repository already cloned) a Git repository
 :: Params: %1 gitUrl, %2 destDir
