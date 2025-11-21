@@ -489,7 +489,7 @@ endif(MSVC)
 find_package(Eigen3 REQUIRED)
 link_libraries(Eigen3::Eigen)
 
-include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
+include_directories(${INCLUDE_DIRECTORIES} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
     ${TBB_INCLUDE_DIR}
@@ -657,7 +657,7 @@ if(BUILD_IFCGEOM)
         find_package(Threads)
     endif()
 
-    target_link_libraries(IfcGeom IfcParse ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(IfcGeom IfcParse ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} ${OpenCASCADE_LIBRARIES})
 
 endif(BUILD_IFCGEOM)
 

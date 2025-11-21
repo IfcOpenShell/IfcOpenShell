@@ -5,9 +5,7 @@
 # If input variables are not specified, try to find OpenCASCADE config.
 # Input variables could also be provided as environment variables.
 #
-# Output variables:
-# - `OCC_INCLUDE_DIR`
-# - `OCC_LIBRARY_DIR`
+# Output variables
 # - `OpenCASCADE_LIBRARIES`
 #
 
@@ -22,6 +20,17 @@ endif()
 if(OCC_LIBRARY_DIR)
     set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
     message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
+endif()
+
+
+if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
+    # OCE is not supported for find_package, because it's using a different name (`oce`)
+    # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
+    # find_package creates variables:
+    # - `OpenCASCADE_INCLUDE_DIR`
+    # - `OpenCASCADE_LIBRARIES`
+    find_package(OpenCASCADE CONFIG REQUIRED)
+    return()
 endif()
 
 # No specific paths specified, try to find package.
@@ -45,23 +54,6 @@ if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
     )
     string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
     set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
-elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
-    # OCE is not supported for find_package, because it's using a different name (`oce`)
-    # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
-    find_package(OpenCASCADE CONFIG REQUIRED)
-    set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
-    # Do not use OpenCASCADE_LIBRARY_DIR for OCC_LIBRARY_DIR - check target property explicitly.
-    # On Windows there is a case with OpenCASCADE_LIBRARY_DIR points to `lib` folder,
-    # while TKernel is actually in `libi`.
-    get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
-    get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
-    set(OCC_VERSION_STRING ${OpenCASCADE_VERSION})
-    message(
-        STATUS
-        "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
-        "deducing from it OCC_INCLUDE_DIR: '${OCC_INCLUDE_DIR}' "
-        "and OCC_LIBRARY_DIR: '${OCC_LIBRARY_DIR}'."
-    )
 else()
     message(
         FATAL_ERROR
@@ -98,15 +90,6 @@ else()
         "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting"
     )
 endif()
-
-# Use the found libTKernel as a template for all other OCC libraries
-# TODO Extract this into macro/function
-foreach(lib ${OpenCASCADE_LIBRARIES})
-    # Make sure we'll handle the Windows/MSVC debug postfix convention too.
-    string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
-    string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
-    list(APPEND OpenCASCADE_LIBRARIES "${lib_path}")
-endforeach()
 
 if(MSVC)
     add_definitions(-DHAVE_NO_DLL)
@@ -147,3 +130,9 @@ if(OCCT_STATIC)
         set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES} "dl")
     endif()
 endif()
+
+add_library(OpenCASCADE_INTERFACE INTERFACE IMPORTED)
+target_include_directories(OpenCASCADE_INTERFACE INTERFACE "${OCC_INCLUDE_DIR}")
+target_link_libraries(OpenCASCADE_INTERFACE INTERFACE ${OpenCASCADE_LIBRARIES})
+target_link_directories(OpenCASCADE_INTERFACE INTERFACE "${OCC_LIBRARY_DIR}")
+set(OpenCASCADE_LIBRARIES OpenCASCADE_INTERFACE)
