@@ -328,7 +328,7 @@ set DEPENDENCY_NAME=mpfr
 set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
 call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
+pushd "%DEPENDENCY_DIR%"
 git reset --hard
 powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -349,6 +349,7 @@ IF NOT EXIST lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\mpfr.lib GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
 copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+popd
 
 :HDF5
 
