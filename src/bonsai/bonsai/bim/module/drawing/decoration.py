@@ -1739,13 +1739,27 @@ class CutDecorator:
             self.cache_camera_matrix()
             return True  # Let's be conservative
         obj = bpy.context.scene.camera
-        loc_check = np.frombuffer(eval(DecoratorData.camera_location_checksum), dtype=np.float32)
-        loc_real = np.array(obj.matrix_world.translation).flatten()
+
+        # Handle both old float64 and new float32 checksums for version compatibility
+        loc_checksum_bytes = eval(DecoratorData.camera_location_checksum)
+        if len(loc_checksum_bytes) == 24:  # Old format: 3 * 8 bytes (float64)
+            loc_check = np.frombuffer(loc_checksum_bytes, dtype=np.float64).astype(np.float32)
+        else:  # New format: 3 * 4 bytes (float32)
+            loc_check = np.frombuffer(loc_checksum_bytes, dtype=np.float32)
+
+        loc_real = np.array(obj.matrix_world.translation, dtype=np.float32).flatten()
         if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             self.cache_camera_matrix()
             return True
-        rot_check = np.frombuffer(eval(DecoratorData.camera_rotation_checksum), dtype=np.float32).reshape(3, 3)
-        rot_real = np.array(obj.matrix_world.to_3x3())
+
+        # Handle both old float64 and new float32 checksums for version compatibility
+        rot_checksum_bytes = eval(DecoratorData.camera_rotation_checksum)
+        if len(rot_checksum_bytes) == 72:  # Old format: 9 * 8 bytes (float64)
+            rot_check = np.frombuffer(rot_checksum_bytes, dtype=np.float64).astype(np.float32).reshape(3, 3)
+        else:  # New format: 9 * 4 bytes (float32)
+            rot_check = np.frombuffer(rot_checksum_bytes, dtype=np.float32).reshape(3, 3)
+
+        rot_real = np.array(obj.matrix_world.to_3x3(), dtype=np.float32)
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
         if angle_rad > 0.0017453292519943296:  # 0.1 degrees
