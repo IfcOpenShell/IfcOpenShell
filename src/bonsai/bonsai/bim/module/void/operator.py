@@ -102,6 +102,19 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             element_had_openings = tool.Geometry.has_openings(voided_element)
             body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body")
             if not element2:
+                # Apply scale transformation for vanilla Blender objects before creating IFC representation
+                # This ensures the opening geometry matches the visual scale of the object
+                if tool.Geometry.is_scaled(obj2):
+                    if obj2.data:
+                        # Make mesh data single-user if it's shared
+                        if obj2.data.users > 1:
+                            obj2.data = obj2.data.copy()
+                        context_override = {}
+                        context_override["object"] = context_override["active_object"] = obj2
+                        context_override["selected_objects"] = context_override["selected_editable_objects"] = [obj2]
+                        with bpy.context.temp_override(**context_override):
+                            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
                 element2 = bonsai.core.root.assign_class(
                     tool.Ifc,
                     tool.Collector,
