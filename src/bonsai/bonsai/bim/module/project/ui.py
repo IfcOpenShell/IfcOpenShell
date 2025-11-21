@@ -331,6 +331,19 @@ class BIM_PT_project(Panel):
         col.prop(props, "ifc_file", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
+        # Blend metadata file UI
+        row = self.layout.row(align=True)
+        col = row.column()
+        col.enabled = False
+        # Show blend metadata file as a label, not editable
+        blendmetadata_path = ""
+        if props.ifc_file:
+            blendmetadata_path = props.ifc_file + ".blendmetadata"
+        col.label(text=blendmetadata_path)
+        row.operator("bim.save_blend_metadata_file", icon="FILE_TICK", text="")
+        row = self.layout.row(align=True)
+        row.operator("bim.load_blend_metadata_and_ifc", icon="FILE_REFRESH", text="Load Metadata + IFC")
+
 
 class BIM_PT_new_project_wizard(Panel):
     bl_label = "New Project Wizard"
