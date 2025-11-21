@@ -836,7 +836,7 @@ if not exist "%~2". (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
-    set RET=%ERRORLEVEL%
+    set RET=!ERRORLEVEL!
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Pulling latest changes."
     git reset --hard
@@ -855,8 +855,8 @@ if not exist "%~2". (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
-    set RET=%ERRORLEVEL%
-    if not "%RET%"=="0" exit /b %RET%
+    set RET=!ERRORLEVEL!
+    if not "!RET!"=="0" exit /b !RET!
     popd
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
