@@ -274,7 +274,7 @@ call :DownloadFile https://download.osgeo.org/proj/proj-9.2.1.zip "%DEPS_DIR%" p
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive proj-9.2.1.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-9.2.1"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
+pushd "%DEPENDENCY_DIR%"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-9.2.1" ^
     -DSQLITE3_INCLUDE_DIR=%INSTALL_DIR%\sqlite3\include ^
     -DSQLITE3_LIBRARY=%INSTALL_DIR%\sqlite3\lib\sqlite3.lib ^
@@ -286,6 +286,7 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\PROJ.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+popd
 
 
 :mpir
@@ -299,7 +300,7 @@ set DEPENDENCY_NAME=mpir
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
 call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
+pushd "%DEPENDENCY_DIR%"
 git reset --hard
 git clean -fdx
 REM There probably need to be quotes here around the filename
@@ -316,6 +317,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
 copy ..\..\lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpir"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+popd
 
 :mpfr
 
