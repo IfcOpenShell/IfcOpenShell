@@ -236,6 +236,92 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
             return res
         return ImportHelper.invoke(self, context, event)
 
+class SaveBlendMetadataFile(bpy.types.Operator):
+    bl_idname = "bim.save_blend_metadata_file"
+    bl_label = "Save Blend Metadata File"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        """
+        Save the current blend file as a metadata-only file (no geometry), preserving settings, window arrangement, geometry nodes, etc.
+        """
+        props = tool.Blender.get_bim_props()
+        ifc_file = getattr(props, "ifc_file", None)
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file path set.")
+            return {"CANCELLED"}
+
+        blendmetadata_path = ifc_file + ".metadata.blend"
+
+        # Save a temporary copy of the current blend file
+        temp_path = bpy.path.abspath('//__temp_blendmetadata.blend')
+        bpy.ops.wm.save_as_mainfile(filepath=temp_path, copy=True)
+
+        # Prepare Python script to run in background Blender to remove geometry
+        cleanup_script = f"""
+import bpy
+# Remove all mesh objects and mesh collections
+for obj in bpy.data.objects:
+    if obj.type == 'MESH':
+        bpy.data.objects.remove(obj, do_unlink=True)
+for collection in bpy.data.collections:
+    # Remove collections that only contain mesh objects
+    if all(o.type == 'MESH' for o in collection.objects):
+        bpy.data.collections.remove(collection)
+bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
+"""
+
+        # Save cleanup script to temp file
+        import tempfile
+        with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as script_file:
+            script_file.write(cleanup_script)
+            script_path = script_file.name
+
+        # Run Blender in background to clean and save metadata file
+        blender_exe = bpy.app.binary_path
+        import subprocess
+        result = subprocess.run([
+            blender_exe,
+            temp_path,
+            '--background',
+            '--python', script_path
+        ], capture_output=True)
+
+        # Clean up temp files
+        try:
+            os.remove(temp_path)
+            os.remove(script_path)
+        except Exception:
+            pass
+
+        if result.returncode == 0:
+            self.report({"INFO"}, f"Blend metadata file saved to: {blendmetadata_path}")
+        else:
+            self.report({"ERROR"}, f"Failed to save blend metadata file: {result.stderr.decode()}")
+        return {"FINISHED"}
+
+class LoadBlendMetadataAndIFC(bpy.types.Operator):
+    bl_idname = "bim.load_blend_metadata_and_ifc"
+    bl_label = "Load Blend Metadata and IFC"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = tool.Blender.get_bim_props()
+        ifc_file = getattr(props, "ifc_file", None)
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file path set.")
+            return {"CANCELLED"}
+
+        metadata_path = ifc_file + ".metadata.blend"
+        # Open the metadata blend file
+        bpy.ops.wm.open_mainfile(filepath=metadata_path)
+        # After loading metadata, clear blend warning (no geometry loaded yet)
+        props = tool.Blender.get_bim_props()
+        props.has_blend_warning = False
+        # Load the IFC file into the current session (preserve layout)
+        bpy.ops.bim.load_project(filepath=ifc_file, should_start_fresh_session=False)
+        self.report({"INFO"}, f"Loaded metadata and IFC: {metadata_path}, {ifc_file}")
+        return {"FINISHED"}
 
 # TODO: Unused operator.
 # Is there a need for this or 'DIR_PATH' propety subtype does almost the same,
