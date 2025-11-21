@@ -35,12 +35,12 @@ if(HAS_MAX)
 
         message(STATUS "Building IFCMax library for Autodesk 3ds Max SDK ${max_year}")
 
-        include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS} ${ICU_INCLUDE_DIR}
+        include_directories(${INCLUDE_DIRECTORIES} ${OPENCOLLADA_INCLUDE_DIRS} ${ICU_INCLUDE_DIR}
             ${Boost_INCLUDE_DIRS} ${max_sdk}/include
         )
 
         # All recent versions of 3ds Max (2014 and newer) are 64-bit only so assume lib/x64 directory
-        link_directories(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
+        link_directories(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
             ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS} ${max_sdk}/lib/x64/Release
         )
 
