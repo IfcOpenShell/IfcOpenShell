@@ -484,12 +484,13 @@ IF EXIST "%INSTALL_DIR%\opencascade-%OCCT_VERSION%" (
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
-set FREETYPE_ZIP=ft271.zip
+set FREETYPE_ZIP=VER-2-7-1.zip
 cd "%DEPS_DIR%"
-call :DownloadFile https://download-mirror.savannah.gnu.org/releases/freetype/ft271.zip "%DEPS_DIR%" %FREETYPE_ZIP%
+call :DownloadFile https://github.com/freetype/freetype/archive/refs/tags/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
+if exist "%DEPS_DIR%\freetype-VER-2-7-1" ren "%DEPS_DIR%\freetype-VER-2-7-1" "freetype-2.7.1"
 cd "%DEPENDENCY_DIR%"
 :: NOTE FreeType is built as a static library by default
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\freetype"
