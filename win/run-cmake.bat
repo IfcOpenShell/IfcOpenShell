@@ -17,7 +17,7 @@
 ::                                                                             ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 echo.
 
 set PROJECT_NAME=IfcOpenShell

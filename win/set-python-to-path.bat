@@ -19,7 +19,7 @@
 
 :: Pass x86 or x64 as %1, if not specified x64 assumed.
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 set TARGET_ARCH=%1
 if "%TARGET_ARCH%"=="" set TARGET_ARCH=x64
 if not exist "%~dp0BuildDepsCache-%TARGET_ARCH%.txt". (

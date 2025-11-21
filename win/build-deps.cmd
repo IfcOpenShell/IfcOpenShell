@@ -24,7 +24,7 @@
 :: Example usage (all arguments are optional):
 :: build-deps.cmd vs2022-x64 RelWithDebInfo Build
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 echo.
 
 for %%Q in ("%~dp0\.") DO set "batpath=%%~fQ"
