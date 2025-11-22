@@ -292,7 +292,7 @@ class Unit(bonsai.core.tool.Unit):
                 return f'{inches:.4g}"'
             # Show both feet and inches
             else:
-                return f"{feet}'{inches:.4g}\""
+                return f"{feet}' - {inches:.4g}\""
         else:
             # Use metric - choose appropriate unit
             if abs(meters) >= 1.0:
