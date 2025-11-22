@@ -489,7 +489,7 @@ class BaseDecorator:
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @cache
-    def format_value(self, context, value, suppress_zero_inches=False, custom_unit=None):
+    def format_value(self, context, value, suppress_zero_inches=False, custom_unit=None, in_unit_length=False):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         precision = drawing_pset_data.get("MetricPrecision", None)
         if not precision:
@@ -502,6 +502,7 @@ class BaseDecorator:
             decimal_places=decimal_places,
             suppress_zero_inches=suppress_zero_inches,
             custom_unit=custom_unit,
+            in_unit_length=in_unit_length,
         )
 
     def draw_asterisk(self, context: bpy.types.Context, pos: Vector, rotation: float = 0.0, scale: float = 1.0) -> None:
@@ -1203,7 +1204,7 @@ class PlanLevelDecorator(BaseDecorator):
                 abs_z = verts[0].z
                 z = helper.get_relative_z(obj, element, abs_z)
 
-                rl = self.format_value(context, z)
+                rl = self.format_value(context, z, in_unit_length=True)
                 text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
 
@@ -1276,7 +1277,7 @@ class SectionLevelDecorator(BaseDecorator):
 
             def get_text():
                 z = verts[0].z
-                rl = self.format_value(context, z)
+                rl = self.format_value(context, z, in_unit_length=True)
                 text = "RL {}{}".format("" if z < 0 else "+", rl)
                 return text
 
@@ -1290,7 +1291,6 @@ class SectionLevelDecorator(BaseDecorator):
                 text_dir=text_dir,
             )
             break  # support only 1 label
-
 
 class BreakDecorator(BaseDecorator):
     """Decorator for breakline objects
