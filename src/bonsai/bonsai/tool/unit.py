@@ -24,14 +24,283 @@ import ifcopenshell
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
+from lark import Lark, Transformer
 from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.unit.prop import BIMUnitProperties
 
 
+def parse_distance_string(input_string: str, use_project_unit: bool = True) -> tuple[bool, float]:
+    """
+    Parse a distance string with optional unit suffixes and convert to meters.
+
+    This function parses distance inputs with units (e.g., "5m", "10ft", "3.5cm")
+    and converts them to meters (SI units) for use in IFC models.
+
+    Supports:
+    - Metric units: mm, cm, dm, m
+    - Imperial units: ft/feet ('), in/inches (")
+    - Arithmetic expressions: +, -, *, /
+    - Fractions for imperial units (e.g., 1/2")
+    - Formula mode: values starting with "="
+
+    :param input_string: The string to parse (e.g., "5m", "10ft", "10'6\"", "3.5cm", "12in")
+    :param use_project_unit: If True, uses project unit scale; if False, uses Blender unit scale
+    :return: Tuple (is_valid, value_in_meters) where is_valid indicates successful parsing
+             and value_in_meters is the converted value in meters
+
+    Examples:
+        >>> parse_distance_string("5m")
+        (True, 5.0)
+        >>> parse_distance_string("30cm")
+        (True, 0.3)
+        >>> parse_distance_string("10ft")
+        (True, 3.048)
+        >>> parse_distance_string("12in")
+        (True, 0.3048)
+        >>> parse_distance_string("5'6\"")
+        (True, 1.6764)
+        >>> parse_distance_string("invalid")
+        (False, 0.0)
+    """
+
+    grammar_imperial = """
+    start: (FORMULA dim expr) | dim
+    dim: imperial
+
+    FORMULA: "="
+
+    imperial: feet_inches | feet_only | inches_only | plain_number
+    feet_only: NUMBER (FEET_SYM | FEET_TEXT)
+    inches_only: (NUMBER | fraction) (INCH_SYM | INCH_TEXT)
+    feet_inches: NUMBER (FEET_SYM | FEET_TEXT) "-"? (NUMBER | fraction) (INCH_SYM | INCH_TEXT)
+    plain_number: NUMBER
+    fraction: NUMBER "/" NUMBER
+
+    expr: (ADD | SUB) dim | (MUL | DIV) NUMBER
+
+    NUMBER: /-?\\d+(?:\\.\\d+)?/
+    FEET_SYM: "'"
+    FEET_TEXT: "ft"
+    INCH_SYM: "\\""
+    INCH_TEXT: "in"
+    ADD: "+"
+    SUB: "-"
+    MUL: "*"
+    DIV: "/"
+
+    %ignore " "
+    """
+
+    grammar_metric = """
+    start: FORMULA? dim expr?
+    dim: metric
+
+    FORMULA: "="
+
+    metric: NUMBER (MM | CM | DM | M | DEG)?
+
+    expr: (ADD | SUB | MUL | DIV) dim
+
+    NUMBER: /-?\\d+(?:\\.\\d+)?/
+    MM: "mm"
+    CM: "cm"
+    DM: "dm"
+    M: "m"
+    DEG: "°"
+    ADD: "+"
+    SUB: "-"
+    MUL: "*"
+    DIV: "/"
+
+    %ignore " "
+    """
+
+    class InputTransform(Transformer):
+        def NUMBER(self, n):
+            return float(n)
+
+        def fraction(self, numbers):
+            return numbers[0] / numbers[1]
+
+        def plain_number(self, args):
+            # A plain number in imperial context is assumed to be feet
+            feet = args[0]
+            # Convert feet to meters (1 foot = 0.3048 meters)
+            return feet * 0.3048
+
+        def feet_only(self, args):
+            # args[0] is the number of feet, args[1] is the unit token (we can ignore it)
+            feet = args[0]
+            # Convert feet to meters (1 foot = 0.3048 meters)
+            return feet * 0.3048
+
+        def inches_only(self, args):
+            # args[0] is the number (or fraction) of inches, args[1] is the unit token
+            inches = args[0]
+            # Convert inches to meters (1 inch = 0.0254 meters)
+            return inches * 0.0254
+
+        def feet_inches(self, args):
+            # Grammar: NUMBER (FEET_SYM | FEET_TEXT) "-"? (NUMBER | fraction) (INCH_SYM | INCH_TEXT)
+            # args will be: [feet_number, feet_unit_token, inches_number, inch_unit_token]
+            # or with optional dash: [feet_number, feet_unit_token, dash_token, inches_number, inch_unit_token]
+            # We need to extract just the numbers
+            feet = args[0]
+            # Find the inches value - it's the first number after the feet number
+            inches = None
+            for arg in args[1:]:
+                if isinstance(arg, (int, float)):
+                    inches = arg
+                    break
+            if inches is None:
+                inches = 0
+            # Convert to meters
+            total_meters = (feet * 0.3048) + (inches * 0.0254)
+            return total_meters
+
+        def imperial(self, args):
+            # Just return the value from the sub-rule (feet_only, inches_only, or feet_inches)
+            return args[0]
+
+        def metric(self, args):
+            # args[0] is the NUMBER, args[1] if present is the unit
+            value = args[0]
+            if len(args) > 1:
+                unit = str(args[1])
+                # Convert to meters based on unit
+                if unit == "mm":
+                    value = value / 1000.0
+                elif unit == "cm":
+                    value = value / 100.0
+                elif unit == "dm":
+                    value = value / 10.0
+                elif unit == "m":
+                    value = value  # already in meters
+                elif unit == "°":
+                    value = value  # degrees, pass through
+            # If no unit specified, assume it's already in the project's unit system
+            return value
+
+        def dim(self, args):
+            return args[0]
+
+        def expr(self, args):
+            op = args[0]
+            value = float(args[1])
+            if op == "+":
+                return lambda x: x + value
+            elif op == "-":
+                return lambda x: x - value
+            elif op == "*":
+                return lambda x: x * value
+            elif op == "/":
+                return lambda x: x / value
+
+        def FORMULA(self, args):
+            return args[0]
+
+        def start(self, args):
+            i = 0
+            if args[0] == "=":
+                i += 1
+            else:
+                if len(args) > 1:
+                    raise ValueError("Invalid input.")
+            dimension = args[i]
+            if len(args) > i + 1:
+                expression = args[i + 1]
+                return expression(dimension)
+            else:
+                return dimension
+
+    try:
+        # Determine unit scale
+        if use_project_unit and tool.Ifc.get():
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        else:
+            unit_scale = tool.Blender.get_unit_scale()
+
+        # Try to parse with the project's default grammar first
+        if bpy.context.scene.unit_settings.system == "IMPERIAL":
+            primary_parser = Lark(grammar_imperial)
+            fallback_parser = Lark(grammar_metric)
+        else:
+            primary_parser = Lark(grammar_metric)
+            fallback_parser = Lark(grammar_imperial)
+
+        # Try parsing with primary grammar
+        parse_tree = None
+        try:
+            parse_tree = primary_parser.parse(input_string)
+            print(f"Primary parser succeeded for '{input_string}'")
+        except Exception as e:
+            print(f"Primary parser failed for '{input_string}': {e}")
+            # If primary fails, try fallback grammar (allows metric in imperial projects and vice versa)
+            try:
+                parse_tree = fallback_parser.parse(input_string)
+                print(f"Fallback parser succeeded for '{input_string}'")
+            except Exception as e2:
+                print(f"Fallback parser failed for '{input_string}': {e2}")
+                pass
+
+        if parse_tree is None:
+            print(f"No parse tree for '{input_string}'")
+            return False, 0.0
+
+        # Transform the parse tree to get the numeric result
+        transformer = InputTransform()
+        result = transformer.transform(parse_tree)
+        print(f"Parsed '{input_string}' -> {result} meters (unit_scale={unit_scale})")
+        result = round(result, 4)
+
+        return True, result
+    except Exception as e:
+        print(f"Parse exception for '{input_string}': {e}")
+        return False, 0.0
+
+
 class Unit(bonsai.core.tool.Unit):
     UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT"]
+
+    @staticmethod
+    def format_distance(meters: float, use_imperial: bool = None) -> str:
+        """
+        Format a distance value in meters to a string in the project's unit system.
+
+        :param meters: The distance value in meters
+        :param use_imperial: If True, format as imperial; if False, format as metric; if None, auto-detect from scene
+        :return: Formatted string with units
+        """
+        if use_imperial is None:
+            use_imperial = bpy.context.scene.unit_settings.system == "IMPERIAL"
+
+        if use_imperial:
+            # Convert meters to feet
+            total_feet = meters / 0.3048
+            feet = int(total_feet)
+            inches = (total_feet - feet) * 12
+
+            # If inches is very close to 0, just show feet
+            if abs(inches) < 0.01:
+                if feet == 0:
+                    return "0'"
+                return f"{feet}'"
+            # If feet is 0, just show inches
+            elif feet == 0:
+                return f"{inches:.4g}\""
+            # Show both feet and inches
+            else:
+                return f"{feet}'{inches:.4g}\""
+        else:
+            # Use metric - choose appropriate unit
+            if abs(meters) >= 1.0:
+                return f"{meters:.4g}m"
+            elif abs(meters) >= 0.01:
+                return f"{meters * 100:.4g}cm"
+            else:
+                return f"{meters * 1000:.4g}mm"
 
     @classmethod
     def get_unit_props(cls) -> BIMUnitProperties:
