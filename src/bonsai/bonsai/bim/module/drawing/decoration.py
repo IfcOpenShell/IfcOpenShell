@@ -489,7 +489,7 @@ class BaseDecorator:
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @cache
-    def format_value(self, context, value, custom_unit=None):
+    def format_value(self, context, value, suppress_zero_inches=False, custom_unit=None):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         precision = drawing_pset_data.get("MetricPrecision", None)
         if not precision:
@@ -500,7 +500,7 @@ class BaseDecorator:
             value,
             precision=precision,
             decimal_places=decimal_places,
-            suppress_zero_inches=True,
+            suppress_zero_inches=suppress_zero_inches,
             custom_unit=custom_unit,
         )
 
@@ -743,7 +743,12 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
-                text = self.format_value(context, length, custom_unit=dimension_data["custom_unit"])
+                text = self.format_value(
+                    context, 
+                    length, 
+                    suppress_zero_inches=dimension_data["suppress_zero_inches"],
+                    custom_unit=dimension_data["custom_unit"]
+                )
                 if isinstance(self, DiameterDecorator):
                     text = "D" + text
                 text = text_prefix + text + text_suffix

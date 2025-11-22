@@ -54,6 +54,27 @@ def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
 
     if is_valid:
         elevation = parsed_elevation
+
+        # Format the string if it needs normalization:
+        # - Plain numbers (no units): "4" → "4' - 0""
+        # - Missing symbols: "5'3" → "5' - 3""
+        # - Inconsistent formatting: "5' 3 3/256" → "5' - 3 3/256""
+        input_str = self.elevation.strip()
+
+        # Check if input needs formatting (has feet/inch symbols or is plain number)
+        needs_formatting = (
+            input_str.replace(".", "").replace("-", "").replace(" ", "").replace("/", "").isdigit()  # Plain number
+            or "'" in input_str  # Has feet symbol
+            or '"' in input_str  # Has inch symbol
+            or " " in input_str.replace(" - ", "")  # Has spaces (but not the formatted " - ")
+        )
+
+        # Only format if the current string doesn't match our standard format
+        if needs_formatting:
+            formatted = tool.Unit.format_distance(elevation)
+            if self.elevation != formatted:
+                self.elevation = formatted
+                return
     else:
         # Fall back to direct float conversion for backward compatibility
         try:
@@ -61,14 +82,6 @@ def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
         except Exception as e:
             print(f"Elevation parsing failed for '{self.elevation}': {e}")
             elevation = 0
-
-    formatted = tool.Unit.format_distance(elevation)
-
-    # Only update the string if it's different from the formatted version
-    # This prevents infinite loops and normalizes the display
-    if self.elevation != formatted:
-        self.elevation = formatted
-        return  # Return early to let the property update trigger this function again
 
     # Update the object's position in the 3D scene
     if ifc_definition_id := self.ifc_definition_id:
