@@ -892,13 +892,35 @@ class BIMDoorProperties(PropertyGroup):
         default="SINGLE_SWING_LEFT",
         update=update_door,
     )
-    overall_height: bpy.props.FloatProperty(name="Overall Height", default=2.0, subtype="DISTANCE", update=update_door)
-    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.9, subtype="DISTANCE", update=update_door)
+    overall_height: bpy.props.FloatProperty(
+        name="Overall Height",
+        default=2.0,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
+    )
+    overall_width: bpy.props.FloatProperty(
+        name="Overall Width",
+        default=0.9,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
+    )
 
     # lining properties
-    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050, subtype="DISTANCE", update=update_door)
+    lining_depth: bpy.props.FloatProperty(
+        name="Lining Depth",
+        default=0.050,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
+    )
     lining_thickness: bpy.props.FloatProperty(
-        name="Lining Thickness", default=0.050, subtype="DISTANCE", update=update_door
+        name="Lining Thickness",
+        default=0.050,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
     )
     lining_offset: bpy.props.FloatProperty(
         name="Lining Offset",
@@ -920,6 +942,7 @@ class BIMDoorProperties(PropertyGroup):
         name="Transom Thickness",
         description="Set values > 0 to add a transom.\n" "`0.050 mm` is good as default value",
         default=0.000,
+        min=0,
         subtype="DISTANCE",
         update=update_door,
     )
@@ -927,6 +950,7 @@ class BIMDoorProperties(PropertyGroup):
         name="Transom Offset",
         description="Distance from the bottom door opening to the beginning of the transom (unlike windows)",
         default=1.525,
+        min=0,
         subtype="DISTANCE",
         update=update_door,
     )
@@ -935,20 +959,32 @@ class BIMDoorProperties(PropertyGroup):
         name="Casing Thickness",
         description="Set values > 0 and LiningOffset = 0 to add a casing.",
         default=0.075,
+        min=0,
         subtype="DISTANCE",
         update=update_door,
     )
-    casing_depth: bpy.props.FloatProperty(name="Casing Depth", default=0.005, subtype="DISTANCE", update=update_door)
+    casing_depth: bpy.props.FloatProperty(
+        name="Casing Depth",
+        default=0.005,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
+    )
 
     threshold_thickness: bpy.props.FloatProperty(
         name="Threshold Thickness",
         description="Set values > 0 to add a threshold.",
         default=0.025,
+        min=0,
         subtype="DISTANCE",
         update=update_door,
     )
     threshold_depth: bpy.props.FloatProperty(
-        name="Threshold Depth", default=0.1, subtype="DISTANCE", update=update_door
+        name="Threshold Depth",
+        default=0.1,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
     )
     threshold_offset: bpy.props.FloatProperty(
         name="Threshold Offset",
@@ -959,7 +995,13 @@ class BIMDoorProperties(PropertyGroup):
     )
 
     # panel properties
-    panel_depth: bpy.props.FloatProperty(name="Panel Depth", default=0.035, subtype="DISTANCE", update=update_door)
+    panel_depth: bpy.props.FloatProperty(
+        name="Panel Depth",
+        default=0.035,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
+    )
     panel_width_ratio: bpy.props.FloatProperty(
         name="Panel Width Ratio",
         description="Width of this panel, given as ratio " "relative to the total clear opening width of the door",
@@ -969,10 +1011,18 @@ class BIMDoorProperties(PropertyGroup):
         update=update_door,
     )
     frame_thickness: bpy.props.FloatProperty(
-        name="Window Frame Thickness", default=0.035, subtype="DISTANCE", update=update_door
+        name="Window Frame Thickness",
+        default=0.035,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
     )
     frame_depth: bpy.props.FloatProperty(
-        name="Window Frame Depth", default=0.035, subtype="DISTANCE", update=update_door
+        name="Window Frame Depth",
+        default=0.035,
+        min=0,
+        subtype="DISTANCE",
+        update=update_door,
     )
 
     # Material properties
