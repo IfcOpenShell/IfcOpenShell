@@ -65,7 +65,7 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
         (False, 0.0)
     """
 
-    grammar_imperial = """
+    grammar_imperial = r"""
     start: (FORMULA dim expr) | dim
     dim: imperial
 
@@ -73,18 +73,22 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
 
     imperial: feet_inches | feet_only | inches_only | plain_number
     feet_only: NUMBER (FEET_SYM | FEET_TEXT)
-    inches_only: (NUMBER | fraction) (INCH_SYM | INCH_TEXT)
-    feet_inches: NUMBER (FEET_SYM | FEET_TEXT) "-"? (NUMBER | fraction) (INCH_SYM | INCH_TEXT)
+    inches_only: inch_value (INCH_SYM | INCH_TEXT)
+    feet_inches: NUMBER (FEET_SYM | FEET_TEXT) DASH? inch_value (INCH_SYM | INCH_TEXT)?
     plain_number: NUMBER
+
+    inch_value: NUMBER fraction | fraction | NUMBER
+
     fraction: NUMBER "/" NUMBER
 
     expr: (ADD | SUB) dim | (MUL | DIV) NUMBER
 
-    NUMBER: /-?\\d+(?:\\.\\d+)?/
+    NUMBER: /-?(?:\d+\.?\d*|\.\d+)/
     FEET_SYM: "'"
     FEET_TEXT: "ft"
-    INCH_SYM: "\\""
+    INCH_SYM: "\""
     INCH_TEXT: "in"
+    DASH: "-"
     ADD: "+"
     SUB: "-"
     MUL: "*"
@@ -93,7 +97,7 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
     %ignore " "
     """
 
-    grammar_metric = """
+    grammar_metric = r"""
     start: FORMULA? dim expr?
     dim: metric
 
@@ -103,7 +107,7 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
 
     expr: (ADD | SUB | MUL | DIV) dim
 
-    NUMBER: /-?\\d+(?:\\.\\d+)?/
+    NUMBER: /-?(?:\d+\.?\d*|\.\d+)/
     MM: "mm"
     CM: "cm"
     DM: "dm"
@@ -124,6 +128,15 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
         def fraction(self, numbers):
             return numbers[0] / numbers[1]
 
+        def inch_value(self, args):
+            # Can be: NUMBER fraction, fraction, or NUMBER
+            if len(args) == 2:
+                # NUMBER fraction (e.g., "9 1/64")
+                return args[0] + args[1]
+            else:
+                # Just fraction or just NUMBER
+                return args[0]
+
         def plain_number(self, args):
             # A plain number in imperial context is assumed to be feet
             feet = args[0]
@@ -137,18 +150,15 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
             return feet * 0.3048
 
         def inches_only(self, args):
-            # args[0] is the number (or fraction) of inches, args[1] is the unit token
+            # args[0] is the inch_value, args[1] is the unit token
             inches = args[0]
             # Convert inches to meters (1 inch = 0.0254 meters)
             return inches * 0.0254
 
         def feet_inches(self, args):
-            # Grammar: NUMBER (FEET_SYM | FEET_TEXT) "-"? (NUMBER | fraction) (INCH_SYM | INCH_TEXT)
-            # args will be: [feet_number, feet_unit_token, inches_number, inch_unit_token]
-            # or with optional dash: [feet_number, feet_unit_token, dash_token, inches_number, inch_unit_token]
-            # We need to extract just the numbers
+            # Extract feet and inches values
             feet = args[0]
-            # Find the inches value - it's the first number after the feet number
+            # Find the inch_value (it's a number, not a token)
             inches = None
             for arg in args[1:]:
                 if isinstance(arg, (int, float)):
@@ -234,30 +244,24 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
         parse_tree = None
         try:
             parse_tree = primary_parser.parse(input_string)
-            print(f"Primary parser succeeded for '{input_string}'")
         except Exception as e:
-            print(f"Primary parser failed for '{input_string}': {e}")
             # If primary fails, try fallback grammar (allows metric in imperial projects and vice versa)
             try:
                 parse_tree = fallback_parser.parse(input_string)
-                print(f"Fallback parser succeeded for '{input_string}'")
             except Exception as e2:
-                print(f"Fallback parser failed for '{input_string}': {e2}")
                 pass
 
         if parse_tree is None:
-            print(f"No parse tree for '{input_string}'")
             return False, 0.0
 
         # Transform the parse tree to get the numeric result
         transformer = InputTransform()
         result = transformer.transform(parse_tree)
-        print(f"Parsed '{input_string}' -> {result} meters (unit_scale={unit_scale})")
-        result = round(result, 4)
+        result = round(result, 6)
 
         return True, result
+
     except Exception as e:
-        print(f"Parse exception for '{input_string}': {e}")
         return False, 0.0
 
 
@@ -265,42 +269,28 @@ class Unit(bonsai.core.tool.Unit):
     UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT"]
 
     @staticmethod
-    def format_distance(meters: float, use_imperial: bool = None) -> str:
+    def format_distance(meters: float, use_imperial: bool = None, **kwargs) -> str:
         """
         Format a distance value in meters to a string in the project's unit system.
 
         :param meters: The distance value in meters
         :param use_imperial: If True, format as imperial; if False, format as metric; if None, auto-detect from scene
+        :param kwargs: Additional arguments to pass to the underlying format_distance function
+                    (hide_units, precision, decimal_places, etc.)
         :return: Formatted string with units
         """
-        if use_imperial is None:
-            use_imperial = bpy.context.scene.unit_settings.system == "IMPERIAL"
+        # Import the comprehensive format_distance from the helper module
+        from bonsai.bim.module.drawing import helper
 
-        if use_imperial:
-            # Convert meters to feet
-            total_feet = meters / 0.3048
-            feet = int(total_feet)
-            inches = (total_feet - feet) * 12
-
-            # If inches is very close to 0, just show feet
-            if abs(inches) < 0.01:
-                if feet == 0:
-                    return "0'"
-                return f"{feet}'"
-            # If feet is 0, just show inches
-            elif feet == 0:
-                return f'{inches:.4g}"'
-            # Show both feet and inches
-            else:
-                return f"{feet}' - {inches:.4g}\""
-        else:
-            # Use metric - choose appropriate unit
-            if abs(meters) >= 1.0:
-                return f"{meters:.4g}m"
-            elif abs(meters) >= 0.01:
-                return f"{meters * 100:.4g}cm"
-            else:
-                return f"{meters * 1000:.4g}mm"
+        # The comprehensive function expects value in scene units, not meters
+        # So we pass meters directly since it handles unit conversion internally
+        return helper.format_distance(
+            meters,
+            hide_units=kwargs.get("hide_units", False),
+            precision=kwargs.get("precision"),
+            decimal_places=kwargs.get("decimal_places"),
+            **kwargs,
+        )
 
     @classmethod
     def get_unit_props(cls) -> BIMUnitProperties:
