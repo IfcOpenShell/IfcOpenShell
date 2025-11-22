@@ -289,7 +289,7 @@ class Unit(bonsai.core.tool.Unit):
                 return f"{feet}'"
             # If feet is 0, just show inches
             elif feet == 0:
-                return f"{inches:.4g}\""
+                return f'{inches:.4g}"'
             # Show both feet and inches
             else:
                 return f"{feet}'{inches:.4g}\""
