@@ -3706,12 +3706,12 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         precision=3,
     )
     
-    _show_dimensions_dialog: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
+    show_dimensions_dialog: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     def draw(self, context):
         layout = self.layout
         
-        if getattr(self, '_show_dimensions_dialog', False):
+        if getattr(self, 'show_dimensions_dialog', False):
             if tool.Ifc.get():
                 length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
                 if length_unit:
@@ -3735,14 +3735,14 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             layout.prop(self, "use_existing_object_by_name")
     
     def invoke(self, context, event):
-        if not getattr(self, '_show_dimensions_dialog', False):
+        if not getattr(self, 'show_dimensions_dialog', False):
             context.window_manager.fileselect_add(self)
             return {'RUNNING_MODAL'}
         else:
             return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        if not getattr(self, '_show_dimensions_dialog', False):
+        if not getattr(self, 'show_dimensions_dialog', False):
             abs_path = Path(self.filepath).absolute().resolve()
             if self.override_existing_image:
                 params = {"check_existing": True, "force_reload": True}
@@ -3769,7 +3769,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 self.report({'ERROR'}, f"Failed to load image: {str(e)}")
                 return {'CANCELLED'}
             
-            self._show_dimensions_dialog = True
+            self.show_dimensions_dialog = True
             return context.window_manager.invoke_props_dialog(self)
         
         return self._execute(context)
