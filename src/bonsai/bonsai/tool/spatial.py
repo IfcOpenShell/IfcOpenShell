@@ -496,7 +496,9 @@ class Spatial(bonsai.core.tool.Spatial):
         new.long_name = element.LongName or ""
         if not element.is_a("IfcProject"):
             elevation = ifcopenshell.util.placement.get_storey_elevation(element)
-            new["elevation"] = tool.Unit.format_distance(elevation)
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            elevation_in_meters = elevation * unit_scale
+            new.elevation = tool.Unit.format_distance(elevation_in_meters)
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
