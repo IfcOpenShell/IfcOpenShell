@@ -258,6 +258,9 @@ class ReferenceUI:
         row = self.layout.row(align=True)
         row.operator("bim.edit_classification_reference", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
+        row = self.layout.row()
+        row.prop(self.props, "classification_system_name", text="Classification System Name")
+
         bonsai.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
 
     def draw_reference_ui(self, reference: dict[str, Any]) -> None:
