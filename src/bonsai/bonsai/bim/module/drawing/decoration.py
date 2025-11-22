@@ -1203,7 +1203,11 @@ class PlanLevelDecorator(BaseDecorator):
             def get_text():
                 abs_z = verts[0].z
                 z = helper.get_relative_z(obj, element, abs_z)
-
+                
+                # Z is in meters (Blender world space), convert to project units (feet)
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                z = z / unit_scale  # Convert meters to feet
+                
                 rl = self.format_value(context, z, in_unit_length=True)
                 text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
@@ -1277,6 +1281,10 @@ class SectionLevelDecorator(BaseDecorator):
 
             def get_text():
                 z = verts[0].z
+                # Z is in meters (Blender world space), convert to project units (feet)
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                z = z / unit_scale  # Convert meters to feet
+                
                 rl = self.format_value(context, z, in_unit_length=True)
                 text = "RL {}{}".format("" if z < 0 else "+", rl)
                 return text
