@@ -38,6 +38,20 @@ from ifcopenshell.util.file import IfcHeaderExtractor
 from bonsai.bim.prop import Attribute
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.pset.prop import IfcProperty
+from bonsai.bim.module.model.prop import (
+    BIMDoorProperties,
+    BIMWindowProperties,
+    BIMRailingProperties,
+    BIMRoofProperties,
+    BIMStairProperties,
+)
+from bonsai.bim.module.model.ui import (
+    draw_door_properties,
+    draw_window_properties,
+    draw_railing_properties,
+    draw_roof_properties,
+    draw_stair_properties,
+)
 from typing import Optional, TYPE_CHECKING, Literal
 from natsort import natsorted
 import textwrap
@@ -320,6 +334,14 @@ class DocPreferences(bpy.types.PropertyGroup):
         classes_no_cut: str
 
 
+class DefaultParameters(bpy.types.PropertyGroup):
+    door: bpy.props.PointerProperty(type=BIMDoorProperties)
+    window: bpy.props.PointerProperty(type=BIMWindowProperties)
+    railing: bpy.props.PointerProperty(type=BIMRailingProperties)
+    roof: bpy.props.PointerProperty(type=BIMRoofProperties)
+    stair: bpy.props.PointerProperty(type=BIMStairProperties)
+
+
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = tool.Blender.get_blender_addon_package_name()
     svg2pdf_command: StringProperty(
@@ -523,6 +545,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         subtype="DIR_PATH",
     )
     doc: bpy.props.PointerProperty(type=DocPreferences)
+    default_parameters: bpy.props.PointerProperty(
+        type=DefaultParameters,
+        name="Default Parameters",
+        description="Default parameters for BIM elements",
+    )
 
     if TYPE_CHECKING:
         svg2pdf_command: str
@@ -557,6 +584,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         cache_dir: str
         pset_dir: str
         doc: DocPreferences
+        default_parameters: DefaultParameters
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -581,6 +609,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Colors", self.draw_decorator_colors)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Directories", self.draw_directories)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Drawing", self.draw_drawing_settings)
+        bonsai.bim.helper.draw_expandable_panel(
+            self.layout,
+            context,
+            "Default Parameters",
+            self.draw_default_parameters,
+        )
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Other", self.draw_other_settings)
 
     def draw_commands(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
@@ -638,6 +672,39 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.row().prop(self, "decorator_color_special")
         layout.row().prop(self, "decorator_color_error")
         layout.row().prop(self, "decorator_color_background")
+
+    def draw_default_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        box = layout.box()
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Door",
+            lambda _layout, _context: draw_door_properties(_layout, self.default_parameters.door),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Window",
+            lambda _layout, _context: draw_window_properties(_layout, self.default_parameters.window),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Railing",
+            lambda _layout, _context: draw_railing_properties(_layout, self.default_parameters.railing),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Roof",
+            lambda _layout, _context: draw_roof_properties(_layout, self.default_parameters.roof),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Stair",
+            lambda _layout, _context: draw_stair_properties(_layout, self.default_parameters.stair),
+        )
 
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")

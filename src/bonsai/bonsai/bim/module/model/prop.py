@@ -645,6 +645,15 @@ class BIMStairProperties(PropertyGroup):
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
 
+    def copy_to(self, target_props: "BIMStairProperties") -> None:
+        """Copy preset values to target stair properties."""
+        target_props.custom_tread_lock = self.custom_tread_lock
+        for prop_name, prop_value in self.get_props_kwargs().items():
+            # Skip custom_first_last_tread_run if it contains None values (when lock is enabled)
+            if prop_name == "custom_first_last_tread_run" and None in prop_value:
+                continue
+            setattr(target_props, prop_name, prop_value)
+
 
 class BIMSverchokProperties(PropertyGroup):
     node_group: bpy.props.PointerProperty(name="Node Group", type=NodeTree)
@@ -862,6 +871,14 @@ class BIMWindowProperties(PropertyGroup):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
+
+    def copy_to(self, target_props: "BIMWindowProperties") -> None:
+        """Copy preset values to target window properties, excluding materials."""
+        exclude_props = {"lining_material", "framing_material", "glazing_material"}
+        for kwargs_dict in (self.get_general_kwargs(), self.get_lining_kwargs(), self.get_panel_kwargs()):
+            for prop_name, prop_value in kwargs_dict.items():
+                if prop_name not in exclude_props:
+                    setattr(target_props, prop_name, prop_value)
 
 
 DoorType = Literal[
@@ -1130,6 +1147,14 @@ class BIMDoorProperties(PropertyGroup):
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
 
+    def copy_to(self, target_props: "BIMDoorProperties") -> None:
+        """Copy properties to target door properties, excluding materials."""
+        exclude_props = {"lining_material", "framing_material", "glazing_material"}
+        for kwargs_dict in (self.get_general_kwargs(), self.get_lining_kwargs(), self.get_panel_kwargs()):
+            for prop_name, prop_value in kwargs_dict.items():
+                if prop_name not in exclude_props:
+                    setattr(target_props, prop_name, prop_value)
+
 
 RailingType = Literal["FRAMELESS_PANEL", "WALL_MOUNTED_HANDRAIL"]
 CapType = Literal["TO_END_POST_AND_FLOOR", "TO_END_POST", "TO_FLOOR", "TO_WALL", "180", "NONE"]
@@ -1228,6 +1253,11 @@ class BIMRailingProperties(PropertyGroup):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
+
+    def copy_to(self, target_props: "BIMRailingProperties") -> None:
+        """Copy preset values to target railing properties."""
+        for prop_name, prop_value in self.get_general_kwargs().items():
+            setattr(target_props, prop_name, prop_value)
 
 
 def to_angle(percentage: float) -> float:
@@ -1330,6 +1360,11 @@ class BIMRoofProperties(PropertyGroup):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
+
+    def copy_to(self, target_props: "BIMRoofProperties") -> None:
+        """Copy preset values to target roof properties."""
+        for prop_name, prop_value in self.get_general_kwargs().items():
+            setattr(target_props, prop_name, prop_value)
 
 
 class SnapMousePoint(PropertyGroup):
