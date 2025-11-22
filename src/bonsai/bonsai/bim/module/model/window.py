@@ -258,6 +258,9 @@ def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
     assert obj
     props = tool.Model.get_window_props(obj)
+    if not props.is_editing:
+        return
+
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
     accumulated_height = [0] * len(panel_schema[0])
     built_panels = []
@@ -450,6 +453,8 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         assert element
         props = tool.Model.get_window_props(obj)
+
+        tool.Blender.get_addon_preferences().default_parameters.window.copy_to(props)
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)

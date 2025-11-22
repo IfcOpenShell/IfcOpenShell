@@ -148,7 +148,7 @@ classes = [
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
     ui.DocPreferences,
-    ui.BIM_ADDON_preferences,
+    # ui.DefaultParameters and ui.BIM_ADDON_preferences are registered separately after modules (see late_classes below)
     # Tabs panel
     ui.BIM_PT_tabs,
     # Project overview
@@ -225,13 +225,32 @@ def on_register(scene):
     is_registering = False
 
 
-def register():
-    for cls in classes:
+# Classes that need to be registered after modules (due to cross-module dependencies)
+late_classes = (
+    ui.DefaultParameters,  # Register before BIM_ADDON_preferences
+    ui.BIM_ADDON_preferences,
+)
+
+
+def register_classes(classes_to_register):
+    for cls in classes_to_register:
         # Prevent crashes in Blender 4.4.0, see #6420.
         if issubclass(cls, (ImportHelper, ExportHelper)):
             assert getattr(cls, "bl_description", "") or cls.__doc__, cls
 
         bpy.utils.register_class(cls)
+
+
+def unregister_classes(classes_to_unregister):
+    for cls in reversed(classes_to_unregister):
+        if getattr(cls, "is_registered", None) is None:
+            bpy.utils.unregister_class(cls)
+        elif cls.is_registered:
+            bpy.utils.unregister_class(cls)
+
+
+def register():
+    register_classes(classes)
 
     bpy.app.handlers.depsgraph_update_post.append(on_register)
     bpy.app.handlers.undo_post.append(handler.undo_post)
@@ -255,6 +274,9 @@ def register():
 
     for mod in modules.values():
         mod.register()
+
+    # Delay registering classes that depend on module classes
+    register_classes(late_classes)
 
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
@@ -287,11 +309,7 @@ def unregister():
 
     bpy.utils.previews.remove(icons)
 
-    for cls in reversed(classes):
-        if getattr(cls, "is_registered", None) is None:
-            bpy.utils.unregister_class(cls)
-        elif cls.is_registered:
-            bpy.utils.unregister_class(cls)
+    unregister_classes(classes)
 
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
@@ -305,6 +323,9 @@ def unregister():
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.remove(ui.draw_custom_context_menu)
     bpy.types.STATUSBAR_HT_header.remove(ui.draw_statusbar)
+
+    # Unregister late classes before modules
+    unregister_classes(late_classes)
 
     for mod in reversed(list(modules.values())):
         mod.unregister()

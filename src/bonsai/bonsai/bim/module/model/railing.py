@@ -342,6 +342,8 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Model.get_railing_props(obj)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
+        tool.Blender.get_addon_preferences().default_parameters.railing.copy_to(props)
+
         railing_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)
 

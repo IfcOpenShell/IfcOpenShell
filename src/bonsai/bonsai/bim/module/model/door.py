@@ -291,6 +291,8 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
     assert obj
     props = tool.Model.get_door_props(obj)
+    if not props.is_editing:
+        return
 
     overall_width = props.overall_width
     overall_height = props.overall_height
@@ -408,7 +410,10 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
 
         if door_swing_type == "LEFT":
             bm_mirror(
-                bm, door_handle_verts, mirror_axes=V_(1, 0, 0), mirror_point=panel_position + V_(panel_size.x / 2, 0, 0)
+                bm,
+                door_handle_verts,
+                mirror_axes=V_(1, 0, 0),
+                mirror_point=panel_position + V_(panel_size.x / 2, 0, 0),
             )
 
         door_handle_mirrored_verts = bm_mirror(
@@ -527,6 +532,8 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         assert element
         props = tool.Model.get_door_props(obj)
+
+        tool.Blender.get_addon_preferences().default_parameters.door.copy_to(props)
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)

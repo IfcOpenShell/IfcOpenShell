@@ -188,6 +188,8 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Model.get_stair_props(obj)
         ifc_file = tool.Ifc.get()
 
+        tool.Blender.get_addon_preferences().default_parameters.stair.copy_to(props)
+
         # Use the special method that includes custom_tread_lock for IFC storage
         stair_data = props.get_props_kwargs_for_ifc_export(convert_to_project_units=True)
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
