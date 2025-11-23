@@ -133,7 +133,7 @@ class Collector(bonsai.core.tool.Collector):
             cls.link_collection_object_safe(collection, obj)
 
         if element.is_a("IfcFeatureElementSubtraction"):
-            tool.Blender.Display.set_wireframe(obj)
+            tool.Blender.Display.set_wireframe(obj, hide_render=True)
 
     @classmethod
     def _create_project_child_collection(cls, name: str) -> bpy.types.Collection:

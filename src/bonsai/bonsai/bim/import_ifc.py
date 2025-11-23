@@ -871,7 +871,7 @@ class IfcImporter:
 
         for ifcclass in self.classes_to_wireframe_list:
             if element.is_a(ifcclass):
-                tool.Blender.Display.set_wireframe(obj)
+                tool.Blender.Display.set_wireframe(obj, hide_render=True)
 
         if shape and mesh:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
