@@ -609,12 +609,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Colors", self.draw_decorator_colors)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Directories", self.draw_directories)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Drawing", self.draw_drawing_settings)
-        bonsai.bim.helper.draw_expandable_panel(
-            self.layout,
-            context,
-            "Default Parameters",
-            self.draw_default_parameters,
-        )
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Other", self.draw_other_settings)
 
     def draw_commands(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
@@ -637,6 +631,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "occurrence_name_style")
         if self.occurrence_name_style == "CUSTOM":
             layout.prop(self, "occurrence_name_function")
+        bonsai.bim.helper.draw_expandable_panel(
+            layout,
+            context,
+            "Default Parameters",
+            self.draw_default_parameters,
+        )
 
     def draw_directories(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "data_dir")
