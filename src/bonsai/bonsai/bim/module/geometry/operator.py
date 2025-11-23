@@ -975,6 +975,10 @@ class OverrideDelete(bpy.types.Operator):
             except:
                 continue
 
+            # Skip spatial elements - they should not be deleted even if empty
+            if aggregate.is_a("IfcSpatialElement"):
+                continue
+
             related_objects = ifcopenshell.util.element.get_parts(aggregate)
             if len(related_objects) == 0:
                 aggregate_name = aggregate.Name or f"{aggregate.is_a()} #{aggregate.id()}"
