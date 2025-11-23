@@ -21,7 +21,7 @@ import bpy
 import bpy.utils.previews
 import importlib
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from . import handler, ui, prop, operator
+from . import handler, ui, prop, operator, gizmo
 from typing import Union
 from collections.abc import Callable
 
@@ -148,6 +148,8 @@ classes = [
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
     ui.DocPreferences,
+    ui.GizmoPreferencesDoor,  # Register before GizmoPreferences
+    ui.GizmoPreferences,
     # ui.DefaultParameters and ui.BIM_ADDON_preferences are registered separately after modules (see late_classes below)
     # Tabs panel
     ui.BIM_PT_tabs,
@@ -202,6 +204,14 @@ classes = [
     ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
+    # Gizmos
+    gizmo.GizmoArrow,
+    gizmo.GizmoCone,
+    gizmo.GizmoLock,
+    gizmo.GizmoArc,
+    gizmo.GizmoPen,
+    gizmo.GizmoValidate,
+    gizmo.GizmoCancel,
 ]
 
 for mod in modules.values():

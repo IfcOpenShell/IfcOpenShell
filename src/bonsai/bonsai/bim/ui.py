@@ -242,6 +242,48 @@ class BIM_UL_generic(bpy.types.UIList):
             layout.label(text="", translate=False)
 
 
+class GizmoPreferencesDoor(bpy.types.PropertyGroup):
+    """Property group for door gizmo visibility settings."""
+
+    overall_height: BoolProperty(name="Overall Height", default=True)
+    overall_width: BoolProperty(name="Overall Width", default=True)
+    threshold_thickness: BoolProperty(name="Threshold Thickness", default=True)
+    threshold_depth: BoolProperty(name="Threshold Depth", default=True)
+    lining_depth: BoolProperty(name="Lining Depth", default=True)
+    lining_thickness: BoolProperty(name="Lining Thickness", default=True)
+    transom_offset: BoolProperty(name="Transom Offset", default=True)
+    transom_thickness: BoolProperty(name="Transom Thickness", default=True)
+    swing_arc: BoolProperty(name="Swing Arc", default=True, description="Show door swing direction arc")
+    flip_arc: BoolProperty(name="Flip Arc", default=True, description="Show flip door orientation arc")
+
+    if TYPE_CHECKING:
+        overall_height: bool
+        overall_width: bool
+        threshold_thickness: bool
+        threshold_depth: bool
+        lining_depth: bool
+        lining_thickness: bool
+        transom_offset: bool
+        transom_thickness: bool
+        swing_arc: bool
+        flip_arc: bool
+
+
+class GizmoPreferences(bpy.types.PropertyGroup):
+    """Property group for all gizmo visibility settings."""
+
+    draw_gizmos_in_3d_viewport: BoolProperty(
+        name="Draw Gizmos In 3D Viewport",
+        default=True,
+        description="Show interactive gizmos in the 3D viewport for parametric elements",
+    )
+    door: bpy.props.PointerProperty(type=GizmoPreferencesDoor)
+
+    if TYPE_CHECKING:
+        draw_gizmos_in_3d_viewport: bool
+        door: GizmoPreferencesDoor
+
+
 class DocPreferences(bpy.types.PropertyGroup):
     sheets_dir: StringProperty(
         default=os.path.join("sheets") + os.path.sep,
@@ -515,6 +557,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Occurrence Name Function",
         description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
     )
+    gizmos: bpy.props.PointerProperty(type=GizmoPreferences)
 
     def update_data_dir(self, context: bpy.types.Context) -> None:
         import bonsai.bim.schema
@@ -580,6 +623,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
         occurrence_name_function: str
+        gizmos: GizmoPreferences
         data_dir: str
         cache_dir: str
         pset_dir: str
@@ -626,6 +670,24 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "should_setup_toolbar")
         layout.prop(self, "should_use_snap")
         layout.prop(self, "should_play_chaching_sound")
+
+        layout.prop(self.gizmos, "draw_gizmos_in_3d_viewport")
+        if self.gizmos.draw_gizmos_in_3d_viewport:
+            bonsai.bim.helper.draw_expandable_panel(
+                layout,
+                context,
+                "Gizmos Parameters",
+                self.draw_gizmo_parameters,
+            )
+
+    def draw_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        box = layout.box()
+        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Door", self.draw_door_gizmo_parameters)
+
+    def draw_door_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        door_gizmos = self.gizmos.door
+        for prop in door_gizmos.__annotations__:
+            layout.prop(door_gizmos, prop)
 
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "occurrence_name_style")
