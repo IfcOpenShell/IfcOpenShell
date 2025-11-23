@@ -1234,15 +1234,13 @@ class Spatial(bonsai.core.tool.Spatial):
         if first_obj.display_type == "TEXTURED":
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
-                obj.show_wire = True
-                obj.display_type = "WIRE"
+                tool.Blender.Display.set_wireframe(obj)
             return
 
         elif first_obj.display_type == "WIRE":
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
-                obj.show_wire = False
-                obj.display_type = "TEXTURED"
+                tool.Blender.Display.set_textured(obj)
             return
 
     @classmethod

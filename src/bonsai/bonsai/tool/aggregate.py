@@ -171,7 +171,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
                     not_editing_obj.obj = obj.original
                     not_editing_obj.previous_display_type = obj.original.display_type
                     not_editing_obj.previous_hide_select = obj.original.hide_select
-                    obj.original.display_type = "WIRE"
+                    tool.Blender.Display.set_wireframe(obj.original)
                     obj.hide_select = True
                 else:
                     editing_obj = props.editing_objects.add()
@@ -188,7 +188,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
             obj = obj_prop.obj
             if not obj:
                 continue
-            obj.original.display_type = obj_prop.previous_display_type
+            tool.Blender.Display.set_display(obj.original, obj_prop.previous_display_type)
             obj.hide_select = obj_prop.previous_hide_select
             element = tool.Ifc.get_entity(obj)
             if not element:
