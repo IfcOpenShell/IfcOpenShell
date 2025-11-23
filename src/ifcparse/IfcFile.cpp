@@ -705,6 +705,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
                 entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream_[2]));
             } catch (const IfcException& ex) {
                 Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].startPos));
+                current_id = 0;
                 goto advance;
             }
 
