@@ -928,14 +928,14 @@ class BIMDoorProperties(PropertyGroup):
     lining_depth: bpy.props.FloatProperty(
         name="Lining Depth",
         default=0.050,
-        min=0,
+        min=0.001,
         subtype="DISTANCE",
         update=update_door,
     )
     lining_thickness: bpy.props.FloatProperty(
         name="Lining Thickness",
         default=0.050,
-        min=0,
+        min=0.001,
         subtype="DISTANCE",
         update=update_door,
     )
@@ -983,7 +983,7 @@ class BIMDoorProperties(PropertyGroup):
     casing_depth: bpy.props.FloatProperty(
         name="Casing Depth",
         default=0.005,
-        min=0,
+        min=0.001,
         subtype="DISTANCE",
         update=update_door,
     )
@@ -999,7 +999,7 @@ class BIMDoorProperties(PropertyGroup):
     threshold_depth: bpy.props.FloatProperty(
         name="Threshold Depth",
         default=0.1,
-        min=0,
+        min=0.001,
         subtype="DISTANCE",
         update=update_door,
     )

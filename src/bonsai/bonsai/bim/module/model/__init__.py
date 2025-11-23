@@ -178,6 +178,8 @@ classes = (
     door.FinishEditingDoor,
     door.EnableEditingDoor,
     door.RemoveDoor,
+    door.ToggleDoorSwing,
+    door.GizmoDoorEdition,
     railing.BIM_OT_add_railing,
     railing.CopyRailingParameters,
     railing.AddRailing,
