@@ -22,7 +22,7 @@ Shared gizmo components for reuse across modules.
 
 import bpy
 import math
-from typing import Optional, Tuple, List
+from typing import Optional
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 from mathutils.geometry import intersect_line_line
@@ -57,11 +57,11 @@ class SnapManager:
     """Manages snap point visualization and mesh snapping."""
 
     def __init__(self):
-        self._snap_point: Optional[Tuple[float, float, float]] = None
+        self._snap_point: Optional[tuple[float, float, float]] = None
         self._draw_handler = None
         self._shader = None
 
-    def set_snap_point(self, point: Optional[Tuple[float, float, float]]) -> None:
+    def set_snap_point(self, point: Optional[tuple[float, float, float]]) -> None:
         """Set snap point and register draw handler if needed."""
         self._snap_point = point
         if self._draw_handler is None and point is not None:
@@ -204,7 +204,7 @@ class SnapManager:
 _snap_manager = SnapManager()
 
 
-def set_snap_point(point: Optional[Tuple[float, float, float]]) -> None:
+def set_snap_point(point: Optional[tuple[float, float, float]]) -> None:
     _snap_manager.set_snap_point(point)
 
 
@@ -219,8 +219,8 @@ def snap_to_mesh(
 
 
 def generate_circle_vertices(
-    center: Tuple[float, float, float], radius: float, segments: int, plane: str = "XY"
-) -> List[Tuple[float, float, float]]:
+    center: tuple[float, float, float], radius: float, segments: int, plane: str = "XY"
+) -> list[tuple[float, float, float]]:
     """Generate circle vertices in specified plane.
 
     Args:
@@ -250,7 +250,7 @@ def generate_circle_vertices(
 
 def create_quarter_circle_arc(
     radius: float = 1.0, segments: int = ARC_SEGMENTS, direction: str = "LEFT", line_width: float = ARC_LINE_WIDTH
-) -> Tuple[Tuple[float, float, float], ...]:
+) -> tuple[tuple[float, float, float], ...]:
     """Create a quarter circle arc with cross-section thickness for visibility from all angles.
 
     Args:
@@ -669,7 +669,7 @@ class GizmoArrow(GizmoMovable):
     bl_idname = "BIM_GT_gizmo_arrow"
     bl_target_properties = ({"id": "offset", "type": "FLOAT", "array_length": 1},)
 
-    def _get_arrow_triangles(self) -> Tuple[Tuple[float, float, float], ...]:
+    def _get_arrow_triangles(self) -> tuple[tuple[float, float, float], ...]:
         """Generate arrow geometry along +X axis."""
         triangles = []
 
@@ -763,7 +763,7 @@ class GizmoCone(GizmoMovable):
             return axis_direction
         return self.axis
 
-    def _get_cone_triangles(self) -> Tuple[Tuple[float, float, float], ...]:
+    def _get_cone_triangles(self) -> tuple[tuple[float, float, float], ...]:
         """Generate cone geometry along +X axis."""
         triangles = []
         cone_tip_x = CONE_LENGTH
