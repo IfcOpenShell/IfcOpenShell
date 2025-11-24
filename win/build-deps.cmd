@@ -717,6 +717,10 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^
                -DROCKSDB_INSTALL_ON_WINDOWS=On ^
                -DFAIL_ON_WARNINGS=Off ^
                -DWITH_TESTS=OFF ^
+               -DWITH_TOOLS=OFF ^
+               -DWITH_BENCHMARK_TOOLS=OFF ^
+               -DWITH_CORE_TOOLS=OFF ^
+               -DROCKSDB_BUILD_SHARED=OFF ^
                -DWITH_ZSTD=On ^
                -DPORTABLE=1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
