@@ -731,6 +731,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup):
             return cls.COLOR_GREEN
         else:
             return cls.COLOR_BLUE
+
     gizmo_props = [
         {"attr_name": "overall_height", "axis": (0, 0, 1)},
         {"attr_name": "overall_width", "axis": (1, 0, 0)},
