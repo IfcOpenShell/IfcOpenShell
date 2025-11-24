@@ -777,9 +777,7 @@ def draw_stair_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyG
         if prop_name == "custom_first_last_tread_run":
             # Draw the lock toggle
             row_lock = layout.row(align=True)
-            lock_text = (
-                "Lock First/Last Treads" if not props.custom_tread_lock else "Unlock First/Last Treads"
-            )
+            lock_text = "Lock First/Last Treads" if not props.custom_tread_lock else "Unlock First/Last Treads"
             row_lock.prop(
                 props,
                 "custom_tread_lock",

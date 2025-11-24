@@ -121,11 +121,12 @@ class BoundingBox:
             retVal = True
         return retVal
 
+
 def find_best_precision(fractional_inches, max_precision=256, base_tolerance=0.0001):
     """
     Find the simplest fraction denominator that accurately represents the value.
     Uses a sliding tolerance - smaller denominators get more tolerance.
-    
+
     :param fractional_inches: The fractional part of inches (0.0 to 1.0)
     :param max_precision: Maximum denominator to try (256 for imperial)
     :param base_tolerance: Base tolerance in inches (very strict)
@@ -133,29 +134,29 @@ def find_best_precision(fractional_inches, max_precision=256, base_tolerance=0.0
     """
     if abs(fractional_inches) < 0.00001:
         return 1  # No fraction needed
-    
+
     # Try denominators from coarsest to finest: 2, 4, 8, 16, 32, 64, 128, 256
     for exp in range(1, 9):  # 2^1 to 2^8
-        denom = 2 ** exp
+        denom = 2**exp
         if denom > max_precision:
             break
-        
+
         # Find nearest numerator for this denominator
         numer = round(fractional_inches * denom)
-        
+
         # Skip if numerator is 0
         if numer == 0:
             continue
-        
+
         # Check if this fraction is close enough
         fraction_value = numer / denom
         error = abs(fraction_value - fractional_inches)
-        
+
         # Very strict tolerance - only simplify if it's a near-perfect match
         # This keeps 3/256 as 3/256, but allows floating point errors to be cleaned up
         if error < base_tolerance:
             return denom
-    
+
     # If no simpler fraction works, use max precision
     return max_precision
 
@@ -233,11 +234,10 @@ def format_distance(
         if isArea:
             toInches = 1550
             inPerFoot = 144
-        
 
         decInches = value * toInches
         decFeet = decInches / 12
-        
+
         if not precision:
             precision = 256
         elif precision == "1":
@@ -258,10 +258,10 @@ def format_distance(
         else:
             feet = 0
 
-         # Separate Fractional Inches
+        # Separate Fractional Inches
         decInches = abs(decInches)  # ignore the sign for inches
         inches = math.floor(decInches)  # remove decimal
-        
+
         # Clean up floating point errors
         fractional_inches = decInches - inches
         tolerance = 0.01  # About 1/100 of an inch
@@ -280,11 +280,11 @@ def format_distance(
             else:
                 frac = round(base * fractional_inches)
 
-
         # Set proper numerator and denominator
         if frac != base:
             # Simplify using GCD
             from math import gcd
+
             divisor = gcd(int(frac), int(base))
             frac = int(frac / divisor)
             base = int(base / divisor)
@@ -312,14 +312,14 @@ def format_distance(
                 tx_dist += str(feet) + "'"
             if not feet and not add_inches:
                 tx_dist += str(feet) + "'"
-            
+
             # Add "0' - " when we have inches but no feet
             # But only add " - " separator if we actually have inches to show
             if not feet and add_inches:
                 tx_dist += "0' - "
             elif feet and add_inches:
                 tx_dist += " - "
-            
+
             if not feet and value < 0:
                 tx_dist += "-"
             if add_inches:
@@ -341,13 +341,11 @@ def format_distance(
                 # Only add inch symbol if we actually added inch content
                 if inches > 0 or frac > 0 or feet == 0:
                     tx_dist += '"'
-            
 
-            
             if precision == "12" and unit_system == "IMPERIAL":
                 tx_dist = str(round(decFeet)) + "'"
             if tx_dist == '"':
-                tx_dist = "0' - 0\""   
+                tx_dist = "0' - 0\""
         else:
             fmt = "%1.3f"
             sq_feet = round(value * toInches / inPerFoot, 4)

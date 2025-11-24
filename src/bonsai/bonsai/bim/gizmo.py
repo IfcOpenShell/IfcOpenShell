@@ -52,6 +52,7 @@ ARC_LINE_WIDTH = 0.015
 
 PRECISION_MODE_MULTIPLIER = 0.1
 
+
 class SnapManager:
     """Manages snap point visualization and mesh snapping."""
 
@@ -64,16 +65,14 @@ class SnapManager:
         """Set snap point and register draw handler if needed."""
         self._snap_point = point
         if self._draw_handler is None and point is not None:
-            self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-                self._draw, (), 'WINDOW', 'POST_VIEW'
-            )
+            self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._draw, (), "WINDOW", "POST_VIEW")
             self._redraw_viewport()
 
     def clear(self) -> None:
         """Clear snap point and unregister handler."""
         self._snap_point = None
         if self._draw_handler is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(self._draw_handler, 'WINDOW')
+            bpy.types.SpaceView3D.draw_handler_remove(self._draw_handler, "WINDOW")
             self._draw_handler = None
             self._redraw_viewport()
 
@@ -83,17 +82,15 @@ class SnapManager:
             return
 
         if self._shader is None:
-            self._shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+            self._shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
         self._shader.bind()
         self._shader.uniform_float("color", SNAP_CIRCLE_COLOR)
         gpu.state.line_width_set(SNAP_LINE_WIDTH)
 
-        for plane in ('XY', 'XZ', 'YZ'):
-            vertices = generate_circle_vertices(
-                self._snap_point, SNAP_CIRCLE_RADIUS, SNAP_CIRCLE_SEGMENTS, plane
-            )
-            batch = batch_for_shader(self._shader, 'LINE_STRIP', {"pos": vertices})
+        for plane in ("XY", "XZ", "YZ"):
+            vertices = generate_circle_vertices(self._snap_point, SNAP_CIRCLE_RADIUS, SNAP_CIRCLE_SEGMENTS, plane)
+            batch = batch_for_shader(self._shader, "LINE_STRIP", {"pos": vertices})
             batch.draw(self._shader)
 
         gpu.state.line_width_set(1.0)
@@ -102,15 +99,12 @@ class SnapManager:
     def _redraw_viewport() -> None:
         """Force 3D viewport redraw."""
         for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':
+            if area.type == "VIEW_3D":
                 area.tag_redraw()
 
     @staticmethod
     def snap_to_mesh(
-        location: Vector,
-        context: bpy.types.Context,
-        axis_vector: Vector,
-        active_obj: bpy.types.Object
+        location: Vector, context: bpy.types.Context, axis_vector: Vector, active_obj: bpy.types.Object
     ) -> Vector:
         """Snap a location to the nearest mesh element if snapping is enabled.
 
@@ -131,9 +125,7 @@ class SnapManager:
         snap_elements = tool_settings.snap_elements_base
 
         mesh_objects = [
-            obj
-            for obj in context.visible_objects
-            if obj.type == "MESH" and obj != active_obj and obj.visible_get()
+            obj for obj in context.visible_objects if obj.type == "MESH" and obj != active_obj and obj.visible_get()
         ]
 
         if not mesh_objects:
@@ -168,14 +160,14 @@ class SnapManager:
 
             world_vertices = [obj.matrix_world @ v.co for v in mesh.vertices]
 
-            if 'VERTEX' in snap_elements:
+            if "VERTEX" in snap_elements:
                 for v_co in world_vertices:
                     dist = (v_co - location).length
                     if dist < closest_distance:
                         closest_distance = dist
                         closest_point = v_co
 
-            if 'EDGE' in snap_elements:
+            if "EDGE" in snap_elements:
                 for edge in mesh.edges:
                     v1 = world_vertices[edge.vertices[0]]
                     v2 = world_vertices[edge.vertices[1]]
@@ -192,10 +184,8 @@ class SnapManager:
                             closest_distance = dist
                             closest_point = closest_on_edge
 
-            if 'FACE' in snap_elements:
-                bvh = BVHTree.FromPolygons(
-                    world_vertices, [p.vertices for p in mesh.polygons]
-                )
+            if "FACE" in snap_elements:
+                bvh = BVHTree.FromPolygons(world_vertices, [p.vertices for p in mesh.polygons])
 
                 nearest_loc, normal, index, dist = bvh.find_nearest(location)
 
@@ -223,19 +213,13 @@ def clear_snap_point() -> None:
 
 
 def snap_to_mesh(
-    location: Vector,
-    context: bpy.types.Context,
-    axis_vector: Vector,
-    active_obj: bpy.types.Object
+    location: Vector, context: bpy.types.Context, axis_vector: Vector, active_obj: bpy.types.Object
 ) -> Vector:
     return _snap_manager.snap_to_mesh(location, context, axis_vector, active_obj)
 
 
 def generate_circle_vertices(
-    center: Tuple[float, float, float],
-    radius: float,
-    segments: int,
-    plane: str = 'XY'
+    center: Tuple[float, float, float], radius: float, segments: int, plane: str = "XY"
 ) -> List[Tuple[float, float, float]]:
     """Generate circle vertices in specified plane.
 
@@ -254,9 +238,9 @@ def generate_circle_vertices(
         cos_a = radius * math.cos(angle)
         sin_a = radius * math.sin(angle)
 
-        if plane == 'XY':
+        if plane == "XY":
             vertices.append((center[0] + cos_a, center[1] + sin_a, center[2]))
-        elif plane == 'XZ':
+        elif plane == "XZ":
             vertices.append((center[0] + cos_a, center[1], center[2] + sin_a))
         else:
             vertices.append((center[0], center[1] + cos_a, center[2] + sin_a))
@@ -265,10 +249,7 @@ def generate_circle_vertices(
 
 
 def create_quarter_circle_arc(
-    radius: float = 1.0,
-    segments: int = ARC_SEGMENTS,
-    direction: str = "LEFT",
-    line_width: float = ARC_LINE_WIDTH
+    radius: float = 1.0, segments: int = ARC_SEGMENTS, direction: str = "LEFT", line_width: float = ARC_LINE_WIDTH
 ) -> Tuple[Tuple[float, float, float], ...]:
     """Create a quarter circle arc with cross-section thickness for visibility from all angles.
 
@@ -307,27 +288,35 @@ def create_quarter_circle_arc(
         if length > 0:
             px, py = -dy / length * half_width, dx / length * half_width
 
-            arc_triangles.extend([
-                (x1 + px, y1 + py, 0.0),
-                (x1 - px, y1 - py, 0.0),
-                (x2 + px, y2 + py, 0.0),
-            ])
-            arc_triangles.extend([
-                (x2 + px, y2 + py, 0.0),
-                (x1 - px, y1 - py, 0.0),
-                (x2 - px, y2 - py, 0.0),
-            ])
+            arc_triangles.extend(
+                [
+                    (x1 + px, y1 + py, 0.0),
+                    (x1 - px, y1 - py, 0.0),
+                    (x2 + px, y2 + py, 0.0),
+                ]
+            )
+            arc_triangles.extend(
+                [
+                    (x2 + px, y2 + py, 0.0),
+                    (x1 - px, y1 - py, 0.0),
+                    (x2 - px, y2 - py, 0.0),
+                ]
+            )
 
-            arc_triangles.extend([
-                (x1, y1, -half_width),
-                (x2, y2, -half_width),
-                (x1, y1, +half_width),
-            ])
-            arc_triangles.extend([
-                (x1, y1, +half_width),
-                (x2, y2, -half_width),
-                (x2, y2, +half_width),
-            ])
+            arc_triangles.extend(
+                [
+                    (x1, y1, -half_width),
+                    (x2, y2, -half_width),
+                    (x1, y1, +half_width),
+                ]
+            )
+            arc_triangles.extend(
+                [
+                    (x1, y1, +half_width),
+                    (x2, y2, -half_width),
+                    (x2, y2, +half_width),
+                ]
+            )
 
     return tuple(arc_triangles)
 
@@ -387,8 +376,10 @@ class GizmoMovable(bpy.types.Gizmo):
         axis_direction = self.get_axis_direction()
 
         result = intersect_line_line(
-            view_origin, view_origin + view_direction * 1000,
-            self.start_location, self.start_location + axis_direction * 1000
+            view_origin,
+            view_origin + view_direction * 1000,
+            self.start_location,
+            self.start_location + axis_direction * 1000,
         )
         current_3d = result[1] if result else self.start_location
 
@@ -414,13 +405,7 @@ class GizmoMovable(bpy.types.Gizmo):
 
         return {"RUNNING_MODAL"}
 
-    def _update_header(
-        self,
-        context: bpy.types.Context,
-        value: float,
-        is_snapping: bool,
-        is_precision: bool
-    ) -> None:
+    def _update_header(self, context: bpy.types.Context, value: float, is_snapping: bool, is_precision: bool) -> None:
         header_text = f"Value: {value:.3f}m"
         hints = []
         if is_snapping:
@@ -446,25 +431,57 @@ class GizmoLock(bpy.types.Gizmo):
     )
 
     tris_closed = (
-        (0.16803650558, 0.18791499734, 0.0), (-0.07805634290, 0.18791499734, 0.0), (0.16803650558, 0.44701099396, 0.0),
-        (0.16803650558, 0.44701099396, 0.0), (-0.07805634290, 0.18791499734, 0.0), (-0.07805634290, 0.44701099396, 0.0),
-        (0.20165449381, 0.13603900373, 0.0), (-0.11167433113, 0.13603900373, 0.0), (0.20165449381, -0.44701099396, 0.0),
-        (0.20165449381, -0.44701099396, 0.0), (-0.11167433113, 0.13603900373, 0.0), (-0.11167433113, -0.44701099396, 0.0),
-        (-0.07805634290, 0.18791499734, 0.0), (-0.39353451133, 0.18791499734, 0.0), (-0.07805634290, 0.44701099396, 0.0),
-        (-0.07805634290, 0.44701099396, 0.0), (-0.39353451133, 0.18791499734, 0.0), (-0.39353451133, 0.30746498704, 0.0),
-        (-0.44701099396, 0.18791499734, 0.0), (-0.44701099396, -0.04477182776, 0.0), (-0.39353451133, 0.18791499734, 0.0),
-        (-0.39353451133, 0.18791499734, 0.0), (-0.44701099396, -0.04477182776, 0.0), (-0.39353451133, -0.04477182776, 0.0),
+        (0.16803650558, 0.18791499734, 0.0),
+        (-0.07805634290, 0.18791499734, 0.0),
+        (0.16803650558, 0.44701099396, 0.0),
+        (0.16803650558, 0.44701099396, 0.0),
+        (-0.07805634290, 0.18791499734, 0.0),
+        (-0.07805634290, 0.44701099396, 0.0),
+        (0.20165449381, 0.13603900373, 0.0),
+        (-0.11167433113, 0.13603900373, 0.0),
+        (0.20165449381, -0.44701099396, 0.0),
+        (0.20165449381, -0.44701099396, 0.0),
+        (-0.11167433113, 0.13603900373, 0.0),
+        (-0.11167433113, -0.44701099396, 0.0),
+        (-0.07805634290, 0.18791499734, 0.0),
+        (-0.39353451133, 0.18791499734, 0.0),
+        (-0.07805634290, 0.44701099396, 0.0),
+        (-0.07805634290, 0.44701099396, 0.0),
+        (-0.39353451133, 0.18791499734, 0.0),
+        (-0.39353451133, 0.30746498704, 0.0),
+        (-0.44701099396, 0.18791499734, 0.0),
+        (-0.44701099396, -0.04477182776, 0.0),
+        (-0.39353451133, 0.18791499734, 0.0),
+        (-0.39353451133, 0.18791499734, 0.0),
+        (-0.44701099396, -0.04477182776, 0.0),
+        (-0.39353451133, -0.04477182776, 0.0),
     )
 
     tris_open = (
-        (0.16803650558, 0.18791499734, 0.0), (-0.07805634290, 0.18791499734, 0.0), (0.16803650558, 0.44701099396, 0.0),
-        (0.16803650558, 0.44701099396, 0.0), (-0.07805634290, 0.18791499734, 0.0), (-0.07805634290, 0.44701099396, 0.0),
-        (0.20165449381, 0.13603900373, 0.0), (-0.11167433113, 0.13603900373, 0.0), (0.20165449381, -0.44701099396, 0.0),
-        (0.20165449381, -0.44701099396, 0.0), (-0.11167433113, 0.13603900373, 0.0), (-0.11167433113, -0.44701099396, 0.0),
-        (0.16803650558, 0.44701099396, 0.0), (-0.07805634290, 0.44701099396, 0.0), (0.16803650558, 0.70610702038, 0.0),
-        (0.16803650558, 0.70610702038, 0.0), (-0.07805634290, 0.44701099396, 0.0), (-0.07805634290, 0.58656096458, 0.0),
-        (-0.11167433113, 0.44701099396, 0.0), (-0.11167433113, 0.73432201147, 0.0), (-0.07805634290, 0.44701099396, 0.0),
-        (-0.07805634290, 0.44701099396, 0.0), (-0.11167433113, 0.73432201147, 0.0), (-0.07805634290, 0.73432201147, 0.0),
+        (0.16803650558, 0.18791499734, 0.0),
+        (-0.07805634290, 0.18791499734, 0.0),
+        (0.16803650558, 0.44701099396, 0.0),
+        (0.16803650558, 0.44701099396, 0.0),
+        (-0.07805634290, 0.18791499734, 0.0),
+        (-0.07805634290, 0.44701099396, 0.0),
+        (0.20165449381, 0.13603900373, 0.0),
+        (-0.11167433113, 0.13603900373, 0.0),
+        (0.20165449381, -0.44701099396, 0.0),
+        (0.20165449381, -0.44701099396, 0.0),
+        (-0.11167433113, 0.13603900373, 0.0),
+        (-0.11167433113, -0.44701099396, 0.0),
+        (0.16803650558, 0.44701099396, 0.0),
+        (-0.07805634290, 0.44701099396, 0.0),
+        (0.16803650558, 0.70610702038, 0.0),
+        (0.16803650558, 0.70610702038, 0.0),
+        (-0.07805634290, 0.44701099396, 0.0),
+        (-0.07805634290, 0.58656096458, 0.0),
+        (-0.11167433113, 0.44701099396, 0.0),
+        (-0.11167433113, 0.73432201147, 0.0),
+        (-0.07805634290, 0.44701099396, 0.0),
+        (-0.07805634290, 0.44701099396, 0.0),
+        (-0.11167433113, 0.73432201147, 0.0),
+        (-0.07805634290, 0.73432201147, 0.0),
     )
 
     def get_custom_shape(self, context: bpy.types.Context):
@@ -656,40 +673,52 @@ class GizmoArrow(GizmoMovable):
         """Generate arrow geometry along +X axis."""
         triangles = []
 
-        triangles.extend([
-            (0, -ARROW_WIDTH, 0),
-            (ARROW_SHAFT_LENGTH, -ARROW_WIDTH, 0),
-            (0, +ARROW_WIDTH, 0),
-        ])
-        triangles.extend([
-            (0, +ARROW_WIDTH, 0),
-            (ARROW_SHAFT_LENGTH, -ARROW_WIDTH, 0),
-            (ARROW_SHAFT_LENGTH, +ARROW_WIDTH, 0),
-        ])
+        triangles.extend(
+            [
+                (0, -ARROW_WIDTH, 0),
+                (ARROW_SHAFT_LENGTH, -ARROW_WIDTH, 0),
+                (0, +ARROW_WIDTH, 0),
+            ]
+        )
+        triangles.extend(
+            [
+                (0, +ARROW_WIDTH, 0),
+                (ARROW_SHAFT_LENGTH, -ARROW_WIDTH, 0),
+                (ARROW_SHAFT_LENGTH, +ARROW_WIDTH, 0),
+            ]
+        )
 
-        triangles.extend([
-            (0, 0, -ARROW_WIDTH),
-            (ARROW_SHAFT_LENGTH, 0, -ARROW_WIDTH),
-            (0, 0, +ARROW_WIDTH),
-        ])
-        triangles.extend([
-            (0, 0, +ARROW_WIDTH),
-            (ARROW_SHAFT_LENGTH, 0, -ARROW_WIDTH),
-            (ARROW_SHAFT_LENGTH, 0, +ARROW_WIDTH),
-        ])
+        triangles.extend(
+            [
+                (0, 0, -ARROW_WIDTH),
+                (ARROW_SHAFT_LENGTH, 0, -ARROW_WIDTH),
+                (0, 0, +ARROW_WIDTH),
+            ]
+        )
+        triangles.extend(
+            [
+                (0, 0, +ARROW_WIDTH),
+                (ARROW_SHAFT_LENGTH, 0, -ARROW_WIDTH),
+                (ARROW_SHAFT_LENGTH, 0, +ARROW_WIDTH),
+            ]
+        )
 
         head_width = ARROW_WIDTH * ARROW_HEAD_WIDTH_MULTIPLIER
-        triangles.extend([
-            (ARROW_SHAFT_LENGTH, -head_width, 0),
-            (ARROW_SHAFT_LENGTH + ARROW_HEAD_LENGTH, 0, 0),
-            (ARROW_SHAFT_LENGTH, +head_width, 0),
-        ])
+        triangles.extend(
+            [
+                (ARROW_SHAFT_LENGTH, -head_width, 0),
+                (ARROW_SHAFT_LENGTH + ARROW_HEAD_LENGTH, 0, 0),
+                (ARROW_SHAFT_LENGTH, +head_width, 0),
+            ]
+        )
 
-        triangles.extend([
-            (ARROW_SHAFT_LENGTH, 0, -head_width),
-            (ARROW_SHAFT_LENGTH + ARROW_HEAD_LENGTH, 0, 0),
-            (ARROW_SHAFT_LENGTH, 0, +head_width),
-        ])
+        triangles.extend(
+            [
+                (ARROW_SHAFT_LENGTH, 0, -head_width),
+                (ARROW_SHAFT_LENGTH + ARROW_HEAD_LENGTH, 0, 0),
+                (ARROW_SHAFT_LENGTH, 0, +head_width),
+            ]
+        )
 
         for i in range(ARROW_CIRCLE_SEGMENTS):
             angle1 = (2 * math.pi * i) / ARROW_CIRCLE_SEGMENTS
@@ -700,11 +729,13 @@ class GizmoArrow(GizmoMovable):
             y2 = head_width * math.cos(angle2)
             z2 = head_width * math.sin(angle2)
 
-            triangles.extend([
-                (ARROW_SHAFT_LENGTH, 0, 0),
-                (ARROW_SHAFT_LENGTH, y1, z1),
-                (ARROW_SHAFT_LENGTH, y2, z2),
-            ])
+            triangles.extend(
+                [
+                    (ARROW_SHAFT_LENGTH, 0, 0),
+                    (ARROW_SHAFT_LENGTH, y1, z1),
+                    (ARROW_SHAFT_LENGTH, y2, z2),
+                ]
+            )
 
         return tuple(triangles)
 
@@ -746,17 +777,21 @@ class GizmoCone(GizmoMovable):
             y2 = CONE_RADIUS * math.cos(angle2)
             z2 = CONE_RADIUS * math.sin(angle2)
 
-            triangles.extend([
-                (cone_tip_x, 0, 0),
-                (0, y1, z1),
-                (0, y2, z2),
-            ])
+            triangles.extend(
+                [
+                    (cone_tip_x, 0, 0),
+                    (0, y1, z1),
+                    (0, y2, z2),
+                ]
+            )
 
-            triangles.extend([
-                (0, 0, 0),
-                (0, y2, z2),
-                (0, y1, z1),
-            ])
+            triangles.extend(
+                [
+                    (0, 0, 0),
+                    (0, y2, z2),
+                    (0, y1, z1),
+                ]
+            )
 
         return tuple(triangles)
 

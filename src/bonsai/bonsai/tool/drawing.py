@@ -1625,11 +1625,11 @@ class Drawing(bonsai.core.tool.Drawing):
 
         xmin, xmax, ymin, ymax = helper.ortho_view_frame(camera.data)[:4]
         rl = ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)[2][3]
-        
+
         # Convert RL from project units (feet) to meters for Blender world space
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         rl_meters = rl * unit_scale
-        
+
         y = (camera.matrix_world.inverted() @ Vector((0.0, 0.0, rl_meters))).y
         if y < ymin or y > ymax:
             return
