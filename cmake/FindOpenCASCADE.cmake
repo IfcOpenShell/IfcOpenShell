@@ -35,6 +35,7 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
     find_package(VTK QUIET)
 
     find_package(OpenCASCADE CONFIG REQUIRED)
+    message(STATUS "Found OpenCASCADE config: ${OpenCASCADE_DIR}")
     return()
 endif()
 
