@@ -12,6 +12,10 @@
 UNIFY_ENVVARS_AND_CACHE(OCC_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OCC_LIBRARY_DIR)
 
+# OpenCASCADE may be built with VTK support. Try to find VTK first to avoid
+# CMake errors when OpenCASCADE's config references VTK targets.
+find_package(VTK QUIET)
+
 if(OCC_INCLUDE_DIR)
     set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
     message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
