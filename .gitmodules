@@ -17,3 +17,6 @@
 [submodule "src/pyodide/demo-app/wheels"]
 	path = src/pyodide/demo-app/wheels
 	url = https://github.com/IfcOpenShell/wasm-wheels
+[submodule "src/svgfill/3rdparty/svgpp"]
+	path = src/svgfill/3rdparty/svgpp
+	url = https://github.com/svgpp/svgpp
