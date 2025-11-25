@@ -37,6 +37,7 @@ if(POLICY CMP0144) # 3.27
 endif()
 if(POLICY CMP0167) # 3.30
     cmake_policy(SET CMP0167 OLD)
+    set(CMAKE_POLICY_DEFAULT_CMP0167 OLD) # Propagate to subdirectories and find modules.
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
