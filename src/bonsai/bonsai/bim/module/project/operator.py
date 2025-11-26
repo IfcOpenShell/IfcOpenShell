@@ -74,6 +74,38 @@ if TYPE_CHECKING:
 PresetType = Literal["metric_m", "metric_mm", "imperial_ft", "demo", "wizard"]
 
 
+class WM_OT_space_origin_warning(bpy.types.Operator):
+    """Warning dialog for spaces at origin"""
+    bl_idname = "wm.space_origin_warning"
+    bl_label = "Space Origin Warning"
+    bl_options = {'INTERNAL'}
+    
+    message: bpy.props.StringProperty()
+    space_count: bpy.props.IntProperty()
+    
+    def execute(self, context):
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.alert = True
+        
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text=f"⚠️  WARNING: {self.space_count} IfcSpace(s) at origin (0,0,0)!", icon='ERROR')
+        col.separator()
+        
+        for line in self.message.split('\n'):
+            if line.strip():
+                col.label(text=line)
+        
+        col.separator()
+        col.label(text="This may indicate incorrect placement.")
+
+
 class NewProject(bpy.types.Operator):
     bl_idname = "bim.new_project"
     bl_label = "New Project"
@@ -1678,6 +1710,31 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
         settings.json_version = self.json_version
         settings.json_compact = self.json_compact
+
+
+        # CHECK FOR SPACES AT ORIGIN
+        ifc_file = tool.Ifc.get()
+        spaces_at_origin = []
+        for space in ifc_file.by_type("IfcSpace"):
+            obj = tool.Ifc.get_object(space)
+            if obj and all(abs(coord) < 0.001 for coord in obj.location):
+                spaces_at_origin.append(space.Name or space.GlobalId)
+        
+        if spaces_at_origin:
+            # Build message
+            message_lines = [f"  • {name}" for name in spaces_at_origin[:5]]
+            if len(spaces_at_origin) > 5:
+                message_lines.append(f"  ... and {len(spaces_at_origin) - 5} more")
+            
+            message = '\n'.join(message_lines)
+            
+            # Show dialog - user MUST click OK
+            bpy.ops.wm.space_origin_warning('INVOKE_DEFAULT', 
+                                            message=message, 
+                                            space_count=len(spaces_at_origin))
+            
+            self.report({'WARNING'}, f"⚠️  {len(spaces_at_origin)} IfcSpace(s) at origin!")
+
 
         ifc_exporter = export_ifc.IfcExporter(settings)
         print("Starting export")

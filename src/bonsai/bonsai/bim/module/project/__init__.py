@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator, workspace, gizmo, decorator
 
 classes = (
+    operator.WM_OT_space_origin_warning,
     operator.AddProjectLibrary,
     operator.AppendEntireLibrary,
     operator.AppendInspectedLinkedElement,
@@ -87,6 +88,7 @@ classes = (
     ui.BIM_UL_filter_categories,
     ui.BIM_UL_links,
     gizmo.ClippingPlane,
+    
 )
 
 addon_keymaps = []
