@@ -37,7 +37,6 @@ classes = (
     operator.MoveSunPathTo3DCursor,
     operator.RadianceRender,
     operator.FalseColorRadiance,
-    operator.ConvertHDRToFootCandles,
     operator.ViewFromSun,
     operator.LightPickCoordinates,
     operator.LightSetTimeToNow,
