@@ -97,8 +97,8 @@ def initialize_bbim_semver():
 
 def get_debug_info():
     bbim_version = bbim_semver["version"]
-
-    return {
+    
+    debug_info = {
         "os": platform.system(),
         "os_version": platform.version(),
         "python_version": platform.python_version(),
@@ -112,6 +112,25 @@ def get_debug_info():
         "last_actions": last_actions,
         "last_error": last_error,
     }
+    
+    # Add .blend file save information
+    if bpy.data.is_saved:
+        debug_info["blend_file_path"] = bpy.data.filepath
+        debug_info["blend_file_dirty"] = bpy.data.is_dirty
+    else:
+        debug_info["blend_file_path"] = "Not saved"
+        debug_info["blend_file_dirty"] = "N/A"
+    
+    # Add IFC file information
+    bim_props = tool.Blender.get_bim_props()
+    if bim_props.ifc_file:
+        debug_info["ifc_file_path"] = bim_props.ifc_file
+        debug_info["ifc_is_dirty"] = bim_props.is_dirty
+    else:
+        debug_info["ifc_file_path"] = "No IFC loaded"
+        debug_info["ifc_is_dirty"] = "N/A"
+    
+    return debug_info
 
 
 def format_debug_info(info: dict):
