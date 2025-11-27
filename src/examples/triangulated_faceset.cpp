@@ -24,7 +24,7 @@
  ********************************************************************************/
 
 #include "../ifcparse/Ifc4.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcUtil.cpp"
 #include "../ifcparse/IfcHierarchyHelper.h"
 
 #include "suzanne_geometry.h"

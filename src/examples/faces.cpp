@@ -24,7 +24,7 @@
  ********************************************************************************/
 
 #include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcUtil.cpp"
 #include "../ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
@@ -41,7 +41,7 @@ void create_testcase(IfcHierarchyHelper& file, IfcSchema::IfcFace* face, const s
 	IfcSchema::IfcConnectedFaceSet::list::ptr shells(new IfcSchema::IfcConnectedFaceSet::list);
 	shells->push(shell);
 	IfcSchema::IfcFaceBasedSurfaceModel* model = new IfcSchema::IfcFaceBasedSurfaceModel(shells);
-	
+
 	IfcSchema::IfcBuildingElementProxy* product = new IfcSchema::IfcBuildingElementProxy(
 		guid(), 0, name, null, null, 0, 0, null, null);
 	file.addBuildingProduct(product);
@@ -51,7 +51,7 @@ void create_testcase(IfcHierarchyHelper& file, IfcSchema::IfcFace* face, const s
 
 	IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list);
 	IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list);
-		
+
 	items->push(model);
 	IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(
 		file.getRepresentationContext("Model"), S("Body"), S("SurfaceModel"), items);
@@ -59,13 +59,13 @@ void create_testcase(IfcHierarchyHelper& file, IfcSchema::IfcFace* face, const s
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
 	file.addEntity(shape);
-		
+
 	product->setRepresentation(shape);
 }
 
 int main(int argc, char** argv) {
 	IfcHierarchyHelper file;
-	{ 
+	{
 		IfcSchema::IfcCartesianPoint::list::ptr points (new IfcSchema::IfcCartesianPoint::list);
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, -400, 0));
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(+400, -400, 0));
@@ -73,13 +73,13 @@ int main(int argc, char** argv) {
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, +400, 0));
 		IfcSchema::IfcPolyLoop* loop = new IfcSchema::IfcPolyLoop(points);
 		IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, true);
-		
+
 		IfcSchema::IfcFaceBound::list::ptr bounds (new IfcSchema::IfcFaceBound::list);
 		bounds->push(bound);
 		IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
 		create_testcase(file, face, "polyloop");
 	}
-	{ 
+	{
 		IfcSchema::IfcCartesianPoint* point1 = file.addTriplet<IfcSchema::IfcCartesianPoint>(+400, 0., 0.);
 		IfcSchema::IfcCartesianPoint* point2 = file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, 0., 0.);
 		IfcSchema::IfcVertexPoint* vertex1 = new IfcSchema::IfcVertexPoint(point1);
@@ -94,13 +94,13 @@ int main(int argc, char** argv) {
 		edges->push(oriented_edge2);
 		IfcSchema::IfcEdgeLoop* loop = new IfcSchema::IfcEdgeLoop(edges);
 		IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, true);
-		
+
 		IfcSchema::IfcFaceBound::list::ptr bounds (new IfcSchema::IfcFaceBound::list);
 		bounds->push(bound);
 		IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
 		create_testcase(file, face, "circle");
 	}
-	{ 
+	{
 		IfcSchema::IfcCartesianPoint::list::ptr points (new IfcSchema::IfcCartesianPoint::list);
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, -400, 0));
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(+400, -400, 0));
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 		points3->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(+100, -300, 0));
 		IfcSchema::IfcPolyLoop* loop3 = new IfcSchema::IfcPolyLoop(points3);
 		IfcSchema::IfcFaceBound* inner_bound2 = new IfcSchema::IfcFaceBound(loop3, true);
-		
+
 		IfcSchema::IfcFaceBound::list::ptr bounds (new IfcSchema::IfcFaceBound::list);
 		bounds->push(inner_bound1);
 		bounds->push(outer_bound);
@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
 		IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
 		create_testcase(file, face, "polyloop with holes");
 	}
-	{ 
+	{
 		IfcSchema::IfcCartesianPoint::list::ptr points (new IfcSchema::IfcCartesianPoint::list);
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, -400, 0));
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-100, -400, 0));
@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
 		IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
 		create_testcase(file, face, "multiple outer boundaries (invalid)");
 	}
-	{ 
+	{
 		IfcSchema::IfcCartesianPoint::list::ptr points (new IfcSchema::IfcCartesianPoint::list);
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, -400, 1e-6));
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(+400, -400, 0));
@@ -163,13 +163,13 @@ int main(int argc, char** argv) {
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, +400, 0));
 		IfcSchema::IfcPolyLoop* loop = new IfcSchema::IfcPolyLoop(points);
 		IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, true);
-		
+
 		IfcSchema::IfcFaceBound::list::ptr bounds (new IfcSchema::IfcFaceBound::list);
 		bounds->push(bound);
 		IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
 		create_testcase(file, face, "imprecise polyloop");
 	}
-	{ 
+	{
 		IfcSchema::IfcCartesianPoint* point1 = file.addTriplet<IfcSchema::IfcCartesianPoint>(+400, 0., 0.);
 		IfcSchema::IfcCartesianPoint* point2 = file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, 0., 0.);
 		IfcSchema::IfcVertexPoint* vertex1 = new IfcSchema::IfcVertexPoint(point1);
@@ -184,7 +184,7 @@ int main(int argc, char** argv) {
 		edges->push(oriented_edge2);
 		IfcSchema::IfcEdgeLoop* loop = new IfcSchema::IfcEdgeLoop(edges);
 		IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, true);
-		
+
 		IfcSchema::IfcFaceBound::list::ptr bounds (new IfcSchema::IfcFaceBound::list);
 		bounds->push(bound);
 

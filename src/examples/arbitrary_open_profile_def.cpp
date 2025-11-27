@@ -29,7 +29,7 @@
 #include <fstream>
 
 #include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcUtil.cpp"
 #include "../ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
