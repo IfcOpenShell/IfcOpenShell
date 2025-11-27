@@ -214,10 +214,17 @@ class BIMModelProperties(PropertyGroup):
     # Used for things like windows, other hosted furniture, and MEP
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
     # Used for plan calculation points such as in room generation
-    rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
+    rl3: bpy.props.FloatProperty(
+        name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation"
+    )
     type_page: bpy.props.IntProperty(name="Type Page", default=1, min=1, update=update_type_page)
     x_angle: bpy.props.FloatProperty(
-        name="X Angle", default=0, subtype="ANGLE", min=math.radians(-180), max=math.radians(180), update=update_x_angle
+        name="X Angle",
+        default=0,
+        subtype="ANGLE",
+        min=math.radians(-180),
+        max=math.radians(180),
+        update=update_x_angle,
     )
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
@@ -238,7 +245,9 @@ class BIMModelProperties(PropertyGroup):
         default="TOP",
         description="Offset convention to reference line",
     )
-    offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
+    offset: bpy.props.FloatProperty(
+        name="Offset", default=0.0, description="Material usage offset from reference line"
+    )
     show_wall_axis: bpy.props.BoolProperty(
         name="Show Wall Axis",
         default=False,
@@ -717,9 +726,11 @@ class BIMWindowProperties(PropertyGroup):
     overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6, subtype="DISTANCE", update=update_window)
 
     # lining properties
-    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050, subtype="DISTANCE", update=update_window)
+    lining_depth: bpy.props.FloatProperty(
+        name="Lining Depth", default=0.050, min=0.001, subtype="DISTANCE", update=update_window
+    )
     lining_thickness: bpy.props.FloatProperty(
-        name="Lining Thickness", default=0.050, subtype="DISTANCE", update=update_window
+        name="Lining Thickness", default=0.050, min=0.001, subtype="DISTANCE", update=update_window
     )
     lining_offset: bpy.props.FloatProperty(
         name="Lining Offset", default=0.050, subtype="DISTANCE", update=update_window
@@ -748,12 +759,13 @@ class BIMWindowProperties(PropertyGroup):
         update=update_window,
     )
     transom_thickness: bpy.props.FloatProperty(
-        name="Transom Thickness", default=0.050, subtype="DISTANCE", update=update_window
+        name="Transom Thickness", default=0.050, min=0.001, subtype="DISTANCE", update=update_window
     )
     first_transom_offset: bpy.props.FloatProperty(
         name="First Transom Offset",
         description="Distance from the first lining to the first transom center",
         default=0.3,
+        min=0.001,
         subtype="DISTANCE",
         update=update_window,
     )

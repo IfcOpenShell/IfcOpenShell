@@ -33,10 +33,10 @@ import bonsai.core.geometry
 import bonsai.core.geometry as core
 import bonsai.core.root
 from bonsai.bim.module.model.window import create_bm_window, create_bm_box
+from bonsai.bim import gizmo
+from bonsai.bim.gizmo import GizmoPropConfig
 
-import math
 from mathutils import Vector, Matrix
-from typing import Union, Any, Optional
 
 import json
 import collections
@@ -193,8 +193,8 @@ def bm_mirror(
 def create_bm_extruded_profile(
     bm: bmesh.types.BMesh,
     points: list[Vector],
-    edges: Optional[list[tuple[int, int]]] = None,
-    faces: Optional[list[list[int]]] = None,
+    edges: list[tuple[int, int]] | None = None,
+    faces: list[list[int]] | None = None,
     position: Vector = V_(0, 0, 0).freeze(),
     magnitude: float = 1.0,
     extrusion_vector: Vector = V_(0, 0, 1).freeze(),
@@ -473,6 +473,7 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     lining_offset_verts = lining_verts + door_verts + window_lining_verts + frame_verts + glass_verts
     bmesh.ops.translate(bm, vec=V_(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 
     if bpy.context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
@@ -684,11 +685,38 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
-    """Toggle door swing direction between LEFT and RIGHT"""
+    """Toggle door swing direction and optionally flip door geometry.
+
+    Shift+Click (when flip_geometry=True): Flip geometry only without changing door direction"""
 
     bl_idname = "bim.toggle_door_swing"
     bl_label = "Toggle Door Swing"
     bl_options = {"REGISTER", "UNDO"}
+
+    flip_geometry: bpy.props.BoolProperty(name="Flip Geometry", default=False)
+    flip_local_axes: bpy.props.EnumProperty(
+        name="Flip Local Axes", items=(("XY", "XY", ""), ("YZ", "YZ", ""), ("XZ", "XZ", "")), default="XY"
+    )
+    skip_direction_change: bpy.props.BoolProperty(
+        name="Skip Direction Change", default=False, options={"HIDDEN", "SKIP_SAVE"}
+    )
+
+    def invoke(self, context, event):
+        self.skip_direction_change = event.shift
+        return self.execute(context)
+
+    def _toggle_swing_direction(self, obj: bpy.types.Object) -> bool:
+        """Toggle door swing direction between LEFT and RIGHT."""
+        props = tool.Model.get_door_props(obj)
+        current_type = props.door_type
+
+        if "LEFT" in current_type:
+            props.door_type = current_type.replace("LEFT", "RIGHT")
+            return True
+        elif "RIGHT" in current_type:
+            props.door_type = current_type.replace("RIGHT", "LEFT")
+            return True
+        return False
 
     def _execute(self, context):
         obj = tool.Blender.get_active_object()
@@ -696,92 +724,79 @@ class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         element = tool.Ifc.get_entity(obj)
-        if not element or not tool.Blender.Modifier.is_door(element):
+        if not element:
             return {"CANCELLED"}
 
-        props = tool.Model.get_door_props(obj)
-        current_type = props.door_type
+        is_door = tool.Blender.Modifier.is_door(element)
 
-        if "LEFT" in current_type:
-            props.door_type = current_type.replace("LEFT", "RIGHT")
-        elif "RIGHT" in current_type:
-            props.door_type = current_type.replace("RIGHT", "LEFT")
+        if self.flip_geometry:
+            tool.Geometry.flip_object(obj, self.flip_local_axes)
+            if not self.skip_direction_change and is_door:
+                self._toggle_swing_direction(obj)
+        elif is_door:
+            self._toggle_swing_direction(obj)
+        else:
+            return {"CANCELLED"}
 
         return {"FINISHED"}
 
 
-class GizmoDoorEdition(bpy.types.GizmoGroup):
+class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     bl_idname = "OBJECT_GGT_bim_door_edition"
     bl_label = "Door Editing Gizmo"
     bl_space_type = "VIEW_3D"
     bl_region_type = "WINDOW"
     bl_options = {"3D", "PERSISTENT"}
 
-    COLOR_RED = (1.0, 0.2, 0.2)
-    COLOR_GREEN = (0.1, 0.8, 0.1)
-    COLOR_BLUE = (0.2, 0.2, 1.0)
-    ARROW_SCALE = 0.25
-
-    @classmethod
-    def get_arrow_color_from_axis(cls, axis):
-        """Get arrow color based on axis direction (X=red, Y=green, Z=blue)."""
-        if axis[0] != 0:
-            return cls.COLOR_RED
-        elif axis[1] != 0:
-            return cls.COLOR_GREEN
-        else:
-            return cls.COLOR_BLUE
+    enable_editing_operator = "bim.enable_editing_door"
+    finish_editing_operator = "bim.finish_editing_door"
+    cancel_editing_operator = "bim.cancel_editing_door"
 
     gizmo_props = [
-        {"attr_name": "overall_height", "axis": (0, 0, 1)},
-        {"attr_name": "overall_width", "axis": (1, 0, 0)},
-        {"attr_name": "threshold_thickness", "axis": (0, 0, 1)},
-        {"attr_name": "threshold_depth", "axis": (0, 1, 0)},
-        {"attr_name": "lining_depth", "axis": (0, 1, 0)},
-        {"attr_name": "lining_thickness", "axis": (1, 0, 0)},
-        {"attr_name": "transom_offset", "axis": (0, 0, 1)},
-        {"attr_name": "transom_thickness", "axis": (0, 0, 1)},
+        GizmoPropConfig("overall_height", (0, 0, 1)),
+        GizmoPropConfig("overall_width", (1, 0, 0)),
+        GizmoPropConfig("threshold_thickness", (0, 0, 1)),
+        GizmoPropConfig("threshold_depth", (0, 1, 0)),
+        GizmoPropConfig("lining_depth", (0, 1, 0)),
+        GizmoPropConfig("lining_thickness", (-1, 0, 0)),
+        GizmoPropConfig("transom_offset", (0, 0, 1)),
+        GizmoPropConfig("transom_thickness", (0, 0, 1)),
+        GizmoPropConfig("casing_thickness", (-1, 0, 0)),
+        GizmoPropConfig("casing_depth", (0, 1, 0)),
     ]
 
     @classmethod
-    def poll(cls, context):
-        """Show gizmo only when a single door object is selected and active."""
+    def is_element_type(cls, element) -> bool:
+        return tool.Blender.Modifier.is_door(element)
+
+    def get_props(self, obj):
+        return tool.Model.get_door_props(obj)
+
+    def get_gizmo_prefs(self):
         prefs = tool.Blender.get_addon_preferences()
-        if not prefs.gizmos.draw_gizmos_in_3d_viewport:
-            return False
+        return prefs.gizmos.door
 
-        obj = tool.Blender.get_active_object(is_selected=True)
-        if not obj:
-            return False
-
-        if len(tool.Blender.get_selected_objects()) != 1:
-            return False
-
-        element = tool.Ifc.get_entity(obj)
-        if not element or not tool.Blender.Modifier.is_door(element):
-            return False
-        return True
-
-    def get_axis_rotation_matrix(self, axis):
-        """Get rotation matrix to align arrow (default +X direction) with the given axis.
-
-        Args:
-            axis: Tuple of (x, y, z) representing the target axis direction
-
-        Returns:
-            Rotation matrix to align arrow with the axis
-        """
-        axis_vec = V_(*axis).normalized()
-        default_dir = V_(1, 0, 0)
-        return default_dir.rotation_difference(axis_vec).to_matrix().to_4x4()
+    def should_hide_gizmo(self, attr_name, props):
+        """Door-specific visibility rules for gizmos."""
+        if not props.is_editing:
+            return True
+        if attr_name == "threshold_depth" and props.threshold_thickness == 0.0:
+            return True
+        if attr_name == "transom_offset" and props.transom_thickness == 0.0:
+            return True
+        if attr_name == "casing_thickness" and props.lining_offset != 0.0:
+            return True
+        if attr_name == "casing_depth" and (props.lining_offset != 0.0 or props.casing_thickness == 0.0):
+            return True
+        return False
 
     def get_gizmo_matrix_overall_height(self, props):
-        translation = Matrix.Translation(V_(props.overall_width - 0.05, 0.0, props.overall_height))
+        translation = Matrix.Translation(V_(props.overall_width - 0.05, props.lining_offset, props.overall_height))
         rotation = self.get_axis_rotation_matrix((0, 0, 1))
         return translation @ rotation
 
     def get_gizmo_matrix_overall_width(self, props):
-        translation = Matrix.Translation(V_(props.overall_width, 0.0, props.overall_height - 0.05))
+        translation = Matrix.Translation(V_(props.overall_width, props.lining_offset, props.overall_height - 0.05))
         rotation = self.get_axis_rotation_matrix((1, 0, 0))
         return translation @ rotation
 
@@ -789,7 +804,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup):
         translation = Matrix.Translation(
             V_(
                 props.overall_width / 2,
-                props.threshold_offset + props.threshold_depth / 2,
+                props.threshold_offset + props.threshold_depth / 2 + props.lining_offset,
                 props.threshold_thickness,
             )
         )
@@ -798,7 +813,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup):
 
     def get_gizmo_matrix_threshold_depth(self, props):
         translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.threshold_depth, props.threshold_thickness / 2)
+            V_(props.overall_width / 2, props.threshold_depth + props.lining_offset, props.threshold_thickness / 2)
         )
         rotation = self.get_axis_rotation_matrix((0, 1, 0))
         return translation @ rotation
@@ -812,64 +827,53 @@ class GizmoDoorEdition(bpy.types.GizmoGroup):
 
     def get_gizmo_matrix_lining_thickness(self, props):
         translation = Matrix.Translation(
-            V_(props.lining_thickness, props.lining_depth / 2 + props.lining_offset, props.overall_height / 2)
+            V_(props.overall_width - props.lining_thickness, props.lining_depth / 2, props.overall_height / 2)
         )
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
+        rotation = self.get_axis_rotation_matrix((-1, 0, 0))
         return translation @ rotation
 
     def get_gizmo_matrix_transom_offset(self, props):
-        translation = Matrix.Translation(V_(props.overall_width / 2, 0.0, props.transom_offset))
+        translation = Matrix.Translation(V_(props.overall_width / 2, props.lining_offset, props.transom_offset))
         rotation = self.get_axis_rotation_matrix((0, 0, 1))
         return translation @ rotation
 
     def get_gizmo_matrix_transom_thickness(self, props):
         translation = Matrix.Translation(
-            V_(props.overall_width / 2, 0.0, props.transom_offset + props.transom_thickness)
+            V_(props.overall_width / 2, props.lining_offset, props.transom_offset + props.transom_thickness)
         )
         rotation = self.get_axis_rotation_matrix((0, 0, 1))
         return translation @ rotation
 
+    @staticmethod
+    def _get_casing_gizmo_base_position(props) -> tuple[float, float, float]:
+        """Get common base position for casing gizmos."""
+        x = -props.casing_thickness + props.lining_thickness
+        y_base = props.lining_depth + props.lining_offset
+        z = props.overall_height / 2
+        return x, y_base, z
+
+    def get_gizmo_matrix_casing_thickness(self, props):
+        x, y_base, z = self._get_casing_gizmo_base_position(props)
+        translation = Matrix.Translation(V_(x, y_base + props.casing_depth / 2, z))
+        rotation = self.get_axis_rotation_matrix((-1, 0, 0))
+        return translation @ rotation
+
+    def get_gizmo_matrix_casing_depth(self, props):
+        x, y_base, z = self._get_casing_gizmo_base_position(props)
+        translation = Matrix.Translation(V_(x, y_base + props.casing_depth, z))
+        rotation = self.get_axis_rotation_matrix((0, 1, 0))
+        return translation @ rotation
+
     def setup(self, context):
+        # Use base class methods for common gizmos
+        self.setup_property_gizmos(context)
+        self.setup_editing_gizmos(context)
+
+        # Door-specific: swing arc gizmos
         prefs = tool.Blender.get_addon_preferences()
-        default_color = prefs.decorations_colour[:3]
         highlight_color = prefs.decorator_color_selected[:3]
         inactive_color = prefs.decorator_color_background[:3]
         special_color = prefs.decorator_color_special[:3]
-
-        def add_gizmo_prop(prop_config):
-            attr_name = prop_config["attr_name"]
-            gizmo = self.gizmos.new("BIM_GT_gizmo_cone")
-
-            def move_get():
-                obj = bpy.context.active_object
-                if not obj:
-                    return 0.0
-                props = tool.Model.get_door_props(obj)
-                return getattr(props, attr_name)
-
-            def move_set(value):
-                obj = bpy.context.active_object
-                if not obj:
-                    return
-                props = tool.Model.get_door_props(obj)
-                setattr(props, attr_name, max(0.0, value))
-
-            # Set callbacks on the gizmo instance
-            gizmo.move_get_cb = move_get
-            gizmo.move_set_cb = move_set
-            gizmo.axis = V_(*prop_config["axis"])
-            gizmo.local_axis = V_(*prop_config["axis"])
-
-            gizmo.color = self.get_arrow_color_from_axis(prop_config["axis"])
-            gizmo.color_highlight = highlight_color
-            gizmo.alpha = 0.99
-            gizmo.use_draw_modal = True
-            gizmo.use_draw_scale = True
-
-            setattr(self, f"gizmo_{attr_name}", gizmo)
-
-        for prop_config in self.gizmo_props:
-            add_gizmo_prop(prop_config)
 
         self.gizmo_door_type = self.gizmos.new("VIEW3D_GT_arc")
         self.gizmo_door_type.use_draw_scale = False
@@ -877,81 +881,32 @@ class GizmoDoorEdition(bpy.types.GizmoGroup):
         self.gizmo_door_type.alpha = 0.5
         self.gizmo_door_type.color_highlight = highlight_color
         self.gizmo_door_type.prop_path = "BIMDoorProperties.door_type"
-        self.gizmo_door_type.target_set_operator("bim.toggle_door_swing")
+        op = self.gizmo_door_type.target_set_operator("bim.toggle_door_swing")
+        op.flip_geometry = False
 
-        # Flip arc gizmo - mirrors the swing arc along X axis, flips door when clicked
+        # Flip arc gizmo - mirrors the swing arc along X axis, flips door and toggles direction when clicked
         self.gizmo_flip_arc = self.gizmos.new("VIEW3D_GT_arc")
         self.gizmo_flip_arc.use_draw_scale = False
         self.gizmo_flip_arc.color = inactive_color
         self.gizmo_flip_arc.alpha = 0.5
         self.gizmo_flip_arc.color_highlight = highlight_color
         self.gizmo_flip_arc.prop_path = "BIMDoorProperties.door_type"
-        op = self.gizmo_flip_arc.target_set_operator("bim.flip_object")
+        op = self.gizmo_flip_arc.target_set_operator("bim.toggle_door_swing")
+        op.flip_geometry = True
         op.flip_local_axes = "XY"
-
-        self.pen_gizmo = self.gizmos.new("VIEW3D_GT_pen")
-        self.pen_gizmo.use_draw_scale = False
-        self.pen_gizmo.color = default_color
-        self.pen_gizmo.color_highlight = highlight_color
-        self.pen_gizmo.alpha = 0.8
-        self.pen_gizmo.target_set_operator("bim.enable_editing_door")
-
-        self.validate_gizmo = self.gizmos.new("VIEW3D_GT_validate")
-        self.validate_gizmo.use_draw_scale = False
-        self.validate_gizmo.color = self.COLOR_GREEN
-        self.validate_gizmo.color_highlight = highlight_color
-        self.validate_gizmo.alpha = 0.8
-        self.validate_gizmo.target_set_operator("bim.finish_editing_door")
-
-        self.cancel_gizmo = self.gizmos.new("VIEW3D_GT_cancel")
-        self.cancel_gizmo.use_draw_scale = False
-        self.cancel_gizmo.color = self.COLOR_RED
-        self.cancel_gizmo.color_highlight = highlight_color
-        self.cancel_gizmo.alpha = 0.8
-        self.cancel_gizmo.target_set_operator("bim.cancel_editing_door")
 
     def refresh(self, context):
         obj = context.active_object
         if not obj:
             return
 
-        props = tool.Model.get_door_props(obj)
+        props = self.get_props(obj)
         mw = obj.matrix_world
-        self.update_arrows(mw, props)
-        self.update_swing_gizmo(mw, props)
+        self.update_property_gizmos(mw, props)
+        self.update_swing_gizmos(mw, props)
         self.update_editing_gizmos(mw, props)
 
-    def update_arrows(self, mw, props):
-        """Update arrow gizmos position and visibility based on editing state."""
-        prefs = tool.Blender.get_addon_preferences()
-        door_gizmo_prefs = prefs.gizmos.door
-
-        for prop_config in self.gizmo_props:
-            attr_name = prop_config["attr_name"]
-            gizmo = getattr(self, f"gizmo_{attr_name}", None)
-            if gizmo is None:
-                continue
-
-            if not getattr(door_gizmo_prefs, attr_name, True):
-                gizmo.hide = True
-                continue
-
-            if (
-                not props.is_editing
-                or (attr_name == "threshold_depth" and props.threshold_thickness == 0.0)
-                or (attr_name == "transom_offset" and props.transom_thickness == 0.0)
-            ):
-                gizmo.hide = True
-                continue
-
-            # Update position and show arrow when editing
-            gizmo.hide = False
-            matrix_method = getattr(self, f"get_gizmo_matrix_{attr_name}", None)
-            if matrix_method:
-                gizmo.matrix_basis = mw @ matrix_method(props)
-            gizmo.matrix_offset = Matrix.Scale(self.ARROW_SCALE, 4)
-
-    def update_swing_gizmo(self, mw, props):
+    def update_swing_gizmos(self, mw, props):
         """Update swing gizmo position and color based on editing state."""
         prefs = tool.Blender.get_addon_preferences()
         door_gizmo_prefs = prefs.gizmos.door
@@ -965,37 +920,13 @@ class GizmoDoorEdition(bpy.types.GizmoGroup):
 
         # Calculate base swing transformation (common to both arcs)
         swing_x_offset = props.overall_width if "RIGHT" in props.door_type else 0.0
-        base_swing_transform = Matrix.Translation(V_(swing_x_offset, 0, 0)) @ Matrix.Scale(props.overall_width, 4)
+        base_swing_transform = Matrix.Translation(V_(swing_x_offset, props.lining_offset, 0)) @ Matrix.Scale(props.overall_width, 4)
 
         if not self.gizmo_door_type.hide:
             self.gizmo_door_type.matrix_basis = mw @ base_swing_transform
             self.gizmo_door_type.color = prefs.decorations_colour[:3]
 
         if not self.gizmo_flip_arc.hide:
-            mirror_x = Matrix.Scale(-1, 4, (0, 1, 0))
-            self.gizmo_flip_arc.matrix_basis = mw @ base_swing_transform @ mirror_x
-
-    def update_editing_gizmos(self, mw, props):
-        """Update editing control gizmos (pen/validate/cancel) visibility and position."""
-
-        icon_z = props.overall_height + 0.5
-        local_transform = (
-            Matrix.Translation(V_(0, 0.0, icon_z))
-            @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
-            @ Matrix.Scale(0.5, 4)
-        )
-        icon_matrix_base = mw @ local_transform
-
-        if props.is_editing:
-            self.pen_gizmo.hide = True
-            self.validate_gizmo.hide = False
-            self.validate_gizmo.matrix_basis = icon_matrix_base
-            self.cancel_gizmo.hide = False
-            cancel_local = Matrix.Translation(V_(0.5, 0.0, 0.0)) @ local_transform
-            self.cancel_gizmo.matrix_basis = mw @ cancel_local
-
-        else:
-            self.pen_gizmo.hide = False
-            self.pen_gizmo.matrix_basis = icon_matrix_base
-            self.validate_gizmo.hide = True
-            self.cancel_gizmo.hide = True
+            # Mirror the flip arc along Y axis to show the opposite swing direction
+            mirror_y = Matrix.Scale(-1, 4, (0, 1, 0))
+            self.gizmo_flip_arc.matrix_basis = mw @ base_swing_transform @ mirror_y
