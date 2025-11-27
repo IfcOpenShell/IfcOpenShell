@@ -241,6 +241,11 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
             row = box.row()
             row.prop(props, "false_color_contour_lines")
 
+            # Contour mode dropdown (only visible if contour lines enabled)
+            if props.false_color_contour_lines:
+                row = box.row()
+                row.prop(props, "false_color_contour_mode")
+
             row = box.row()
             row.label(text="Multiplier")
             row.prop(props, "false_color_multiplier", text="")
@@ -251,22 +256,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
             row = box.row()
             row.operator("render_scene.false_color_radiance", text="Generate False Color Image")
-
-        layout.separator()
-
-        # Step 5: Convert to foot-candles
-        box = layout.box()
-        box.label(text="Step 5: Convert HDR to Foot-Candles")
-        row = box.row()
-        row.prop(props, "convert_hdr_to_fc")
-
-        if props.convert_hdr_to_fc:
-            row = box.row()
-            row.label(text="Output Name")
-            row.prop(props, "hdr_to_fc_output_name", text="")
-
-            row = box.row()
-            row.operator("render_scene.convert_hdr_to_fc", text="Convert to Foot-Candles")
 
 
 class BIM_PT_solar(bpy.types.Panel):
