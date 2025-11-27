@@ -222,6 +222,28 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         self.props_to_pset = event.alt
         return self.execute(context)
 
+
+    def _cleanup_collections(self, obj: bpy.types.Object) -> None:
+        """Remove object from non-IFC collections after IFC class assignment.
+        
+        When an object is assigned to an IFC class, it gets added to the appropriate
+        IFC container collection. This method removes it from any non-IFC collections
+        it was previously in, ensuring the object only appears in its proper IFC
+        spatial container.
+        
+        Args:
+            obj: The Blender object to clean up
+        """
+        if len(obj.users_collection) <= 1:
+            return
+        
+        # Identify IFC collections (those starting with "Ifc")
+        non_ifc_collections = [c for c in obj.users_collection if not c.name.startswith("Ifc")]
+        
+        # Remove from all non-IFC collections
+        for collection in non_ifc_collections:
+            collection.objects.unlink(obj)
+
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
         props = tool.Root.get_root_props()
@@ -327,6 +349,9 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     predefined_type=predefined_type,
                     should_add_representation=False,
                 )
+
+                self._cleanup_collections(obj)
+
                 ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc, tool.Geometry, obj=obj, representation=representation
@@ -358,6 +383,9 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     context=ifc_context,
                     ifc_representation_class=self.ifc_representation_class,
                 )
+
+                self._cleanup_collections(obj)
+                
                 representation = tool.Geometry.get_active_representation(obj)
                 if representation:
                     tool.Geometry.reload_representation(obj)
