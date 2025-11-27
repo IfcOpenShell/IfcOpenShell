@@ -149,6 +149,8 @@ classes = [
     ui.BIM_UL_generic,
     ui.DocPreferences,
     ui.GizmoPreferencesDoor,  # Register before GizmoPreferences
+    ui.GizmoPreferencesWindow,  # Register before GizmoPreferences
+    ui.GizmoPreferencesStair,  # Register before GizmoPreferences
     ui.GizmoPreferences,
     # ui.DefaultParameters and ui.BIM_ADDON_preferences are registered separately after modules (see late_classes below)
     # Tabs panel
@@ -212,6 +214,9 @@ classes = [
     gizmo.GizmoPen,
     gizmo.GizmoValidate,
     gizmo.GizmoCancel,
+    gizmo.GizmoPlus,
+    gizmo.GizmoMinus,
+    gizmo.GizmoCycle,
 ]
 
 for mod in modules.values():
