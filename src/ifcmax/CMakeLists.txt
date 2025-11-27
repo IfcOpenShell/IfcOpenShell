@@ -79,7 +79,11 @@ if(HAS_MAX)
 
         set_target_properties(IfcMax_${max_year} PROPERTIES SUFFIX ".dli")
 
-        install(TARGETS IfcMax_${max_year} RUNTIME DESTINATION ${BINDIR})
+        install(TARGETS IfcMax_${max_year}
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+            RUNTIME DESTINATION ${BINDIR}
+        )
     endforeach()
 else()
     message(STATUS "Autodesk 3ds Max SDK not found, is required to build IFCMax.")
