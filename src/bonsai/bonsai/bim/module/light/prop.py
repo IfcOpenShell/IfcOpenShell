@@ -568,9 +568,23 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     false_color_contour_lines: BoolProperty(
-        name="Contour Lines",
+        name="Enable Contour Lines",
         description="Add contour lines to the false color image",
         default=True,
+    )
+
+    false_color_contour_mode: EnumProperty(
+        name="Contour Mode",
+        description="Contour line display mode",
+        items=[
+            (
+                "WITH_BG",
+                "Contour Lines with Background",
+                "Show contour lines overlaid on the colored false color background",
+            ),
+            ("WITHOUT_BG", "Contour Lines Only", "Show only contour lines without the false color background"),
+        ],
+        default="WITH_BG",
     )
 
     false_color_multiplier: FloatProperty(
@@ -585,19 +599,6 @@ class RadianceExporterProperties(PropertyGroup):
         name="False Color Output Name",
         description="Name of the false color output file (without extension)",
         default="false_color",
-    )
-
-    # HDR to foot-candles conversion properties
-    convert_hdr_to_fc: BoolProperty(
-        name="Convert to Foot-Candles",
-        description="Convert the main render HDR to foot-candles unit for illuminance verification",
-        default=False,
-    )
-
-    hdr_to_fc_output_name: StringProperty(
-        name="FC Output Name",
-        description="Name of the foot-candles converted HDR file (without extension)",
-        default="render_fc",
     )
 
     if TYPE_CHECKING:
@@ -630,10 +631,9 @@ class RadianceExporterProperties(PropertyGroup):
         false_color_label: Literal["fc", "lux", "cd/m2"]
         false_color_scale: float
         false_color_contour_lines: bool
+        false_color_contour_mode: Literal["WITH_BG", "WITHOUT_BG"]
         false_color_multiplier: float
         false_color_output_name: str
-        convert_hdr_to_fc: bool
-        hdr_to_fc_output_name: str
 
 
 class BIMSolarProperties(PropertyGroup):

@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import subprocess
 
 import pyradiance as pr
 from datetime import datetime
@@ -105,7 +106,27 @@ class ExportOBJ(bpy.types.Operator):
         elements += ifc_file.by_type("IfcSite")
         elements = [e for e in elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
 
-        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
+        # Filter elements by visibility in Blender
+        # Only export elements that are visible in the viewport
+        visible_elements = []
+        for element in elements:
+            # Get the corresponding Blender object
+            blender_obj = tool.Ifc.get_object(element)
+
+            # If no Blender object exists, include the element (not yet represented)
+            if blender_obj is None:
+                visible_elements.append(element)
+                continue
+
+            # Check if the object is visible
+            # visible_get() returns True if the object is visible (not hidden, not on hidden layer, etc.)
+            if blender_obj.visible_get():
+                visible_elements.append(element)
+            else:
+                print(f"Skipping hidden element: {element.GlobalId if hasattr(element, 'GlobalId') else element.id()}")
+
+        print(f"Exporting {len(visible_elements)} visible elements out of {len(elements)} total elements")
+        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=visible_elements)
         if iterator.initialize():
             while True:
                 shape = iterator.get()
@@ -243,8 +264,8 @@ class PrepareRadianceScene(bpy.types.Operator):
                 return {"CANCELLED"}
 
             # Build datetime for Radiance gensky
-            # Note: sun_pos_props and sun_props are synchronized by update_sun_path()
-            dt = datetime(sun_pos_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
+            # Note: sun_props (BIMSolarProperties) is the authoritative source, synchronized to sun_pos_props
+            dt = datetime(sun_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
 
             print(f"Sun position data for Radiance gensky:")
             print(f"  DateTime: {dt}")
@@ -258,12 +279,19 @@ class PrepareRadianceScene(bpy.types.Operator):
             sunny_without_sun = sky_condition == "SUNNY_WITHOUT_SUN"
             cloudy = sky_condition == "CLOUDY"
 
+            # Note: Radiance gensky expects longitude and timezone in "degrees west of Greenwich"
+            # Standard geographic coordinates have positive east, so we need to negate for eastern hemisphere
+            # longitude: positive = east of Greenwich (negate for gensky), negative = west (keep as is)
+            # timezone: UTC offset hours × 15 degrees, but negative for eastern hemisphere (UTC+)
+            longitude_for_gensky = -sun_props.longitude  # Negate because geographic coords are positive east
+            timezone_for_gensky = -int(sun_props.UTC_zone) * 15  # Negate because UTC+ is east
+
             sky_description = pr.gensky(
                 dt=dt,
                 latitude=sun_props.latitude,
-                longitude=sun_props.longitude,
+                longitude=longitude_for_gensky,
                 year=sun_pos_props.year,
-                timezone=-int(sun_props.UTC_zone),
+                timezone=timezone_for_gensky,
                 sunny_with_sun=sunny_with_sun,
                 sunny_without_sun=sunny_without_sun,
                 cloudy=cloudy,
@@ -433,7 +461,9 @@ ground_glow source ground
                     if ies_light.ies_file_path and ies_light.target_object:
                         obj = ies_light.target_object
                         pos = obj.location
-                        z_rot = ies_light.rotation_z
+                        # Convert rotation from radians to degrees
+                        # (Blender's ANGLE subtype stores values in radians)
+                        z_rot = math.degrees(ies_light.rotation_z)
 
                         if idx in converted_ies_lights:
                             # Light is enabled and was converted
@@ -620,10 +650,6 @@ class FalseColorRadiance(bpy.types.Operator):
         print(f"  Multiplier: {multiplier}")
 
         try:
-            import subprocess
-
-            # Build command line arguments for falsecolor
-            # Format: falsecolor [options] -ip input.hdr > output.hdr
             fc_output_name = props.false_color_output_name
             fc_hdr_path = os.path.join(output_dir, f"{fc_output_name}.hdr")
 
@@ -631,73 +657,82 @@ class FalseColorRadiance(bpy.types.Operator):
             light_module_dir = os.path.dirname(__file__)
             falsecolor_exe = os.path.join(light_module_dir, "Radiance", "bin", "falsecolor.exe")
             radiance_lib = os.path.join(light_module_dir, "Radiance", "lib")
-            falsecolor_bin = falsecolor_exe if os.path.exists(falsecolor_exe) else "falsecolor"
+            radiance_bin_dir = os.path.join(light_module_dir, "Radiance", "bin")
 
+            print(f"Looking for bundled falsecolor at: {falsecolor_exe}")
+
+            if os.path.exists(falsecolor_exe):
+                falsecolor_bin = falsecolor_exe
+                print(f"Using bundled falsecolor: {falsecolor_bin}")
+            else:
+                # Try to find falsecolor in system PATH
+                import shutil
+
+                system_falsecolor = shutil.which("falsecolor.exe") or shutil.which("falsecolor")
+                if system_falsecolor:
+                    falsecolor_bin = system_falsecolor
+                    radiance_bin_dir = os.path.dirname(system_falsecolor)
+                    radiance_lib = os.path.join(os.path.dirname(radiance_bin_dir), "lib")
+                    print(f"Using system falsecolor: {falsecolor_bin}")
+                else:
+                    falsecolor_bin = "falsecolor"
+                    print(f"Warning: falsecolor.exe not found in bundle or system PATH, will try system PATH")
+
+            # Build command line arguments for falsecolor
             cmd = [falsecolor_bin]
-
-            # Add multiplier
             cmd.extend(["-m", str(multiplier)])
-
-            # Add scale
             cmd.extend(["-s", fc_scale])
-
-            # Add label
             cmd.extend(["-l", props.false_color_label])
 
-            # Add contour lines if enabled
+            # Determine contour mode and build command accordingly
             if props.false_color_contour_lines:
-                cmd.append("-cl")
-
-            # Add -ip flag (use same image for intensity and overlay)
-            cmd.append("-ip")
-            cmd.append(hdr_path)
+                if props.false_color_contour_mode == "WITH_BG":
+                    # Contour lines with background - use -cl and -ip
+                    print("Generating false color with contour lines (with background)...")
+                    cmd.append("-cl")
+                    cmd.append("-ip")
+                    cmd.append(hdr_path)
+                else:  # WITHOUT_BG
+                    # Contour lines only (with legend but no colored background)
+                    print("Generating false color with contour lines only (with legend, no background)...")
+                    cmd.append("-cl")
+                    cmd.append("-i")
+                    cmd.append(hdr_path)
+            else:
+                # No contour lines - standard false color with -ip
+                print("Generating standard false color image...")
+                cmd.append("-ip")
+                cmd.append(hdr_path)
 
             print(f"Running falsecolor command: {' '.join(cmd)}")
             print(f"Using falsecolor binary: {falsecolor_bin}")
 
             # Setup environment for Radiance tools
             env = os.environ.copy()
-            env["RAYPATH"] = "." + os.pathsep + radiance_lib
+
+            # Add Radiance bin directory to PATH so falsecolor can find its dependencies
+            if radiance_bin_dir and os.path.exists(radiance_bin_dir):
+                env["PATH"] = radiance_bin_dir + os.pathsep + env.get("PATH", "")
+                print(f"Added to PATH: {radiance_bin_dir}")
+
+            # Set RAYPATH for Radiance library files
+            if os.path.exists(radiance_lib):
+                env["RAYPATH"] = "." + os.pathsep + radiance_lib
+                print(f"Set RAYPATH: {radiance_lib}")
+            else:
+                print(f"Note: Radiance lib folder not found at {radiance_lib}")
 
             # Execute falsecolor and capture output
-            try:
-                result = subprocess.run(cmd, capture_output=True, check=True, env=env)
-                fc_image = result.stdout
+            # Use cwd=output_dir to ensure falsecolor writes to the correct location
+            result = subprocess.run(cmd, capture_output=True, check=True, env=env, cwd=output_dir)
+            fc_image = result.stdout
 
-                print(f"Saving false color HDR to: {fc_hdr_path}")
-                with open(fc_hdr_path, "wb") as f:
-                    f.write(fc_image)
+            print(f"Saving false color HDR to: {fc_hdr_path}")
+            with open(fc_hdr_path, "wb") as f:
+                f.write(fc_image)
 
-                print(f"False color HDR generated successfully: {fc_hdr_path}")
-                self.report({"INFO"}, f"False color image generated: {fc_hdr_path}")
-
-            except FileNotFoundError:
-                # falsecolor binary not found in PATH or bundled location
-                # Fallback: use pcond as an alternative visualization
-                print("WARNING: falsecolor binary not found")
-                print(f"  Checked locations:")
-                print(f"    1. Bundled: {falsecolor_exe}")
-                print(f"    2. System PATH: falsecolor")
-                print("Using alternative method: Tone-mapped HDR for luminance visualization...")
-                print("Note: This is a fallback visualization without false color overlay")
-
-                fc_image = pr.pcond(hdr=hdr_path, human=True)
-
-                # Still save as HDR for consistency
-                with open(fc_hdr_path, "wb") as f:
-                    f.write(fc_image)
-
-                print(f"Tone-mapped HDR saved to: {fc_hdr_path}")
-                self.report(
-                    {"WARNING"},
-                    "falsecolor binary not found. Generated tone-mapped HDR instead. "
-                    "Ensure Radiance/bin folder is present in the light module directory.",
-                )
-
-            except subprocess.CalledProcessError as e:
-                error_msg = f"falsecolor failed: {e.stderr.decode() if e.stderr else str(e)}"
-                print(f"ERROR: {error_msg}")
-                raise RuntimeError(error_msg)
+            print(f"False color HDR generated successfully: {fc_hdr_path}")
+            self.report({"INFO"}, f"False color image generated: {fc_hdr_path}")
 
             # Generate TIFF version for convenience
             try:
@@ -714,81 +749,27 @@ class FalseColorRadiance(bpy.types.Operator):
 
             return {"FINISHED"}
 
-        except Exception as e:
-            error_msg = f"Failed to generate false color image: {str(e)}"
-            self.report({"ERROR"}, error_msg)
+        except subprocess.CalledProcessError as e:
+            error_msg = f"falsecolor failed: {e.stderr.decode() if e.stderr else str(e)}"
             print(f"ERROR: {error_msg}")
-            print(f"Traceback:")
-            import traceback
-
-            traceback.print_exc()
-            return {"CANCELLED"}
-
-
-class ConvertHDRToFootCandles(bpy.types.Operator):
-    """Convert HDR image to foot-candles unit"""
-
-    bl_idname = "render_scene.convert_hdr_to_fc"
-    bl_label = "Convert HDR to Foot-Candles"
-    bl_description = "Convert the main render HDR to foot-candles unit for illuminance verification"
-
-    def execute(self, context):
-        props = tool.Blender.get_radiance_exporter_props()
-        output_dir = props.output_dir
-        output_file_name = props.output_file_name
-
-        # Check if the main render HDR exists
-        hdr_path = os.path.join(output_dir, f"{output_file_name}.hdr")
-        if not os.path.exists(hdr_path):
-            error_msg = f"HDR file not found at: {hdr_path}. Please run 'Radiance Render' first."
             self.report({"ERROR"}, error_msg)
-            print(f"ERROR: {error_msg}")
             return {"CANCELLED"}
-
-        print(f"Converting HDR to foot-candles: {hdr_path}")
-
-        # Conversion factor from cd/m² to foot-candles
-        # 1 foot-candle = 10.764 lux = 10.764 cd/m²
-        # So to convert: multiply by 1/10.764 ≈ 0.0929
-        fc_scale_factor = 0.0929005
-
-        try:
-            # Use pyradiance Pcomb to convert
-            print(f"Applying pcomb with scale factor {fc_scale_factor} and original flag...")
-
-            # Create Pcomb command with original=True (-o flag) and scaler for unit conversion
-            # Note: fout=False ensures the output is a proper HDR file with headers, not raw data
-            pcomb_result = pr.Pcomb(fout=False).add(hdr_path, original=True, scaler=fc_scale_factor)()
-
-            # Save the converted HDR
-            fc_output_name = props.hdr_to_fc_output_name
-            fc_hdr_path = os.path.join(output_dir, f"{fc_output_name}.hdr")
-
-            print(f"Saving foot-candles HDR to: {fc_hdr_path}")
-            with open(fc_hdr_path, "wb") as f:
-                f.write(pcomb_result)
-
-            print(f"HDR converted to foot-candles successfully: {fc_hdr_path}")
-            self.report({"INFO"}, f"HDR converted to foot-candles: {fc_hdr_path}")
-
-            # Also generate TIFF version for convenient viewing
-            try:
-                print("Generating TIFF version of foot-candles image...")
-                pcond_fc_image = pr.pcond(hdr=fc_hdr_path, human=True)
-                fc_tiff_path = os.path.join(output_dir, f"{fc_output_name}.tiff")
-                print(f"Saving foot-candles TIFF to: {fc_tiff_path}")
-                pr.ra_tiff(inp=pcond_fc_image, out=fc_tiff_path, lzw=True)
-                print(f"TIFF version generated: {fc_tiff_path}")
-                self.report({"INFO"}, f"TIFF version also generated: {fc_tiff_path}")
-            except Exception as e:
-                print(f"Warning: Failed to generate foot-candles TIFF: {str(e)}")
-                self.report({"WARNING"}, f"TIFF generation failed: {str(e)}")
-
-            print("Foot-candles conversion completed successfully.")
-            return {"FINISHED"}
-
+        except FileNotFoundError as fnf_error:
+            # Check if falsecolor was not found
+            if "falsecolor" in str(fnf_error).lower() or not os.path.exists(falsecolor_exe):
+                error_msg = "falsecolor not found! Please install Radiance and add it to your system PATH"
+            else:
+                error_msg = f"falsecolor binary not found at: {falsecolor_exe}. Please ensure the Radiance/bin folder is present in the light module directory."
+            print(f"ERROR: {error_msg}")
+            self.report({"ERROR"}, error_msg)
+            return {"CANCELLED"}
         except Exception as e:
-            error_msg = f"Failed to convert HDR to foot-candles: {str(e)}"
+            # Check if it's a falsecolor not found error
+            if "falsecolor" in str(e).lower() or isinstance(e, FileNotFoundError):
+                error_msg = "falsecolor not found! Please install Radiance and add it to your system PATH"
+            else:
+                error_msg = f"Failed to generate false color image: {str(e)}"
+
             self.report({"ERROR"}, error_msg)
             print(f"ERROR: {error_msg}")
             print(f"Traceback:")
