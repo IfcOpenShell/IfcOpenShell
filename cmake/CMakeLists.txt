@@ -159,15 +159,6 @@ endif()
 
 include(GNUInstallDirs)
 
-# Specify paths to install files
-if(NOT BINDIR)
-    set(BINDIR bin)
-endif()
-if(NOT IS_ABSOLUTE ${BINDIR})
-    set(BINDIR ${CMAKE_INSTALL_BINDIR})
-endif()
-message(STATUS "BINDIR: ${BINDIR}")
-
 if(NOT INCLUDEDIR)
     set(INCLUDEDIR include)
 endif()
@@ -175,16 +166,6 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
     set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
-
-if(NOT LIBDIR)
-    set(LIBDIR lib)
-endif()
-if(NOT IS_ABSOLUTE ${LIBDIR})
-    set(LIBDIR ${CMAKE_INSTALL_LIBDIR})
-endif()
-message(STATUS "LIBDIR: ${LIBDIR}")
-
-set(IFCOPENSHELL_LIBRARY_DIR "") # for *nix rpaths
 
 if(BUILD_SHARED_LIBS)
     add_definitions(-DIFC_SHARED_BUILD)
@@ -194,8 +175,6 @@ if(BUILD_SHARED_LIBS)
         # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
         add_definitions(-wd4251)
     endif()
-
-    set(IFCOPENSHELL_LIBRARY_DIR "${LIBDIR}")
 endif()
 
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
@@ -780,20 +759,12 @@ if(BUILD_IFCGEOM)
         )
     endforeach()
 
-    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
+    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
     if(WITH_OPENCASCADE)
-        install(TARGETS geometry_serializer ${geometry_serializer_libraries}
-            ARCHIVE DESTINATION ${LIBDIR}
-            LIBRARY DESTINATION ${LIBDIR}
-            RUNTIME DESTINATION ${BINDIR}
-        )
+        install(TARGETS geometry_serializer ${geometry_serializer_libraries})
     endif()
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
