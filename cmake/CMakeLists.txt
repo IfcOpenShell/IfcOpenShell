@@ -345,18 +345,6 @@ find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
-if(NOT MINIMAL_BUILD)
-    # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
-    if(IFCXML_SUPPORT)
-        find_package(LibXml2 REQUIRED)
-    endif()
-endif()
-
-if(IFCXML_SUPPORT)
-    add_definitions(-DWITH_IFCXML)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
-endif()
-
 if(BUILD_IFCGEOM)
     # Open CASCADE
     if(WITH_OPENCASCADE)
