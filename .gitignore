@@ -17,6 +17,7 @@
 # General Python residue
 __pycache__
 *.py.bak
+venv
 
 # Visual Studio Code files
 .vscode
@@ -78,8 +79,6 @@ src/bonsai/bonsai/translations.py
 
 # bonsai test temp files
 src/bonsai/test/files/temp
-src/bonsai/test/files/basic.ifc.cache.blend
-src/bonsai/test/files/basic.ifc.cache.sqlite
 
 # bonsai data
 src/bonsai/bonsai/bim/data/build/
@@ -87,9 +86,7 @@ src/bonsai/bonsai/bim/data/gantt/index.html
 src/bonsai/bonsai/bim/data/gantt/jsgantt.js
 src/bonsai/bonsai/bim/data/gantt/jsgantt.css
 src/bonsai/bonsai/bim/data/webui/static/js/jquery.min.js
-
-src/bonsai/drawings
-src/bonsai/layouts
+src/bonsai/bonsai/bim/data/webui/running_pid.json
 
 # ifcopenshell swig and compiled files
 src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper*.so

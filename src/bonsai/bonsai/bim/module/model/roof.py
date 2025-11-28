@@ -570,6 +570,8 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Model.get_roof_props(obj)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
+        tool.Blender.get_addon_preferences().default_parameters.roof.copy_to(props)
+
         # rejecting original roof shape to be safe
         # taking into account only it's bounding box dimensions
         if obj.dimensions.x == 0 or obj.dimensions.y == 0:

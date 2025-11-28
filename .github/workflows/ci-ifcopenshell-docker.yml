@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: activate
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v5
       with:
         submodules: recursive
 
@@ -76,7 +76,7 @@ jobs:
         make package
       working-directory: build
     - name: Upload 
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         # Artifact name
         name: ifcos-artifacts
@@ -89,31 +89,31 @@ jobs:
     name: Docker Build, Tag, Push
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v5
       with:
         lfs: true
     
     - name: Download 
-      uses: actions/download-artifact@v4.1.7
+      uses: actions/download-artifact@v6.0.0
       with:
         # Artifact name
         name: ifcos-artifacts
         path: artifacts/
     -
       name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
+      uses: docker/setup-qemu-action@v3
     -
       name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1        
+      uses: docker/setup-buildx-action@v3        
     - 
       name: Login to Dockerhub
-      uses: docker/login-action@v1 
+      uses: docker/login-action@v3 
       with:
         username: aecgeeks
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
     - 
       name: Build container image
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v6
       with: 
         context: artifacts
         repository: aecgeeks/ifcopenshell

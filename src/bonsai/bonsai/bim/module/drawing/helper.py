@@ -18,6 +18,7 @@
 
 import bpy
 import math
+import ifcopenshell.util.element
 import mathutils.geometry
 import ifcopenshell
 import ifcopenshell.util.unit
@@ -121,6 +122,45 @@ class BoundingBox:
         return retVal
 
 
+def find_best_precision(fractional_inches, max_precision=256, base_tolerance=0.0001):
+    """
+    Find the simplest fraction denominator that accurately represents the value.
+    Uses a sliding tolerance - smaller denominators get more tolerance.
+
+    :param fractional_inches: The fractional part of inches (0.0 to 1.0)
+    :param max_precision: Maximum denominator to try (256 for imperial)
+    :param base_tolerance: Base tolerance in inches (very strict)
+    :return: Best denominator (power of 2: 2, 4, 8, 16, 32, 64, 128, 256)
+    """
+    if abs(fractional_inches) < 0.00001:
+        return 1  # No fraction needed
+
+    # Try denominators from coarsest to finest: 2, 4, 8, 16, 32, 64, 128, 256
+    for exp in range(1, 9):  # 2^1 to 2^8
+        denom = 2**exp
+        if denom > max_precision:
+            break
+
+        # Find nearest numerator for this denominator
+        numer = round(fractional_inches * denom)
+
+        # Skip if numerator is 0
+        if numer == 0:
+            continue
+
+        # Check if this fraction is close enough
+        fraction_value = numer / denom
+        error = abs(fraction_value - fractional_inches)
+
+        # Very strict tolerance - only simplify if it's a near-perfect match
+        # This keeps 3/256 as 3/256, but allows floating point errors to be cleaned up
+        if error < base_tolerance:
+            return denom
+
+    # If no simpler fraction works, use max precision
+    return max_precision
+
+
 # This function stolen from https://github.com/kevancress/MeasureIt_ARCH/blob/dcf607ce0896aa2284463c6b4ae9cd023fc54cbe/measureit_arch_baseclass.py
 # MeasureIt-ARCH is GPL-v3
 def format_distance(
@@ -186,14 +226,18 @@ def format_distance(
             if unit_length == "INCHES":
                 toInches = 1
             if unit_length == "FEET":
-                toInches = 11.9999
+                toInches = 12
         else:
             toInches = 39.3700787401574887
-        inPerFoot = 11.9999
+        inPerFoot = 12.0
 
         if isArea:
             toInches = 1550
-            inPerFoot = 143.999
+            inPerFoot = 144
+
+        decInches = value * toInches
+        decFeet = decInches / 12
+
         if not precision:
             precision = 256
         elif precision == "1":
@@ -202,8 +246,6 @@ def format_distance(
             precision = int(precision.split("/")[1])
 
         base = int(precision)
-        decInches = value * toInches
-        decFeet = decInches / 12
 
         # Separate ft and inches
         # Unless Inches are the specified Length Unit or unit_fraction is False
@@ -219,20 +261,33 @@ def format_distance(
         # Separate Fractional Inches
         decInches = abs(decInches)  # ignore the sign for inches
         inches = math.floor(decInches)  # remove decimal
-        if inches != 0:
-            frac = round(base * (decInches - inches))
+
+        # Clean up floating point errors
+        fractional_inches = decInches - inches
+        tolerance = 0.01  # About 1/100 of an inch
+
+        # If the fractional part is very small, treat it as zero
+        if fractional_inches < tolerance:
+            frac = 0
+        # If very close to the next whole inch, round up
+        elif fractional_inches > (1.0 - tolerance):
+            frac = 0
+            inches += 1
         else:
-            frac = round(base * (decInches))
+            # Calculate fraction normally
+            if inches != 0:
+                frac = round(base * fractional_inches)
+            else:
+                frac = round(base * fractional_inches)
 
         # Set proper numerator and denominator
         if frac != base:
-            numcycles = int(math.log2(base))
-            for i in range(numcycles):
-                if frac % 2 == 0:
-                    frac = int(frac / 2)
-                    base = int(base / 2)
-                else:
-                    break
+            # Simplify using GCD
+            from math import gcd
+
+            divisor = gcd(int(frac), int(base))
+            frac = int(frac / divisor)
+            base = int(base / divisor)
         else:
             frac = 0
             inches += 1
@@ -251,31 +306,46 @@ def format_distance(
             frac = None
         if not isArea:
             add_inches = bool(inches) or not suppress_zero_inches or (inches == 0 and frac)
+
             tx_dist = ""
             if feet:
                 tx_dist += str(feet) + "'"
             if not feet and not add_inches:
                 tx_dist += str(feet) + "'"
-            if feet and add_inches:
+
+            # Add "0' - " when we have inches but no feet
+            # But only add " - " separator if we actually have inches to show
+            if not feet and add_inches:
+                tx_dist += "0' - "
+            elif feet and add_inches:
                 tx_dist += " - "
+
             if not feet and value < 0:
                 tx_dist += "-"
             if add_inches:
-                if feet == 0 and inches == 0:
-                    pass
+                if feet == 0 and inches == 0 and not frac:
+                    # Special case: exactly zero, show "0"
+                    tx_dist += "0"
+                elif feet == 0 and inches == 0:
+                    pass  # Has fraction, will be added below
                 else:
                     tx_dist += str(inches)
             if add_inches and frac:
                 if feet == 0 and inches == 0:
-                    pass
+                    pass  # Has fraction, will be added below
                 else:
                     tx_dist += " "
             if frac:
                 tx_dist += str(frac) + "/" + str(base)
             if add_inches or frac:
-                tx_dist += '"'
+                # Only add inch symbol if we actually added inch content
+                if inches > 0 or frac > 0 or feet == 0:
+                    tx_dist += '"'
+
             if precision == "12" and unit_system == "IMPERIAL":
                 tx_dist = str(round(decFeet)) + "'"
+            if tx_dist == '"':
+                tx_dist = "0' - 0\""
         else:
             fmt = "%1.3f"
             sq_feet = round(value * toInches / inPerFoot, 4)
@@ -421,8 +491,8 @@ def ortho_view_frame(
 
     Similar to `bpy.types.Camera.view_frame`
 
-    :arg camera: camera of drawing
-    :arg margin: margins, in scene units
+    :param camera: camera of drawing
+    :param margin: margins, in scene units
     :return: (xmin, xmax, ymin, ymax, zmin, zmax) in local camera coordinates
     """
     props = tool.Drawing.get_camera_props(camera)
@@ -443,8 +513,8 @@ def almost_zero(v):
 def clip_segment(bounds, segm):
     """Clipping line segment to bounds
 
-    :arg bounds: (xmin, xmax, ymin, ymax)
-    :arg segm: 2 vertices of the segment
+    :param bounds: (xmin, xmax, ymin, ymax)
+    :param segm: 2 vertices of the segment
     :return: 2 new vertices of segment or None if segment outside the bounding box
     """
     # Liang–Barsky algorithm
@@ -493,8 +563,8 @@ def clip_segment(bounds, segm):
 def elevate_segment(bounds, segm):
     """Elevate line xy-perpendicular segment vertically
 
-    :arg bounds: (xmin, xmax, ymin, ymax)
-    :arg segm: 2 vertices of the segment
+    :param bounds: (xmin, xmax, ymin, ymax)
+    :param segm: 2 vertices of the segment
     :return: 2 new vertices of segment or None if segment outside the bounding box
     """
     _, _, ymin, ymax, zmin, _ = bounds
@@ -544,13 +614,11 @@ def add_newline_between_words(text: str, newline_at: int) -> str:
 def get_relative_z(obj: bpy.types.Object, element, abs_z: float) -> float:
     """Return relative Z of an element, accounting for its spatial container.
 
-    Args:
-        obj: The Blender object representing the element.
-        element: The IFC entity for the object.
-        abs_z: The absolute Z value in world coordinates.
+    :param obj: The Blender object representing the element.
+    :param element: The IFC entity for the object.
+    :param abs_z: The absolute Z value in world coordinates.
 
-    Returns:
-        Relative Z value if the element is inside a spatial container,
+    :return: Relative Z value if the element is inside a spatial container,
         otherwise the absolute Z.
     """
     z = abs_z

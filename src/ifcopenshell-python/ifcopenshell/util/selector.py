@@ -259,6 +259,7 @@ class FormatTransformer(lark.Transformer):
         )
 
     def imperial_length(self, args):
+        args = list(filter(lambda x: x is not None, args))
         if len(args) == 2:
             input_unit, output_unit = "foot", "foot"
             value, precision = args
@@ -279,7 +280,7 @@ class FormatTransformer(lark.Transformer):
         return ifcopenshell.util.unit.format_length(
             float(value),
             int(precision),
-            suppress_zero_inches=suppress_zero_inches,
+            suppress_zero_inches=(suppress_zero_inches if suppress_zero_inches is not None else False),
             unit_system="imperial",
             input_unit=input_unit,
             output_unit=output_unit,
@@ -1027,13 +1028,6 @@ class FacetTransformer(lark.Transformer):
             ):
                 parents.add(parent)
 
-        for rel in self.file.by_type("IfcRelVoidsElement"):
-            parent = rel.RelatingBuildingElement
-            if parent and (
-                self.compare(parent.Name, comparison, value) or self.compare(parent.GlobalId, comparison, value)
-            ):
-                parents.add(parent)
-
         for rel in self.file.by_type("IfcRelFillsElement"):
             parent = rel.RelatingOpeningElement
             if parent and (
@@ -1041,15 +1035,19 @@ class FacetTransformer(lark.Transformer):
             ):
                 parents.add(parent)
 
+        # Get all children of the matched parents
         children: set[ifcopenshell.entity_instance] = set()
         for parent in parents:
             children |= set(ifcopenshell.util.element.get_decomposition(parent))
 
+        # Combine parents and children into a single result set
+        result = parents | children
+
         self.add_default_elements()
         if comparison == "=":
-            self.elements = self.elements & children
+            self.elements = self.elements & result
         else:
-            self.elements -= children
+            self.elements -= result
 
     def query(self, args):
         keys, comparison, value = args

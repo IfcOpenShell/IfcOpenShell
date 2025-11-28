@@ -82,7 +82,6 @@ CLI Manual
       .xml   XML            Property definitions and decomposition tree
       .svg   SVG            Scalable Vector Graphics (2D floor plan)
       .h5    HDF            Hierarchical Data Format storing positions, normals and indices
-      .cityjson             City JSON format for geospatial data
       .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry
       .ifc   IFC-SPF        Industry Foundation Classes
 

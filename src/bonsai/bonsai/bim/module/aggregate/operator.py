@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.aggregate as core
@@ -126,6 +127,10 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
         # Second pass: delete aggregates that now have no parts
         deleted_aggregates = []
         for aggregate in aggregates_to_check:
+            # Skip spatial elements - they should not be deleted even if empty
+            if aggregate.is_a("IfcSpatialElement"):
+                continue
+
             related_objects = ifcopenshell.util.element.get_parts(aggregate)
             if len(related_objects) == 0:
                 aggregate_name = aggregate.Name or f"{aggregate.is_a()} #{aggregate.id()}"
@@ -320,6 +325,21 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
                 if aggregate_obj:
                     aggregate_obj.select_set(True)
                     bpy.context.view_layer.objects.active = aggregate_obj
+
+        # copy selection query to clipboard
+        result = ""
+        for aggregate in all_parts:
+            aggregate_class = aggregate.is_a()
+            aggregate_name = aggregate.Name or ""
+            query = f'parent = "{aggregate_name}"'
+            if not result:
+                result = query
+            else:
+                result += f" + {query}"
+
+        if result:
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
 
         self.one_level_deep = False  # <-- forcibly reset
         return {"FINISHED"}

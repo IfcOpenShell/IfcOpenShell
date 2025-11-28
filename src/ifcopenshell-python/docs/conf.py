@@ -103,7 +103,13 @@ autoapi_dirs = [
 # autoapi_dirs = ['../../bcf/bcf', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
 
 # These are auto-generated based on the IFC schema, so exclude them
-autoapi_ignore = ["*ifcopenshell/express/rules*"]
+# Temporarily ignore bsdd files until they are packaged properly in the wheel.
+autoapi_ignore = [
+    "*ifcopenshell/express/rules*",
+    "*bsdd/bsdd_json.py",
+    "*bsdd/type_hints.py",
+    "*bsdd/yml_to_classes.py",
+]
 
 # Custom autoapi templates to make it easier to read our docs
 autoapi_template_dir = "_autoapi_templates"

@@ -275,6 +275,7 @@ namespace {
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
 %include "../serializers/TtlWktSerializer.h"
+%include "../serializers/JsonSerializer.h"
 
 %extend ifcopenshell::geometry::taxonomy::style {
 	size_t instance_id() const {

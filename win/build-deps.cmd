@@ -24,7 +24,7 @@
 :: Example usage (all arguments are optional):
 :: build-deps.cmd vs2022-x64 RelWithDebInfo Build
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 echo.
 
 for %%Q in ("%~dp0\.") DO set "batpath=%%~fQ"
@@ -274,7 +274,7 @@ call :DownloadFile https://download.osgeo.org/proj/proj-9.2.1.zip "%DEPS_DIR%" p
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive proj-9.2.1.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-9.2.1"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
+pushd "%DEPENDENCY_DIR%"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-9.2.1" ^
     -DSQLITE3_INCLUDE_DIR=%INSTALL_DIR%\sqlite3\include ^
     -DSQLITE3_LIBRARY=%INSTALL_DIR%\sqlite3\lib\sqlite3.lib ^
@@ -286,6 +286,7 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\PROJ.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+popd
 
 
 :mpir
@@ -299,7 +300,7 @@ set DEPENDENCY_NAME=mpir
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
 call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
+pushd "%DEPENDENCY_DIR%"
 git reset --hard
 git clean -fdx
 REM There probably need to be quotes here around the filename
@@ -316,6 +317,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
 copy ..\..\lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpir"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+popd
 
 :mpfr
 
@@ -328,7 +330,7 @@ set DEPENDENCY_NAME=mpfr
 set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
 call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
+pushd "%DEPENDENCY_DIR%"
 git reset --hard
 powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -349,12 +351,12 @@ IF NOT EXIST lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\mpfr.lib GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
 copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+popd
 
 :HDF5
 
 set DEPENDENCY_NAME=hdf5
 set DEPENDENCY_DIR=%DEPS_DIR%\hdf5-%HDF5_VERSION%
-cd "%DEPENDENCY_DIR%"
 set HDF5_CMAKE_ZIP=hdf5-%HDF5_VERSION%.zip
 set HDF5_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
 
@@ -370,7 +372,7 @@ call :DownloadFile ^
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\hdf5-%HDF5_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-ren "%DEPS_DIR%\hdf5-hdf5-%HDF5_VERSION%" "hdf5-%HDF5_VERSION%"
+if exist "%DEPS_DIR%\hdf5-hdf5-%HDF5_VERSION%" ren "%DEPS_DIR%\hdf5-hdf5-%HDF5_VERSION%" "hdf5-%HDF5_VERSION%"
 pushd "%DEPENDENCY_DIR%"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%HDF5_INSTALL_NAME%" ^
                -DHDF5_ENABLE_Z_LIB_SUPPORT=OFF -DBUILD_TESTING=OFF ^
@@ -389,11 +391,16 @@ popd
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
+set DEPENDENCY_INSTALL_DIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%
+echo BOOST_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+:: Needed for CGAL build.
+set BOOST_ROOT=%DEPENDENCY_DIR%
 set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost-%BOOST_VERSION%-b2-nodocs.%ZIP_EXT%
 
+cd "%DEPS_DIR%"
 call :DownloadFile https://github.com/boostorg/boost/releases/download/boost-%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -401,7 +408,9 @@ call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" %DEPENDENCY_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: top-level folder name changed when migrating to github releases
-ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
+if exist "%DEPS_DIR%\boost-%BOOST_VERSION%". (
+    ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
+)
 
 :: Build Boost build script
 if not exist "%DEPENDENCY_DIR%\project-config.jam". (
@@ -417,10 +426,10 @@ set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options -
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
 cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
-IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
+IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPENDENCY_DIR%\bin.v2\project-cache.jam"
 
 call .\b2 toolset=%BOOST_TOOLSET% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
-    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND%
+    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=%DEPENDENCY_INSTALL_DIR%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -475,12 +484,13 @@ IF EXIST "%INSTALL_DIR%\opencascade-%OCCT_VERSION%" (
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
-set FREETYPE_ZIP=ft271.zip
+set FREETYPE_ZIP=VER-2-7-1.zip
 cd "%DEPS_DIR%"
-call :DownloadFile https://download-mirror.savannah.gnu.org/releases/freetype/ft271.zip "%DEPS_DIR%" %FREETYPE_ZIP%
+call :DownloadFile https://github.com/freetype/freetype/archive/refs/tags/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
+if exist "%DEPS_DIR%\freetype-VER-2-7-1" ren "%DEPS_DIR%\freetype-VER-2-7-1" "freetype-2.7.1"
 cd "%DEPENDENCY_DIR%"
 :: NOTE FreeType is built as a static library by default
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\freetype"
@@ -572,15 +582,21 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 
 :SWIG
+set DEPENDENCY_NAME=SWIG
+set SWIG_VERSION=4.1.0
+set DEPENDENCY_DIR=%DEPS_DIR%\swig-%SWIG_VERSION%
+set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\swig-%SWIG_VERSION%
+echo SWIG_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
-IF EXIST "%INSTALL_DIR%\swigwin" (
-    echo Found existing "%INSTALL_DIR%\swigwin", skipping
+IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
+    echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
     goto :cgal
 )
 
 cd "%DEPS_DIR%"
 
 :: Install bizon dependency for SWIG.
+set SWIG_DEPENDENCY_NAME=%DEPENDENCY_NAME%
 set DEPENDENCY_NAME=win_flex_bison
 set WIN_FLEX_BIZON=win_flex_bison-2.5.25
 set WIN_FLEX_BIZON_ZIP=%WIN_FLEX_BIZON%.zip
@@ -589,10 +605,8 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 echo test %WIN_FLEX_BIZON%
 call :ExtractArchive %WIN_FLEX_BIZON_ZIP% "%DEPS_DIR%\%WIN_FLEX_BIZON%" "%DEPS_DIR%\%WIN_FLEX_BIZON%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+set DEPENDENCY_NAME=%SWIG_DEPENDENCY_NAME%
 
-set SWIG_VERSION=4.3.0
-set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
-set DEPENDENCY_DIR=%DEPS_DIR%\swig-%SWIG_VERSION%
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 call :DownloadFile https://github.com/swig/swig/archive/refs/tags/v%SWIG_VERSION%.zip "%DEPS_DIR%" swig-%SWIG_VERSION%.zip
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -601,7 +615,7 @@ call :ExtractArchive swig-%SWIG_VERSION%.zip "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\swigwin" ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DWITH_PCRE=OFF ^
                -DBISON_EXECUTABLE="%DEPS_DIR%\%WIN_FLEX_BIZON%\win_bison.exe"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -626,13 +640,13 @@ cd "%DEPENDENCY_DIR%"
 git reset --hard
 git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
-               -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
+               -DBOOST_ROOT="%BOOST_ROOT%"    ^
                -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
                -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
                -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
                -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
                -DCGAL_HEADER_ONLY=On                          ^
-               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+               -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -761,7 +775,7 @@ echo.
 call :PrintUsage
 :Error
 echo.
-call "%~dp0\utils\cecho.cmd" 0 12 "An error occurred! Aborting!"
+call "%~dp0\utils\cecho.cmd" 0 12 "An error occurred! Aborting! Last logged action: %LAST_ACTION%"
 set IFCOS_SCRIPT_RET=1
 goto :Finish
 
@@ -802,6 +816,7 @@ if not exist "%~3". (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
 )
 set RET=%ERRORLEVEL%
+set LAST_ACTION=DownloadFile '%DEPENDENCY_NAME%'.
 popd
 exit /b %RET%
 
@@ -814,7 +829,9 @@ if not exist "%~3". (
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
 )
-exit /b %ERRORLEVEL%
+set RET=%ERRORLEVEL%
+set LAST_ACTION=ExtractArchive '%DEPENDENCY_NAME%'.
+exit /b %RET%
 
 :: GitCloneOrPullRepository - Clones or pulls (if repository already cloned) a Git repository
 :: Params: %1 gitUrl, %2 destDir
@@ -824,7 +841,7 @@ if not exist "%~2". (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
-    set RET=%ERRORLEVEL%
+    set RET=!ERRORLEVEL!
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Pulling latest changes."
     git reset --hard
@@ -843,8 +860,8 @@ if not exist "%~2". (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
-    set RET=%ERRORLEVEL%
-    if not "%RET%"=="0" exit /b %RET%
+    set RET=!ERRORLEVEL!
+    if not "!RET!"=="0" exit /b !RET!
     popd
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
@@ -940,3 +957,4 @@ echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
 echo NB: This script needs to be ran from the directory directly containing it.
 echo.
+

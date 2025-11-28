@@ -277,7 +277,7 @@ class BIM_UL_containers_manager(UIList):
         if item:
             row = layout.row(align=True)
             icon = self.icon_by_class.get(item.ifc_class, "META_PLANE")
-            split = row.split(factor=0.85)
+            split = row.split(factor=0.8)
             if item.long_name:
                 split2 = split.split(factor=0.7)
                 row = split2.row(align=True)

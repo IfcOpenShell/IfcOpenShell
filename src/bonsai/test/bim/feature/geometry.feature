@@ -102,8 +102,10 @@ Scenario: Remove representation - remove an active representation
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When the variable "representation_body" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And the variable "representation_context" is "{ifc}.by_type('IfcShapeRepresentation')[0].ContextOfItems.id()"
     And I press "bim.remove_representation(representation_id={representation_body})"
     Then the object "IfcWall/Cube" has no data
+    And the mesh "{representation_context}/{representation_body}" does not exist
 
 Scenario: Remove representation - remove an unloaded representation
     Given an empty IFC project
@@ -292,10 +294,27 @@ Scenario: Override duplicate move - with active IFC data
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And additionally the object "IfcBuildingStorey/My Storey" is selected
-    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
     When I duplicate the selected objects
     Then the object "IfcWall/Cube" exists
+    And the object "IfcWall/Cube" is an "IfcWall"
+    And the object "IfcWall/Cube.001" exists
+    And the object "IfcWall/Cube.001" is an "IfcWall"
+    And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
+
+Scenario: Override duplicate move - with locked elements
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube" is selected
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
+    And additionally the object "IfcBuildingStorey/My Storey" is selected
+    Then I press "bim.override_object_duplicate_move" and expect error "Error: 'IfcBuildingStorey/My Storey' is locked. Unlock it via the Spatial panel in the Project Overview tab."
+    And the object "IfcWall/Cube" exists
     And the object "IfcWall/Cube" is an "IfcWall"
     And the object "IfcWall/Cube.001" exists
     And the object "IfcWall/Cube.001" is an "IfcWall"
@@ -310,8 +329,10 @@ Scenario: Override duplicate move - with unlocked elements
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
+    And I set the "is_locked" property to "FALSE"
     And the object "IfcBuildingStorey/My Storey" is selected
-    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
     When I duplicate the selected objects
     Then the object "IfcBuildingStorey/My Storey.001" exists
     And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
@@ -333,9 +354,8 @@ Scenario: Override duplicate move - copying a coloured representation
     And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
     And I press "bim.assign_style_to_selected(style_id={style})"
     When I duplicate the selected objects
-    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
+    And I save IFC project
+    And I load previously saved IFC project
     Then the material "Style" colour is "1,0,0,1"
     And the object "IfcWall/Cube" has the material "Style"
     And the object "IfcWall/Cube.001" has the material "Style"
@@ -507,6 +527,8 @@ Scenario: Override duplicate move linked - with active IFC data
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcBuildingStorey/My Storey" is selected
     When I press "object.duplicate_move_linked"
@@ -538,6 +560,9 @@ Scenario: Override paste buffer - with active IFC data
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
+    And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
+    And I set the "is_locked" property to "FALSE"
     And additionally the object "IfcBuildingStorey/My Storey" is selected
     When I press "view3d.copybuffer"
     # IFC elements unlinked on paste for safety
@@ -555,8 +580,9 @@ Scenario: Duplicate linked aggregate
     When I duplicate linked aggregate the selected objects
     Then the object "IfcWall/Wall_01.001" exists
     And the object "IfcWall/Wall_02.001" exists
-    And the object "IfcElementAssembly/Assembly_01" exists
-    Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly_01" belong to the same Linked Aggregate Group
+    # msgbus updates don't happen in background mode, so obj is not renamed to "IfcElementAssembly/Assembly_01"
+    And the object "Assembly_01" exists
+    Then the object "IfcElementAssembly/Assembly" and "Assembly_01" belong to the same Linked Aggregate Group
 
 Scenario: Refresh linked aggregate
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"

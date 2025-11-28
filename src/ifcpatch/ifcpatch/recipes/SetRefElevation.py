@@ -32,7 +32,6 @@ class Patcher:
         The reference elevation is simply a numerical attribute.
 
         :param elevation: The elevation to set.
-        :type elevation: typing.Union[str, float]
 
         Example:
 

@@ -28,6 +28,7 @@ import numpy as np
 import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.unit
@@ -1237,8 +1238,7 @@ class IfcImporter:
                 if not pset:
                     return
                 if "Aggregate_Index" not in pset.keys():
-                    ifcopenshell.api.run(
-                        "pset.edit_pset",
+                    ifcopenshell.api.pset.edit_pset(
                         self.file,
                         pset=self.file.by_id(pset["id"]),
                         properties={"Aggregate_Index": aggregate_index, "Name": name},

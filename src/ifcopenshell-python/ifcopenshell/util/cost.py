@@ -189,11 +189,9 @@ def get_cost_items_for_product(product: ifcopenshell.entity_instance) -> list[if
     """
     Returns a list of cost items related to the given product.
 
-    Args:
-        product: An object of class IfcProduct representing a product.
+    :param product: An object of class IfcProduct representing a product.
 
-    Returns:
-        A list of IfcCostItem objects representing the cost items related to the product.
+    :return: A list of IfcCostItem objects representing the cost items related to the product.
     """
     cost_items = []
     for assignment in product.HasAssignments:

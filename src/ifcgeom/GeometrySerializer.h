@@ -87,12 +87,17 @@ inline namespace settings {
 		static constexpr const char* const description = "Use a geometrical section rather than full polyhedral output and footprint in TTL WKT";
 		static constexpr bool defaultvalue = false;
 	};
+
+	struct SeparateZUpNode : public SettingBase<SeparateZUpNode, bool> {
+        static constexpr const char* const name = "separate-z-up-node";
+        static constexpr const char* const description = "Introduce a separate Z-Up node into the GlTF hierarchy instead of multiplying the transform into the root node matrices";
+        static constexpr bool defaultvalue = false;
+    };
 }
 
 class SerializerSettings : public SettingsContainer <
 	// @todo should we use tuple_cat here to unify the settings into a single class?
-	std::tuple<UseElementNames, UseElementGuids, UseElementStepIds, UseElementTypes, UseYUp, WriteGltfEcef, FloatingPointDigits, BaseUri, WktUseSection>
->
+    std::tuple<UseElementNames, UseElementGuids, UseElementStepIds, UseElementTypes, UseYUp, WriteGltfEcef, FloatingPointDigits, BaseUri, WktUseSection, SeparateZUpNode>>
 {};
 
 }

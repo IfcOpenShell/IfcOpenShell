@@ -38,12 +38,15 @@ import bonsai.core.geometry
 import bonsai.core.type
 import bonsai.tool as tool
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.api.context
 import ifcopenshell.api.drawing
 import ifcopenshell.api.document
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.geom
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
@@ -220,6 +223,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def exclude_annotation_from_drawing(
         cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance
     ) -> None:
+        ifc_file = tool.Ifc.get()
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
@@ -892,6 +896,33 @@ class Drawing(bonsai.core.tool.Drawing):
                             if axis.AxisTag == rel.Name:
                                 return axis
                 return product
+
+    @classmethod
+    def get_assigned_product_workaround(
+        cls, element: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
+        """Get all products assigned to the element.
+
+        A workaround allowing to unassign accumulated products until we properly resolve #4014.
+        In theory annotations should have more than one product assigned,
+        but there's still undefined bug causing that in some cases.
+        """
+
+        assigned_products: list[ifcopenshell.entity_instance] = []
+        for rel in element.HasAssignments:
+            if not rel.is_a("IfcRelAssignsToProduct"):
+                continue
+            assigned_products.append(rel.RelatingProduct)
+
+        if len(assigned_products) > 1:
+            print(
+                f"WARNING. Detected multiple assigned products ({len(assigned_products)}) for annotation '{element}'."
+                "\nIf you can reproduce this, please report it to Bonsai developers "
+                "at https://github.com/IfcOpenShell/IfcOpenShell/issues/4014."
+                "\nAssigned products:\n" + "\n".join([str(p) for p in assigned_products])
+            )
+
+        return assigned_products
 
     @classmethod
     def import_annotations_in_group(cls, group: ifcopenshell.entity_instance) -> None:
@@ -1594,7 +1625,12 @@ class Drawing(bonsai.core.tool.Drawing):
 
         xmin, xmax, ymin, ymax = helper.ortho_view_frame(camera.data)[:4]
         rl = ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)[2][3]
-        y = (camera.matrix_world.inverted() @ Vector((0.0, 0.0, rl))).y
+
+        # Convert RL from project units (feet) to meters for Blender world space
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        rl_meters = rl * unit_scale
+
+        y = (camera.matrix_world.inverted() @ Vector((0.0, 0.0, rl_meters))).y
         if y < ymin or y > ymax:
             return
 
@@ -1705,11 +1741,22 @@ class Drawing(bonsai.core.tool.Drawing):
         im = camera.matrix_world.inverted()
         v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in [v1, v2]]
 
+        target_view = cls.get_drawing_target_view(drawing)
         bounds = helper.ortho_view_frame(camera.data)
-        if not (points := helper.clip_segment(bounds, [v1, v2])):
+
+        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+            # For plan views, clip to XY bounds and set Z=0
+            if not (points := helper.clip_segment(bounds, [v1, v2])):
+                return
+            for v in points:
+                v.z = 0
+        elif target_view in ("ELEVATION_VIEW", "SECTION_VIEW"):
+            # For section/elevation views, elevate the segment vertically
+            if not (points := helper.elevate_segment(bounds, [v1, v2])):
+                return
+        else:
             return
-        for v in points:
-            v.z = 0
+
         return points
 
     @classmethod
@@ -1971,8 +2018,16 @@ class Drawing(bonsai.core.tool.Drawing):
         if matrix_world is None:
             # Use normalized camera matrix (without scale) for RCP compatibility
             matrix_world = cls.get_camera_matrix(camera)
-        annotation_offset = Vector((0, 0, -camera.data.clip_start - 0.05))
-        annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
+
+        # Check if this is an RCP (reflected ceiling plan) by checking for negative scale
+        camera_scale = camera.matrix_world.to_scale()
+        is_rcp = camera_scale.x < 0 or camera_scale.y < 0 or camera_scale.z < 0
+
+        # For RCP, the offset needs to be positive instead of negative
+        # because the Z axis is flipped 180° in get_camera_matrix
+        offset_direction = 1 if is_rcp else -1
+        annotation_offset = Vector((0, 0, offset_direction * (camera.data.clip_start + 0.05)))
+        annotation_offset = matrix_world.to_quaternion() @ annotation_offset
         matrix_world.translation += annotation_offset
         return matrix_world
 

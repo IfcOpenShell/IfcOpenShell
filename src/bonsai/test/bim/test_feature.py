@@ -21,6 +21,7 @@ import os
 import types
 import bpy
 import pytest
+import shutil
 import pprint
 import traceback
 import webbrowser
@@ -31,6 +32,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import bonsai.tool as tool
 import bonsai.bim.handler
+from collections.abc import Generator
 from bonsai.bim.ifc import IfcStore
 from bonsai.tool.brick import BrickStore
 from bonsai.bim.module.model.data import AuthoringData
@@ -49,6 +51,7 @@ variables = {
     "ifc": "tool.Ifc.get()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
+    "temp_project_path": tool.Project.TEMP_PROJECT_PATH.as_posix(),
 }
 
 # Monkey-patch webbrowser opening since we want to test headlessly
@@ -63,6 +66,15 @@ PYTEST_BLENDER_NO_BACKGROUND = bool(os.getenv("PYTEST_BLENDER_NO_BACKGROUND"))
 Can be useful for debugging, but has caveats - can't use ``wm.read_homefile``
 as resets the ``bpy.context`` and some it's members become `None`.
 """
+
+TMP = Path.cwd() / "test/files/temp"
+TEST_FILES_DIR = Path.cwd() / "test/files"
+
+CLEAN_LINKED_FILES_CACHE = False
+
+EPSET_DRAWING = Path.cwd() / "bonsai/bim/data/pset/EPset_Drawing.ifc"
+EPSET_DRAWING_BYTES = EPSET_DRAWING.read_bytes()
+RELOAD_EPSET_DRAWING = False
 
 
 class PanelSpy:
@@ -186,14 +198,16 @@ class OperatorSpy:
 
 
 class TemplateListSpy(PanelSpy):
+    items: bpy.types.bpy_prop_collection_idprop[bpy.types.PropertyGroup]
+    active_index: int
+    active_item: bpy.types.PropertyGroup | None
+    blender_panel: type[bpy.types.UIList]
+
     def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict[str, Any]):
         self.spied_data = spied_data
         self.items = getattr(self.spied_data["dataptr"], self.spied_data["propname"])
         self.active_index = getattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"])
-        try:
-            self.active_item = self.items[self.active_index]
-        except:
-            self.active_item = None
+        self.active_item = tool.Blender.get_active_uilist_element(self.items, self.active_index)
         self.blender_panel = template_list
 
         self.rows: list[TemplateListItemSpy] = []
@@ -286,6 +300,25 @@ def vectors_are_equal(v1, v2):
     return all(is_x(v1[i], v2[i]) for i in range(len(v1)))
 
 
+@pytest.fixture(scope="function", autouse=True)
+def run_for_each_test() -> Generator[None]:
+    # Code before this runs before each test
+    yield
+    # Code after this runs after each test
+
+    global CLEAN_LINKED_FILES_CACHE
+    if CLEAN_LINKED_FILES_CACHE:
+        for filepath in TEST_FILES_DIR.glob("*.ifc.cache.*"):
+            filepath.unlink()
+        CLEAN_LINKED_FILES_CACHE = False
+
+    # pset_template tests are editing EPset_Drawing.ifc, so we need to restore it.
+    global RELOAD_EPSET_DRAWING
+    if RELOAD_EPSET_DRAWING:
+        EPSET_DRAWING.write_bytes(EPSET_DRAWING_BYTES)
+        RELOAD_EPSET_DRAWING = False
+
+
 @given("an untestable scenario")
 def an_untestable_scenario():
     pass
@@ -325,6 +358,31 @@ def an_empty_ifc_2x3_project():
     bpy.ops.bim.create_project()
 
 
+@given(parsers.parse("I load previously saved IFC project"))
+@when(parsers.parse("I load previously saved IFC project"))
+@then(parsers.parse("I load previously saved IFC project"))
+def load_previously_saved_ifc_project() -> None:
+    filepath = tool.Project.TEMP_PROJECT_PATH
+    bpy.ops.bim.load_project(filepath=filepath.__str__())
+
+
+@given(parsers.parse("I save IFC project"))
+@when(parsers.parse("I save IFC project"))
+@then(parsers.parse("I save IFC project"))
+def saving_ifc_project() -> None:
+    tool.Project.save_test_project()
+
+
+@given(parsers.parse('I link IFC project from "{filepath}"'))
+@when(parsers.parse('I link IFC project from "{filepath}"'))
+@then(parsers.parse('I link IFC project from "{filepath}"'))
+def i_link_ifc_project_from_filepath(filepath: str) -> None:
+    global CLEAN_LINKED_FILES_CACHE
+    filepath = replace_variables(filepath)
+    CLEAN_LINKED_FILES_CACHE = True
+    bpy.ops.bim.link_ifc(filepath=filepath, use_cache=False)
+
+
 @given("the Brickschema is stubbed")
 def the_brickschema_is_stubbed():
     # This makes things run faster since we don't need to load the entire brick schema
@@ -335,13 +393,19 @@ def the_brickschema_is_stubbed():
 @given(parsers.parse('I look at the "{panel}" panel'))
 @when(parsers.parse('I look at the "{panel}" panel'))
 @then(parsers.parse('I look at the "{panel}" panel'))
-def i_look_at_the_panel_panel(panel):
-    global ui_name_cache
+def i_look_at_the_panel_panel(panel: str) -> None:
+    # Option to provide explicit panel name if panel names overlap.
+    panel_class = getattr(bpy.types, panel, None)
+
+    if panel_class is None:
+        global ui_name_cache
+        create_ui_name_cache()
+        if panel not in ui_name_cache:
+            assert False, f"Panel '{panel}' not found in `bpy.types` and in {ui_name_cache}"
+        panel_class = getattr(bpy.types, ui_name_cache[panel])
+
     global panel_spy
-    create_ui_name_cache()
-    if panel not in ui_name_cache:
-        assert False, f"Panel {panel} not found in {ui_name_cache}"
-    panel_spy = PanelSpy(getattr(bpy.types, ui_name_cache[panel]))
+    panel_spy = PanelSpy(panel_class)
     panel_spy.refresh_spy()
 
 
@@ -623,12 +687,16 @@ def the_name_list_has_total_items(name, total):
 @given(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @then(parsers.parse('I can select the "{item_name}" item in the "{list_name}" list'))
-def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
+def i_select_the_item_name_item_in_the_list_name_list(item_name: str, list_name: str) -> None:
+    """
+    :param item_name: The ``.name`` of the item to select.
+    :param list_name: List type name, e.g. ``BIM_UL_containers_manager``.
+    """
     assert panel_spy
     panel_spy.refresh_spy()
     for template_list in panel_spy.spied_lists:
         if list_name == template_list.spied_data["listtype_name"]:
-            item_names = []
+            item_names: list[str] = []
             for i, item in enumerate(template_list.items):
                 item_names.append(item.name)
                 if item.name == item_name:
@@ -641,6 +709,8 @@ def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
 
 @when("I load a new pset template file")
 def i_load_a_new_pset_template_file():
+    global RELOAD_EPSET_DRAWING
+    RELOAD_EPSET_DRAWING = True
     props = tool.PsetTemplate.get_pset_template_props()
     IfcStore.pset_template_path = props.pset_template_files
     IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
@@ -772,6 +842,8 @@ def i_press_operator_and_expect_error(operator, error_msg):
     assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
 
 
+# TODO: We should rename 'I press' to 'I run' or 'I execute'
+# to avoid confusion with 'I click'.
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
 def i_press_operator(operator: str) -> types.NoneType:
@@ -1120,6 +1192,11 @@ def the_material_name_exists(name: str) -> bpy.types.Material:
 @then(parsers.parse('the material "{name}" does not exist'))
 def the_material_name_does_not_exist(name):
     assert bpy.data.materials.get(name) is None, "Material exists"
+
+
+@then(parsers.parse('the mesh "{name}" does not exist'))
+def the_mesh_name_does_not_exist(name: str) -> None:
+    assert bpy.data.meshes.get(name) is None, f"Mesh '{name}' exists"
 
 
 def get_ifc_material_by_name(name: str) -> Union[ifcopenshell.entity_instance, None]:
@@ -1761,19 +1838,19 @@ def i_fail():
 @given(parsers.parse("I save sample test files"))
 @when(parsers.parse("I save sample test files"))
 @then(parsers.parse("I save sample test files"))
-def saving_sample_test_files(and_open_in_blender=None):
-    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
+def saving_sample_test_files() -> None:
+    filepath = TMP / "sample_test_file"
     print(f"Saved to {filepath}")
-    bpy.ops.bim.save_project(filepath=f"{filepath}.ifc", should_save_as=True)
-    bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
+    bpy.ops.bim.save_project(filepath=filepath.with_suffix(".ifc").__str__(), should_save_as=True)
+    bpy.ops.wm.save_as_mainfile(filepath=filepath.with_suffix(".blend").__str__())
 
 
 @given(parsers.parse("I load test blend file"))
 @when(parsers.parse("I load test blend file"))
 @then(parsers.parse("I load test blend file"))
 def opening_sample_test_files_in_blender():
-    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file.blend"
-    bpy.ops.wm.open_mainfile(filepath=filepath, display_file_selector=False)
+    filepath = TMP / "sample_test_file.blend"
+    bpy.ops.wm.open_mainfile(filepath=filepath.__str__(), display_file_selector=False)
 
 
 # TODO: merge to single fixture with `saving_sample_test_files`; add "and wait"

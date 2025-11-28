@@ -38,6 +38,20 @@ from ifcopenshell.util.file import IfcHeaderExtractor
 from bonsai.bim.prop import Attribute
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.pset.prop import IfcProperty
+from bonsai.bim.module.model.prop import (
+    BIMDoorProperties,
+    BIMWindowProperties,
+    BIMRailingProperties,
+    BIMRoofProperties,
+    BIMStairProperties,
+)
+from bonsai.bim.module.model.ui import (
+    draw_door_properties,
+    draw_window_properties,
+    draw_railing_properties,
+    draw_roof_properties,
+    draw_stair_properties,
+)
 from typing import Optional, TYPE_CHECKING, Literal
 from natsort import natsorted
 import textwrap
@@ -228,6 +242,120 @@ class BIM_UL_generic(bpy.types.UIList):
             layout.label(text="", translate=False)
 
 
+class GizmoPreferencesDoor(bpy.types.PropertyGroup):
+    """Property group for door gizmo visibility settings."""
+
+    overall_height: BoolProperty(name="Overall Height", default=True)
+    overall_width: BoolProperty(name="Overall Width", default=True)
+    threshold_thickness: BoolProperty(name="Threshold Thickness", default=True)
+    threshold_depth: BoolProperty(name="Threshold Depth", default=True)
+    lining_depth: BoolProperty(name="Lining Depth", default=True)
+    lining_thickness: BoolProperty(name="Lining Thickness", default=True)
+    transom_offset: BoolProperty(name="Transom Offset", default=True)
+    transom_thickness: BoolProperty(name="Transom Thickness", default=True)
+    casing_thickness: BoolProperty(name="Casing Thickness", default=True)
+    casing_depth: BoolProperty(name="Casing Depth", default=True)
+    swing_arc: BoolProperty(name="Swing Arc", default=True, description="Show door swing direction arc")
+    flip_arc: BoolProperty(name="Flip Arc", default=True, description="Show flip door orientation arc")
+
+    if TYPE_CHECKING:
+        overall_height: bool
+        overall_width: bool
+        threshold_thickness: bool
+        threshold_depth: bool
+        lining_depth: bool
+        lining_thickness: bool
+        transom_offset: bool
+        transom_thickness: bool
+        casing_thickness: bool
+        casing_depth: bool
+        swing_arc: bool
+        flip_arc: bool
+
+
+class GizmoPreferencesWindow(bpy.types.PropertyGroup):
+    """Property group for window gizmo visibility settings."""
+
+    overall_height: BoolProperty(name="Overall Height", default=True)
+    overall_width: BoolProperty(name="Overall Width", default=True)
+    lining_depth: BoolProperty(name="Lining Depth", default=True)
+    lining_thickness: BoolProperty(name="Lining Thickness", default=True)
+    lining_to_panel_offset_x: BoolProperty(name="Lining to Panel Offset X", default=True)
+    lining_to_panel_offset_y: BoolProperty(name="Lining to Panel Offset Y", default=True)
+    mullion_thickness: BoolProperty(name="Mullion Thickness", default=True)
+    first_mullion_offset: BoolProperty(name="First Mullion Offset", default=True)
+    second_mullion_offset: BoolProperty(name="Second Mullion Offset", default=True)
+    transom_thickness: BoolProperty(name="Transom Thickness", default=True)
+    first_transom_offset: BoolProperty(name="First Transom Offset", default=True)
+    second_transom_offset: BoolProperty(name="Second Transom Offset", default=True)
+
+    if TYPE_CHECKING:
+        overall_height: bool
+        overall_width: bool
+        lining_depth: bool
+        lining_thickness: bool
+        lining_to_panel_offset_x: bool
+        lining_to_panel_offset_y: bool
+        mullion_thickness: bool
+        first_mullion_offset: bool
+        second_mullion_offset: bool
+        transom_thickness: bool
+        first_transom_offset: bool
+        second_transom_offset: bool
+
+
+class GizmoPreferencesStair(bpy.types.PropertyGroup):
+    """Property group for stair gizmo visibility settings."""
+
+    width: BoolProperty(name="Width", default=True)
+    height: BoolProperty(name="Height", default=True)
+    tread_run: BoolProperty(name="Tread Run", default=True)
+    tread_depth: BoolProperty(name="Tread Depth", default=True)
+    nosing_length: BoolProperty(name="Nosing Length", default=True)
+    nosing_depth: BoolProperty(name="Nosing Depth", default=True)
+    total_length_target: BoolProperty(name="Total Length Target", default=True)
+    base_slab_depth: BoolProperty(name="Base Slab Depth", default=True)
+    top_slab_depth: BoolProperty(name="Top Slab Depth", default=True)
+    lock: BoolProperty(name="Total Length Lock", default=True)
+    plus: BoolProperty(name="Add Tread (+)", default=True)
+    minus: BoolProperty(name="Remove Tread (-)", default=True)
+    cycle: BoolProperty(name="Cycle Stair Type", default=True)
+
+    if TYPE_CHECKING:
+        width: bool
+        height: bool
+        tread_run: bool
+        tread_depth: bool
+        nosing_length: bool
+        nosing_depth: bool
+        total_length_target: bool
+        base_slab_depth: bool
+        top_slab_depth: bool
+        lock: bool
+        plus: bool
+        minus: bool
+        cycle: bool
+
+
+class GizmoPreferences(bpy.types.PropertyGroup):
+    """Property group for all gizmo visibility settings."""
+
+    draw_gizmos_in_3d_viewport: BoolProperty(
+        name="Draw Gizmos In 3D Viewport",
+        default=True,
+        description="Show interactive gizmos in the 3D viewport for parametric elements",
+    )
+    door: bpy.props.PointerProperty(type=GizmoPreferencesDoor)
+    window: bpy.props.PointerProperty(type=GizmoPreferencesWindow)
+    stair: bpy.props.PointerProperty(type=GizmoPreferencesStair)
+
+    if TYPE_CHECKING:
+        draw_gizmos_in_3d_viewport: bool
+        door: GizmoPreferencesDoor
+        window: GizmoPreferencesWindow
+        stair: GizmoPreferencesStair
+
+
 class DocPreferences(bpy.types.PropertyGroup):
     sheets_dir: StringProperty(
         default=os.path.join("sheets") + os.path.sep,
@@ -320,29 +448,63 @@ class DocPreferences(bpy.types.PropertyGroup):
         classes_no_cut: str
 
 
+class DefaultParameters(bpy.types.PropertyGroup):
+    door: bpy.props.PointerProperty(type=BIMDoorProperties)
+    window: bpy.props.PointerProperty(type=BIMWindowProperties)
+    railing: bpy.props.PointerProperty(type=BIMRailingProperties)
+    roof: bpy.props.PointerProperty(type=BIMRoofProperties)
+    stair: bpy.props.PointerProperty(type=BIMStairProperties)
+
+
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = tool.Blender.get_blender_addon_package_name()
     svg2pdf_command: StringProperty(
         name="SVG to PDF Command",
-        description='print sheet to pdf together with svg. Leave blank svg is just created, E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]',
+        description=(
+            "print sheet to pdf together with svg. Leave blank svg is just created, "
+            'E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]'
+            '\n `"svg"`, `"pdf"` will be replaced automatically.'
+        ),
     )
     svg2dxf_command: StringProperty(
         name="SVG to DXF Command",
-        description='E.g. [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]',
+        description=(
+            'E.g. `[["inkscape", "svg", "-o", "eps"], '
+            '["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]`'
+            '\n `"svg"`, `"eps"`, `"dxf"` will be replaced automatically.'
+        ),
     )
     svg_command: StringProperty(
         name="SVG Command",
-        description='Software to open generated drawing and sheets. Leave blank system default for .svg is used E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]',
+        description=(
+            "Software to open generated drawing and sheets. Leave blank system default for .svg is used "
+            'E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]'
+            '\n `"path"` will be replaced with the path to the generated .svg file.'
+        ),
     )
     layout_svg_command: StringProperty(
         name="Layout SVG Command",
-        description='Software to open layouts, before generated. Leave blank system default for .svg is used E.g.  [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+        description=(
+            "Software to open layouts, before generated. Leave blank system default for .svg is used. "
+            'E.g. `[["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]`'
+            '\n `"path"` will be replaced with the path to the generated .svg file.'
+        ),
     )
     pdf_command: StringProperty(
         name="PDF Command",
-        description='Software to open .pdf, leave blank uses system default. E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+        description=(
+            "Software to open .pdf, leave blank uses system default. "
+            'E.g. `[["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]`'
+            '\n `"path"` will be replaced with the path to the generated .pdf file.'
+        ),
     )
-    spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
+    spreadsheet_command: StringProperty(
+        name="Spreadsheet Command",
+        description=(
+            'E.g. [["libreoffice", "path"]]'
+            '\n `"path"` will be replaced with the path to the generated spreadsheet file.'
+        ),
+    )
     should_hide_empty_props: BoolProperty(
         name="Hide Empty Properties",
         default=True,
@@ -351,12 +513,18 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_setup_workspace: BoolProperty(
         name="Setup Workspace Layout for BIM",
         default=True,
-        description="If enabled, this will add a default workspace dedicated to working with BIM models.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, this will add a default workspace dedicated to working with BIM models.\n"
+            "It is recommended to keep this `Enabled`"
+        ),
     )
     activate_workspace: BoolProperty(
         name="Activate BIM Workspace on Startup",
         default=True,
-        description="If enabled, this will automatically activate the BIM workspace when opening a project.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, this will automatically activate the BIM workspace when opening a project.\n"
+            "It is recommended to keep this `Enabled`"
+        ),
     )
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
@@ -366,7 +534,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_use_snap: BoolProperty(
         name="Enable Snapping on Startup",
         default=True,
-        description="If enabled, snapping will be enabled on new sessions.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, snapping will be enabled on new sessions.\n" "It is recommended to keep this `Enabled`"
+        ),
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     tmp_dir: StringProperty(
@@ -428,7 +598,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         max=100,
         subtype="PERCENTAGE",
         name="Non-Openings Opacity",
-        description="When modifying openings, other elements of the model will display with some transparency.\n0 is fully transparent and 100 is fully opaque",
+        description=(
+            "When modifying openings, other elements of the model will display with some transparency.\n"
+            "0 is fully transparent and 100 is fully opaque"
+        ),
     )
 
     bsdd_load_preview_dictionaries: BoolProperty(
@@ -456,6 +629,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Occurrence Name Function",
         description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
     )
+    gizmos: bpy.props.PointerProperty(type=GizmoPreferences)
 
     def update_data_dir(self, context: bpy.types.Context) -> None:
         import bonsai.bim.schema
@@ -486,6 +660,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         subtype="DIR_PATH",
     )
     doc: bpy.props.PointerProperty(type=DocPreferences)
+    default_parameters: bpy.props.PointerProperty(
+        type=DefaultParameters,
+        name="Default Parameters",
+        description="Default parameters for BIM elements",
+    )
 
     if TYPE_CHECKING:
         svg2pdf_command: str
@@ -498,6 +677,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         should_setup_workspace: bool
         activate_workspace: bool
         should_setup_toolbar: bool
+        should_use_snap: bool
         should_play_chaching_sound: bool
         tmp_dir: str
         decorations_colour: tuple[float, float, float, float]
@@ -515,10 +695,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
         occurrence_name_function: str
+        gizmos: GizmoPreferences
         data_dir: str
         cache_dir: str
         pset_dir: str
         doc: DocPreferences
+        default_parameters: DefaultParameters
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -561,10 +743,61 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "should_use_snap")
         layout.prop(self, "should_play_chaching_sound")
 
+        layout.prop(self.gizmos, "draw_gizmos_in_3d_viewport")
+        if self.gizmos.draw_gizmos_in_3d_viewport:
+            bonsai.bim.helper.draw_expandable_panel(
+                layout,
+                context,
+                "Gizmos Parameters",
+                self.draw_gizmo_parameters,
+            )
+
+    def draw_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.label(text="Toggle visibility of gizmos in editing mode")
+        box = layout.box()
+        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Door", self.draw_door_gizmo_parameters)
+        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Window", self.draw_window_gizmo_parameters)
+        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Stair", self.draw_stair_gizmo_parameters)
+
+    def draw_door_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        from bonsai.bim.module.model.door import GizmoDoorEdition
+
+        door_gizmos = self.gizmos.door
+        gizmo_prop_names = {p.attr_name for p in GizmoDoorEdition.gizmo_props}
+        gizmo_prop_names.update(("swing_arc", "flip_arc"))
+        for prop in door_gizmos.__annotations__:
+            if prop in gizmo_prop_names:
+                layout.prop(door_gizmos, prop)
+
+    def draw_window_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        from bonsai.bim.module.model.window import GizmoWindowEdition
+
+        window_gizmos = self.gizmos.window
+        gizmo_prop_names = {p.attr_name for p in GizmoWindowEdition.gizmo_props}
+        for prop in window_gizmos.__annotations__:
+            if prop in gizmo_prop_names:
+                layout.prop(window_gizmos, prop)
+
+    def draw_stair_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        from bonsai.bim.module.model.stair import GizmoStairEdition
+
+        stair_gizmos = self.gizmos.stair
+        gizmo_prop_names = {p.attr_name for p in GizmoStairEdition.gizmo_props}
+        special_gizmo_names = {"lock", "plus", "minus"}
+        for prop in stair_gizmos.__annotations__:
+            if prop in gizmo_prop_names or prop in special_gizmo_names:
+                layout.prop(stair_gizmos, prop)
+
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "occurrence_name_style")
         if self.occurrence_name_style == "CUSTOM":
             layout.prop(self, "occurrence_name_function")
+        bonsai.bim.helper.draw_expandable_panel(
+            layout,
+            context,
+            "Default Parameters",
+            self.draw_default_parameters,
+        )
 
     def draw_directories(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "data_dir")
@@ -600,6 +833,39 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.row().prop(self, "decorator_color_special")
         layout.row().prop(self, "decorator_color_error")
         layout.row().prop(self, "decorator_color_background")
+
+    def draw_default_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        box = layout.box()
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Door",
+            lambda _layout, _context: draw_door_properties(_layout, self.default_parameters.door),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Window",
+            lambda _layout, _context: draw_window_properties(_layout, self.default_parameters.window),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Railing",
+            lambda _layout, _context: draw_railing_properties(_layout, self.default_parameters.railing),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Roof",
+            lambda _layout, _context: draw_roof_properties(_layout, self.default_parameters.roof),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Stair",
+            lambda _layout, _context: draw_stair_properties(_layout, self.default_parameters.stair),
+        )
 
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")

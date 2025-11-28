@@ -9,7 +9,7 @@ Scenario: Duplicate drawing
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -27,7 +27,7 @@ Scenario: Duplicate drawing - without duplicating annotations
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -50,7 +50,7 @@ Scenario: Duplicate drawing - with duplicating annotations
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -73,7 +73,7 @@ Scenario: Create drawing
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -93,7 +93,7 @@ Scenario: Create drawing after deleting a duplicated object
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
     And I duplicate the selected objects
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -112,7 +112,7 @@ Scenario: Activate drawing preserves visibility for non-ifc objects
     And I add a cube
     And the object "Cube" is visible
     And the object "Cube.001" is not visible
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -126,7 +126,7 @@ Scenario: Activate drawing preserves selection
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -143,7 +143,7 @@ Scenario: Remove drawing
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -157,13 +157,16 @@ Scenario: Remove drawing
 
 Scenario: Remove drawing - via object deletion
     Given an empty IFC project
+    And I save IFC project
     And I add a cube
     And the object "Cube" is selected
     And I look at the "Class" panel
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I press "bim.add_drawing"
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     And the collection "IfcAnnotation/PLAN_VIEW" exists
     And the object "IfcAnnotation/PLAN_VIEW" is selected
@@ -178,7 +181,7 @@ Scenario: Remove drawing - deleting active drawing
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -193,7 +196,7 @@ Scenario: Add annotation - text
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -207,7 +210,7 @@ Scenario: Add annotation - auto create context if it doesn't exist
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I save sample test files
+    And I save IFC project
     And I look at the "Geometric Representation Contexts" panel
     And I see "Plan"
     And I click the "X" after the text "Plan"
@@ -228,7 +231,7 @@ Scenario: Create drawing - using shapely fill mode
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I set the "location_hint" property to "My Storey"
@@ -244,7 +247,7 @@ Scenario: Create drawing - using shapely fill mode
 
 Scenario: Add sheet
     Given an empty IFC project
-    And I save sample test files
+    And I save IFC project
     And I look at the "Sheets" panel
     And I click "IMPORT"
     When I click "ADD"
@@ -253,7 +256,7 @@ Scenario: Add sheet
 
 Scenario: Create sheet
     Given an empty IFC project
-    And I save sample test files
+    And I save IFC project
     And I look at the "Sheets" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -270,7 +273,7 @@ Scenario: Add drawing to sheet
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -295,7 +298,7 @@ Scenario: Create sheet - with a drawing added to it
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"

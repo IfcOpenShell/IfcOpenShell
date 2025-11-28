@@ -106,6 +106,13 @@ def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
         model_representation = ifcopenshell.api.geometry.add_railing_representation(ifc_file, **representation_data)
         tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
+        # recalculate normals to ensure correct shading
+        mesh = obj.data
+        if isinstance(mesh, bpy.types.Mesh):
+            bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=False)
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+            tool.Blender.apply_bmesh(mesh, bm)
+
     elif props.railing_type == "FRAMELESS_PANEL":
         tool.Model.add_body_representation(obj)
 
@@ -334,6 +341,8 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         assert element
         props = tool.Model.get_railing_props(obj)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        tool.Blender.get_addon_preferences().default_parameters.railing.copy_to(props)
 
         railing_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)

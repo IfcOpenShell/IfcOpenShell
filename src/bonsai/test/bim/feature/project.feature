@@ -679,7 +679,7 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
 
 Scenario: Link IFC
     Given an empty IFC project
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    When I link IFC project from "{cwd}/test/files/basic.ifc"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "True"
     And the collection "IfcProject/basic.ifc" exists
     And the object "Chunk" exists
@@ -690,7 +690,7 @@ Scenario: Link IFC - disabled false origin mode
     # Not currently possible via UI
     And I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I set "scene.BIMProjectProperties.false_origin_mode" to "DISABLED"
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    When I link IFC project from "{cwd}/test/files/geolocation.ifc"
     Then the object "Chunk" exists
     And the object "Chunk" has a vertex at "2,2,-1"
     And the object "Chunk" has a vertex at "9,-1,-1"
@@ -701,7 +701,7 @@ Scenario: Link IFC - from an empty IFC project - automatic false origin mode (0,
     # Not currently possible via UI
     And I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    When I link IFC project from "{cwd}/test/files/geolocation.ifc"
     Then the object "Chunk" exists
     And the object "Chunk" has a vertex at "2,2,-1"
     And the object "Chunk" has a vertex at "9,-1,-1"
@@ -712,7 +712,7 @@ Scenario: Link IFC - from an empty Blender session - automatic false origin mode
     # Not currently possible via UI
     And I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    When I link IFC project from "{cwd}/test/files/geolocation.ifc"
     Then the object "Chunk" exists
     And the object "Chunk" has a vertex at "-11,-2,0"
     And the object "Chunk" has a vertex at "-4,-5,0"
@@ -724,7 +724,7 @@ Scenario: Link IFC - manual false origin mode
     And I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
     And I set "scene.BIMProjectProperties.false_origin" to "10000,0,0"
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    When I link IFC project from "{cwd}/test/files/geolocation.ifc"
     Then the object "Chunk" exists
     And the object "Chunk" has a vertex at "-8,2,-1"
     And the object "Chunk" has a vertex at "-1,-1,-1"
@@ -735,8 +735,8 @@ Scenario: Link IFC - automatic false origin mode - two different false origins a
     # Not currently possible via UI
     And I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-mapconversion-angle.ifc', use_cache=False)"
+    When I link IFC project from "{cwd}/test/files/geolocation.ifc"
+    And I link IFC project from "{cwd}/test/files/geolocation-mapconversion-angle.ifc"
     Then the object "Col:IfcProject/geolocation.ifc:Chunk" exists
     And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" exists
     And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-11,-2,0"
@@ -751,8 +751,8 @@ Scenario: Link IFC - automatic false origin mode - two different false origins a
     # Not currently possible via UI
     And I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-mapconversion-angle.ifc', use_cache=False)"
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    When I link IFC project from "{cwd}/test/files/geolocation-mapconversion-angle.ifc"
+    And I link IFC project from "{cwd}/test/files/geolocation.ifc"
     Then the object "Col:IfcProject/geolocation.ifc:Chunk" exists
     And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" exists
     And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-11,-2,0"
@@ -767,9 +767,9 @@ Scenario: Link IFC - automatic false origin mode - three identical false origins
     # Not currently possible via UI
     And I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit1.ifc', use_cache=False)"
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit2.ifc', use_cache=False)"
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit3.ifc', use_cache=False)"
+    When I link IFC project from "{cwd}/test/files/geolocation-unit1.ifc"
+    And I link IFC project from "{cwd}/test/files/geolocation-unit2.ifc"
+    And I link IFC project from "{cwd}/test/files/geolocation-unit3.ifc"
     Then the object "Col:IfcProject/geolocation-unit1.ifc:Chunk" exists
     And the object "Col:IfcProject/geolocation-unit2.ifc:Chunk" exists
     And the object "Col:IfcProject/geolocation-unit3.ifc:Chunk" exists
@@ -779,7 +779,7 @@ Scenario: Link IFC - automatic false origin mode - three identical false origins
 
 Scenario: Toggle link visibility - wireframe mode
     Given an empty IFC project
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I link IFC project from "{cwd}/test/files/basic.ifc"
     When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='WIREFRAME')"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_wireframe" is "True"
     And the object "Chunk" should display as "WIRE"
@@ -789,7 +789,7 @@ Scenario: Toggle link visibility - wireframe mode
 
 Scenario: Toggle link selectability
     Given an empty IFC project
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I link IFC project from "{cwd}/test/files/basic.ifc"
     When I press "bim.toggle_link_selectability(link='{cwd}/test/files/basic.ifc')"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_selectable" is "False"
     And the collection "IfcProject/basic.ifc" is unselectable
@@ -799,7 +799,7 @@ Scenario: Toggle link selectability
 
 Scenario: Toggle link visibility - visible mode
     Given an empty IFC project
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I link IFC project from "{cwd}/test/files/basic.ifc"
     When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='VISIBLE')"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_hidden" is "True"
     And the object "IfcProject/basic.ifc" is not visible
@@ -809,14 +809,14 @@ Scenario: Toggle link visibility - visible mode
 
 Scenario: Unload link
     Given an empty Blender session
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I link IFC project from "{cwd}/test/files/basic.ifc"
     When I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "False"
     And the collection "IfcProject/basic.ifc" does not exist
 
 Scenario: Load link
     Given an empty Blender session
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I link IFC project from "{cwd}/test/files/basic.ifc"
     And I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
     When I press "bim.load_link(filepath='{cwd}/test/files/basic.ifc')"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "True"
@@ -824,7 +824,7 @@ Scenario: Load link
 
 Scenario: Unlink IFC
     Given an empty Blender session
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I link IFC project from "{cwd}/test/files/basic.ifc"
     And I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
     When I press "bim.unlink_ifc(filepath='{cwd}/test/files/basic.ifc')"
     Then "scene.BIMProjectProperties.links.get('{cwd}/test/files/basic.ifc')" is "None"
@@ -833,20 +833,21 @@ Scenario: Unlink IFC
 
 Scenario: Export IFC - blank project
     Given an empty IFC project
-    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
+    When I save IFC project
     Then nothing happens
 
 Scenario: Export IFC - with basic contents
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/temp/export.ifc"
+    When I save IFC project
+    Then "scene.BIMProperties.ifc_file" is "{temp_project_path}"
 
 Scenario: Export IFC - with basic contents and saving as another file
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc', should_save_as=True)"
-    Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/temp/export.ifc"
+    When I save IFC project
+    When I press "bim.save_project(filepath='{temp_project_path}', should_save_as=True)"
+    Then "scene.BIMProperties.ifc_file" is "{temp_project_path}"
 
 Scenario: Export IFC - with basic contents and saving as IfcJSON where import is not supported
     Given an empty Blender session
@@ -877,26 +878,23 @@ Scenario: Export IFC - with deleted objects synchronised
     And the object "IfcBuildingStorey/My Storey" is selected
     And I set the "is_locked" property to "FALSE"
     And I delete the selected objects
-    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I save IFC project
+    And I load previously saved IFC project
     Then the object "IfcBuildingStorey/My Storey" does not exist
 
 Scenario: Export IFC - with moved object location synchronised
     Given an empty IFC project
     When the object "IfcBuildingStorey/My Storey" is moved to "0,0,1"
-    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I save IFC project
+    And I load previously saved IFC project
     Then the object "IfcBuildingStorey/My Storey" is at "0,0,1"
 
 Scenario: Export IFC - with moved grid axis location synchronised
     Given an empty IFC project
     And I press "mesh.add_grid"
     When the object "IfcGridAxis/01" is moved to "1,0,0"
-    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I save IFC project
+    And I load previously saved IFC project
     Then the object "IfcGridAxis/01" bottom left corner is at "1,-2,0"
 
 Scenario: Export IFC - with changed object scale ignored
@@ -909,7 +907,6 @@ Scenario: Export IFC - with changed object scale ignored
     And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     When the object "IfcWall/Cube" is scaled to "2"
-    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I save IFC project
+    And I load previously saved IFC project
     Then the object "IfcWall/Cube" dimensions are "2,2,2"

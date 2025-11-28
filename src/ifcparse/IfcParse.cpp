@@ -1607,6 +1607,11 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
 	// Move the storage of simple type instances so that they are retained during the lifetime of the file
     read_simple_type_instances = streamer.stealInstances();
 
+    // Set file ownership on simple type instances, so that when adding them to other files, proper copies are created
+    for (auto& inst : read_simple_type_instances) {
+        inst->file_ = file;
+    }
+
     Logger::Status("\rDone scanning file   ");
 
     delete tokens;

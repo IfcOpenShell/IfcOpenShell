@@ -143,12 +143,11 @@ class Debug(bonsai.core.tool.Debug):
 
         Note that Styles UI (or other UI) should be updated manually after using this method.
 
-        Args:
-            object_type: The type of object to merge
-            by_name_or_identification_only: If True, merge based only on Name attribute (or equivalent identifier).
-                         Strips .XXX suffix patterns (e.g., 'foo.001' matches 'foo', 'foo.002').
-                         For PERSON, uses Identification. For APPLICATION, uses ApplicationFullName.
-                         For PERSON_AND_ORGANIZATION, uses combination of person and organization identifiers.
+        :param object_type: The type of object to merge
+        :param by_name_or_identification_only: If True, merge based only on Name attribute (or equivalent identifier).
+            Strips .XXX suffix patterns (e.g., 'foo.001' matches 'foo', 'foo.002').
+            For PERSON, uses Identification. For APPLICATION, uses ApplicationFullName.
+            For PERSON_AND_ORGANIZATION, uses combination of person and organization identifiers.
         """
 
         def normalize_name(name: str) -> str:

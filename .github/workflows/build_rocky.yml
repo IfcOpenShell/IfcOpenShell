@@ -29,12 +29,12 @@ jobs:
           aws --version
 
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           repository: IfcOpenShell/build-outputs
           path: ./build
@@ -48,8 +48,8 @@ jobs:
           [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \; || true
 
       - name: ccache
-        # Latest release (1.2.19) doesn't support Rocky, so using a specific commit.
-        uses: hendrikmuhs/ccache-action@eca11c308176d48942455b9e5b1b70ff6950a778
+        # TODO: Use tag after 1.2.20 releases.
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
         with:
           key: ubuntu-22.04-${{ runner.arch }}-rockylinux8
 
@@ -61,7 +61,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-logs-rocky
           path: |
@@ -118,7 +118,7 @@ jobs:
           cd ..
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}

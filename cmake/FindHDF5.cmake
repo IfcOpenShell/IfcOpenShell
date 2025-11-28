@@ -1,5 +1,23 @@
+#
+# Input variables:
+# - `HDF5_INCLUDE_DIR`
+# - `HDF5_LIBRARY_DIR`
+# - `HDF5_LIBRARIES`
+# If input variables are not specified, try to find HDF5 config.
+# Input variables could also be provided as environment variables.
+#
+# Output variables:
+# - `HDF5_INCLUDE_DIR`
+# - `HDF5_LIBRARY_DIR`
+# - `HDF5_LIBRARIES`
+#
+
+UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
+
 # To avoid cyclic calls to this file
-list(REMOVE_ITEM CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
+list(REMOVE_ITEM CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
 
 if("${HDF5_INCLUDE_DIR}" STREQUAL "")
     message(STATUS "No HDF5 include directory specified")
@@ -86,3 +104,6 @@ if(NOT HDF5_INCLUDE_DIR OR NOT HDF5_LIBRARY_DIR)
         endif()
     endif()
 endif()
+
+# Restore module path.
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})

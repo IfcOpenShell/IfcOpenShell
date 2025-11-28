@@ -35,6 +35,8 @@ MATERIAL_TYPE = Literal[
     "IfcMaterialList",
 ]
 
+PrioritisedLayer = namedtuple("PrioritisedLayer", "priority material thickness")
+PrioritisedProfile = namedtuple("PrioritisedProfile", "priority material profile")
 
 def get_pset(
     element: ifcopenshell.entity_instance,
@@ -1845,3 +1847,40 @@ def has_openings(element: ifcopenshell.entity_instance) -> bool:
     :return: True if element has openings.
     """
     return bool(next(get_openings(element), False))
+
+
+def get_material_layers(element: ifcopenshell.entity_instance) -> list[PrioritisedLayer]:
+    """
+    Retrieves all material layers assigned to an element.
+    :param element: The IFC element
+    :return: A list of IfcMaterialLayer entities
+
+    Example:
+    .. code:: python
+        element = ifcopenshell.by_type("IfcWall")[0]
+        material_layers = ifcopenshell.util.element.get_material_layers(element)
+    """
+    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+    if not material or not material.is_a("IfcMaterialLayerSet"):
+        return []
+    return [PrioritisedLayer(getattr(layer, "Priority", 0) or 0, layer.Material, layer.LayerThickness) for layer in material.MaterialLayers]
+
+
+def get_material_profiles(element: ifcopenshell.entity_instance) -> list[PrioritisedProfile]:
+    """
+    Retrieves all material profiles assigned to an element.
+
+    :param element: The IFC element
+    :return: A list of IfcMaterialProfile entities
+
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.by_type("IfcBeam")[0]
+        material_profiles = ifcopenshell.util.element.get_material_profiles(element)
+    """
+    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+    if not material or not material.is_a("IfcMaterialProfileSet") :
+        return []
+    return [PrioritisedProfile(getattr(material_profile, "Priority", 0) or 0, material_profile.Material, material_profile.Profile) for material_profile in material.MaterialProfiles]

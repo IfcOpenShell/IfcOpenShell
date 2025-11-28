@@ -58,23 +58,21 @@ class TestDisableEditingAssignedProduct:
 class TestEditAssignedProduct:
     def test_text_annotation(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
+        drawing.get_assigned_product_workaround("element").should_be_called().will_return(["existing_product"])
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
-        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(True)
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
     def test_non_text_annotation(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
+        drawing.get_assigned_product_workaround("element").should_be_called().will_return(["existing_product"])
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
-        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(False)
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
@@ -398,6 +396,7 @@ class TestDuplicateDrawing:
         drawing.get_name("drawing").should_be_called().will_return("name")
         drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
         ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
+        drawing.clear_annotation_relationships("new_drawing").should_be_called()
         drawing.copy_representation("drawing", "new_drawing").should_be_called()
         drawing.set_name("new_drawing", "unique_name").should_be_called()
         drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")

@@ -17,7 +17,7 @@
 ::                                                                             ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 echo.
 
 set PROJECT_NAME=IfcOpenShell
@@ -79,12 +79,11 @@ popd
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
-:: tfk: todo remove duplication
-set BOOST_VERSION=1.86.0
-set BOOST_VER=%BOOST_VERSION:.=_%
+:: Legacy setup.
+if not defined BOOST_INSTALL_DIR (
+    set BOOST_INSTALL_DIR=%DEPS_DIR%\boost_1_86_0\stage\%GEN_SHORTHAND%
+)
 
-set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%
-set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\%GEN_SHORTHAND%\lib
 if not defined OCC_INCLUDE_DIR set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
 if not defined OCC_LIBRARY_DIR set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INSTALL_DIR=%INSTALL_DIR%\OpenCOLLADA
@@ -99,7 +98,9 @@ for /f "usebackq delims=" %%v in (`
 set PYTHON_INCLUDE_DIR=%PYTHONHOME%\include
 set PYTHON_LIBRARY=%PYTHONHOME%\libs\python%PY_VER_MAJOR_MINOR%.lib
 
-set SWIG_INSTALL_DIR=%INSTALL_DIR%\swigwin
+:: `swigwin` is a legacy installation folder name, before we started using versioned folders.
+:: we can remove it later.
+if not defined SWIG_INSTALL_DIR set SWIG_INSTALL_DIR=%INSTALL_DIR%\swigwin
 set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
 if not defined ADD_COMMIT_SHA set ADD_COMMIT_SHA=Off
 
@@ -109,6 +110,8 @@ set GMP_INCLUDE_DIR=%INSTALL_DIR%\mpir
 set GMP_LIBRARY_DIR=%INSTALL_DIR%\mpir
 set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
 set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
+:: We don't install Eigen currently,
+:: so there's no Eigen3config.cmake and therefore we provide path explicitly.
 set EIGEN_DIR=%INSTALL_DIR%\Eigen
 set USD_INCLUDE_DIR=%INSTALL_DIR%\usd\include
 set USD_LIBRARY_DIR=%INSTALL_DIR%\usd\lib
@@ -125,7 +128,7 @@ echo   Toolset      = %VS_TOOLSET%
 echo   Arguments    = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
-echo    BOOST_ROOT              = %BOOST_ROOT%
+echo    BOOST_INSTALL_DIR       = %BOOST_INSTALL_DIR%
 echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
 echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
 echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
@@ -165,17 +168,17 @@ echo "Running CMake for %PROJECT_NAME%."
 
 set CMAKE_PREFIX_PATH=%HDF5_INSTALL_DIR%;%OPENCOLLADA_INSTALL_DIR%;%SWIG_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%ROCKSDB_INSTALL_DIR%;%ZSTD_INSTALL_DIR%
-set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_ROOT%;%CCACHE_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_INSTALL_DIR%;%CCACHE_INSTALL_DIR%
 
 IF NOT "%VS_TOOLSET_HOST%"=="" (
     cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% ^
-              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=ON ^
+              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
               -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
               -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
               -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
 ) ELSE (
     cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% ^
-              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=ON ^
+              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
               -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
               -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
               -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%

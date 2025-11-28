@@ -773,8 +773,9 @@ def format_length(
             if output_unit == "foot":
                 return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
             return f'{(feet * 12) + whole} {remainder}/{frac.denominator}"'
+        # When we have a proper fraction (numerator < denominator), show "0 frac"
         if output_unit == "foot":
-            return f"{feet}' - {frac.numerator}/{frac.denominator}\""
+            return f"{feet}' - 0 {frac.numerator}/{frac.denominator}\""
         return f'{feet * 12} {frac.numerator}/{frac.denominator}"'
     elif unit_system == "metric":
         rounded_val = round(value / precision) * precision

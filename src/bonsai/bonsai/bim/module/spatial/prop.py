@@ -36,6 +36,7 @@ import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.api.attribute
 import ifcopenshell.util.unit
+from bonsai.tool.unit import parse_distance_string
 from typing import TYPE_CHECKING, Union, Literal
 
 
@@ -48,18 +49,46 @@ def get_subelement_class(
 
 
 def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
-    try:
-        elevation = float(self.elevation)
-        if self.elevation != str(elevation):
-            self.elevation = str(elevation)
-            return
-    except:
-        elevation = 0
+    # Try to parse the input string with unit support first
+    is_valid, parsed_elevation = parse_distance_string(self.elevation, use_project_unit=True)
+
+    if is_valid:
+        elevation = parsed_elevation
+
+        # Format the string if it needs normalization:
+        # - Plain numbers (no units): "4" → "4' - 0""
+        # - Missing symbols: "5'3" → "5' - 3""
+        # - Inconsistent formatting: "5' 3 3/256" → "5' - 3 3/256""
+        input_str = self.elevation.strip()
+
+        # Check if input needs formatting (has feet/inch symbols or is plain number)
+        needs_formatting = (
+            input_str.replace(".", "").replace("-", "").replace(" ", "").replace("/", "").isdigit()  # Plain number
+            or "'" in input_str  # Has feet symbol
+            or '"' in input_str  # Has inch symbol
+            or " " in input_str.replace(" - ", "")  # Has spaces (but not the formatted " - ")
+        )
+
+        # Only format if the current string doesn't match our standard format
+        if needs_formatting:
+            formatted = tool.Unit.format_distance(elevation)
+            if self.elevation != formatted:
+                self.elevation = formatted
+                return
+    else:
+        # Fall back to direct float conversion for backward compatibility
+        try:
+            elevation = float(self.elevation)
+        except Exception as e:
+            print(f"Elevation parsing failed for '{self.elevation}': {e}")
+            elevation = 0
+
+    # Update the object's position in the 3D scene
     if ifc_definition_id := self.ifc_definition_id:
         entity = tool.Ifc.get().by_id(ifc_definition_id)
         if obj := tool.Ifc.get_object(entity):
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            obj.matrix_world[2][3] = elevation * unit_scale
+            # elevation is already in meters, set it directly
+            obj.matrix_world[2][3] = elevation
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj)
 
 

@@ -308,6 +308,7 @@ class Document:
 class Drawing:
     def activate_drawing(cls, camera): pass
     def add_literal(cls, **attributes): pass
+    def clear_annotation_relationships(cls, drawing): pass
     def copy_representation(cls, source, dest): pass
     def create_annotation_context(cls, target_view, object_type=None): pass
     def create_annotation_object(cls, drawing, object_type): pass
@@ -342,6 +343,7 @@ class Drawing:
     def get_annotation_context(cls, target_view, object_type=None): pass
     def get_annotation_representation(cls, element_type): pass
     def get_assigned_product(cls, element): pass
+    def get_assigned_product_workaround(cls, element): pass
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
@@ -867,8 +869,6 @@ class Sequence:
     def get_animation_product_frames(cls, work_schedule, settings): pass
     def get_animation_settings(cls): pass
     def get_checked_tasks(cls): pass
-    def get_direct_nested_tasks(cls, task):pass
-    def get_direct_task_outputs(cls, task): pass
     def get_finish_date(cls): pass
     def get_highlighted_task(cls): pass
     def get_lag_time_attributes(cls): pass

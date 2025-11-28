@@ -79,7 +79,6 @@ option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
-option(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." OFF)
 option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate geometrical relationships." OFF)
 option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcOpenShell" OFF)
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
@@ -199,30 +198,13 @@ if(BUILD_SHARED_LIBS)
     set(IFCOPENSHELL_LIBRARY_DIR "${LIBDIR}")
 endif()
 
-UNIFY_ENVVARS_AND_CACHE(OCC_INCLUDE_DIR)
-UNIFY_ENVVARS_AND_CACHE(OCC_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
 UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
-UNIFY_ENVVARS_AND_CACHE(EIGEN_DIR)
 
 if(NOT MINIMAL_BUILD)
-    UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
-    UNIFY_ENVVARS_AND_CACHE(LIBXML2_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(LIBXML2_LIBRARIES)
-    UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
     UNIFY_ENVVARS_AND_CACHE(PYTHON_INCLUDE_DIR)
     UNIFY_ENVVARS_AND_CACHE(PYTHON_LIBRARY)
     UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
-    UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
-    UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
-    UNIFY_ENVVARS_AND_CACHE(CGAL_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(CGAL_LIBRARY_DIR)
-    UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
-    UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 endif()
 
 # Get a list of all OPTION flags from the CMakeLists.txt
@@ -233,53 +215,13 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
-set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
-
-macro(clear_wasm_sysroot)
-if(WASM_BUILD)
-    # when using the nix/build-all.py build script we should not
-    # look into the sysroot for most of the dependencies but rather
-    # in the designated build/ folder created by the script.
-    set(CMAKE_FIND_ROOT_PATH "")
-endif()
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
-endmacro()
-
-macro(restore_wasm_sysroot)
-if(WASM_BUILD)
-    # reset to use sysroot
-    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
-endif()
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-endmacro()
-
 if(WITH_CGAL)
-    if(NOT CGAL_INCLUDE_DIR)
-	# CGAL is not respecting default Boost_USE_STATIC_LIBS value
-	# and sometiems it's getting in the way.
-	if(NOT DEFINED Boost_USE_STATIC_LIBS)
-		set(CGAL_Boost_USE_STATIC_LIBS OFF)
-	else()
-		set(CGAL_Boost_USE_STATIC_LIBS "${Boost_USE_STATIC_LIBS}")
-	endif()
     find_package(CGAL REQUIRED)
-        if(NOT CGAL_DIR)
-            message(
-                FATAL_ERROR
-                "CGAL_SUPPORT enabled, but CGAL_INCLUDE_DIR wasn't provided and CGAL package couldn't be found."
-            )
-        endif()
-        message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
+    if(TARGET CGAL::CGAL)
         link_libraries(CGAL::CGAL)
     endif()
-
     add_definitions(-DIFOPSH_WITH_CGAL)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
-
-    if(CITYJSON_SUPPORT)
-		add_definitions(-DIFOPSH_WITH_CITYJSON)
-    endif()
-
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
@@ -289,7 +231,7 @@ if(WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
 endif()
 
-if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
+if(GLTF_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
     if(NOT JSON_INCLUDE_DIR)
         find_package(nlohmann_json CONFIG)
@@ -301,9 +243,7 @@ if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     endif()
 
     if(NOT nlohmann_json_DIR)
-        clear_wasm_sysroot()
         find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
-        restore_wasm_sysroot()
         set(JSON_INCLUDE_DIR ${json_header_path})
 
         if(json_header_path)
@@ -319,49 +259,7 @@ endif()
 
 # Add USD support to serializers
 if(USD_SUPPORT)
-    UNIFY_ENVVARS_AND_CACHE(USD_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(USD_LIBRARY_DIR)
-
-    if("${USD_INCLUDE_DIR}" STREQUAL "")
-        find_path(USD_INCLUDE_DIR pxr.h
-            PATHS
-                /usr/include/pxr
-                /usr/local/include/pxr
-            REQUIRED
-        )
-        if(USD_INCLUDE_DIR)
-            message(STATUS "Found USD include files in: ${USD_INCLUDE_DIR}")
-        else()
-            message(FATAL_ERROR "Unable to find USD include directory, specify USD_INCLUDE_DIR manually.")
-        endif()
-    else()
-        set(USD_INCLUDE_DIR ${USD_INCLUDE_DIR} CACHE FILEPATH "USD header files")
-        message(STATUS "Looking for USD include files in: ${USD_INCLUDE_DIR}")
-    endif()
-
-    set(USD_LIBRARIES
-            usd_usd
-            usd_usdGeom
-            usd_usdShade
-            usd_usdLux
-            usd_vt
-            usd_sdf
-            usd_tf
-            usd_gf
-        )
-
-    find_library(USD_LIBRARY
-        NAMES ${USD_LIBRARIES}
-        PATHS ${USD_LIBRARY_DIR})
-    if(USD_LIBRARY)
-        message(STATUS "USD libraries ${USD_LIBRARIES} found in: ${USD_LIBRARY_DIR}")
-        link_directories(${USD_LIBRARY_DIR})
-    else()
-        message(FATAL_ERROR "Unable to find USD libraries in: ${USD_LIBRARY_DIR}")
-    endif()
-
-    add_definitions(-DWITH_USD)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_USD)
+    find_package(USD REQUIRED)
 endif(USD_SUPPORT)
 
 if (WITH_ROCKSDB)
@@ -443,44 +341,15 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
-clear_wasm_sysroot()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-restore_wasm_sysroot()
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 if(NOT MINIMAL_BUILD)
     # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
-    clear_wasm_sysroot()
     if(IFCXML_SUPPORT)
-        if((NOT LIBXML2_INCLUDE_DIR AND NOT LIBXML2_LIBRARIES))
-            # First try config mode (probably works with vcpkg, Conan, macOS brew installs, but not on ubuntu 22.04)
-            # CONFIG is provided using root path, so no need to clear sysroot here.
-            restore_wasm_sysroot()
-            find_package(LibXml2 QUIET CONFIG)
-            clear_wasm_sysroot()
-
-            if(NOT LibXml2_FOUND)
-                # Fallback to CMake's builtin FindLibXml2 module (works on Ubuntu)
-                find_package(LibXml2 REQUIRED)
-            else()
-                message(STATUS "Found LibXml2 config: ${LibXml2_DIR}")
-            endif()
-
-            if(TARGET LibXml2::LibXml2)
-                # Config mode already gives us the target
-                set(LIBXML2_LIBRARIES LibXml2::LibXml2)
-                get_target_property(LIBXML2_INCLUDE_DIR LibXml2::LibXml2 INTERFACE_INCLUDE_DIRECTORIES)
-            else()
-                # Module mode (Ubuntu)
-                set(LIBXML2_LIBRARIES ${LibXml2_LIBRARIES})
-                set(LIBXML2_INCLUDE_DIR ${LibXml2_INCLUDE_DIRS})
-            endif()
-        else()
-            find_package(LibXml2 REQUIRED)
-        endif()
+        find_package(LibXml2 REQUIRED)
     endif()
-    restore_wasm_sysroot()
 endif()
 
 if(IFCXML_SUPPORT)
@@ -489,248 +358,15 @@ if(IFCXML_SUPPORT)
 endif()
 
 if(BUILD_IFCGEOM)
-    if(MSVC AND NOT LibXml2_DIR)
-        add_debug_variants(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" d)
-    endif()
-
     # Open CASCADE
     if(WITH_OPENCASCADE)
-    if(OCC_INCLUDE_DIR)
-        set(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
-        message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
-    endif()
-
-    if(OCC_LIBRARY_DIR)
-        set(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
-        message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
-    endif()
-
-    # No specific paths specified, try to find package.
-    if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
-        message(
-            STATUS
-            "Using provided OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
-            "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
-        )
-        # Parse OCC_VERSION_STRING.
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
-            REGEX "#define OCC_VERSION_MAJOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
-            REGEX "#define OCC_VERSION_MINOR.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
-        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
-            REGEX "#define OCC_VERSION_MAINTENANCE.*"
-        )
-        string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
-        set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
-    elseif(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
-        # OCE is not supported for find_package, because it's using a different name (`oce`)
-        # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
-        find_package(OpenCASCADE CONFIG REQUIRED)
-        set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
-        # Do not use OpenCASCADE_LIBRARY_DIR for OCC_LIBRARY_DIR - check target property explicitly.
-        # On Windows there is a case with OpenCASCADE_LIBRARY_DIR points to `lib` folder,
-        # while TKernel is actually in `libi`.
-        get_target_property(TKERNEL_LIB_PATH TKernel LOCATION)
-        get_filename_component(OCC_LIBRARY_DIR "${TKERNEL_LIB_PATH}" DIRECTORY)
-        set(OCC_VERSION_STRING ${OpenCASCADE_VERSION})
-        message(
-            STATUS
-            "Found Open CASCADE package at '${OpenCASCADE_DIR}', "
-            "deducing from it OCC_INCLUDE_DIR: '${OCC_INCLUDE_DIR}' "
-            "and OCC_LIBRARY_DIR: '${OCC_LIBRARY_DIR}'."
-        )
-    else()
-        message(
-            FATAL_ERROR
-            "Couldn't find Open CASCADE installation. "
-            "Either both OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}') "
-            "must be specified or OpenCASCADE package should be discoverable. "
-            "If you're using OCE, then providing a package is not available "
-            "and you need to provide OCE_INCLUDE_DIR and OCE_LIBRARY_DIR directly."
-        )
-    endif()
-
-    set(
-        OPENCASCADE_LIBRARY_NAMES
-        TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-        TKFillet TKXSBase TKOffset TKHLR
-
-        # @todo investigate the exact conditions when this is necessary
-        TKBin
-    )
-
-    if(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-        list(APPEND OPENCASCADE_LIBRARY_NAMES  TKIGES TKSTEPBase TKSTEPAttr TKSTEP209 TKSTEP)
-    else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-        list(APPEND OPENCASCADE_LIBRARY_NAMES TKDESTEP TKDEIGES)
-    endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-
-    clear_wasm_sysroot()
-    find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
-    restore_wasm_sysroot()
-
-    if(libTKernel)
-        message(STATUS "Required Open Cascade Library files found")
-    else()
-        message(
-            FATAL_ERROR
-            "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting"
-        )
-    endif()
-
-    # Use the found libTKernel as a template for all other OCC libraries
-    # TODO Extract this into macro/function
-    foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
-        # Make sure we'll handle the Windows/MSVC debug postfix convention too.
-        string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
-        string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
-        list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
-    endforeach()
-
-    if(MSVC)
-        add_definitions(-DHAVE_NO_DLL)
-        add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" d)
-    endif()
-
-    if(WIN32)
-        # OCC might require linking to Winsock depending on the version and build configuration
-        list(APPEND OPENCASCADE_LIBRARIES ws2_32.lib)
-    endif()
-
-    # Make sure cross-referenced symbols between static OCC libraries get
-    # resolved. Also add thread and rt libraries.
-    get_filename_component(libTKernelExt ${libTKernel} EXT)
-    if("${libTKernelExt}" STREQUAL ".a")
-        set(OCCT_STATIC ON)
-    endif()
-
-    if(OCCT_STATIC)
-        find_package(Threads)
-
-        if(WASM_BUILD)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-        else()
-            # OPENCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies
-            # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
-            if(APPLE)
-                set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-            else()
-                set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
-            endif()
-        endif()
-
-        if(NOT APPLE AND NOT WIN32)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
-        endif()
-        if(NOT WIN32)
-            set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
-        endif()
-    endif()
+        find_package(OpenCASCADE REQUIRED)
     endif(WITH_OPENCASCADE)
 endif(BUILD_IFCGEOM)
 
-if(COLLADA_SUPPORT AND (NOT OPENCOLLADA_INCLUDE_DIR AND NOT OPENCOLLADA_LIBRARY_DIR))
-    # If package is found, automatically sets
-    # OPENCOLLADA_INCLUDE_DIRS and OPENCOLLADA_LIBRARIES (list of targets, not paths).
-    find_package(OpenCOLLADA CONFIG)
-    if(OpenCOLLADA_DIR)
-        message(STATUS "Found OpenCOLLADA: '${OpenCOLLADA_DIR}'.")
-        set(OPENCOLLADA_FOUND TRUE)
-    else()
-        message(STATUS "OpenCOLLADA package not found, falling back to manual search.")
-    endif()
+if(COLLADA_SUPPORT)
+    find_package(OpenCOLLADA REQUIRED)
 endif()
-if(COLLADA_SUPPORT AND NOT OpenCOLLADA_DIR)
-    # Find OpenCOLLADA
-    if("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
-        message(STATUS "No OpenCOLLADA include directory specified")
-        set(OPENCOLLADA_INCLUDE_DIR "/usr/include/opencollada" CACHE FILEPATH "OpenCOLLADA header files")
-    else()
-        set(OPENCOLLADA_INCLUDE_DIR "${OPENCOLLADA_INCLUDE_DIR}" CACHE FILEPATH "OpenCOLLADA header files")
-    endif()
-
-    if("${OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
-        message(STATUS "No OpenCOLLADA library directory specified")
-        find_library(OPENCOLLADA_FRAMEWORK_LIB NAMES OpenCOLLADAFramework
-            PATHS /usr/lib64/opencollada /usr/lib/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
-        get_filename_component(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_FRAMEWORK_LIB} PATH)
-    endif()
-
-    find_library(OpenCOLLADAFramework NAMES OpenCOLLADAFramework OpenCOLLADAFrameworkd PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
-
-    if(OpenCOLLADAFramework)
-        message(STATUS "OpenCOLLADA library files found")
-    else()
-        message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA libraries. "
-            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
-    endif()
-
-    set(OPENCOLLADA_LIBRARY_DIR "${OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
-
-    set(OPENCOLLADA_INCLUDE_DIRS "${OPENCOLLADA_INCLUDE_DIR}/COLLADABaseUtils" "${OPENCOLLADA_INCLUDE_DIR}/COLLADAStreamWriter")
-
-    find_file(COLLADASWStreamWriter_h "COLLADASWStreamWriter.h" ${OPENCOLLADA_INCLUDE_DIRS})
-
-    if(COLLADASWStreamWriter_h)
-        message(STATUS "OpenCOLLADA header files found")
-        set(OPENCOLLADA_FOUND TRUE)
-
-        set(OPENCOLLADA_LIBRARY_NAMES
-            GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
-            OpenCOLLADAStreamWriter UTF buffer ftoa
-        )
-
-        # Use the found OpenCOLLADAFramework as a template for all other OpenCOLLADA libraries
-        foreach(lib ${OPENCOLLADA_LIBRARY_NAMES})
-            # Make sure we'll handle the Windows/MSVC debug postfix convention too.
-            string(REPLACE OpenCOLLADAFrameworkd "${lib}" lib_path "${OpenCOLLADAFramework}")
-            string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${lib_path}")
-            list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
-        endforeach()
-
-        if("${PCRE_LIBRARY_DIR}" STREQUAL "")
-            if(WIN32)
-                find_library(pcre_library NAMES pcre pcred PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
-            else()
-                find_library(pcre_library NAMES pcre PATHS ${OPENCOLLADA_LIBRARY_DIR})
-            endif()
-
-            get_filename_component(PCRE_LIBRARY_DIR ${pcre_library} PATH)
-        else()
-            find_library(pcre_library NAMES pcre pcred PATHS ${PCRE_LIBRARY_DIR} NO_DEFAULT_PATH)
-        endif()
-
-        if(pcre_library)
-            set(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_LIBRARY_DIR} ${PCRE_LIBRARY_DIR})
-
-            if(MSVC)
-                # Add release lib regardless whether release or debug found. Debug version will be appended below.
-                list(APPEND OPENCOLLADA_LIBRARIES "${PCRE_LIBRARY_DIR}/pcre.lib")
-            else()
-                list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
-            endif()
-        else()
-            message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find PCRE. "
-                "Disable COLLADA_SUPPORT or fix PCRE_LIBRARY_DIR path to proceed.")
-        endif()
-
-        if(MSVC)
-            add_debug_variants(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" d)
-        endif()
-    else()
-        message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA headers. "
-            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
-    endif()
-endif(COLLADA_SUPPORT AND NOT OpenCOLLADA_DIR)
-if(COLLADA_SUPPORT AND OPENCOLLADA_FOUND)
-    add_definitions(-DWITH_OPENCOLLADA)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_OPENCOLLADA)
-endif()
-
 
 if(HDF5_SUPPORT)
     find_package(HDF5 REQUIRED COMPONENTS C CXX)
@@ -850,25 +486,12 @@ else()
 endif(MSVC)
 
 
-# Ensure other dependencies are provided.
-if(NOT EXISTS "${EIGEN_DIR}")
-    find_package(Eigen3 CONFIG)
-    if(Eigen3_DIR)
-        message(STATUS "Eigen3: found config at '${Eigen3_DIR}'.")
-    else()
-        message(
-            FATAL_ERROR
-            "EIGEN_DIR is not provided or provided folder doesn't exist (current value: '${EIGEN_DIR}'). "
-            "Also couldn't find Eigen3 as a package."
-        )
-    endif()
-    link_libraries(Eigen3::Eigen)
-endif()
+find_package(Eigen3 REQUIRED)
+link_libraries(Eigen3::Eigen)
 
-
-include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
-	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIRS}
-    ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
+include_directories(${INCLUDE_DIRECTORIES} ${OPENCOLLADA_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
+    ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
     ${TBB_INCLUDE_DIR}
 )
 
@@ -968,18 +591,13 @@ if(BUILD_IFCGEOM)
 endif()
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-	foreach(schema ${SCHEMA_VERSIONS})
-		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${schema})
-	endforeach()
-	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
-
-    if(WITH_OPENCASCADE)
+	if(WITH_OPENCASCADE)
         foreach(schema ${SCHEMA_VERSIONS})
             set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${schema})
 
             add_library(geometry_serializer_ifc${schema} STATIC ../src/ifcgeom/Serialization/schema/Serialization.cpp)
             set_target_properties(geometry_serializer_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS -DIfcSchema=Ifc${schema}")
-            target_link_libraries(geometry_serializer_ifc${schema} ${OPENCASCADE_LIBRARIES})
+            target_link_libraries(geometry_serializer_ifc${schema} ${OpenCASCADE_LIBRARIES})
             list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
         endforeach()
 
@@ -996,10 +614,8 @@ if(BUILD_IFCGEOM)
         set(CGAL_LIBRARIES CGAL::CGAL)
         message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
     elseif(WITH_CGAL AND NOT CGAL_DIR)
-	clear_wasm_sysroot()
         find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
         find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-	restore_wasm_sysroot()
         if(NOT libGMP)
             message(FATAL_ERROR "Unable to find GMP library files, aborting")
         endif()
@@ -1011,33 +627,8 @@ if(BUILD_IFCGEOM)
         list(APPEND CGAL_LIBRARIES "${libGMP}")
     endif()
 
-    foreach(kernel ${GEOMETRY_KERNELS})
-        string(TOUPPER ${kernel} KERNEL_UPPER)
-        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
-        file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
-        set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
-
-        add_library(geometry_kernel_${kernel} ${IFCGEOM_FILES} ../src/ifcgeom/kernels/ifc_geomlibrary_api.h)
-        set_property(TARGET geometry_kernel_${kernel} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS")
-        # needed?
-        # if(NOT WASM_BUILD)
-        # endif()
-        target_link_libraries(geometry_kernel_${kernel} ${${KERNEL_UPPER}_LIBRARIES} IfcGeom IfcParse)
-        list(APPEND kernel_libraries geometry_kernel_${kernel})
-
-        if(${kernel} STREQUAL "cgal")
-            set_property(TARGET geometry_kernel_${kernel} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
-
-            add_library(geometry_kernel_${kernel}_simple ${IFCGEOM_FILES})
-            set_target_properties(geometry_kernel_${kernel}_simple PROPERTIES COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS")
-            # needed?
-            # if(NOT WASM_BUILD)
-            # endif()
-            target_link_libraries(geometry_kernel_${kernel}_simple ${${KERNEL_UPPER}_LIBRARIES} IfcGeom IfcParse)
-            list(APPEND kernel_libraries geometry_kernel_${kernel}_simple)
-        endif()
-    endforeach()
-
+    add_subdirectory(../src/ifcgeom ifcgeom)
+    
     # IfcGeom
     foreach(schema ${SCHEMA_VERSIONS})
         file(GLOB IFCGEOM_I_FILES ../src/ifcgeom/mapping/*.i)
@@ -1066,134 +657,22 @@ if(BUILD_IFCGEOM)
         find_package(Threads)
     endif()
 
-    target_link_libraries(IfcGeom IfcParse ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(IfcGeom IfcParse ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} ${OpenCASCADE_LIBRARIES})
 
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-    # Serializers
-    file(GLOB SERIALIZERS_H_FILES ../src/serializers/*.h)
-    file(GLOB SERIALIZERS_CPP_FILES ../src/serializers/*.cpp)
-    set(SERIALIZERS_FILES ${SERIALIZERS_H_FILES} ${SERIALIZERS_CPP_FILES})
-    file(GLOB SERIALIZERS_S_H_FILES ../src/serializers/schema_dependent/*.h)
-    file(GLOB SERIALIZERS_S_CPP_FILES ../src/serializers/schema_dependent/*.cpp)
-    set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
-
-    foreach(schema ${SCHEMA_VERSIONS})
-        add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
-        set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORTS -DIfcSchema=Ifc${schema}")
-
-        if(WASM_BUILD)
-            target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
-        else()
-            target_link_libraries(Serializers_ifc${schema} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
-        endif()
-    endforeach()
-
-    add_library(Serializers ${SERIALIZERS_FILES})
-    set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
-
-    if(WITH_PROJ)
-        target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
-        if (PROJ_STATIC)
-            target_compile_definitions(Serializers PRIVATE "PROJ_DLL=")
-        endif()
-        target_include_directories(Serializers PRIVATE ${PROJ_INCLUDE_DIR} ${SQLITE_INCLUDE_DIR})
-        target_link_libraries(Serializers ${PROJ_LIBRARIES})
-    endif()
-
-    target_link_libraries(Serializers ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES} IfcGeom ${OPENCASCADE_LIBRARIES} ${kernel_libraries} IfcParse)
-
+    add_subdirectory(../src/serializers serializers)
+    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} ${SERIALIZER_SCHEMA_LIBRARIES})
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 if(BUILD_CONVERT)
-    if(WITH_CGAL AND CITYJSON_SUPPORT)
-        message(STATUS "Building CityJSON support")
-        set(CITYJSON_CONVERT_FILES
-            ../src/ifcconvert/cityjson/geobim.cpp
-            ../src/ifcconvert/cityjson/global_execution_context.cpp
-            ../src/ifcconvert/cityjson/opening_collector.cpp
-            ../src/ifcconvert/cityjson/processing.cpp
-            ../src/ifcconvert/cityjson/radius_comparison.cpp
-            ../src/ifcconvert/cityjson/radius_execution_context.cpp
-            ../src/ifcconvert/cityjson/settings.cpp
-            ../src/ifcconvert/cityjson/writer.cpp
-        )
-        add_library(cityjson_converter ${CITYJSON_CONVERT_FILES})
-        target_include_directories(cityjson_converter PRIVATE ../src)
-        set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
-
-        install(TARGETS cityjson_converter
-            ARCHIVE DESTINATION ${LIBDIR}
-            LIBRARY DESTINATION ${LIBDIR}
-        )
-
-        add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
-        set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
-        target_include_directories(cityjson_converter_exe PRIVATE ../src)
-        target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
-
-        install(TARGETS cityjson_converter_exe
-            RUNTIME DESTINATION ${BINDIR}
-        )
-    endif()
-
-    # IfcConvert
-	if (WITH_RELATIONSHIP_VALIDATION)
-		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
-		file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
-	else()
-		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/IfcConvert.cpp)
-		file(GLOB IFCCONVERT_H_FILES)
-	endif()
-    set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
-    add_executable(IfcConvert ${IFCCONVERT_FILES})
-
-    target_link_libraries(IfcConvert IfcGeom IfcParse Serializers ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
-	if (WITH_RELATIONSHIP_VALIDATION)
-        set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DWITH_RELATIONSHIP_VALIDATION")
-    endif()
-
-    if(WITH_CGAL AND CITYJSON_SUPPORT)
-        set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DIFOPSH_WITH_CITYJSON")
-    endif()
-
-    if((NOT WIN32) AND BUILD_SHARED_LIBS)
-        # Only set RPATHs when building shared libraries (i.e. IfcParse and
-        # IfcGeom are dynamically linked). Not necessarily a perfect solution
-        # but probably a good indication of whether RPATHs are necessary.
-        SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
-    endif()
-
-    install(TARGETS IfcConvert
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
+    add_subdirectory(../src/ifcconvert ifcconvert)
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
 if(BUILD_GEOMSERVER)
-
-    if(NOT WITH_OPENCASCADE)
-        message(FATAL_ERROR "Open CASCADE is required to build IfcGeomServer.")
-    endif()
-
-    file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
-    file(GLOB H_FILES ../src/ifcgeomserver/*.h)
-    set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
-    add_executable(IfcGeomServer ${SOURCE_FILES})
-    target_link_libraries(IfcGeomServer IfcGeom IfcParse ${kernel_libraries} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
-
-    if((NOT WIN32) AND BUILD_SHARED_LIBS)
-        SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
-    endif()
-
-    install(TARGETS IfcGeomServer
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
+    add_subdirectory(../src/ifcgeomserver ifcgeomserver)
 endif(BUILD_GEOMSERVER)
 
 if(ADD_COMMIT_SHA)
@@ -1307,22 +786,6 @@ if(BUILD_IFCGEOM)
         RUNTIME DESTINATION ${BINDIR}
     )
 endif(BUILD_IFCGEOM)
-
-if(BUILD_CONVERT)
-    install(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES}
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
-
-    install(FILES ${SERIALIZERS_H_FILES}
-        DESTINATION ${INCLUDEDIR}/serializers/
-    )
-
-    install(FILES ${SERIALIZERS_S_H_FILES}
-        DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
-    )
-endif(BUILD_CONVERT)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
     if(WITH_OPENCASCADE)

@@ -23,7 +23,7 @@
 :: Usage example for doing an optimized vs2015-x64 build with debug information and using IFC 4:
 :: > build-all.cmd vs2015-x64 RelWithDebInfo -DUSE_IFC4=1 -DENABLE_BUILD_OPTIMIZATIONS=1
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 
 setlocal EnableDelayedExpansion
 

@@ -1360,6 +1360,8 @@ class Geometry(bonsai.core.tool.Geometry):
 
         If no other representation present, will replace object with an empty.
         Method assumes that `obj` does have a current representation (it could be not `representation`).
+
+        Will clean up old ``obj.data`` if no other users exist.
         """
         element = tool.Ifc.get_entity(obj)
         assert element
@@ -1378,7 +1380,11 @@ class Geometry(bonsai.core.tool.Geometry):
 
         # `representation` is the only representation for object.
         if new_representation is None:
+            old_data = obj.data
+            assert old_data is not None
             cls.recreate_object_with_data(obj, None)
+            if not cls.has_data_users(old_data):
+                cls.delete_data(old_data)
             return
 
         bonsai.core.geometry.switch_representation(
@@ -2090,6 +2096,7 @@ class Geometry(bonsai.core.tool.Geometry):
         decomposition_relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
         connection_relationships = tool.Root.get_connection_relationships(objects_to_duplicate)
         old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
+        old_obj_name_to_new_obj_name: dict[str, str] = {}
 
         for obj in objects_to_duplicate:
             element = tool.Ifc.get_entity(obj)
@@ -2141,6 +2148,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
+            old_obj_name_to_new_obj_name[obj.name] = new_obj.name
 
             if not element:
                 continue
@@ -2172,6 +2180,19 @@ class Geometry(bonsai.core.tool.Geometry):
                 old_to_new[element] = [new]
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
+
+        # Remap Blender parent relationships for duplicated objects
+        for old_obj_name, new_obj_name in old_obj_name_to_new_obj_name.items():
+            new_obj = bpy.data.objects.get(new_obj_name)
+            if new_obj and new_obj.parent and new_obj.parent.name in old_obj_name_to_new_obj_name:
+                # Store world matrix before reparenting to preserve transform
+                world_matrix = new_obj.matrix_world.copy()
+                new_parent_name = old_obj_name_to_new_obj_name[new_obj.parent.name]
+                new_parent = bpy.data.objects.get(new_parent_name)
+                if new_parent:
+                    new_obj.parent = new_parent
+                    # Restore world transform by setting matrix_world
+                    new_obj.matrix_world = world_matrix
 
         # Recreate aggregate relationship
         for old in old_to_new.keys():

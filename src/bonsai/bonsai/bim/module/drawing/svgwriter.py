@@ -202,6 +202,15 @@ class SvgWriter:
     ) -> Self:
         self.precision = precision
         self.decimal_places = decimal_places
+
+        # Sort annotations to ensure FILLAREA types are drawn first (at the bottom)
+        def sort_key(element):
+            predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+            # Return 0 for FILLAREA to draw them first, 1 for everything else
+            return 0 if predefined_type == "FILL_AREA" else 1
+
+        annotations = sorted(annotations, key=sort_key)
+
         for element in annotations:
             obj = tool.Ifc.get_object(element)
             if (

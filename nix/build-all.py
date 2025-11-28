@@ -243,7 +243,9 @@ if WASM:
     # Pyodide still in transition from `FLAGS` to `FLAGS_INIT`.
     # `FLAGS_INIT` allow us to provide flags using environment variables
     # and providing `FLAGS` directly would break pyodide toolchain.
-    WASM_CMAKE_IS_USING_INIT_VARS = get_pyodide_build_version() >= (0, 30, 8)
+    # NOTE: changes in pyodide-build currently got postponed:
+    # https://github.com/pyodide/pyodide-build/pull/249
+    WASM_CMAKE_IS_USING_INIT_VARS = get_pyodide_build_version() >= (99, 0, 0)
 
     # pyodide provide empty `CXXFLAGS`, leading to issues using C++ files compiled with `-fexceptions`
     # which is used by OCCT.
@@ -941,11 +943,9 @@ if "pcre2" in targets:
         download_name=f"pcre2-{PCRE2_VERSION}.tar.bz2",
     )
 
-# An issue exists with swig-1.3 and python >= 3.2
-# Therefore, build a recent copy from source
 if "swig" in targets:
     build_dependency(
-        name="swig",
+        name=f"swig-{SWIG_VERSION}",
         mode="autoconf",
         build_tool_args=["--disable-ccache", f"--with-pcre2-prefix={DEPS_DIR}/install/pcre2-{PCRE2_VERSION}"],
         download_url="https://github.com/swig/swig.git",
@@ -1431,6 +1431,9 @@ if "rocksdb" in targets:
         ]
     )
 
+if "swig" in targets:
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/swig-{SWIG_VERSION}")
+
 if not WASM and (not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets)):
     logger.info("\rConfiguring executables...")
 
@@ -1483,9 +1486,6 @@ if "IfcOpenShell-Python" in targets:
         if os.path.exists(cache_path):
             os.remove(cache_path)
 
-        prefix_paths: list[str] = []
-        if "swig" in targets:
-            prefix_paths.append(f"{DEPS_DIR}/install/swig")
         if python_path:
             # We couldn't just prefix PATH and have to provide all variables explicitly,
             # see ifcwrap/cmake for the details.
@@ -1502,7 +1502,7 @@ if "IfcOpenShell-Python" in targets:
         run_cmake(
             "",
             cmake_args
-            + get_cmake_args_prefix_path(prefix_paths)
+            + get_cmake_args_prefix_path()
             + [
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
                 # Needed because pyodide is expecting setup.py to be in the root.

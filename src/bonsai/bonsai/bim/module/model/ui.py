@@ -305,48 +305,9 @@ class BIM_PT_stair(bpy.types.Panel):
                 row.operator("bim.finish_editing_stair", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_stair", icon="CANCEL", text="")
                 row = self.layout.row(align=True)
-                for prop_name in props.get_props_kwargs():
-                    # Skip custom_tread_lock as it's handled with custom_first_last_tread_run
-                    if prop_name == "custom_tread_lock":
-                        continue
 
-                    prop_value = getattr(props, prop_name)
+                draw_stair_properties(self.layout, props)
 
-                    # Special handling for custom_first_last_tread_run
-                    if prop_name == "custom_first_last_tread_run":
-                        # Draw the lock toggle
-                        row_lock = self.layout.row(align=True)
-                        lock_text = (
-                            "Lock First/Last Treads" if not props.custom_tread_lock else "Unlock First/Last Treads"
-                        )
-                        row_lock.prop(
-                            props,
-                            "custom_tread_lock",
-                            text=lock_text,
-                            icon="LOCKED" if props.custom_tread_lock else "UNLOCKED",
-                        )
-
-                        # Only show the custom values input if unlocked
-                        if not props.custom_tread_lock:
-                            prop_readable_name = props.bl_rna.properties[prop_name].name
-                            self.layout.label(text=f"{prop_readable_name}:")
-                            self.layout.prop(props, prop_name, text="")
-                    elif isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
-                        prop_readable_name = props.bl_rna.properties[prop_name].name
-                        self.layout.label(text=f"{prop_readable_name}:")
-                        self.layout.prop(props, prop_name, text="")
-                    else:
-                        self.layout.prop(props, prop_name)
-
-                    if prop_name == "height":  # Weak but we just want to insert this inside props drawing
-                        row_length = self.layout.row(align=True)
-                        row_length.prop(props, "total_length_target")
-                        row_length.prop(
-                            props,
-                            "total_length_lock",
-                            text="",
-                            icon="LOCKED" if props.total_length_lock else "UNLOCKED",
-                        )
                 regenerate_stair_mesh(obj)
             else:
                 calculated_params = StairData.data["calculated_params"]
@@ -440,39 +401,11 @@ class BIM_PT_window(bpy.types.Panel):
             row.label(text="Window parameters", icon="OUTLINER_OB_LATTICE")
 
             if props.is_editing:
-                number_of_panels, panels_data = props.window_types_panels[props.window_type]
                 row = self.layout.row(align=True)
                 row.operator("bim.finish_editing_window", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_window", icon="CANCEL", text="")
 
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    self.layout.prop(props, prop)
-
-                lining_props = props.get_lining_kwargs()
-                self.layout.label(text="Lining properties")
-                for prop in lining_props:
-                    self.layout.prop(props, prop)
-
-                panel_props = props.get_panel_kwargs()
-                self.layout.label(text="Panel properties")
-
-                panel_box = self.layout.box()
-                row = panel_box.row()
-                cols = [row.column(align=True) for i in range(number_of_panels + 1)]
-
-                cols[0].label(text="")
-
-                for panel_i in range(number_of_panels):
-                    r = cols[panel_i + 1].row()
-                    r.alignment = "CENTER"
-                    r.label(text=f"#{panel_i}")
-                    r = cols[panel_i + 1].row()
-
-                for prop in panel_props:
-                    cols[0].label(text=f"{props.bl_rna.properties[prop].name}")
-                    for panel_i in range(number_of_panels):
-                        cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
+                draw_window_properties(self.layout, props)
 
                 self.layout.use_property_split = True
                 self.layout.label(text="Material Properties")
@@ -560,19 +493,7 @@ class BIM_PT_door(bpy.types.Panel):
                 row.operator("bim.finish_editing_door", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_door", icon="CANCEL", text="")
 
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    self.layout.prop(props, prop)
-
-                lining_props = props.get_lining_kwargs()
-                self.layout.label(text="Lining Properties")
-                for prop in lining_props:
-                    self.layout.prop(props, prop)
-
-                panel_props = props.get_panel_kwargs()
-                self.layout.label(text="Panel Properties")
-                for prop in panel_props:
-                    self.layout.prop(props, prop)
+                draw_door_properties(self.layout, props)
 
                 self.layout.use_property_split = True
                 self.layout.label(text="Material Properties")
@@ -643,14 +564,7 @@ class BIM_PT_railing(bpy.types.Panel):
                 row.operator("bim.finish_editing_railing", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_railing", icon="CANCEL", text="")
 
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    if prop == "support_spacing" and props.use_manual_supports:
-                        row = self.layout.row()
-                        row.prop(props, prop)
-                        row.active = False
-                        continue
-                    self.layout.prop(props, prop)
+                draw_railing_properties(self.layout, props)
 
                 update_railing_modifier_bmesh(context)
 
@@ -708,9 +622,7 @@ class BIM_PT_roof(bpy.types.Panel):
                 row.operator("bim.finish_editing_roof", icon="CHECKMARK", text="Finish Editing")
                 row.operator("bim.cancel_editing_roof", icon="CANCEL", text="")
 
-                general_props = props.get_general_kwargs()
-                for prop in general_props:
-                    self.layout.prop(props, prop)
+                draw_roof_properties(self.layout, props)
 
                 update_roof_modifier_bmesh(obj)
             elif props.is_editing_path:
@@ -774,6 +686,126 @@ class BIM_PT_external_parametric_geometry(bpy.types.Panel):
             for input in inputs:
                 row = layout.row(align=True)
                 row.prop(input, "default_value", text=input.name)
+
+
+def draw_door_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+    """Draw door properties UI (shared between properties panel and preferences)."""
+    # General properties
+    general_props = props.get_general_kwargs()
+    for prop in general_props:
+        layout.prop(props, prop)
+
+    # Lining properties
+    layout.label(text="Lining Properties")
+    lining_props = props.get_lining_kwargs()
+    for prop in lining_props:
+        layout.prop(props, prop)
+
+    # Panel properties
+    layout.label(text="Panel Properties")
+    panel_props = props.get_panel_kwargs()
+    for prop in panel_props:
+        layout.prop(props, prop)
+
+
+def draw_window_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+    """Draw window properties UI (shared between properties panel and preferences)."""
+    number_of_panels, panels_data = props.window_types_panels[props.window_type]
+
+    # General and lining properties
+    general_props = props.get_general_kwargs()
+    for prop in general_props:
+        layout.prop(props, prop)
+
+    layout.label(text="Lining Properties")
+    lining_props = props.get_lining_kwargs()
+    for prop in lining_props:
+        layout.prop(props, prop)
+
+    # Panel properties (special layout for multiple panels)
+    panel_props = props.get_panel_kwargs()
+    layout.label(text="Panel Properties")
+
+    panel_box = layout.box()
+    row = panel_box.row()
+    cols = [row.column(align=True) for i in range(number_of_panels + 1)]
+
+    cols[0].label(text="")
+
+    for panel_i in range(number_of_panels):
+        r = cols[panel_i + 1].row()
+        r.alignment = "CENTER"
+        r.label(text=f"#{panel_i}")
+        r = cols[panel_i + 1].row()
+
+    for prop in panel_props:
+        cols[0].label(text=f"{props.bl_rna.properties[prop].name}")
+        for panel_i in range(number_of_panels):
+            cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
+
+
+def draw_railing_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+    """Draw railing properties UI (shared between properties panel and preferences)."""
+    general_props = props.get_general_kwargs()
+    for prop in general_props:
+        if prop == "support_spacing" and props.use_manual_supports:
+            row = layout.row()
+            row.prop(props, prop)
+            row.active = False
+            continue
+        layout.prop(props, prop)
+
+
+def draw_roof_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+    """Draw roof properties UI (shared between properties panel and preferences)."""
+    # General properties
+    general_props = props.get_general_kwargs()
+    for prop in general_props:
+        layout.prop(props, prop)
+
+
+def draw_stair_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+    """Draw stair properties UI (shared between properties panel and preferences)."""
+    for prop_name in props.get_props_kwargs():
+        # Skip custom_tread_lock as it's handled with custom_first_last_tread_run
+        if prop_name == "custom_tread_lock":
+            continue
+
+        prop_value = getattr(props, prop_name)
+
+        # Special handling for custom_first_last_tread_run
+        if prop_name == "custom_first_last_tread_run":
+            # Draw the lock toggle
+            row_lock = layout.row(align=True)
+            lock_text = "Lock First/Last Treads" if not props.custom_tread_lock else "Unlock First/Last Treads"
+            row_lock.prop(
+                props,
+                "custom_tread_lock",
+                text=lock_text,
+                icon="LOCKED" if props.custom_tread_lock else "UNLOCKED",
+            )
+
+            # Only show the custom values input if unlocked
+            if not props.custom_tread_lock:
+                prop_readable_name = props.bl_rna.properties[prop_name].name
+                layout.label(text=f"{prop_readable_name}:")
+                layout.prop(props, prop_name, text="")
+        elif isinstance(prop_value, Iterable) and not isinstance(prop_value, str):
+            prop_readable_name = props.bl_rna.properties[prop_name].name
+            layout.label(text=f"{prop_readable_name}:")
+            layout.prop(props, prop_name, text="")
+        else:
+            layout.prop(props, prop_name)
+
+        if prop_name == "height":  # Weak but we just want to insert this inside props drawing
+            row_length = layout.row(align=True)
+            row_length.prop(props, "total_length_target")
+            row_length.prop(
+                props,
+                "total_length_lock",
+                text="",
+                icon="LOCKED" if props.total_length_lock else "UNLOCKED",
+            )
 
 
 def add_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:

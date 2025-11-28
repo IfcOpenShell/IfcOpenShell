@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
 from .type_hints import *
 from typing import Optional, Literal
 from datetime import datetime

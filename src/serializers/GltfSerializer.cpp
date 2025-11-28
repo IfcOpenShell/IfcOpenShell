@@ -180,35 +180,108 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 		return;
 	}
 
-	node_array_.push_back(json_["nodes"].size());
+	size_t current_node_index = json_["nodes"].size();
+    auto current_leaf_index = current_node_index;
+    json_["nodes"].emplace_back();
+    node_indices_[o->product()] = current_node_index;
+    node_array_.push_back(current_node_index);
 
-	const auto& m = o->transformation().data()->ccomponents();
-	
-	// @todo check
-	std::array<double, 16> matrix_flat;
-	if (settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get()) {
-		matrix_flat = {
-			m(0,0), m(1,0), m(2,0), m(3,0),
-			m(0,1), m(1,1), m(2,1), m(3,1),
-			m(0,2), m(1,2), m(2,2), m(3,2),
-			m(0,3), m(1,3), m(2,3), m(3,3)
-		};
-	} else {
-		// nb: note that this contains the Y-UP transform as well.
-		matrix_flat = {
-			m(0,0), m(2,0), -m(1,0), m(3,0),
-			m(0,1), m(2,1), -m(1,1), m(3,1),
-			m(0,2), m(2,2), -m(1,2), m(3,2),
-			m(0,3), m(2,3), -m(1,3), m(3,3)
-		};
+	auto m = o->transformation().data()->ccomponents();
+
+	if (o->parents().empty()) {
+        roots_.push_back(current_node_index);
 	}
+	if (!o->parents().empty()) {
+		// apply inverse of last parent -> overwrite product transform (m)
+        m = o->parents().back()->transformation().data()->ccomponents().inverse() * m;
+
+        for (auto it = o->parents().rbegin(); it != o->parents().rend(); ++it) {
+            const auto jt = it + 1;
+            const bool is_root = jt == o->parents().rend();
+
+            auto kt = node_indices_.find((*it)->product());
+            if (kt != node_indices_.end()) {
+				// parent already processed as part of other parent sequence
+                json_["nodes"][kt->second]["children"].push_back(current_node_index);
+                break;
+			}
+
+            
+			auto mm = (*it)->transformation().data()->ccomponents();
+            if (!is_root) {
+                mm = (*jt)->transformation().data()->ccomponents().inverse() * mm;
+			}
+
+			json parent_node = json::object();
+
+			std::array<double, 16> matrix_flat;
+            if (settings_.get<ifcopenshell::geometry::settings::SeparateZUpNode>().get() || settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get() || !is_root) {
+				// y-up transform is only accounted for on root
+				matrix_flat = {
+					mm(0,0), mm(1,0), mm(2,0), mm(3,0),
+					mm(0,1), mm(1,1), mm(2,1), mm(3,1),
+					mm(0,2), mm(1,2), mm(2,2), mm(3,2),
+					mm(0,3), mm(1,3), mm(2,3), mm(3,3)
+				};
+			} else {
+				// nb: note that this contains the Y-UP transform.
+				matrix_flat = {
+					mm(0,0), mm(2,0), -mm(1,0), mm(3,0),
+					mm(0,1), mm(2,1), -mm(1,1), mm(3,1),
+					mm(0,2), mm(2,2), -mm(1,2), mm(3,2),
+					mm(0,3), mm(2,3), -mm(1,3), mm(3,3)
+				};
+			}
 	
-	static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+			static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+	
+			if (matrix_flat != identity_matrix) {
+				// glTF validator complains about identity matrices
+                parent_node["matrix"] = matrix_flat;
+			}
+
+            size_t new_node_index = json_["nodes"].size();
+            node_indices_[(*it)->product()] = new_node_index;
+            node_array_.push_back(new_node_index);
+            parent_node["name"] = object_id(o);
+            parent_node["children"] = json::array({current_node_index});
+            json_["nodes"].push_back(parent_node);
+
+			current_node_index = new_node_index;
+
+			if (is_root) {
+                roots_.push_back(current_node_index);
+            }
+		}
+    }
 	
 	json node;
-	if (matrix_flat != identity_matrix) {
-		// glTF validator complains about identity matrices
-		node["matrix"] = matrix_flat;
+    {
+		std::array<double, 16> matrix_flat;
+        if (settings_.get<ifcopenshell::geometry::settings::SeparateZUpNode>().get() || settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get() || !o->parents().empty()) {
+			// y-up transform is only accounted for on root
+			matrix_flat = {
+				m(0,0), m(1,0), m(2,0), m(3,0),
+				m(0,1), m(1,1), m(2,1), m(3,1),
+				m(0,2), m(1,2), m(2,2), m(3,2),
+				m(0,3), m(1,3), m(2,3), m(3,3)
+			};
+		} else {
+			// nb: note that this contains the Y-UP transform.
+			matrix_flat = {
+				m(0,0), m(2,0), -m(1,0), m(3,0),
+				m(0,1), m(2,1), -m(1,1), m(3,1),
+				m(0,2), m(2,2), -m(1,2), m(3,2),
+				m(0,3), m(2,3), -m(1,3), m(3,3)
+			};
+		}
+	
+		static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+	
+		if (matrix_flat != identity_matrix) {
+			// glTF validator complains about identity matrices
+			node["matrix"] = matrix_flat;
+		}
 	}
 	node["name"] = object_id(o);
 	
@@ -300,7 +373,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	}
 
 	node["mesh"] = current_mesh_index;
-	json_["nodes"].push_back(node);
+    json_["nodes"][current_leaf_index] = node;
 }
 
 template <uint32_t>
@@ -338,20 +411,30 @@ void write_block(std::ostream& fs, It begin, It end) {
 }
 
 void GltfSerializer::finalize() {
+    // separate z up
+    if (settings_.get<ifcopenshell::geometry::settings::SeparateZUpNode>().get()) {
+        z_up_transform_ = json::object();
+        (*z_up_transform_)["name"] = "Z_UP";
+		static const std::array<double, 16> z_up_matrix = {
+			1, 0, 0, 0,
+			0, 0, -1, 0,
+			0, 1, 0, 0,
+			0, 0, 0, 1};
+        (*z_up_transform_)["matrix"] = z_up_matrix;
+        (*z_up_transform_)["children"] = roots_;
+        json_["nodes"].push_back(*z_up_transform_);
+    }
+
 	if (north_rotation_) {
-		(*north_rotation_)["children"] = json::array();
-		for (int i = 0; i < json_["nodes"].size(); ++i) {
-			(*north_rotation_)["children"].push_back(i);
-		}
-		json_["nodes"].push_back(*north_rotation_);
+        (*north_rotation_)["children"] = roots_;
 	}
 
 	if (ecef_transform_) {
-		(*ecef_transform_)["children"] = json::array();
-		for (int i = 0; i < json_["nodes"].size(); ++i) {
-			(*ecef_transform_)["children"].push_back(i);
-		}
-		json_["nodes"].push_back(*ecef_transform_);
+        (*ecef_transform_)["children"] = roots_;
+	}
+
+	if (z_up_transform_) {
+        (*ecef_transform_)["children"] = roots_;
 	}
 
 	tmp_fstream1_.close();
@@ -372,7 +455,9 @@ void GltfSerializer::finalize() {
 	}
 
 	json scene_0;
-	if (north_rotation_ || ecef_transform_) {
+    if (geometry_settings().get<ifcopenshell::geometry::settings::UseElementHierarchy>().get()) {
+        scene_0["nodes"] = roots_;
+    } else if (north_rotation_ || ecef_transform_ || z_up_transform_) {
 		scene_0["nodes"] = std::array<size_t, 1>{json_["nodes"].size() - 1};
 	} else {
 		scene_0["nodes"] = node_array_;

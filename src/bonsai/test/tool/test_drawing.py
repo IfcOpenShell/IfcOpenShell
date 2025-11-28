@@ -155,6 +155,9 @@ class TestDisableEditingText(NewFile):
         props = tool.Drawing.get_text_props(obj)
         props.is_editing = True
         subject.disable_editing_text(obj)
+
+        # Props might get invalidated, since no properties set.
+        props = tool.Drawing.get_text_props(obj)
         assert props.is_editing == False
 
 
@@ -812,8 +815,9 @@ class TestDrawingMaintainingSheetPosition(NewFile):
     def test_run(self):
         props = tool.Drawing.get_document_props()
         bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
         ifc = tool.Ifc.get()
-        sheet_path = Path.cwd() / "layouts" / "A01 - UNTITLED.svg"
+        sheet_path = Path(tool.Ifc.get_path()).parent / "layouts" / "A01 - UNTITLED.svg"
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -867,6 +871,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
 class TestDrawingStyles(NewFile):
     def setup_project_with_drawing(self):
         bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
         bpy.ops.bim.load_drawings()
         bpy.ops.bim.add_drawing()
         ifc = tool.Ifc.get()
@@ -878,19 +883,13 @@ class TestDrawingStyles(NewFile):
         props = tool.Drawing.get_document_props()
         self.drawing_styles = props.drawing_styles
 
-    def test_drawing_styles_not_loaded_if_underlay_is_inactive(self):
+    def test_drawing_styles_are_loaded_even_if_underlay_is_inactive(self):
         self.setup_project_with_drawing()
-        assert len(self.drawing_styles) == 0
-
-    def test_drawing_styles_loaded_on_underlay_enabled(self):
-        self.setup_project_with_drawing()
-        assert (scene := bpy.context.scene) and (camera := scene.camera)
-        props = tool.Drawing.get_camera_props(camera)
-        props.has_underlay = True
         assert len(self.drawing_styles) == 3
 
     def test_drawing_styles_reload(self):
         self.setup_project_with_drawing()
+        self.drawing_styles.clear()
         bpy.ops.bim.reload_drawing_styles()
         assert len(self.drawing_styles) == 3
 

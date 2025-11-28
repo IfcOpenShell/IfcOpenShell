@@ -38,20 +38,14 @@ class Patcher:
         Sets the world coordinate system to whatever you want.
 
         :param x: The X coordinate.
-        :type x: typing.Union[str, float]
         :param y: The Y coordinate.
-        :type y: typing.Union[str, float]
         :param z: The Z coordinate.
-        :type z: typing.Union[str, float]
         :param ax: An angle to rotate by for 3D rotations along the X axis.
             Angles are in decimal degrees and positive is anticlockwise.
-        :type ax: typing.Union[str, float]
         :param ay: An angle to rotate by for 3D rotations along the Y axis.
             Angles are in decimal degrees and positive is anticlockwise.
-        :type ay: typing.Union[str, float]
         :param az: An angle to rotate by for 3D rotations along the Z axis.
             Angles are in decimal degrees and positive is anticlockwise.
-        :type az: typing.Union[str, float]
 
         Example:
 

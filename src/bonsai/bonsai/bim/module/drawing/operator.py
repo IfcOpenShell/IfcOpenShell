@@ -932,6 +932,31 @@ class CreateDrawing(bpy.types.Operator):
 
             return svg_path
 
+        # Add target_view and scale classes to the parent group from IFC data
+        if group is not None:
+            existing_classes = group.get("class", "").split()
+
+            # Add target_view class
+            if hasattr(self, "cprops") and getattr(self.cprops, "target_view", None):
+                target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
+                target_view_full_class = f"target-view-{target_view_class}"
+                if target_view_full_class not in existing_classes:
+                    existing_classes.append(target_view_full_class)
+
+            # Add scale class from EPset_Drawing.Scale
+            drawing_pset = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing")
+            if drawing_pset and drawing_pset.get("Scale"):
+                scale_value = drawing_pset["Scale"]
+                # Remove "1/" prefix if it exists
+                if isinstance(scale_value, str) and scale_value.startswith("1/"):
+                    scale_value = scale_value[2:]
+                scale_class = tool.Drawing.canonicalise_class_name(str(scale_value))
+                scale_full_class = f"scale-{scale_class}"
+                if scale_full_class not in existing_classes:
+                    existing_classes.append(scale_full_class)
+
+            group.set("class", " ".join(existing_classes))
+
         if self.cprops.cut_mode == "BISECT":
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
@@ -1286,11 +1311,6 @@ class CreateDrawing(bpy.types.Operator):
                 classes.append(
                     tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
                 )
-
-        # ─── Target View ───────────────────────────────────────────
-        if getattr(self.cprops, "target_view", None):
-            target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
-            classes.append(f"target-view-{target_view_class}")
 
         return classes
 
@@ -2701,7 +2721,9 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     def set_raster_style(self, context: bpy.types.Context) -> None:
         scene = context.scene  # Do not remove. It is used in exec later
         assert (space := tool.Blender.get_view3d_space())  # Do not remove. It is used in exec later
-        style = json.loads(self.drawing_style.raster_style)
+        style: dict[str, Any] = json.loads(self.drawing_style.raster_style)
+
+        VIEWPORT_SHADING_TYPE = "scene.display.shading.type"
 
         def preprocess(path: str, value: Any) -> tuple[str, Any, bool, bool]:
             warning = False
@@ -2737,6 +2759,19 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 warning = True
                 skip = True
+            # @25.11.11
+            elif (
+                path == "scene.display.shading.studio_light"
+                and value == "Default"
+                and style[VIEWPORT_SHADING_TYPE] in ("RENDERED", "MATERIAL")
+            ):
+                value = "forest.exr"
+                print(
+                    f"Warning: Value 'Default' for property '{path}' and "
+                    f"'{VIEWPORT_SHADING_TYPE}' = '{style[VIEWPORT_SHADING_TYPE]}' is outdated "
+                    "and should be replaced with 'forest.exr' in shading_styles.json."
+                )
+                warning = True
             # @25.05.12
             elif path == "scene.display.shading.wireframe_color_type" and value == "MATERIAL":
                 value = "THEME"
@@ -2772,7 +2807,16 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
 
             return path, value, warning, skip
 
-        for path, value in style.items():
+        paths = list(style.keys())
+        PRIORITY_PATHS = (
+            # `scene.display.shading.studio_light` values depend on `.type`
+            # so we got to set it first.
+            VIEWPORT_SHADING_TYPE,
+        )
+        paths.sort(key=lambda p: p not in PRIORITY_PATHS)
+
+        for path in paths:
+            value = style[path]
             path, value, warning, skip = preprocess(path, value)
             self.has_warnings_during_activation |= warning
 
@@ -3436,6 +3480,15 @@ class LoadDrawings(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Load the saved drawings in this IFC project"
 
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        # Operator is not accessible through UI if IFC project is not saved,
+        # but adding poll check to avoid using Drawings UI in scripts with unsaved project.
+        if tool.Ifc.get_path():
+            return True
+        cls.poll_message_set("IFC project is not saved.")
+        return False
 
     def _execute(self, context):
         core.load_drawings(tool.Drawing)

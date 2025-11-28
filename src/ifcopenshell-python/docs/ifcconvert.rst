@@ -2,8 +2,7 @@ IfcConvert
 ==========
 
 IfcConvert is a command-line application for converting IFC geometry into file
-formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, CityJSON, TTL/WKT, and
-IFC-SPF itself.
+formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, TTL/WKT, and IFC-SPF itself.
 
 For other formats, you may use other IfcOpenShell utilities as shown in the
 table below.
@@ -13,7 +12,7 @@ table below.
 +=========================+=========================+======================+
 | .ifc                    | .obj, .dae, .glb, .stp, | IfcConvert           |
 |                         | .igs, .xml, .svg, .h5,  |                      |
-|                         | .cityjson, .ttl, .ifc   |                      |
+|                         | .ttl, .ifc              |                      |
 +-------------------------+-------------------------+----------------------+
 | .ifc                    | .dae, .abc, .usd, .obj, | Bonsai_              |
 |                         | .ply, .stl, .fbx, .glb, |                      |
@@ -46,8 +45,6 @@ table below.
 +-------------------------+-------------------------+----------------------+
 | .obj                    | .ifc                    | Bonsai_              |
 +-------------------------+-------------------------+----------------------+
-| .json (CityJSON)        | .ifc                    | IfcCityJSON_         |
-+-------------------------+-------------------------+----------------------+
 | .xer (Oracle P6)        | .ifc                    | Ifc4D_               |
 +-------------------------+-------------------------+----------------------+
 | .xml (Oracle P6)        | .ifc                    | Ifc4D_               |
@@ -63,7 +60,6 @@ table below.
 .. _IfcCSV: ifccsv.html
 .. _Ifc4D: ifc4d.html
 .. _Ifc5D: ifc5d.html
-.. _IfcCityJSON: ifccityjson.html
 .. _Ifc2JSON: other.html
 .. _Bonsai: bonsai.html
 
