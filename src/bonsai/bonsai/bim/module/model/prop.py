@@ -671,19 +671,6 @@ def window_type_prop_update(self, context):
     update_window(self, context)
 
 
-WindowType = Literal[
-    "SINGLE_PANEL",
-    "DOUBLE_PANEL_HORIZONTAL",
-    "DOUBLE_PANEL_VERTICAL",
-    "TRIPLE_PANEL_BOTTOM",
-    "TRIPLE_PANEL_TOP",
-    "TRIPLE_PANEL_LEFT",
-    "TRIPLE_PANEL_RIGHT",
-    "TRIPLE_PANEL_HORIZONTAL",
-    "TRIPLE_PANEL_VERTICAL",
-]
-
-
 # default prop values are in mm and converted later
 class BIMWindowProperties(PropertyGroup):
     non_si_units_props = (
@@ -712,7 +699,7 @@ class BIMWindowProperties(PropertyGroup):
     is_editing: bpy.props.BoolProperty(default=False)
     window_type: bpy.props.EnumProperty(
         name="Window Type",
-        items=[(i, i, "") for i in get_args(WindowType)],
+        items=[(i, i, "") for i in get_args(tool.Model.WindowType)],
         default="SINGLE_PANEL",
         update=window_type_prop_update,
     )
@@ -788,7 +775,7 @@ class BIMWindowProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         is_editing: bool
-        window_type: WindowType
+        window_type: tool.Model.WindowType
         overall_height: float
         overall_width: float
         lining_depth: float
@@ -822,7 +809,7 @@ class BIMWindowProperties(PropertyGroup):
         return tool.Model.convert_data_to_project_units(kwargs, ["window_type"])
 
     def get_lining_kwargs(
-        self, window_type: Optional[WindowType] = None, convert_to_project_units: bool = False
+        self, window_type: Optional[tool.Model.WindowType] = None, convert_to_project_units: bool = False
     ) -> dict[str, Any]:
         if not window_type:
             window_type = self.window_type
@@ -889,18 +876,6 @@ class BIMWindowProperties(PropertyGroup):
                     setattr(target_props, prop_name, prop_value)
 
 
-DoorType = Literal[
-    "SINGLE_SWING_LEFT",
-    "SINGLE_SWING_RIGHT",
-    "DOUBLE_SWING_LEFT",
-    "DOUBLE_SWING_RIGHT",
-    "DOUBLE_DOOR_SINGLE_SWING",
-    "SLIDING_TO_LEFT",
-    "SLIDING_TO_RIGHT",
-    "DOUBLE_DOOR_SLIDING",
-]
-
-
 class BIMDoorProperties(PropertyGroup):
     non_si_units_props = (
         "is_editing",
@@ -913,7 +888,7 @@ class BIMDoorProperties(PropertyGroup):
     is_editing: bpy.props.BoolProperty(default=False)
     door_type: bpy.props.EnumProperty(
         name="Door Operation Type",
-        items=tuple((i, i, "") for i in get_args(DoorType)),
+        items=tuple((i, i, "") for i in get_args(tool.Model.DoorType)),
         default="SINGLE_SWING_LEFT",
         update=update_door,
     )
@@ -1057,7 +1032,7 @@ class BIMDoorProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         is_editing: bool
-        door_type: DoorType
+        door_type: tool.Model.DoorType
         overall_height: float
         overall_width: float
 

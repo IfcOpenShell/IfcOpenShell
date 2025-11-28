@@ -23,12 +23,19 @@ Shared gizmo components for reuse across modules.
 __all__ = [
     # Dataclasses
     "GizmoPropConfig",
+    "NumericInputState",
     # Functions
     "set_snap_point",
     "clear_snap_point",
     "snap_to_mesh",
+    "build_snap_cache",
+    "clear_snap_cache",
+    "get_billboard_rotation",
+    "get_camera_direction",
     "generate_circle_vertices",
     "create_circle_arc",
+    # Operators
+    "BIM_OT_gizmo_value_input",
     # Gizmo classes
     "GizmoMovable",
     "GizmoLock",
@@ -40,6 +47,7 @@ __all__ = [
     "GizmoMinus",
     "GizmoCycle",
     "GizmoArrow",
+    "GizmoArrow2D",
     "GizmoCone",
     # Mixin classes
     "BaseParametricGizmoGroup",
@@ -49,21 +57,24 @@ from typing import Any
 
 import bpy
 import math
+import numpy as np
 from dataclasses import dataclass
 from mathutils import Vector, Matrix
-from mathutils.bvhtree import BVHTree
+from mathutils.kdtree import KDTree
 from mathutils.geometry import intersect_line_line
 from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d, location_3d_to_region_2d
 import gpu
 from gpu_extras.batch import batch_for_shader
 import bonsai.tool as tool
+from bonsai.tool.unit import parse_distance_string
 
 
 SNAP_POINT_SIZE = 10.0
 SNAP_POINT_COLOR = (1.0, 0.5, 0.0, 1.0)
 SNAP_MAX_RADIUS = 5.0
-SNAP_SCREEN_DISTANCE = 30  # Maximum screen-space distance for snapping (in pixels)
+SNAP_SCREEN_DISTANCE = 15  # Maximum screen-space distance for snapping (in pixels)
 SNAP_WORLD_DISTANCE = 0.2  # Maximum world-space distance for snapping (in meters)
+SNAP_KD_CANDIDATES = 16  # Number of KD-tree candidates (3D nearest may differ from screen nearest)
 
 ARROW_SHAFT_LENGTH = 0.8
 ARROW_HEAD_LENGTH = 0.2
@@ -83,33 +94,103 @@ PRECISION_MODE_MULTIPLIER = 0.1
 RAY_CAST_DISTANCE = 1000  # Distance to extend rays for intersection calculations
 DEFAULT_POINT_SIZE = 1.0  # Default GPU point size
 
+# Characters allowed for keyboard numeric input (supports units and formulas)
+_DIGITS = set("0123456789")
+_OPERATORS = {".", "-", "+", "*", "/"}
+_METRIC_UNITS = {"m", "c", "d"}  # m, cm, dm, mm
+_IMPERIAL_UNITS = {"f", "t", "i", "n", "'", '"'}  # ft, in, ', "
+_SPECIAL = {"=", " "}  # Formula prefix, spaces
+
+NUMERIC_INPUT_CHARS = _DIGITS | _OPERATORS | _METRIC_UNITS | _IMPERIAL_UNITS | _SPECIAL
+
+# Module-level storage for gizmo callback (Blender ID properties don't support functions)
+_gizmo_value_input_callback: dict[str, Any] = {}
+
+
+@dataclass
+class SnapCache:
+    """Unified snap cache with combined KD-tree for vertex snapping."""
+
+    # Combined KD-tree with all world vertices from all objects
+    kd_tree: KDTree
+    # All world vertices indexed by global vertex index
+    all_vertices: list[Vector]
+
+
+@dataclass
+class NumericInputState:
+    """State for keyboard numeric input during gizmo operations."""
+
+    characters: list[str]
+    parsed_value: float
+    is_active: bool
+    is_valid: bool
+
+    @classmethod
+    def create_default(cls) -> "NumericInputState":
+        return cls(characters=[], parsed_value=0.0, is_active=False, is_valid=True)
+
+    def reset(self) -> None:
+        self.characters.clear()
+        self.parsed_value = 0.0
+        self.is_active = False
+        self.is_valid = True
+
+    def get_input_string(self) -> str:
+        return "".join(self.characters)
+
+    def is_relative_mode(self) -> bool:
+        input_str = self.get_input_string()
+        return input_str.startswith("+") or input_str.startswith("-")
+
+    def calculate_final_value(self, init_value: float, invert_delta: bool = False) -> float:
+        if self.is_relative_mode():
+            delta = self.parsed_value
+            if invert_delta:
+                delta = -delta
+            return init_value + delta
+        return self.parsed_value
+
+    def parse(self) -> None:
+        """Parse the current input string and update parsed_value and is_valid."""
+        if not self.characters:
+            self.parsed_value = 0.0
+            self.is_valid = True
+            return
+
+        input_str = self.get_input_string()
+        is_valid, value = parse_distance_string(input_str)
+
+        if is_valid:
+            self.parsed_value = value
+            self.is_valid = True
+        else:
+            try:
+                self.parsed_value = float(input_str)
+                self.is_valid = True
+            except ValueError:
+                self.parsed_value = 0.0
+                self.is_valid = False
+
 
 @dataclass
 class GizmoPropConfig:
-    """Configuration for a gizmo property.
-
-    Attributes:
-        attr_name: Name of the property attribute on the element's props
-        axis: Direction axis as (x, y, z) tuple, determines gizmo color and direction.
-            Color convention follows Blender's standard axis colors:
-            - X axis (1, 0, 0) or (-1, 0, 0) -> Red
-            - Y axis (0, 1, 0) or (0, -1, 0) -> Green
-            - Z axis (0, 0, 1) or (0, 0, -1) -> Blue
-        invert_delta: If True, inverts the drag direction for this gizmo
-    """
+    """Configuration for a gizmo property."""
 
     attr_name: str
     axis: tuple[int, int, int]
     invert_delta: bool = False
+    delta_scale: float = 1.0  # Multiplier for the delta (e.g., 2.0 for symmetric thickness properties)
 
 
 class SnapManager:
-    """Manages snap point visualization and mesh snapping."""
+    """Manages snap point visualization and mesh snapping with caching."""
 
     def __init__(self):
         self._snap_point: tuple[float, float, float] | Vector | None = None
         self._draw_handler = None
         self._shader = None
+        self._snap_cache: SnapCache | None = None
 
     def set_snap_point(self, point: tuple[float, float, float] | Vector | None) -> None:
         """Set snap point and register draw handler if needed."""
@@ -150,90 +231,109 @@ class SnapManager:
             if area.type == "VIEW_3D":
                 area.tag_redraw()
 
+    def build_snap_cache(self, context: bpy.types.Context, active_obj: bpy.types.Object) -> None:
+        """Build unified cache with combined KD-tree for vertex snapping.
+
+        Uses foreach_get for fast vertex data extraction and NumPy for
+        batch matrix transformation.
+        """
+        self._snap_cache = None
+
+        mesh_objects = [
+            obj for obj in context.visible_objects
+            if obj.type == "MESH" and obj != active_obj and obj.visible_get()
+        ]
+
+        if not mesh_objects:
+            return
+
+        depsgraph = context.evaluated_depsgraph_get()
+        all_vertices: list[Vector] = []
+
+        for obj in mesh_objects:
+            mesh_data = obj.data
+            if not hasattr(mesh_data, "vertices") or not mesh_data.vertices:
+                continue
+
+            obj_eval = obj.evaluated_get(depsgraph)
+            mesh = obj_eval.to_mesh()
+
+            try:
+                vertex_count = len(mesh.vertices)
+                if vertex_count == 0:
+                    continue
+
+                coords = np.empty(vertex_count * 3, dtype=np.float32)
+                mesh.vertices.foreach_get("co", coords)  # type: ignore[arg-type]
+                coords = coords.reshape(-1, 3)
+
+                matrix = np.array(obj_eval.matrix_world, dtype=np.float32)
+                ones = np.ones((vertex_count, 1), dtype=np.float32)
+                coords_h = np.hstack([coords, ones])
+                world_coords = (coords_h @ matrix.T)[:, :3]
+
+                all_vertices.extend(Vector(co) for co in world_coords)
+            finally:
+                obj_eval.to_mesh_clear()
+
+        if not all_vertices:
+            return
+
+        kd_tree = KDTree(len(all_vertices))
+        for i, v in enumerate(all_vertices):
+            kd_tree.insert(v, i)
+        kd_tree.balance()
+
+        self._snap_cache = SnapCache(
+            kd_tree=kd_tree,
+            all_vertices=all_vertices,
+        )
+
+    def clear_snap_cache(self) -> None:
+        self._snap_cache = None
+
     @staticmethod
-    def _calc_snap_distance(
+    def _calc_snap_distance_sq(
         point_3d: Vector,
         location: Vector,
-        mouse_coords: tuple[float, float] | None,
+        mouse_vec: Vector | None,
         region: bpy.types.Region | None,
         rv3d: bpy.types.RegionView3D | None,
     ) -> float:
-        """Calculate distance - screen-space if mouse coords available, else world-space."""
-        if mouse_coords is not None and region is not None and rv3d is not None:
+        """Calculate squared distance - screen-space if mouse coords available, else world-space."""
+        if mouse_vec is not None and region is not None and rv3d is not None:
             point_2d = location_3d_to_region_2d(region, rv3d, point_3d)
             if point_2d is not None:
-                return (Vector(mouse_coords) - point_2d).length
+                return (mouse_vec - point_2d).length_squared
             return float("inf")
-        return (point_3d - location).length
+        return (point_3d - location).length_squared
 
     @staticmethod
     def _find_closest_vertex(
         world_vertices: list[Vector],
         location: Vector,
-        mouse_coords: tuple[float, float] | None,
+        mouse_vec: Vector | None,
         region: bpy.types.Region | None,
         rv3d: bpy.types.RegionView3D | None,
         closest_point: Vector | None,
-        closest_distance: float,
+        closest_dist_sq: float,
+        kd_tree: KDTree | None = None,
     ) -> tuple[Vector | None, float]:
-        """Find the closest vertex to snap to."""
-        for v_co in world_vertices:
-            dist = SnapManager._calc_snap_distance(v_co, location, mouse_coords, region, rv3d)
-            if dist < closest_distance:
-                closest_distance = dist
-                closest_point = v_co
-        return closest_point, closest_distance
-
-    @staticmethod
-    def _find_closest_edge_point(
-        mesh: bpy.types.Mesh,
-        world_vertices: list[Vector],
-        location: Vector,
-        mouse_coords: tuple[float, float] | None,
-        region: bpy.types.Region | None,
-        rv3d: bpy.types.RegionView3D | None,
-        closest_point: Vector | None,
-        closest_distance: float,
-    ) -> tuple[Vector | None, float]:
-        """Find the closest point on an edge to snap to."""
-        for edge in mesh.edges:
-            v1 = world_vertices[edge.vertices[0]]
-            v2 = world_vertices[edge.vertices[1]]
-
-            edge_vec = v2 - v1
-            edge_len_sq = edge_vec.length_squared
-
-            if edge_len_sq > 0:
-                t = max(0, min(1, (location - v1).dot(edge_vec) / edge_len_sq))
-                closest_on_edge = v1 + t * edge_vec
-                dist = SnapManager._calc_snap_distance(closest_on_edge, location, mouse_coords, region, rv3d)
-
-                if dist < closest_distance:
-                    closest_distance = dist
-                    closest_point = closest_on_edge
-        return closest_point, closest_distance
-
-    @staticmethod
-    def _find_closest_face_point(
-        mesh: bpy.types.Mesh,
-        world_vertices: list[Vector],
-        location: Vector,
-        mouse_coords: tuple[float, float] | None,
-        region: bpy.types.Region | None,
-        rv3d: bpy.types.RegionView3D | None,
-        closest_point: Vector | None,
-        closest_distance: float,
-    ) -> tuple[Vector | None, float]:
-        """Find the closest point on a face to snap to."""
-        bvh = BVHTree.FromPolygons(world_vertices, [p.vertices for p in mesh.polygons])
-        nearest_loc, normal, index, dist = bvh.find_nearest(location)
-
-        if nearest_loc:
-            screen_dist = SnapManager._calc_snap_distance(nearest_loc, location, mouse_coords, region, rv3d)
-            if screen_dist < closest_distance:
-                closest_distance = screen_dist
-                closest_point = nearest_loc
-        return closest_point, closest_distance
+        """Find the closest vertex to snap to using KD-tree if available."""
+        if kd_tree is not None:
+            for _, idx, _ in kd_tree.find_n(location, SNAP_KD_CANDIDATES):
+                v_co = world_vertices[idx]
+                dist_sq = SnapManager._calc_snap_distance_sq(v_co, location, mouse_vec, region, rv3d)
+                if dist_sq < closest_dist_sq:
+                    closest_dist_sq = dist_sq
+                    closest_point = v_co
+        else:
+            for v_co in world_vertices:
+                dist_sq = SnapManager._calc_snap_distance_sq(v_co, location, mouse_vec, region, rv3d)
+                if dist_sq < closest_dist_sq:
+                    closest_dist_sq = dist_sq
+                    closest_point = v_co
+        return closest_point, closest_dist_sq
 
     @staticmethod
     def _get_nearby_objects(
@@ -241,98 +341,143 @@ class SnapManager:
         location: Vector,
     ) -> list[bpy.types.Object]:
         """Filter objects to those within SNAP_MAX_RADIUS of location."""
+        radius_sq = SNAP_MAX_RADIUS * SNAP_MAX_RADIUS
         nearby_objects = []
+
         for obj in mesh_objects:
             bbox_corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-            for corner in bbox_corners:
-                if (corner - location).length <= SNAP_MAX_RADIUS:
-                    nearby_objects.append(obj)
-                    break
+            if not bbox_corners:
+                continue
+
+            bbox_min = Vector((
+                min(c.x for c in bbox_corners),
+                min(c.y for c in bbox_corners),
+                min(c.z for c in bbox_corners),
+            ))
+            bbox_max = Vector((
+                max(c.x for c in bbox_corners),
+                max(c.y for c in bbox_corners),
+                max(c.z for c in bbox_corners),
+            ))
+
+            closest = Vector((
+                max(bbox_min.x, min(location.x, bbox_max.x)),
+                max(bbox_min.y, min(location.y, bbox_max.y)),
+                max(bbox_min.z, min(location.z, bbox_max.z)),
+            ))
+
+            if (location - closest).length_squared <= radius_sq:
+                nearby_objects.append(obj)
+
         return nearby_objects
 
-    @staticmethod
     def snap_to_mesh(
+        self,
         location: Vector,
         context: bpy.types.Context,
-        axis_vector: Vector,
         active_obj: bpy.types.Object,
         mouse_coords: tuple[float, float] | None = None,
     ) -> Vector:
-        """Snap a location to the nearest mesh element if snapping is enabled.
+        """Snap a location to the nearest vertex if snapping is enabled.
 
-        Args:
-            location: The world space location to snap
-            context: The Blender context
-            axis_vector: The axis direction of the gizmo
-            active_obj: The active object to exclude from snapping
-            mouse_coords: Optional (x, y) mouse position in region coordinates for screen-space distance
-
-        Returns:
-            The snapped location or original location if snapping is disabled
+        Only vertex snapping is supported. Returns the original location if
+        snapping is disabled or VERTEX is not in the snap elements.
         """
         tool_settings = context.scene.tool_settings
 
         if not tool_settings.use_snap:
             return location
 
-        snap_elements = tool_settings.snap_elements_base
-
-        mesh_objects = [
-            obj for obj in context.visible_objects if obj.type == "MESH" and obj != active_obj and obj.visible_get()
-        ]
-
-        if not mesh_objects:
-            return location
-
-        nearby_objects = SnapManager._get_nearby_objects(mesh_objects, location)
-
-        if not nearby_objects:
+        if "VERTEX" not in tool_settings.snap_elements_base:
             return location
 
         region = context.region
         rv3d = context.region_data
         use_screen_distance = mouse_coords is not None and region is not None and rv3d is not None
+        mouse_vec = Vector(mouse_coords) if mouse_coords is not None else None
 
         closest_point: Vector | None = None
-        closest_distance = float("inf")
+        closest_dist_sq = float("inf")
 
-        for obj in nearby_objects:
-            if not obj.data.vertices:
-                continue
+        if self._snap_cache is not None:
+            closest_point, closest_dist_sq = self._snap_from_cache(
+                location, mouse_vec, region, rv3d
+            )
+        else:
+            closest_point, closest_dist_sq = self._snap_without_cache(
+                location, context, active_obj, mouse_vec, region, rv3d
+            )
 
-            depsgraph = context.evaluated_depsgraph_get()
-            obj_eval = obj.evaluated_get(depsgraph)
-            mesh = obj_eval.to_mesh()
-
-            if not mesh.vertices:
-                obj_eval.to_mesh_clear()
-                continue
-
-            world_vertices = [obj.matrix_world @ v.co for v in mesh.vertices]
-
-            if "VERTEX" in snap_elements:
-                closest_point, closest_distance = SnapManager._find_closest_vertex(
-                    world_vertices, location, mouse_coords, region, rv3d, closest_point, closest_distance
-                )
-
-            if "EDGE" in snap_elements:
-                closest_point, closest_distance = SnapManager._find_closest_edge_point(
-                    mesh, world_vertices, location, mouse_coords, region, rv3d, closest_point, closest_distance
-                )
-
-            if "FACE" in snap_elements:
-                closest_point, closest_distance = SnapManager._find_closest_face_point(
-                    mesh, world_vertices, location, mouse_coords, region, rv3d, closest_point, closest_distance
-                )
-
-            obj_eval.to_mesh_clear()
-
-        # Use screen-space threshold (pixels) or fall back to world-space
-        max_distance = SNAP_SCREEN_DISTANCE if use_screen_distance else SNAP_WORLD_DISTANCE
-        if closest_point and closest_distance < max_distance:
+        max_dist_sq = SNAP_SCREEN_DISTANCE ** 2 if use_screen_distance else SNAP_WORLD_DISTANCE ** 2
+        if closest_point and closest_dist_sq < max_dist_sq:
             return closest_point
 
         return location
+
+    def _snap_from_cache(
+        self,
+        location: Vector,
+        mouse_vec: Vector | None,
+        region: bpy.types.Region | None,
+        rv3d: bpy.types.RegionView3D | None,
+    ) -> tuple[Vector | None, float]:
+        """Find closest vertex using cached KD-tree."""
+        if self._snap_cache is None:
+            return None, float("inf")
+
+        cache = self._snap_cache
+        return SnapManager._find_closest_vertex(
+            cache.all_vertices, location, mouse_vec, region, rv3d,
+            None, float("inf"), cache.kd_tree
+        )
+
+    def _snap_without_cache(
+        self,
+        location: Vector,
+        context: bpy.types.Context,
+        active_obj: bpy.types.Object,
+        mouse_vec: Vector | None,
+        region: bpy.types.Region | None,
+        rv3d: bpy.types.RegionView3D | None,
+    ) -> tuple[Vector | None, float]:
+        """Find closest vertex without cache (fallback path)."""
+        mesh_objects = [
+            obj for obj in context.visible_objects
+            if obj.type == "MESH" and obj != active_obj and obj.visible_get()
+        ]
+
+        if not mesh_objects:
+            return None, float("inf")
+
+        nearby_objects = SnapManager._get_nearby_objects(mesh_objects, location)
+        if not nearby_objects:
+            return None, float("inf")
+
+        closest_point: Vector | None = None
+        closest_dist_sq = float("inf")
+        depsgraph = context.evaluated_depsgraph_get()
+
+        for obj in nearby_objects:
+            mesh_data = obj.data
+            if not hasattr(mesh_data, "vertices") or not mesh_data.vertices:
+                continue
+
+            obj_eval = obj.evaluated_get(depsgraph)
+            mesh = obj_eval.to_mesh()
+
+            try:
+                if not mesh or not mesh.vertices:
+                    continue
+
+                world_vertices = [obj_eval.matrix_world @ v.co for v in mesh.vertices]
+                closest_point, closest_dist_sq = SnapManager._find_closest_vertex(
+                    world_vertices, location, mouse_vec, region, rv3d,
+                    closest_point, closest_dist_sq
+                )
+            finally:
+                obj_eval.to_mesh_clear()
+
+        return closest_point, closest_dist_sq
 
 
 _snap_manager = SnapManager()
@@ -349,27 +494,44 @@ def clear_snap_point() -> None:
 def snap_to_mesh(
     location: Vector,
     context: bpy.types.Context,
-    axis_vector: Vector,
     active_obj: bpy.types.Object,
     mouse_coords: tuple[float, float] | None = None,
 ) -> Vector:
-    return _snap_manager.snap_to_mesh(location, context, axis_vector, active_obj, mouse_coords)
+    return _snap_manager.snap_to_mesh(location, context, active_obj, mouse_coords)
+
+
+def build_snap_cache(context: bpy.types.Context, active_obj: bpy.types.Object) -> None:
+    _snap_manager.build_snap_cache(context, active_obj)
+
+
+def clear_snap_cache() -> None:
+    _snap_manager.clear_snap_cache()
+
+
+def get_billboard_rotation(context: bpy.types.Context) -> Matrix:
+    """Get rotation matrix that makes an object face the camera."""
+    rv3d = context.region_data
+    if rv3d is None:
+        return Matrix.Identity(4)
+    return rv3d.view_matrix.to_3x3().transposed().to_4x4()
+
+
+def get_camera_direction(context: bpy.types.Context, position: Vector) -> Vector | None:
+    """Get normalized direction from position towards camera."""
+    rv3d = context.region_data
+    if rv3d is None:
+        return None
+
+    if rv3d.is_perspective:
+        view_origin = rv3d.view_matrix.inverted().translation
+        return (view_origin - position).normalized()
+    return Vector(rv3d.view_matrix.inverted().col[2][:3]).normalized()
 
 
 def generate_circle_vertices(
     center: tuple[float, float, float] | Vector, radius: float, segments: int, plane: str = "XY"
 ) -> list[tuple[float, float, float]]:
-    """Generate circle vertices in specified plane.
-
-    Args:
-        center: (x, y, z) tuple for circle center
-        radius: Circle radius
-        segments: Number of segments
-        plane: 'XY', 'XZ', or 'YZ'
-
-    Returns:
-        List of (x, y, z) vertices
-    """
+    """Generate circle vertices in specified plane ('XY', 'XZ', or 'YZ')."""
     vertices = []
     for i in range(segments + 1):
         angle = (2 * math.pi * i) / segments
@@ -394,19 +556,7 @@ def create_circle_arc(
     angle_min: float = 0.0,
     angle_max: float = 90.0,
 ) -> tuple[tuple[float, float, float], ...]:
-    """Create a circle arc with cross-section thickness for visibility from all angles.
-
-    Args:
-        radius: Radius of the arc
-        segments: Number of segments for smoothness
-        direction: 'LEFT' for counterclockwise, 'RIGHT' for clockwise (mirrors along X)
-        line_width: Width of the arc line in both perpendicular directions
-        angle_min: Start angle in degrees (default 0°)
-        angle_max: End angle in degrees (default 90°)
-
-    Returns:
-        Tuple of arc triangles for drawing geometry visible from all angles
-    """
+    """Create a circle arc with cross-section thickness for visibility from all angles."""
     half_width = line_width / 2
     angle_min_rad = math.radians(angle_min)
     angle_max_rad = math.radians(angle_max)
@@ -469,15 +619,246 @@ def create_circle_arc(
     return tuple(arc_triangles)
 
 
-class GizmoMovable(bpy.types.Gizmo):
-    """Base class for movable gizmos with snapping and precision controls.
+class BIM_OT_gizmo_value_input(bpy.types.Operator):
+    """Enter a numeric value for a gizmo property. Click or Enter to confirm, ESC to cancel."""
 
-    This class provides common functionality for gizmos that can be dragged
-    to modify values, including:
-    - Snap to mesh support (toggle with Ctrl)
-    - Precision mode (hold Shift for 10x slower movement)
-    - Header text with value and modifier hints
-    - Consistent invoke/exit/modal behavior
+    bl_idname = "bim.gizmo_value_input"
+    bl_label = "Gizmo Value Input"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    prop_name: bpy.props.StringProperty(name="Property Name", default="Value")
+    init_value: bpy.props.FloatProperty(name="Initial Value", default=0.0)
+    invert_delta: bpy.props.BoolProperty(name="Invert Delta", default=False)
+
+    def invoke(self, context, event):
+        self._keyboard_input = NumericInputState.create_default()
+        self._move_set_cb = _gizmo_value_input_callback.get("move_set_cb")
+        self._active_gizmo = _gizmo_value_input_callback.get("active_gizmo")
+        self._gizmo_group = _gizmo_value_input_callback.get("gizmo_group")
+        self._hidden_gizmos: list[bpy.types.Gizmo] = []
+        self._original_color: tuple[float, float, float] | None = None
+
+        # Mouse movement context
+        self._start_location: Vector = _gizmo_value_input_callback.get("start_location", Vector())
+        self._axis_direction: Vector = _gizmo_value_input_callback.get("axis_direction", Vector((0, 0, 1)))
+        self._active_obj: bpy.types.Object | None = _gizmo_value_input_callback.get("active_obj")
+        self._delta_scale: float = _gizmo_value_input_callback.get("delta_scale", 1.0)
+        self._mouse_delta: float = 0.0
+
+        # Snapping state
+        self._initial_snap_state: bool = context.scene.tool_settings.use_snap
+        self._snap_cache_built: bool = False
+        self._is_snapping: bool = False
+
+        self._hide_other_gizmos()
+        self._set_highlight_color()
+
+        context.window_manager.modal_handler_add(self)
+        self._update_header(context)
+        return {"RUNNING_MODAL"}
+
+    def _set_highlight_color(self) -> None:
+        if not self._active_gizmo:
+            return
+        self._original_color = tuple(self._active_gizmo.color)
+        self._active_gizmo.color = self._active_gizmo.color_highlight
+
+    def _restore_color(self) -> None:
+        if self._active_gizmo and self._original_color:
+            self._active_gizmo.color = self._original_color
+
+    def _hide_other_gizmos(self) -> None:
+        if not self._gizmo_group or not self._active_gizmo:
+            return
+
+        # Store hidden gizmos so update_property_gizmos respects it.
+        hidden_set: set[bpy.types.Gizmo] = set()
+        for gizmo in self._gizmo_group.gizmos:
+            if gizmo != self._active_gizmo:
+                gizmo.hide = True
+                hidden_set.add(gizmo)
+                self._hidden_gizmos.append(gizmo)
+
+        # Store in module-level dict so gizmo group methods can check it
+        _gizmo_value_input_callback["hidden_gizmos"] = hidden_set
+
+    def _restore_gizmo_visibility(self) -> None:
+        # Clear the hidden set first so refresh doesn't re-hide.
+        _gizmo_value_input_callback.pop("hidden_gizmos", None)
+        for gizmo in self._hidden_gizmos:
+            gizmo.hide = False
+        self._hidden_gizmos.clear()
+
+    def modal(self, context, event):
+        kb = self._keyboard_input
+
+        # Character input
+        if event.value == "PRESS" and event.ascii and event.ascii.lower() in NUMERIC_INPUT_CHARS:
+            kb.characters.append(event.ascii)
+            kb.is_active = True
+            kb.parse()
+            self._apply_value()
+            self._update_header(context)
+            return {"RUNNING_MODAL"}
+
+        if event.type == "BACK_SPACE" and event.value == "PRESS":
+            if kb.characters:
+                kb.characters.pop()
+                kb.parse()
+                self._apply_value()
+                self._update_header(context)
+            return {"RUNNING_MODAL"}
+
+        if event.type in {"RET", "NUMPAD_ENTER"} and event.value == "PRESS":
+            if kb.is_valid:
+                self._apply_value()
+            self._cleanup(context)
+            return {"FINISHED"}
+
+        if event.type == "LEFTMOUSE" and event.value == "PRESS":
+            if kb.characters:
+                if kb.is_valid:
+                    self._apply_value()
+                self._cleanup(context)
+                return {"FINISHED"}
+            self._cleanup(context)
+            return {"CANCELLED"}
+
+        if event.type == "ESC" and event.value == "PRESS":
+            if self._move_set_cb:
+                self._move_set_cb(self.init_value)
+            self._cleanup(context)
+            return {"CANCELLED"}
+
+        if event.type == "RIGHTMOUSE" and event.value == "PRESS":
+            if self._move_set_cb:
+                self._move_set_cb(self.init_value)
+            self._cleanup(context)
+            return {"CANCELLED"}
+
+        # Mouse movement - only when not typing
+        if event.type == "MOUSEMOVE" and not kb.characters:
+            self._handle_mouse_move(context, event)
+            return {"RUNNING_MODAL"}
+
+        return {"RUNNING_MODAL"}
+
+    def _handle_mouse_move(self, context, event) -> None:
+        region = context.region
+        rv3d = context.region_data
+        tool_settings = context.scene.tool_settings
+        if not region or not rv3d:
+            return
+
+        # Ctrl toggles snapping
+        self._is_snapping = not self._initial_snap_state if event.ctrl else self._initial_snap_state
+
+        # Build snap cache lazily on first Ctrl press
+        if self._is_snapping and not self._snap_cache_built and self._active_obj:
+            build_snap_cache(context, self._active_obj)
+            self._snap_cache_built = True
+
+        current_coord = (event.mouse_region_x, event.mouse_region_y)
+        view_origin = region_2d_to_origin_3d(region, rv3d, current_coord)
+        view_direction = region_2d_to_vector_3d(region, rv3d, current_coord)
+
+        result = intersect_line_line(
+            view_origin,
+            view_origin + view_direction * RAY_CAST_DISTANCE,
+            self._start_location,
+            self._start_location + self._axis_direction * RAY_CAST_DISTANCE,
+        )
+        current_3d = result[1] if result else self._start_location
+
+        delta = (current_3d - self._start_location).dot(self._axis_direction)
+
+        # Snapping
+        if self._is_snapping and self._active_obj:
+            # Temporarily set tool_settings for snap_to_mesh
+            original_snap = tool_settings.use_snap
+            tool_settings.use_snap = True
+            snapped_pos = snap_to_mesh(current_3d, context, self._active_obj, current_coord)
+            tool_settings.use_snap = original_snap
+            if snapped_pos != current_3d:
+                delta = (snapped_pos - self._start_location).dot(self._axis_direction)
+                set_snap_point(snapped_pos)
+            else:
+                clear_snap_point()
+        else:
+            clear_snap_point()
+
+        # Precision mode with Shift
+        if event.shift:
+            delta *= PRECISION_MODE_MULTIPLIER
+
+        if self.invert_delta:
+            delta = -delta
+
+        delta *= self._delta_scale
+        self._mouse_delta = delta
+
+        if self._move_set_cb:
+            self._move_set_cb(self.init_value + delta)
+
+        self._update_header(context)
+
+    def _apply_value(self) -> None:
+        if not self._move_set_cb or not self._keyboard_input.is_valid:
+            return
+        final_value = self._keyboard_input.calculate_final_value(self.init_value, self.invert_delta)
+        self._move_set_cb(final_value)
+
+    def _update_header(self, context) -> None:
+        if not context.area:
+            return
+        kb = self._keyboard_input
+
+        if kb.characters:
+            # Typing mode - show keyboard input
+            input_str = kb.get_input_string()
+            preview = kb.calculate_final_value(self.init_value, self.invert_delta)
+            validity = "" if kb.is_valid else " [invalid]"
+            header = f"{self.prop_name}: {preview:.3f}m  |  Input: {input_str}_{validity}"
+            header += "  |  Click/Enter: Confirm  |  ESC: Cancel"
+        else:
+            # Mouse mode - show current value from mouse delta
+            current_value = self.init_value + self._mouse_delta
+            header = f"{self.prop_name}: {current_value:.3f}m"
+            hints = []
+            if self._is_snapping:
+                hints.append("Snapping: ON")
+            hints.extend(["Ctrl: Snap", "Shift: Precision", "Type: Enter Value"])
+            header += "  |  " + "  |  ".join(hints)
+            header += "  |  Click/Enter: Confirm  |  ESC: Cancel"
+
+        context.area.header_text_set(header)
+
+    def _cleanup(self, context) -> None:
+        try:
+            if context.area:
+                context.area.header_text_set(None)
+        finally:
+            try:
+                self._restore_color()
+            finally:
+                try:
+                    self._restore_gizmo_visibility()
+                    # Trigger gizmo group refresh to recalculate positions based on new values
+                    if self._gizmo_group and hasattr(self._gizmo_group, "refresh"):
+                        self._gizmo_group.refresh(context)
+                    # Force viewport redraw to update gizmo display
+                    if context.area:
+                        context.area.tag_redraw()
+                finally:
+                    clear_snap_point()
+                    clear_snap_cache()
+                    _gizmo_value_input_callback.clear()
+
+
+class GizmoMovable(bpy.types.Gizmo):
+    """Base class for draggable gizmos. Ctrl: snap, Shift: precision, Keyboard: direct input.
+
+    Click without dragging enters a keyboard-only input mode for accessibility.
     """
 
     __slots__ = (
@@ -491,24 +872,80 @@ class GizmoMovable(bpy.types.Gizmo):
         "active_obj",
         "initial_snap_state",
         "invert_delta",
+        "delta_scale",
+        "prop_name",
+        "keyboard_input",
+        "gizmo_group",
+        "_snap_cache_built",
+        "_start_mouse_pos",
+        "_has_dragged",
     )
+
+    # Threshold in pixels for considering mouse movement as a drag
+    DRAG_THRESHOLD = 5
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set:
         self.init_value = self.move_get_cb() if self.move_get_cb else 0.0
         self.start_location = self.matrix_basis.translation.copy()
         self.active_obj = context.active_object
         self.initial_snap_state = context.scene.tool_settings.use_snap
+        self.keyboard_input = NumericInputState.create_default()
+        self._snap_cache_built = False
+        self._start_mouse_pos = (event.mouse_region_x, event.mouse_region_y)
+        self._has_dragged = False
+        if not hasattr(self, "prop_name") or self.prop_name is None:
+            self.prop_name = "Value"
+        # Build cache immediately only if snap is already enabled
+        if self.initial_snap_state and self.active_obj:
+            build_snap_cache(context, self.active_obj)
+            self._snap_cache_built = True
         return {"RUNNING_MODAL"}
 
     def exit(self, context: bpy.types.Context, cancel: bool) -> None:
-        context.area.header_text_set(None)
-        if cancel and self.move_set_cb:
+        if context.area:
+            context.area.header_text_set(None)
+        if hasattr(self, "keyboard_input"):
+            self.keyboard_input.reset()
+
+        # Check for click-without-drag: invoke keyboard input operator for accessibility
+        should_invoke_keyboard = (
+            not cancel
+            and hasattr(self, "_has_dragged")
+            and not self._has_dragged
+            and self.move_set_cb is not None
+        )
+
+        if should_invoke_keyboard:
+            # Store callback and gizmo references in module-level dict
+            _gizmo_value_input_callback["move_set_cb"] = self.move_set_cb
+            _gizmo_value_input_callback["active_gizmo"] = self
+            _gizmo_value_input_callback["gizmo_group"] = getattr(self, "gizmo_group", None)
+            # Store context for mouse movement support
+            _gizmo_value_input_callback["start_location"] = self.start_location.copy()
+            _gizmo_value_input_callback["axis_direction"] = self.get_axis_direction()
+            _gizmo_value_input_callback["active_obj"] = self.active_obj
+            _gizmo_value_input_callback["delta_scale"] = getattr(self, "delta_scale", 1.0)
+            bpy.ops.bim.gizmo_value_input(
+                "INVOKE_DEFAULT",
+                prop_name=getattr(self, "prop_name", "Value"),
+                init_value=self.init_value,
+                invert_delta=getattr(self, "invert_delta", False),
+            )
+        elif cancel and self.move_set_cb:
             self.move_set_cb(self.init_value)
+
         if hasattr(self, "initial_snap_state"):
             context.scene.tool_settings.use_snap = self.initial_snap_state
         clear_snap_point()
+        clear_snap_cache()
 
     def get_axis_direction(self) -> Vector:
+        """Get the world-space axis direction, transforming local_axis if set."""
+        if hasattr(self, "local_axis") and self.active_obj:
+            obj_rotation = self.active_obj.matrix_world.to_3x3()
+            axis_direction: Vector = obj_rotation @ self.local_axis
+            axis_direction.normalize()
+            return axis_direction
         return self.axis
 
     def modal(self, context: bpy.types.Context, event: bpy.types.Event, tweak) -> set:
@@ -516,9 +953,31 @@ class GizmoMovable(bpy.types.Gizmo):
         rv3d = context.region_data
         tool_settings = context.scene.tool_settings
 
+        keyboard_result = self._handle_keyboard_input(context, event)
+        if keyboard_result is not None:
+            return keyboard_result
+
+        if self.keyboard_input.is_active:
+            return {"RUNNING_MODAL"}
+
+        if not region or not rv3d:
+            return {"RUNNING_MODAL"}
+
         tool_settings.use_snap = not self.initial_snap_state if event.ctrl else self.initial_snap_state
 
+        # Build snap cache lazily on first Ctrl press if not already built
+        if tool_settings.use_snap and not self._snap_cache_built and self.active_obj:
+            build_snap_cache(context, self.active_obj)
+            self._snap_cache_built = True
+
         current_coord = (event.mouse_region_x, event.mouse_region_y)
+
+        # Detect if user has dragged beyond threshold
+        if not self._has_dragged and hasattr(self, "_start_mouse_pos"):
+            dx = current_coord[0] - self._start_mouse_pos[0]
+            dy = current_coord[1] - self._start_mouse_pos[1]
+            if (dx * dx + dy * dy) > (self.DRAG_THRESHOLD ** 2):
+                self._has_dragged = True
         view_origin = region_2d_to_origin_3d(region, rv3d, current_coord)
         view_direction = region_2d_to_vector_3d(region, rv3d, current_coord)
 
@@ -535,7 +994,7 @@ class GizmoMovable(bpy.types.Gizmo):
         delta = (current_3d - self.start_location).dot(axis_direction)
 
         if tool_settings.use_snap and self.active_obj:
-            snapped_pos = snap_to_mesh(current_3d, context, axis_direction, self.active_obj, current_coord)
+            snapped_pos = snap_to_mesh(current_3d, context, self.active_obj, current_coord)
             if snapped_pos != current_3d:
                 delta = (snapped_pos - self.start_location).dot(axis_direction)
                 set_snap_point(snapped_pos)
@@ -550,29 +1009,99 @@ class GizmoMovable(bpy.types.Gizmo):
         if getattr(self, "invert_delta", False):
             delta = -delta
 
-        if self.move_set_cb:
-            self.move_set_cb(self.init_value + delta)
+        # Apply delta scale (e.g., 2.0 for symmetric thickness properties)
+        delta_scale = getattr(self, "delta_scale", 1.0)
+        delta *= delta_scale
 
-        self._update_header(context, self.init_value + delta, tool_settings.use_snap, event.shift)
+        kb = self.keyboard_input
+        final_delta = kb.parsed_value if kb.parsed_value != 0.0 else delta
+
+        if self.move_set_cb:
+            self.move_set_cb(self.init_value + final_delta)
+
+        self._update_header(context, self.init_value + final_delta, tool_settings.use_snap, event.shift)
 
         return {"RUNNING_MODAL"}
 
+    def _handle_keyboard_input(
+        self, context: bpy.types.Context, event: bpy.types.Event
+    ) -> set[str] | None:
+        """Handle keyboard numeric input."""
+        kb = self.keyboard_input
+
+        if event.value == "PRESS" and event.ascii and event.ascii.lower() in NUMERIC_INPUT_CHARS:
+            kb.characters.append(event.ascii)
+            kb.is_active = True
+            kb.parse()
+            self._apply_keyboard_value()
+            self._update_header_typing(context)
+            return {"RUNNING_MODAL"}
+
+        if event.type == "BACK_SPACE" and event.value == "PRESS":
+            if kb.characters:
+                kb.characters.pop()
+                kb.parse()
+                self._apply_keyboard_value()
+                self._update_header_typing(context)
+            elif kb.is_active:
+                kb.reset()
+                if self.move_set_cb:
+                    self.move_set_cb(self.init_value)
+            return {"RUNNING_MODAL"}
+
+        if event.type in {"RET", "NUMPAD_ENTER"} and event.value == "PRESS":
+            if kb.is_active and kb.is_valid:
+                final_value = kb.calculate_final_value(self.init_value, getattr(self, "invert_delta", False))
+                kb.characters.clear()
+                kb.is_active = False
+                self._update_header(context, final_value, False, False)
+            return {"RUNNING_MODAL"}
+
+        if event.type == "ESC" and event.value == "PRESS" and kb.is_active:
+            kb.reset()
+            if self.move_set_cb:
+                self.move_set_cb(self.init_value)
+            return {"RUNNING_MODAL"}
+
+        return None
+
+    def _apply_keyboard_value(self) -> None:
+        kb = self.keyboard_input
+        if self.move_set_cb and kb.is_valid:
+            final_value = kb.calculate_final_value(self.init_value, getattr(self, "invert_delta", False))
+            self.move_set_cb(final_value)
+
+    def _update_header_typing(self, context: bpy.types.Context) -> None:
+        if not context.area:
+            return
+        kb = self.keyboard_input
+        input_str = kb.get_input_string()
+        preview = kb.calculate_final_value(self.init_value, getattr(self, "invert_delta", False))
+
+        validity = "" if kb.is_valid else " [invalid]"
+        prop_display = getattr(self, "prop_name", "Value")
+
+        header = f"{prop_display}: {preview:.3f}m  |  Input: {input_str}_{validity}"
+        header += "  |  Enter: Confirm  |  Backspace: Delete  |  ESC: Cancel"
+        context.area.header_text_set(header)
+
     def _update_header(self, context: bpy.types.Context, value: float, is_snapping: bool, is_precision: bool) -> None:
-        header_text = f"Value: {value:.3f}m"
+        if not context.area:
+            return
+        prop_display = getattr(self, "prop_name", "Value")
         hints = []
         if is_snapping:
             hints.append("Snapping: ON")
         if is_precision:
-            hints.append("Precision Mode (0.1x)")
-        hints.extend(["Ctrl: Toggle Snap", "Shift: Precision"])
+            hints.append("Precision (0.1x)")
+        hints.extend(["Ctrl: Snap", "Shift: Precision", "Type: Enter Value"])
 
-        if hints:
-            header_text += "  |  " + "  |  ".join(hints)
+        header_text = f"{prop_display}: {value:.3f}m  |  " + "  |  ".join(hints)
         context.area.header_text_set(header_text)
 
 
 class GizmoLock(bpy.types.Gizmo):
-    """Reusable lock icon gizmo that switches between closed and open states."""
+    """Lock icon gizmo that switches between closed and open states."""
 
     bl_idname = "VIEW3D_GT_lock"
 
@@ -696,7 +1225,7 @@ class GizmoLock(bpy.types.Gizmo):
 
 
 class GizmoArc(bpy.types.Gizmo):
-    """Reusable arc gizmo for door swing visualization."""
+    """Arc gizmo for door swing visualization."""
 
     bl_idname = "VIEW3D_GT_arc"
 
@@ -707,7 +1236,7 @@ class GizmoArc(bpy.types.Gizmo):
     )
 
     def setup(self) -> None:
-        """Create arc shapes for both LEFT and RIGHT directions."""
+        """Create arc shapes for LEFT and RIGHT directions."""
         arc_left = create_circle_arc(radius=1.0, direction="LEFT", angle_min=2.0, angle_max=90.0)
         arc_right = create_circle_arc(radius=1.0, direction="RIGHT", angle_min=2.0, angle_max=90.0)
 
@@ -715,7 +1244,7 @@ class GizmoArc(bpy.types.Gizmo):
         self.custom_shape_right = self.new_custom_shape(type="TRIS", verts=arc_right)
 
     def _get_shape_for_direction(self, context: bpy.types.Context) -> object:
-        """Get the appropriate arc shape based on door swing direction."""
+        """Get arc shape based on door swing direction."""
         obj = context.active_object
         if not obj:
             return self.custom_shape_left
@@ -737,7 +1266,7 @@ class GizmoArc(bpy.types.Gizmo):
 
 
 class GizmoPen(bpy.types.Gizmo):
-    """Reusable pen/edit icon gizmo for entering edit mode."""
+    """Pen/edit icon gizmo for entering edit mode."""
 
     bl_idname = "VIEW3D_GT_pen"
 
@@ -772,7 +1301,7 @@ class GizmoPen(bpy.types.Gizmo):
 
 
 class GizmoValidate(bpy.types.Gizmo):
-    """Reusable validate/checkmark icon gizmo for confirming edits."""
+    """Validate/checkmark icon gizmo for confirming edits."""
 
     bl_idname = "VIEW3D_GT_validate"
 
@@ -804,7 +1333,7 @@ class GizmoValidate(bpy.types.Gizmo):
 
 
 class GizmoCancel(bpy.types.Gizmo):
-    """Reusable cancel/X icon gizmo for canceling edits."""
+    """Cancel/X icon gizmo for canceling edits."""
 
     bl_idname = "VIEW3D_GT_cancel"
 
@@ -854,22 +1383,19 @@ class GizmoCancel(bpy.types.Gizmo):
 
 
 class GizmoPlus(bpy.types.Gizmo):
-    """Reusable plus/+ icon gizmo for incrementing values."""
+    """Plus icon gizmo for incrementing values."""
 
     bl_idname = "VIEW3D_GT_plus"
 
     __slots__ = ("custom_shape",)
 
-    # Plus sign triangles (cross shape) - 50% larger
     tris = (
-        # Horizontal bar
         (-0.375, -0.075, 0.0),
         (-0.375, 0.075, 0.0),
         (0.375, 0.075, 0.0),
         (-0.375, -0.075, 0.0),
         (0.375, 0.075, 0.0),
         (0.375, -0.075, 0.0),
-        # Vertical bar
         (-0.075, -0.375, 0.0),
         (-0.075, 0.375, 0.0),
         (0.075, 0.375, 0.0),
@@ -889,13 +1415,12 @@ class GizmoPlus(bpy.types.Gizmo):
 
 
 class GizmoMinus(bpy.types.Gizmo):
-    """Reusable minus/- icon gizmo for decrementing values."""
+    """Minus icon gizmo for decrementing values."""
 
     bl_idname = "VIEW3D_GT_minus"
 
     __slots__ = ("custom_shape",)
 
-    # Minus sign triangles (horizontal bar) - 50% larger
     tris = (
         (-0.375, -0.075, 0.0),
         (-0.375, 0.075, 0.0),
@@ -916,19 +1441,17 @@ class GizmoMinus(bpy.types.Gizmo):
 
 
 def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
-    """Generate circular arrow geometry (↻ style) covering ~300 degrees."""
+    """Generate circular arrow geometry covering ~300 degrees."""
     triangles = []
-    radius = 0.375  # 50% larger than original 0.25
-    line_width = 0.06  # 50% larger than original 0.04
+    radius = 0.375
+    line_width = 0.10
     half_width = line_width / 2
 
-    # Arc from ~30 degrees to ~330 degrees (300 degree arc)
     segments = 20
     start_angle = math.radians(30)
     end_angle = math.radians(330)
     angle_range = end_angle - start_angle
 
-    # Generate arc points
     arc_points = []
     for i in range(segments + 1):
         angle = start_angle + angle_range * (i / segments)
@@ -936,18 +1459,15 @@ def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
         y = radius * math.sin(angle)
         arc_points.append((x, y))
 
-    # Create triangles for the arc (flat ribbon in XY plane with Z thickness)
     for i in range(len(arc_points) - 1):
         x1, y1 = arc_points[i]
         x2, y2 = arc_points[i + 1]
 
-        # Direction perpendicular to arc segment (for width in XY plane)
         dx, dy = x2 - x1, y2 - y1
         length = (dx**2 + dy**2) ** 0.5
         if length > 0:
             px, py = -dy / length * half_width, dx / length * half_width
 
-            # XY plane triangles
             triangles.extend(
                 [
                     (x1 + px, y1 + py, 0.0),
@@ -963,7 +1483,6 @@ def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
                 ]
             )
 
-            # XZ plane triangles (for visibility from other angles)
             triangles.extend(
                 [
                     (x1, y1, -half_width),
@@ -979,10 +1498,8 @@ def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
                 ]
             )
 
-    # Arrowhead at the end of the arc (pointing in direction of cycling)
-    arrow_size = 0.18  # 50% larger than original 0.12
+    arrow_size = 0.30
     end_x, end_y = arc_points[-1]
-    # Direction tangent to the arc at the end
     prev_x, prev_y = arc_points[-2]
     tangent_x = end_x - prev_x
     tangent_y = end_y - prev_y
@@ -991,15 +1508,12 @@ def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
         tangent_x /= tangent_len
         tangent_y /= tangent_len
 
-    # Arrow tip extends in the tangent direction
     tip_x = end_x + tangent_x * arrow_size * 0.5
     tip_y = end_y + tangent_y * arrow_size * 0.5
 
-    # Arrow base perpendicular to tangent
     perp_x = -tangent_y * arrow_size
     perp_y = tangent_x * arrow_size
 
-    # Arrowhead triangle (XY plane)
     triangles.extend(
         [
             (tip_x, tip_y, 0.0),
@@ -1008,7 +1522,6 @@ def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
         ]
     )
 
-    # Arrowhead triangle (XZ plane for depth)
     triangles.extend(
         [
             (tip_x, tip_y, 0.0),
@@ -1021,7 +1534,7 @@ def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
 
 
 class GizmoCycle(bpy.types.Gizmo):
-    """Reusable circular arrow icon gizmo for cycling through enum values."""
+    """Circular arrow icon gizmo for cycling through enum values."""
 
     bl_idname = "VIEW3D_GT_cycle"
 
@@ -1046,7 +1559,6 @@ class GizmoArrow(GizmoMovable):
     bl_target_properties = ({"id": "offset", "type": "FLOAT", "array_length": 1},)
 
     def _get_arrow_triangles(self) -> tuple[tuple[float, float, float], ...]:
-        """Generate arrow geometry along +X axis."""
         triangles = []
 
         triangles.extend(
@@ -1125,22 +1637,81 @@ class GizmoArrow(GizmoMovable):
         self.draw_custom_shape(self.custom_shape, select_id=select_id)
 
 
+class GizmoArrow2D(GizmoMovable):
+    """Flat 2D arrow that rotates around its axis to face the camera."""
+
+    bl_idname = "BIM_GT_gizmo_arrow_2d"
+    bl_target_properties = ({"id": "offset", "type": "FLOAT", "array_length": 1},)
+
+    ARROW_2D_SHAFT_LENGTH = 0.5
+    ARROW_2D_HEAD_LENGTH = 0.5
+    ARROW_2D_WIDTH = 0.25
+    ARROW_2D_HEAD_WIDTH = 0.75
+
+    def _get_arrow_2d_triangles(self) -> tuple[tuple[float, float, float], ...]:
+        """Generate flat arrow geometry in XY plane, pointing along +X."""
+        shaft = self.ARROW_2D_SHAFT_LENGTH
+        head = self.ARROW_2D_HEAD_LENGTH
+        w = self.ARROW_2D_WIDTH / 2
+        hw = self.ARROW_2D_HEAD_WIDTH / 2
+
+        return (
+            # Shaft
+            (0, -w, 0), (shaft, -w, 0), (0, w, 0),
+            (0, w, 0), (shaft, -w, 0), (shaft, w, 0),
+            # Head
+            (shaft, -hw, 0), (shaft + head, 0, 0), (shaft, hw, 0),
+        )
+
+    def setup(self) -> None:
+        self.custom_shape = self.new_custom_shape("TRIS", self._get_arrow_2d_triangles())
+
+    def draw(self, context: bpy.types.Context) -> None:
+        self.draw_custom_shape(self.custom_shape)
+
+    def draw_select(self, context: bpy.types.Context, select_id: int) -> None:
+        self.draw_custom_shape(self.custom_shape, select_id=select_id)
+
+    def draw_prepare(self, context: bpy.types.Context) -> None:
+        """Rotate around arrow axis to face camera."""
+        position = self.matrix_basis.translation
+        to_camera = get_camera_direction(context, position)
+        if to_camera is None:
+            return
+
+        axis_world = Vector(self.matrix_basis.col[0][:3]).normalized()
+        to_camera_projected = to_camera - axis_world * to_camera.dot(axis_world)
+
+        if to_camera_projected.length_squared < 1e-6:
+            return
+
+        to_camera_projected.normalize()
+
+        local_z_world = Vector(self.matrix_basis.col[2][:3]).normalized()
+        local_z_projected = local_z_world - axis_world * local_z_world.dot(axis_world)
+
+        if local_z_projected.length_squared < 1e-6:
+            return
+
+        local_z_projected.normalize()
+
+        cross = local_z_projected.cross(to_camera_projected)
+        dot = local_z_projected.dot(to_camera_projected)
+        sign = 1.0 if cross.dot(axis_world) >= 0 else -1.0
+        angle = sign * math.acos(max(-1.0, min(1.0, dot)))
+
+        axis_rot = Matrix.Rotation(angle, 4, "X")
+        current_scale = self.matrix_offset.to_scale() if self.matrix_offset else Vector((1, 1, 1))
+        self.matrix_offset = axis_rot @ Matrix.Scale(current_scale[0], 4)
+
+
 class GizmoCone(GizmoMovable):
-    """Cone gizmo for directional value editing with local axis support."""
+    """Cone gizmo for directional value editing."""
 
     bl_idname = "BIM_GT_gizmo_cone"
     bl_target_properties = ({"id": "offset", "type": "FLOAT", "array_length": 1},)
 
-    def get_axis_direction(self) -> Vector:
-        if hasattr(self, "local_axis") and self.active_obj:
-            obj_rotation = self.active_obj.matrix_world.to_3x3()
-            axis_direction = obj_rotation @ self.local_axis
-            axis_direction.normalize()
-            return axis_direction
-        return self.axis
-
     def _get_cone_triangles(self) -> tuple[tuple[float, float, float], ...]:
-        """Generate cone geometry along +X axis."""
         triangles = []
         cone_tip_x = CONE_LENGTH
 
@@ -1182,25 +1753,11 @@ class GizmoCone(GizmoMovable):
 
 
 class BaseParametricGizmoGroup:
-    """Base mixin class for parametric element gizmo groups (doors, windows, etc.).
-
-    This class provides shared functionality for gizmo groups that edit
-    parametric BIM elements. Subclasses should define:
-    - gizmo_props: list of property configurations
-    - get_props(obj): method to get the element's properties
-    - get_gizmo_prefs(): method to get gizmo preferences
-    - element_type_check(element): method to check if element is the right type
-    - Operator bl_idnames for enable_editing, finish_editing, cancel_editing
-
-    Example subclass:
-        class GizmoDoorEdition(bpy.types.GizmoGroup, BaseParametricGizmoGroup):
-            bl_idname = "OBJECT_GGT_bim_door_edition"
-            ...
-    """
+    """Base mixin for parametric element gizmo groups (doors, windows, etc.)."""
 
     COLOR_RED = (1.0, 0.2, 0.2)
     COLOR_GREEN = (0.1, 0.8, 0.1)
-    COLOR_BLUE = (0.2, 0.2, 1.0)
+    COLOR_BLUE = (0.3, 0.3, 1.0)
     ARROW_SCALE = 0.25
 
     # Subclasses must define these
@@ -1208,10 +1765,10 @@ class BaseParametricGizmoGroup:
     enable_editing_operator: str = ""
     finish_editing_operator: str = ""
     cancel_editing_operator: str = ""
+    cycle_type_operator: str = ""
 
     @classmethod
     def get_arrow_color_from_axis(cls, axis: tuple[int, int, int]) -> tuple[float, float, float]:
-        """Get arrow color based on axis direction (X=red, Y=green, Z=blue)."""
         if axis[0] != 0:
             return cls.COLOR_RED
         elif axis[1] != 0:
@@ -1219,19 +1776,16 @@ class BaseParametricGizmoGroup:
         return cls.COLOR_BLUE
 
     def get_axis_rotation_matrix(self, axis: tuple[int, int, int]) -> Matrix:
-        """Get rotation matrix to align arrow with the given axis."""
         axis_vec = Vector(axis).normalized()
         default_dir = Vector((1, 0, 0))
         return default_dir.rotation_difference(axis_vec).to_matrix().to_4x4()
 
     @classmethod
     def is_element_type(cls, element) -> bool:
-        """Check if the element is of the correct type. Must be overridden by subclass."""
         raise NotImplementedError("Subclass must implement is_element_type()")
 
     @classmethod
     def poll(cls, context) -> bool:
-        """Show gizmo only when a single element of the correct type is selected and active."""
         prefs = tool.Blender.get_addon_preferences()
         if not prefs.gizmos.draw_gizmos_in_3d_viewport:
             return False
@@ -1249,36 +1803,29 @@ class BaseParametricGizmoGroup:
         return True
 
     def get_props(self, obj: bpy.types.Object) -> Any:
-        """Get properties for the element. Must be overridden by subclass."""
         raise NotImplementedError("Subclass must implement get_props()")
 
     def get_gizmo_prefs(self) -> Any:
-        """Get gizmo preferences for this element type. Must be overridden by subclass."""
         raise NotImplementedError("Subclass must implement get_gizmo_prefs()")
 
     def get_prop_min_value(self, attr_name: str) -> float:
-        """Get minimum value for a property. Override to customize."""
         return 0.0
 
     def should_hide_gizmo(self, attr_name: str, props) -> bool:
-        """Check if a specific gizmo should be hidden. Override to add visibility rules."""
         return not props.is_editing
 
     def get_element_height(self, props) -> float:
-        """Get the element height for icon positioning. Override if property name differs."""
         return getattr(props, "overall_height", getattr(props, "height", 1.0))
 
     def setup_property_gizmos(self, context: bpy.types.Context) -> None:
-        """Set up gizmos for all properties in gizmo_props."""
         prefs = tool.Blender.get_addon_preferences()
         highlight_color = prefs.decorator_color_selected[:3]
 
         for prop_config in self.gizmo_props:
             attr_name = prop_config.attr_name
             invert_delta = prop_config.invert_delta
-            gizmo = self.gizmos.new("BIM_GT_gizmo_cone")
+            gizmo = self.gizmos.new("BIM_GT_gizmo_arrow_2d")
 
-            # Create closures that capture attr_name
             def make_move_get(name):
                 def move_get():
                     obj = bpy.context.active_object
@@ -1305,6 +1852,10 @@ class BaseParametricGizmoGroup:
             gizmo.axis = Vector(prop_config.axis)
             gizmo.local_axis = Vector(prop_config.axis)
             gizmo.invert_delta = invert_delta
+            gizmo.delta_scale = prop_config.delta_scale
+
+            gizmo.prop_name = attr_name.replace("_", " ").title()
+            gizmo.gizmo_group = self
 
             gizmo.color = self.get_arrow_color_from_axis(prop_config.axis)
             gizmo.color_highlight = highlight_color
@@ -1315,7 +1866,6 @@ class BaseParametricGizmoGroup:
             setattr(self, f"gizmo_{attr_name}", gizmo)
 
     def setup_editing_gizmos(self, context: bpy.types.Context) -> None:
-        """Set up pen, validate, and cancel gizmos for editing mode."""
         prefs = tool.Blender.get_addon_preferences()
         default_color = prefs.decorations_colour[:3]
         highlight_color = prefs.decorator_color_selected[:3]
@@ -1341,9 +1891,18 @@ class BaseParametricGizmoGroup:
         self.cancel_gizmo.alpha = 0.8
         self.cancel_gizmo.target_set_operator(self.cancel_editing_operator)
 
+        if self.cycle_type_operator:
+            self.cycle_gizmo = self.gizmos.new("VIEW3D_GT_cycle")
+            self.cycle_gizmo.use_draw_scale = False
+            self.cycle_gizmo.color = default_color
+            self.cycle_gizmo.color_highlight = highlight_color
+            self.cycle_gizmo.alpha = 0.8
+            self.cycle_gizmo.target_set_operator(self.cycle_type_operator)
+
     def update_property_gizmos(self, mw, props) -> None:
-        """Update arrow gizmos position and visibility based on editing state."""
         gizmo_prefs = self.get_gizmo_prefs()
+        # Check if keyboard input modal is hiding gizmos
+        hidden_by_modal = _gizmo_value_input_callback.get("hidden_gizmos", set())
 
         for prop_config in self.gizmo_props:
             attr_name = prop_config.attr_name
@@ -1351,42 +1910,72 @@ class BaseParametricGizmoGroup:
             if gizmo is None:
                 continue
 
-            # Check preferences
+            # Respect gizmos hidden by keyboard input modal
+            if gizmo in hidden_by_modal:
+                gizmo.hide = True
+                continue
+
             if not getattr(gizmo_prefs, attr_name, True):
                 gizmo.hide = True
                 continue
 
-            # Check visibility rules
             if self.should_hide_gizmo(attr_name, props):
                 gizmo.hide = True
                 continue
 
-            # Update position and show arrow
             gizmo.hide = False
             matrix_method = getattr(self, f"get_gizmo_matrix_{attr_name}", None)
             if matrix_method:
                 gizmo.matrix_basis = mw @ matrix_method(props)
             gizmo.matrix_offset = Matrix.Scale(self.ARROW_SCALE, 4)
 
-    def update_editing_gizmos(self, mw, props) -> None:
-        """Update editing control gizmos (pen/validate/cancel) visibility and position."""
+    def update_editing_gizmos(self, context: bpy.types.Context, mw, props) -> None:
         icon_z = self.get_element_height(props) + 0.5
+        billboard_rot = get_billboard_rotation(context)
+        # Check if keyboard input modal is hiding gizmos
+        hidden_by_modal = _gizmo_value_input_callback.get("hidden_gizmos", set())
+
         local_transform = (
             Matrix.Translation(Vector((0, 0.0, icon_z)))
-            @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
+            @ billboard_rot
             @ Matrix.Scale(0.5, 4)
         )
         icon_matrix_base = mw @ local_transform
 
         if props.is_editing:
             self.pen_gizmo.hide = True
-            self.validate_gizmo.hide = False
+            self.validate_gizmo.hide = self.validate_gizmo in hidden_by_modal
             self.validate_gizmo.matrix_basis = icon_matrix_base
-            self.cancel_gizmo.hide = False
+            self.cancel_gizmo.hide = self.cancel_gizmo in hidden_by_modal
             cancel_local = Matrix.Translation(Vector((0.5, 0.0, 0.0))) @ local_transform
             self.cancel_gizmo.matrix_basis = mw @ cancel_local
+            if self.cycle_type_operator:
+                self.cycle_gizmo.hide = self.cycle_gizmo in hidden_by_modal
+                cycle_transform = (
+                    Matrix.Translation(Vector((0, 0.0, icon_z)))
+                    @ billboard_rot
+                    @ Matrix.Scale(0.30, 4)
+                )
+                cycle_local = Matrix.Translation(Vector((0.87, 0.0, 0.0))) @ cycle_transform
+                self.cycle_gizmo.matrix_basis = mw @ cycle_local
         else:
-            self.pen_gizmo.hide = False
+            self.pen_gizmo.hide = self.pen_gizmo in hidden_by_modal
             self.pen_gizmo.matrix_basis = icon_matrix_base
             self.validate_gizmo.hide = True
             self.cancel_gizmo.hide = True
+            if self.cycle_type_operator:
+                self.cycle_gizmo.hide = True
+
+    def draw_prepare(self, context: bpy.types.Context) -> None:
+        """Called before drawing - updates gizmos to face camera."""
+        obj = context.active_object
+        if not obj:
+            return
+        props = self.get_props(obj)
+        mw = obj.matrix_world
+        self.update_editing_gizmos(context, mw, props)
+
+        for prop_config in self.gizmo_props:
+            gizmo = getattr(self, f"gizmo_{prop_config.attr_name}", None)
+            if gizmo and hasattr(gizmo, "draw_prepare") and not gizmo.hide:
+                gizmo.draw_prepare(context)

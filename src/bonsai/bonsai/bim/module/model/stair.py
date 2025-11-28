@@ -34,6 +34,7 @@ from bmesh.types import BMVert
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
+from typing import get_args
 
 
 def regenerate_stair_mesh(obj: bpy.types.Object) -> None:
@@ -357,13 +358,10 @@ class CycleStairType(bpy.types.Operator):
             return {"CANCELLED"}
 
         props = tool.Model.get_stair_props(obj)
-        types = ["CONCRETE", "WOOD/STEEL", "GENERIC"]
-        try:
-            current_idx = types.index(props.stair_type)
-        except ValueError:
-            current_idx = 0
+        stair_types = get_args(tool.Model.StairType)
+        current_idx = stair_types.index(props.stair_type) if props.stair_type in stair_types else 0
         direction = -1 if self.reverse else 1
-        props.stair_type = types[(current_idx + direction) % len(types)]
+        props.stair_type = stair_types[(current_idx + direction) % len(stair_types)]
 
         return {"FINISHED"}
 
@@ -374,6 +372,13 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     bl_space_type = "VIEW_3D"
     bl_region_type = "WINDOW"
     bl_options = {"3D", "PERSISTENT"}
+
+    # Gizmo layout offsets (meters)
+    GIZMO_X_OFFSET = 0.5  # Horizontal offset from stair end
+    GIZMO_PLUS_X_OFFSET = 0.25  # Additional X offset for plus button
+    GIZMO_MINUS_X_OFFSET = 0.5  # Additional X offset for minus button
+    GIZMO_BUTTON_Z_OFFSET = 0.15  # Vertical offset for +/- buttons above lock
+    GIZMO_CYCLE_Z_OFFSET = 0.5  # Vertical offset for cycle gizmo above lock
 
     enable_editing_operator = "bim.enable_editing_stair"
     finish_editing_operator = "bim.finish_editing_stair"
@@ -429,6 +434,13 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     def get_gizmo_matrix_width(self, props):
         translation = Matrix.Translation(Vector((0, props.width, 0)))
+        rotation = self.get_axis_rotation_matrix((0, 1, 0))
+        return translation @ rotation
+
+    def get_gizmo_matrix_width_top(self, props):
+        """Position for the secondary width gizmo at the top of the stairs."""
+        total_run = self._get_stair_total_run(props)
+        translation = Matrix.Translation(Vector((total_run, props.width, props.height)))
         rotation = self.get_axis_rotation_matrix((0, 1, 0))
         return translation @ rotation
 
@@ -490,6 +502,41 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         prefs = tool.Blender.get_addon_preferences()
         highlight_color = prefs.decorator_color_selected[:3]
 
+        # Secondary width gizmo at the top of the stairs (linked to same width property)
+        self.gizmo_width_top = self.gizmos.new("BIM_GT_gizmo_arrow_2d")
+
+        def make_width_get():
+            def move_get():
+                obj = bpy.context.active_object
+                if not obj:
+                    return 0.0
+                props = self.get_props(obj)
+                return props.width
+            return move_get
+
+        def make_width_set():
+            def move_set(value):
+                obj = bpy.context.active_object
+                if not obj:
+                    return
+                props = self.get_props(obj)
+                props.width = max(0.0, value)
+            return move_set
+
+        self.gizmo_width_top.move_get_cb = make_width_get()
+        self.gizmo_width_top.move_set_cb = make_width_set()
+        self.gizmo_width_top.axis = Vector((0, 1, 0))
+        self.gizmo_width_top.local_axis = Vector((0, 1, 0))
+        self.gizmo_width_top.invert_delta = False
+        self.gizmo_width_top.delta_scale = 1.0
+        self.gizmo_width_top.prop_name = "Width"
+        self.gizmo_width_top.gizmo_group = self
+        self.gizmo_width_top.color = self.COLOR_GREEN
+        self.gizmo_width_top.color_highlight = highlight_color
+        self.gizmo_width_top.alpha = 0.99
+        self.gizmo_width_top.use_draw_modal = True
+        self.gizmo_width_top.use_draw_scale = True
+
         # Total length lock gizmo
         self.lock_gizmo = self.gizmos.new("VIEW3D_GT_lock")
         self.lock_gizmo.use_draw_scale = False
@@ -533,65 +580,81 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
         props = self.get_props(obj)
         mw = obj.matrix_world
+        billboard_rot = gizmo.get_billboard_rotation(context)
         self.update_property_gizmos(mw, props)
-        self.update_editing_gizmos(mw, props)
-        self.update_lock_gizmo(mw, props)
-        self.update_tread_count_gizmos(mw, props)
-        self.update_cycle_gizmo(mw, props)
+        self.update_editing_gizmos(context, mw, props)
+        self.update_width_top_gizmo(mw, props)
+        self.update_lock_gizmo(mw, props, billboard_rot)
+        self.update_tread_count_gizmos(mw, props, billboard_rot)
+        self.update_cycle_gizmo(mw, props, billboard_rot)
 
-    def update_lock_gizmo(self, mw, props):
-        """Update lock gizmo position and visibility."""
+    def update_width_top_gizmo(self, mw, props):
+        """Update the secondary width gizmo at the top of the stairs."""
+        gizmo_prefs = self.get_gizmo_prefs()
+        # Use same visibility as the main width gizmo
+        self.gizmo_width_top.hide = not props.is_editing or not getattr(gizmo_prefs, "width", True)
+
+        if self.gizmo_width_top.hide:
+            return
+
+        self.gizmo_width_top.matrix_basis = mw @ self.get_gizmo_matrix_width_top(props)
+        self.gizmo_width_top.matrix_offset = Matrix.Scale(self.ARROW_SCALE, 4)
+
+    def update_lock_gizmo(self, mw, props, billboard_rot):
         gizmo_prefs = self.get_gizmo_prefs()
         self.lock_gizmo.hide = not props.is_editing or not gizmo_prefs.lock
 
         if self.lock_gizmo.hide:
             return
 
-        # Update color based on lock state: red when locked, green when unlocked
         self.lock_gizmo.color = self.COLOR_RED if props.total_length_lock else self.COLOR_GREEN
 
         total_run = self._get_stair_total_run(props)
-        lock_x = total_run + props.tread_run + 0.5
+        lock_x = total_run + props.tread_run + self.GIZMO_X_OFFSET
         local_transform = (
             Matrix.Translation(Vector((lock_x, props.width / 2, props.height)))
-            @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
+            @ billboard_rot
             @ Matrix.Scale(0.2, 4)
         )
         self.lock_gizmo.matrix_basis = mw @ local_transform
 
-    def update_tread_count_gizmos(self, mw, props):
-        """Update plus and minus gizmos for tread count adjustment."""
+    def update_tread_count_gizmos(self, mw, props, billboard_rot):
         gizmo_prefs = self.get_gizmo_prefs()
 
-        # Plus gizmo - always visible when editing (if preference enabled)
         self.plus_gizmo.hide = not props.is_editing or not gizmo_prefs.plus
-        # Minus gizmo - hidden when number_of_treads is 1 (if preference enabled)
         self.minus_gizmo.hide = not props.is_editing or props.number_of_treads <= 1 or not gizmo_prefs.minus
 
         if self.plus_gizmo.hide and self.minus_gizmo.hide:
             return
 
         total_run = self._get_stair_total_run(props)
-        base_x = total_run + props.tread_run + 0.5
+        base_x = total_run + props.tread_run + self.GIZMO_X_OFFSET
 
         if not self.plus_gizmo.hide:
             plus_local_transform = (
-                Matrix.Translation(Vector((base_x + 0.25, props.width / 2, props.height + 0.15)))
-                @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
+                Matrix.Translation(Vector((
+                    base_x + self.GIZMO_PLUS_X_OFFSET,
+                    props.width / 2,
+                    props.height + self.GIZMO_BUTTON_Z_OFFSET
+                )))
+                @ billboard_rot
                 @ Matrix.Scale(0.2, 4)
             )
             self.plus_gizmo.matrix_basis = mw @ plus_local_transform
 
         if not self.minus_gizmo.hide:
             minus_local_transform = (
-                Matrix.Translation(Vector((base_x + 0.5, props.width / 2, props.height + 0.15)))
-                @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
+                Matrix.Translation(Vector((
+                    base_x + self.GIZMO_MINUS_X_OFFSET,
+                    props.width / 2,
+                    props.height + self.GIZMO_BUTTON_Z_OFFSET
+                )))
+                @ billboard_rot
                 @ Matrix.Scale(0.2, 4)
             )
             self.minus_gizmo.matrix_basis = mw @ minus_local_transform
 
-    def update_cycle_gizmo(self, mw, props):
-        """Update cycle gizmo position - 0.5m above lock gizmo."""
+    def update_cycle_gizmo(self, mw, props, billboard_rot):
         gizmo_prefs = self.get_gizmo_prefs()
         self.cycle_gizmo.hide = not props.is_editing or not gizmo_prefs.cycle
 
@@ -599,10 +662,23 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             return
 
         total_run = self._get_stair_total_run(props)
-        cycle_x = total_run + props.tread_run + 0.5  # Same X as lock
+        cycle_x = total_run + props.tread_run + self.GIZMO_X_OFFSET
         local_transform = (
-            Matrix.Translation(Vector((cycle_x, props.width / 2, props.height + 0.5)))  # +0.5m above lock
-            @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
+            Matrix.Translation(Vector((
+                cycle_x,
+                props.width / 2,
+                props.height + self.GIZMO_CYCLE_Z_OFFSET
+            )))
+            @ billboard_rot
             @ Matrix.Scale(0.2, 4)
         )
         self.cycle_gizmo.matrix_basis = mw @ local_transform
+
+    def draw_prepare(self, context):
+        """Called before drawing - updates gizmos to face camera."""
+        # Call base class implementation
+        super().draw_prepare(context)
+
+        # Also update the secondary width gizmo to face camera
+        if hasattr(self, "gizmo_width_top") and not self.gizmo_width_top.hide:
+            self.gizmo_width_top.draw_prepare(context)

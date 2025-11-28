@@ -207,7 +207,9 @@ classes = [
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
     # Gizmos
+    gizmo.BIM_OT_gizmo_value_input,
     gizmo.GizmoArrow,
+    gizmo.GizmoArrow2D,
     gizmo.GizmoCone,
     gizmo.GizmoLock,
     gizmo.GizmoArc,
