@@ -35,12 +35,14 @@ add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
 if(IFCXML_SUPPORT)
+    find_package(LibXml2 REQUIRED)
+    add_definitions(-DWITH_IFCXML)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 
     if(LibXml2_DIR)
         target_compile_definitions(IfcParse PRIVATE ${LIBXML2_DEFINITIONS})
     endif()
 
-    add_definitions(-DWITH_IFCXML)
     target_link_libraries(IfcParse LibXml2::LibXml2)
 endif()
 
