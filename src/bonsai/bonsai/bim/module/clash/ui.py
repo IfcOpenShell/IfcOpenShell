@@ -165,6 +165,7 @@ class BIM_PT_ifcclash(Panel):
             layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
             row = layout.row()
             row.operator("bim.select_clash")
+            row.operator("bim.hide_clash", text="", icon="HIDE_ON")
         else:
             row.label(text="Clashes Are Not Loaded", icon="PIVOT_CURSOR")
 
