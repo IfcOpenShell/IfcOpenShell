@@ -19,11 +19,7 @@ endif()
 
 target_link_libraries(Serializers PRIVATE ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES} IfcGeom ${OPENCASCADE_LIBRARIES} ${kernel_libraries} IfcParse)
 
-install(TARGETS Serializers
-    ARCHIVE DESTINATION ${LIBDIR}
-    RUNTIME DESTINATION ${BINDIR}
-    LIBRARY DESTINATION ${LIBDIR}
-)
+install(TARGETS Serializers)
 
 install(FILES ${SERIALIZERS_H_FILES}
     DESTINATION ${INCLUDEDIR}/serializers/

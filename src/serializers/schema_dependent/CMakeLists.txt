@@ -12,11 +12,7 @@ foreach(schema ${SCHEMA_VERSIONS})
         target_link_libraries(Serializers_ifc${schema} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
     endif()
 
-    install(TARGETS Serializers_ifc${schema}
-        ARCHIVE DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-    )
+    install(TARGETS Serializers_ifc${schema})
 endforeach()
 
 
