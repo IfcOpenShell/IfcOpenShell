@@ -109,23 +109,6 @@ class BIM_PT_debug(Panel):
         row.prop(props, "display_type", text="")
         row.operator("bim.override_display_type").display = props.display_type
 
-        layout.operator("bim.purge_unused_representations")
-
-        row = layout.row(align=True)
-        row.prop(props, "ifc_class_purge", text="")
-        row.operator("bim.purge_unused_elements_by_class", text="Purge Orphaned", icon="TRASH")
-        row.operator("bim.print_unused_elements_stats", text="", icon="INFO")
-
-        if context.active_object and (data := context.active_object.data):
-            mprops = tool.Geometry.get_mesh_props(data)
-            row = layout.row()
-            row.operator("bim.get_representation_ifc_parameters")
-            for index, ifc_parameter in enumerate(mprops.ifc_parameters):
-                row = layout.row(align=True)
-                row.prop(ifc_parameter, "name", text="")
-                row.prop(ifc_parameter, "value", text="")
-                row.operator("bim.update_parametric_representation", icon="FILE_REFRESH", text="").index = index
-
         layout.label(text="Inspector:")
 
         row = layout.row(align=True)
