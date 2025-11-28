@@ -1401,6 +1401,29 @@ class Model(bonsai.core.tool.Model):
 
     StairType = Literal["CONCRETE", "WOOD/STEEL", "GENERIC"]
 
+    DoorType = Literal[
+        "SINGLE_SWING_LEFT",
+        "SINGLE_SWING_RIGHT",
+        "DOUBLE_SWING_LEFT",
+        "DOUBLE_SWING_RIGHT",
+        "DOUBLE_DOOR_SINGLE_SWING",
+        "SLIDING_TO_LEFT",
+        "SLIDING_TO_RIGHT",
+        "DOUBLE_DOOR_SLIDING",
+    ]
+
+    WindowType = Literal[
+        "SINGLE_PANEL",
+        "DOUBLE_PANEL_HORIZONTAL",
+        "DOUBLE_PANEL_VERTICAL",
+        "TRIPLE_PANEL_BOTTOM",
+        "TRIPLE_PANEL_TOP",
+        "TRIPLE_PANEL_LEFT",
+        "TRIPLE_PANEL_RIGHT",
+        "TRIPLE_PANEL_HORIZONTAL",
+        "TRIPLE_PANEL_VERTICAL",
+    ]
+
     @classmethod
     def generate_stair_2d_profile(
         cls,

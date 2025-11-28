@@ -39,6 +39,7 @@ import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 from bmesh.types import BMVert
 from mathutils import Vector, Matrix
+from typing import get_args
 
 V_ = tool.Blender.V_
 
@@ -579,6 +580,31 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class CycleWindowType(bpy.types.Operator, tool.Ifc.Operator):
+    """Cycle through available window types."""
+
+    bl_idname = "bim.cycle_window_type"
+    bl_label = "Cycle Window Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = tool.Blender.get_active_object()
+        if not obj:
+            return {"CANCELLED"}
+
+        element = tool.Ifc.get_entity(obj)
+        if not element or not tool.Blender.Modifier.is_window(element):
+            return {"CANCELLED"}
+
+        props = tool.Model.get_window_props(obj)
+        window_types = list(get_args(tool.Model.WindowType))
+        current_index = window_types.index(props.window_type) if props.window_type in window_types else 0
+        next_index = (current_index + 1) % len(window_types)
+        props.window_type = window_types[next_index]
+
+        return {"FINISHED"}
+
+
 class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     bl_idname = "OBJECT_GGT_bim_window_edition"
     bl_label = "Window Editing Gizmo"
@@ -589,6 +615,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     enable_editing_operator = "bim.enable_editing_window"
     finish_editing_operator = "bim.finish_editing_window"
     cancel_editing_operator = "bim.cancel_editing_window"
+    cycle_type_operator = "bim.cycle_window_type"
 
     gizmo_props = [
         GizmoPropConfig("overall_height", (0, 0, 1)),
@@ -597,10 +624,10 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         GizmoPropConfig("lining_thickness", (1, 0, 0)),
         GizmoPropConfig("lining_to_panel_offset_x", (1, 0, 0)),
         GizmoPropConfig("lining_to_panel_offset_y", (0, 1, 0)),
-        GizmoPropConfig("mullion_thickness", (1, 0, 0)),
+        GizmoPropConfig("mullion_thickness", (1, 0, 0), delta_scale=2.0),
         GizmoPropConfig("first_mullion_offset", (1, 0, 0)),
         GizmoPropConfig("second_mullion_offset", (1, 0, 0)),
-        GizmoPropConfig("transom_thickness", (0, 0, 1)),
+        GizmoPropConfig("transom_thickness", (0, 0, 1), delta_scale=2.0),
         GizmoPropConfig("first_transom_offset", (0, 0, 1)),
         GizmoPropConfig("second_transom_offset", (0, 0, 1)),
     ]
@@ -690,6 +717,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return translation @ rotation
 
     def get_gizmo_matrix_mullion_thickness(self, props):
+        # Position at the right edge of the mullion (offset + thickness/2) so gizmo movement matches property 1:1
         translation = Matrix.Translation(
             V_(props.first_mullion_offset + props.mullion_thickness / 2, props.lining_offset, props.overall_height / 2)
         )
@@ -697,7 +725,10 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return translation @ rotation
 
     def get_gizmo_matrix_first_mullion_offset(self, props):
-        translation = Matrix.Translation(V_(props.first_mullion_offset, props.lining_offset, props.overall_height / 2))
+        # Position at the left edge of the mullion (offset - thickness/2)
+        translation = Matrix.Translation(
+            V_(props.first_mullion_offset - props.mullion_thickness / 2, props.lining_offset, props.overall_height / 2)
+        )
         rotation = self.get_axis_rotation_matrix((1, 0, 0))
         return translation @ rotation
 
@@ -707,6 +738,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return translation @ rotation
 
     def get_gizmo_matrix_transom_thickness(self, props):
+        # Position at the top edge of the transom (offset + thickness/2) so gizmo movement matches property 1:1
         translation = Matrix.Translation(
             V_(props.overall_width / 2, props.lining_offset, props.first_transom_offset + props.transom_thickness / 2)
         )
@@ -714,7 +746,10 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return translation @ rotation
 
     def get_gizmo_matrix_first_transom_offset(self, props):
-        translation = Matrix.Translation(V_(props.overall_width / 2, props.lining_offset, props.first_transom_offset))
+        # Position at the bottom edge of the transom (offset - thickness/2)
+        translation = Matrix.Translation(
+            V_(props.overall_width / 2, props.lining_offset, props.first_transom_offset - props.transom_thickness / 2)
+        )
         rotation = self.get_axis_rotation_matrix((0, 0, 1))
         return translation @ rotation
 
@@ -768,4 +803,4 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         props = self.get_props(obj)
         mw = obj.matrix_world
         self.update_property_gizmos(mw, props)
-        self.update_editing_gizmos(mw, props)
+        self.update_editing_gizmos(context, mw, props)

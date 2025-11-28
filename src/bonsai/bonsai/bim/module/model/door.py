@@ -41,6 +41,7 @@ from mathutils import Vector, Matrix
 import json
 import collections
 import collections.abc
+from typing import get_args
 
 V_ = tool.Blender.V_
 
@@ -741,6 +742,38 @@ class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class CycleDoorType(bpy.types.Operator, tool.Ifc.Operator):
+    """Cycle through available door types. Shift+click to cycle in reverse."""
+
+    bl_idname = "bim.cycle_door_type"
+    bl_label = "Cycle Door Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    reverse: bpy.props.BoolProperty(name="Reverse", default=False, options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.reverse = event.shift
+        return self.execute(context)
+
+    def _execute(self, context):
+        obj = tool.Blender.get_active_object()
+        if not obj:
+            return {"CANCELLED"}
+
+        element = tool.Ifc.get_entity(obj)
+        if not element or not tool.Blender.Modifier.is_door(element):
+            return {"CANCELLED"}
+
+        props = tool.Model.get_door_props(obj)
+        door_types = get_args(tool.Model.DoorType)
+        current_index = door_types.index(props.door_type) if props.door_type in door_types else 0
+        direction = -1 if self.reverse else 1
+        next_index = (current_index + direction) % len(door_types)
+        props.door_type = door_types[next_index]
+
+        return {"FINISHED"}
+
+
 class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     bl_idname = "OBJECT_GGT_bim_door_edition"
     bl_label = "Door Editing Gizmo"
@@ -751,6 +784,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     enable_editing_operator = "bim.enable_editing_door"
     finish_editing_operator = "bim.finish_editing_door"
     cancel_editing_operator = "bim.cancel_editing_door"
+    cycle_type_operator = "bim.cycle_door_type"
 
     gizmo_props = [
         GizmoPropConfig("overall_height", (0, 0, 1)),
@@ -833,11 +867,15 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return translation @ rotation
 
     def get_gizmo_matrix_transom_offset(self, props):
-        translation = Matrix.Translation(V_(props.overall_width / 2, props.lining_offset, props.transom_offset))
+        # Position at the bottom of the transom (transom extends upward from offset)
+        translation = Matrix.Translation(
+            V_(props.overall_width / 2, props.lining_offset, props.transom_offset)
+        )
         rotation = self.get_axis_rotation_matrix((0, 0, 1))
         return translation @ rotation
 
     def get_gizmo_matrix_transom_thickness(self, props):
+        # Position at the top of the transom (offset + thickness)
         translation = Matrix.Translation(
             V_(props.overall_width / 2, props.lining_offset, props.transom_offset + props.transom_thickness)
         )
@@ -904,7 +942,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         mw = obj.matrix_world
         self.update_property_gizmos(mw, props)
         self.update_swing_gizmos(mw, props)
-        self.update_editing_gizmos(mw, props)
+        self.update_editing_gizmos(context, mw, props)
 
     def update_swing_gizmos(self, mw, props):
         """Update swing gizmo position and color based on editing state."""
