@@ -948,28 +948,36 @@ def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
             px, py = -dy / length * half_width, dx / length * half_width
 
             # XY plane triangles
-            triangles.extend([
-                (x1 + px, y1 + py, 0.0),
-                (x1 - px, y1 - py, 0.0),
-                (x2 + px, y2 + py, 0.0),
-            ])
-            triangles.extend([
-                (x2 + px, y2 + py, 0.0),
-                (x1 - px, y1 - py, 0.0),
-                (x2 - px, y2 - py, 0.0),
-            ])
+            triangles.extend(
+                [
+                    (x1 + px, y1 + py, 0.0),
+                    (x1 - px, y1 - py, 0.0),
+                    (x2 + px, y2 + py, 0.0),
+                ]
+            )
+            triangles.extend(
+                [
+                    (x2 + px, y2 + py, 0.0),
+                    (x1 - px, y1 - py, 0.0),
+                    (x2 - px, y2 - py, 0.0),
+                ]
+            )
 
             # XZ plane triangles (for visibility from other angles)
-            triangles.extend([
-                (x1, y1, -half_width),
-                (x2, y2, -half_width),
-                (x1, y1, +half_width),
-            ])
-            triangles.extend([
-                (x1, y1, +half_width),
-                (x2, y2, -half_width),
-                (x2, y2, +half_width),
-            ])
+            triangles.extend(
+                [
+                    (x1, y1, -half_width),
+                    (x2, y2, -half_width),
+                    (x1, y1, +half_width),
+                ]
+            )
+            triangles.extend(
+                [
+                    (x1, y1, +half_width),
+                    (x2, y2, -half_width),
+                    (x2, y2, +half_width),
+                ]
+            )
 
     # Arrowhead at the end of the arc (pointing in direction of cycling)
     arrow_size = 0.18  # 50% larger than original 0.12
@@ -992,18 +1000,22 @@ def _generate_circular_arrow_tris() -> tuple[tuple[float, float, float], ...]:
     perp_y = tangent_x * arrow_size
 
     # Arrowhead triangle (XY plane)
-    triangles.extend([
-        (tip_x, tip_y, 0.0),
-        (end_x - perp_x * 0.5, end_y - perp_y * 0.5, 0.0),
-        (end_x + perp_x * 0.5, end_y + perp_y * 0.5, 0.0),
-    ])
+    triangles.extend(
+        [
+            (tip_x, tip_y, 0.0),
+            (end_x - perp_x * 0.5, end_y - perp_y * 0.5, 0.0),
+            (end_x + perp_x * 0.5, end_y + perp_y * 0.5, 0.0),
+        ]
+    )
 
     # Arrowhead triangle (XZ plane for depth)
-    triangles.extend([
-        (tip_x, tip_y, 0.0),
-        (end_x, end_y, -arrow_size * 0.5),
-        (end_x, end_y, +arrow_size * 0.5),
-    ])
+    triangles.extend(
+        [
+            (tip_x, tip_y, 0.0),
+            (end_x, end_y, -arrow_size * 0.5),
+            (end_x, end_y, +arrow_size * 0.5),
+        ]
+    )
 
     return tuple(triangles)
 

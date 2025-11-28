@@ -920,7 +920,9 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
         # Calculate base swing transformation (common to both arcs)
         swing_x_offset = props.overall_width if "RIGHT" in props.door_type else 0.0
-        base_swing_transform = Matrix.Translation(V_(swing_x_offset, props.lining_offset, 0)) @ Matrix.Scale(props.overall_width, 4)
+        base_swing_transform = Matrix.Translation(V_(swing_x_offset, props.lining_offset, 0)) @ Matrix.Scale(
+            props.overall_width, 4
+        )
 
         if not self.gizmo_door_type.hide:
             self.gizmo_door_type.matrix_basis = mw @ base_swing_transform

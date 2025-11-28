@@ -446,7 +446,9 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     def get_gizmo_matrix_tread_depth(self, props):
         riser_height = self._get_first_riser_height(props)
-        translation = Matrix.Translation(Vector((props.tread_run / 2, props.width / 2, riser_height - props.tread_depth)))
+        translation = Matrix.Translation(
+            Vector((props.tread_run / 2, props.width / 2, riser_height - props.tread_depth))
+        )
         rotation = self.get_axis_rotation_matrix((0, 0, -1))
         return translation @ rotation
 
@@ -458,7 +460,9 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     def get_gizmo_matrix_nosing_depth(self, props):
         riser_height = self._get_first_riser_height(props)
-        translation = Matrix.Translation(Vector((-props.nosing_length, props.width / 2, riser_height - props.nosing_depth)))
+        translation = Matrix.Translation(
+            Vector((-props.nosing_length, props.width / 2, riser_height - props.nosing_depth))
+        )
         rotation = self.get_axis_rotation_matrix((0, 0, -1))
         return translation @ rotation
 
