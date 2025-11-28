@@ -214,9 +214,7 @@ class BIMModelProperties(PropertyGroup):
     # Used for things like windows, other hosted furniture, and MEP
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
     # Used for plan calculation points such as in room generation
-    rl3: bpy.props.FloatProperty(
-        name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation"
-    )
+    rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
     type_page: bpy.props.IntProperty(name="Type Page", default=1, min=1, update=update_type_page)
     x_angle: bpy.props.FloatProperty(
         name="X Angle",
@@ -245,9 +243,7 @@ class BIMModelProperties(PropertyGroup):
         default="TOP",
         description="Offset convention to reference line",
     )
-    offset: bpy.props.FloatProperty(
-        name="Offset", default=0.0, description="Material usage offset from reference line"
-    )
+    offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
     show_wall_axis: bpy.props.BoolProperty(
         name="Show Wall Axis",
         default=False,

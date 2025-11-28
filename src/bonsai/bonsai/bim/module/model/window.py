@@ -680,7 +680,11 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     def get_gizmo_matrix_lining_to_panel_offset_y(self, props):
         y_full = self._get_lining_to_panel_offset_y_full(props)
         translation = Matrix.Translation(
-            V_(props.lining_to_panel_offset_x, y_full + props.frame_depth[0] + props.lining_offset, props.lining_thickness)
+            V_(
+                props.lining_to_panel_offset_x,
+                y_full + props.frame_depth[0] + props.lining_offset,
+                props.lining_thickness,
+            )
         )
         rotation = self.get_axis_rotation_matrix((0, 1, 0))
         return translation @ rotation
@@ -693,16 +697,12 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return translation @ rotation
 
     def get_gizmo_matrix_first_mullion_offset(self, props):
-        translation = Matrix.Translation(
-            V_(props.first_mullion_offset, props.lining_offset, props.overall_height / 2)
-        )
+        translation = Matrix.Translation(V_(props.first_mullion_offset, props.lining_offset, props.overall_height / 2))
         rotation = self.get_axis_rotation_matrix((1, 0, 0))
         return translation @ rotation
 
     def get_gizmo_matrix_second_mullion_offset(self, props):
-        translation = Matrix.Translation(
-            V_(props.second_mullion_offset, props.lining_offset, props.overall_height / 2)
-        )
+        translation = Matrix.Translation(V_(props.second_mullion_offset, props.lining_offset, props.overall_height / 2))
         rotation = self.get_axis_rotation_matrix((1, 0, 0))
         return translation @ rotation
 
@@ -714,16 +714,12 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return translation @ rotation
 
     def get_gizmo_matrix_first_transom_offset(self, props):
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.lining_offset, props.first_transom_offset)
-        )
+        translation = Matrix.Translation(V_(props.overall_width / 2, props.lining_offset, props.first_transom_offset))
         rotation = self.get_axis_rotation_matrix((0, 0, 1))
         return translation @ rotation
 
     def get_gizmo_matrix_second_transom_offset(self, props):
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.lining_offset, props.second_transom_offset)
-        )
+        translation = Matrix.Translation(V_(props.overall_width / 2, props.lining_offset, props.second_transom_offset))
         rotation = self.get_axis_rotation_matrix((0, 0, 1))
         return translation @ rotation
 
