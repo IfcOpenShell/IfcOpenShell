@@ -324,13 +324,13 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
     element: bpy.props.IntProperty()
     name: bpy.props.StringProperty(name="Name")
     description: bpy.props.StringProperty(name="Description")
-    assign_active_object: bpy.props.BoolProperty(default=False)
+    assign_selected_objects: bpy.props.BoolProperty(default=False)
 
     if TYPE_CHECKING:
         element: int
         name: str
         description: str
-        assign_active_object: bool
+        assign_selected_objects: bool
 
     def _execute(self, context):
         element = tool.Ifc.get().by_id(self.element)
@@ -349,14 +349,16 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         
         bpy.ops.bim.load_type_thumbnails()
         
-        # Assign active object to the new type if requested
-        if self.assign_active_object and context.active_object:
-            active_element = tool.Ifc.get_entity(context.active_object)
-            if active_element and active_element.is_a("IfcObject"):
-                core.assign_type(tool.Ifc, tool.Type, element=active_element, type=new)
-                prefs = tool.Blender.get_addon_preferences()
-                if prefs.occurrence_name_style == "TYPE":
-                    context.active_object.name = tool.Model.generate_occurrence_name(new, active_element.is_a())
+        # Assign selected objects to the new type if requested
+        if self.assign_selected_objects:
+            selected_objects = tool.Blender.get_selected_objects()
+            prefs = tool.Blender.get_addon_preferences()
+            for selected_obj in selected_objects:
+                selected_element = tool.Ifc.get_entity(selected_obj)
+                if selected_element and selected_element.is_a("IfcObject"):
+                    core.assign_type(tool.Ifc, tool.Type, element=selected_element, type=new)
+                    if prefs.occurrence_name_style == "TYPE":
+                        selected_obj.name = tool.Model.generate_occurrence_name(new, selected_element.is_a())
         
         if obj in context.selectable_objects:
             tool.Blender.select_and_activate_single_object(context, new_obj)
@@ -381,7 +383,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
     def draw(self, context):
         self.layout.prop(self, "name")
         self.layout.prop(self, "description")
-        if context.active_object:
-            active_element = tool.Ifc.get_entity(context.active_object)
-            if active_element and active_element.is_a("IfcObject"):
-                self.layout.prop(self, "assign_active_object", text="Assign Active Object to New Type")
+        selected_objects = tool.Blender.get_selected_objects()
+        ifc_objects = [obj for obj in selected_objects if tool.Ifc.get_entity(obj) and tool.Ifc.get_entity(obj).is_a("IfcObject")]
+        if ifc_objects:
+            self.layout.prop(self, "assign_selected_objects", text=f"Assign {len(ifc_objects)} Selected Object(s) to New Type")
