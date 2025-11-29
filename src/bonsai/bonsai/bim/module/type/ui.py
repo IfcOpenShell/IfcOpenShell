@@ -96,6 +96,10 @@ class BIM_PT_type(Panel):
                 op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
                 op.relating_type = 0  # will only select the relating types of only the selected objects
                 row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
+                # Add duplicate button here with assign_active_object enabled
+                op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
+                op.element = TypeData.data["relating_type"]["id"]
+                op.assign_active_object = True
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_type", icon="X", text="")
             else:

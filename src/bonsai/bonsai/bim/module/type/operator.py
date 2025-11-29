@@ -322,6 +322,15 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Duplicate Type"
     bl_options = {"REGISTER", "UNDO"}
     element: bpy.props.IntProperty()
+    name: bpy.props.StringProperty(name="Name")
+    description: bpy.props.StringProperty(name="Description")
+    assign_active_object: bpy.props.BoolProperty(default=False)
+
+    if TYPE_CHECKING:
+        element: int
+        name: str
+        description: str
+        assign_active_object: bool
 
     def _execute(self, context):
         element = tool.Ifc.get().by_id(self.element)
@@ -332,8 +341,23 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         if obj.data:
             new_obj.data = obj.data.copy()
         new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
-        new.Name += " Copy"
+        
+        # Apply the name and description from the dialog
+        new.Name = self.name
+        if self.description:
+            new.Description = self.description
+        
         bpy.ops.bim.load_type_thumbnails()
+        
+        # Assign active object to the new type if requested
+        if self.assign_active_object and context.active_object:
+            active_element = tool.Ifc.get_entity(context.active_object)
+            if active_element and active_element.is_a("IfcObject"):
+                core.assign_type(tool.Ifc, tool.Type, element=active_element, type=new)
+                prefs = tool.Blender.get_addon_preferences()
+                if prefs.occurrence_name_style == "TYPE":
+                    context.active_object.name = tool.Model.generate_occurrence_name(new, active_element.is_a())
+        
         if obj in context.selectable_objects:
             tool.Blender.select_and_activate_single_object(context, new_obj)
         else:
@@ -347,3 +371,17 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             props.ifc_class = new.is_a()
             props.relating_type_id = str(tool.Blender.get_ifc_definition_id(new_obj))
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        element = tool.Ifc.get().by_id(self.element)
+        self.name = (element.Name or "Unnamed") + " Copy"
+        self.description = element.Description or ""
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "name")
+        self.layout.prop(self, "description")
+        if context.active_object:
+            active_element = tool.Ifc.get_entity(context.active_object)
+            if active_element and active_element.is_a("IfcObject"):
+                self.layout.prop(self, "assign_active_object", text="Assign Active Object to New Type")
