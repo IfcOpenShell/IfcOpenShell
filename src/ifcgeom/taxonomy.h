@@ -1649,42 +1649,34 @@ typedef item const* ptr;
 		}
 
 		template <typename T, typename U, typename Fn>
-		void visit_2(const typename U::ptr& c, const Fn& fn) {
+		void visit_2(const typename U::ptr& collection, const Fn& fn) {
 			static_assert(std::is_same<T, taxonomy::point3>::value, "@todo Only implemented for point3");
-			for (auto& i : c->children) {
+            for (auto& child : collection->children) {
 				// @todo Sad... now that we have templated collection members,
 				// we can't generally use collection_base anymore as a cast target.
-				if (auto s = taxonomy::dcast<taxonomy::collection>(i)) {
-					visit_2<T, taxonomy::collection>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::loop>(i)) {
-					visit_2<T, taxonomy::loop>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::face>(i)) {
-					visit_2<T, taxonomy::face>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::shell>(i)) {
-					visit_2<T, taxonomy::shell>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::solid>(i)) {
-					visit_2<T, taxonomy::solid>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::loft>(i)) {
-					visit_2<T, taxonomy::loft>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::boolean_result>(i)) {
-					visit_2<T, taxonomy::boolean_result>(s, fn);
-				}
-				else if (auto pt = taxonomy::dcast<taxonomy::point3>(i)) {
+				if (auto col = std::dynamic_pointer_cast<taxonomy::collection>(child)) {
+					visit_2<T, taxonomy::collection>(col, fn);
+				} else if (auto loop = std::dynamic_pointer_cast<taxonomy::loop>(child)) {
+					visit_2<T, taxonomy::loop>(loop, fn);
+				} else if (auto face = std::dynamic_pointer_cast<taxonomy::face>(child)) {
+					visit_2<T, taxonomy::face>(face, fn);
+				} else if (auto shell = std::dynamic_pointer_cast<taxonomy::shell>(child)) {
+					visit_2<T, taxonomy::shell>(shell, fn);
+				} else if (auto solid = std::dynamic_pointer_cast<taxonomy::solid>(child)) {
+					visit_2<T, taxonomy::solid>(solid, fn);
+				} else if (auto loft = std::dynamic_pointer_cast<taxonomy::loft>(child)) {
+                    visit_2<T, taxonomy::loft>(loft, fn);
+				} else if (auto bl = std::dynamic_pointer_cast<taxonomy::boolean_result>(child)) {
+                    visit_2<T, taxonomy::boolean_result>(bl, fn);
+				} else if (auto pt = std::dynamic_pointer_cast<taxonomy::point3>(child)) {
 					fn(pt);
-				}
-				else if (auto l = taxonomy::dcast<taxonomy::edge>(i)) {
+				} else if (auto ed = std::dynamic_pointer_cast<taxonomy::edge>(child)) {
 					// @todo maybe make edge a collection then as well?
-					if (l->start.which() == 1) {
-						fn(boost::get<taxonomy::point3::ptr>(l->start));
+					if (ed->start.which() == 1) {
+						fn(boost::get<taxonomy::point3::ptr>(ed->start));
 					}
-					if (l->end.which() == 1) {
-						fn(boost::get<taxonomy::point3::ptr>(l->end));
+					if (ed->end.which() == 1) {
+						fn(boost::get<taxonomy::point3::ptr>(ed->end));
 					}
 				}
 			}
