@@ -84,6 +84,50 @@ namespace {
 }
 
 bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
+    using namespace ifcopenshell::geometry;
+
+	bool applied_temporary_offset = false;
+	Eigen::Vector3d mean;
+
+	auto curve = scs->curve;
+
+	// Apply temporary offset if the geometry is far away from origin
+	// Re: https://github.com/IfcOpenShell/IfcOpenShell/issues/7408
+	// The norm2 that used as a treshold is actually really small though
+    // is this a coincedence that it solves the problem in this one test case?
+	if (curve->kind() == taxonomy::LOOP && std::dynamic_pointer_cast<taxonomy::loop>(curve)->is_polyhedron()) {
+        Eigen::Vector3d sum = Eigen::Vector3d::Zero();
+        size_t count = 0;
+
+        visit_2<taxonomy::point3, taxonomy::loop>(std::dynamic_pointer_cast<taxonomy::loop>(curve), [&](const taxonomy::point3::ptr& p) {
+            const Eigen::Vector3d& coords = p->ccomponents();
+
+            sum += coords;
+            ++count;
+        });
+
+        mean = (count > 0) ? (sum / static_cast<double>(count)).eval() : Eigen::Vector3d::Zero().eval();
+
+        if (mean.norm() > 1.e2) {
+            curve = taxonomy::loop::ptr((taxonomy::loop*)scs->curve->clone_());
+            applied_temporary_offset = true;
+            std::set<taxonomy::point3::ptr> unique_points;
+            for (auto& e : std::dynamic_pointer_cast<taxonomy::loop>(curve)->children) {
+                auto* a = boost::get<taxonomy::point3::ptr>(&e->start);
+                auto* b = boost::get<taxonomy::point3::ptr>(&e->end);
+                if (a) {
+                    unique_points.insert(*a);
+                }
+                if (b) {
+                    unique_points.insert(*b);
+                }
+            }
+            for (auto& p : unique_points) {
+                p->components() -= mean;
+            }
+        }
+    }
+	
 	auto w = convert_curve(scs->curve);
 	if (w.which() != 2) {
 		Logger::Error("Unsupported directrix");
@@ -207,13 +251,13 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	for (int i = 0; i < 2; ++i) {
 		for (TopExp_Explorer exp(face, TopAbs_WIRE); exp.More(); exp.Next()) {
 			const auto& section = TopoDS::Wire(exp.Current());
-			if (section.IsSame(outer) != i == 0) {
+			if (section.IsSame(outer) != (i == 0)) {
 				continue;
 			}
 
 			BRepOffsetAPI_MakePipeShell builder(wire);
 			builder.Add(section);
-			builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
+            builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
 			if (directrix_on_plane) {
 				builder.SetMode(pln.Axis().Direction());
 			} else if (!is_plane) {
@@ -238,8 +282,8 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 				mf1.reset(new BRepBuilderAPI_MakeFace(f1));
 			}
 
-			for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
-				BB.Add(comp, exp.Current());
+			for (TopExp_Explorer exp2(builder.Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
+				BB.Add(comp, exp2.Current());
 			}
 		}
 	}
@@ -253,6 +297,12 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	}
 
 	result = BRepBuilderAPI_MakeSolid(comp).Solid();
+
+	if (applied_temporary_offset) {
+        gp_Trsf trsf;
+        trsf.SetTranslation(gp_Vec(-mean.x(), -mean.y(), -mean.z()));
+        result.Move(trsf);
+    }
 
 	return true;
 }
