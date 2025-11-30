@@ -1349,6 +1349,7 @@ class Model(bonsai.core.tool.Model):
             first_tread_run = props.custom_first_last_tread_run[0] / si_conversion
             last_tread_run = props.custom_first_last_tread_run[1] / si_conversion
             nosing_length = props.nosing_length / si_conversion
+            use_custom_first_last_tread_run = not props.custom_tread_lock
         else:
             assert pset_data
             number_of_treads: int = pset_data["number_of_treads"]
@@ -1360,29 +1361,23 @@ class Model(bonsai.core.tool.Model):
             )
             first_tread_run, last_tread_run = custom_first_last_tread_run
             nosing_length = pset_data.get("nosing_length", 0)
+            use_custom_first_last_tread_run = not pset_data.get("custom_tread_lock", True)
 
         calculated_params: dict[str, Any] = {}
         number_of_rises = number_of_treads + 1
         calculated_params["Number of Risers"] = number_of_rises
         calculated_params["Tread Rise"] = round(height / number_of_rises, 5)
 
-        # calculate stair length
-        # Start with all treads using default tread_run
-        n_default_tread_runs = number_of_rises
+        # Calculate total length taking into account custom first/last tread runs :
         length = 0.0
-
-        # If first tread has custom width (non-None), use it instead of default.
-        if first_tread_run is not None:
-            n_default_tread_runs -= 1
+        default_rises = number_of_rises
+        if use_custom_first_last_tread_run and first_tread_run is not None:
+            default_rises -= 1
             length += first_tread_run
-
-        # If last tread has custom width (non-None), use it instead of default
-        if last_tread_run is not None:
-            n_default_tread_runs -= 1
+        if use_custom_first_last_tread_run and last_tread_run is not None:
+            default_rises -= 1
             length += last_tread_run
-
-        # Add remaining default tread runs
-        length += tread_run * n_default_tread_runs
+        length += tread_run * default_rises
 
         # Handle nosing length effects on total length
         # Nosing overlaps don't affect tread run spacing,
