@@ -23,7 +23,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
         target_link_libraries(${KERNEL_TARGET_SIMPLE} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
         install(TARGETS ${KERNEL_TARGET_SIMPLE})
     elseif(${kernel} STREQUAL "opencascade")
-        target_link_libraries(${KERNEL_TARGET} ${OpenCASCADE_LIBRARIES})
+        target_link_libraries(${KERNEL_TARGET} ${OPENCASCADE_LIBRARIES})
     endif()
 
     install(FILES ${IFCGEOM_H_FILES}

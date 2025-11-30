@@ -26,11 +26,11 @@ if(SCHEMA_VERSIONS MATCHES "2x3")
     if(WITH_OPENCASCADE)
 
         ADD_EXECUTABLE(IfcOpenHouse IfcOpenHouse.cpp)
-        TARGET_LINK_LIBRARIES(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
+        TARGET_LINK_LIBRARIES(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES})
         set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
 
         ADD_EXECUTABLE(IfcAdvancedHouse IfcAdvancedHouse.cpp)
-        TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
+        TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES})
         set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
 
     endif()
