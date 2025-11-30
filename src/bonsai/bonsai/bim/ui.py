@@ -249,6 +249,8 @@ class GizmoPreferencesDoor(bpy.types.PropertyGroup):
     overall_width: BoolProperty(name="Overall Width", default=True)
     threshold_thickness: BoolProperty(name="Threshold Thickness", default=True)
     threshold_depth: BoolProperty(name="Threshold Depth", default=True)
+    threshold_offset: BoolProperty(name="Threshold Offset", default=True)
+    lining_offset: BoolProperty(name="Lining Offset", default=True)
     lining_depth: BoolProperty(name="Lining Depth", default=True)
     lining_thickness: BoolProperty(name="Lining Thickness", default=True)
     transom_offset: BoolProperty(name="Transom Offset", default=True)
@@ -263,6 +265,8 @@ class GizmoPreferencesDoor(bpy.types.PropertyGroup):
         overall_width: bool
         threshold_thickness: bool
         threshold_depth: bool
+        threshold_offset: bool
+        lining_offset: bool
         lining_depth: bool
         lining_thickness: bool
         transom_offset: bool
@@ -278,10 +282,13 @@ class GizmoPreferencesWindow(bpy.types.PropertyGroup):
 
     overall_height: BoolProperty(name="Overall Height", default=True)
     overall_width: BoolProperty(name="Overall Width", default=True)
+    lining_offset: BoolProperty(name="Lining Offset", default=True)
     lining_depth: BoolProperty(name="Lining Depth", default=True)
     lining_thickness: BoolProperty(name="Lining Thickness", default=True)
     lining_to_panel_offset_x: BoolProperty(name="Lining to Panel Offset X", default=True)
     lining_to_panel_offset_y: BoolProperty(name="Lining to Panel Offset Y", default=True)
+    frame_depth: BoolProperty(name="Frame Depth", default=True)
+    frame_thickness: BoolProperty(name="Frame Thickness", default=True)
     mullion_thickness: BoolProperty(name="Mullion Thickness", default=True)
     first_mullion_offset: BoolProperty(name="First Mullion Offset", default=True)
     second_mullion_offset: BoolProperty(name="Second Mullion Offset", default=True)
@@ -292,10 +299,13 @@ class GizmoPreferencesWindow(bpy.types.PropertyGroup):
     if TYPE_CHECKING:
         overall_height: bool
         overall_width: bool
+        lining_offset: bool
         lining_depth: bool
         lining_thickness: bool
         lining_to_panel_offset_x: bool
         lining_to_panel_offset_y: bool
+        frame_depth: bool
+        frame_thickness: bool
         mullion_thickness: bool
         first_mullion_offset: bool
         second_mullion_offset: bool
@@ -311,6 +321,7 @@ class GizmoPreferencesStair(bpy.types.PropertyGroup):
     height: BoolProperty(name="Height", default=True)
     tread_run: BoolProperty(name="Tread Run", default=True)
     tread_depth: BoolProperty(name="Tread Depth", default=True)
+    riser_height: BoolProperty(name="Riser Height", default=True)
     nosing_length: BoolProperty(name="Nosing Length", default=True)
     nosing_depth: BoolProperty(name="Nosing Depth", default=True)
     total_length_target: BoolProperty(name="Total Length Target", default=True)
@@ -326,6 +337,7 @@ class GizmoPreferencesStair(bpy.types.PropertyGroup):
         height: bool
         tread_run: bool
         tread_depth: bool
+        riser_height: bool
         nosing_length: bool
         nosing_depth: bool
         total_length_target: bool
@@ -763,7 +775,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         from bonsai.bim.module.model.door import GizmoDoorEdition
 
         door_gizmos = self.gizmos.door
-        gizmo_prop_names = {p.attr_name for p in GizmoDoorEdition.gizmo_props}
+        gizmo_prop_names = {p.attr_name for p in GizmoDoorEdition.dimension_gizmo_props}
+        # Add special gizmos not in dimension_gizmo_props
         gizmo_prop_names.update(("swing_arc", "flip_arc"))
         for prop in door_gizmos.__annotations__:
             if prop in gizmo_prop_names:
@@ -773,7 +786,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         from bonsai.bim.module.model.window import GizmoWindowEdition
 
         window_gizmos = self.gizmos.window
-        gizmo_prop_names = {p.attr_name for p in GizmoWindowEdition.gizmo_props}
+        gizmo_prop_names = {p.attr_name for p in GizmoWindowEdition.dimension_gizmo_props}
         for prop in window_gizmos.__annotations__:
             if prop in gizmo_prop_names:
                 layout.prop(window_gizmos, prop)
@@ -782,8 +795,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         from bonsai.bim.module.model.stair import GizmoStairEdition
 
         stair_gizmos = self.gizmos.stair
-        gizmo_prop_names = {p.attr_name for p in GizmoStairEdition.gizmo_props}
-        special_gizmo_names = {"lock", "plus", "minus"}
+        gizmo_prop_names = {p.attr_name for p in GizmoStairEdition.dimension_gizmo_props}
+        # Add special gizmos not in dimension_gizmo_props
+        special_gizmo_names = {"lock", "plus", "minus", "cycle"}
         for prop in stair_gizmos.__annotations__:
             if prop in gizmo_prop_names or prop in special_gizmo_names:
                 layout.prop(stair_gizmos, prop)

@@ -21,7 +21,7 @@ import bpy
 import bpy.utils.previews
 import importlib
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from . import handler, ui, prop, operator, gizmo
+from . import handler, ui, prop, operator
 from typing import Union
 from collections.abc import Callable
 
@@ -206,19 +206,6 @@ classes = [
     ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
-    # Gizmos
-    gizmo.BIM_OT_gizmo_value_input,
-    gizmo.GizmoArrow,
-    gizmo.GizmoArrow2D,
-    gizmo.GizmoCone,
-    gizmo.GizmoLock,
-    gizmo.GizmoArc,
-    gizmo.GizmoPen,
-    gizmo.GizmoValidate,
-    gizmo.GizmoCancel,
-    gizmo.GizmoPlus,
-    gizmo.GizmoMinus,
-    gizmo.GizmoCycle,
 ]
 
 for mod in modules.values():

@@ -33,8 +33,8 @@ import bonsai.core.geometry
 import bonsai.core.geometry as core
 import bonsai.core.root
 from bonsai.bim.module.model.window import create_bm_window, create_bm_box
-from bonsai.bim import gizmo
-from bonsai.bim.gizmo import GizmoPropConfig
+from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
 
 from mathutils import Vector, Matrix
 
@@ -786,31 +786,33 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     cancel_editing_operator = "bim.cancel_editing_door"
     cycle_type_operator = "bim.cycle_door_type"
 
-    gizmo_props = [
-        GizmoPropConfig("overall_height", (0, 0, 1)),
-        GizmoPropConfig("overall_width", (1, 0, 0)),
-        GizmoPropConfig("threshold_thickness", (0, 0, 1)),
-        GizmoPropConfig("threshold_depth", (0, 1, 0)),
-        GizmoPropConfig("lining_depth", (0, 1, 0)),
-        GizmoPropConfig("lining_thickness", (-1, 0, 0)),
-        GizmoPropConfig("transom_offset", (0, 0, 1)),
-        GizmoPropConfig("transom_thickness", (0, 0, 1)),
-        GizmoPropConfig("casing_thickness", (-1, 0, 0)),
-        GizmoPropConfig("casing_depth", (0, 1, 0)),
+    dimension_gizmo_props = [
+        DimensionGizmoConfig(attr_name="overall_width", axis=(1, 0, 0), min_value=0.01, text_offset_sign=-1),
+        DimensionGizmoConfig(attr_name="overall_height", axis=(0, 0, 1), min_value=0.01, text_alignment="start"),
+        DimensionGizmoConfig(attr_name="threshold_thickness", axis=(0, 0, 1)),
+        DimensionGizmoConfig(attr_name="threshold_depth", axis=(0, 1, 0)),
+        DimensionGizmoConfig(attr_name="threshold_offset", axis=(0, 1, 0)),
+        DimensionGizmoConfig(attr_name="lining_offset", axis=(0, 1, 0)),
+        DimensionGizmoConfig(attr_name="lining_depth", axis=(0, 1, 0)),
+        DimensionGizmoConfig(attr_name="lining_thickness", axis=(-1, 0, 0)),
+        DimensionGizmoConfig(attr_name="transom_offset", axis=(0, 0, 1)),
+        DimensionGizmoConfig(attr_name="transom_thickness", axis=(0, 0, 1)),
+        DimensionGizmoConfig(attr_name="casing_thickness", axis=(-1, 0, 0)),
+        DimensionGizmoConfig(attr_name="casing_depth", axis=(0, 1, 0)),
     ]
 
     @classmethod
     def is_element_type(cls, element) -> bool:
         return tool.Blender.Modifier.is_door(element)
 
-    def get_props(self, obj):
+    def get_props(self, obj: bpy.types.Object):
         return tool.Model.get_door_props(obj)
 
     def get_gizmo_prefs(self):
         prefs = tool.Blender.get_addon_preferences()
         return prefs.gizmos.door
 
-    def should_hide_gizmo(self, attr_name, props):
+    def should_hide_gizmo(self, attr_name: str, props) -> bool:
         """Door-specific visibility rules for gizmos."""
         if not props.is_editing:
             return True
@@ -824,90 +826,100 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             return True
         return False
 
-    def get_gizmo_matrix_overall_height(self, props):
-        translation = Matrix.Translation(V_(props.overall_width - 0.05, props.lining_offset, props.overall_height))
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
+    def get_icon_y_offset(self, context: bpy.types.Context, mw: Matrix) -> float:
+        """Get Y offset for icons based on view direction.
 
-    def get_gizmo_matrix_overall_width(self, props):
-        translation = Matrix.Translation(V_(props.overall_width, props.lining_offset, props.overall_height - 0.05))
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_threshold_thickness(self, props):
-        translation = Matrix.Translation(
-            V_(
-                props.overall_width / 2,
-                props.threshold_offset + props.threshold_depth / 2 + props.lining_offset,
-                props.threshold_thickness,
+        Positions icons further than the furthest geometry:
+        max(threshold_offset + threshold_depth, lining_offset + lining_depth) + 2 * GIZMO_OFFSET
+        """
+        obj = context.active_object
+        if not obj:
+            return self.ICON_Y_OFFSET
+        props = self.get_props(obj)
+        furthest_y = (
+            max(
+                props.threshold_offset + props.threshold_depth,
+                props.lining_offset + props.lining_depth,
             )
+            + 2 * self.GIZMO_OFFSET
         )
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
 
-    def get_gizmo_matrix_threshold_depth(self, props):
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.threshold_depth + props.lining_offset, props.threshold_thickness / 2)
-        )
-        rotation = self.get_axis_rotation_matrix((0, 1, 0))
-        return translation @ rotation
+        viewing_from_negative_y, _ = self.get_local_view_direction(context, mw)
+        if viewing_from_negative_y:
+            return -furthest_y
+        return furthest_y
 
-    def get_gizmo_matrix_lining_depth(self, props):
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.lining_depth + props.lining_offset, props.overall_height)
+    def get_dimension_matrix_threshold_thickness(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width / 2, props.threshold_offset + props.threshold_depth, 0), (0, 0, 1)
         )
-        rotation = self.get_axis_rotation_matrix((0, 1, 0))
-        return translation @ rotation
 
-    def get_gizmo_matrix_lining_thickness(self, props):
-        translation = Matrix.Translation(
-            V_(props.overall_width - props.lining_thickness, props.lining_depth / 2, props.overall_height / 2)
+    def get_dimension_matrix_threshold_depth(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width / 2, props.threshold_offset, props.threshold_thickness), (0, 1, 0)
         )
-        rotation = self.get_axis_rotation_matrix((-1, 0, 0))
-        return translation @ rotation
 
-    def get_gizmo_matrix_transom_offset(self, props):
-        # Position at the bottom of the transom (transom extends upward from offset)
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.lining_offset, props.transom_offset)
+    def get_dimension_matrix_threshold_offset(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width / 2 - 0.1, 0, props.threshold_thickness), (0, 1, 0)
         )
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
 
-    def get_gizmo_matrix_transom_thickness(self, props):
-        # Position at the top of the transom (offset + thickness)
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.lining_offset, props.transom_offset + props.transom_thickness)
+    def get_dimension_matrix_lining_offset(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(V_(0, 0, 0), (0, 1, 0))
+
+    def get_dimension_matrix_lining_depth(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width, props.lining_offset, props.overall_height), (0, 1, 0)
         )
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
+
+    def get_dimension_matrix_lining_thickness(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width, props.lining_depth / 2, props.overall_height / 2), (-1, 0, 0)
+        )
+
+    def get_dimension_matrix_transom_offset(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width / 2, props.lining_offset, 0), (0, 0, 1)
+        )
+
+    def get_dimension_matrix_transom_thickness(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width / 2, props.lining_offset, props.transom_offset), (0, 0, 1)
+        )
 
     @staticmethod
     def _get_casing_gizmo_base_position(props) -> tuple[float, float, float]:
         """Get common base position for casing gizmos."""
-        x = -props.casing_thickness + props.lining_thickness
+        x = props.lining_thickness
         y_base = props.lining_depth + props.lining_offset
         z = props.overall_height / 2
         return x, y_base, z
 
-    def get_gizmo_matrix_casing_thickness(self, props):
+    def get_dimension_matrix_casing_thickness(self, props) -> Matrix:
         x, y_base, z = self._get_casing_gizmo_base_position(props)
-        translation = Matrix.Translation(V_(x, y_base + props.casing_depth / 2, z))
-        rotation = self.get_axis_rotation_matrix((-1, 0, 0))
-        return translation @ rotation
+        return self.compose_gizmo_matrix(V_(x, y_base + props.casing_depth / 2, z), (-1, 0, 0))
 
-    def get_gizmo_matrix_casing_depth(self, props):
+    def get_dimension_matrix_casing_depth(self, props) -> Matrix:
         x, y_base, z = self._get_casing_gizmo_base_position(props)
-        translation = Matrix.Translation(V_(x, y_base + props.casing_depth, z))
-        rotation = self.get_axis_rotation_matrix((0, 1, 0))
-        return translation @ rotation
+        return self.compose_gizmo_matrix(V_(x - props.casing_thickness, y_base, z), (0, 1, 0))
 
-    def setup(self, context):
-        # Use base class methods for common gizmos
-        self.setup_property_gizmos(context)
+    def get_dimension_matrix_overall_width(self, props) -> Matrix:
+        """Position width dimension below the door."""
+        return self.compose_gizmo_matrix(
+            V_(0, props.lining_offset - self.GIZMO_OFFSET, -self.GIZMO_OFFSET), (1, 0, 0)
+        )
+
+    def get_dimension_matrix_overall_height(self, props) -> Matrix:
+        """Position height dimension to the side of the door."""
+        casing_offset = props.casing_thickness if props.lining_offset == 0.0 else 0.0
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width + casing_offset + self.GIZMO_OFFSET, props.lining_offset - self.GIZMO_OFFSET, 0),
+            (0, 0, 1),
+        )
+
+    def setup(self, context: bpy.types.Context) -> None:
         self.setup_editing_gizmos(context)
-
-        # Door-specific: swing arc gizmos
+        self.setup_dimension_gizmos(context)
         prefs = tool.Blender.get_addon_preferences()
         highlight_color = prefs.decorator_color_selected[:3]
         inactive_color = prefs.decorator_color_background[:3]
@@ -922,7 +934,6 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         op = self.gizmo_door_type.target_set_operator("bim.toggle_door_swing")
         op.flip_geometry = False
 
-        # Flip arc gizmo - mirrors the swing arc along X axis, flips door and toggles direction when clicked
         self.gizmo_flip_arc = self.gizmos.new("VIEW3D_GT_arc")
         self.gizmo_flip_arc.use_draw_scale = False
         self.gizmo_flip_arc.color = inactive_color
@@ -933,40 +944,65 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         op.flip_geometry = True
         op.flip_local_axes = "XY"
 
-    def refresh(self, context):
+    def refresh(self, context: bpy.types.Context) -> None:
+        if not self.is_setup_complete():
+            return
         obj = context.active_object
         if not obj:
             return
 
         props = self.get_props(obj)
         mw = obj.matrix_world
-        self.update_property_gizmos(mw, props)
         self.update_swing_gizmos(mw, props)
         self.update_editing_gizmos(context, mw, props)
+        self.update_dimension_gizmos(mw, props)
 
-    def update_swing_gizmos(self, mw, props):
+    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw: Matrix, props) -> None:
+        """Update dimension gizmo positions based on camera view direction."""
+        viewing_from_negative_y, viewing_from_negative_x = self.get_local_view_direction(context, mw)
+        y_pos = self.get_lining_y_position_for_view(props, viewing_from_negative_y)
+
+        self.set_dimension_gizmo_position("overall_width", mw, V_(0, y_pos, -self.GIZMO_OFFSET), (1, 0, 0))
+
+        casing_offset = props.casing_thickness if props.lining_offset == 0.0 else 0.0
+        if viewing_from_negative_x:
+            x_pos = -casing_offset - self.GIZMO_OFFSET
+        else:
+            x_pos = props.overall_width + casing_offset + self.GIZMO_OFFSET
+        self.set_dimension_gizmo_position("overall_height", mw, V_(x_pos, y_pos, 0), (0, 0, 1))
+
+    def update_swing_gizmos(self, mw: Matrix, props) -> None:
         """Update swing gizmo position and color based on editing state."""
-        prefs = tool.Blender.get_addon_preferences()
-        door_gizmo_prefs = prefs.gizmos.door
+        door_type_hidden_by_modal = self.is_gizmo_hidden_by_modal(self.gizmo_door_type)
+        flip_arc_hidden_by_modal = self.is_gizmo_hidden_by_modal(self.gizmo_flip_arc)
 
-        self.gizmo_door_type.hide = not props.is_editing or not door_gizmo_prefs.swing_arc
-        self.gizmo_flip_arc.hide = not props.is_editing or not door_gizmo_prefs.flip_arc
+        if door_type_hidden_by_modal:
+            self.gizmo_door_type.hide = True
+        else:
+            prefs = tool.Blender.get_addon_preferences()
+            door_gizmo_prefs = prefs.gizmos.door
+            self.gizmo_door_type.hide = not props.is_editing or not door_gizmo_prefs.swing_arc
 
-        # If both are hidden, no need to calculate transforms
+        if flip_arc_hidden_by_modal:
+            self.gizmo_flip_arc.hide = True
+        else:
+            prefs = tool.Blender.get_addon_preferences()
+            door_gizmo_prefs = prefs.gizmos.door
+            self.gizmo_flip_arc.hide = not props.is_editing or not door_gizmo_prefs.flip_arc
+
         if self.gizmo_door_type.hide and self.gizmo_flip_arc.hide:
             return
 
-        # Calculate base swing transformation (common to both arcs)
         swing_x_offset = props.overall_width if "RIGHT" in props.door_type else 0.0
         base_swing_transform = Matrix.Translation(V_(swing_x_offset, props.lining_offset, 0)) @ Matrix.Scale(
             props.overall_width, 4
         )
 
+        prefs = tool.Blender.get_addon_preferences()
         if not self.gizmo_door_type.hide:
             self.gizmo_door_type.matrix_basis = mw @ base_swing_transform
             self.gizmo_door_type.color = prefs.decorations_colour[:3]
 
         if not self.gizmo_flip_arc.hide:
-            # Mirror the flip arc along Y axis to show the opposite swing direction
             mirror_y = Matrix.Scale(-1, 4, (0, 1, 0))
             self.gizmo_flip_arc.matrix_basis = mw @ base_swing_transform @ mirror_y
