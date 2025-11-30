@@ -498,15 +498,15 @@ class BIMStairProperties(PropertyGroup):
     non_si_units_props = ("is_editing", "number_of_treads", "has_top_nib", "stair_type", "custom_tread_lock")
 
     is_editing: bpy.props.BoolProperty(default=False)
-    width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
-    height: bpy.props.FloatProperty(name="Height", default=1.0, soft_min=0.01, subtype="DISTANCE")
+    width: bpy.props.FloatProperty(name="Width", default=1.2, min=0.01, subtype="DISTANCE")
+    height: bpy.props.FloatProperty(name="Height", default=1.0, min=0.01, subtype="DISTANCE")
     number_of_treads: bpy.props.IntProperty(
-        name="Number of Treads", default=6, soft_min=1, update=update_number_of_treads
+        name="Number of Treads", default=6, soft_min=1, min=0, update=update_number_of_treads
     )
     total_length_target: bpy.props.FloatProperty(
         name="Total Length Target",
         default=3.0,
-        soft_min=0.01,
+        min=0.01,
         subtype="DISTANCE",
         update=update_total_length_target,
         description="Total Length Target, might not be exactly respected depending on the parameters",
@@ -516,12 +516,12 @@ class BIMStairProperties(PropertyGroup):
         name="Lock Total Length",
         description="Lock Total Length when changing number of treads or tread run",
     )
-    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, soft_min=0.01, subtype="DISTANCE")
+    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, min=0.01, subtype="DISTANCE")
     tread_run: bpy.props.FloatProperty(
-        name="Tread Run", default=0.3, soft_min=0.01, subtype="DISTANCE", update=update_tread_run
+        name="Tread Run", default=0.3, min=0.01, subtype="DISTANCE", update=update_tread_run
     )
-    base_slab_depth: bpy.props.FloatProperty(name="Base Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
-    top_slab_depth: bpy.props.FloatProperty(name="Top Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
+    base_slab_depth: bpy.props.FloatProperty(name="Base Slab Depth", default=0.25, min=0, subtype="DISTANCE")
+    top_slab_depth: bpy.props.FloatProperty(name="Top Slab Depth", default=0.25, min=0, subtype="DISTANCE")
     has_top_nib: bpy.props.BoolProperty(name="Has Top Nib", default=True)
     stair_type: bpy.props.EnumProperty(
         name="Stair Type",
@@ -542,7 +542,7 @@ class BIMStairProperties(PropertyGroup):
         min=0,
         unit="LENGTH",
         size=2,
-        update=update_custom_first_last_tread_run,  # Added update callback
+        update=update_custom_first_last_tread_run,
     )
     nosing_length: bpy.props.FloatProperty(
         name="Nosing Length",
