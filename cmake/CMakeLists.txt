@@ -208,9 +208,6 @@ if(WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OPENCASCADE_LIBRARIES used by kernel generic cmake file
     set(OPENCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
-    find_package(OpenCASCADE REQUIRED)
-    # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OPENCASCADE_LIBRARIES used by kernel generic cmake file
-    set(OPENCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
     add_definitions(-DIFOPSH_WITH_OPENCASCADE)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
@@ -329,25 +326,6 @@ endif()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
-
-if(NOT MINIMAL_BUILD)
-    # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
-    if(IFCXML_SUPPORT)
-        find_package(LibXml2 REQUIRED)
-    endif()
-endif()
-
-if(IFCXML_SUPPORT)
-    add_definitions(-DWITH_IFCXML)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
-endif()
-
-if(BUILD_IFCGEOM)
-    # Open CASCADE
-    if(WITH_OPENCASCADE)
-        find_package(OpenCASCADE REQUIRED)
-    endif(WITH_OPENCASCADE)
-endif(BUILD_IFCGEOM)
 
 if(COLLADA_SUPPORT)
     find_package(OpenCOLLADA REQUIRED)
@@ -569,13 +547,6 @@ add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 
 if(BUILD_IFCGEOM)
-	foreach(schema ${SCHEMA_VERSIONS})
-		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} geometry_mapping_ifc${schema})
-	endforeach()
-    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
-endif()
-
-if(BUILD_IFCGEOM)
     # CGAL::CGAL target already has dependencies resolved.
     if(WITH_CGAL AND CGAL_DIR)
         set(CGAL_LIBRARIES CGAL::CGAL)
@@ -595,34 +566,6 @@ if(BUILD_IFCGEOM)
     endif()
 
     add_subdirectory(../src/ifcgeom ifcgeom)
-    
-    # IfcGeom
-    foreach(schema ${SCHEMA_VERSIONS})
-        file(GLOB IFCGEOM_I_FILES ../src/ifcgeom/mapping/*.i)
-        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/mapping/*.h)
-        file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/mapping/*.cpp)
-        set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
-
-        add_library(geometry_mapping_ifc${schema} OBJECT ${IFCGEOM_FILES})
-        set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
-        list(APPEND mapping_libraries geometry_mapping_ifc${schema})
-    endforeach()
-
-    # IfcGeom (schema agnostic)
-    file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom/*.h)
-    file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom/*.cpp)
-    set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
-
-    add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
-    set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
-
-    if(UNIX)
-        find_package(Threads)
-    endif()
-
-    target_link_libraries(IfcGeom IfcParse ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} ${OpenCASCADE_LIBRARIES})
-
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
