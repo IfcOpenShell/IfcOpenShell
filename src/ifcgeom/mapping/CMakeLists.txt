@@ -1,3 +1,5 @@
+find_package(Eigen3 REQUIRED)
+
 foreach(schema ${SCHEMA_VERSIONS})
     file(GLOB IFCGEOM_I_FILES *.i)
     file(GLOB IFCGEOM_H_FILES *.h)
@@ -6,7 +8,7 @@ foreach(schema ${SCHEMA_VERSIONS})
 
     add_library(geometry_mapping_ifc${schema} OBJECT ${IFCGEOM_FILES})
     set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-    target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
+    target_link_libraries(geometry_mapping_ifc${schema} IfcParse  Eigen3::Eigen)
 
     list(APPEND mapping_libraries geometry_mapping_ifc${schema})
 
