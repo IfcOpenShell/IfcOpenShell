@@ -28,8 +28,8 @@ import ifcopenshell.api.pset
 import bonsai.tool as tool
 import bonsai.core.root
 import bonsai.core.geometry
-from bonsai.bim import gizmo
-from bonsai.bim.gizmo import GizmoPropConfig
+from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 import ifcopenshell.api
 import ifcopenshell.api.material
@@ -42,6 +42,44 @@ from mathutils import Vector, Matrix
 from typing import get_args
 
 V_ = tool.Blender.V_
+
+# Window type visibility helpers for dimension gizmos
+_MULLION_TYPES = frozenset((
+    "DOUBLE_PANEL_VERTICAL",
+    "TRIPLE_PANEL_BOTTOM",
+    "TRIPLE_PANEL_TOP",
+    "TRIPLE_PANEL_LEFT",
+    "TRIPLE_PANEL_RIGHT",
+    "TRIPLE_PANEL_VERTICAL",
+))
+_TRANSOM_TYPES = frozenset((
+    "DOUBLE_PANEL_HORIZONTAL",
+    "TRIPLE_PANEL_BOTTOM",
+    "TRIPLE_PANEL_TOP",
+    "TRIPLE_PANEL_LEFT",
+    "TRIPLE_PANEL_RIGHT",
+    "TRIPLE_PANEL_HORIZONTAL",
+))
+
+
+def _has_mullion(props) -> bool:
+    """Check if the window type uses mullions (vertical dividers)."""
+    return props.window_type in _MULLION_TYPES
+
+
+def _has_second_mullion(props) -> bool:
+    """Check if the window type uses a second mullion."""
+    return props.window_type == "TRIPLE_PANEL_VERTICAL"
+
+
+def _has_transom(props) -> bool:
+    """Check if the window type uses transoms (horizontal dividers)."""
+    return props.window_type in _TRANSOM_TYPES
+
+
+def _has_second_transom(props) -> bool:
+    """Check if the window type uses a second transom."""
+    return props.window_type == "TRIPLE_PANEL_HORIZONTAL"
 
 
 def update_window_modifier_representation(context: bpy.types.Context) -> None:
@@ -481,6 +519,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
 class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_window"
     bl_label = "Cancel Editing Window"
+    bl_description = "Cancel editing and revert window parameters to their previous values"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -509,6 +548,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_window"
     bl_label = "Finish Editing Window"
+    bl_description = "Apply changes and finish editing window parameters"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -541,6 +581,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_window"
     bl_label = "Enable Editing Window"
+    bl_description = "Enter edit mode to modify window parameters interactively"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -605,6 +646,26 @@ class CycleWindowType(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+def _compute_frame_depth(props) -> float:
+    """Get the first panel's frame depth value."""
+    return props.frame_depth[0]
+
+
+def _apply_frame_depth(props, value: float) -> None:
+    """Apply a new frame depth value to the first panel, preserving other panels."""
+    props.frame_depth = (max(0.0, value),) + tuple(props.frame_depth[1:])
+
+
+def _compute_frame_thickness(props) -> float:
+    """Get the first panel's frame thickness value."""
+    return props.frame_thickness[0]
+
+
+def _apply_frame_thickness(props, value: float) -> None:
+    """Apply a new frame thickness value to the first panel, preserving other panels."""
+    props.frame_thickness = (max(0.0, value),) + tuple(props.frame_thickness[1:])
+
+
 class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     bl_idname = "OBJECT_GGT_bim_window_edition"
     bl_label = "Window Editing Gizmo"
@@ -617,190 +678,180 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     cancel_editing_operator = "bim.cancel_editing_window"
     cycle_type_operator = "bim.cycle_window_type"
 
-    gizmo_props = [
-        GizmoPropConfig("overall_height", (0, 0, 1)),
-        GizmoPropConfig("overall_width", (1, 0, 0)),
-        GizmoPropConfig("lining_depth", (0, 1, 0)),
-        GizmoPropConfig("lining_thickness", (1, 0, 0)),
-        GizmoPropConfig("lining_to_panel_offset_x", (1, 0, 0)),
-        GizmoPropConfig("lining_to_panel_offset_y", (0, 1, 0)),
-        GizmoPropConfig("mullion_thickness", (1, 0, 0), delta_scale=2.0),
-        GizmoPropConfig("first_mullion_offset", (1, 0, 0)),
-        GizmoPropConfig("second_mullion_offset", (1, 0, 0)),
-        GizmoPropConfig("transom_thickness", (0, 0, 1), delta_scale=2.0),
-        GizmoPropConfig("first_transom_offset", (0, 0, 1)),
-        GizmoPropConfig("second_transom_offset", (0, 0, 1)),
+    dimension_gizmo_props = [
+        DimensionGizmoConfig(attr_name="overall_width", axis=(1, 0, 0), min_value=0.01, text_offset_sign=-1),
+        DimensionGizmoConfig(attr_name="overall_height", axis=(0, 0, 1), min_value=0.01, text_alignment="start"),
+        DimensionGizmoConfig(attr_name="lining_offset", axis=(0, 1, 0)),
+        DimensionGizmoConfig(attr_name="lining_depth", axis=(0, 1, 0)),
+        DimensionGizmoConfig(attr_name="lining_thickness", axis=(1, 0, 0)),
+        DimensionGizmoConfig(attr_name="lining_to_panel_offset_x", axis=(1, 0, 0)),
+        DimensionGizmoConfig(attr_name="lining_to_panel_offset_y", axis=(0, 1, 0), min_value=-10.0),
+        DimensionGizmoConfig(
+            attr_name="frame_depth",
+            axis=(0, -1, 0),
+            compute_value=_compute_frame_depth,
+            apply_value=_apply_frame_depth,
+        ),
+        DimensionGizmoConfig(
+            attr_name="frame_thickness",
+            axis=(1, 0, 0),
+            compute_value=_compute_frame_thickness,
+            apply_value=_apply_frame_thickness,
+        ),
+        DimensionGizmoConfig(attr_name="mullion_thickness", axis=(1, 0, 0), delta_scale=2.0, visibility_condition=_has_mullion),
+        DimensionGizmoConfig(attr_name="first_mullion_offset", axis=(1, 0, 0), visibility_condition=_has_mullion),
+        DimensionGizmoConfig(attr_name="second_mullion_offset", axis=(1, 0, 0), visibility_condition=_has_second_mullion),
+        DimensionGizmoConfig(attr_name="transom_thickness", axis=(0, 0, 1), delta_scale=2.0, visibility_condition=_has_transom),
+        DimensionGizmoConfig(attr_name="first_transom_offset", axis=(0, 0, 1), visibility_condition=_has_transom),
+        DimensionGizmoConfig(attr_name="second_transom_offset", axis=(0, 0, 1), visibility_condition=_has_second_transom),
     ]
 
     @classmethod
     def is_element_type(cls, element) -> bool:
         return tool.Blender.Modifier.is_window(element)
 
-    def get_props(self, obj):
+    def get_props(self, obj: bpy.types.Object):
         return tool.Model.get_window_props(obj)
 
     def get_gizmo_prefs(self):
         prefs = tool.Blender.get_addon_preferences()
         return prefs.gizmos.window
 
-    def should_hide_gizmo(self, attr_name, props):
-        """Window-specific visibility rules for gizmos."""
-        if not props.is_editing:
-            return True
+    def get_icon_y_offset(self, context: bpy.types.Context, mw: Matrix) -> float:
+        """Position icons beyond the furthest geometry extent based on view direction."""
+        obj = context.active_object
+        if not obj:
+            return self.ICON_Y_OFFSET
+        props = self.get_props(obj)
 
-        has_mullion = self._has_mullion(props)
-        has_second_mullion = self._has_second_mullion(props)
-        has_transom = self._has_transom(props)
-        has_second_transom = self._has_second_transom(props)
-
-        if attr_name == "mullion_thickness" and not has_mullion:
-            return True
-        if attr_name == "first_mullion_offset" and not has_mullion:
-            return True
-        if attr_name == "second_mullion_offset" and not has_second_mullion:
-            return True
-        if attr_name == "transom_thickness" and not has_transom:
-            return True
-        if attr_name == "first_transom_offset" and not has_transom:
-            return True
-        if attr_name == "second_transom_offset" and not has_second_transom:
-            return True
-        return False
-
-    def get_gizmo_matrix_overall_height(self, props):
-        translation = Matrix.Translation(V_(props.overall_width - 0.05, props.lining_offset, props.overall_height))
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
-
-    def get_gizmo_matrix_overall_width(self, props):
-        translation = Matrix.Translation(V_(props.overall_width, props.lining_offset, props.overall_height - 0.05))
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_lining_depth(self, props):
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.lining_depth + props.lining_offset, props.overall_height)
+        furthest_positive_y = (
+            max(0, props.lining_offset)
+            + props.lining_depth
+            + props.lining_to_panel_offset_y
         )
-        rotation = self.get_axis_rotation_matrix((0, 1, 0))
-        return translation @ rotation
+        furthest_negative_y = min(0, props.lining_offset)
 
-    def get_gizmo_matrix_lining_thickness(self, props):
-        translation = Matrix.Translation(
-            V_(props.lining_thickness, props.lining_depth / 2 + props.lining_offset, props.overall_height / 2)
+        viewing_from_negative_y, _ = self.get_local_view_direction(context, mw)
+        if viewing_from_negative_y:
+            return furthest_negative_y - 2 * self.GIZMO_OFFSET
+        return furthest_positive_y + 2 * self.GIZMO_OFFSET
+
+    def get_dimension_matrix_lining_offset(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(V_(0, 0, 0), (0, 1, 0))
+
+    def get_dimension_matrix_lining_depth(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width / 2, props.lining_offset, props.overall_height), (0, 1, 0)
         )
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
+
+    def get_dimension_matrix_lining_thickness(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(0, props.lining_depth / 2 + props.lining_offset, props.overall_height / 2), (1, 0, 0)
+        )
 
     @staticmethod
     def _get_lining_to_panel_offset_y_full(props) -> float:
         """Get the full Y offset for lining-to-panel positioning."""
         return (props.lining_depth - props.frame_depth[0]) + props.lining_to_panel_offset_y
 
-    def get_gizmo_matrix_lining_to_panel_offset_x(self, props):
+    def get_dimension_matrix_lining_to_panel_offset_x(self, props) -> Matrix:
         y_full = self._get_lining_to_panel_offset_y_full(props)
-        translation = Matrix.Translation(
-            V_(props.lining_to_panel_offset_x, y_full + props.lining_offset, props.lining_thickness)
+        return self.compose_gizmo_matrix(
+            V_(0, y_full + props.frame_depth[0] + props.lining_offset, props.lining_to_panel_offset_x), (1, 0, 0)
         )
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
 
-    def get_gizmo_matrix_lining_to_panel_offset_y(self, props):
+    def get_dimension_matrix_lining_to_panel_offset_y(self, props) -> Matrix:
+        y_start = props.lining_depth + props.lining_offset
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width - props.lining_to_panel_offset_x, y_start, props.lining_to_panel_offset_x),
+            (0, 1, 0),
+        )
+
+    def get_dimension_matrix_frame_depth(self, props) -> Matrix:
         y_full = self._get_lining_to_panel_offset_y_full(props)
-        translation = Matrix.Translation(
-            V_(
-                props.lining_to_panel_offset_x,
-                y_full + props.frame_depth[0] + props.lining_offset,
-                props.lining_thickness,
-            )
-        )
-        rotation = self.get_axis_rotation_matrix((0, 1, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_mullion_thickness(self, props):
-        # Position at the right edge of the mullion (offset + thickness/2) so gizmo movement matches property 1:1
-        translation = Matrix.Translation(
-            V_(props.first_mullion_offset + props.mullion_thickness / 2, props.lining_offset, props.overall_height / 2)
-        )
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_first_mullion_offset(self, props):
-        # Position at the left edge of the mullion (offset - thickness/2)
-        translation = Matrix.Translation(
-            V_(props.first_mullion_offset - props.mullion_thickness / 2, props.lining_offset, props.overall_height / 2)
-        )
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_second_mullion_offset(self, props):
-        translation = Matrix.Translation(V_(props.second_mullion_offset, props.lining_offset, props.overall_height / 2))
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_transom_thickness(self, props):
-        # Position at the top edge of the transom (offset + thickness/2) so gizmo movement matches property 1:1
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.lining_offset, props.first_transom_offset + props.transom_thickness / 2)
-        )
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
-
-    def get_gizmo_matrix_first_transom_offset(self, props):
-        # Position at the bottom edge of the transom (offset - thickness/2)
-        translation = Matrix.Translation(
-            V_(props.overall_width / 2, props.lining_offset, props.first_transom_offset - props.transom_thickness / 2)
-        )
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
-
-    def get_gizmo_matrix_second_transom_offset(self, props):
-        translation = Matrix.Translation(V_(props.overall_width / 2, props.lining_offset, props.second_transom_offset))
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
-
-    def _has_mullion(self, props):
-        """Check if the window type uses mullions (vertical dividers)."""
-        window_type = props.window_type
-        return window_type in (
-            "DOUBLE_PANEL_VERTICAL",
-            "TRIPLE_PANEL_BOTTOM",
-            "TRIPLE_PANEL_TOP",
-            "TRIPLE_PANEL_LEFT",
-            "TRIPLE_PANEL_RIGHT",
-            "TRIPLE_PANEL_VERTICAL",
+        y_start = y_full + props.frame_depth[0] + props.lining_offset
+        return self.compose_gizmo_matrix(
+            V_(props.lining_to_panel_offset_x, y_start, props.lining_to_panel_offset_x), (0, -1, 0)
         )
 
-    def _has_second_mullion(self, props):
-        """Check if the window type uses a second mullion."""
-        return props.window_type == "TRIPLE_PANEL_VERTICAL"
-
-    def _has_transom(self, props):
-        """Check if the window type uses transoms (horizontal dividers)."""
-        window_type = props.window_type
-        return window_type in (
-            "DOUBLE_PANEL_HORIZONTAL",
-            "TRIPLE_PANEL_BOTTOM",
-            "TRIPLE_PANEL_TOP",
-            "TRIPLE_PANEL_LEFT",
-            "TRIPLE_PANEL_RIGHT",
-            "TRIPLE_PANEL_HORIZONTAL",
+    def get_dimension_matrix_frame_thickness(self, props) -> Matrix:
+        y_full = self._get_lining_to_panel_offset_y_full(props)
+        y_pos = y_full + props.frame_depth[0] + props.lining_offset
+        return self.compose_gizmo_matrix(
+            V_(props.lining_to_panel_offset_x, y_pos, props.overall_height / 2), (1, 0, 0)
         )
 
-    def _has_second_transom(self, props):
-        """Check if the window type uses a second transom."""
-        return props.window_type == "TRIPLE_PANEL_HORIZONTAL"
+    def get_dimension_matrix_mullion_thickness(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.first_mullion_offset - props.mullion_thickness / 2, props.lining_offset, props.overall_height / 2),
+            (1, 0, 0),
+        )
 
-    def setup(self, context):
-        # Use base class methods for common gizmos
-        self.setup_property_gizmos(context)
+    def get_dimension_matrix_first_mullion_offset(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(0, props.lining_offset, props.overall_height / 2), (1, 0, 0)
+        )
+
+    def get_dimension_matrix_second_mullion_offset(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(0, props.lining_offset, props.overall_height / 2 + 0.1), (1, 0, 0)
+        )
+
+    def get_dimension_matrix_transom_thickness(self, props) -> Matrix:
+        # Offset X when panels are horizontal to avoid overlap with mullion gizmo
+        x_pos = props.overall_width / 2 - 0.1 if _has_transom(props) else props.overall_width / 2
+        return self.compose_gizmo_matrix(
+            V_(x_pos, props.lining_offset, props.first_transom_offset - props.transom_thickness / 2),
+            (0, 0, 1),
+        )
+
+    def get_dimension_matrix_first_transom_offset(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width / 2, props.lining_offset, 0), (0, 0, 1)
+        )
+
+    def get_dimension_matrix_second_transom_offset(self, props) -> Matrix:
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width / 2 + 0.1, props.lining_offset, 0), (0, 0, 1)
+        )
+
+    def get_dimension_matrix_overall_width(self, props) -> Matrix:
+        """Position width dimension below the window."""
+        return self.compose_gizmo_matrix(
+            V_(0, props.lining_offset - self.GIZMO_OFFSET, -self.GIZMO_OFFSET), (1, 0, 0)
+        )
+
+    def get_dimension_matrix_overall_height(self, props) -> Matrix:
+        """Position height dimension to the side of the window."""
+        return self.compose_gizmo_matrix(
+            V_(props.overall_width + self.GIZMO_OFFSET, props.lining_offset - self.GIZMO_OFFSET, 0), (0, 0, 1)
+        )
+
+    def setup(self, context: bpy.types.Context) -> None:
         self.setup_editing_gizmos(context)
+        self.setup_dimension_gizmos(context)
 
-    def refresh(self, context):
+    def refresh(self, context: bpy.types.Context) -> None:
+        if not self.is_setup_complete():
+            return
         obj = context.active_object
         if not obj:
             return
 
         props = self.get_props(obj)
         mw = obj.matrix_world
-        self.update_property_gizmos(mw, props)
         self.update_editing_gizmos(context, mw, props)
+        self.update_dimension_gizmos(mw, props)
+
+    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw: Matrix, props) -> None:
+        """Update dimension gizmo positions based on camera view direction."""
+        viewing_from_negative_y, viewing_from_negative_x = self.get_local_view_direction(context, mw)
+        y_pos = self.get_lining_y_position_for_view(props, viewing_from_negative_y)
+
+        self.set_dimension_gizmo_position("overall_width", mw, V_(0, y_pos, -self.GIZMO_OFFSET), (1, 0, 0))
+
+        if viewing_from_negative_x:
+            x_pos = -self.GIZMO_OFFSET
+        else:
+            x_pos = props.overall_width + self.GIZMO_OFFSET
+        self.set_dimension_gizmo_position("overall_height", mw, V_(x_pos, y_pos, 0), (0, 0, 1))
