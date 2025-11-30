@@ -20,6 +20,8 @@ if(UNIX)
     find_package(Threads)
 endif()
 
+find_package(Eigen3 REQUIRED)
+
 if(WASM_BUILD)
     target_link_libraries(IfcGeom ${kernel_libraries} ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
 else()

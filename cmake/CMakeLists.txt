@@ -449,10 +449,6 @@ else()
     endif()
 endif(MSVC)
 
-
-find_package(Eigen3 REQUIRED)
-link_libraries(Eigen3::Eigen)
-
 include_directories(${INCLUDE_DIRECTORIES} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
