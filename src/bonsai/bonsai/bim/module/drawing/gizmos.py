@@ -1954,7 +1954,9 @@ class BIM_OT_gizmo_value_input(bpy.types.Operator):
             tool_settings.use_snap = original_snap
 
             if snapped_tip != tip_3d:
-                delta = (snapped_tip - self._start_location).dot(self._axis_direction) + self._click_offset
+                # snap_to_mesh may return a tuple from the cache, ensure it's a Vector
+                snapped_tip_vec = Vector(snapped_tip) if not isinstance(snapped_tip, Vector) else snapped_tip
+                delta = (snapped_tip_vec - self._start_location).dot(self._axis_direction) + self._click_offset
                 set_snap_point(snapped_tip)
             else:
                 clear_snap_point()
@@ -2195,7 +2197,9 @@ class GizmoMovable(bpy.types.Gizmo):
         if tool_settings.use_snap and self.active_obj:
             snapped_pos = snap_to_mesh(current_3d, context, self.active_obj, current_coord)
             if snapped_pos != current_3d:
-                delta = (snapped_pos - self.start_location).dot(axis_direction)
+                # snap_to_mesh may return a tuple from the cache, ensure it's a Vector
+                snapped_pos_vec = Vector(snapped_pos) if not isinstance(snapped_pos, Vector) else snapped_pos
+                delta = (snapped_pos_vec - self.start_location).dot(axis_direction)
                 set_snap_point(snapped_pos)
             else:
                 clear_snap_point()
