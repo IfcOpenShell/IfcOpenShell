@@ -1007,7 +1007,7 @@ class CreateDrawing(bpy.types.Operator):
 
             for polygon in closed_polygons.geoms:
                 # Less than 1mm2 is not worth styling on sheet
-                if polygon.area < 1:
+                if polygon.area < .1:
                     continue
                 centroid = polygon.centroid
                 centroid = centroid if polygon.contains(centroid) else polygon.representative_point()
