@@ -347,6 +347,9 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         if self.description:
             new.Description = self.description
         
+        # Update the Blender object name to match the IFC element name
+        tool.Root.set_object_name(new_obj, new)
+        
         bpy.ops.bim.load_type_thumbnails()
         
         # Assign selected objects to the new type if requested
