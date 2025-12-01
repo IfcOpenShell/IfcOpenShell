@@ -3275,15 +3275,31 @@ class AssignSelectedObjectAsProduct(bpy.types.Operator):
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
         assert element1 and element2
-        if element1.is_a("IfcAnnotation"):
+        
+        # Check if at least one object is an IfcAnnotation
+        is_annotation1 = element1.is_a("IfcAnnotation")
+        is_annotation2 = element2.is_a("IfcAnnotation")
+        
+        if not (is_annotation1 or is_annotation2):
+            self.report({"ERROR"}, "At least one of the selected objects must be IfcAnnotation.")
+            return {"CANCELLED"}
+        
+        # If both are annotations, use the currently active object as relating product
+        if is_annotation1 and is_annotation2:
+            active_obj = context.active_object
+            if active_obj == obj1:
+                other_selected_object = obj1
+                bpy.context.view_layer.objects.active = obj2
+            else:
+                other_selected_object = obj2
+                bpy.context.view_layer.objects.active = obj1
+        # If only one is an annotation, make it the active object
+        elif is_annotation1:
             other_selected_object = obj2
             bpy.context.view_layer.objects.active = obj1
-        elif element2.is_a("IfcAnnotation"):
+        else:
             other_selected_object = obj1
             bpy.context.view_layer.objects.active = obj2
-        else:
-            self.report({"ERROR"}, "One of the selected objects must be IfcAnnotation.")
-            return {"CANCELLED"}
 
         assert (active_obj := context.active_object)
         props = tool.Drawing.get_object_assigned_product_props(active_obj)
