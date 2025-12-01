@@ -58,11 +58,33 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
         else:
             related_objects = tool.Blender.get_selected_objects()
         prefs = tool.Blender.get_addon_preferences()
+        
+        # Get the active drawing's target view
+        active_target_view = None
+        drawing_props = context.scene.DocProperties
+        if drawing_props.active_drawing_id:
+            active_drawing = tool.Ifc.get().by_id(drawing_props.active_drawing_id)
+            if active_drawing:
+                active_target_view = tool.Drawing.get_drawing_target_view(active_drawing)
+        
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcObject"):
                 continue
             core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+            
+            # Switch to the drawing's target view if available
+            if active_target_view and element.Representation:
+                for rep in element.Representation.Representations:
+                    if rep.ContextOfItems.TargetView == active_target_view:
+                        bonsai.core.geometry.switch_representation(
+                            tool.Ifc,
+                            tool.Geometry,
+                            obj=obj,
+                            representation=rep,
+                        )
+                        break
+            
             if prefs.occurrence_name_style == "TYPE":
                 obj.name = tool.Model.generate_occurrence_name(relating_type, element.is_a())
 
