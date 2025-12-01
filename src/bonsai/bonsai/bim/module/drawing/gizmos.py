@@ -87,7 +87,18 @@ camera is viewing from the positive or negative side of each axis.
 """
 
 __all__ = [
+    "GizmoColor",
+    "GizmoAxis",
+    "TextAlignment",
+    "CoordinateSpace",
+    "ModalState",
     "DimensionGizmoConfig",
+    "DimensionDrawConfig",
+    "ViewDirection",
+    "GizmoModalContext",
+    "get_modal_context",
+    "get_validated_modal_context",
+    "ParametricProps",
     "NumericInputState",
     "GPUStateScope",
     "set_snap_point",
@@ -114,13 +125,15 @@ __all__ = [
     "GizmoCone",
     "GizmoDimension",
     "DimensionRenderer",
+    "CycleTypeMixin",
     "BaseParametricGizmoGroup",
     "UglyDotGizmo",
     "ExtrusionGuidesGizmo",
     "ExtrusionWidget",
 ]
 
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, Literal, Protocol, runtime_checkable, get_args
+from enum import Enum
 
 import blf
 import bpy
@@ -177,7 +190,116 @@ _SPECIAL = {"=", " "}  # Formula prefix, spaces
 NUMERIC_INPUT_CHARS = _DIGITS | _OPERATORS | _METRIC_UNITS | _IMPERIAL_UNITS | _SPECIAL
 
 
-@dataclass
+class GizmoColor(Enum):
+    """Color identifiers for dimension gizmos.
+
+    Maps axis directions to colors following BIM/CAD conventions:
+    - RED: X-axis (width)
+    - GREEN: Y-axis (depth)
+    - BLUE: Z-axis (height)
+
+    Use GizmoColor.from_axis() to auto-derive color from axis direction.
+    """
+
+    RED = "RED"
+    GREEN = "GREEN"
+    BLUE = "BLUE"
+
+    @classmethod
+    def from_axis(cls, axis: tuple[int, int, int]) -> "GizmoColor":
+        """Derive color from axis direction.
+
+        Args:
+            axis: Direction tuple (x, y, z) with at least one non-zero component.
+
+        Returns:
+            GizmoColor based on the first non-zero axis component.
+        """
+        if axis[0] != 0:
+            return cls.RED
+        elif axis[1] != 0:
+            return cls.GREEN
+        return cls.BLUE
+
+
+class TextAlignment(Enum):
+    """Text alignment options for dimension gizmo labels.
+
+    Controls where the dimension value text is positioned along the dimension line.
+    """
+
+    START = "start"  # Align text to the start of the dimension line
+    CENTER = "center"  # Center text on the dimension line (default)
+    END = "end"  # Align text to the end of the dimension line
+
+
+# Type alias for gizmo axis direction tuples
+# Each component must be -1, 0, or 1 to indicate direction along that axis
+GizmoAxis = tuple[Literal[-1, 0, 1], Literal[-1, 0, 1], Literal[-1, 0, 1]]
+
+
+class CoordinateSpace(Enum):
+    """Coordinate space identifiers for gizmo positioning.
+
+    Clarifies which space a position or direction is expressed in:
+    - LOCAL: Object-local coordinates (relative to element origin)
+    - WORLD: World/scene coordinates (absolute position)
+    - SCREEN: 2D screen-space coordinates (pixels)
+
+    Usage:
+        # Document coordinate space in function signatures
+        def get_position(self, space: CoordinateSpace = CoordinateSpace.LOCAL) -> Vector:
+            ...
+
+        # Or use as documentation in comments
+        local_pos = Vector((0, 0, 1))  # CoordinateSpace.LOCAL
+        world_pos = matrix_world @ local_pos  # CoordinateSpace.WORLD
+    """
+
+    LOCAL = "local"  # Object-local space (relative to element matrix_world)
+    WORLD = "world"  # World/scene space (absolute coordinates)
+    SCREEN = "screen"  # 2D screen space (pixel coordinates)
+
+
+class ModalState(Enum):
+    """State machine states for modal gizmo operations.
+
+    Used to track the current interaction mode during gizmo manipulation.
+    Helps organize modal operator logic and determine valid state transitions.
+
+    States:
+        IDLE: No interaction active, waiting for user input
+        DRAGGING: User is dragging the gizmo with the mouse
+        KEYBOARD_INPUT: User is typing a numeric value
+        SNAPPING: Dragging with snap enabled (Ctrl held)
+        PRECISION: Dragging with precision mode (Shift held)
+
+    State transitions:
+        IDLE -> DRAGGING: Mouse press on gizmo
+        IDLE -> KEYBOARD_INPUT: Numeric key press
+        DRAGGING -> SNAPPING: Ctrl pressed during drag
+        DRAGGING -> PRECISION: Shift pressed during drag
+        SNAPPING -> DRAGGING: Ctrl released
+        PRECISION -> DRAGGING: Shift released
+        * -> IDLE: Mouse release, Enter, Escape
+    """
+
+    IDLE = "idle"
+    DRAGGING = "dragging"
+    KEYBOARD_INPUT = "keyboard_input"
+    SNAPPING = "snapping"
+    PRECISION = "precision"
+
+    def is_active(self) -> bool:
+        """Check if this state represents an active interaction."""
+        return self != ModalState.IDLE
+
+    def allows_keyboard_input(self) -> bool:
+        """Check if this state allows transitioning to keyboard input."""
+        return self in (ModalState.IDLE, ModalState.DRAGGING)
+
+
+@dataclass(slots=True)
 class GizmoModalContext:
     """Typed context for modal gizmo operations.
 
@@ -222,6 +344,38 @@ class GizmoModalContext:
 
 # Module-level instance for modal gizmo context
 _gizmo_modal_context = GizmoModalContext()
+
+
+def get_modal_context() -> GizmoModalContext:
+    """Get the global modal gizmo context.
+
+    Provides access to the module-level context without exposing the private variable.
+    Use this when reading context values that may be None.
+
+    Returns:
+        The global GizmoModalContext instance.
+    """
+    return _gizmo_modal_context
+
+
+def get_validated_modal_context() -> GizmoModalContext:
+    """Get the modal context, validating that essential fields are set.
+
+    Use this when the context is expected to be fully initialized (e.g., during
+    modal operator execution). Raises RuntimeError if the context is incomplete.
+
+    Returns:
+        The global GizmoModalContext instance with essential fields validated.
+
+    Raises:
+        RuntimeError: If active_gizmo or gizmo_group is None.
+    """
+    ctx = _gizmo_modal_context
+    if ctx.active_gizmo is None:
+        raise RuntimeError("Modal context not initialized: active_gizmo is None")
+    if ctx.gizmo_group is None:
+        raise RuntimeError("Modal context not initialized: gizmo_group is None")
+    return ctx
 
 
 class GPUStateScope:
@@ -352,7 +506,7 @@ class DimensionTextRenderer:
         value: float,
         color: tuple[float, float, float],
         offset_sign: int = 1,
-        alignment: str = "center",
+        alignment: TextAlignment | str = TextAlignment.CENTER,
     ) -> None:
         """Draw formatted dimension value text at the given screen position.
 
@@ -363,9 +517,16 @@ class DimensionTextRenderer:
             value: Dimension value to format and display
             color: Text color (r, g, b)
             offset_sign: 1 for above/right, -1 for below/left
-            alignment: "center" or "start"
+            alignment: TextAlignment enum value
         """
-        text = tool.Unit.format_distance(value)
+        # Normalize string to enum for comparison
+        if isinstance(alignment, str):
+            alignment = TextAlignment(alignment)
+
+        is_negative = value < 0
+        text = tool.Unit.format_distance(abs(value))
+        if is_negative:
+            text = "-" + text
 
         font_id = 0
         font_size = tool.Blender.scale_font_size(self.VALUE_FONT_SIZE)
@@ -376,7 +537,7 @@ class DimensionTextRenderer:
         text_width, text_height = blf.dimensions(font_id, text)
         offset_distance = (text_height + 4) * offset_sign
 
-        if alignment == "start":
+        if alignment == TextAlignment.START:
             text_x = screen_pos[0] + perpendicular[0] * offset_distance
             text_y = screen_pos[1] - text_height / 2 + perpendicular[1] * offset_distance
         else:
@@ -453,6 +614,118 @@ class DimensionTextRenderer:
         batch.draw(shader)
 
 
+@dataclass(slots=True, frozen=True)
+class DimensionDrawConfig:
+    """Immutable configuration for drawing a dimension line.
+
+    Groups the many parameters needed by DimensionRenderer.draw() into a
+    single configuration object, improving readability and maintainability.
+
+    Attributes:
+        start_world: World-space start position
+        end_world: World-space end position
+        axis_world: Normalized axis direction in world space
+        dimension_length: Length of the dimension (for drawing the line)
+        color: Base color (r, g, b)
+        alpha: Base alpha (0.0 to 1.0)
+        is_highlight: Whether gizmo is highlighted/hovered
+        highlight_color: Highlight color (r, g, b)
+        highlight_alpha: Highlight alpha
+        show_start_arrow: Whether to show arrow at start
+        show_end_arrow: Whether to show arrow at end
+        show_extension_lines: Whether to show extension lines
+        text_offset_sign: 1 for above/right, -1 for below/left
+        text_alignment: TextAlignment value for text positioning along line
+        prop_name: Property name for tooltip (shown when highlighted)
+        display_value: Value to display as text (can be negative); uses dimension_length if None
+    """
+
+    start_world: Vector
+    end_world: Vector
+    axis_world: Vector
+    dimension_length: float
+    color: tuple[float, float, float] = (1.0, 1.0, 1.0)
+    alpha: float = 1.0
+    is_highlight: bool = False
+    highlight_color: tuple[float, float, float] = (1.0, 1.0, 0.5)
+    highlight_alpha: float = 1.0
+    show_start_arrow: bool = False
+    show_end_arrow: bool = True
+    show_extension_lines: bool = True
+    text_offset_sign: Literal[-1, 1] = 1
+    text_alignment: TextAlignment = TextAlignment.CENTER
+    prop_name: str | None = None
+    display_value: float | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class ViewDirection:
+    """Immutable representation of camera view direction relative to an element's local space.
+
+    Provides a cleaner API than tuple unpacking for view-dependent gizmo positioning.
+
+    With:
+        view = self.get_view_direction(context, mw)
+        if view.from_back: ...
+
+    Attributes:
+        from_negative_y: True if camera is on the -Y side (viewing from "back")
+        from_negative_x: True if camera is on the -X side (viewing from "left")
+
+    Properties:
+        from_back: Alias for from_negative_y (more intuitive for doors/windows)
+        from_front: Inverse of from_back
+        from_left: Alias for from_negative_x
+        from_right: Inverse of from_left
+    """
+
+    from_negative_y: bool = False
+    from_negative_x: bool = False
+
+    @property
+    def from_back(self) -> bool:
+        """True if viewing from the back (-Y) side of the element."""
+        return self.from_negative_y
+
+    @property
+    def from_front(self) -> bool:
+        """True if viewing from the front (+Y) side of the element."""
+        return not self.from_negative_y
+
+    @property
+    def from_left(self) -> bool:
+        """True if viewing from the left (-X) side of the element."""
+        return self.from_negative_x
+
+    @property
+    def from_right(self) -> bool:
+        """True if viewing from the right (+X) side of the element."""
+        return not self.from_negative_x
+
+    @classmethod
+    def from_context(cls, context: bpy.types.Context, world_matrix: Matrix) -> "ViewDirection":
+        """Create ViewDirection from Blender context and object world matrix.
+
+        Args:
+            context: Blender context with region_data
+            world_matrix: Object's world transformation matrix
+
+        Returns:
+            ViewDirection instance, defaults to (False, False) if region data unavailable.
+        """
+        rv3d = context.region_data
+        if not rv3d:
+            return cls()
+
+        view_direction = Vector(rv3d.view_rotation @ Vector((0, 0, -1)))
+        local_view_dir = world_matrix.inverted().to_3x3() @ view_direction
+
+        return cls(
+            from_negative_y=local_view_dir.y < 0,
+            from_negative_x=local_view_dir.x < 0,
+        )
+
+
 class DimensionRenderer:
     """Handles rendering of dimension line graphics.
 
@@ -462,6 +735,9 @@ class DimensionRenderer:
 
     Usage:
         renderer = DimensionRenderer.get_instance()
+        config = DimensionDrawConfig(start_world, end_world, axis_world, length, color)
+        renderer.draw(context, config)
+        # Or use legacy method signature:
         renderer.draw(context, start_world, end_world, ...)
     """
 
@@ -512,8 +788,9 @@ class DimensionRenderer:
         show_end_arrow: bool = True,
         show_extension_lines: bool = True,
         text_offset_sign: int = 1,
-        text_alignment: str = "center",
+        text_alignment: TextAlignment = TextAlignment.CENTER,
         prop_name: str | None = None,
+        display_value: float | None = None,
     ) -> None:
         """Draw complete dimension graphics in screen space.
 
@@ -522,7 +799,7 @@ class DimensionRenderer:
             start_world: World-space start position
             end_world: World-space end position
             axis_world: Normalized axis direction in world space
-            dimension_length: Length of the dimension (for text display)
+            dimension_length: Length of the dimension (for drawing the line)
             color: Base color (r, g, b)
             alpha: Base alpha
             is_highlight: Whether gizmo is highlighted/hovered
@@ -532,11 +809,15 @@ class DimensionRenderer:
             show_end_arrow: Whether to show arrow at end
             show_extension_lines: Whether to show extension lines
             text_offset_sign: 1 for above/right, -1 for below/left
-            text_alignment: "center" or "start"
+            text_alignment: TextAlignment enum for text positioning
             prop_name: Property name for tooltip (shown when highlighted)
+            display_value: Value to display as text (can be negative); uses dimension_length if None
         """
         if dimension_length < 0:
             return
+
+        # Use display_value for text if provided, otherwise use dimension_length
+        text_value = display_value if display_value is not None else dimension_length
 
         region = context.region
         rv3d = context.region_data
@@ -650,7 +931,7 @@ class DimensionRenderer:
                 )
                 text_color = highlight_color if is_highlight else color
                 DimensionTextRenderer.get_instance().draw_value_text(
-                    context, center_screen, perpendicular, dimension_length, text_color, text_offset_sign, text_alignment
+                    context, center_screen, perpendicular, text_value, text_color, text_offset_sign, text_alignment
                 )
 
             if is_highlight and prop_name:
@@ -690,9 +971,9 @@ class DimensionRenderer:
         return (top, bottom)
 
 
-@dataclass
+@dataclass(slots=True, frozen=True)
 class SnapCache:
-    """Unified snap cache with combined KD-tree for vertex snapping."""
+    """Immutable snap cache with combined KD-tree for vertex snapping."""
 
     # Combined KD-tree with all world vertices from all objects
     kd_tree: KDTree
@@ -700,7 +981,7 @@ class SnapCache:
     all_vertices: list[tuple[float, float, float]]
 
 
-@dataclass
+@dataclass(slots=True)
 class NumericInputState:
     """State for keyboard numeric input during gizmo operations."""
 
@@ -756,7 +1037,25 @@ class NumericInputState:
                 self.is_valid = False
 
 
-@dataclass
+@runtime_checkable
+class ParametricProps(Protocol):
+    """Protocol defining the common interface for parametric element properties.
+
+    All parametric property classes (BIMDoorProperties, BIMWindowProperties,
+    BIMStairProperties, etc.) should implement this interface. This enables
+    type-safe code in BaseParametricGizmoGroup without importing concrete classes.
+
+    Example:
+        def update_gizmos(self, props: ParametricProps) -> None:
+            if props.is_editing:
+                # Safe to access common properties
+                ...
+    """
+
+    is_editing: bool
+
+
+@dataclass(slots=True)
 class DimensionGizmoConfig:
     """Configuration for a dimension gizmo.
 
@@ -814,34 +1113,86 @@ class DimensionGizmoConfig:
             If None, uses setattr(props, attr_name, value).
         visibility_condition: Optional function(props) -> bool. If returns False,
             the gizmo is hidden. Used for conditional gizmos.
+        matrix_position: Optional function(props) -> Vector for gizmo position.
+            If provided, eliminates need for get_dimension_matrix_{attr_name} method.
+            The returned Vector is the local-space position where the gizmo origin
+            will be placed. Combined with axis to create the full transformation matrix.
     """
 
     attr_name: str
-    axis: tuple[int, int, int]
-    color: str | None = None
+    axis: GizmoAxis
+    color: GizmoColor | str | None = None  # GizmoColor enum, string ("RED"/"GREEN"/"BLUE"), or None for auto
     prop_name: str | None = None
     min_value: float = 0.0
     invert_delta: bool = False
     delta_scale: float = 1.0
-    text_offset_sign: int = 1
-    text_alignment: str = "center"
+    text_offset_sign: Literal[-1, 1] = 1
+    text_alignment: TextAlignment | str = TextAlignment.CENTER
     show_start_arrow: bool = False
     show_end_arrow: bool = True
     compute_value: Callable[[Any], float] | None = None
     apply_value: Callable[[Any, float], None] | None = None
     visibility_condition: Callable[[Any], bool] | None = None
+    matrix_position: Callable[[Any], "Vector"] | None = None  # Optional: function(props) -> Vector position
 
     def __post_init__(self):
-        if self.color is None:
-            if self.axis[0] != 0:
-                self.color = "RED"
-            elif self.axis[1] != 0:
-                self.color = "GREEN"
-            else:
-                self.color = "BLUE"
+        # Validate attr_name
+        if not self.attr_name or not isinstance(self.attr_name, str):
+            raise ValueError("attr_name must be a non-empty string")
 
+        # Validate axis
+        if len(self.axis) != 3:
+            raise ValueError(f"axis must be a 3-tuple, got {len(self.axis)} elements")
+        if not any(self.axis):
+            raise ValueError("axis must have at least one non-zero component")
+
+        # Normalize and validate text_alignment
+        if isinstance(self.text_alignment, str):
+            try:
+                self.text_alignment = TextAlignment(self.text_alignment)
+            except ValueError:
+                valid = [e.value for e in TextAlignment]
+                raise ValueError(f"text_alignment must be one of {valid}, got '{self.text_alignment}'")
+        elif not isinstance(self.text_alignment, TextAlignment):
+            raise ValueError(f"text_alignment must be TextAlignment enum or string, got {type(self.text_alignment)}")
+
+        # Validate text_offset_sign
+        if self.text_offset_sign not in (1, -1):
+            raise ValueError(f"text_offset_sign must be 1 or -1, got {self.text_offset_sign}")
+
+        # Normalize and validate color
+        if self.color is None:
+            # Auto-derive from axis direction
+            self.color = GizmoColor.from_axis(self.axis)
+        elif isinstance(self.color, str):
+            # Convert string to enum
+            try:
+                self.color = GizmoColor(self.color)
+            except ValueError:
+                raise ValueError(f"color must be 'RED', 'GREEN', or 'BLUE', got '{self.color}'")
+        elif not isinstance(self.color, GizmoColor):
+            raise ValueError(f"color must be GizmoColor enum, string, or None, got {type(self.color)}")
+
+        # Auto-derive prop_name from attr_name if not specified
         if self.prop_name is None:
             self.prop_name = self.attr_name.replace("_", " ").title()
+
+    def __repr__(self) -> str:
+        """Concise representation showing key configuration values."""
+        parts = [f"attr_name={self.attr_name!r}", f"axis={self.axis}"]
+        if self.color:
+            parts.append(f"color={self.color.name}")
+        if self.visibility_condition:
+            parts.append("visibility_condition=<fn>")
+        if self.matrix_position:
+            parts.append("matrix_position=<fn>")
+        if self.compute_value:
+            parts.append("compute_value=<fn>")
+        if self.min_value != 0.0:
+            parts.append(f"min_value={self.min_value}")
+        if self.invert_delta:
+            parts.append("invert_delta=True")
+        return f"DimensionGizmoConfig({', '.join(parts)})"
 
 
 class SnapManager:
@@ -3062,10 +3413,11 @@ class GizmoDimension(GizmoMovable):
         "_start_mouse_pos",
         "_has_dragged",
         "_dimension_length",
+        "_display_value",  # Actual value for display (can be negative)
         "text_offset_sign",  # -1 to offset text below/left, +1 for above/right (default)
         "show_start_arrow",  # Whether to show arrow at start (origin) of dimension
         "show_end_arrow",  # Whether to show arrow at end of dimension
-        "text_alignment",  # "center" (default) or "start" (left-aligned at offset from line)
+        "text_alignment",  # TextAlignment enum: CENTER (default) or START (left-aligned at offset from line)
         "_original_value",  # Original property value before interaction
         "_click_offset",  # Offset from dimension tip to click position (for snap correction)
         "show_extension_lines",  # Whether to show extension lines at dimension endpoints
@@ -3095,10 +3447,11 @@ class GizmoDimension(GizmoMovable):
     def setup(self) -> None:
         self.custom_shape = self.new_custom_shape("TRIS", self._get_clickable_shape())
         self._dimension_length = 1.0
+        self._display_value = 1.0
         self.text_offset_sign = 1
         self.show_start_arrow = False
         self.show_end_arrow = True
-        self.text_alignment = "center"
+        self.text_alignment = TextAlignment.CENTER
         self.show_extension_lines = True
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -3125,8 +3478,9 @@ class GizmoDimension(GizmoMovable):
             show_end_arrow=getattr(self, "show_end_arrow", True),
             show_extension_lines=getattr(self, "show_extension_lines", True),
             text_offset_sign=getattr(self, "text_offset_sign", 1),
-            text_alignment=getattr(self, "text_alignment", "center"),
+            text_alignment=getattr(self, "text_alignment", TextAlignment.CENTER),
             prop_name=getattr(self, "prop_name", None),
+            display_value=getattr(self, "_display_value", self._dimension_length),
         )
 
     def _calculate_screen_endpoints(
@@ -3243,8 +3597,10 @@ class GizmoDimension(GizmoMovable):
         # Validate input: reject NaN, Inf, and non-numeric values
         if not isinstance(length, (int, float)) or math.isnan(length) or math.isinf(length):
             length = 0.0
-        # Clamp to valid range (0 to 10000 meters is reasonable for BIM)
-        self._dimension_length = max(0.0, min(length, 10000.0))
+        # Store the actual value for display (can be negative)
+        self._display_value = max(-10000.0, min(length, 10000.0))
+        # Clamp to valid range (0 to 10000 meters is reasonable for BIM) for drawing
+        self._dimension_length = max(0.0, min(abs(length), 10000.0))
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set:
         """Initialize dimension gizmo interaction with click-position tracking.
@@ -3498,6 +3854,54 @@ class GizmoDimension(GizmoMovable):
         clear_snap_cache()
 
 
+class CycleTypeMixin:
+    """Mixin for operators that cycle through type literals.
+
+    Subclasses must define:
+        element_checker: Class method name on tool.Blender.Modifier (e.g., "is_door")
+        props_getter: Method name on tool.Model (e.g., "get_door_props")
+        type_literal: The type literal from tool.Model (e.g., tool.Model.DoorType)
+        type_attr: Attribute name on props for the type (e.g., "door_type")
+
+    Optional:
+        skip_element_check: If True, skip the element type validation (default False)
+    """
+
+    element_checker: str
+    props_getter: str
+    type_literal: type
+    type_attr: str
+    skip_element_check: bool = False
+
+    reverse: bpy.props.BoolProperty(name="Reverse", default=False, options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        """Set reverse direction based on Shift key."""
+        self.reverse = event.shift
+        return self.execute(context)
+
+    def _cycle_type(self, context: bpy.types.Context) -> set[str]:
+        """Common type cycling logic. Call from execute() or _execute()."""
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        if not self.skip_element_check:
+            element = tool.Ifc.get_entity(obj)
+            checker = getattr(tool.Blender.Modifier, self.element_checker)
+            if not element or not checker(element):
+                return {"CANCELLED"}
+
+        props = getattr(tool.Model, self.props_getter)(obj)
+        types = get_args(self.type_literal)
+        current = getattr(props, self.type_attr)
+        idx = types.index(current) if current in types else 0
+        direction = -1 if self.reverse else 1
+        setattr(props, self.type_attr, types[(idx + direction) % len(types)])
+
+        return {"FINISHED"}
+
+
 class BaseParametricGizmoGroup:
     """Base mixin for parametric element gizmo groups (doors, windows, stairs, etc.).
 
@@ -3545,6 +3949,31 @@ class BaseParametricGizmoGroup:
 
     - Dimension gizmos: Positioned with GIZMO_OFFSET from geometry edges
     - Icon gizmos: Positioned above element using ICON_Z_OFFSET, laid out horizontally
+
+    Color Convention
+    ================
+
+    Gizmo colors follow Blender's axis convention:
+    - RED: X-axis dimensions (width)
+    - GREEN: Y-axis dimensions (depth)
+    - BLUE: Z-axis dimensions (height)
+
+    View Direction API
+    ==================
+
+    Use ``ViewDirection.from_context(context, mw)`` to determine camera position::
+
+        view = ViewDirection.from_context(context, obj.matrix_world)
+        if view.from_back:  # Camera behind element (interior for doors)
+            y_pos = props.depth
+        if view.from_left:  # Camera on left side
+            x_pos = -offset
+
+    Negative Value Handling
+    =======================
+
+    Some dimensions support negative values (e.g., lining_offset). When negative,
+    the gizmo is flipped 180° using FLIP_MATRIX so the arrow points opposite.
     """
 
     # === Gizmo Colors ===
@@ -3556,6 +3985,11 @@ class BaseParametricGizmoGroup:
     # === Dimension Gizmo Layout (meters) ===
     ARROW_SCALE = 0.25  # Scale factor for arrow gizmos
     GIZMO_OFFSET = 0.15  # Distance from geometry edge to dimension line
+    GIZMO_STACK_OFFSET = 0.1  # Offset increment for stacking multiple gizmos to avoid overlap
+    GIZMO_CLAMP_MAX = 10000.0  # Maximum value for dimension clamping (meters)
+
+    # Pre-computed flip matrix for negative value handling (180° rotation around Z)
+    FLIP_MATRIX = Matrix.Rotation(math.pi, 4, 'Z')
 
     # === Icon Gizmo Layout (meters) ===
     # Icons are positioned in a horizontal row above the element:
@@ -3575,10 +4009,17 @@ class BaseParametricGizmoGroup:
     cycle_type_operator: str = ""
 
     @classmethod
-    def get_color_from_name(cls, color_name: str) -> tuple[float, float, float]:
-        """Get color tuple from color name string."""
-        colors = {"RED": cls.COLOR_RED, "GREEN": cls.COLOR_GREEN, "BLUE": cls.COLOR_BLUE}
-        return colors.get(color_name.upper(), cls.COLOR_RED)
+    def get_color_from_name(cls, color: GizmoColor | str) -> tuple[float, float, float]:
+        """Get color tuple from GizmoColor enum or color name string."""
+        colors = {
+            GizmoColor.RED: cls.COLOR_RED,
+            GizmoColor.GREEN: cls.COLOR_GREEN,
+            GizmoColor.BLUE: cls.COLOR_BLUE,
+        }
+        if isinstance(color, GizmoColor):
+            return colors.get(color, cls.COLOR_RED)
+        # Handle legacy string input
+        return colors.get(GizmoColor(color.upper()), cls.COLOR_RED)
 
     @classmethod
     def get_arrow_color_from_axis(cls, axis: tuple[int, int, int]) -> tuple[float, float, float]:
@@ -3604,6 +4045,8 @@ class BaseParametricGizmoGroup:
             - viewing_from_negative_x: True if camera is on the -X side of the element
 
         Returns (False, False) if region data is unavailable.
+
+        Note: Consider using ViewDirection.from_context() for a cleaner API.
         """
         rv3d = context.region_data
         if not rv3d:
@@ -3616,6 +4059,44 @@ class BaseParametricGizmoGroup:
         viewing_from_negative_x = local_view_dir.x < 0
 
         return viewing_from_negative_y, viewing_from_negative_x
+
+    def get_view_direction(self, context: bpy.types.Context, world_matrix: Matrix) -> "ViewDirection":
+        """Get view direction as a ViewDirection object for cleaner API.
+
+        Example:
+            view = self.get_view_direction(context, mw)
+            if view.from_back:
+                y_pos = props.depth
+            else:
+                y_pos = 0
+        """
+        from_neg_y, from_neg_x = self.get_local_view_direction(context, world_matrix)
+        return ViewDirection(from_negative_y=from_neg_y, from_negative_x=from_neg_x)
+
+    def update_gizmo_visibility(
+        self, gizmo: bpy.types.Gizmo, is_editing: bool, pref_enabled: bool
+    ) -> bool:
+        """Update gizmo visibility based on modal state, editing state, and preference.
+
+        Consolidates the common pattern:
+            if hidden_by_modal:
+                gizmo.hide = True
+            else:
+                gizmo.hide = not is_editing or not pref_enabled
+
+        Args:
+            gizmo: The gizmo to update visibility for
+            is_editing: Whether the element is currently being edited
+            pref_enabled: Whether this gizmo type is enabled in preferences
+
+        Returns:
+            True if the gizmo is now visible (not hidden), False otherwise
+        """
+        if self.is_gizmo_hidden_by_modal(gizmo):
+            gizmo.hide = True
+            return False
+        gizmo.hide = not is_editing or not pref_enabled
+        return not gizmo.hide
 
     def get_y_position_for_view(
         self, props, viewing_from_negative_y: bool, width_attr: str = "width", use_offset: bool = False
@@ -3638,6 +4119,25 @@ class BaseParametricGizmoGroup:
         if viewing_from_negative_y:
             return width + (self.GIZMO_OFFSET if use_offset else 0)
         return -self.GIZMO_OFFSET if use_offset else 0
+
+    def get_icon_y_for_view(self, props, viewing_from_negative_y: bool) -> float:
+        """Get Y position for editing icons based on view direction.
+
+        Similar to get_y_position_for_view but always includes offset and
+        uses the element's furthest Y extent for positioning.
+
+        Args:
+            props: Element properties object
+            viewing_from_negative_y: True if viewing from -Y side
+
+        Returns:
+            Y position for icon row: -GIZMO_OFFSET when viewing from -Y,
+                                     width + GIZMO_OFFSET otherwise
+        """
+        width = getattr(props, "width", 0)
+        if viewing_from_negative_y:
+            return -self.GIZMO_OFFSET
+        return width + self.GIZMO_OFFSET
 
     def compose_gizmo_matrix(self, translation: Vector, axis: tuple[int, int, int]) -> Matrix:
         """Compose a gizmo transformation matrix from translation and axis.
@@ -3676,6 +4176,130 @@ class BaseParametricGizmoGroup:
             return lining_offset + (self.GIZMO_OFFSET if use_offset else 0)
         return lining_offset - (self.GIZMO_OFFSET if use_offset else 0)
 
+    def get_x_positions_for_view(
+        self, width: float, offset: float, viewing_from_negative_x: bool
+    ) -> tuple[float, float]:
+        """Get X positions for height and lining gizmos based on view direction.
+
+        When viewing from -X side, height goes to -X and lining goes to +X.
+        When viewing from +X side, height goes to +X and lining goes to -X.
+
+        Args:
+            width: Element width (e.g., overall_width)
+            offset: Additional offset (e.g., casing_thickness)
+            viewing_from_negative_x: True if viewing from -X side
+
+        Returns:
+            Tuple of (x_pos_height, x_pos_lining)
+        """
+        if viewing_from_negative_x:
+            x_pos_height = -offset - self.GIZMO_OFFSET
+            x_pos_lining = width + offset + self.GIZMO_OFFSET
+        else:
+            x_pos_height = width + offset + self.GIZMO_OFFSET
+            x_pos_lining = -offset - self.GIZMO_OFFSET
+        return x_pos_height, x_pos_lining
+
+    def get_dimension_matrix_lining_offset_default(self, props) -> Matrix:
+        """Default lining offset matrix for door/window elements.
+
+        Position at element width + offset, at Y=0, below the element.
+        Override in subclass if different positioning is needed.
+        """
+        width = getattr(props, "overall_width", 0)
+        return self.compose_gizmo_matrix(
+            Vector((width + self.GIZMO_OFFSET, 0, -self.GIZMO_OFFSET)), (0, 1, 0)
+        )
+
+    def get_casing_offset(self, props) -> float:
+        """Get casing offset for view-dependent dimension positioning.
+
+        Override in door to return casing_thickness when lining_offset is 0.
+        Default returns 0 (no casing offset).
+        """
+        return 0.0
+
+    def _update_view_dependent_dimensions(
+        self, context: bpy.types.Context, mw: Matrix, props
+    ) -> None:
+        """Update overall_width, overall_height, and lining_offset based on view direction.
+
+        This base implementation handles the common pattern for door/window gizmos.
+        Subclasses can override get_casing_offset() to customize behavior.
+        """
+        viewing_from_negative_y, viewing_from_negative_x = self.get_local_view_direction(context, mw)
+        y_pos = self.get_lining_y_position_for_view(props, viewing_from_negative_y)
+
+        self.set_dimension_gizmo_position("overall_width", mw, Vector((0, y_pos, -self.GIZMO_OFFSET)), (1, 0, 0))
+
+        casing_offset = self.get_casing_offset(props)
+        x_pos_height, x_pos_lining = self.get_x_positions_for_view(
+            props.overall_width, casing_offset, viewing_from_negative_x
+        )
+        self.set_dimension_gizmo_position("overall_height", mw, Vector((x_pos_height, y_pos, 0)), (0, 0, 1))
+        self.set_dimension_gizmo_position(
+            "lining_offset", mw, Vector((x_pos_lining, 0, -self.GIZMO_OFFSET)), (0, 1, 0), props.lining_offset
+        )
+
+    def create_icon_gizmo(
+        self,
+        gizmo_type: str,
+        color: tuple[float, float, float],
+        operator: str,
+        prop_path: str | None = None,
+        alpha: float = 0.8,
+        **operator_props,
+    ) -> bpy.types.Gizmo:
+        """Create an icon gizmo with common settings.
+
+        Args:
+            gizmo_type: Blender gizmo type (e.g., "VIEW3D_GT_lock", "VIEW3D_GT_plus")
+            color: RGB color tuple
+            operator: Operator ID to trigger (e.g., "bim.toggle_stair_property")
+            prop_path: Optional property path for lock icons (e.g., "BIMStairProperties.lock")
+            alpha: Opacity (default 0.8)
+            **operator_props: Additional operator properties to set
+
+        Returns:
+            The created gizmo
+        """
+        prefs = tool.Blender.get_addon_preferences()
+        highlight_color = prefs.decorator_color_selected[:3]
+
+        gz = self.gizmos.new(gizmo_type)
+        gz.use_draw_scale = False
+        gz.color = color
+        gz.color_highlight = highlight_color
+        gz.alpha = alpha
+        if prop_path:
+            gz.prop_path = prop_path
+        op = gz.target_set_operator(operator)
+        for key, value in operator_props.items():
+            setattr(op, key, value)
+        return gz
+
+    def create_arc_gizmo(
+        self,
+        color: tuple[float, float, float],
+        operator: str,
+        prop_path: str | None = None,
+        alpha: float = 0.5,
+        **operator_props,
+    ) -> bpy.types.Gizmo:
+        """Create an arc gizmo for swing/rotation indicators (e.g., door swing).
+
+        Args:
+            color: RGB color tuple
+            operator: Operator ID to trigger (e.g., "bim.toggle_door_swing")
+            prop_path: Optional property path (e.g., "BIMDoorProperties.door_type")
+            alpha: Opacity (default 0.5 for arc gizmos)
+            **operator_props: Additional operator properties to set
+
+        Returns:
+            The created arc gizmo
+        """
+        return self.create_icon_gizmo("VIEW3D_GT_arc", color, operator, prop_path, alpha, **operator_props)
+
     @classmethod
     def is_element_type(cls, element) -> bool:
         raise NotImplementedError("Subclass must implement is_element_type()")
@@ -3698,11 +4322,92 @@ class BaseParametricGizmoGroup:
             return False
         return True
 
+    def setup(self, context: bpy.types.Context) -> None:
+        """Template method for gizmo setup.
+
+        Subclasses should override setup_element_specific_gizmos() to add
+        element-specific gizmos (e.g., door swing arcs, stair lock icons).
+        """
+        self.setup_editing_gizmos(context)
+        self.setup_dimension_gizmos(context)
+        self.setup_element_specific_gizmos(context)
+
+    def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
+        """Override to add element-specific gizmos.
+
+        Called after setup_editing_gizmos and setup_dimension_gizmos.
+        Examples: door swing arcs, stair lock/plus/minus icons.
+        """
+        pass
+
+    def refresh(self, context: bpy.types.Context) -> None:
+        """Template method for gizmo refresh.
+
+        Subclasses should override _refresh_element_specific() for element-specific updates
+        (e.g., door swing arcs, stair lock icons).
+        """
+        if not self.is_setup_complete():
+            return
+        obj = context.active_object
+        if not obj:
+            return
+
+        props = self.get_props(obj)
+        mw = obj.matrix_world
+        self.update_editing_gizmos(context, mw, props)
+        self.update_dimension_gizmos(mw, props)
+        self._refresh_element_specific(context, mw, props)
+
+    def _refresh_element_specific(
+        self, context: bpy.types.Context, mw: "Matrix", props  # noqa: ARG002
+    ) -> None:
+        """Override for element-specific refresh logic.
+
+        Called after update_editing_gizmos and update_dimension_gizmos.
+        Examples: door swing gizmos, stair lock/tread/plus/minus gizmos.
+        """
+        pass
+
+    # Subclass should define these class attributes for metadata-driven dispatch
+    # If not defined, subclass must override get_props() and get_gizmo_prefs()
+    props_getter: str | None = None  # e.g., "get_door_props"
+    gizmo_pref_name: str | None = None  # e.g., "door"
+
     def get_props(self, obj: bpy.types.Object) -> Any:
-        raise NotImplementedError("Subclass must implement get_props()")
+        """Get properties for the element.
+
+        Subclass can either:
+        1. Define class attribute `props_getter` (e.g., "get_door_props")
+        2. Override this method directly
+        """
+        if self.props_getter:
+            return getattr(tool.Model, self.props_getter)(obj)
+        raise NotImplementedError("Subclass must define props_getter or override get_props()")
+    @staticmethod
+    def get_addon_prefs():
+        """Get addon preferences (cached accessor)."""
+        return tool.Blender.get_addon_preferences()
+
+    def get_decoration_colors(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        """Get default and highlight colors from preferences.
+
+        Returns:
+            Tuple of (default_color, highlight_color) as RGB tuples.
+        """
+        prefs = self.get_addon_prefs()
+        return prefs.decorations_colour[:3], prefs.decorator_color_selected[:3]
 
     def get_gizmo_prefs(self) -> Any:
-        raise NotImplementedError("Subclass must implement get_gizmo_prefs()")
+        """Get gizmo preferences for this element type.
+
+        Subclass can either:
+        1. Define class attribute `gizmo_pref_name` (e.g., "door")
+        2. Override this method directly
+        """
+        if self.gizmo_pref_name:
+            prefs = self.get_addon_prefs()
+            return getattr(prefs.gizmos, self.gizmo_pref_name)
+        raise NotImplementedError("Subclass must define gizmo_pref_name or override get_gizmo_prefs()")
 
     def is_setup_complete(self) -> bool:
         """Check if gizmo setup has been completed.
@@ -3809,6 +4514,7 @@ class BaseParametricGizmoGroup:
         mw: Matrix,
         position: Vector,
         axis: tuple[int, int, int],
+        value: float | None = None,
     ) -> None:
         """Set a dimension gizmo's position if visible.
 
@@ -3817,9 +4523,34 @@ class BaseParametricGizmoGroup:
             mw: Object's world matrix
             position: Local position as Vector or tuple (x, y, z)
             axis: Direction axis tuple (e.g., (1, 0, 0) for X)
+            value: Optional value to check for negative flip. If None, no flip is applied.
         """
         if gz := self.get_dimension_gizmo_if_visible(attr_name):
-            gz.matrix_basis = mw @ self.compose_gizmo_matrix(position, axis)
+            self._apply_dimension_matrix(gz, mw, self.compose_gizmo_matrix(position, axis), value)
+
+    def _apply_dimension_matrix(
+        self,
+        gizmo: bpy.types.Gizmo,
+        mw: Matrix,
+        base_matrix: Matrix,
+        value: float | None = None,
+    ) -> None:
+        """Apply matrix to dimension gizmo, flipping for negative values.
+
+        Consolidates negative value handling in one place. For negative values,
+        the gizmo is rotated 180° around Z so the dimension arrow points in the
+        opposite direction while keeping the origin at the same position.
+
+        Args:
+            gizmo: The dimension gizmo to update
+            mw: Object's world matrix
+            base_matrix: Local transformation matrix
+            value: If negative, applies FLIP_MATRIX rotation
+        """
+        if value is not None and value < 0:
+            gizmo.matrix_basis = mw @ base_matrix @ self.FLIP_MATRIX
+        else:
+            gizmo.matrix_basis = mw @ base_matrix
 
     def should_hide_dimension_gizmo(
         self, gizmo: bpy.types.Gizmo, config: "DimensionGizmoConfig", props, gizmo_prefs
@@ -3851,39 +4582,56 @@ class BaseParametricGizmoGroup:
             return True
         return False
 
+    def _setup_icon_gizmo(
+        self,
+        gizmo_type: str,
+        color: tuple[float, float, float],
+        operator: str,
+        highlight_color: tuple[float, float, float] | None = None,
+        alpha: float = 0.8,
+    ) -> bpy.types.Gizmo:
+        """Create and configure an icon gizmo with standard settings.
+
+        Reduces boilerplate in setup_editing_gizmos.
+
+        Args:
+            gizmo_type: Blender gizmo type identifier (e.g., "VIEW3D_GT_pen")
+            color: RGB color tuple
+            operator: Operator to invoke on click
+            highlight_color: Optional highlight color (defaults to prefs selection color)
+            alpha: Gizmo alpha (default 0.8)
+
+        Returns:
+            Configured gizmo instance.
+        """
+        if highlight_color is None:
+            _, highlight_color = self.get_decoration_colors()
+
+        gizmo = self.gizmos.new(gizmo_type)
+        gizmo.use_draw_scale = False
+        gizmo.color = color
+        gizmo.color_highlight = highlight_color
+        gizmo.alpha = alpha
+        gizmo.target_set_operator(operator)
+        return gizmo
+
     def setup_editing_gizmos(self, context: bpy.types.Context) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = prefs.decorations_colour[:3]
-        highlight_color = prefs.decorator_color_selected[:3]
+        default_color, highlight_color = self.get_decoration_colors()
 
-        self.pen_gizmo = self.gizmos.new("VIEW3D_GT_pen")
-        self.pen_gizmo.use_draw_scale = False
-        self.pen_gizmo.color = default_color
-        self.pen_gizmo.color_highlight = highlight_color
-        self.pen_gizmo.alpha = 0.8
-        self.pen_gizmo.target_set_operator(self.enable_editing_operator)
-
-        self.validate_gizmo = self.gizmos.new("VIEW3D_GT_validate")
-        self.validate_gizmo.use_draw_scale = False
-        self.validate_gizmo.color = self.COLOR_GREEN
-        self.validate_gizmo.color_highlight = highlight_color
-        self.validate_gizmo.alpha = 0.8
-        self.validate_gizmo.target_set_operator(self.finish_editing_operator)
-
-        self.cancel_gizmo = self.gizmos.new("VIEW3D_GT_cancel")
-        self.cancel_gizmo.use_draw_scale = False
-        self.cancel_gizmo.color = self.COLOR_RED
-        self.cancel_gizmo.color_highlight = highlight_color
-        self.cancel_gizmo.alpha = 0.8
-        self.cancel_gizmo.target_set_operator(self.cancel_editing_operator)
+        self.pen_gizmo = self._setup_icon_gizmo(
+            "VIEW3D_GT_pen", default_color, self.enable_editing_operator, highlight_color
+        )
+        self.validate_gizmo = self._setup_icon_gizmo(
+            "VIEW3D_GT_validate", self.COLOR_GREEN, self.finish_editing_operator, highlight_color
+        )
+        self.cancel_gizmo = self._setup_icon_gizmo(
+            "VIEW3D_GT_cancel", self.COLOR_RED, self.cancel_editing_operator, highlight_color
+        )
 
         if self.cycle_type_operator:
-            self.cycle_gizmo = self.gizmos.new("VIEW3D_GT_cycle")
-            self.cycle_gizmo.use_draw_scale = False
-            self.cycle_gizmo.color = default_color
-            self.cycle_gizmo.color_highlight = highlight_color
-            self.cycle_gizmo.alpha = 0.8
-            self.cycle_gizmo.target_set_operator(self.cycle_type_operator)
+            self.cycle_gizmo = self._setup_icon_gizmo(
+                "VIEW3D_GT_cycle", default_color, self.cycle_type_operator, highlight_color
+            )
 
     def _make_dimension_getter(self, config: DimensionGizmoConfig):
         """Create getter closure for dimension gizmo."""
@@ -3973,32 +4721,61 @@ class BaseParametricGizmoGroup:
 
             gizmo.hide = False
 
-            matrix_method = getattr(self, f"get_dimension_matrix_{config.attr_name}", None)
-            base_matrix = matrix_method(props) if matrix_method else Matrix.Identity(4)
+            # Priority: config.matrix_position > get_dimension_matrix_* method > Identity
+            if config.matrix_position:
+                position = config.matrix_position(props)
+                base_matrix = self.compose_gizmo_matrix(position, config.axis)
+            else:
+                matrix_method = getattr(self, f"get_dimension_matrix_{config.attr_name}", None)
+                base_matrix = matrix_method(props) if matrix_method else Matrix.Identity(4)
 
             if config.compute_value:
                 value = config.compute_value(props)
             else:
                 value = getattr(props, config.attr_name, 0.0)
 
-            # Handle negative values by flipping the gizmo direction
-            if value < 0:
-                # Flip the X axis (dimension direction) for negative values
-                flip_matrix = Matrix.Scale(-1, 4, Vector((1, 0, 0)))
-                gizmo.matrix_basis = mw @ base_matrix @ flip_matrix
-                gizmo.set_dimension_length(abs(value))
-            else:
-                gizmo.matrix_basis = mw @ base_matrix
-                gizmo.set_dimension_length(value)
+            # Use consolidated negative value handling
+            self._apply_dimension_matrix(gizmo, mw, base_matrix, value)
+            gizmo.show_start_arrow = config.show_start_arrow
+            gizmo.show_end_arrow = config.show_end_arrow
+            gizmo.set_dimension_length(value)
+
+    def get_icon_y_extent(self, props) -> tuple[float, float]:
+        """Get Y extents for icon positioning based on element geometry.
+
+        Subclasses should override this to return the furthest geometry extents
+        in the +Y and -Y directions from the element origin.
+
+        Returns:
+            Tuple of (positive_y_extent, negative_y_extent).
+            Both values should be positive (absolute distances).
+            The base implementation returns (0, 0).
+
+        Example for a door:
+            return (lining_offset + lining_depth + 2*OFFSET, 2*OFFSET)
+        """
+        return (0.0, 0.0)
 
     def get_icon_y_offset(self, context: bpy.types.Context, mw: Matrix) -> float:
         """Get Y offset for icons based on view direction.
 
-        Returns negative offset when viewing from -Y side (icons move to -Y),
-        positive offset when viewing from +Y side (icons move to +Y).
-        Subclasses can override to customize behavior.
+        Uses get_icon_y_extent() to determine how far to offset icons based on
+        the camera viewing direction. Icons are positioned beyond the geometry
+        on the side the camera is viewing from.
+
+        Subclasses typically only need to override get_icon_y_extent().
         """
-        return 0.0
+        obj = context.active_object
+        if not obj:
+            return self.ICON_Y_OFFSET
+
+        props = self.get_props(obj)
+        positive_extent, negative_extent = self.get_icon_y_extent(props)
+
+        viewing_from_negative_y, _ = self.get_local_view_direction(context, mw)
+        if viewing_from_negative_y:
+            return -negative_extent
+        return positive_extent
 
     def update_editing_gizmos(self, context: bpy.types.Context, mw: Matrix, props) -> None:
         """Update editing icon gizmo positions to billboard toward camera."""
