@@ -1006,7 +1006,7 @@ class CreateDrawing(bpy.types.Operator):
             closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
 
             for polygon in closed_polygons.geoms:
-                # Less than 1mm2 is not worth styling on sheet
+                # Less than 0.1mm2 is not worth styling on sheet
                 if polygon.area < .1:
                     continue
                 centroid = polygon.centroid
