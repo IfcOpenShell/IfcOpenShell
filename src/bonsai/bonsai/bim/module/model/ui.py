@@ -31,9 +31,6 @@ from bonsai.bim.module.model.data import (
     RailingData,
     RoofData,
 )
-from bonsai.bim.module.model.stair import regenerate_stair_mesh
-from bonsai.bim.module.model.railing import update_railing_modifier_bmesh
-from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
 from collections.abc import Iterable
 from typing import Any, TYPE_CHECKING
 
@@ -307,8 +304,6 @@ class BIM_PT_stair(bpy.types.Panel):
                 row = self.layout.row(align=True)
 
                 draw_stair_properties(self.layout, props)
-
-                regenerate_stair_mesh(obj)
             else:
                 calculated_params = StairData.data["calculated_params"]
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
@@ -565,9 +560,6 @@ class BIM_PT_railing(bpy.types.Panel):
                 row.operator("bim.cancel_editing_railing", icon="CANCEL", text="")
 
                 draw_railing_properties(self.layout, props)
-
-                update_railing_modifier_bmesh(context)
-
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_railing_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_railing_path", icon="CANCEL", text="")
@@ -623,8 +615,6 @@ class BIM_PT_roof(bpy.types.Panel):
                 row.operator("bim.cancel_editing_roof", icon="CANCEL", text="")
 
                 draw_roof_properties(self.layout, props)
-
-                update_roof_modifier_bmesh(obj)
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
