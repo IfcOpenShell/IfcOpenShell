@@ -14,6 +14,27 @@ namespace {
 	}
 }
 
+namespace {
+template <typename T, typename Cmp = std::less<T>>
+bool has_intersection(const std::set<T, Cmp>& A,
+                      const std::set<T, Cmp>& B) {
+    auto itA = A.begin();
+    auto itB = B.begin();
+
+    while (itA != A.end() && itB != B.end()) {
+        if (Cmp()(*itA, *itB)) {
+            ++itA;
+        } else if (Cmp()(*itB, *itA)) {
+            ++itB;
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+}
+
 taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections)
 {
 	std::sort(cross_sections.begin(), cross_sections.end());
@@ -25,7 +46,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 	// @todo currently only the case is handled where directrix returns a function_item
 	// @todo this "if" statement is not really required because the function returns at the start if the Directrix is not a function_item function
 	if (fn) {
-		function_item_evaluator evaluator(settings_,fn);
+		function_item_evaluator evaluator(settings_, fn);
 		double start = std::max(0., cross_sections.front().dist_along);
 		double end = std::min(fn->length(), cross_sections.back().dist_along);
 
@@ -45,6 +66,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 			// parameter is minimum number of steps
 			num_steps = (size_t)std::ceil(param);
 		}
+        auto delta_step = curve_length / num_steps;
 		std::vector<double> longitudes;
 		for (auto& x : cross_sections) {
 			longitudes.push_back(x.dist_along);
@@ -52,13 +74,15 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 		longitudes.push_back(std::numeric_limits<double>::infinity());
 		auto profile_index = longitudes.begin();
 		for (size_t i = 0; i <= num_steps; ++i) {
-			auto dist_along = start + curve_length / num_steps * i;
+            auto dist_along = start + delta_step * i;
 			while (dist_along > *(profile_index + 1)) {
 				profile_index++;
 				if (profile_index == longitudes.end()) {
 					// @todo handle this? 
 				}
 			}
+
+			const bool is_last_placement_of_this_profile = profile_index + 1 >= longitudes.end() ? false : ((start + delta_step * (i+1)) > *(profile_index + 1));
 
 			auto relative_dist_along = (dist_along - *profile_index) / (*(profile_index + 1) - *profile_index);
 			const auto& profile_a = cross_sections[std::distance(longitudes.begin(), profile_index)].section_geometry;
@@ -143,28 +167,203 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
                     } else if (rotation_a != rotation_b) {
 						Logger::Error("Direction vectors on cross section placements only supported when used consistently");
 					}
+
 					taxonomy::loop::ptr w1, w2;
 					taxonomy::edge::ptr e1, e2;
+                    taxonomy::point3::ptr p1, p2;
+
 					for (auto tmp_ : boost::combine(loops_a, loops_b)) {
 						boost::tie(w1, w2) = tmp_;
-						if (w1->children.size() != w2->children.size()) {
-							Logger::Warning("Mismatching number of edges: " +
-								std::to_string(w1->children.size()) + " vs " +
-								std::to_string(w2->children.size()),
-								inst
-							);
-							return nullptr;
-						}
-						std::vector<taxonomy::point3::ptr> points;
-						for (auto tmp__ : boost::combine(w1->children, w2->children)) {
-							boost::tie(e1, e2) = tmp__;
-							auto& p1 = boost::get<taxonomy::point3::ptr>(e1->start);
-							auto& p2 = boost::get<taxonomy::point3::ptr>(e2->start);
 
-							auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
-							// auto p4 = (interpolated_rotation * p3).eval();
-							points.push_back(taxonomy::make<taxonomy::point3>(p3));
+						if (w1->closed != w2->closed) {
+							Logger::Warning("Mismatching closed property on loops", inst);
+							return nullptr;
+                        }
+
+						if (w1->tags.is_initialized() != w2->tags.is_initialized()) {
+							Logger::Warning("Mismatching availability tags on loops", inst);
+							return nullptr;
+                        }
+
+						if (w1->tags) {
+							// check uniqueness
+                            std::set<std::string> tags_seen;
+                            for (const auto& t : *w1->tags) {
+								if (tags_seen.find(t) != tags_seen.end()) {
+									Logger::Warning("Duplicate tag '" + t + "' on loft profile", inst);
+									return nullptr;
+								}
+								tags_seen.insert(t);
+                            }
 						}
+
+						if (w2->tags) {
+                            // check uniqueness
+                            std::set<std::string> tags_seen;
+                            for (const auto& t : *w2->tags) {
+                                if (tags_seen.find(t) != tags_seen.end()) {
+                                    Logger::Warning("Duplicate tag '" + t + "' on loft profile", inst);
+                                    return nullptr;
+                                }
+                                tags_seen.insert(t);
+                            }
+                        }
+
+						std::map<std::string, taxonomy::point3::ptr> tag_to_point_on_w1, tag_to_point_on_w2;
+
+						auto loop_to_points = [](const taxonomy::loop::ptr& loop, const boost::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
+                            std::vector<taxonomy::point3::ptr> points;
+                            std::vector<std::set<std::string>> tags;
+                            std::vector<std::string>::const_iterator tag_it;
+                            
+							if (!loop->closed.get_value_or(false)) {
+                                points = {boost::get<taxonomy::point3::ptr>(loop->children[0]->start)};
+                                if (input_tags) {
+                                    tags = {{input_tags->front()}};
+                                    tag_it = ++input_tags->begin();
+                                }
+							}
+							for (auto& e : loop->children) {
+								const auto& p1 = boost::get<taxonomy::point3::ptr>(e->start);
+								const auto& p2 = boost::get<taxonomy::point3::ptr>(e->end);
+                                if (input_tags && p1->ccomponents() == p2->ccomponents()) {
+                                    tags.back().insert(*tag_it);
+                                    ++tag_it;
+                                } else {
+                                    points.push_back(p2);
+                                    if (input_tags) {
+                                        tags.emplace_back();
+                                        tags.back().insert(*tag_it);
+                                        ++tag_it;
+                                    }
+                                }
+							}
+                            if (!input_tags) {
+                                if (loop->closed.get_value_or(false)) {
+									// close polygon by referencing first point
+									points.push_back(points.front());
+                                }
+							}
+                            return {points, tags};
+                        };
+
+						auto combine_tags = [](const std::vector<std::set<std::string>>& tag_sets) -> std::set<std::string> {
+							return std::accumulate(
+								tag_sets.begin(), tag_sets.end(), std::set<std::string>{},
+								[](std::set<std::string> acc,
+								   const std::set<std::string>& m) {
+									acc.insert(m.begin(), m.end());
+									return acc;
+								});
+                        };
+
+						auto join_tags = [](const std::set<std::string>& tag_set) -> std::string {
+							std::string result;
+							for (auto it = tag_set.begin(); it != tag_set.end(); ++it) {
+								if (it != tag_set.begin()) {
+									result += ", ";
+								}
+								result += *it;
+							}
+							return result;
+                        };
+
+						auto [w1_points, w1_tags] = loop_to_points(w1, w1->tags);
+                        auto [w2_points, w2_tags] = loop_to_points(w2, w2->tags);
+
+						if (w1->tags && w2->tags) {
+							{
+                                auto it = w1_points.begin();
+                                auto jt = w1_tags.begin();
+                                while (it != w1_points.end() && jt != w1_tags.end()) {
+                                    for (auto& t : *jt) {
+                                        tag_to_point_on_w1[t] = *it;
+									}
+                                    ++it;
+                                    ++jt;
+                                }
+							}
+
+							{
+                                auto it = w2_points.begin();
+                                auto jt = w2_tags.begin();
+                                while (it != w2_points.end() && jt != w2_tags.end()) {
+                                    for (auto& t : *jt) {
+                                        tag_to_point_on_w2[t] = *it;
+                                    }
+                                    ++it;
+                                    ++jt;
+                                }
+                            }
+
+							auto w1_tags_combined = combine_tags(w1_tags);
+                            auto w2_tags_combined = combine_tags(w2_tags);
+
+							// For every point (which can have multiple tags in case of 0-width edges) there needs to be a corresponding point on the other profile
+
+							for (auto& p1_tags : w1_tags) {
+                                if (!has_intersection(p1_tags, w2_tags_combined)) {
+                                    Logger::Warning("No matching tags found on loft profiles: " + join_tags(p1_tags) + " not in " + join_tags(w2_tags_combined), inst);
+									return nullptr;
+								}
+							}
+
+							for (auto& p2_tags : w2_tags) {
+                                if (!has_intersection(p2_tags, w1_tags_combined)) {
+                                    Logger::Warning("No matching tags found on loft profiles: " + join_tags(p2_tags) + " not in " + join_tags(w1_tags_combined), inst);
+                                    return nullptr;
+								}
+                            }
+						} else {
+                            if (w1->children.size() != w2->children.size()) {
+                                Logger::Warning("Mismatching number of edges: " +
+                                                    std::to_string(w1->children.size()) + " vs " +
+                                                    std::to_string(w2->children.size()),
+                                                inst);
+                                return nullptr;
+                            }
+						}
+
+						std::vector<taxonomy::point3::ptr> points;
+
+                        std::vector<std::string> common_tags_vec;
+                        if (w1->tags) {
+                            std::set<std::string> common_tags;
+                            for (const auto& t : *w1->tags) {
+                                if (tag_to_point_on_w2.find(t) == tag_to_point_on_w2.end()) {
+                                    continue;
+                                }
+
+                                const auto& p1 = tag_to_point_on_w1[t];
+                                const auto& p2 = tag_to_point_on_w2[t];
+
+                                auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
+
+                                std::set<std::string> tags_for_this_point_on_subsequent_profile = {t};
+
+								if (is_last_placement_of_this_profile) {
+                                    for (auto& ts : w2_tags) {
+                                        if (ts.find(t) != ts.end()) {
+                                            tags_for_this_point_on_subsequent_profile = ts;
+										}
+									}
+								}
+
+                                for (auto& x : tags_for_this_point_on_subsequent_profile) {
+									points.push_back(taxonomy::make<taxonomy::point3>(p3));
+                                    common_tags_vec.push_back(x);
+                                }     
+                            }
+                        } else {
+                            for (auto tmp__ : boost::combine(w1_points, w2_points)) {
+                                boost::tie(p1, p2) = tmp__;
+                                auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
+                                points.push_back(taxonomy::make<taxonomy::point3>(p3));
+                            }
+                        }
+
+						/*
+						// This is handled in the loop_to_points() function above
                         if (!points.empty()) {
 							if (!w1->closed.get_value_or(true) && !w2->closed.get_value_or(true)) {
                                 // open polygon, add last point
@@ -178,12 +377,17 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
                                 points.push_back(points.front());
                             }
 						}
+						*/
 
 						auto interpolated_loop = polygon_from_points(points);
-						interpolated_loop->external = w1->external;
 						if (interpolated->kind() == taxonomy::FACE) {
-							std::static_pointer_cast<taxonomy::face>(interpolated)->children.push_back(interpolated_loop);
+                            interpolated_loop->external = w1->external;
+                            std::static_pointer_cast<taxonomy::face>(interpolated)->children.push_back(interpolated_loop);
 						} else {
+                            if (w1->tags) {
+                                std::static_pointer_cast<taxonomy::loop>(interpolated)->tags = common_tags_vec;
+							}
+                            std::static_pointer_cast<taxonomy::loop>(interpolated)->closed = w1->closed;
 							std::static_pointer_cast<taxonomy::loop>(interpolated)->children = interpolated_loop->children;
 						}
 					}
@@ -227,6 +431,19 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 			auto m = (m4b * loft->children.back()->matrix->ccomponents()).eval();
 			loft->children.back()->matrix->components() = m;
 		}
+
+		auto find_closest = [](const std::vector<double>& v, double target) -> std::vector<double>::const_iterator {
+            auto it = std::lower_bound(v.begin(), v.end(), target);
+
+            if (it == v.begin()) {
+                return it;
+            }
+
+            double after = *it;
+            double before = *(it - 1);
+
+            return (std::abs(after - target) < std::abs(target - before)) ? it : (it - 1);
+        };
 	}
 
 	return loft;
