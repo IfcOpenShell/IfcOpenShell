@@ -9,7 +9,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     if(WASM_BUILD)
         target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
     else()
-        target_link_libraries(Serializers_ifc${schema} IfcGeom ${OPENCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
+        target_link_libraries(Serializers_ifc${schema} IfcGeom ${OpenCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
     endif()
 
     install(TARGETS Serializers_ifc${schema})
