@@ -29,7 +29,8 @@ from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDe
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
 from bonsai.bim.module.drawing.decoration import CutDecorator
-from typing import TYPE_CHECKING, Literal, get_args, Union, Any, Optional, Callable
+from typing import TYPE_CHECKING, Literal, get_args, Union, Any, Optional
+from collections.abc import Callable
 from mathutils import Vector
 
 

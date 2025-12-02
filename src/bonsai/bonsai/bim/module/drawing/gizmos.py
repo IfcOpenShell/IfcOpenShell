@@ -132,7 +132,8 @@ __all__ = [
     "ExtrusionWidget",
 ]
 
-from typing import Any, Callable, Iterator, Literal, Protocol, runtime_checkable, get_args
+from typing import Any, Literal, Protocol, runtime_checkable, get_args
+from collections.abc import Callable, Iterator
 from enum import Enum
 
 import blf
