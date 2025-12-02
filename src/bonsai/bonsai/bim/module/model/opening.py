@@ -417,12 +417,14 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                             representation=representation,
                         )
 
-        #Refresh cut decorator
+        # Refresh cut decorator
         DecoratorData.cut_cache.clear()
         DecoratorData.fill_cache.clear()
         DecoratorData.slice_cache.clear()
 
         return {"FINISHED"}
+
+
 class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.flip_fill"
     bl_label = "Flip Fill"

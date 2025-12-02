@@ -779,89 +779,105 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     # matrix_position lambdas replace the get_dimension_matrix_* methods
     dimension_gizmo_props = [
         DimensionGizmoConfig(
-            attr_name="overall_width", axis=(1, 0, 0), min_value=0.01, text_offset_sign=-1,
+            attr_name="overall_width",
+            axis=(1, 0, 0),
+            min_value=0.01,
+            text_offset_sign=-1,
             # Position set dynamically in _update_dimension_gizmo_positions based on view
         ),
         DimensionGizmoConfig(
-            attr_name="overall_height", axis=(0, 0, 1), min_value=0.01, text_alignment="start",
+            attr_name="overall_height",
+            axis=(0, 0, 1),
+            min_value=0.01,
+            text_alignment="start",
             # Position set dynamically in _update_dimension_gizmo_positions based on view
         ),
         DimensionGizmoConfig(
-            attr_name="threshold_thickness", axis=(0, 0, 1),
+            attr_name="threshold_thickness",
+            axis=(0, 0, 1),
             matrix_position=lambda p: V_(p.overall_width / 2, p.threshold_offset + p.threshold_depth, 0),
         ),
         DimensionGizmoConfig(
-            attr_name="threshold_depth", axis=(0, 1, 0),
+            attr_name="threshold_depth",
+            axis=(0, 1, 0),
             visibility_condition=lambda p: p.has_threshold_depth(),
             matrix_position=lambda p: V_(p.overall_width / 2, p.threshold_offset, p.threshold_thickness),
         ),
         DimensionGizmoConfig(
-            attr_name="threshold_offset", axis=(0, 1, 0),
+            attr_name="threshold_offset",
+            axis=(0, 1, 0),
             matrix_position=lambda p: V_(p.overall_width / 2 - _G.GIZMO_STACK_OFFSET, 0, p.threshold_thickness),
         ),
         DimensionGizmoConfig(
-            attr_name="lining_offset", axis=(0, 1, 0), min_value=-10.0,
+            attr_name="lining_offset",
+            axis=(0, 1, 0),
+            min_value=-10.0,
             # Position set dynamically in _update_dimension_gizmo_positions based on view
         ),
         DimensionGizmoConfig(
-            attr_name="lining_depth", axis=(0, 1, 0),
+            attr_name="lining_depth",
+            axis=(0, 1, 0),
             matrix_position=lambda p: V_(p.overall_width, p.lining_offset, p.overall_height),
         ),
         DimensionGizmoConfig(
-            attr_name="lining_thickness", axis=(-1, 0, 0),
+            attr_name="lining_thickness",
+            axis=(-1, 0, 0),
             matrix_position=lambda p: V_(p.overall_width, p.lining_depth / 2, p.overall_height / 2),
         ),
         DimensionGizmoConfig(
-            attr_name="transom_offset", axis=(0, 0, 1),
+            attr_name="transom_offset",
+            axis=(0, 0, 1),
             visibility_condition=lambda p: p.has_transom(),
             matrix_position=lambda p: V_(p.overall_width / 2, p.lining_offset, 0),
         ),
         DimensionGizmoConfig(
-            attr_name="transom_thickness", axis=(0, 0, 1),
+            attr_name="transom_thickness",
+            axis=(0, 0, 1),
             matrix_position=lambda p: V_(p.overall_width / 2, p.lining_offset, p.transom_offset),
         ),
         DimensionGizmoConfig(
-            attr_name="casing_thickness", axis=(-1, 0, 0),
+            attr_name="casing_thickness",
+            axis=(-1, 0, 0),
             visibility_condition=lambda p: p.has_casing(),
             matrix_position=lambda p: V_(
-                p.lining_thickness,
-                p.lining_depth + p.lining_offset + p.casing_depth / 2,
-                p.overall_height / 2
+                p.lining_thickness, p.lining_depth + p.lining_offset + p.casing_depth / 2, p.overall_height / 2
             ),
         ),
         DimensionGizmoConfig(
-            attr_name="casing_depth", axis=(0, 1, 0),
+            attr_name="casing_depth",
+            axis=(0, 1, 0),
             visibility_condition=lambda p: p.has_casing_depth(),
             matrix_position=lambda p: V_(
-                p.lining_thickness - p.casing_thickness,
-                p.lining_depth + p.lining_offset,
-                p.overall_height / 2
+                p.lining_thickness - p.casing_thickness, p.lining_depth + p.lining_offset, p.overall_height / 2
             ),
         ),
         DimensionGizmoConfig(
-            attr_name="panel_depth", axis=(0, 1, 0),
+            attr_name="panel_depth",
+            axis=(0, 1, 0),
             matrix_position=lambda p: V_(
                 p.lining_to_panel_offset_x + p.overall_width * p.panel_width_ratio / 2,
                 p.lining_offset + p.lining_to_panel_offset_y,
-                p.threshold_thickness + p.get_panel_center_z()
+                p.threshold_thickness + p.get_panel_center_z(),
             ),
         ),
         DimensionGizmoConfig(
-            attr_name="frame_thickness", axis=(-1, 0, 0),
+            attr_name="frame_thickness",
+            axis=(-1, 0, 0),
             visibility_condition=lambda p: p.has_transom(),
             matrix_position=lambda p: V_(
                 p.overall_width,
                 p.lining_offset + p.lining_to_panel_offset_y + p.frame_depth / 2,
-                p.get_transom_window_center_z()
+                p.get_transom_window_center_z(),
             ),
         ),
         DimensionGizmoConfig(
-            attr_name="frame_depth", axis=(0, 1, 0),
+            attr_name="frame_depth",
+            axis=(0, 1, 0),
             visibility_condition=lambda p: p.has_transom(),
             matrix_position=lambda p: V_(
                 p.overall_width - p.frame_thickness,
                 p.lining_offset + p.lining_to_panel_offset_y,
-                p.get_transom_window_center_z()
+                p.get_transom_window_center_z(),
             ),
         ),
     ]
@@ -895,12 +911,14 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         special_color = prefs.decorator_color_special[:3]
 
         self.gizmo_door_type = self.create_arc_gizmo(
-            special_color, "bim.toggle_door_swing",
+            special_color,
+            "bim.toggle_door_swing",
             prop_path="BIMDoorProperties.door_type",
             flip_geometry=False,
         )
         self.gizmo_flip_arc = self.create_arc_gizmo(
-            inactive_color, "bim.toggle_door_swing",
+            inactive_color,
+            "bim.toggle_door_swing",
             prop_path="BIMDoorProperties.door_type",
             flip_geometry=True,
             flip_local_axes="XY",
@@ -916,7 +934,9 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         """Override to return casing_thickness when lining_offset is 0."""
         return props.get_casing_offset()
 
-    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw: Matrix, props: "BIMDoorProperties") -> None:
+    def _update_dimension_gizmo_positions(
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMDoorProperties"
+    ) -> None:
         """Update dimension gizmo positions based on camera view direction."""
         self._update_view_dependent_dimensions(context, mw, props)
 

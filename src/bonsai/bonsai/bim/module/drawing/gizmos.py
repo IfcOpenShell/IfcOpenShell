@@ -1558,9 +1558,7 @@ def snap_to_mesh(
     return _snap_manager.snap_to_mesh(location, context, active_obj, mouse_coords, include_active)
 
 
-def build_snap_cache(
-    context: bpy.types.Context, active_obj: bpy.types.Object, include_active: bool = False
-) -> None:
+def build_snap_cache(context: bpy.types.Context, active_obj: bpy.types.Object, include_active: bool = False) -> None:
     _snap_manager.build_snap_cache(context, active_obj, include_active)
 
 
@@ -2013,7 +2011,6 @@ class UglyDotGizmo(OffsetHandle, types.Gizmo):
         self.draw_custom_shape(self.custom_shape, select_id=select_id)
 
 
-
 class ExtrusionGuidesGizmo(CustomGizmo, types.Gizmo):
     """Extrusion guides
 
@@ -2045,7 +2042,6 @@ class ExtrusionGuidesGizmo(CustomGizmo, types.Gizmo):
     def refresh(self):
         depth = self.target_get_value("depth") / self.scale_value
         self.matrix_offset.col[2][2] = depth  # z-scaled
-
 
 
 class ExtrusionWidget(types.GizmoGroup):
@@ -2098,7 +2094,6 @@ class ExtrusionWidget(types.GizmoGroup):
         gz.target_set_prop("depth", prop, "value")
         gz.scale_value = scale_value
 
-
     def refresh(self, context: bpy.types.Context) -> None:
         """updating gizmos"""
         target = context.active_object
@@ -2146,9 +2141,11 @@ class ExtrusionWidget(types.GizmoGroup):
                 scale_value /= si_conversions["thou"]
         return scale_value
 
+
 # ============================================================================
 # Core Gizmo Classes
 # ============================================================================
+
 
 class BIM_OT_gizmo_value_input(bpy.types.Operator):
     """Enter a numeric value for a gizmo property. Click or Enter to confirm, ESC to cancel."""
@@ -2462,10 +2459,7 @@ class GizmoMovable(bpy.types.Gizmo):
             self.keyboard_input.reset()
 
         should_invoke_keyboard = (
-            not cancel
-            and hasattr(self, "_has_dragged")
-            and not self._has_dragged
-            and self.move_set_cb is not None
+            not cancel and hasattr(self, "_has_dragged") and not self._has_dragged and self.move_set_cb is not None
         )
 
         if should_invoke_keyboard:
@@ -2528,7 +2522,7 @@ class GizmoMovable(bpy.types.Gizmo):
         if not self._has_dragged and hasattr(self, "_start_mouse_pos"):
             dx = current_coord[0] - self._start_mouse_pos[0]
             dy = current_coord[1] - self._start_mouse_pos[1]
-            if (dx * dx + dy * dy) > (self.DRAG_THRESHOLD ** 2):
+            if (dx * dx + dy * dy) > (self.DRAG_THRESHOLD**2):
                 self._has_dragged = True
         view_origin = region_2d_to_origin_3d(region, rv3d, current_coord)
         view_direction = region_2d_to_vector_3d(region, rv3d, current_coord)
@@ -2576,9 +2570,7 @@ class GizmoMovable(bpy.types.Gizmo):
 
         return {"RUNNING_MODAL"}
 
-    def _handle_keyboard_input(
-        self, context: bpy.types.Context, event: bpy.types.Event
-    ) -> set[str] | None:
+    def _handle_keyboard_input(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str] | None:
         """Handle keyboard numeric input."""
         kb = self.keyboard_input
 
@@ -3266,10 +3258,16 @@ class GizmoArrow2D(GizmoMovable):
 
         return (
             # Shaft
-            (0, -w, 0), (shaft, -w, 0), (0, w, 0),
-            (0, w, 0), (shaft, -w, 0), (shaft, w, 0),
+            (0, -w, 0),
+            (shaft, -w, 0),
+            (0, w, 0),
+            (0, w, 0),
+            (shaft, -w, 0),
+            (shaft, w, 0),
             # Head
-            (shaft, -hw, 0), (shaft + head, 0, 0), (shaft, hw, 0),
+            (shaft, -hw, 0),
+            (shaft + head, 0, 0),
+            (shaft, hw, 0),
         )
 
     def setup(self) -> None:
@@ -3434,14 +3432,30 @@ class GizmoDimension(GizmoMovable):
         """Generate a simple clickable bar shape (unit length along X)."""
         hw = self.HIT_WIDTH / 2
         return (
-            (0, -hw, -hw), (1, -hw, -hw), (0, hw, -hw),
-            (0, hw, -hw), (1, -hw, -hw), (1, hw, -hw),
-            (0, -hw, hw), (0, hw, hw), (1, -hw, hw),
-            (1, -hw, hw), (0, hw, hw), (1, hw, hw),
-            (0, -hw, -hw), (0, -hw, hw), (1, -hw, -hw),
-            (1, -hw, -hw), (0, -hw, hw), (1, -hw, hw),
-            (0, hw, -hw), (1, hw, -hw), (0, hw, hw),
-            (0, hw, hw), (1, hw, -hw), (1, hw, hw),
+            (0, -hw, -hw),
+            (1, -hw, -hw),
+            (0, hw, -hw),
+            (0, hw, -hw),
+            (1, -hw, -hw),
+            (1, hw, -hw),
+            (0, -hw, hw),
+            (0, hw, hw),
+            (1, -hw, hw),
+            (1, -hw, hw),
+            (0, hw, hw),
+            (1, hw, hw),
+            (0, -hw, -hw),
+            (0, -hw, hw),
+            (1, -hw, -hw),
+            (1, -hw, -hw),
+            (0, -hw, hw),
+            (1, -hw, hw),
+            (0, hw, -hw),
+            (1, hw, -hw),
+            (0, hw, hw),
+            (0, hw, hw),
+            (1, hw, -hw),
+            (1, hw, hw),
         )
 
     def setup(self) -> None:
@@ -3483,9 +3497,7 @@ class GizmoDimension(GizmoMovable):
             display_value=getattr(self, "_display_value", self._dimension_length),
         )
 
-    def _calculate_screen_endpoints(
-        self, context: bpy.types.Context
-    ) -> tuple[Vector, Vector, Vector, float] | None:
+    def _calculate_screen_endpoints(self, context: bpy.types.Context) -> tuple[Vector, Vector, Vector, float] | None:
         """Calculate screen-space endpoints and direction for the dimension line.
 
         Returns:
@@ -3726,7 +3738,7 @@ class GizmoDimension(GizmoMovable):
         if not self._has_dragged and hasattr(self, "_start_mouse_pos"):
             dx = current_coord[0] - self._start_mouse_pos[0]
             dy = current_coord[1] - self._start_mouse_pos[1]
-            if (dx * dx + dy * dy) > (self.DRAG_THRESHOLD ** 2):
+            if (dx * dx + dy * dy) > (self.DRAG_THRESHOLD**2):
                 self._has_dragged = True
         view_origin = region_2d_to_origin_3d(region, rv3d, current_coord)
         view_direction = region_2d_to_vector_3d(region, rv3d, current_coord)
@@ -3815,10 +3827,7 @@ class GizmoDimension(GizmoMovable):
             self.keyboard_input.reset()
 
         should_invoke_keyboard = (
-            not cancel
-            and hasattr(self, "_has_dragged")
-            and not self._has_dragged
-            and self.move_set_cb is not None
+            not cancel and hasattr(self, "_has_dragged") and not self._has_dragged and self.move_set_cb is not None
         )
 
         if should_invoke_keyboard:
@@ -3989,7 +3998,7 @@ class BaseParametricGizmoGroup:
     GIZMO_CLAMP_MAX = 10000.0  # Maximum value for dimension clamping (meters)
 
     # Pre-computed flip matrix for negative value handling (180° rotation around Z)
-    FLIP_MATRIX = Matrix.Rotation(math.pi, 4, 'Z')
+    FLIP_MATRIX = Matrix.Rotation(math.pi, 4, "Z")
 
     # === Icon Gizmo Layout (meters) ===
     # Icons are positioned in a horizontal row above the element:
@@ -4073,9 +4082,7 @@ class BaseParametricGizmoGroup:
         from_neg_y, from_neg_x = self.get_local_view_direction(context, world_matrix)
         return ViewDirection(from_negative_y=from_neg_y, from_negative_x=from_neg_x)
 
-    def update_gizmo_visibility(
-        self, gizmo: bpy.types.Gizmo, is_editing: bool, pref_enabled: bool
-    ) -> bool:
+    def update_gizmo_visibility(self, gizmo: bpy.types.Gizmo, is_editing: bool, pref_enabled: bool) -> bool:
         """Update gizmo visibility based on modal state, editing state, and preference.
 
         Consolidates the common pattern:
@@ -4154,9 +4161,7 @@ class BaseParametricGizmoGroup:
         """
         return Matrix.Translation(translation) @ self.get_axis_rotation_matrix(axis)
 
-    def get_lining_y_position_for_view(
-        self, props, viewing_from_negative_y: bool, use_offset: bool = True
-    ) -> float:
+    def get_lining_y_position_for_view(self, props, viewing_from_negative_y: bool, use_offset: bool = True) -> float:
         """Get Y position for lining-based elements (doors, windows) based on view direction.
 
         For elements with lining_offset property, this calculates the Y position
@@ -4207,9 +4212,7 @@ class BaseParametricGizmoGroup:
         Override in subclass if different positioning is needed.
         """
         width = getattr(props, "overall_width", 0)
-        return self.compose_gizmo_matrix(
-            Vector((width + self.GIZMO_OFFSET, 0, -self.GIZMO_OFFSET)), (0, 1, 0)
-        )
+        return self.compose_gizmo_matrix(Vector((width + self.GIZMO_OFFSET, 0, -self.GIZMO_OFFSET)), (0, 1, 0))
 
     def get_casing_offset(self, props) -> float:
         """Get casing offset for view-dependent dimension positioning.
@@ -4219,9 +4222,7 @@ class BaseParametricGizmoGroup:
         """
         return 0.0
 
-    def _update_view_dependent_dimensions(
-        self, context: bpy.types.Context, mw: Matrix, props
-    ) -> None:
+    def _update_view_dependent_dimensions(self, context: bpy.types.Context, mw: Matrix, props) -> None:
         """Update overall_width, overall_height, and lining_offset based on view direction.
 
         This base implementation handles the common pattern for door/window gizmos.
@@ -4358,9 +4359,7 @@ class BaseParametricGizmoGroup:
         self.update_dimension_gizmos(mw, props)
         self._refresh_element_specific(context, mw, props)
 
-    def _refresh_element_specific(
-        self, context: bpy.types.Context, mw: "Matrix", props  # noqa: ARG002
-    ) -> None:
+    def _refresh_element_specific(self, context: bpy.types.Context, mw: "Matrix", props) -> None:  # noqa: ARG002
         """Override for element-specific refresh logic.
 
         Called after update_editing_gizmos and update_dimension_gizmos.
@@ -4383,6 +4382,7 @@ class BaseParametricGizmoGroup:
         if self.props_getter:
             return getattr(tool.Model, self.props_getter)(obj)
         raise NotImplementedError("Subclass must define props_getter or override get_props()")
+
     @staticmethod
     def get_addon_prefs():
         """Get addon preferences (cached accessor)."""
@@ -4803,7 +4803,9 @@ class BaseParametricGizmoGroup:
                 self.cycle_gizmo.hide = self.is_gizmo_hidden_by_modal(self.cycle_gizmo)
                 local_pos_cycle = Vector((self.ICON_VALIDATE_X + self.ICON_CYCLE_X, icon_y, icon_z))
                 world_pos_cycle = mw @ local_pos_cycle
-                self.cycle_gizmo.matrix_basis = Matrix.Translation(world_pos_cycle) @ billboard_rot @ Matrix.Scale(0.30, 4)
+                self.cycle_gizmo.matrix_basis = (
+                    Matrix.Translation(world_pos_cycle) @ billboard_rot @ Matrix.Scale(0.30, 4)
+                )
         else:
             self.pen_gizmo.hide = self.is_gizmo_hidden_by_modal(self.pen_gizmo)
             self.pen_gizmo.matrix_basis = icon_matrix_base

@@ -488,11 +488,16 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             matrix_position=lambda p: V_(0, -_G.GIZMO_OFFSET, -_G.GIZMO_OFFSET),
         ),
         DimensionGizmoConfig(
-            attr_name="height", axis=(0, 0, 1), min_value=0.01, text_alignment="start",
+            attr_name="height",
+            axis=(0, 0, 1),
+            min_value=0.01,
+            text_alignment="start",
             matrix_position=lambda p: V_(p.get_total_run() + _G.GIZMO_OFFSET, -_G.GIZMO_OFFSET, 0),
         ),
         DimensionGizmoConfig(
-            attr_name="width", axis=(0, 1, 0), min_value=0.01,
+            attr_name="width",
+            axis=(0, 1, 0),
+            min_value=0.01,
             matrix_position=lambda p: V_(_G.GIZMO_OFFSET, 0, -_G.GIZMO_OFFSET),
         ),
         DimensionGizmoConfig(
@@ -503,7 +508,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             matrix_position=lambda p: V_(
                 0 if p.custom_tread_lock else p.custom_first_last_tread_run[0],
                 0,
-                p.get_riser_height() if p.custom_tread_lock else p.get_riser_height() * 2
+                p.get_riser_height() if p.custom_tread_lock else p.get_riser_height() * 2,
             ),
         ),
         DimensionGizmoConfig(
@@ -524,12 +529,11 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             visibility_condition=lambda p: p.has_custom_treads(),
             compute_value=_tread_run_accessors[1][0],
             apply_value=_tread_run_accessors[1][1],
-            matrix_position=lambda p: V_(
-                p.get_total_run() - p.custom_first_last_tread_run[1], 0, p.height
-            ),
+            matrix_position=lambda p: V_(p.get_total_run() - p.custom_first_last_tread_run[1], 0, p.height),
         ),
         DimensionGizmoConfig(
-            attr_name="nosing_length", axis=(-1, 0, 0),
+            attr_name="nosing_length",
+            axis=(-1, 0, 0),
             matrix_position=lambda p: V_(0, p.width / 2, p.get_riser_height()),
         ),
         DimensionGizmoConfig(
@@ -578,12 +582,16 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
         """Create stair-specific icon gizmos (lock, plus, minus)."""
         self.lock_gizmo = self.create_icon_gizmo(
-            "VIEW3D_GT_lock", self.COLOR_BLUE, "bim.toggle_stair_property",
+            "VIEW3D_GT_lock",
+            self.COLOR_BLUE,
+            "bim.toggle_stair_property",
             prop_path="BIMStairProperties.total_length_lock",
             property_name="total_length_lock",
         )
         self.tread_lock_gizmo = self.create_icon_gizmo(
-            "VIEW3D_GT_lock", (1.0, 1.0, 1.0), "bim.toggle_stair_property",
+            "VIEW3D_GT_lock",
+            (1.0, 1.0, 1.0),
+            "bim.toggle_stair_property",
             prop_path="BIMStairProperties.custom_tread_lock",
             property_name="custom_tread_lock",
         )
@@ -594,9 +602,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             "VIEW3D_GT_minus", self.COLOR_RED, "bim.adjust_stair_treads", increment=-1
         )
 
-    def _refresh_element_specific(
-        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"
-    ) -> None:
+    def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties") -> None:
         """Update stair-specific lock and tread count gizmos."""
         billboard_rot = gizmo.get_billboard_rotation(context)
         self.update_lock_gizmo(mw, props, billboard_rot)
@@ -637,7 +643,9 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             self.minus_gizmo, props.is_editing and props.number_of_treads > 1, gizmo_prefs.minus
         )
 
-    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties") -> None:
+    def _update_dimension_gizmo_positions(
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"
+    ) -> None:
         """Update dimension gizmo positions based on camera view direction."""
         viewing_from_negative_y, viewing_from_negative_x = self.get_local_view_direction(context, mw)
         billboard_rot = gizmo.get_billboard_rotation(context)
@@ -651,7 +659,12 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self._update_editing_icon_positions(mw, props, viewing_from_negative_y, billboard_rot)
 
     def _update_overall_dimension_gizmos(
-        self, mw: Matrix, props: "BIMStairProperties", viewing_from_negative_y: bool, viewing_from_negative_x: bool, total_run: float
+        self,
+        mw: Matrix,
+        props: "BIMStairProperties",
+        viewing_from_negative_y: bool,
+        viewing_from_negative_x: bool,
+        total_run: float,
     ) -> None:
         """Update overall dimension gizmos (total_length, width, height)."""
         y_pos_offset = self.get_y_position_for_view(props, viewing_from_negative_y, use_offset=True)
@@ -662,7 +675,12 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self.set_dimension_gizmo_position("height", mw, V_(total_run + self.GIZMO_OFFSET, y_pos_offset, 0), (0, 0, 1))
 
     def _update_tread_dimension_gizmos(
-        self, mw: Matrix, props: "BIMStairProperties", viewing_from_negative_y: bool, total_run: float, riser_height: float
+        self,
+        mw: Matrix,
+        props: "BIMStairProperties",
+        viewing_from_negative_y: bool,
+        total_run: float,
+        riser_height: float,
     ) -> None:
         """Update tread-related dimension gizmos (tread_run, custom first/last tread)."""
         y_pos = self.get_y_position_for_view(props, viewing_from_negative_y, use_offset=False)
@@ -689,18 +707,33 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self.set_dimension_gizmo_position("nosing_length", mw, V_(0, props.width / 2, riser_height), (-1, 0, 0))
         self.set_dimension_gizmo_position("tread_depth", mw, V_(0, y_pos, riser_height), (0, 0, -1))
         self.set_dimension_gizmo_position("riser_height", mw, V_(props.tread_run, y_pos, 0), (0, 0, 1))
-        self.set_dimension_gizmo_position("nosing_depth", mw, V_(-props.nosing_length, props.width / 2, riser_height), (0, 0, -1))
+        self.set_dimension_gizmo_position(
+            "nosing_depth", mw, V_(-props.nosing_length, props.width / 2, riser_height), (0, 0, -1)
+        )
 
     def _update_lock_gizmo_position(
-        self, mw: Matrix, props: "BIMStairProperties", viewing_from_negative_y: bool, billboard_rot: Matrix, total_run: float
+        self,
+        mw: Matrix,
+        props: "BIMStairProperties",
+        viewing_from_negative_y: bool,
+        billboard_rot: Matrix,
+        total_run: float,
     ) -> None:
         """Update lock gizmo position based on Y view direction."""
         y_pos = self.get_y_position_for_view(props, viewing_from_negative_y, use_offset=True)
         self.set_icon_gizmo_position(
-            "lock_gizmo", mw, total_run + self.ICON_Z_OFFSET, y_pos, -self.GIZMO_OFFSET, billboard_rot, scale=self.EDITING_ICON_SCALE
+            "lock_gizmo",
+            mw,
+            total_run + self.ICON_Z_OFFSET,
+            y_pos,
+            -self.GIZMO_OFFSET,
+            billboard_rot,
+            scale=self.EDITING_ICON_SCALE,
         )
 
-    def _update_editing_icon_positions(self, mw: Matrix, props: "BIMStairProperties", viewing_from_negative_y: bool, billboard_rot: Matrix) -> None:
+    def _update_editing_icon_positions(
+        self, mw: Matrix, props: "BIMStairProperties", viewing_from_negative_y: bool, billboard_rot: Matrix
+    ) -> None:
         """Update editing icon positions, flipping Y based on viewing angle."""
         if not props.is_editing:
             return
@@ -710,10 +743,17 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
         self.set_icon_gizmo_position("validate_gizmo", mw, 0, y_pos, icon_z, billboard_rot)
         self.set_icon_gizmo_position("cancel_gizmo", mw, self.ICON_CANCEL_X, y_pos, icon_z, billboard_rot)
-        self.set_icon_gizmo_position("cycle_gizmo", mw, self.ICON_CYCLE_X, y_pos, icon_z, billboard_rot, scale=self.ICON_CYCLE_SCALE)
         self.set_icon_gizmo_position(
-            "tread_lock_gizmo", mw, self.ICON_TREAD_LOCK_X, y_pos,
-            icon_z - self.EDITING_ICON_SCALE / 2, billboard_rot, scale=self.EDITING_ICON_SCALE
+            "cycle_gizmo", mw, self.ICON_CYCLE_X, y_pos, icon_z, billboard_rot, scale=self.ICON_CYCLE_SCALE
+        )
+        self.set_icon_gizmo_position(
+            "tread_lock_gizmo",
+            mw,
+            self.ICON_TREAD_LOCK_X,
+            y_pos,
+            icon_z - self.EDITING_ICON_SCALE / 2,
+            billboard_rot,
+            scale=self.EDITING_ICON_SCALE,
         )
         self.set_icon_gizmo_position(
             "plus_gizmo", mw, self.ICON_PLUS_X, y_pos, icon_z, billboard_rot, scale=self.ICON_PLUS_MINUS_SCALE
