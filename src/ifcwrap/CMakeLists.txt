@@ -63,13 +63,6 @@ set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
-# NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
-# Python 3.5 intaller and onwards will have an option to install the debug libraries too.
-# NOTE PYTHON_DEBUG_LIBRARIES appears to be a deprecated variable
-IF (WIN32 AND NOT Python_LIBRARY_DEBUG)
-	MESSAGE(STATUS "Python debug libraries were not found, defining SWIG_PYTHON_INTERPRETER_NO_DEBUG workaround for IfcWrap.")
-	ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
-ENDIF()
 
 if (WITH_CGAL)
     set(LIBSVGFILL svgfill)
@@ -91,6 +84,26 @@ SET_PROPERTY(
 # In 4.2+ it's done automatically when discovering `Development.Module`.
 if(WIN32 AND CMAKE_VERSION VERSION_LESS "4.2")
     set(Python_DEBUG_POSTFIX "_d")
+endif()
+# Workaround for most likely missing debug Python libraries on Windows.
+# Even if user has them, it's unlikely that they want to use them for building IfcPython
+# since it makes extension incompatiblew with standard Python
+# and requires all other extensions to be built in debug mode as well.
+# But debug mode is still might be needed - e.g. Blender's Python is using it, if you're running debug build.
+if(NOT USE_DEBUG_PYTHON)
+    set(Python_DEBUG_POSTFIX "")
+	add_compile_definitions(SWIG_PYTHON_INTERPRETER_NO_DEBUG)
+    if(Python_LIBRARY_DEBUG)
+        # If debug libraries were found, then override them with release ones.
+        get_target_property(IMPORTED_IMPLIB Python::Module IMPORTED_IMPLIB_RELEASE)
+        get_target_property(IMPORTED_LOCATION Python::Module IMPORTED_LOCATION_RELEASE)
+        set_target_properties(
+            Python::Module
+            PROPERTIES
+            IMPORTED_IMPLIB_DEBUG "${IMPORTED_IMPLIB}"
+            IMPORTED_LOCATION_DEBUG "${IMPORTED_LOCATION}"
+        )
+    endif()
 endif()
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "4.2")
     # `DEBUG_POSTFIX` argument was added in 4.2.
