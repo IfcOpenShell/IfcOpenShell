@@ -205,7 +205,7 @@ if(WITH_CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
-if(WITH_OPENCASCADE)
+if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OpenCASCADE_LIBRARIES used by kernel generic cmake file
     set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
