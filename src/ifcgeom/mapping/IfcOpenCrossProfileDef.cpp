@@ -50,7 +50,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef* inst) {
     if (tags.has_value() && !tags.get().empty()) {
         tag = tags.get()[0];
     }
-    start->tag = tag;
+    // start->tag = tag;
 
     auto widths = inst->Widths();
     auto angles = inst->Slopes(); // these are actually angles, but the attribute is called Slopes
@@ -79,15 +79,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef* inst) {
             tag = tags.get()[i+1];
         }
 
-        points.push_back(taxonomy::make<taxonomy::point3>(x, y, z, tag));
+        points.push_back(taxonomy::make<taxonomy::point3>(x, y, z));
     }
 
     auto mapped = polygon_from_points(points);
-    if (mapped->kind() == taxonomy::LOOP) {
+    /*if (mapped->kind() == taxonomy::LOOP) {
         auto r = taxonomy::loop::ptr((taxonomy::loop*)mapped->clone_());
         r->closed = false;
         return r;
-    }
+    }*/ 
+
+    mapped->closed = false;
+    mapped->tags = tags;
+
     return mapped;
 }
 

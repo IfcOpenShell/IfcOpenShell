@@ -929,6 +929,7 @@ typedef item const* ptr;
 
 				boost::optional<bool> external, closed;
 				boost::optional<taxonomy::function_item::ptr> fi;
+                boost::optional<std::vector<std::string>> tags;
 
 				bool is_polyhedron() const {
 					for (auto& e : children) {
