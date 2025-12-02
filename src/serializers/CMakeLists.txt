@@ -17,7 +17,11 @@ if(WITH_PROJ)
     target_link_libraries(Serializers PRIVATE proj::proj)
 endif()
 
-target_link_libraries(Serializers PRIVATE ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES} IfcGeom ${OPENCASCADE_LIBRARIES} ${kernel_libraries} IfcParse)
+target_link_libraries(Serializers
+    PRIVATE
+    ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES}
+    IfcGeom ${OpenCASCADE_LIBRARIES} ${kernel_libraries} IfcParse
+)
 
 install(TARGETS Serializers)
 

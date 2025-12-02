@@ -207,8 +207,8 @@ endif()
 
 if(WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
-    # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OPENCASCADE_LIBRARIES used by kernel generic cmake file
-    set(OPENCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
+    # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OpenCASCADE_LIBRARIES used by kernel generic cmake file
+    set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
     add_definitions(-DIFOPSH_WITH_OPENCASCADE)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
