@@ -171,6 +171,7 @@ def _get_updater(module_name: str, func_name: str) -> Callable:
     cache_key = f"{module_name}.{func_name}"
     if cache_key not in _updater_cache:
         import importlib
+
         module = importlib.import_module(f"bonsai.bim.module.model.{module_name}")
         _updater_cache[cache_key] = getattr(module, func_name)
     return _updater_cache[cache_key]
@@ -476,12 +477,18 @@ class BIMStairProperties(PropertyGroup):
         name="Lock Total Length",
         description="Lock Total Length when changing number of treads or tread run",
     )
-    tread_depth: bpy.props.FloatProperty(name="Tread Depth", default=0.25, min=0.01, subtype="DISTANCE", update=update_stair)
+    tread_depth: bpy.props.FloatProperty(
+        name="Tread Depth", default=0.25, min=0.01, subtype="DISTANCE", update=update_stair
+    )
     tread_run: bpy.props.FloatProperty(
         name="Tread Run", default=0.3, min=0.01, subtype="DISTANCE", update=update_tread_run
     )
-    base_slab_depth: bpy.props.FloatProperty(name="Base Slab Depth", default=0.25, min=0, subtype="DISTANCE", update=update_stair)
-    top_slab_depth: bpy.props.FloatProperty(name="Top Slab Depth", default=0.25, min=0, subtype="DISTANCE", update=update_stair)
+    base_slab_depth: bpy.props.FloatProperty(
+        name="Base Slab Depth", default=0.25, min=0, subtype="DISTANCE", update=update_stair
+    )
+    top_slab_depth: bpy.props.FloatProperty(
+        name="Top Slab Depth", default=0.25, min=0, subtype="DISTANCE", update=update_stair
+    )
     has_top_nib: bpy.props.BoolProperty(name="Has Top Nib", default=True, update=update_stair)
     stair_type: bpy.props.EnumProperty(
         name="Stair Type",
@@ -515,7 +522,12 @@ class BIMStairProperties(PropertyGroup):
         update=validate_nosing_value,
     )
     nosing_depth: bpy.props.FloatProperty(
-        name="Nosing Depth", description="Depth of the tread's nosing", min=0, default=0, unit="LENGTH", update=update_stair
+        name="Nosing Depth",
+        description="Depth of the tread's nosing",
+        min=0,
+        default=0,
+        unit="LENGTH",
+        update=update_stair,
     )
 
     if TYPE_CHECKING:
@@ -1087,7 +1099,7 @@ class BIMWindowProperties(PropertyGroup):
             value: New value (clamped to min 0.0)
         """
         current = getattr(self, attr_name)
-        new_value = tuple(current[:panel_index]) + (max(0.0, value),) + tuple(current[panel_index + 1:])
+        new_value = tuple(current[:panel_index]) + (max(0.0, value),) + tuple(current[panel_index + 1 :])
         setattr(self, attr_name, new_value)
 
 
@@ -1401,7 +1413,10 @@ class BIMRailingProperties(PropertyGroup):
     is_editing_path: bpy.props.BoolProperty(default=False)
 
     railing_type: bpy.props.EnumProperty(
-        name="Railing Type", items=[(i, i, "") for i in get_args(RailingType)], default="FRAMELESS_PANEL", update=update_railing
+        name="Railing Type",
+        items=[(i, i, "") for i in get_args(RailingType)],
+        default="FRAMELESS_PANEL",
+        update=update_railing,
     )
     height: bpy.props.FloatProperty(name="Height", default=1.0, subtype="DISTANCE", update=update_railing)
     thickness: bpy.props.FloatProperty(name="Thickness", default=0.050, subtype="DISTANCE", update=update_railing)
@@ -1423,7 +1438,9 @@ class BIMRailingProperties(PropertyGroup):
         subtype="DISTANCE",
         update=update_railing,
     )
-    railing_diameter: bpy.props.FloatProperty(name="Railing Diameter", default=0.050, subtype="DISTANCE", update=update_railing)
+    railing_diameter: bpy.props.FloatProperty(
+        name="Railing Diameter", default=0.050, subtype="DISTANCE", update=update_railing
+    )
     clear_width: bpy.props.FloatProperty(
         name="Clear Width",
         default=0.040,
@@ -1529,10 +1546,17 @@ class BIMRoofProperties(PropertyGroup):
         name="Roof Type", items=[(i, i, "") for i in get_args(RoofType)], default="HIP/GABLE ROOF", update=update_roof
     )
     generation_method: bpy.props.EnumProperty(
-        name="Roof Generation Method", items=[(i, i, "") for i in get_args(RoofGenerationMethod)], default="ANGLE", update=update_roof
+        name="Roof Generation Method",
+        items=[(i, i, "") for i in get_args(RoofGenerationMethod)],
+        default="ANGLE",
+        update=update_roof,
     )
     height: bpy.props.FloatProperty(
-        name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE", update=update_roof
+        name="Height",
+        default=1.0,
+        description="Maximum height of the roof to be generated.",
+        subtype="DISTANCE",
+        update=update_roof,
     )
     angle: bpy.props.FloatProperty(
         name="Slope Angle",

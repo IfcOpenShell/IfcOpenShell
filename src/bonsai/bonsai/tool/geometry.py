@@ -1907,9 +1907,20 @@ class Geometry(bonsai.core.tool.Geometry):
         # ADD THIS AT THE END - Store initial vertex order for annotations
         if rep_obj and (element := tool.Ifc.get_entity(rep_obj)):
             if element.is_a("IfcAnnotation") and element.ObjectType in {
-                "TEXT_LEADER", "DIMENSION", "RADIUS", "DIAMETER", "ANGLE",
-                "FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT",
-                "STAIR_ARROW", "PLAN_LEVEL", "SECTION_LEVEL", "SECTION", "ELEVATION"
+                "TEXT_LEADER",
+                "DIMENSION",
+                "RADIUS",
+                "DIAMETER",
+                "ANGLE",
+                "FALL",
+                "SLOPE_ANGLE",
+                "SLOPE_FRACTION",
+                "SLOPE_PERCENT",
+                "STAIR_ARROW",
+                "PLAN_LEVEL",
+                "SECTION_LEVEL",
+                "SECTION",
+                "ELEVATION",
             }:
                 # Store the initial first vertex position
                 if isinstance(obj.data, bpy.types.Mesh) and obj.data.vertices:
@@ -2361,7 +2372,7 @@ class Geometry(bonsai.core.tool.Geometry):
         mesh = obj.data
         if not isinstance(mesh, bpy.types.Mesh):
             return
-        
+
         # Get the original first vertex position from custom properties
         if "bonsai_first_vert_co" in mesh:
             original_first_co = Vector(mesh["bonsai_first_vert_co"])
@@ -2372,19 +2383,19 @@ class Geometry(bonsai.core.tool.Geometry):
                 mesh["bonsai_first_vert_co"] = original_first_co[:]
             else:
                 return
-        
+
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
-        
+
         if len(bm.verts) == 0:
             bm.free()
             return
-        
+
         # Find endpoints (vertices with only one connected edge)
         endpoints = [v for v in bm.verts if len(v.link_edges) == 1]
-        
+
         # Choose the endpoint closest to the original first vertex position
         if len(endpoints) == 0:
             # Closed loop - pick any vertex as start
@@ -2395,12 +2406,12 @@ class Geometry(bonsai.core.tool.Geometry):
         else:
             # Choose endpoint closest to where the original first vertex was
             start_vert = min(endpoints, key=lambda v: (v.co - original_first_co).length)
-        
+
         # Build ordered vertex list by following edges
         ordered_verts = [start_vert]
         current_vert = start_vert
         visited_edges = set()
-        
+
         while True:
             # Find next unvisited edge
             next_edge = None
@@ -2408,36 +2419,36 @@ class Geometry(bonsai.core.tool.Geometry):
                 if edge not in visited_edges:
                     next_edge = edge
                     break
-            
+
             if not next_edge:
                 break
-            
+
             visited_edges.add(next_edge)
             next_vert = next_edge.other_vert(current_vert)
-            
+
             # Avoid going back on ourselves
             if next_vert not in ordered_verts:
                 ordered_verts.append(next_vert)
-            
+
             current_vert = next_vert
-        
+
         # Store vertex coordinates in the correct order
         new_verts_co = [v.co.copy() for v in ordered_verts]
-        
+
         # Update the stored first vertex position to the new first vertex
         mesh["bonsai_first_vert_co"] = new_verts_co[0][:]
-        
+
         # Clear and rebuild mesh with correct vertex order
         bm.clear()
-        
+
         # Create new vertices in order
         new_verts = [bm.verts.new(co) for co in new_verts_co]
         bm.verts.ensure_lookup_table()
-        
+
         # Create edges connecting consecutive vertices
         for i in range(len(new_verts) - 1):
             bm.edges.new([new_verts[i], new_verts[i + 1]])
-        
+
         # Write back to mesh
         bm.to_mesh(mesh)
         bm.free()

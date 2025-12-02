@@ -1007,7 +1007,7 @@ class CreateDrawing(bpy.types.Operator):
 
             for polygon in closed_polygons.geoms:
                 # Less than 0.1mm2 is not worth styling on sheet
-                if polygon.area < .1:
+                if polygon.area < 0.1:
                     continue
                 centroid = polygon.centroid
                 centroid = centroid if polygon.contains(centroid) else polygon.representative_point()
@@ -3275,15 +3275,15 @@ class AssignSelectedObjectAsProduct(bpy.types.Operator):
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
         assert element1 and element2
-        
+
         # Check if at least one object is an IfcAnnotation
         is_annotation1 = element1.is_a("IfcAnnotation")
         is_annotation2 = element2.is_a("IfcAnnotation")
-        
+
         if not (is_annotation1 or is_annotation2):
             self.report({"ERROR"}, "At least one of the selected objects must be IfcAnnotation.")
             return {"CANCELLED"}
-        
+
         # If both are annotations, use the currently active object as relating product
         if is_annotation1 and is_annotation2:
             active_obj = context.active_object

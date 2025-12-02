@@ -2409,14 +2409,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_geometry_props()
         item = tool.Geometry.get_active_representation(obj)
         assert item
-        
+
         # Fix vertex order for annotation items
         rep_obj = props.representation_obj
         if rep_obj:
             element = tool.Ifc.get_entity(rep_obj)
             if element and self._is_annotation_object(element):
                 tool.Geometry.ensure_annotation_vertex_order(obj)
-        
+
         if tool.Geometry.is_meshlike_item(item):
             if tool.Geometry.is_geometric_data(obj.data) and (
                 item.is_a("IfcVertex") or item.is_a("IfcEdge") or obj.data.polygons
@@ -2560,12 +2560,12 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         """Check if element is an annotation object that needs vertex order preservation."""
         if not element.is_a("IfcAnnotation"):
             return False
-        
+
         # Object types that have semantic vertex order (arrow direction, text position)
         annotation_types_with_order = {
             "TEXT_LEADER",
             "DIMENSION",
-            "RADIUS", 
+            "RADIUS",
             "DIAMETER",
             "ANGLE",
             "FALL",
@@ -2578,7 +2578,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             "SECTION",
             "ELEVATION",
         }
-        
+
         return element.ObjectType in annotation_types_with_order
 
 
@@ -3408,11 +3408,27 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
         tool.Root.reload_item_decorator()
 
         element = tool.Ifc.get_entity(obj)
-        if element and element.is_a("IfcAnnotation") and element.ObjectType in {
-            "TEXT_LEADER", "DIMENSION", "RADIUS", "DIAMETER", "ANGLE",
-            "FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT",
-            "STAIR_ARROW", "PLAN_LEVEL", "SECTION_LEVEL", "SECTION", "ELEVATION"
-        }:
+        if (
+            element
+            and element.is_a("IfcAnnotation")
+            and element.ObjectType
+            in {
+                "TEXT_LEADER",
+                "DIMENSION",
+                "RADIUS",
+                "DIAMETER",
+                "ANGLE",
+                "FALL",
+                "SLOPE_ANGLE",
+                "SLOPE_FRACTION",
+                "SLOPE_PERCENT",
+                "STAIR_ARROW",
+                "PLAN_LEVEL",
+                "SECTION_LEVEL",
+                "SECTION",
+                "ELEVATION",
+            }
+        ):
             for item_obj_data in props.item_objs:
                 item_obj = item_obj_data.obj
                 if item_obj and isinstance(item_obj.data, bpy.types.Mesh) and item_obj.data.vertices:

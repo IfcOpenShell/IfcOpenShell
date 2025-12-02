@@ -673,6 +673,3 @@ class BIM_PT_purge(Panel):
                 row.prop(ifc_parameter, "name", text="")
                 row.prop(ifc_parameter, "value", text="")
                 row.operator("bim.update_parametric_representation", icon="FILE_REFRESH", text="").index = index
-
-
-
