@@ -2585,7 +2585,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 
         return element.ObjectType in annotation_types_with_order
 
-
 class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.direct_profile_edit"
     bl_label = "IFC Direct Profile Edit"
@@ -2597,22 +2596,22 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         # Only allow in OBJECT or EDIT modes
         if context.mode not in ("OBJECT", "EDIT_MESH", "EDIT_CURVE"):
             return False
-
+        
         # Must have an active object
         if not context.active_object:
             return False
-
+        
         # In edit mode, we're good to go (we'll exit)
         if context.mode in ("EDIT_MESH", "EDIT_CURVE"):
             return True
-
+        
         # In object mode, check if it's an editable object type
         obj = context.active_object
-
+        
         # Only mesh and curve objects are editable
         if obj.type not in ("MESH", "CURVE"):
             return False
-
+        
         return True
 
     def _execute(self, context):
@@ -2632,7 +2631,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         # If we're already in edit mode, exit to object mode and SAVE changes
         if context.mode in ("EDIT_MESH", "EDIT_CURVE"):
             return self.handle_exit_edit_mode(context)
-
+        
         # We're in object mode, try to enter profile/axis edit
         return self.handle_enter_edit_mode(context)
 
@@ -2641,59 +2640,140 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         if not obj:
             return {"CANCELLED"}
-
+        
         # Check if we're editing a representation item
         if tool.Geometry.is_representation_item(obj):
             return self.exit_item_edit_mode(context, obj)
-
+        
         # Check if we're editing an element-level profile or axis
         element = tool.Ifc.get_entity(obj)
         if element and tool.Geometry.has_mesh_properties(obj.data):
             return self.exit_element_edit_mode(context, obj, element)
-
+        
         # For other edit modes, use standard operator
         return bpy.ops.bim.override_mode_set_object()
 
     def exit_item_edit_mode(self, context, obj):
-        """Exit from SweptAreaSolid item editing."""
+        """Exit from representation item editing."""
         try:
+            # Make absolutely sure we're in object mode before proceeding
+            if context.mode != "OBJECT":
+                bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
+            
             item = tool.Geometry.get_active_representation(obj)
-            if not item or not item.is_a("IfcSweptAreaSolid"):
+            if not item:
                 return bpy.ops.bim.override_mode_set_object()
 
-            # Use the standard save workflow for items
-            from bonsai.bim.module.model.decorator import ProfileDecorator
-
-            ProfileDecorator.uninstall()
-            tool.Blender.toggle_edit_mode(context)
-
-            profile = tool.Model.export_profile(obj)
-            if not profile:
-
-                def msg(self, context):
-                    self.layout.label(text="INVALID PROFILE")
-
-                context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                tool.Blender.toggle_edit_mode(context)
-                ProfileDecorator.install(context)
-                return {"CANCELLED"}
-
-            old_profile = item.SweptArea
-            profile.ProfileName = old_profile.ProfileName
-
-            ifc_file = tool.Ifc.get()
-            for inverse in ifc_file.get_inverse(old_profile):
-                ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
-
-            tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
-            ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
-
+            # Fix vertex order for annotation items
             props = tool.Geometry.get_geometry_props()
-            if props.representation_obj:
+            rep_obj = props.representation_obj
+            if rep_obj:
+                element = tool.Ifc.get_entity(rep_obj)
+                if element and OverrideModeSetObject._is_annotation_object(self, element):
+                    tool.Geometry.ensure_annotation_vertex_order(obj)
+
+            # Handle SweptAreaSolid
+            if item.is_a("IfcSweptAreaSolid"):
+                from bonsai.bim.module.model.decorator import ProfileDecorator
+                
+                ProfileDecorator.uninstall()
+                
+                profile = tool.Model.export_profile(obj)
+                if not profile:
+                    def msg(self, context):
+                        self.layout.label(text="INVALID PROFILE")
+                    context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                    tool.Blender.toggle_edit_mode(context)
+                    ProfileDecorator.install(context)
+                    return {"CANCELLED"}
+                
+                old_profile = item.SweptArea
+                profile.ProfileName = old_profile.ProfileName
+                
+                ifc_file = tool.Ifc.get()
+                for inverse in ifc_file.get_inverse(old_profile):
+                    ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+                
+                tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
+                ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
+                
+                if props.representation_obj:
+                    tool.Geometry.reload_representation(props.representation_obj)
+                    tool.Geometry.disable_item_mode()
+                
+                return {"FINISHED"}
+            
+            # Handle curvelike items (annotations)
+            elif tool.Geometry.is_curvelike_item(item):
+                from bonsai.bim.module.model.decorator import ProfileDecorator
+                
+                ProfileDecorator.uninstall()
+                
+                new = tool.Model.export_curves(obj)
+
+                if not new:
+                    def msg(self, context):
+                        self.layout.label(text="INVALID PROFILE")
+                    context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                    tool.Blender.toggle_edit_mode(context)
+                    ProfileDecorator.install(context)
+                    return {"CANCELLED"}
+
+                additional_curves = []
+                if len(new) > 1:
+                    additional_curves = new[1:]
+                new = new[0]
+
+                ifc_file = tool.Ifc.get()
+                for inverse in ifc_file.get_inverse(item):
+                    ifcopenshell.util.element.replace_attribute(inverse, item, new)
+                ifcopenshell.util.element.remove_deep2(ifc_file, item)
+
+                tool.Ifc.link(new, obj.data)
+                tool.Geometry.import_item(obj)
+
+                for curve_item in additional_curves:
+                    representation = tool.Geometry.get_active_representation(props.representation_obj)
+                    representation = ifcopenshell.util.representation.resolve_representation(representation)
+                    representation.Items = list(representation.Items) + [curve_item]
+
+                    mesh = bpy.data.meshes.new("temp")
+                    new_obj = bpy.data.objects.new("temp", mesh)
+                    tool.Geometry.name_item_object(new_obj, curve_item)
+                    tool.Ifc.link(curve_item, mesh)
+                    bpy.context.collection.objects.link(new_obj)
+                    props.add_item_object(new_obj, curve_item)
+                    new_obj.matrix_world = obj.matrix_world
+                    tool.Geometry.import_item(new_obj)
+
+                if additional_curves:
+                    tool.Root.reload_item_decorator()
+                
+                # Reload representation and exit item mode
                 tool.Geometry.reload_representation(props.representation_obj)
                 tool.Geometry.disable_item_mode()
-
-            return {"FINISHED"}
+                
+                return {"FINISHED"}
+            
+            # Handle meshlike items
+            elif tool.Geometry.is_meshlike_item(item):
+                if tool.Geometry.is_geometric_data(obj.data) and (
+                    item.is_a("IfcVertex") or item.is_a("IfcEdge") or obj.data.polygons
+                ):
+                    tool.Geometry.edit_meshlike_item(obj)
+                else:
+                    tool.Geometry.import_item(obj)
+                tool.Root.reload_item_decorator()
+                
+                # Exit item mode to return to object mode
+                tool.Geometry.disable_item_mode()
+                
+                return {"FINISHED"}
+            
+            # Fallback
+            else:
+                return bpy.ops.bim.override_mode_set_object()
+                
         except Exception as e:
             self.report({"ERROR"}, f"Failed to save item changes: {str(e)}")
             return {"CANCELLED"}
@@ -2702,11 +2782,11 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         """Exit from element-level profile or axis editing."""
         try:
             mesh_props = tool.Geometry.get_mesh_props(obj.data)
-
+            
             # Check if we're editing axis
             if mesh_props.subshape_type == "AXIS":
                 return bpy.ops.bim.edit_extrusion_axis()
-
+            
             # Otherwise, we're editing a profile
             body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if body:
@@ -2717,7 +2797,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         except Exception as e:
             self.report({"ERROR"}, f"Failed to save profile/axis changes: {str(e)}")
             return {"CANCELLED"}
-
+        
         # Fallback to standard operator
         return bpy.ops.bim.override_mode_set_object()
 
@@ -2726,37 +2806,37 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         if not obj:
             return {"CANCELLED"}
-
+        
         # Check if object has mesh or curve data
-        if not hasattr(obj, "data") or not obj.data:
+        if not hasattr(obj, 'data') or not obj.data:
             self.report({"INFO"}, "Object has no editable data")
             return {"CANCELLED"}
-
+        
         element = tool.Ifc.get_entity(obj)
         if not element:
             self.report({"INFO"}, "Active object is not an IFC element")
             return {"CANCELLED"}
-
+        
         # Check if this is a LAYER2 element (wall, railing, etc.)
         try:
             material_usage = tool.Model.get_usage_type(element)
         except:
             material_usage = None
-
+        
         if material_usage == "LAYER2":
             self.report({"ERROR"}, "LAYER2 elements (walls, railings, etc.) cannot use profile editing.")
             return {"CANCELLED"}
-
+        
         # Try to get representation
         try:
             representation = tool.Geometry.get_active_representation(obj)
         except:
             representation = None
-
+        
         if not representation:
             self.report({"INFO"}, "Object has no active representation")
             return {"CANCELLED"}
-
+        
         # Check for PROFILE usage (beams, columns, members) - should edit axis
         if material_usage == "PROFILE":
             try:
@@ -2764,7 +2844,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
             except Exception as e:
                 self.report({"ERROR"}, f"Failed to enable axis editing: {str(e)}")
                 return {"CANCELLED"}
-
+        
         # Check if this is an element with an extrusion profile (LAYER3, etc)
         try:
             body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
@@ -2776,63 +2856,105 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         except Exception as e:
             self.report({"ERROR"}, f"Failed to enable profile editing: {str(e)}")
             return {"CANCELLED"}
-
+        
         # Otherwise, try to enter item mode and edit SweptAreaSolid
         return self.enter_item_edit_mode(context, obj)
 
     def enter_item_edit_mode(self, context, obj):
-        """Enter item mode for SweptAreaSolid editing."""
+        """Enter item mode for representation item editing."""
         try:
             props = tool.Geometry.get_geometry_props()
             if not props.representation_obj:
                 bpy.ops.bim.import_representation_items()
                 props = tool.Geometry.get_geometry_props()
-
-            # Find the SweptAreaSolid item
+            
+            # Find an editable item - prioritize SweptAreaSolid but allow others
+            editable_item_obj = None
             swept_solid_obj = None
+            
             for item_obj_data in props.item_objs:
                 item_obj = item_obj_data.obj
                 if not item_obj:
                     continue
                 try:
                     item = tool.Geometry.get_active_representation(item_obj)
-                    if item and item.is_a("IfcSweptAreaSolid"):
+                    if not item:
+                        continue
+                    
+                    # Prioritize SweptAreaSolid
+                    if item.is_a("IfcSweptAreaSolid"):
                         swept_solid_obj = item_obj
+                        editable_item_obj = item_obj
                         break
+                    
+                    # But accept other editable types as fallback
+                    if not editable_item_obj:
+                        editable_item_obj = item_obj
                 except:
                     continue
-
-            if not swept_solid_obj:
-                self.report({"INFO"}, "No editable SweptAreaSolid item found")
+            
+            if not editable_item_obj:
+                self.report({"INFO"}, "No editable representation item found")
                 tool.Geometry.disable_item_mode()
                 return {"CANCELLED"}
-
-            # Select and activate the swept solid object
-            bpy.ops.object.select_all(action="DESELECT")
-            swept_solid_obj.select_set(True)
-            context.view_layer.objects.active = swept_solid_obj
-
-            # Import the profile to prepare for editing
-            item = tool.Geometry.get_active_representation(swept_solid_obj)
-            if item and item.is_a("IfcSweptAreaSolid"):
+            
+            # Select and activate the editable object
+            bpy.ops.object.select_all(action='DESELECT')
+            editable_item_obj.select_set(True)
+            context.view_layer.objects.active = editable_item_obj
+            
+            # Get the item to determine how to edit it
+            item = tool.Geometry.get_active_representation(editable_item_obj)
+            
+            # Handle SweptAreaSolid with profile import
+            if item.is_a("IfcSweptAreaSolid"):
                 profile = item.SweptArea
-                res = tool.Model.import_profile(profile, obj=swept_solid_obj)
+                res = tool.Model.import_profile(profile, obj=editable_item_obj)
                 if res is None:
                     self.report({"ERROR"}, "Couldn't import profile for editing")
                     tool.Geometry.disable_item_mode()
                     return {"CANCELLED"}
-
-                tool.Ifc.link(item, swept_solid_obj.data)
+                
+                tool.Ifc.link(item, editable_item_obj.data)
                 tool.Blender.toggle_edit_mode(context)
-
+                
                 from bonsai.bim.module.model.decorator import ProfileDecorator
-
                 ProfileDecorator.install(context)
-
+                
                 if not bpy.app.background:
                     tool.Blender.set_viewport_tool("bim.cad_tool")
-
+                
                 return {"FINISHED"}
+            
+            # Handle other item types (annotations, curves, etc.)
+            elif tool.Geometry.is_curvelike_item(item):
+                tool.Model.import_curve(item, obj=editable_item_obj)
+                tool.Ifc.link(item, editable_item_obj.data)
+                tool.Blender.toggle_edit_mode(context)
+                
+                from bonsai.bim.module.model.decorator import ProfileDecorator
+                ProfileDecorator.install(context)
+                
+                if not bpy.app.background:
+                    tool.Blender.set_viewport_tool("bim.cad_tool")
+                
+                return {"FINISHED"}
+            
+            # Handle meshlike items
+            elif tool.Geometry.is_meshlike_item(item):
+                tool.Geometry.dissolve_triangulated_edges(editable_item_obj)
+                tool.Blender.select_and_activate_single_object(context, editable_item_obj)
+                assert isinstance(mesh := editable_item_obj.data, bpy.types.Mesh)
+                props = tool.Geometry.get_mesh_props(mesh)
+                props.mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
+                tool.Blender.toggle_edit_mode(context)
+                return {"FINISHED"}
+            
+            else:
+                self.report({"INFO"}, f"Editing {item.is_a()} geometry is not yet supported")
+                tool.Geometry.disable_item_mode()
+                return {"CANCELLED"}
+                
         except Exception as e:
             self.report({"ERROR"}, f"Failed to enter item edit mode: {str(e)}")
             try:
@@ -2841,7 +2963,12 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                 pass
             return {"CANCELLED"}
 
-        return {"CANCELLED"}
+
+
+
+
+
+
 
 
 class FlipObject(bpy.types.Operator):
