@@ -36,7 +36,7 @@ set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERS
 
 if(IFCXML_SUPPORT)
     find_package(LibXml2 REQUIRED)
-    add_definitions(-DWITH_IFCXML)
+    target_compile_definitions(IfcParse PUBLIC WITH_IFCXML)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
 
     if(LibXml2_DIR)
