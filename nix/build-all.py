@@ -56,8 +56,6 @@ Used environment variables:
     `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
     Allows to build wasm without pyodide build environment, which can be useful for debugging build issues.
     Example value: 'pyodide/cpython/installs/python-3.13.2'
-    - ``WASM_TOOLCHAIN_FILE`` - path to emscripten toolchain file from pyodide ('Emscripten.cmake')
-    needed only if ``WASM_PYTHON_PATH`` is provided.
     - ``ADD_COMMIT_SHA`` - if defined with any non-empty value then
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
 
