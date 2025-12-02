@@ -26,7 +26,7 @@ class InMemoryZipFile:
         self._file_name: Optional[str | Path] = str(file_name) if hasattr(file_name, "_from_parts") else file_name
         self.in_memory_data = BytesIO()
         # Create the in-memory zipfile
-        self.in_memory_zip = zipfile.ZipFile(self.in_memory_data, "w", compression, False)
+        self.in_memory_zip = zipfile.ZipFile(self.in_memory_data, "w", compression, True)
         self.in_memory_zip.debug = debug
 
     def writestr(self, filename_in_zip: str | zipfile.ZipInfo, file_contents: bytes | str) -> None:
