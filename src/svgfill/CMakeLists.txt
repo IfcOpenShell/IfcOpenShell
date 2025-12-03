@@ -15,14 +15,6 @@ endif()
 
 include(GNUInstallDirs)
 
-# Specify paths to install files
-if(NOT BINDIR)
-    set(BINDIR bin)
-endif()
-if(NOT IS_ABSOLUTE ${BINDIR})
-    set(BINDIR ${CMAKE_INSTALL_BINDIR})
-endif()
-message(STATUS "BINDIR: ${BINDIR}")
 
 if(NOT INCLUDEDIR)
     set(INCLUDEDIR include)
@@ -31,14 +23,6 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
     set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
-
-if(NOT LIBDIR)
-    set(LIBDIR lib)
-endif()
-if(NOT IS_ABSOLUTE ${LIBDIR})
-    set(LIBDIR ${CMAKE_INSTALL_LIBDIR})
-endif()
-message(STATUS "LIBDIR: ${LIBDIR}")
 
 set(CGAL_LIBRARY_NAMES libCGAL_Core libCGAL_ImageIO libCGAL)
 
@@ -158,6 +142,5 @@ if(WIN32)
     target_link_options(svgfill_exe PRIVATE "/NOIMPLIB")
 endif()
 
-install(TARGETS svgfill_exe DESTINATION ${BINDIR})
-install(TARGETS svgfill DESTINATION ${LIBDIR})
+install(TARGETS svgfill_exe svgfill)
 install(FILES ${LIB_H_FILES} DESTINATION ${INCLUDEDIR})
