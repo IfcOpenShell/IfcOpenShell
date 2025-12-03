@@ -20,6 +20,9 @@
 :: This batch file expects CMake generator as %1 and build configuration type as %2. If not provided,
 :: a deduced generator will be used for %1 and BUILD_CFG_DEFAULT for %2 (both set in vs-cfg.cmd)
 :: Possible extra parameters are passed for the MSBuild call.
+::
+:: Example usage:
+::   install-ifcopenshell.bat vs2022-x64 Debug
 
 @if not defined ECHO_ON ( echo off )
 set PROJECT_NAME=IfcOpenShell
