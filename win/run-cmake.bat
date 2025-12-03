@@ -170,14 +170,25 @@ set CMAKE_PREFIX_PATH=%HDF5_INSTALL_DIR%;%OPENCOLLADA_INSTALL_DIR%;%SWIG_INSTALL
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%ROCKSDB_INSTALL_DIR%;%ZSTD_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_INSTALL_DIR%;%CCACHE_INSTALL_DIR%
 
+:: Not fully supported - not available from install-ifcopenshell
+:: and some logs are still showing Visual Studio generators.
+:: Needed just for debugging.
+if defined USE_NINJA (
+    set GENERATOR=Ninja
+    set ARCH_OPTION=
+) else (
+    set GENERATOR=%GENERATOR%
+    set ARCH_OPTION=-A %VS_PLATFORM%
+)
+
 IF NOT "%VS_TOOLSET_HOST%"=="" (
-    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% ^
+    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% -T %VS_TOOLSET_HOST% ^
               -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
               -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
               -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
               -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
 ) ELSE (
-    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% ^
+    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% ^
               -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
               -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
               -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
