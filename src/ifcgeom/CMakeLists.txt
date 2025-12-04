@@ -22,11 +22,15 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 
-if(WASM_BUILD)
-    target_link_libraries(IfcGeom ${kernel_libraries} ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
-else()
-    target_link_libraries(IfcGeom IfcParse ${kernel_libraries} ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
+target_link_libraries(IfcGeom
+    ${kernel_libraries} ${mapping_libraries}
+    ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen"
+    ${CGAL_LIBRARIES}
+)
+if(NOT WASM_BUILD)
+    target_link_libraries(IfcGeom IfcParse)
 endif()
+target_link_libraries(IfcGeom )
 
 install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
     DESTINATION ${INCLUDEDIR}/ifcgeom
