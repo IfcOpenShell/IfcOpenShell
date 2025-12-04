@@ -663,5 +663,3 @@ class BIM_PT_purge(Panel):
         row.prop(props, "ifc_class_purge", text="")
         row.operator("bim.purge_unused_elements_by_class", text="Purge Orphaned", icon="TRASH")
         row.operator("bim.print_unused_elements_stats", text="", icon="INFO")
-
-
