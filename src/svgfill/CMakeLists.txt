@@ -114,7 +114,7 @@ endif()
 
 
 
-include_directories(${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR}
+include_directories(${Boost_INCLUDE_DIRS}
 	${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/svgpp/include
 )
 
@@ -122,11 +122,7 @@ file(GLOB LIB_H_FILES src/*.h)
 file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp)
 set(LIB_SRC_FILES ${LIB_H_FILES} ${LIB_CPP_FILES})
 add_library(svgfill ${LIB_SRC_FILES})
-if(LibXml2_DIR)
-    find_package(LibXml2 CONFIG REQUIRED)
-    target_compile_definitions(svgfill PRIVATE ${LIBXML2_DEFINITIONS})
-endif()
-target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES} ${CGAL_LIBRARIES})
+target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 ${CGAL_LIBRARIES})
 
 add_executable(svgfill_exe src/main.cpp)
 target_link_libraries(svgfill_exe svgfill)
