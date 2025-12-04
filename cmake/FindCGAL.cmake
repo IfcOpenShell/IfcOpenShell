@@ -47,7 +47,7 @@ else()
         set(CGAL_Boost_USE_STATIC_LIBS "${Boost_USE_STATIC_LIBS}")
     endif()
     find_package(CGAL CONFIG)
-    if(NOT CGAL::CGAL)
+    if(NOT CGAL_FOUND)
         message(
             FATAL_ERROR
             "CGAL_SUPPORT enabled, but CGAL_INCLUDE_DIR wasn't provided and CGAL package couldn't be found."
@@ -56,5 +56,5 @@ else()
     message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
 endif()
 
-target_compile_definitions(CGAL::CGAL INTERFACE IFOPSH_WITH_CGAL)
+target_compile_definitions(CGAL INTERFACE IFOPSH_WITH_CGAL)
 set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)

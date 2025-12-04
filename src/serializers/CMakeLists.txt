@@ -9,12 +9,12 @@ set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORT
 set(SERIALIZER_SCHEMA_LIBRARIES Serializers ${SERIALIZER_SCHEMA_LIBRARIES} PARENT_SCOPE)
 
 if(WITH_PROJ)
-    find_package(proj REQUIRED)
+    find_package(PROJ REQUIRED)
     target_compile_definitions(Serializers PRIVATE "WITH_PROJ")
     if(PROJ_STATIC)
         target_compile_definitions(Serializers PRIVATE "PROJ_DLL=")
     endif()
-    target_link_libraries(Serializers PRIVATE proj::proj)
+    target_link_libraries(Serializers PRIVATE PROJ::proj)
 endif()
 
 target_link_libraries(Serializers
