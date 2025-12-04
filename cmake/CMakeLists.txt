@@ -197,11 +197,7 @@ endforeach()
 
 if(WITH_CGAL)
     find_package(CGAL REQUIRED)
-    if(TARGET CGAL::CGAL)
-        link_libraries(CGAL::CGAL)
-    endif()
-    add_definitions(-DIFOPSH_WITH_CGAL)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
+    set(CGAL_LIBRARIES CGAL::CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
@@ -451,7 +447,7 @@ endif(MSVC)
 
 include_directories(${INCLUDE_DIRECTORIES} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
-    ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
+    ${USD_INCLUDE_DIR}
     ${TBB_INCLUDE_DIR}
 )
 
@@ -544,24 +540,6 @@ add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 
 if(BUILD_IFCGEOM)
-    # CGAL::CGAL target already has dependencies resolved.
-    if(WITH_CGAL AND CGAL_DIR)
-        set(CGAL_LIBRARIES CGAL::CGAL)
-        message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
-    elseif(WITH_CGAL AND NOT CGAL_DIR)
-        find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
-        find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-        if(NOT libGMP)
-            message(FATAL_ERROR "Unable to find GMP library files, aborting")
-        endif()
-        if(NOT libMPFR)
-            message(FATAL_ERROR "Unable to find MPFR library files, aborting")
-        endif()
-
-        list(APPEND CGAL_LIBRARIES "${libMPFR}")
-        list(APPEND CGAL_LIBRARIES "${libGMP}")
-    endif()
-
     add_subdirectory(../src/ifcgeom ifcgeom)
 endif(BUILD_IFCGEOM)
 

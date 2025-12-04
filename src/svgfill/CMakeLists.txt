@@ -23,65 +23,6 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
-set(CGAL_LIBRARY_NAMES libCGAL_Core libCGAL_ImageIO libCGAL)
-
-if(NOT CGAL_INCLUDE_DIR)
-	find_package(CGAL REQUIRED)
-	if(NOT CGAL_DIR)
-		message(
-			FATAL_ERROR
-			"CGAL_SUPPORT enabled, but CGAL_INCLUDE_DIR wasn't provided and CGAL package couldn't be found."
-		)
-	endif()
-	message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
-	set(CGAL_LIBRARIES CGAL::CGAL)
-else()
-	set(CGAL_INCLUDE_DIR ${CGAL_INCLUDE_DIR} CACHE FILEPATH "CGAL header files")
-	message(STATUS "Looking for CGAL include files in: ${CGAL_INCLUDE_DIR}")
-
-	if(NOT "${CGAL_LIBRARY_DIR}" STREQUAL "")
-		set(CGAL_LIBRARY_DIR ${CGAL_LIBRARY_DIR} CACHE FILEPATH "CGAL library files")
-		message(STATUS "Looking for CGAL library files in: ${CGAL_LIBRARY_DIR}")
-	endif()
-
-	if(WASM_BUILD)
-		set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
-		set(CMAKE_FIND_ROOT_PATH "")
-	endif()
-
-	find_library(libCGAL NAMES CGAL PATHS ${CGAL_LIBRARY_DIR} NO_DEFAULT_PATH)
-
-	if(libCGAL)
-		message(STATUS "CGAL library files found")
-		foreach(lib ${CGAL_LIBRARY_NAMES})
-			string(REPLACE libCGAL "${lib}" lib_path "${libCGAL}")
-			list(APPEND CGAL_LIBRARIES "${lib_path}")
-		endforeach()
-	else()
-		if(NOT "${CGAL_LIBRARY_DIR}" STREQUAL "")
-			file(GLOB CGAL_LIBRARIES ${CGAL_LIBRARY_DIR}/CGAL*.lib)
-			list(LENGTH CGAL_LIBRARY_NAMES num_cgal_library_names)
-			list(LENGTH CGAL_LIBRARIES num_cgal_libraries)
-			link_directories("${CGAL_LIBRARY_DIR}")
-			if(NOT "${num_cgal_library_names}" STREQUAL "${num_cgal_libraries}")
-				message(FATAL_ERROR "Unable to find CGAL library files, aborting")
-			endif()
-			message(STATUS "CGAL library files found")
-		endif()
-	endif()
-	find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
-	find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-	if(NOT libGMP)
-			message(FATAL_ERROR "Unable to find GMP library files, aborting")
-	endif()
-	if(NOT libMPFR)
-			message(FATAL_ERROR "Unable to find MPFR library files, aborting")
-	endif()
-	
-	list(APPEND CGAL_LIBRARIES "${libMPFR}")
-	list(APPEND CGAL_LIBRARIES "${libGMP}")
-endif(NOT CGAL_INCLUDE_DIR)
-
 if(WIN32 AND ("$ENV{CONDA_BUILD}" STREQUAL ""))
 	set(Boost_USE_STATIC_LIBS ON)
 	set(Boost_USE_MULTITHREADED ON)
@@ -106,22 +47,18 @@ endif()
 find_package(Boost)
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 find_package(LibXml2 REQUIRED)
-
-if(WASM_BUILD)
-    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
-endif()
-
+find_package(CGAL REQUIRED)
 
 
 include_directories(${Boost_INCLUDE_DIRS}
-	${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/svgpp/include
+	${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/svgpp/include
 )
 
 file(GLOB LIB_H_FILES src/*.h)
 file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp)
 set(LIB_SRC_FILES ${LIB_H_FILES} ${LIB_CPP_FILES})
 add_library(svgfill ${LIB_SRC_FILES})
-target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 ${CGAL_LIBRARIES})
+target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 CGAL::CGAL)
 
 add_executable(svgfill_exe src/main.cpp)
 target_link_libraries(svgfill_exe svgfill)
