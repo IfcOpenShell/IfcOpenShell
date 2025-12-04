@@ -39,10 +39,6 @@ if(IFCXML_SUPPORT)
     target_compile_definitions(IfcParse PUBLIC WITH_IFCXML)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML PARENT_SCOPE)
 
-    if(LibXml2_DIR)
-        target_compile_definitions(IfcParse PRIVATE ${LIBXML2_DEFINITIONS})
-    endif()
-
     target_link_libraries(IfcParse LibXml2::LibXml2)
 endif()
 
