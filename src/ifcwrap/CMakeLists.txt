@@ -119,11 +119,6 @@ else()
     )
 endif()
 
-if(WITH_CGAL)
-    find_package(CGAL REQUIRED)
-    target_link_libraries(ifcopenshell_wrapper PRIVATE CGAL::CGAL)
-endif()
-
 target_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
 SET_PROPERTY(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if (WASM_BUILD)
