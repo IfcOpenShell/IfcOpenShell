@@ -11,8 +11,6 @@ foreach(schema ${SCHEMA_VERSIONS})
     else()
         target_link_libraries(Serializers_ifc${schema} IfcGeom ${OpenCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
     endif()
-
-    install(TARGETS Serializers_ifc${schema})
 endforeach()
 
 
