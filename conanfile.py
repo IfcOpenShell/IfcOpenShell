@@ -327,6 +327,8 @@ class IfcopenshellConan(ConanFile):
             serializers = _add_component("Serializers", requires=["IfcGeom"])
             if self.options.with_hdf5:
                 serializers.requires.append("hdf5::hdf5_cpp")
+            if self.options.with_rocksdb:
+                serializers.requires.append("rocksdb::librocksdb")
             if self.options.build_convert_with_usd:
                 serializers.requires.append("usd::usd")
             if self.options.build_convert_with_proj:
@@ -343,3 +345,6 @@ class IfcopenshellConan(ConanFile):
             #     # _add_component(component_name, requires=["IfcParse", f"Serializers_ifc{schema}", f"geometry_mapping_ifc{schema}", "IfcGeom", "opencascade::occt_tkmesh", "opencascade::occt_tkxmesh", "opencascade::occt_tkmeshvs", "opencascade::occt_tktopalgo", "opencascade::occt_tkbrep", "opencascade::occt_tkgeomalgo"])                _add_component(component_name, requires=["IfcParse", f"Serializers_ifc{schema}", f"geometry_mapping_ifc{schema}", "IfcGeom", "opencascade::occt_tkmesh", "opencascade::occt_tkxmesh", "opencascade::occt_tkmeshvs", "opencascade::occt_tktopalgo", "opencascade::occt_tkbrep", "opencascade::occt_tkgeomalgo"])
             #     _add_component(component_name, requires=["IfcParse", f"Serializers_ifc{schema}", "IfcGeom", "opencascade::occt_tkmesh", "opencascade::occt_tkxmesh", "opencascade::occt_tkmeshvs", "opencascade::occt_tktopalgo", "opencascade::occt_tkbrep", "opencascade::occt_tkgeomalgo"])
             #     geometry_serializer.requires.append(component_name)
+        if self.options.build_qtviewer:
+            self.cpp_info.components["qtviewer"].libs = []
+            self.cpp_info.components["qtviewer"].requires = ["qt::qtbase"]
