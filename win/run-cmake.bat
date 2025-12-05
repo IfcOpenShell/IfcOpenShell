@@ -16,6 +16,11 @@
 :: along with this program. If not, see <http://www.gnu.org/licenses/>.        ::
 ::                                                                             ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+:: Example usage:
+::   run-cmake.bat vs2022-x64
+::   run-cmake.bat vs2022-x64 -DGLTF_SUPPORT=ON -DHDF5_SUPPORT=OFF
+
 
 @if not defined ECHO_ON ( echo off )
 echo.
