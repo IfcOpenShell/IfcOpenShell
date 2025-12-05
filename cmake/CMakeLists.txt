@@ -641,30 +641,6 @@ if(BUILD_QTVIEWER)
     add_subdirectory(../src/qtviewer qtviewer)
 endif()
 
-if(BUILD_IFCGEOM)
-    # install(FILES ${IFCGEOM_H_FILES}
-    #     DESTINATION ${INCLUDEDIR}/ifcgeom
-    # )
-
-    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom
-    )
-
-    file(GLOB SERIALIZATION_H_FILES ../src/ifcgeom/serialization/*.h)
-    install(FILES ${SERIALIZATION_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom/serialization
-    )
-
-    foreach(kernel ${GEOMETRY_KERNELS})
-        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
-         install(FILES ${IFCGEOM_H_FILES}
-            DESTINATION ${INCLUDEDIR}/ifcgeom/kernels/${kernel}
-        )
-    endforeach()
-
-    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
-endif(BUILD_IFCGEOM)
-
 # Cmake uninstall target
 if(NOT TARGET uninstall)
     configure_file(
