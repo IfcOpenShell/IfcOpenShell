@@ -30,6 +30,8 @@
 #include "../ifcparse/utils.h"
 
 // undefine opencascade Handle macro, because it conflicts with USD
+// Macro source code lives in Standard_Handle.hxx.
+#pragma push_macro("Handle")
 #undef Handle
 
 #include "pxr/pxr.h"
@@ -37,6 +39,9 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdShade/material.h"
+
+// redefine Handle macro.
+#pragma pop_macro("Handle")
 
 #include <vector>
 #include <string>
