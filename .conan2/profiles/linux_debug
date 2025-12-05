@@ -1,0 +1,22 @@
+[settings]
+os=Linux
+arch=x86_64
+compiler=gcc
+compiler.cppstd=17
+compiler.version=10
+compiler.libcxx=libstdc++11
+build_type=Debug
+compiler.sanitizer=Address
+
+[conf]
+tools.build:cflags+=["-fsanitize=address", "-fno-omit-frame-pointer"]
+tools.build:cxxflags+=["-fsanitize=address", "-fno-omit-frame-pointer"]
+tools.build:exelinkflags+=["-fsanitize=address"]
+tools.build:sharedlinkflags+=["-fsanitize=address"]
+
+[runenv]
+ASAN_OPTIONS=halt_on_error=1:detect_leaks=1
+
+[tool_requires]
+cmake/[>=3.21 <5]
+ccache/[>=4.11 <5]

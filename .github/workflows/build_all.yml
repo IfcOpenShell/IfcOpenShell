@@ -9,11 +9,12 @@ jobs:
     strategy:
       matrix:
         workflow:
-          - 'Build IfcOpenShell Linux'
-          - 'Build IfcOpenShell Linux ARM'
-          - 'Build IfcOpenShell OSX'
-          - 'Build IfcOpenShell WASM / Pyodide'
-          - 'Build IfcOpenShell Windows'
+          - 'Build IfcOpenShell as a conan package'
+          # - 'Build IfcOpenShell Linux'
+          # - 'Build IfcOpenShell Linux ARM'
+          # - 'Build IfcOpenShell OSX'
+          # - 'Build IfcOpenShell WASM / Pyodide'
+          # - 'Build IfcOpenShell Windows'
     steps:
       - name: Trigger binary build workflows
         uses: benc-uk/workflow-dispatch@v1

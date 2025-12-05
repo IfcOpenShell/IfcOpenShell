@@ -1,0 +1,8 @@
+compiler:
+   clang:
+     sanitizer: [null, Address, Leak, Thread, Memory, UndefinedBehavior, HardwareAssistanceAddress, KernelAddress, AddressUndefinedBehavior, ThreadUndefinedBehavior]
+   gcc:
+     sanitizer: [null, Address, Leak, Thread, UndefinedBehavior, KernelAddress, AddressUndefinedBehavior, ThreadUndefinedBehavior]
+   msvc:
+     sanitizer: [null, Address, KernelAddress]
+

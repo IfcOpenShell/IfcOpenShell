@@ -1,0 +1,12 @@
+[settings]
+os=Linux
+arch=x86_64
+compiler=clang
+compiler.cppstd=17
+compiler.version=18
+compiler.libcxx=libstdc++11
+build_type=Linux
+
+[tool_requires]
+cmake/[>=3.21 <5]
+ccache/[>=4.11 <5]

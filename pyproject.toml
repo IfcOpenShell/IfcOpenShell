@@ -70,3 +70,8 @@ ruff.sequence = ["ruff-main", "ruff-old"]
 black = "black ."
 
 format.sequence = ["black", "ruff-main", "ruff-old"]
+
+[tool.cibuildwheel]
+before-all = "uname -a"
+
+[build-system]

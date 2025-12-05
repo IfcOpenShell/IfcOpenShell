@@ -139,7 +139,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
+PYTHON_VERSIONS = ["3.12.1"]
 JSON_VERSION = "3.11.3"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
@@ -267,7 +267,7 @@ if platform.system() == "Darwin":
     # /Users/runner/work/IfcOpenShell/IfcOpenShell/src/ifcparse/IfcFile.cpp:539:14: error: 'exists' is unavailable: introduced in macOS 10.15
     TOOLSET = "10.15"
 
-IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
+IFCOS_NUM_BUILD_PROCS = 3
 
 SCRIPT_PATH = Path(__file__).parent
 REPO_PATH = SCRIPT_PATH.parent

@@ -1,0 +1,20 @@
+[settings]
+os=Emscripten
+arch=wasm
+compiler=emcc
+compiler.version=4.0.10
+compiler.libcxx=libc++
+compiler.cppstd=17
+build_type=Release
+[tool_requires]
+emsdk/4.0.10
+
+[conf]
+# Optional settings to enable memory allocation
+tools.build:exelinkflags=['-sALLOW_MEMORY_GROWTH=1', '-sMAXIMUM_MEMORY=4GB', '-sINITIAL_MEMORY=64MB']
+tools.build:sharedlinkflags=['-sALLOW_MEMORY_GROWTH=1', '-sMAXIMUM_MEMORY=4GB', '-sINITIAL_MEMORY=64MB']
+tools.build:defines+=['BOOST_STACKTRACE_LIBCXX_RUNTIME_MAY_CAUSE_MEMORY_LEAK=1']
+tools.cmake.cmake_layout:build_folder_vars=['settings.build_type', 'settings.arch']
+
+[options]
+boost/*:without_stacktrace=True

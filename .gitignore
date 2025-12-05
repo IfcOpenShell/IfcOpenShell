@@ -13,6 +13,7 @@
 /src/qtviewer/out/
 
 /win/BuildDepsCache*.txt
+CMakeUserPresets.json
 
 # General Python residue
 __pycache__

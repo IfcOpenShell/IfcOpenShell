@@ -200,9 +200,10 @@ namespace {
             std::for_each(builder_.begin(), builder_.end(), [&stream](std::u32string::value_type character) {
                 if (character >= 0x20 && character <= 0x7e) {
                     stream.put((char)character);
-                } else {
-                    stream << "\\u" << character;
-                }
+                } 
+                // else {
+                //     stream << "\\u" << character;
+                // }
             });
             return stream.str();
         }
