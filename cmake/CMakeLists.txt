@@ -222,8 +222,10 @@ if(GLTF_SUPPORT)
 endif()
 
 # Add USD support to serializers
+set(USD_LIBRARIES "")
 if(USD_SUPPORT)
     find_package(USD REQUIRED)
+    set(USD_LIBRARIES USD::USD)
 endif(USD_SUPPORT)
 
 if (WITH_ROCKSDB)
@@ -432,8 +434,6 @@ endif(MSVC)
 
 include_directories(${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR}
-    ${USD_INCLUDE_DIR}
-    ${TBB_INCLUDE_DIR}
 )
 
 if(NOT SCHEMA_VERSIONS)
