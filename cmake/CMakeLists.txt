@@ -330,6 +330,7 @@ endif()
 
 if(HDF5_SUPPORT)
     find_package(HDF5 REQUIRED COMPONENTS C CXX)
+    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} hdf5::hdf5_cpp)
 
     add_definitions(-DWITH_HDF5)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
