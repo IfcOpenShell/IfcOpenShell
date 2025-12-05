@@ -146,6 +146,9 @@ if(CCACHE_FOUND)
     endif()
 endif()
 
+# Variable to accumulate swig definitions from various submodules.
+set(SWIG_DEFINES "")
+
 if(MSVC AND MSVC_PARALLEL_BUILD)
     add_definitions("/MP")
 endif()
@@ -275,7 +278,7 @@ endif()
 
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
 # runtime, when doing running conda-build we pick what conda prepared for us.
-if(WIN32 AND("$ENV{CONDA_BUILD}" STREQUAL ""))
+if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
@@ -445,7 +448,7 @@ else()
     endif()
 endif(MSVC)
 
-include_directories(${INCLUDE_DIRECTORIES} ${OPENCOLLADA_INCLUDE_DIRS}
+include_directories(${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${USD_INCLUDE_DIR}
     ${TBB_INCLUDE_DIR}
@@ -675,6 +678,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_GENERATOR "TGZ;DEB")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
+set(BOOST_DEPS "")
 foreach(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
     string(REPLACE "_" "-" COMP ${COMPONENT})
     set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}-dev")

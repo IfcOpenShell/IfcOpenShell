@@ -19,13 +19,13 @@ UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
 # To avoid cyclic calls to this file
 list(REMOVE_ITEM CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
 
-if("${HDF5_INCLUDE_DIR}" STREQUAL "")
+if(NOT HDF5_INCLUDE_DIR)
     message(STATUS "No HDF5 include directory specified")
 else()
     set(HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}" CACHE FILEPATH "HDF5 header files")
 endif()
 
-if("${HDF5_LIBRARY_DIR}" STREQUAL "")
+if(NOT HDF5_LIBRARY_DIR)
     message(STATUS "No HDF5 library directory specified")
 else()
     set(HDF5_LIBRARY_DIR "${HDF5_LIBRARY_DIR}" CACHE FILEPATH "HDF5 library files")
@@ -35,7 +35,7 @@ if(HDF5_LIBRARY_DIR)
     # result of the HDF5 ctest package
     # Find zlib using cmake find_library. How should this be implemented?
     # FIND_LIBRARY(NAMES z libz libz_debug PATHS ... NO_DEFAULT_PATH)
-    if("$ENV{CONDA_BUILD}" STREQUAL "")
+    if(NOT DEFINED ENV{CONDA_BUILD})
         # result of the HDF5 ctest package
         if(WIN32)
             set(zlib_post lib)
