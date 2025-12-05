@@ -19,7 +19,7 @@
 
 # Create a cache entry if absent for environment variables
 macro(UNIFY_ENVVARS_AND_CACHE VAR)
-    if((NOT DEFINED ${VAR}) AND(NOT "$ENV{${VAR}}" STREQUAL ""))
+    if(NOT DEFINED ${VAR} AND DEFINED ENV{${VAR}} AND NOT ENV{${VAR}} STREQUAL "")
         set(${VAR} "$ENV{${VAR}}" CACHE STRING "${VAR}" FORCE)
     endif()
 endmacro()
