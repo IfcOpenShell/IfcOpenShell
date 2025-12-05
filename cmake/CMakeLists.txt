@@ -244,7 +244,7 @@ if (WITH_ROCKSDB)
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
     add_definitions(-DIFOPSH_WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
-    link_libraries(RocksDB::rocksdb)
+    link_libraries($<IF:$<TARGET_EXISTS:RocksDB::rocksdb-shared>,RocksDB::rocksdb-shared,RocksDB::rocksdb>)
 
     if (WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
