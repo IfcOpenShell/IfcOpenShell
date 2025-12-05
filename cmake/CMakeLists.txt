@@ -213,28 +213,10 @@ if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
 endif()
 
+set(GLTF_LIBRARIES "")
 if(GLTF_SUPPORT)
-    UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-    if(NOT JSON_INCLUDE_DIR)
-        find_package(nlohmann_json CONFIG)
-        if(nlohmann_json_DIR)
-            link_libraries(nlohmann_json::nlohmann_json)
-        else()
-            message(STATUS "Unable to find nlohmann_json package, trying to find it as a header-only library.")
-        endif()
-    endif()
-
-    if(NOT nlohmann_json_DIR)
-        find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
-        set(JSON_INCLUDE_DIR ${json_header_path})
-
-        if(json_header_path)
-            message(STATUS "JSON for Modern C++ header file found in '${JSON_INCLUDE_DIR}'.")
-        else()
-            message(FATAL_ERROR "Unable to find JSON for Modern C++ header file / package, aborting")
-        endif()
-    endif()
-
+    find_package(nlohmann_json REQUIRED)
+    set(GLTF_LIBRARIES nlohmann_json::nlohmann_json)
     add_definitions(-DWITH_GLTF)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
 endif()
@@ -449,7 +431,7 @@ else()
 endif(MSVC)
 
 include_directories(${OPENCOLLADA_INCLUDE_DIRS}
-	${Boost_INCLUDE_DIRS} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
+	${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR}
     ${USD_INCLUDE_DIR}
     ${TBB_INCLUDE_DIR}
 )
