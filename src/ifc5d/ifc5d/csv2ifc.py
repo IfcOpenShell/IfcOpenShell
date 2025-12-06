@@ -416,9 +416,10 @@ class Csv2Ifc:
 def has_property(self, product: ifcopenshell.entity_instance, property_name: str) -> bool:
     if not property_name:
         return True
-    qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)
-    for qset, quantities in qtos.items():
-        for quantity, value in quantities.items():
-            if quantity == property_name:
-                return True
+    psets = ifcopenshell.util.element.get_psets(product, qtos_only=False)
+    for pset, props in psets.items():
+        for prop, value in props.items():
+            if isinstance(value, (int, float)):
+                if prop == property_name:
+                    return True
     return False

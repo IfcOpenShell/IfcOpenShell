@@ -52,7 +52,8 @@ def get_total_quantity(root_element: ifcopenshell.entity_instance) -> Union[floa
         quantities = root_element.CostQuantities
         if not quantities:
             return None
-        return sum([q[3] for q in quantities])
+        #return sum([q[3] for q in quantities])
+        return sum(q[3] if q[3] is not None else q[2].wrappedValue for q in quantities)
     elif root_element.is_a("IfcConstructionResource"):
         quantity = root_element.BaseQuantity
         return quantity[3] if quantity else 1.0

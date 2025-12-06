@@ -106,11 +106,11 @@ class Usecase:
                 continue
             self.assign_cost_control(related_object=product, cost_item=self.settings["cost_item"])
             if self.settings["prop_name"]:
-                if (
-                    self.settings["cost_item"].CostQuantities
-                    and self.settings["cost_item"].CostQuantities[0].Name.lower() != self.settings["prop_name"].lower()
-                ):
-                    continue
+#                if (
+#                    self.settings["cost_item"].CostQuantities
+#                    and self.settings["cost_item"].CostQuantities[0].Name.lower() != self.settings["prop_name"].lower()
+#                ):
+#                    continue
                 self.add_quantity_from_related_object(product)
         if self.settings["prop_name"]:
             self.settings["cost_item"].CostQuantities = list(self.quantities)
@@ -128,14 +128,22 @@ class Usecase:
 
     def add_quantity_from_related_object(self, element: ifcopenshell.entity_instance) -> None:
         for relationship in element.IsDefinedBy:
-            if relationship.is_a("IfcRelDefinesByProperties"):
+            if relationship.is_a("IfcRelDefinesByProperties") and relationship.RelatingPropertyDefinition.is_a("IfcQuantitySet"):
                 self.add_quantity_from_qto(relationship.RelatingPropertyDefinition)
+            elif relationship.is_a("IfcRelDefinesByProperties") and relationship.RelatingPropertyDefinition.is_a("IfcPropertySet"):
+                self.add_quantity_from_pset(relationship.RelatingPropertyDefinition)
 
     def add_quantity_from_qto(self, qto: ifcopenshell.entity_instance) -> None:
         if not qto.is_a("IfcElementQuantity"):
             return
         for prop in qto.Quantities:
             if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == self.settings["prop_name"].lower():
+                self.quantities.add(prop)
+
+    def add_quantity_from_pset(self, pset: ifcopenshell.entity_instance) -> None:
+        for prop in pset.HasProperties:
+#            if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == self.settings["prop_name"].lower():
+            if prop.Name.lower() == self.settings["prop_name"].lower():
                 self.quantities.add(prop)
 
     def update_cost_item_count(self):
