@@ -134,6 +134,7 @@ class BIM_PT_spatial_decomposition(Panel):
 
             # Only show container visibility operators if the preference is enabled
             from bonsai.bim.ui import BIM_ADDON_preferences
+
             addon = BIM_ADDON_preferences.get_addon_instance()
             if addon and getattr(addon, "preferences", None):
                 prefs = addon.preferences

@@ -507,6 +507,7 @@ class SetDefaultContainer(bpy.types.Operator):
         core.set_orientation_slot(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
         return {"FINISHED"}
 
+
 class SetContainerVisibility(bpy.types.Operator):
     bl_idname = "bim.set_container_visibility"
     bl_label = "Set Container Visibility"
@@ -553,6 +554,7 @@ class SetContainerVisibility(bpy.types.Operator):
             if self.should_include_children:
                 queue.extend(ifcopenshell.util.element.get_parts(container))
         return {"FINISHED"}
+
 
 class SetElementVisibility(bpy.types.Operator):
     bl_idname = "bim.set_element_visibility"
