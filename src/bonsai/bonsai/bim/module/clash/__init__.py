@@ -24,6 +24,7 @@ classes = (
     operator.AddClashSource,
     operator.ExecuteIfcClash,
     operator.ExportClashSets,
+    operator.HideClash,
     operator.ImportClashSets,
     operator.LoadSmartGroupsForActiveClashSet,
     operator.RemoveClashSet,
