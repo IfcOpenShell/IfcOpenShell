@@ -679,9 +679,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     )
 
     addon_instance = None
+
     @classmethod
     def set_addon_instance(cls):
         import bpy
+
         instance = None
         for key in bpy.context.preferences.addons.keys():
             if ".bonsai" in key:
