@@ -31,7 +31,7 @@ bool ParseIfcFile::Parse(
     settings.set("weld-vertices", false);
     settings.set("apply-default-materials", true);
 
-    IfcGeom::Iterator* it = new IfcGeom::Iterator(settings, &file);
+    IfcGeom::Iterator* it = new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(&file, "opencascade", settings), settings, &file);
     if (!it->initialize()) {
         MessageLogger::log("Error: Iterator failed to initialize! Aborting.");
         delete it;

@@ -17,8 +17,6 @@
 #                                                                              #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.1.3)
-
 message("Running CMakeLists.txt in /src/qtviewer")
 
 # Specify the Qt version and components to use
@@ -100,3 +98,5 @@ target_include_directories(${targetName} PUBLIC
 
 get_target_property(targetIncludeDirs ${targetName} INCLUDE_DIRECTORIES)
 message(STATUS "target_include_directories: ${targetIncludeDirs}")
+
+install(TARGETS ${targetName})
