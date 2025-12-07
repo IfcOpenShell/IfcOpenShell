@@ -12,7 +12,6 @@ TODO:
   
     https://github.com/IfcOpenShell/IfcOpenShell/pull/7436
     https://github.com/IfcOpenShell/IfcOpenShell/pull/7434
-    https://github.com/IfcOpenShell/IfcOpenShell/pull/7435
   
 - have latest opencascade in conan center (https://github.com/conan-io/conan-center-index/pull/27354)
 
@@ -29,3 +28,5 @@ TODO:
 - Study hdf5 used by ifcgeom/serializers/ifcconvert
 
 Study https://github.com/Krande
+
+Study MCP and see how to apply it to IfcOpenShell (https://modelcontextprotocol.io/docs/learn/client-concepts)

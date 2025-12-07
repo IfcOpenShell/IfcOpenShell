@@ -200,6 +200,8 @@ class IfcopenshellConan(ConanFile):
         # tc.cache_variables["WASM_BUILD"] = self.options.with_wasm
         # tc.cache_variables["ENABLE_BUILD_OPTIMIZATIONS"] = self.options.with_build_optimizations
         
+        tc.cache_variables["BUILD_QTVIEWER"] = self.options.build_qtviewer
+        
         tc.cache_variables["BUILD_IFCPYTHON"] = self.options.with_ifcpython
 
         tc.cache_variables["BUILD_EXAMPLES"] = self.options.with_examples and self.options.schemas.contains("2x3")
