@@ -443,6 +443,27 @@ class SelectClash(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class HideClash(bpy.types.Operator):
+    bl_idname = "bim.hide_clash"
+    bl_label = "Hide Clash"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Hide the clash decorator"
+
+    @classmethod
+    def poll(cls, context):
+        if not ClashDecorator.is_installed:
+            cls.poll_message_set("No clash selected.")
+            return False
+        return True
+
+    def execute(self, context):
+        ClashDecorator.uninstall()
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+        return {"FINISHED"}
+
+
 class SmartClashGroup(bpy.types.Operator):
     bl_idname = "bim.smart_clash_group"
     bl_label = "Smart Group Clashes"
