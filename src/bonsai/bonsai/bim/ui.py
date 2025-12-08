@@ -678,6 +678,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Default parameters for BIM elements",
     )
 
+    container_hide_show_isolate: BoolProperty(
+        name="Container hide/show/isolate",
+        description="Enable container hide/show/isolate feature in the UI",
+        default=False,
+    )
+
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -713,6 +719,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         pset_dir: str
         doc: DocPreferences
         default_parameters: DefaultParameters
+        container_hide_show_isolate: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -892,15 +899,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "bsdd_load_inactive_dictionaries")
         layout.prop(self, "bsdd_load_test_dictionaries")
 
-
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
-
-    container_hide_show_isolate: BoolProperty(
-        name="Container hide/show/isolate",
-        description="Enable container hide/show/isolate feature in the UI",
-        default=False,
-    )
 
 
 # Scene panel groups
