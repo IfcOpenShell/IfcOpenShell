@@ -391,10 +391,10 @@ int IFCImp::DoImport(const TCHAR *file_name, ImpInterface *impitfc, Interface *i
 		const IfcGeom::BRepElement* brepElement = static_cast<const IfcGeom::BRepElement*>(iterator.get_native());
 		const IfcGeom::TriangulationElement* triElement = static_cast<const IfcGeom::TriangulationElement*>(iterator.get());
 
-		const TSTR e_type = TSTR::FromUTF8(element->type().c_str());
-		const TSTR e_guid = TSTR::FromUTF8(element->guid().c_str());
-		const TSTR e_name = TSTR::FromUTF8(element->name().c_str());
-		const TSTR e_idStr = TSTR(std::to_wstring(element->id()).c_str());
+		TSTR e_type = TSTR::FromUTF8(element->type().c_str());
+		TSTR e_guid = TSTR::FromUTF8(element->guid().c_str());
+		TSTR e_name = TSTR::FromUTF8(element->name().c_str());
+		TSTR e_idStr = TSTR(std::to_wstring(element->id()).c_str());
 
 
 		// dump out the parent tree up to IfcProject for each element
@@ -406,8 +406,8 @@ int IFCImp::DoImport(const TCHAR *file_name, ImpInterface *impitfc, Interface *i
 				log_stream << "->" << p_e->type() << " [#" << p_e->id() << "]";
 			}
 		}
-
-		LogToListener(_M("%3d%% - [#%d] %s: '%s' %s\n"), iterator.progress(), element->id(), e_type, e_name, TSTR::FromUTF8( log_stream.str().c_str() ) );
+        TSTR logString = TSTR::FromUTF8(log_stream.str().c_str());
+        LogToListener(_M("%3d%% - [#%d] %s: '%s' %s\n"), iterator.progress(), element->id(), e_type.data(), e_name.data(), logString.data());
 
 		Mtl *mat = ComposeMultiMaterial(material_cache, mats, ip, slot, triElement->geometry().materials(), triElement->type(), triElement->geometry().material_ids());
 
@@ -469,7 +469,7 @@ int IFCImp::DoImport(const TCHAR *file_name, ImpInterface *impitfc, Interface *i
         impitfc->AddNodeToScene(impnode_cache[i]);
 
 	// Calculate the duration
-	unsigned int seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - startTime).count();
+	INT64 seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - startTime).count();
 	LogToListener(_M("Import finished in %u seconds\n"), seconds);
 		
 	return IMPEXP_SUCCESS;
@@ -487,13 +487,14 @@ BOOL IFCImp::VerifyCancel() {
 
 void IFCImp::BuildFullName( const IfcUtil::IfcBaseEntity& entity, MSTR& long_name) 
 {  
-	auto name = TSTR::FromUTF8(entity.get_value<std::string>("Name", "").c_str());          
+	TSTR name = TSTR::FromUTF8(entity.get_value<std::string>("Name", "").c_str());          
+	TSTR declName = TSTR::FromUTF8(entity.declaration().name().c_str());          
 
-	if( name.length() > 0) {
-		long_name.printf(_M("%s/%s [#%d]"), TSTR::FromUTF8(entity.declaration().name().c_str()), name, entity.id_);
+	if( _tcslen( name ) > 0) {
+        long_name.printf(_M("%s/%s [#%d]"), declName.data(), name.data(), entity.id_);
 	}
 	else {
-		long_name.printf(_M("%s [#%d]"), TSTR::FromUTF8(entity.declaration().name().c_str()), entity.id_);
+        long_name.printf(_M("%s [#%d]"), declName.data(), entity.id_);
 	}
 }
 
