@@ -920,11 +920,11 @@ IF [%~3]==[] (
 call cecho.cmd 0 13 "Building %TARGET% of %DEPENDENCY_NAME%. Please be patient, this will take a while."
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
-IF %COMPILE_WITH_WPO%==FALSE (
-	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM% /t:"%TARGET%"
-) ELSE (
-	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE /t:"%TARGET%"
+set COMPILE_WITH_WPO_SETTING=
+IF NOT %COMPILE_WITH_WPO%==FALSE (
+    set COMPILE_WITH_WPO_SETTING=;WholeProgramOptimization=TRUE
 )
+%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%%COMPILE_WITH_WPO_SETTING% /t:"%TARGET%"
 exit /b %ERRORLEVEL%
 
 :: InstallCMakeProject - Builds the INSTALL project of CMake-based project
@@ -936,11 +936,11 @@ pushd %1
 call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
-IF %COMPILE_WITH_WPO%==FALSE (
-	%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
-) ELSE (
-	%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+set COMPILE_WITH_WPO_SETTING=
+IF NOT %COMPILE_WITH_WPO%==FALSE (
+    set COMPILE_WITH_WPO_SETTING=;WholeProgramOptimization=TRUE
 )
+%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%%COMPILE_WITH_WPO_SETTING%
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
