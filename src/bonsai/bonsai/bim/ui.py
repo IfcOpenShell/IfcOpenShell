@@ -678,34 +678,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Default parameters for BIM elements",
     )
 
-    addon_instance = None
-
-    @classmethod
-    def set_addon_instance(cls):
-        import bpy
-
-        instance = None
-        for key in bpy.context.preferences.addons.keys():
-            if ".bonsai" in key:
-                instance = bpy.context.preferences.addons.get(key)
-                break
-        cls.addon_instance = instance
-
-    @classmethod
-    def get_addon_instance(cls):
-        if cls.addon_instance is None:
-            cls.set_addon_instance()
-        return cls.addon_instance
-
-    def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
-        layout.prop(self, "container_hide_show_isolate")
-
-    container_hide_show_isolate: BoolProperty(
-        name="Container hide/show/isolate",
-        description="Enable container hide/show/isolate feature in the UI",
-        default=False,
-    )
-
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -919,6 +891,16 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "bsdd_load_preview_dictionaries")
         layout.prop(self, "bsdd_load_inactive_dictionaries")
         layout.prop(self, "bsdd_load_test_dictionaries")
+
+
+    def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.prop(self, "container_hide_show_isolate")
+
+    container_hide_show_isolate: BoolProperty(
+        name="Container hide/show/isolate",
+        description="Enable container hide/show/isolate feature in the UI",
+        default=False,
+    )
 
 
 # Scene panel groups
