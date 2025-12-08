@@ -224,7 +224,7 @@ endif()
 set(USD_LIBRARIES "")
 if(USD_SUPPORT)
     find_package(USD REQUIRED)
-    set(USD_LIBRARIES USD::USD)
+    set(USD_LIBRARIES pxr::USD)
 endif(USD_SUPPORT)
 
 if (WITH_ROCKSDB)
