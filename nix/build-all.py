@@ -1407,11 +1407,11 @@ else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
 
 if "usd" in targets:
-    cmake_args.extend(
+    cmake_args.append("-DUSD_SUPPORT=ON")
+    cmake_args_prefix_path.extend(
         [
-            f"-DUSD_SUPPORT=" "On",
-            f"-DUSD_INCLUDE_DIR={DEPS_DIR}/install/usd-{USD_VERSION}/include",
-            f"-DUSD_LIBRARY_DIR={DEPS_DIR}/install/usd-{USD_VERSION}/lib",
+            f"{DEPS_DIR}/install/tbb-{TBB_VERSION}",
+            f"{DEPS_DIR}/install/usd-{USD_VERSION}",
         ]
     )
 

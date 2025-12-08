@@ -118,10 +118,8 @@ set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
 :: We don't install Eigen currently,
 :: so there's no Eigen3config.cmake and therefore we provide path explicitly.
 set EIGEN_DIR=%INSTALL_DIR%\Eigen
-set USD_INCLUDE_DIR=%INSTALL_DIR%\usd\include
-set USD_LIBRARY_DIR=%INSTALL_DIR%\usd\lib
-set TBB_INCLUDE_DIR=%INSTALL_DIR%\tbb\include
-set TBB_LIBRARY_DIR=%INSTALL_DIR%\tbb\lib
+set TBB_INSTALL_DIR=%INSTALL_DIR%\tbb
+set USD_INSTALL_DIR=%INSTALL_DIR%\usd
 set ROCKSDB_INSTALL_DIR=%INSTALL_DIR%\rocksdb
 set ZSTD_INSTALL_DIR=%INSTALL_DIR%\zstd
 
@@ -155,10 +153,8 @@ echo    GMP_LIBRARY_DIR         = %GMP_LIBRARY_DIR%
 echo    MPFR_INCLUDE_DIR        = %MPFR_INCLUDE_DIR%
 echo    MPFR_LIBRARY_DIR        = %MPFR_LIBRARY_DIR%
 echo    EIGEN_DIR               = %EIGEN_DIR%
-echo    USD_INCLUDE_DIR         = %USD_INCLUDE_DIR%
-echo    USD_LIBRARY_DIR         = %USD_LIBRARY_DIR%
-echo    TBB_INCLUDE_DIR         = %TBB_INCLUDE_DIR%
-echo    TBB_LIBRARY_DIR         = %TBB_LIBRARY_DIR%
+echo    TBB_INSTALL_DIR         = %TBB_INSTALL_DIR%
+echo    USD_INSTALL_DIR         = %USD_INSTALL_DIR%
 echo    ROCKSDB_INSTALL_DIR     = %ROCKSDB_INSTALL_DIR%
 echo    ZSTD_INSTALL_DIR        = %ZSTD_INSTALL_DIR%
 echo    CCACHE_INSTALL_DIR      = %CCACHE_INSTALL_DIR%
@@ -174,6 +170,7 @@ echo "Running CMake for %PROJECT_NAME%."
 set CMAKE_PREFIX_PATH=%HDF5_INSTALL_DIR%;%OPENCOLLADA_INSTALL_DIR%;%SWIG_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%ROCKSDB_INSTALL_DIR%;%ZSTD_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_INSTALL_DIR%;%CCACHE_INSTALL_DIR%
+set CMake_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%USD_INSTALL_DIR%;%TBB_INSTALL_DIR%
 
 :: Not fully supported - not available from install-ifcopenshell
 :: and some logs are still showing Visual Studio generators.
