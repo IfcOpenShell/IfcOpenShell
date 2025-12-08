@@ -132,23 +132,16 @@ class BIM_PT_spatial_decomposition(Panel):
             op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
 
-            # Only show container visibility operators if the preference is enabled
-            from bonsai.bim.ui import BIM_ADDON_preferences
-
-            addon = BIM_ADDON_preferences.get_addon_instance()
-            if addon and getattr(addon, "preferences", None):
-                prefs = addon.preferences
-                value = getattr(prefs, "container_hide_show_isolate", None)
-                if value:
-                    op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="")
-                    op.mode = "ISOLATE"
-                    op.container = ifc_definition_id
-                    op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
-                    op.mode = "SHOW"
-                    op.container = ifc_definition_id
-                    op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
-                    op.mode = "HIDE"
-                    op.container = ifc_definition_id
+            if tool.Blender.get_addon_preferences().container_hide_show_isolate:
+                op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="")
+                op.mode = "ISOLATE"
+                op.container = ifc_definition_id
+                op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
+                op.mode = "SHOW"
+                op.container = ifc_definition_id
+                op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
+                op.mode = "HIDE"
+                op.container = ifc_definition_id
 
             # The only operator that's enabled for IfcProject.
             col = row.column(align=True)
