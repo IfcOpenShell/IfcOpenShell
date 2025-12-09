@@ -41,6 +41,8 @@ echo.
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
 
+set SCRIPT_DIR=%~dp0
+
 :: Make sure vcvarsall.bat is called and dev env set is up.
 IF "%VSINSTALLDIR%"=="" (
    call utils\cecho.cmd 0 12 "Visual Studio environment variables not set- cannot proceed."
@@ -108,6 +110,7 @@ FOR %%i IN (powershell git cmake) DO (
 :: Check powershell version
 powershell -c "exit $PSVersionTable.PSVersion.Major -lt 5"
 IF NOT %ERRORLEVEL%==0 call cecho.cmd 0 12 "Powershell version 5 or higher required" && goto :ErrorAndPrintUsage
+set PWSH_TOOLS=powershell -NonInteractive -File %SCRIPT_DIR%\utils\tools.ps1
 
 cmake --version | findstr version > temp.txt
 set /p CMAKE_VERSION=<temp.txt
@@ -358,12 +361,12 @@ popd
 set DEPENDENCY_NAME=hdf5
 set DEPENDENCY_DIR=%DEPS_DIR%\hdf5-%HDF5_VERSION%
 set HDF5_CMAKE_ZIP=hdf5-%HDF5_VERSION%.zip
-set HDF5_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+set DEPENDENCY_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+set HDF5_INSTALL_NAME=%DEPENDENCY_INSTALL_NAME%
+set NEXT_DEPENDENCY_LABEL=Boost
 
-IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_NAME%" (
-    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_NAME%", skipping
-    goto :Boost
-)
+call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
 call :DownloadFile ^
@@ -383,6 +386,7 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\HDF5.sln" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :MarkInstallation
 popd
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
@@ -443,15 +447,14 @@ call :DownloadFile https://github.com/nlohmann/json/releases/download/v3.6.1/jso
 :: Note OpenCOLLADA has only Release and Debug builds.
 set DEPENDENCY_NAME=OpenCOLLADA
 set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
+set DEPENDENCY_INSTALL_NAME=OpenCOLLADA
+set NEXT_DEPENDENCY_LABEL=OCCT
 :: Always clone it, even if it's installed, because it contains xml headers we need.
 :: Use a fixed revision in order to prevent introducing breaking changes
 call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
 
-IF EXIST "%INSTALL_DIR%\OpenCOLLADA" (
-    echo Found existing "%INSTALL_DIR%\OpenCOLLADA", skipping
-    :: we do need to clone though because the bundled libxml includes are not installed
-    goto :OCCT
-)
+call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
@@ -463,7 +466,7 @@ IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOL
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
 :: NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with arbitrary versions of the libraries.
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
                -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES=""
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
@@ -471,15 +474,19 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OPENCOLLADA.sln" %DEBUG_OR_REL
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :MarkInstallation
 
 :OCCT
 
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
-IF EXIST "%INSTALL_DIR%\opencascade-%OCCT_VERSION%" (
-    echo Found existing "%INSTALL_DIR%\opencascade-%OCCT_VERSION%", skipping
-    goto :Python
-)
+set DEPENDENCY_NAME=OpenCASCADE
+set OCCT_DEPENDENCY_INSTALL_NAME=opencascade-%OCCT_VERSION%
+set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
+set NEXT_DEPENDENCY_LABEL=Python
+
+call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
@@ -502,6 +509,7 @@ if not %ERRORLEVEL%==0 goto :Error
 
 set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
+set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
 cd "%DEPS_DIR%"
 call :GitCloneAndCheckoutRevision https://github.com/Open-Cascade-SAS/OCCT "%DEPENDENCY_DIR%" %OCCT_VER%
 if not %ERRORLEVEL%==0 goto :Error
@@ -517,7 +525,7 @@ findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
 
 cd "%DEPENDENCY_DIR%"
-call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade-%OCCT_VERSION%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
+call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
     -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
 if not %ERRORLEVEL%==0 goto :Error
 
@@ -532,6 +540,7 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
+call :MarkInstallation
 
 SET COMPILE_WITH_WPO=FALSE
 
@@ -694,11 +703,11 @@ set DEPENDENCY_NAME=rocksdb
 set ROCKSDB_VERSION=9.11.2
 set ROCKSDB_ZIP=rocksdb-%ROCKSDB_VERSION%.zip
 set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%-%ROCKSDB_VERSION%
+set DEPENDENCY_INSTALL_NAME=%DEPENDENCY_NAME%
+set NEXT_DEPENDENCY_LABEL=Successful
 
-IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
-    echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
-    goto :Successful
-)
+call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 cd %DEPS_DIR%
 call :DownloadFile ^
@@ -713,7 +722,7 @@ cd "%DEPENDENCY_DIR%"
 set ZSTD_INCLUDE=%INSTALL_DIR%\zstd\include
 set ZSTD_LIB_DEBUG=%INSTALL_DIR%\zstd\lib\zstd_static.lib
 set ZSTD_LIB_RELEASE=%INSTALL_DIR%\zstd\lib\zstd_static.lib
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" ^
                -DROCKSDB_INSTALL_ON_WINDOWS=On ^
                -DFAIL_ON_WARNINGS=Off ^
                -DWITH_TESTS=OFF ^
@@ -722,12 +731,14 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^
                -DWITH_CORE_TOOLS=OFF ^
                -DROCKSDB_BUILD_SHARED=OFF ^
                -DWITH_ZSTD=On ^
-               -DPORTABLE=1
+               -DPORTABLE=1 ^
+               -DCMAKE_DEBUG_POSTFIX="_d"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\rocksdb.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :MarkInstallation
 
 :: :tbb
 :: set DEPENDENCY_NAME=tbb
@@ -803,7 +814,7 @@ echo Build ended at %END_TIME%. Time elapsed %hh%:%mm%:%ss%.%cc%.
 :BuildTimeSkipped
 set PATH=%ORIGINAL_PATH%
 cd "%~dp0"
-exit /b %IFCOS_SCRIPT_RET%
+exit %IFCOS_SCRIPT_RET%
 
 ::::::::::::::::::::::::::::::::::::: Subroutines :::::::::::::::::::::::::::::::::::::
 
@@ -944,6 +955,33 @@ IF NOT %COMPILE_WITH_WPO%==FALSE (
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
+
+:: Checks whether a dependency is already installed for the specified config
+:: Doesn't work for dependencies, only for those that need separate Debug/Release installs.
+:: Required vars:
+:: - DEPENDENCY_NAME
+:: - DEPENDENCY_INSTALL_NAME
+:: - NEXT_DEPENDENCY_LABEL
+:: Always intended to be used with the code below
+:: (unfortunately we can't move `GOTO` to the this label too,
+:: because of how it would interact with `call` and `exit /b`):
+:: ```
+:: call :CheckInstallation
+:: if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
+:: ```
+:CheckInstallation
+%PWSH_TOOLS% check_installation %DEPENDENCY_NAME% "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
+set RET=%ERRORLEVEL%
+if %RET%==200 echo Found existing "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" for %BUILD_CFG%, skipping && exit /b 200
+if %RET% NEQ 404 GOTO :Error
+exit /b 0
+
+:: Required vars:
+:: - DEPENDENCY_INSTALL_NAME
+:MarkInstallation
+%PWSH_TOOLS% mark "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+exit /b 0
 
 :: PrintUsage - Prints usage information
 :PrintUsage
