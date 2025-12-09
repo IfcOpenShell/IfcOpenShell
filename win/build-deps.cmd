@@ -604,15 +604,15 @@ IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
 
 cd "%DEPS_DIR%"
 
-:: Install bizon dependency for SWIG.
+:: Install bison dependency for SWIG.
 set SWIG_DEPENDENCY_NAME=%DEPENDENCY_NAME%
 set DEPENDENCY_NAME=win_flex_bison
-set WIN_FLEX_BIZON=win_flex_bison-2.5.25
-set WIN_FLEX_BIZON_ZIP=%WIN_FLEX_BIZON%.zip
-call :DownloadFile https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/%WIN_FLEX_BIZON_ZIP% "%DEPS_DIR%" %WIN_FLEX_BIZON_ZIP%
+set WIN_FLEX_BISON=win_flex_bison-2.5.25
+set WIN_FLEX_BISON_ZIP=%WIN_FLEX_BISON%.zip
+call :DownloadFile https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/%WIN_FLEX_BISON_ZIP% "%DEPS_DIR%" %WIN_FLEX_BISON_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-echo test %WIN_FLEX_BIZON%
-call :ExtractArchive %WIN_FLEX_BIZON_ZIP% "%DEPS_DIR%\%WIN_FLEX_BIZON%" "%DEPS_DIR%\%WIN_FLEX_BIZON%"
+echo test %WIN_FLEX_BISON%
+call :ExtractArchive %WIN_FLEX_BISON_ZIP% "%DEPS_DIR%\%WIN_FLEX_BISON%" "%DEPS_DIR%\%WIN_FLEX_BISON%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 set DEPENDENCY_NAME=%SWIG_DEPENDENCY_NAME%
 
@@ -626,7 +626,7 @@ cd "%DEPENDENCY_DIR%"
 
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DWITH_PCRE=OFF ^
-               -DBISON_EXECUTABLE="%DEPS_DIR%\%WIN_FLEX_BIZON%\win_bison.exe"
+               -DBISON_EXECUTABLE="%DEPS_DIR%\%WIN_FLEX_BISON%\win_bison.exe"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\swig.sln" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
