@@ -89,8 +89,6 @@ if not defined BOOST_INSTALL_DIR (
     set BOOST_INSTALL_DIR=%DEPS_DIR%\boost_1_86_0\stage\%GEN_SHORTHAND%
 )
 
-if not defined OCC_INCLUDE_DIR set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
-if not defined OCC_LIBRARY_DIR set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INSTALL_DIR=%INSTALL_DIR%\OpenCOLLADA
 set LIBXML2_INCLUDE_DIR=%DEPS_DIR%\OpenCOLLADA\Externals\LibXML\include
 set LIBXML2_LIBRARIES=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada\xml.lib
@@ -133,8 +131,10 @@ echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_INSTALL_DIR       = %BOOST_INSTALL_DIR%
 echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
+:: OCC_INCLUDE_DIR / OCC_LIBRARY_DIR are legacy vars, they're not defined by build-deps.cmd anymore.
 echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
 echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
+echo    OCC_INSTALL_DIR         = %OCC_INSTALL_DIR%
 echo    OPENCOLLADA_INSTALL_DIR = %OPENCOLLADA_INSTALL_DIR%
 echo    LIBXML2_INCLUDE_DIR     = %LIBXML2_INCLUDE_DIR%
 echo    LIBXML2_LIBRARIES       = %LIBXML2_LIBRARIES%
@@ -171,6 +171,7 @@ set CMAKE_PREFIX_PATH=%HDF5_INSTALL_DIR%;%OPENCOLLADA_INSTALL_DIR%;%SWIG_INSTALL
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%ROCKSDB_INSTALL_DIR%;%ZSTD_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_INSTALL_DIR%;%CCACHE_INSTALL_DIR%
 set CMake_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%USD_INSTALL_DIR%;%TBB_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%OCC_INSTALL_DIR%
 
 :: Not fully supported - not available from install-ifcopenshell
 :: and some logs are still showing Visual Studio generators.

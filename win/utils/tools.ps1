@@ -50,12 +50,9 @@ function mark_based_on_artifacts {
         }
     }
     elseif ($dependency_name -eq "OpenCASCADE") {
-        if ($env:BUILD_CFG -eq "Debug") {
-            $artifact = "win64\lib\TKerneld.lib"
-        }
-        else {
-            $artifact = "win64\lib\TKernel.lib"
-        }
+        # New OCCT folder layout was introduced after marker files were added,
+        # so installation don't need artifact-based detection.
+        return
     }
     elseif ($dependency_name -eq "rocksdb") {
         if ($env:BUILD_CFG -eq "Debug") {
