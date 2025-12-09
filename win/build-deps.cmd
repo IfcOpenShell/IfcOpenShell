@@ -186,8 +186,6 @@ IF DEFINED PYTHON_VERSION (
 )
 
 :: VERSION DERIVATIONS
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     set PYTHONHOME=%DEPS_DIR%\python.%PYTHON_VERSION%\tools
 )
@@ -197,8 +195,6 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 :: executed by jumping (using goto) to different labels.
 if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
@@ -481,9 +477,13 @@ call :MarkInstallation
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
 set DEPENDENCY_NAME=OpenCASCADE
-set OCCT_DEPENDENCY_INSTALL_NAME=opencascade-%OCCT_VERSION%
+:: `new-layout` suffix can be removed on the next OCCT version update
+:: it's needed to separate legacy layout installation from the new one.
+set OCCT_DEPENDENCY_INSTALL_NAME=opencascade-%OCCT_VERSION%-new-layout
 set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
+set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set NEXT_DEPENDENCY_LABEL=Python
+echo OCC_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 call :CheckInstallation
 if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
@@ -525,7 +525,10 @@ findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
 
 cd "%DEPENDENCY_DIR%"
-call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
+:: TODO: remove CMAKE_DEBUG_POSTFIX setting later.
+:: Temporarily explicitly set `CMAKE_DEBUG_POSTFIX` to empty to override it's perviously being set to `d`.
+:: OCCT don't need it, since it's layout is separating debug and release build by different folders.
+call :RunCMake -DINSTALL_DIR="%DEPENDENCY_INSTALL_DIR%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX="" ^
     -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
 if not %ERRORLEVEL%==0 goto :Error
 
@@ -538,27 +541,22 @@ IF %ARCH_BITS%==32 (
 
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
+
+:: If `inc` is present in installation folder, then installation takes much longer
+:: See https://github.com/Open-Cascade-SAS/OCCT/issues/901
+powershell -c "$path = '%DEPENDENCY_INSTALL_DIR%\inc'; if (Test-Path $path) { Remove-Item -Recurse -Force $path }"
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
+
+:: Fix upstream bug in cmake config file with unescaped quotes preventing configuration.
+:: The issue is fixed in 7.9.0+.
+:: See https://github.com/Open-Cascade-SAS/OCCT/pull/373
+powershell -c "$path='%DEPENDENCY_INSTALL_DIR%\cmake\OpenCASCADEConfig.cmake'; (Get-Content $path) -replace '/wd\"(\d+)\"','/wd$1' | Set-Content $path"
+if not %ERRORLEVEL%==0 goto :Error
+
 call :MarkInstallation
 
 SET COMPILE_WITH_WPO=FALSE
-
-:: Use a single lib directory for release and debug libraries as is done with OCE
-if not exist "%OCC_LIBRARY_DIR%". mkdir "%OCC_LIBRARY_DIR%"
-:: NOTE OCCT (at least occt-V7_0_0-9059ca1) directory creation code is hardcoded and doesn't seem handle future VC versions
-set OCCT_VC_VER=%VC_VER%
-IF %OCCT_VC_VER% GTR 14 (
-    set OCCT_VC_VER=14
-)
-move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\lib\*.*" "%OCC_LIBRARY_DIR%"
-rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%"
-:: Removed unneeded bits
-rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\data"
-rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\samples"
-del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 
 :Python
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%

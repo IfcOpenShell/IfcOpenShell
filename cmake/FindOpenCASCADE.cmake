@@ -36,6 +36,12 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
 
     find_package(OpenCASCADE CONFIG REQUIRED)
     message(STATUS "Found OpenCASCADE config: ${OpenCASCADE_DIR}")
+
+    if(OpenCASCADE_VERSION VERSION_LESS "7.9.0")
+        # Bug in OCCT cmake configs < 7.9.0 - missing linked library.
+        list(APPEND OpenCASCADE_LIBRARIES WSOCK32.lib)
+    endif()
+
     return()
 endif()
 
