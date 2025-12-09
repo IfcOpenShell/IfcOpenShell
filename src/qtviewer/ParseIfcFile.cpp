@@ -1,4 +1,5 @@
 #include "ParseIfcFile.h"
+#include "../ifcgeom/hybrid_kernel.h"
 
 #include "MessageLogger.h"
 #include "osg/Array"

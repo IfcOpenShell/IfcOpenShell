@@ -2,7 +2,6 @@
 #define PARSEIFCFILE_H
 
 #include "../ifcgeom/Iterator.h"
-#include "../ifcgeom/hybrid_kernel.h"
 #include "osg/Geometry"
 #include "osg/Material"
 #include "osg/MatrixTransform"
