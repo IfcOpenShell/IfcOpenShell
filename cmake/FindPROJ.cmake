@@ -5,9 +5,8 @@
 # If input variables are not specified, try to find PROJ config.
 # Input variables could also be provided as environment variables.
 #
-# Output variables:
-# - `PROJ_INCLUDE_DIR`
-# - `PROJ_LIBRARIES`
+# Output targets:
+# - `PROJ::proj`
 #
 
 # To avoid cyclic calls to this file
