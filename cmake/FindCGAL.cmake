@@ -56,5 +56,5 @@ else()
     message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
 endif()
 
-target_compile_definitions(CGAL INTERFACE IFOPSH_WITH_CGAL)
+target_compile_definitions(CGAL::CGAL INTERFACE IFOPSH_WITH_CGAL)
 set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
