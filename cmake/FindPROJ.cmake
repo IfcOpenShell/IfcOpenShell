@@ -61,3 +61,5 @@ else()
     message(STATUS "Looking for PROJ include files in: ${PROJ_INCLUDE_DIR}")
     include_directories(${PROJ_INCLUDE_DIR})
 endif()
+
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
