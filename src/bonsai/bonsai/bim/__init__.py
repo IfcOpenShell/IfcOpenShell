@@ -137,8 +137,6 @@ classes = [
     operator.BIM_OT_manage_tab_panels,
     operator.BIM_OT_manage_tab_visibility,
     operator.BIM_OT_toggle_tab_visibility,
-    operator.BIM_OT_load_json_layout,
-    operator.BIM_OT_save_json_layout,
     operator.BIM_OT_reset_ui_layout,
     prop.ObjProperty,
     prop.MultipleFileSelect,

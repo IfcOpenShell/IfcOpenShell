@@ -33,7 +33,7 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
 from enum import Enum
-from bonsai.bim.ui import TAB_PANELS, TAB_VISIBILITY
+from bonsai.bim.ui import TAB_PANELS, get_tab_visibility, set_tab_visibility, get_tab_names
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -1860,15 +1860,14 @@ class BIM_OT_manage_tab_visibility(bpy.types.Operator):
         row.alignment = "RIGHT"
 
         row.operator("bim.reset_ui_layout", icon="FILE_REFRESH", text="")
-        row.operator("bim.load_json_layout", icon="IMPORT", text="")
-        row.operator("bim.save_json_layout", icon="EXPORT", text="")
         row = layout.row()
         row = self.layout.row(align=True)
         row.alignment = "CENTER"
 
-        for tab_name, is_visible in TAB_VISIBILITY.items():
+        for tab_name in get_tab_names():
             row = layout.row()
             row.label(text=tab_name)
+            is_visible = get_tab_visibility(tab_name)
             icon = "HIDE_OFF" if is_visible else "HIDE_ON"
             op = row.operator("bim.toggle_tab_visibility", text="", icon=icon)
             op.tab_name = tab_name
@@ -1890,8 +1889,9 @@ class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
     tab_name: bpy.props.StringProperty()
 
     def execute(self, context):
-        if self.tab_name in TAB_VISIBILITY:
-            TAB_VISIBILITY[self.tab_name] = not TAB_VISIBILITY[self.tab_name]
+        if self.tab_name in get_tab_names():
+            current_visibility = get_tab_visibility(self.tab_name)
+            set_tab_visibility(self.tab_name, not current_visibility)
 
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
@@ -1901,112 +1901,7 @@ class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
         return {"FINISHED"}
 
 
-import json
-import bpy
 
-
-class BIM_OT_load_json_layout(bpy.types.Operator):
-    """Load JSON Layout"""
-
-    bl_idname = "bim.load_json_layout"
-    bl_label = "Load UI Layout"
-    bl_options = {"REGISTER", "UNDO"}
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        global TAB_VISIBILITY, TAB_PANELS
-
-        try:
-            with open(self.filepath, "r") as file:
-                data = json.load(file)
-
-            if "TAB_VISIBILITY" in data:
-                TAB_VISIBILITY.update(data["TAB_VISIBILITY"])
-
-            if "TAB_PANELS" in data:
-                TAB_PANELS.update(data["TAB_PANELS"])
-
-            if "scene_properties" in data:
-                for prop_name, value in data["scene_properties"].items():
-                    if hasattr(context.scene, prop_name):
-                        setattr(context.scene, prop_name, value)
-
-            for area in bpy.context.window.screen.areas:
-                if area.type == "PROPERTIES":
-                    area.tag_redraw()
-
-            self.report({"INFO"}, f"Loaded JSON layout from {self.filepath}")
-        except Exception as e:
-            self.report({"ERROR"}, f"Failed to load JSON layout: {e}")
-            return {"CANCELLED"}
-
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        ifc_file_path = bpy.context.scene.BIMProperties["ifc_file"]
-        if not ifc_file_path:
-            self.report({"ERROR"}, "No IFC file is associated with the project.")
-            return {"CANCELLED"}
-
-        self.filepath = os.path.join(os.path.dirname(ifc_file_path), ".bonsai_layout_json")
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class BIM_OT_save_json_layout(bpy.types.Operator):
-    """Save JSON Layout"""
-
-    bl_idname = "bim.save_json_layout"
-    bl_label = "Save UI Layout"
-    bl_options = {"REGISTER", "UNDO"}
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        try:
-            ifc_file_path = bpy.context.scene.BIMProperties["ifc_file"]
-            if not ifc_file_path:
-                self.report({"ERROR"}, "No IFC file is associated with the project.")
-                return {"CANCELLED"}
-
-            layout_data = {
-                "TAB_VISIBILITY": TAB_VISIBILITY,
-                "TAB_PANELS": TAB_PANELS,
-                "scene_properties": {},
-            }
-
-            for tab_name, panels in TAB_PANELS.items():
-                for panel in panels:
-                    panel_name = panel.get("bl_idname", "")
-                    if not panel_name:
-                        continue
-
-                    show_prop_name = f"show_{panel_name.lower()}"
-                    bookmark_prop_name = f"bookmark_{panel_name.lower()}"
-                    layout_data["scene_properties"][show_prop_name] = getattr(context.scene, show_prop_name, True)
-                    layout_data["scene_properties"][bookmark_prop_name] = getattr(
-                        context.scene, bookmark_prop_name, False
-                    )
-
-            with open(self.filepath, "w") as file:
-                json.dump(layout_data, file, indent=4)
-                self.report({"INFO"}, f"Saved JSON layout to {self.filepath}")
-        except Exception as e:
-            self.report({"ERROR"}, f"Failed to save JSON layout: {e}")
-            return {"CANCELLED"}
-
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        ifc_file_path = bpy.context.scene.BIMProperties["ifc_file"]
-        if not ifc_file_path:
-            self.report({"ERROR"}, "No IFC file is associated with the project.")
-            return {"CANCELLED"}
-
-        self.filepath = os.path.join(os.path.dirname(ifc_file_path), ".bonsai_layout_json")
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class BIM_OT_reset_ui_layout(bpy.types.Operator):
@@ -2017,10 +1912,10 @@ class BIM_OT_reset_ui_layout(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        global TAB_VISIBILITY, TAB_PANELS
+        global TAB_PANELS
 
-        for tab_name in TAB_VISIBILITY.keys():
-            TAB_VISIBILITY[tab_name] = True
+        for tab_name in get_tab_names():
+            set_tab_visibility(tab_name, True)
 
         TAB_PANELS["BOOKMARK"] = [{}]
 

@@ -613,7 +613,17 @@ class BIMProperties(PropertyGroup):
         ],
         name="Time Unit",
         default="HOUR",
-    )
+    )    tab_visibility_project: BoolProperty(name="Project Tab Visible", default=True)
+    tab_visibility_object: BoolProperty(name="Object Tab Visible", default=True)
+    tab_visibility_geometry: BoolProperty(name="Geometry Tab Visible", default=True)
+    tab_visibility_drawings: BoolProperty(name="Drawings Tab Visible", default=True)
+    tab_visibility_services: BoolProperty(name="Services Tab Visible", default=True)
+    tab_visibility_structure: BoolProperty(name="Structure Tab Visible", default=True)
+    tab_visibility_scheduling: BoolProperty(name="Scheduling Tab Visible", default=True)
+    tab_visibility_fm: BoolProperty(name="FM Tab Visible", default=True)
+    tab_visibility_quality: BoolProperty(name="Quality Tab Visible", default=True)
+    tab_visibility_bookmark: BoolProperty(name="Bookmark Tab Visible", default=True)
+
     if TYPE_CHECKING:
         is_dirty: bool
         schema_dir: str
@@ -628,6 +638,16 @@ class BIMProperties(PropertyGroup):
         volume_unit: str
         mass_unit: str
         time_unit: str
+        tab_visibility_project: bool
+        tab_visibility_object: bool
+        tab_visibility_geometry: bool
+        tab_visibility_drawings: bool
+        tab_visibility_services: bool
+        tab_visibility_structure: bool
+        tab_visibility_scheduling: bool
+        tab_visibility_fm: bool
+        tab_visibility_quality: bool
+        tab_visibility_bookmark: bool
 
 
 class IfcParameter(PropertyGroup):
