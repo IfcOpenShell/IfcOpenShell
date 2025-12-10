@@ -38,6 +38,7 @@ classes = (
     operator.SelectDecomposedElements,
     operator.SelectProduct,
     operator.SelectSimilarContainer,
+    operator.SetContainerVisibility,
     operator.SetDefaultContainer,
     operator.SetElementVisibility,
     operator.ToggleContainerElement,
