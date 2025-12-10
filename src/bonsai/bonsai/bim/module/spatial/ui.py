@@ -132,6 +132,17 @@ class BIM_PT_spatial_decomposition(Panel):
             op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
 
+            if tool.Blender.get_addon_preferences().container_hide_show_isolate:
+                op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="")
+                op.mode = "ISOLATE"
+                op.container = ifc_definition_id
+                op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
+                op.mode = "SHOW"
+                op.container = ifc_definition_id
+                op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
+                op.mode = "HIDE"
+                op.container = ifc_definition_id
+
             # The only operator that's enabled for IfcProject.
             col = row.column(align=True)
             col.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
