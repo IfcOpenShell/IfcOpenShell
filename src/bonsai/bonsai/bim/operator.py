@@ -33,7 +33,7 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
 from enum import Enum
-from bonsai.bim.ui import get_all_tab_panels, get_tab_visibility, set_tab_visibility, get_tab_names, get_panel_config, initialize_panel_properties
+from bonsai.bim.ui import get_all_tab_panels, get_tab_visibility, set_tab_visibility, get_tab_names, get_panel_config, initialize_panel_properties, initialize_tab_visibilities
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -1794,6 +1794,7 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
         context.scene.active_tab_name = self.tab_name
         context.scene.tab_panels.clear()
         
+        initialize_tab_visibilities()
         initialize_panel_properties()
         all_panels = get_all_tab_panels(force_refresh=True)
         

@@ -144,6 +144,7 @@ classes = [
     prop.ISODuration,
     prop.BIMAreaProperties,
     prop.BIMTabProperties,
+    prop.BIMTabVisibility,  # Must be registered before BIMProperties
     prop.BIMPanelProperties,  # Must be registered before BIMProperties
     prop.BIMProperties,
     prop.IfcParameter,
@@ -284,8 +285,6 @@ def register():
     bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
-    
-    ui.initialize_panel_properties()
     
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.append(ui.draw_custom_context_menu)
