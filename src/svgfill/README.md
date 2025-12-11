@@ -23,7 +23,6 @@ Installation is shown based on the IfcOpenShell build script directory output:
     
     set IFCOPENSHELL_ROOT=..\path\to\ifcopenshell\directory\
     cmake -DBOOST_ROOT=%IFCOPENSHELL_ROOT%\deps\boost_1_67_0                                                    ^
-          -DBOOST_LIBRARYDIR=%IFCOPENSHELL_ROOT%\deps\boost_1_67_0\stage\vs2017-Win32\lib                       ^
           -DLIBXML2_INCLUDE_DIR=%IFCOPENSHELL_ROOT%\deps\OpenCOLLADA\Externals\LibXML\include                   ^
           -DLIBXML2_LIBRARIES=%IFCOPENSHELL_ROOT%\deps-vs2017-x86-installed\OpenCOLLADA\lib\opencollada\xml.lib ^
           -DCGAL_INCLUDE_DIR=%IFCOPENSHELL_ROOT%\deps-vs2017-x86-installed\cgal\include                         ^

@@ -395,7 +395,6 @@ set DEPENDENCY_INSTALL_DIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%
 echo BOOST_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 :: Needed for CGAL build.
 set BOOST_ROOT=%DEPENDENCY_DIR%
-set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost-%BOOST_VERSION%-b2-nodocs.%ZIP_EXT%
@@ -653,8 +652,7 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
                -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
                -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
                -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
-               -DCGAL_HEADER_ONLY=On                          ^
-               -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%"
+               -DCGAL_HEADER_ONLY=On
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -771,7 +769,6 @@ call :MarkInstallation
 ::                -DPXR_BUILD_USD_TOOLS=FALSE                 ^
 ::                -DPXR_BUILD_TESTS=FALSE                     ^
 ::                -DBUILD_SHARED_LIBS=Off                     ^
-::                -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\USD.sln" %BUILD_CFG%
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
