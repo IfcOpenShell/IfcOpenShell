@@ -46,6 +46,9 @@ else()
     else()
         set(CGAL_Boost_USE_STATIC_LIBS "${Boost_USE_STATIC_LIBS}")
     endif()
+    # Annoyingly this is producing CMP0167 boost warnings, because it's unsetting cmake policies
+    # and using FindBoost module. But there's nothing we can do about it,
+    # since everything happens in the scope of CGAL config. I guess it's be resolved in CGAL 6.1.0.
     find_package(CGAL CONFIG)
     if(NOT CGAL_FOUND)
         message(
