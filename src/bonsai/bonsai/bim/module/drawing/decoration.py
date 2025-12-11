@@ -1621,6 +1621,8 @@ class SymbolDecorator(BaseDecorator):
 class CutDecorator:
     installed = None
     cache = {}
+    local_view_has_annotation = False
+    was_in_local_view = False
 
     @classmethod
     def install(cls, context):
@@ -1645,12 +1647,30 @@ class CutDecorator:
         if not context.scene.camera:
             return
 
-        # Check if any viewport is in local view - skip decorations if so
+        # Check if any viewport is in local view
+        in_local_view = False
         for area in context.screen.areas:
             if area.type == "VIEW_3D":
                 space = area.spaces.active
                 if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
-                    return  # Don't draw decorations in local view
+                    in_local_view = True
+                    break
+        
+        # If just entering local view (transition from False to True)
+        if in_local_view and not self.__class__.was_in_local_view:
+            self.__class__.local_view_has_annotation = False
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.is_a("IfcAnnotation"):
+                    self.__class__.local_view_has_annotation = True
+                    break
+        
+        # Update the state for next time
+        self.__class__.was_in_local_view = in_local_view
+        
+        # Skip decorations if in local view and no IfcAnnotation was selected when entering
+        if in_local_view and not self.__class__.local_view_has_annotation:
+            return
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
@@ -1978,6 +1998,8 @@ class DecorationsHandler:
 
     installed = None
     handler = None
+    local_view_has_annotation = False
+    was_in_local_view = False
 
     @classmethod
     def install(cls, context):
@@ -2036,12 +2058,30 @@ class DecorationsHandler:
                 decorator.font_id = font_id
 
     def __call__(self, context):
-        # Check if any viewport is in local view - skip decorations if so
+        # Check if any viewport is in local view
+        in_local_view = False
         for area in context.screen.areas:
             if area.type == "VIEW_3D":
                 space = area.spaces.active
                 if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
-                    return  # Don't draw decorations in local view
+                    in_local_view = True
+                    break
+        
+        # If just entering local view (transition from False to True)
+        if in_local_view and not self.__class__.was_in_local_view:
+            self.__class__.local_view_has_annotation = False
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.is_a("IfcAnnotation"):
+                    self.__class__.local_view_has_annotation = True
+                    break
+        
+        # Update the state for next time
+        self.__class__.was_in_local_view = in_local_view
+        
+        # Skip decorations if in local view and no IfcAnnotation was selected when entering
+        if in_local_view and not self.__class__.local_view_has_annotation:
+            return
 
         # disable decorations when not in camera view
         if context.region_data.view_perspective != "CAMERA":
