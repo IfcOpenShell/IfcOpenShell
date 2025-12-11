@@ -647,11 +647,6 @@ cd "%DEPENDENCY_DIR%"
 git reset --hard
 git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
-               -DBOOST_ROOT="%BOOST_ROOT%"    ^
-               -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
-               -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
-               -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
-               -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
                -DCGAL_HEADER_ONLY=On
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
