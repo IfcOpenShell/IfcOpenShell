@@ -294,10 +294,6 @@ bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
         except Exception:
             pass
 
-        if result.returncode == 0:
-            self.report({"INFO"}, f"Blend metadata file saved to: {blendmetadata_path}")
-        else:
-            self.report({"ERROR"}, f"Failed to save blend metadata file: {result.stderr.decode()}")
         return {"FINISHED"}
 
 class LoadBlendMetadataAndIFC(bpy.types.Operator):
