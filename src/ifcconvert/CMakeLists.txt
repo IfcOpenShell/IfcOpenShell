@@ -16,4 +16,6 @@ target_link_libraries(IfcConvert
     ${CGAL_LIBRARIES} ${GLTF_LIBRARIES}
 )
 
-install(TARGETS IfcConvert)
+install(TARGETS IfcConvert
+    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+)

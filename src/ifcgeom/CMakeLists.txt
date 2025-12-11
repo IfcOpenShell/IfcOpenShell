@@ -31,8 +31,9 @@ if(NOT WASM_BUILD)
     target_link_libraries(IfcGeom IfcParse)
 endif()
 
-install(TARGETS IfcGeom)
-
+install(TARGETS IfcGeom
+    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+)
 install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
     DESTINATION ${INCLUDEDIR}/ifcgeom
 )

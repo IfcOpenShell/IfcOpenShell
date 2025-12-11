@@ -11,6 +11,8 @@ install(FILES ${IFCGEOM_SERIALIZATION_H_FILE}
     DESTINATION ${INCLUDEDIR}/ifcgeom/Serialization
 )
 
-install(TARGETS geometry_serializer ${geometry_serializer_libraries})
+install(TARGETS geometry_serializer ${geometry_serializer_libraries}
+    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+)
 
 set(geometry_serializer_libraries ${geometry_serializer_libraries} PARENT_SCOPE)

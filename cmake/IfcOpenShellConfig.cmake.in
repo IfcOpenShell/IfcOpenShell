@@ -1,0 +1,5 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/@CONFIG_TARGETS_FILENAME@")
+
+check_required_components("@PROJECT_NAME@")
