@@ -127,7 +127,6 @@ echo   Arguments    = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_INSTALL_DIR       = %BOOST_INSTALL_DIR%
-echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
 :: OCC_INCLUDE_DIR / OCC_LIBRARY_DIR are legacy vars, they're not defined by build-deps.cmd anymore.
 echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
 echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
