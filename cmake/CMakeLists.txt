@@ -197,11 +197,6 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
-if(WITH_CGAL)
-    find_package(CGAL REQUIRED)
-    set(CGAL_LIBRARIES CGAL::CGAL_INTERFACE)
-    list(APPEND GEOMETRY_KERNELS cgal)
-endif()
 
 if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
@@ -304,6 +299,15 @@ if(USE_MMAP)
     endif()
 
     add_definitions(-DUSE_MMAP)
+endif()
+
+# Handle CGAL after Boost settings are set, since CGAL will use them too.
+# Do `find_package(Boost)` only after this, to make sure `FindBoost` finds correct components.
+# Otherwise it will find components needed for CGAL and we might some libraries.
+if(WITH_CGAL)
+    find_package(CGAL REQUIRED)
+    set(CGAL_LIBRARIES CGAL::CGAL_INTERFACE)
+    list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
