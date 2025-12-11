@@ -35,7 +35,7 @@ from bonsai import get_debug_info
 import bonsai.bim
 import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
-from bonsai.bim.prop import Attribute
+from bonsai.bim.prop import Attribute, get_tab
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.module.model.prop import (
@@ -62,10 +62,9 @@ if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
 
 
-TAB_NAMES = ["PROJECT", "OBJECT", "GEOMETRY", "DRAWINGS", "SERVICES", "STRUCTURE", "SCHEDULING", "FM", "QUALITY", "BOOKMARK"]
-
 def get_tab_names():
-    return TAB_NAMES
+    enum_items = get_tab(None, None)
+    return [item[0] for item in enum_items if item is not None]
 
 def get_panel_tab_name(panel_class):
     if hasattr(panel_class, 'bim_tab_name'):
@@ -81,6 +80,23 @@ def should_show_panel(panel_id, panel_tab_name, context):
         return get_tab_visibility(panel_tab_name) and get_panel_visibility(panel_id, panel_tab_name)
     
     return False
+
+def initialize_tab_visibilities():
+    """Initialize tab visibility collection with all tabs set to visible by default."""
+    try:
+        bim_props = tool.Blender.get_bim_props()
+    except (AttributeError, AssertionError):
+        # Context not available during registration, skip initialization
+        return
+    
+    if len(bim_props.tab_visibilities) > 0:
+        return
+    
+    for tab_name in get_tab_names():
+        tab_vis = bim_props.tab_visibilities.add()
+        tab_vis.name = tab_name
+        tab_vis.is_visible = True
+
 
 def initialize_panel_properties():
     try:
@@ -161,14 +177,20 @@ def get_all_tab_panels(force_refresh=False):
 
 def get_tab_visibility(tab_name):
     bim_props = tool.Blender.get_bim_props()
-    prop_name = f"tab_visibility_{tab_name.lower()}"
-    return getattr(bim_props, prop_name, True)
+    tab_vis = bim_props.tab_visibilities.get(tab_name)
+    return tab_vis.is_visible if tab_vis else True
 
 
 def set_tab_visibility(tab_name, visible):
     bim_props = tool.Blender.get_bim_props()
-    prop_name = f"tab_visibility_{tab_name.lower()}"
-    setattr(bim_props, prop_name, visible)
+    tab_vis = bim_props.tab_visibilities.get(tab_name)
+    if tab_vis:
+        tab_vis.is_visible = visible
+    else:
+        # Create if doesn't exist
+        new_tab = bim_props.tab_visibilities.add()
+        new_tab.name = tab_name
+        new_tab.is_visible = visible
 
 
 def get_panel_visibility(panel_id, current_tab=None):
