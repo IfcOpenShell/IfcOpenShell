@@ -1756,22 +1756,25 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         bim_props = tool.Blender.get_bim_props()
         if bim_props.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
             tool.Ifc.set_path(output_file)
-        save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
-        if save_blend_file:
-            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         bim_props.is_dirty = False
         
         if tool.Blender.get_addon_preferences().user_ui_customization:
             try:
                 bpy.ops.bim.save_blend_metadata_file()
+                blendmetadata_path = output_file + ".metadata.blend"
+                self.report({"INFO"}, f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}')
             except Exception as e:
-                settings.logger.warning(f"Failed to save blend metadata file: {e}")
+                self.report({"ERROR"}, f"Failed to save blend metadata file: {e}")
+        else:
+            save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
+            if save_blend_file:
+                bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+            self.report(
+                {"INFO"},
+                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+            )
         
         bonsai.bim.handler.refresh_ui_data()
-        self.report(
-            {"INFO"},
-            f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
-        )
 
     @classmethod
     def description(cls, context, properties):
