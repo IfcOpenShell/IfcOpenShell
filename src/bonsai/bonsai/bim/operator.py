@@ -33,7 +33,7 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
 from enum import Enum
-from bonsai.bim.ui import TAB_PANELS, get_tab_visibility, set_tab_visibility, get_tab_names
+from bonsai.bim.ui import get_all_tab_panels, get_tab_visibility, set_tab_visibility, get_tab_names, get_panel_config, initialize_panel_properties
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -1725,24 +1725,29 @@ class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
 
     def execute(self, context):
         panel_name = self.action.replace("TOGGLE_VISIBILITY_", "")
-
-        for item in context.scene.tab_panels:
-            if item.name == panel_name:
-                item["visible"] = not item.get("visible", True)
-
-                prop_name = f"show_{panel_name.lower()}"
-                if hasattr(context.scene, prop_name):
-                    setattr(context.scene, prop_name, item["visible"])
-                    print(f"Toggled visibility for panel: {panel_name} to {'visible' if item['visible'] else 'hidden'}")
-                else:
-                    print(f"Property '{prop_name}' not found on Scene.")
-                break
-
+        active_tab = getattr(context.scene, "active_tab_name", None) or getattr(tool.Blender.get_bim_props(), "tab", None)
+        is_bookmark_tab = active_tab == "BOOKMARK"
+        
+        panel_config = get_panel_config(panel_name)
+        if panel_config:
+            if is_bookmark_tab:
+                panel_config.is_visible_in_bookmarks = not panel_config.is_visible_in_bookmarks
+                new_value = panel_config.is_visible_in_bookmarks
+            else:
+                panel_config.is_visible_in_tab = not panel_config.is_visible_in_tab
+                new_value = panel_config.is_visible_in_tab
+            
+            for item in context.scene.tab_panels:
+                if item.name == panel_name:
+                    item["visible"] = new_value
+                    break
+        
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
-
-        self.report({"INFO"}, f"Toggled visibility for {panel_name}.")
+        
+        tab_context = "Bookmarks" if is_bookmark_tab else "Tab"
+        self.report({"INFO"}, f"Toggled visibility for {panel_name} in {tab_context}.")
         return {"FINISHED"}
 
 
@@ -1757,40 +1762,20 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
 
     def execute(self, context):
         panel_name = self.action.replace("BOOKMARK_", "")
-
-        for item in context.scene.tab_panels:
-            if item.name == panel_name:
-                item["bookmarked"] = not item.get("bookmarked", False)
-
-                prop_name = f"bookmark_{panel_name.lower()}"
-                if hasattr(context.scene, prop_name):
-                    setattr(context.scene, prop_name, item["bookmarked"])
-                    print(
-                        f"Toggled bookmark for panel: {panel_name} to {'bookmarked' if item['bookmarked'] else 'Not bookmarked'}"
-                    )
-                else:
-                    print(f"Property '{prop_name}' not found on Scene.")
-
-                panel_label = item["bl_label"]
-                if item["bookmarked"]:
-                    if not any(p.get("bl_idname") == panel_name for p in TAB_PANELS["BOOKMARK"]):
-                        TAB_PANELS["BOOKMARK"].append({"bl_idname": panel_name, "bl_label": panel_label})
-                        print(f"Added {panel_name} to BOOKMARK tab.")
-                else:
-                    for i, p in enumerate(TAB_PANELS["BOOKMARK"]):
-                        if p.get("bl_idname") == panel_name:
-                            del TAB_PANELS["BOOKMARK"][i]
-                            print(f"Removed {panel_name} from BOOKMARK tab.")
-                            if context.scene.active_tab_name == "BOOKMARK":
-                                index = context.scene.tab_panels.find(panel_name)
-                                if index != -1:
-                                    context.scene.tab_panels.remove(index)
-                            break
-
+        panel_config = get_panel_config(panel_name)
+        
+        if panel_config:
+            panel_config.is_bookmarked = not panel_config.is_bookmarked
+            
+            for item in context.scene.tab_panels:
+                if item.name == panel_name:
+                    item["bookmarked"] = panel_config.is_bookmarked
+                    break
+        
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
-
+        
         self.report({"INFO"}, f"Toggled bookmark for {panel_name}.")
         return {"FINISHED"}
 
@@ -1805,25 +1790,33 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
     tab_name: bpy.props.StringProperty()
 
     def invoke(self, context, event):
+        
         context.scene.active_tab_name = self.tab_name
-
         context.scene.tab_panels.clear()
-        for panel_data in TAB_PANELS.get(self.tab_name, []):
+        
+        initialize_panel_properties()
+        all_panels = get_all_tab_panels(force_refresh=True)
+        
+        for panel_data in all_panels.get(self.tab_name, []):
             panel_name = panel_data.get("bl_idname", "")
             panel_label = panel_data.get("bl_label", "")
             if not panel_name or not panel_label:
                 continue
+                
             item = context.scene.tab_panels.add()
             item.name = panel_name
             item["bl_label"] = panel_label
 
-            show_prop_name = f"show_{panel_name.lower()}"
-            bookmark_prop_name = f"bookmark_{panel_name.lower()}"
-
-            item["visible"] = getattr(context.scene, show_prop_name, True)
-            item["bookmarked"] = getattr(context.scene, bookmark_prop_name, False)
-
-        print(f"Tab Panels for {self.tab_name}: {[item.name for item in context.scene.tab_panels]}")
+            panel_config = get_panel_config(panel_name)
+            if panel_config:
+                if self.tab_name == "BOOKMARK":
+                    item["visible"] = panel_config.is_visible_in_bookmarks
+                else:
+                    item["visible"] = panel_config.is_visible_in_tab
+                item["bookmarked"] = panel_config.is_bookmarked
+            else:
+                item["visible"] = True
+                item["bookmarked"] = False
 
         return context.window_manager.invoke_popup(self)
 
@@ -1836,11 +1829,15 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
 
     def execute(self, context):
         for item in context.scene.tab_panels:
-            show_prop_name = f"show_{item.name.lower()}"
-            bookmark_prop_name = f"bookmark_{item.name.lower()}"
+            panel_config = get_panel_config(item.name)
+            if panel_config:
+                if self.tab_name == "BOOKMARK":
+                    panel_config.is_visible_in_bookmarks = item["visible"]
+                else:
+                    panel_config.is_visible_in_tab = item["visible"]
+                panel_config.is_bookmarked = item["bookmarked"]
 
-            setattr(context.scene, show_prop_name, item["visible"])
-            setattr(context.scene, bookmark_prop_name, item["bookmarked"])
+
 
         self.report({"INFO"}, f"Panels for {self.tab_name} managed successfully.")
         return {"FINISHED"}
@@ -1912,14 +1909,13 @@ class BIM_OT_reset_ui_layout(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        global TAB_PANELS
 
         for tab_name in get_tab_names():
             set_tab_visibility(tab_name, True)
 
-        TAB_PANELS["BOOKMARK"] = [{}]
+        get_all_tab_panels()["BOOKMARK"] = [{}]
 
-        for tab_name, panels in TAB_PANELS.items():
+        for tab_name, panels in get_all_tab_panels().items():
             for panel in panels:
                 panel_name = panel.get("bl_idname", "")
                 if not panel_name:
