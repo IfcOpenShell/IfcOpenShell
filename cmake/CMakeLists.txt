@@ -27,16 +27,6 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if (VERSION_OVERRIDE)
-    file(READ "../VERSION" "RELEASE_VERSION_")
-    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
-    message(STATUS "Detected version '${RELEASE_VERSION}'")
-else()
-    set(RELEASE_VERSION "0.8.0")
-endif()
-
-project(IfcOpenShell VERSION ${RELEASE_VERSION})
-
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 if(POLICY CMP0141) # 3.25+
@@ -96,12 +86,23 @@ option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(USE_DEBUG_PYTHON "Use debug binaries when building Debug IfcPython on Windows." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, requires git" OFF)
+option(VERSION_OVERRIDE "Override the version defined in buildinfo.cpp with the file VERSION in the repository root" OFF)
 
 set(
     PYTHON_MODULE_INSTALL_DIR
     "" CACHE PATH
     "Directory to install IfcPython package to. By default package is installed in found Python's site-packages."
 )
+
+if (VERSION_OVERRIDE)
+    file(READ "../VERSION" "RELEASE_VERSION_")
+    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
+    message(STATUS "Detected version '${RELEASE_VERSION}'")
+else()
+    set(RELEASE_VERSION "0.8.0")
+endif()
+
+project(IfcOpenShell VERSION ${RELEASE_VERSION})
 
 # Make sure CMake modules in this project are found first
 list(PREPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
