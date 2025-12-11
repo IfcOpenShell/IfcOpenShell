@@ -1004,6 +1004,10 @@ class BIM_PT_tabs(Panel):
         # Yes, that's right.
         row_left.alignment = "CENTER"
         row_left.scale_y = 0.2
+
+        if not tool.Blender.get_addon_preferences().user_ui_customization:
+            row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+        
         for tab in get_tab_names():
             # Draw a little underscore below the active tab icon.
             if get_tab_visibility(tab):
@@ -1012,7 +1016,6 @@ class BIM_PT_tabs(Panel):
                 else:
                     row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
         row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)  # space for Switch
-
         col_right = split.column(align=True)
         row_right = col_right.row(align=True)
         row_right.alignment = "RIGHT"
