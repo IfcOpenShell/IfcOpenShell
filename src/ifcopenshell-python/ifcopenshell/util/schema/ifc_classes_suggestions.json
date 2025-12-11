@@ -54,12 +54,12 @@
     "IfcFireSuppressionTerminal": [
         {
             "name": "Fire Extinguisher"
-        },
+        }
     ],
     "IfcFireSuppressionTerminalType": [
         {
             "name": "Fire Extinguisher"
-        },
+        }
     ],
     "IfcFurniture": [
         {
