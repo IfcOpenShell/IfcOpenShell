@@ -144,6 +144,7 @@ classes = [
     prop.ISODuration,
     prop.BIMAreaProperties,
     prop.BIMTabProperties,
+    prop.BIMPanelProperties,  # Must be registered before BIMProperties
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,
@@ -238,42 +239,6 @@ def on_register(scene):
     is_registering = False
 
 
-def register_panel_visibility_properties():
-    for panel_list in ui.TAB_PANELS.values():
-        for panel in panel_list:
-            bl_idname = panel.get("bl_idname", "")
-            prop_name = f"show_{bl_idname.lower()}"
-            setattr(
-                bpy.types.Scene,
-                prop_name,
-                bpy.props.BoolProperty(
-                    name=f"Show {bl_idname}",
-                    description=f"Show or hide the {bl_idname} panel",
-                    default=True,
-                ),
-            )
-            prop_name = f"bookmark_{bl_idname.lower()}"
-            setattr(
-                bpy.types.Scene,
-                prop_name,
-                bpy.props.BoolProperty(
-                    name=f"Bookmark {bl_idname}",
-                    description=f"Move to Bookmark or not {bl_idname} panel",
-                    default=False,
-                ),
-            )
-
-
-def unregister_panel_visibility_properties():
-    for panel_list in ui.TAB_PANELS.values():
-        for panel in panel_list:
-            bl_idname = panel.get("bl_idname", "")
-            prop_name = f"show_{bl_idname.lower()}"
-            if hasattr(bpy.types.Scene, prop_name):
-                delattr(bpy.types.Scene, prop_name)
-            prop_name = f"bookmark_{bl_idname.lower()}"
-            if hasattr(bpy.types.Scene, prop_name):
-                delattr(bpy.types.Scene, prop_name)
 
 
 # Classes that need to be registered after modules (due to cross-module dependencies)
@@ -319,6 +284,9 @@ def register():
     bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
+    
+    ui.initialize_panel_properties()
+    
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.append(ui.draw_custom_context_menu)
     bpy.types.STATUSBAR_HT_header.append(ui.draw_statusbar)
@@ -357,7 +325,6 @@ def register():
     bpy.types.Scene.active_tab_name = bpy.props.StringProperty()
     bpy.types.Scene.tab_panels = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
     bpy.types.Scene.active_tab_panel_index = bpy.props.IntProperty()
-    register_panel_visibility_properties()
 
 
 def unregister():

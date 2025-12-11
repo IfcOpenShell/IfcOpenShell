@@ -62,66 +62,101 @@ if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
 
 
-TAB_PANELS = {
-    "PROJECT": [
-        #        "BIM_PT_tab_new_project_wizard",
-        {"bl_idname": "BIM_PT_tab_project_info", "bl_label": "Project Info"},
-        {"bl_idname": "BIM_PT_tab_spatial", "bl_label": "Spatial"},
-        {"bl_idname": "BIM_PT_tab_project_setup", "bl_label": "Project Setup"},
-        {"bl_idname": "BIM_PT_tab_geometry", "bl_label": "Geometry"},
-        {"bl_idname": "BIM_PT_tab_stakeholders", "bl_label": "Stakeholders"},
-        {"bl_idname": "BIM_PT_tab_grouping_and_filtering", "bl_label": "Grouping and Filtering"},
-    ],
-    "OBJECT": [
-        {"bl_idname": "BIM_PT_tab_object_metadata", "bl_label": "Object Metadata"},
-        {"bl_idname": "BIM_PT_tab_misc", "bl_label": "Misc"},
-    ],
-    "GEOMETRY": [
-        {"bl_idname": "BIM_PT_tab_placement", "bl_label": "Placement"},
-        {"bl_idname": "BIM_PT_tab_representations", "bl_label": "Representations"},
-        {"bl_idname": "BIM_PT_tab_geometric_relationships", "bl_label": "Geometric Relationships"},
-        {"bl_idname": "BIM_PT_tab_parametric_geometry", "bl_label": "Parametric Geometry"},
-        {"bl_idname": "BIM_PT_tab_object_materials", "bl_label": "Object Materials"},
-        {"bl_idname": "BIM_PT_tab_materials", "bl_label": "Materials"},
-        {"bl_idname": "BIM_PT_tab_styles", "bl_label": "Styles"},
-        {"bl_idname": "BIM_PT_tab_profiles", "bl_label": "Profiles"},
-    ],
-    "DRAWINGS": [
-        {"bl_idname": "BIM_PT_tab_sheets", "bl_label": "Sheets"},
-        {"bl_idname": "BIM_PT_tab_drawings", "bl_label": "Drawings"},
-        {"bl_idname": "BIM_PT_tab_schedules", "bl_label": "Schedules"},
-        {"bl_idname": "BIM_PT_tab_references", "bl_label": "References"},
-    ],
-    "SERVICES": [
-        {"bl_idname": "BIM_PT_tab_services", "bl_label": "Services"},
-        {"bl_idname": "BIM_PT_tab_zones", "bl_label": "Zones"},
-        {"bl_idname": "BIM_PT_tab_solar_analysis", "bl_label": "Solar Analysis"},
-        {"bl_idname": "BIM_PT_tab_lighting", "bl_label": "Lighting"},
-    ],
-    "STRUCTURE": [
-        {"bl_idname": "BIM_PT_tab_structural", "bl_label": "Structural"},
-    ],
-    "SCHEDULING": [
-        {"bl_idname": "BIM_PT_tab_status", "bl_label": "Status"},
-        {"bl_idname": "BIM_PT_tab_qto", "bl_label": "Quantity Take-off"},
-        {"bl_idname": "BIM_PT_tab_resources", "bl_label": "Resources"},
-        {"bl_idname": "BIM_PT_tab_cost", "bl_label": "Cost"},
-        {"bl_idname": "BIM_PT_tab_sequence", "bl_label": "Construction Scheduling"},
-    ],
-    "FM": [
-        {"bl_idname": "BIM_PT_tab_handover", "bl_label": "Handover"},
-        {"bl_idname": "BIM_PT_tab_operations", "bl_label": "Operations"},
-    ],
-    "QUALITY": [
-        {"bl_idname": "BIM_PT_tab_quality_control", "bl_label": "Quality Control"},
-        {"bl_idname": "BIM_PT_tab_clash_detection", "bl_label": "Clash Detection"},
-        {"bl_idname": "BIM_PT_tab_collaboration", "bl_label": "Collaboration"},
-        {"bl_idname": "BIM_PT_tab_sandbox", "bl_label": "Sandbox"},
-    ],
-    "BOOKMARK": [
-        {},
-    ],
-}
+TAB_NAMES = ["PROJECT", "OBJECT", "GEOMETRY", "DRAWINGS", "SERVICES", "STRUCTURE", "SCHEDULING", "FM", "QUALITY", "BOOKMARK"]
+
+def get_tab_names():
+    return TAB_NAMES
+
+def get_panel_tab_name(panel_class):
+    if hasattr(panel_class, 'bim_tab_name'):
+        return panel_class.bim_tab_name
+    return "PROJECT"  # Default fallback
+
+
+def should_show_panel(panel_id, panel_tab_name, context):
+    if tool.Blender.is_tab(context, "BOOKMARK"):
+        return is_panel_bookmarked(panel_id) and get_panel_visibility(panel_id, "BOOKMARK")
+    
+    if tool.Blender.is_tab(context, panel_tab_name):
+        return get_tab_visibility(panel_tab_name) and get_panel_visibility(panel_id, panel_tab_name)
+    
+    return False
+
+def initialize_panel_properties():
+    try:
+        bim_props = tool.Blender.get_bim_props()
+        
+        if len(bim_props.panel_properties) > 0:
+            return
+        
+        for attr_name in dir(bpy.types):
+            if attr_name.startswith("BIM_PT_tab_"):
+                try:
+                    panel_class = getattr(bpy.types, attr_name)
+                    if not hasattr(panel_class, 'bl_idname'):
+                        continue
+                    
+                    panel_id = panel_class.bl_idname
+                    
+                    prop = bim_props.panel_properties.add()
+                    prop.name = panel_id
+                    prop.is_visible_in_tab = True
+                    prop.is_visible_in_bookmarks = True
+                    prop.is_bookmarked = False
+                except:
+                    pass
+    except:
+        pass
+
+def get_panel_config(panel_id):
+    try:
+        bim_props = tool.Blender.get_bim_props()
+        
+        for prop in bim_props.panel_properties:
+            if prop.name == panel_id:
+                return prop
+        
+        prop = bim_props.panel_properties.add()
+        prop.name = panel_id
+        prop.is_visible_in_tab = True
+        prop.is_visible_in_bookmarks = True
+        prop.is_bookmarked = False
+        return prop
+    except:
+        return None
+
+def get_all_tab_panels(force_refresh=False):
+    panels = {tab_name: [] for tab_name in get_tab_names() if tab_name != "BOOKMARK"}
+    panels["BOOKMARK"] = []
+    
+    try:
+        bim_props = tool.Blender.get_bim_props()
+        for prop in bim_props.panel_properties:
+            try:
+                panel_class = getattr(bpy.types, prop.name, None)
+                if panel_class:
+                    tab_name = get_panel_tab_name(panel_class)
+                    if tab_name and tab_name != "BOOKMARK":
+                        bl_label = getattr(panel_class, "bl_label", prop.name)
+                        panels[tab_name].append({"bl_idname": prop.name, "bl_label": bl_label})
+            except:
+                pass
+            
+            if prop.is_bookmarked:
+                try:
+                    panel_class = getattr(bpy.types, prop.name, None)
+                    if panel_class:
+                        bl_label = getattr(panel_class, "bl_label", prop.name)
+                        panels["BOOKMARK"].append({"bl_idname": prop.name, "bl_label": bl_label})
+                except:
+                    pass
+    except:
+        pass
+    
+    if not panels["BOOKMARK"]:
+        panels["BOOKMARK"] = [{}]
+    
+    return panels
 
 
 def get_tab_visibility(tab_name):
@@ -133,31 +168,29 @@ def get_tab_visibility(tab_name):
 def set_tab_visibility(tab_name, visible):
     bim_props = tool.Blender.get_bim_props()
     prop_name = f"tab_visibility_{tab_name.lower()}"
-    if hasattr(bim_props, prop_name):
-        setattr(bim_props, prop_name, visible)
+    setattr(bim_props, prop_name, visible)
 
 
-def get_tab_names():
-    return list(TAB_PANELS.keys())
+def get_panel_visibility(panel_id, current_tab=None):
+    try:
+        panel_config = get_panel_config(panel_id)
+        if panel_config:
+            if current_tab == "BOOKMARK":
+                return panel_config.is_visible_in_bookmarks
+            else:
+                return panel_config.is_visible_in_tab
+    except:
+        pass
+    return True
 
-
-def get_tab_name(bl_idname):
-    return next(
-        (k for k, v in reversed(list(TAB_PANELS.items())) if k != "BOOKMARK" and any(d.get("bl_idname") == bl_idname for d in v)),
-        "BOOKMARK",
-    )
-
-
-def get_bl_label(bl_idname):
-    return next(
-        (
-            panel["bl_label"]
-            for panels in TAB_PANELS.values()
-            for panel in panels
-            if isinstance(panel, dict) and panel.get("bl_idname") == bl_idname
-        ),
-        "NO LABEL",
-    )
+def is_panel_bookmarked(panel_id):
+    try:
+        panel_config = get_panel_config(panel_id)
+        if panel_config:
+            return panel_config.is_bookmarked
+    except:
+        pass
+    return False
 
 
 class IFCFileSelector:
@@ -1181,12 +1214,13 @@ class BIM_PT_tab_new_project_wizard(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        if not getattr(context.scene, "show_bim_pt_tab_new_project_wizard", True):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not tool.Blender.is_tab(context, "PROJECT"):
+        if not tool.Blender.is_tab(context, cls.bim_tab_name):
             return False
         bim_props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
@@ -1202,29 +1236,24 @@ class BIM_PT_tab_new_project_wizard(Panel):
 
 class BIM_PT_tab_project_info(Panel):
     bl_idname = "BIM_PT_tab_project_info"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+        if tool.Blender.is_tab(context, cls.bim_tab_name):
             bim_props = tool.Blender.get_bim_props()
             pprops = tool.Project.get_project_props()
             if pprops.is_loading:
                 return True
             elif tool.Ifc.get() or bim_props.ifc_file:
                 return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         layout = self.layout
@@ -1233,24 +1262,19 @@ class BIM_PT_tab_project_info(Panel):
 
 class BIM_PT_tab_spatial(Panel):
     bl_idname = "BIM_PT_tab_spatial"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Spatial"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1258,24 +1282,19 @@ class BIM_PT_tab_spatial(Panel):
 
 class BIM_PT_tab_project_setup(Panel):
     bl_idname = "BIM_PT_tab_project_setup"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Project Setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+        if tool.Blender.is_tab(context, cls.bim_tab_name):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1283,25 +1302,20 @@ class BIM_PT_tab_project_setup(Panel):
 
 class BIM_PT_tab_stakeholders(Panel):
     bl_idname = "BIM_PT_tab_stakeholders"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Stakeholders"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1309,24 +1323,19 @@ class BIM_PT_tab_stakeholders(Panel):
 
 class BIM_PT_tab_collaboration(Panel):
     bl_idname = "BIM_PT_tab_collaboration"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Collaboration"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "QUALITY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+        if tool.Blender.is_tab(context, cls.bim_tab_name):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1334,25 +1343,20 @@ class BIM_PT_tab_collaboration(Panel):
 
 class BIM_PT_tab_grouping_and_filtering(Panel):
     bl_idname = "BIM_PT_tab_grouping_and_filtering"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Grouping and Filtering"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"HEADER_LAYOUT_EXPAND"}
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1368,24 +1372,19 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
 
 class BIM_PT_tab_geometry(Panel):
     bl_idname = "BIM_PT_tab_geometry"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1393,24 +1392,19 @@ class BIM_PT_tab_geometry(Panel):
 
 class BIM_PT_tab_status(Panel):
     bl_idname = "BIM_PT_tab_status"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Status"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1418,24 +1412,19 @@ class BIM_PT_tab_status(Panel):
 
 class BIM_PT_tab_qto(Panel):
     bl_idname = "BIM_PT_tab_qto"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Quantity Take-off"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1443,24 +1432,19 @@ class BIM_PT_tab_qto(Panel):
 
 class BIM_PT_tab_resources(Panel):
     bl_idname = "BIM_PT_tab_resources"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Resources"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1468,24 +1452,19 @@ class BIM_PT_tab_resources(Panel):
 
 class BIM_PT_tab_cost(Panel):
     bl_idname = "BIM_PT_tab_cost"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Cost"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1493,24 +1472,19 @@ class BIM_PT_tab_cost(Panel):
 
 class BIM_PT_tab_sequence(Panel):
     bl_idname = "BIM_PT_tab_sequence"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Construction Scheduling"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1518,24 +1492,19 @@ class BIM_PT_tab_sequence(Panel):
 
 class BIM_PT_tab_structural(Panel):
     bl_idname = "BIM_PT_tab_structural"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Structural"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "STRUCTURE"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1543,24 +1512,19 @@ class BIM_PT_tab_structural(Panel):
 
 class BIM_PT_tab_services(Panel):
     bl_idname = "BIM_PT_tab_services"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SERVICES"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1568,24 +1532,19 @@ class BIM_PT_tab_services(Panel):
 
 class BIM_PT_tab_lighting(Panel):
     bl_idname = "BIM_PT_tab_lighting"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Lighting"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SERVICES"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1593,24 +1552,19 @@ class BIM_PT_tab_lighting(Panel):
 
 class BIM_PT_tab_zones(Panel):
     bl_idname = "BIM_PT_tab_zones"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Zones"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SERVICES"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1618,24 +1572,19 @@ class BIM_PT_tab_zones(Panel):
 
 class BIM_PT_tab_solar_analysis(Panel):
     bl_idname = "BIM_PT_tab_solar_analysis"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Solar Analysis"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SERVICES"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1643,24 +1592,19 @@ class BIM_PT_tab_solar_analysis(Panel):
 
 class BIM_PT_tab_quality_control(Panel):
     bl_idname = "BIM_PT_tab_quality_control"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Quality Control"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "QUALITY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+        if tool.Blender.is_tab(context, cls.bim_tab_name):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1668,24 +1612,19 @@ class BIM_PT_tab_quality_control(Panel):
 
 class BIM_PT_tab_clash_detection(Panel):
     bl_idname = "BIM_PT_tab_clash_detection"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Clash Detection"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "QUALITY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+        if tool.Blender.is_tab(context, cls.bim_tab_name):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1693,25 +1632,20 @@ class BIM_PT_tab_clash_detection(Panel):
 
 class BIM_PT_tab_sandbox(Panel):
     bl_idname = "BIM_PT_tab_sandbox"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Sandbox"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "QUALITY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+        if tool.Blender.is_tab(context, cls.bim_tab_name):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         row = self.layout.row()
@@ -1726,18 +1660,15 @@ class BIM_PT_tab_object_metadata(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "OBJECT"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
-            return False
-        if not getattr(context.scene, prop_visible, True):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
         props = tool.Project.get_project_props()
         if (
-            tool.Blender.is_tab(context, get_tab_name(cls.bl_idname))
+            tool.Blender.is_tab(context, cls.bim_tab_name)
             and tool.Ifc.get()
             and (obj := context.active_object)
             # Hide links empty handles.
@@ -1748,9 +1679,7 @@ class BIM_PT_tab_object_metadata(Panel):
             )
         ):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1758,30 +1687,25 @@ class BIM_PT_tab_object_metadata(Panel):
 
 class BIM_PT_tab_placement(Panel):
     bl_idname = "BIM_PT_tab_placement"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Placement"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
-            return False
-        if not getattr(context.scene, prop_visible, True):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
         if (
-            tool.Blender.is_tab(context, get_tab_name(cls.bl_idname))
+            tool.Blender.is_tab(context, cls.bim_tab_name)
             and tool.Ifc.get()
             and (obj := context.active_object)
             and tool.Ifc.get_entity(obj)
         ):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1789,29 +1713,18 @@ class BIM_PT_tab_placement(Panel):
 
 class BIM_PT_tab_representations(Panel):
     bl_idname = "BIM_PT_tab_representations"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Representations"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if (
-            tool.Blender.is_tab(context, get_tab_name(cls.bl_idname))
-            and tool.Ifc.get()
-            and tool.Geometry.get_active_or_representation_obj()
-        ):
-            return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1819,26 +1732,21 @@ class BIM_PT_tab_representations(Panel):
 
 class BIM_PT_tab_geometric_relationships(Panel):
     bl_idname = "BIM_PT_tab_geometric_relationships"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Geometric Relationships"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1846,31 +1754,19 @@ class BIM_PT_tab_geometric_relationships(Panel):
 
 class BIM_PT_tab_parametric_geometry(Panel):
     bl_idname = "BIM_PT_tab_parametric_geometry"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Parametric Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if (
-            tool.Blender.is_tab(context, get_tab_name(cls.bl_idname))
-            and tool.Ifc.get()
-            and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
-        ):
-            return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1878,30 +1774,18 @@ class BIM_PT_tab_parametric_geometry(Panel):
 
 class BIM_PT_tab_object_materials(Panel):
     bl_idname = "BIM_PT_tab_object_materials"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Object Materials"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if (
-            tool.Blender.is_tab(context, get_tab_name(cls.bl_idname))
-            and tool.Ifc.get()
-            and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
-        ):
-            return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1909,25 +1793,20 @@ class BIM_PT_tab_object_materials(Panel):
 
 class BIM_PT_tab_materials(Panel):
     bl_idname = "BIM_PT_tab_materials"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Materials"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1935,25 +1814,20 @@ class BIM_PT_tab_materials(Panel):
 
 class BIM_PT_tab_styles(Panel):
     bl_idname = "BIM_PT_tab_styles"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Styles"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1961,25 +1835,20 @@ class BIM_PT_tab_styles(Panel):
 
 class BIM_PT_tab_profiles(Panel):
     bl_idname = "BIM_PT_tab_profiles"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Profiles"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1987,25 +1856,20 @@ class BIM_PT_tab_profiles(Panel):
 
 class BIM_PT_tab_sheets(Panel):
     bl_idname = "BIM_PT_tab_sheets"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Sheets"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "DRAWINGS"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -2013,25 +1877,20 @@ class BIM_PT_tab_sheets(Panel):
 
 class BIM_PT_tab_drawings(Panel):
     bl_idname = "BIM_PT_tab_drawings"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Drawings"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "DRAWINGS"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -2039,25 +1898,20 @@ class BIM_PT_tab_drawings(Panel):
 
 class BIM_PT_tab_schedules(Panel):
     bl_idname = "BIM_PT_tab_schedules"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Schedules"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "DRAWINGS"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -2065,25 +1919,20 @@ class BIM_PT_tab_schedules(Panel):
 
 class BIM_PT_tab_references(Panel):
     bl_idname = "BIM_PT_tab_references"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "References"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "DRAWINGS"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -2091,26 +1940,21 @@ class BIM_PT_tab_references(Panel):
 
 class BIM_PT_tab_misc(Panel):
     bl_idname = "BIM_PT_tab_misc"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Misc"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "OBJECT"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)) and tool.Ifc.get():
+        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -2118,25 +1962,20 @@ class BIM_PT_tab_misc(Panel):
 
 class BIM_PT_tab_handover(Panel):
     bl_idname = "BIM_PT_tab_handover"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Handover"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "FM"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+        if tool.Blender.is_tab(context, cls.bim_tab_name):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -2144,25 +1983,20 @@ class BIM_PT_tab_handover(Panel):
 
 class BIM_PT_tab_operations(Panel):
     bl_idname = "BIM_PT_tab_operations"
-    bl_label = get_bl_label(bl_idname)
+    bl_label = "Operations"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 2
+    bim_tab_name = "FM"
 
     @classmethod
     def poll(cls, context):
-        prop_bookmark = f"bookmark_{cls.bl_idname.lower()}"
-        prop_visible = f"show_{cls.bl_idname.lower()}"
-        if not get_tab_visibility(get_tab_name(cls.bl_idname)):
+        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
             return False
-        if not getattr(context.scene, prop_visible, True):
-            return False
-        if tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+        if tool.Blender.is_tab(context, cls.bim_tab_name):
             return True
-        if tool.Blender.is_tab(context, "BOOKMARK") and getattr(context.scene, prop_bookmark, False):
-            return True
-        return False
+        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass

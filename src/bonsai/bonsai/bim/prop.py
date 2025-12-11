@@ -530,6 +530,17 @@ class BIMTabProperties(PropertyGroup):
         inactive_tab: bool
 
 
+class BIMPanelProperties(PropertyGroup):
+    is_visible_in_tab: BoolProperty(name="Is Visible in Tab", default=True)
+    is_visible_in_bookmarks: BoolProperty(name="Is Visible in Bookmarks", default=True)
+    is_bookmarked: BoolProperty(name="Is Bookmarked", default=False)
+
+    if TYPE_CHECKING:
+        is_visible_in_tab: bool
+        is_visible_in_bookmarks: bool
+        is_bookmarked: bool
+
+
 class BIMProperties(PropertyGroup):
     is_dirty: BoolProperty(name="Is Dirty", default=False)
     schema_dir: StringProperty(
@@ -623,6 +634,7 @@ class BIMProperties(PropertyGroup):
     tab_visibility_fm: BoolProperty(name="FM Tab Visible", default=True)
     tab_visibility_quality: BoolProperty(name="Quality Tab Visible", default=True)
     tab_visibility_bookmark: BoolProperty(name="Bookmark Tab Visible", default=True)
+    panel_properties: CollectionProperty(type=BIMPanelProperties, name="Panel Properties")
 
     if TYPE_CHECKING:
         is_dirty: bool
@@ -648,6 +660,7 @@ class BIMProperties(PropertyGroup):
         tab_visibility_fm: bool
         tab_visibility_quality: bool
         tab_visibility_bookmark: bool
+        panel_properties: bpy.types.bpy_prop_collection[BIMPanelProperties]
 
 
 class IfcParameter(PropertyGroup):
