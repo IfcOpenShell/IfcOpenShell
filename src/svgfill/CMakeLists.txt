@@ -56,7 +56,7 @@ file(GLOB LIB_H_FILES src/*.h)
 file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp)
 set(LIB_SRC_FILES ${LIB_H_FILES} ${LIB_CPP_FILES})
 add_library(svgfill ${LIB_SRC_FILES})
-target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 CGAL::CGAL)
+target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 CGAL::CGAL_INTERFACE)
 
 add_executable(svgfill_exe src/main.cpp)
 target_link_libraries(svgfill_exe svgfill)

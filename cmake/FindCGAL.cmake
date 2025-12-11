@@ -10,10 +10,10 @@
 # Input variables could also be provided as environment variables.
 #
 # Output targets:
-# - `CGAL::CGAL`
+# - `CGAL::CGAL_INTERFACE`
 #
 
-if(TARGET CGAL::CGAL)
+if(TARGET CGAL::CGAL_INTERFACE)
     return()
 endif()
 
@@ -56,5 +56,9 @@ else()
     message(STATUS "CGAL: found config at '${CGAL_DIR}'.")
 endif()
 
-target_compile_definitions(CGAL::CGAL INTERFACE IFOPSH_WITH_CGAL)
+# Adding another `CGAL_INTERFACE` target, because we want to add compile definitions to it,
+# but in `CGALconfig.cmake` `CGAL::CGAL` is an alias, so you can't add properties to it.
+add_library(CGAL::CGAL_INTERFACE INTERFACE IMPORTED)
+target_link_libraries(CGAL::CGAL_INTERFACE INTERFACE CGAL::CGAL)
+target_compile_definitions(CGAL::CGAL_INTERFACE INTERFACE IFOPSH_WITH_CGAL)
 set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)

@@ -199,7 +199,7 @@ endforeach()
 
 if(WITH_CGAL)
     find_package(CGAL REQUIRED)
-    set(CGAL_LIBRARIES CGAL::CGAL)
+    set(CGAL_LIBRARIES CGAL::CGAL_INTERFACE)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
