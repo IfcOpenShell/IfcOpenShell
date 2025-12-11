@@ -702,7 +702,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Show mass and time units section in the new project wizard panel",
         default=False,
     )
-    
+        user_ui_customization: BoolProperty(
+        name="User UI Customization",
+        description="Enable user interface customization features (hide/show tabs and panels, bookmark panels) and save the session settings as part of the .metadata.blend file",
+        default=False,
+    )
+
     chain_filter_with_set_operations: BoolProperty(
         name="NEW filter mode: Enable chained filters with set operations",
         description="Enable chaining search filters with set operations: ADD (union: combine sets), SUBTRACT (difference: remove from set), FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values",
@@ -753,6 +758,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         default_filter_with_set_operations_for_globalid_and_class: bool
+        user_ui_customization: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -943,6 +949,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = box.row(align=True)
         row.prop(self, "default_filter_with_set_operations_for_globalid_and_class")
         row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/comment/27030"
+        layout.prop(self, "user_ui_customization")
 
 
 # Scene panel groups
@@ -989,8 +996,8 @@ class BIM_PT_tabs(Panel):
             self.draw_tab_entry(row_left, "PACKAGE", "FM", True, aprops.tab == "FM")
         if get_tab_visibility("QUALITY"):
             self.draw_tab_entry(row_left, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-        if get_tab_visibility("BOOKMARK"):
-            self.draw_tab_entry(row_left, "SOLO_ON", "BOOKMARK", True, aprops.tab == "BOOKMARK")  # New BOOKMARK tab
+        if tool.Blender.get_addon_preferences().user_ui_customization and get_tab_visibility("BOOKMARK"):
+            self.draw_tab_entry(row_left, "SOLO_ON", "BOOKMARK", True, aprops.tab == "BOOKMARK")
         row_left.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
         row_left = col_left.row(align=True)
@@ -1010,16 +1017,17 @@ class BIM_PT_tabs(Panel):
         row_right = col_right.row(align=True)
         row_right.alignment = "RIGHT"
 
-        row_right.operator("bim.manage_tab_visibility", icon="PREFERENCES", text="")
+        if tool.Blender.get_addon_preferences().user_ui_customization:
+            row_right.operator("bim.manage_tab_visibility", icon="PREFERENCES", text="")
 
         row = self.layout.row(align=True)
         row.prop(aprops, "tab", text="")
 
-        # Add gear icons for all tabs except SWITCH_TAB
-        for tab in get_tab_names():
-            if get_tab_visibility(tab):
-                if aprops.tab == tab:
-                    row.operator("bim.manage_tab_panels", text="", icon="PREFERENCES").tab_name = tab
+        if tool.Blender.get_addon_preferences().user_ui_customization:
+            for tab in get_tab_names():
+                if get_tab_visibility(tab):
+                    if aprops.tab == tab:
+                        row.operator("bim.manage_tab_panels", text="", icon="PREFERENCES").tab_name = tab
 
         if bonsai.REINSTALLED_BBIM_VERSION:
             box = self.layout.box()
