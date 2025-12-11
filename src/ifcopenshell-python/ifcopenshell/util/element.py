@@ -477,7 +477,7 @@ def get_elements_by_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell
     """Retrieve the elements (or element types) that are using the provided property set."""
     is_ifc2x3 = pset.file.schema == "IFC2X3"
     elements = set()
-    if pset.is_a("IfcPropertySet") or pset.is_a("IfcPreDefinedPropertySet") or pset.is_a("IfcElementQuantity"):
+    if pset.is_a("IfcPropertySetDefinition"):
         rels = pset.PropertyDefinitionOf if is_ifc2x3 else pset.DefinesOccurrence
         for rel in rels:
             elements.update(rel.RelatedObjects)
