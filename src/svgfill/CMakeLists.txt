@@ -72,5 +72,7 @@ if(WIN32)
     target_link_options(svgfill_exe PRIVATE "/NOIMPLIB")
 endif()
 
-install(TARGETS svgfill_exe svgfill)
+install(TARGETS svgfill_exe svgfill
+    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+)
 install(FILES ${LIB_H_FILES} DESTINATION ${INCLUDEDIR})

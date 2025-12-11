@@ -12,6 +12,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
     set_property(TARGET ${KERNEL_TARGET} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
     list(APPEND kernel_libraries ${KERNEL_TARGET})
     target_link_libraries(${KERNEL_TARGET} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
+    install(TARGETS ${KERNEL_TARGET}
+        EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+    )
 
     if(${kernel} STREQUAL "cgal")
         find_package(CGAL REQUIRED)
@@ -24,6 +27,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
         list(APPEND kernel_libraries ${KERNEL_TARGET_SIMPLE})
         target_link_libraries(${KERNEL_TARGET_SIMPLE} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
         target_link_libraries(${KERNEL_TARGET_SIMPLE} CGAL::CGAL_INTERFACE)
+        install(TARGETS ${KERNEL_TARGET_SIMPLE}
+            EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+        )
     elseif(${kernel} STREQUAL "opencascade")
         target_link_libraries(${KERNEL_TARGET} ${OpenCASCADE_LIBRARIES})
     endif()

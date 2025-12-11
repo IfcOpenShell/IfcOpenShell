@@ -170,6 +170,8 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
+set(IFCOPENSHELL_EXPORT_TARGETS "${PROJECT_NAME}Targets")
+
 if(BUILD_SHARED_LIBS)
     add_definitions(-DIFC_SHARED_BUILD)
     if(MSVC)
@@ -681,3 +683,5 @@ set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
 # set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
 
 include(CPack)
+
+include(package_export.cmake)

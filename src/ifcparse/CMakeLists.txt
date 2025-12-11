@@ -53,4 +53,6 @@ install(FILES ${IFCPARSE_H_FILES}
     DESTINATION ${INCLUDEDIR}/ifcparse
 )
 
-install(TARGETS IfcParse)
+install(TARGETS IfcParse
+    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+)
