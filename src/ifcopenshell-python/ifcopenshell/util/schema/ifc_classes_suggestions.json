@@ -51,6 +51,16 @@
             "predefined_type": "DISTRIBUTIONBOARD"
         }
     ],
+    "IfcFireSuppressionTerminal": [
+        {
+            "name": "Fire Extinguisher"
+        },
+    ],
+    "IfcFireSuppressionTerminalType": [
+        {
+            "name": "Fire Extinguisher"
+        },
+    ],
     "IfcFurniture": [
         {
             "name": "Casework"
