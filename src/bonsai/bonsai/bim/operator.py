@@ -304,10 +304,14 @@ class LoadBlendMetadataAndIFC(bpy.types.Operator):
     bl_idname = "bim.load_blend_metadata_and_ifc"
     bl_label = "Load Blend Metadata and IFC"
     bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(name="IFC File Path", default="")
 
     def execute(self, context):
-        props = tool.Blender.get_bim_props()
-        ifc_file = getattr(props, "ifc_file", None)
+        ifc_file = self.filepath
+        if not ifc_file:
+            props = tool.Blender.get_bim_props()
+            ifc_file = getattr(props, "ifc_file", None)
+        
         if not ifc_file:
             self.report({"WARNING"}, "No IFC file path set.")
             return {"CANCELLED"}
