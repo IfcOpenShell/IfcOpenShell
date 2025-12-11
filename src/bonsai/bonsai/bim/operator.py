@@ -33,7 +33,7 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
 from enum import Enum
-from bonsai.bim.ui import get_all_tab_panels, get_tab_visibility, set_tab_visibility, get_tab_names, get_panel_config, initialize_panel_properties, initialize_tab_visibilities
+from bonsai.bim.helper import get_all_tab_panels, get_tab_visibility, set_tab_visibility, get_tab_names, get_panel_config, initialize_panel_properties, initialize_tab_visibilities
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -1728,7 +1728,7 @@ class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
         active_tab = getattr(context.scene, "active_tab_name", None) or getattr(tool.Blender.get_bim_props(), "tab", None)
         is_bookmark_tab = active_tab == "BOOKMARK"
         
-        panel_config = get_panel_config(panel_name)
+        panel_config = get_panel_config(panel_name, create_if_missing=True)
         if panel_config:
             if is_bookmark_tab:
                 panel_config.is_visible_in_bookmarks = not panel_config.is_visible_in_bookmarks
@@ -1762,7 +1762,7 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
 
     def execute(self, context):
         panel_name = self.action.replace("BOOKMARK_", "")
-        panel_config = get_panel_config(panel_name)
+        panel_config = get_panel_config(panel_name, create_if_missing=True)
         
         if panel_config:
             panel_config.is_bookmarked = not panel_config.is_bookmarked
@@ -1808,7 +1808,7 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
             item.name = panel_name
             item["bl_label"] = panel_label
 
-            panel_config = get_panel_config(panel_name)
+            panel_config = get_panel_config(panel_name, create_if_missing=True)
             if panel_config:
                 if self.tab_name == "BOOKMARK":
                     item["visible"] = panel_config.is_visible_in_bookmarks
@@ -1830,7 +1830,7 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
 
     def execute(self, context):
         for item in context.scene.tab_panels:
-            panel_config = get_panel_config(item.name)
+            panel_config = get_panel_config(item.name, create_if_missing=True)
             if panel_config:
                 if self.tab_name == "BOOKMARK":
                     panel_config.is_visible_in_bookmarks = item["visible"]
