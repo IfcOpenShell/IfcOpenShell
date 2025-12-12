@@ -21,6 +21,7 @@
 macro(UNIFY_ENVVARS_AND_CACHE VAR)
     if(NOT DEFINED ${VAR} AND DEFINED ENV{${VAR}} AND NOT ENV{${VAR}} STREQUAL "")
         set(${VAR} "$ENV{${VAR}}" CACHE STRING "${VAR}" FORCE)
+        mark_as_advanced(${VAR})
     endif()
 endmacro()
 

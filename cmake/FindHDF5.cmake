@@ -86,6 +86,7 @@ endif()
 if(NOT HDF5_INCLUDE_DIR OR NOT HDF5_LIBRARY_DIR)
     # First try to find it as a config.
     find_package(HDF5 CONFIG)
+    mark_as_advanced(HDF5_DIR)
     if(HDF5_DIR)
         message(STATUS "HDF5: found config at '${HDF5_DIR}'.")
         set(HDF5_LIBRARIES hdf5_cpp-static)

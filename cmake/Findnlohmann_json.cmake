@@ -11,12 +11,14 @@ UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
 
 if(NOT JSON_INCLUDE_DIR)
     find_package(nlohmann_json CONFIG)
+    mark_as_advanced(nlohmann_json)
     if(nlohmann_json_DIR)
         return()
     endif()
 endif()
 
 find_path(json_header_path "nlohmann/json.hpp" HINTS "${JSON_INCLUDE_DIR}")
+mark_as_advanced(json_header_path)
 
 if(json_header_path)
     message(STATUS "JSON for Modern C++ header file found in '${json_header_path}'.")

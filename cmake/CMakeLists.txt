@@ -152,6 +152,7 @@ if(CCACHE_FOUND)
         endif()
     endif()
 endif()
+mark_as_advanced(CCACHE_FOUND)
 
 # Variable to accumulate swig definitions from various submodules.
 set(SWIG_DEFINES "")
@@ -239,6 +240,7 @@ if (WITH_ROCKSDB)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
     endif()
     find_package(RocksDB CONFIG REQUIRED)
+    mark_as_advanced(RocksDB_DIR)
     if(WIN32)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
     endif()
@@ -253,6 +255,7 @@ if (WITH_ROCKSDB)
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
         find_package(zstd CONFIG REQUIRED)
+        mark_as_advanced(zstd_DIR)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
         link_libraries(zstd::libzstd_static)
 

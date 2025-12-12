@@ -33,8 +33,10 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
     # OpenCASCADE may be built with VTK support. Try to find VTK first to avoid
     # CMake errors when OpenCASCADE's config references VTK targets.
     find_package(VTK QUIET)
+    mark_as_advanced(VTK_DIR)
 
     find_package(OpenCASCADE CONFIG REQUIRED)
+    mark_as_advanced(OpenCASCADE_DIR)
     message(STATUS "Found OpenCASCADE config: ${OpenCASCADE_DIR}")
 
     if(OpenCASCADE_VERSION VERSION_LESS "7.9.0")
