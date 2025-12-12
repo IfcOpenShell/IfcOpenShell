@@ -1056,7 +1056,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return tooltip
 
     def execute(self, context):
-        if (tool.Blender.get_addon_preferences().user_ui_customization 
+        if (tool.Blender.get_addon_preferences().save_metadata_blend_file 
             and self.should_start_fresh_session 
             and not self.is_advanced):
             filepath = self.get_filepath()
@@ -1758,7 +1758,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
             tool.Ifc.set_path(output_file)
         bim_props.is_dirty = False
         
-        if tool.Blender.get_addon_preferences().user_ui_customization:
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file:
             try:
                 bpy.ops.bim.save_blend_metadata_file()
                 blendmetadata_path = output_file + ".metadata.blend"

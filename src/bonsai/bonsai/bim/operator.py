@@ -257,27 +257,43 @@ class SaveBlendMetadataFile(bpy.types.Operator):
         temp_path = bpy.path.abspath('//__temp_blendmetadata.blend')
         bpy.ops.wm.save_as_mainfile(filepath=temp_path, copy=True)
 
-        # Prepare Python script to run in background Blender to remove geometry
         cleanup_script = f"""
 import bpy
-# Remove all mesh objects and mesh collections
-for obj in bpy.data.objects:
-    if obj.type == 'MESH':
-        bpy.data.objects.remove(obj, do_unlink=True)
-for collection in bpy.data.collections:
-    # Remove collections that only contain mesh objects
-    if all(o.type == 'MESH' for o in collection.objects):
-        bpy.data.collections.remove(collection)
+
+def remove_ifc_collections():
+    \"\"\"Remove all collections that start with 'IfcProject' and their contents.\"\"\"
+    collections_to_remove = []
+    
+    # Find all IfcProject collections
+    for collection in bpy.data.collections:
+        if collection.name.startswith('IfcProject'):
+            collections_to_remove.append(collection)
+    
+    # Remove objects in these collections first
+    for collection in collections_to_remove:
+        for obj in list(collection.objects):
+            bpy.data.objects.remove(obj, do_unlink=True)
+        
+        # Also remove any child collections
+        for child in list(collection.children):
+            bpy.data.collections.remove(child, do_unlink=True)
+    
+    # Remove the IfcProject collections themselves
+    for collection in collections_to_remove:
+        bpy.data.collections.remove(collection, do_unlink=True)
+
+# Remove IFC-related data
+remove_ifc_collections()
+
+# Save the metadata file
 bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
 """
 
-        # Save cleanup script to temp file
         import tempfile
         with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as script_file:
             script_file.write(cleanup_script)
             script_path = script_file.name
 
-        # Run Blender in background to clean and save metadata file
         blender_exe = bpy.app.binary_path
         import subprocess
         result = subprocess.run([
@@ -287,7 +303,6 @@ bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
             '--python', script_path
         ], capture_output=True)
 
-        # Clean up temp files
         try:
             os.remove(temp_path)
             os.remove(script_path)

@@ -702,6 +702,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Show mass and time units section in the new project wizard panel",
         default=False,
     )
+    save_metadata_blend_file: BoolProperty(
+        name="Save non ifc data to .metadata.blend File",
+        description="Save session data (window layout, settings) to a .metadata.blend file alongside the IFC file. This file is automatically loaded when opening the project.",
+        default=False,
+    )
         user_ui_customization: BoolProperty(
         name="User UI Customization",
         description="Enable user interface customization features (hide/show tabs and panels, bookmark panels) and save the session settings as part of the .metadata.blend file",
@@ -758,6 +763,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         default_filter_with_set_operations_for_globalid_and_class: bool
+        save_metadata_blend_file: bool
         user_ui_customization: bool
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -949,7 +955,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = box.row(align=True)
         row.prop(self, "default_filter_with_set_operations_for_globalid_and_class")
         row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/comment/27030"
-        layout.prop(self, "user_ui_customization")
+        layout.prop(self, "save_metadata_blend_file")
+        if self.save_metadata_blend_file:
+            row = layout.row()
+            row.separator()
+            row.prop(self, "user_ui_customization")
 
 
 # Scene panel groups
@@ -967,6 +977,7 @@ class BIM_PT_tabs(Panel):
             UIData.load()
         is_ifc_project = bool(tool.Ifc.get())
         aprops = tool.Blender.get_area_props(context)
+        addon_prefs = tool.Blender.get_addon_preferences()
         ifc_icon = f"{UIData.data['tabs_icon_color_mode']}_ifc"
 
         split = self.layout.split(factor=0.9)
@@ -996,7 +1007,7 @@ class BIM_PT_tabs(Panel):
             self.draw_tab_entry(row_left, "PACKAGE", "FM", True, aprops.tab == "FM")
         if get_tab_visibility("QUALITY"):
             self.draw_tab_entry(row_left, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-        if tool.Blender.get_addon_preferences().user_ui_customization and get_tab_visibility("BOOKMARK"):
+        if addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization and get_tab_visibility("BOOKMARK"):
             self.draw_tab_entry(row_left, "SOLO_ON", "BOOKMARK", True, aprops.tab == "BOOKMARK")
         row_left.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
@@ -1005,7 +1016,7 @@ class BIM_PT_tabs(Panel):
         row_left.alignment = "CENTER"
         row_left.scale_y = 0.2
 
-        if not tool.Blender.get_addon_preferences().user_ui_customization:
+        if not (addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization):
             row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
         
         for tab in get_tab_names():
@@ -1020,13 +1031,13 @@ class BIM_PT_tabs(Panel):
         row_right = col_right.row(align=True)
         row_right.alignment = "RIGHT"
 
-        if tool.Blender.get_addon_preferences().user_ui_customization:
+        if addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization:
             row_right.operator("bim.manage_tab_visibility", icon="PREFERENCES", text="")
 
         row = self.layout.row(align=True)
         row.prop(aprops, "tab", text="")
 
-        if tool.Blender.get_addon_preferences().user_ui_customization:
+        if addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization:
             for tab in get_tab_names():
                 if get_tab_visibility(tab):
                     if aprops.tab == tab:
