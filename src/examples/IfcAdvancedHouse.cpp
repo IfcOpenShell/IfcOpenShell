@@ -39,12 +39,12 @@
 #include <Standard_Version.hxx>
 
 #define IfcSchema Ifc2x3
-#include "../ifcparse/macros.h"
-#include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcBaseClass.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "ifcparse/macros.h"
+#include "ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcBaseClass.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
-#include "../ifcgeom/Serialization/Serialization.h"
+#include "ifcgeom/Serialization/Serialization.h"
 
 #if USE_VLD
 #include <vld.h>
