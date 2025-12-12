@@ -118,6 +118,31 @@ jobs:
             -DCMAKE_CXX_FLAGS_INIT="-fPIC"
           sudo make -j$(nproc) install
 
+      # We need zstd and libxml2 just for cmake config files to test the examples build.
+      # zslibzstd-dev has cmake config only on Ubuntu 24.04+.
+      - name : Build zstd
+        run: |
+          git clone https://github.com/facebook/zstd --depth 1 --branch v1.5.7
+          cd zstd
+          # `build` already exists.
+          mkdir build_ && cd build_
+          cmake ../build/cmake -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          sudo cmake --build . --target install -j $(nproc)
+
+      # libxml2-dev doesn't have cmake configs even on Ubuntu 24.04+.
+      - name: Build libxml2
+        run: |
+          git clone https://gitlab.gnome.org/GNOME/libxml2.git --branch v2.13.8 --depth 1
+          cd libxml2
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          sudo cmake --build . --target install -j $(nproc)
+
       # Ubuntu has `swig` package, but we build it to match the version we use in the main build.
       # To avoid failing tests when checking stub generation.
       - name: build swig
@@ -177,6 +202,14 @@ jobs:
       - name: Run IfcConvert on Sample file
         run: |
           IfcConvert test/input/acad2010_walls.ifc test/input/acad2010_walls.obj
+
+      - name: Build standalone examples to test cmake package
+        run: |
+          cd src/examples
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake --build .
+          ./IfcParseExamples "../IfcParseExamples_test.ifc"
 
       - name: Test ifcopenshell-python
         run: |
