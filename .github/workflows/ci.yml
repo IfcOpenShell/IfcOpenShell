@@ -210,6 +210,8 @@ jobs:
           cmake .. -DCMAKE_BUILD_TYPE=Release
           cmake --build .
           ./IfcParseExamples "../IfcParseExamples_test.ifc"
+          ./IfcOpenHouse
+          ./IfcAdvancedHouse
 
       - name: Test ifcopenshell-python
         run: |
