@@ -17,7 +17,6 @@ foreach(file ${IFCPARSE_CPP_FILES_ALL})
     endif()
 endforeach()
 
-message(STATUS "SCHEMA_VERSIONS from ifcparse: ${SCHEMA_VERSIONS}")
 foreach(schema ${SCHEMA_VERSIONS})
     list(APPEND IFCPARSE_H_FILES
         Ifc${schema}.h

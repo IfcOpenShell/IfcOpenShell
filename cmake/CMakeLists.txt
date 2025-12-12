@@ -80,6 +80,13 @@ option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is require
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
 option(BUILD_PACKAGE "" OFF)
+# Most users probably need just common schemas,
+# but we're keeping it `OFF` by default to avoid disruption
+# (e.g. all Python distribution would need to adapt this option to be set).
+option(BUILD_ONLY_COMMON_SCHEMAS
+    "Build only common IFC schemas (2x3, 4, 4x3_add2). By default all schemas will be built."
+    OFF)
+option(SCHEMA_VERSIONS "Explicitly specify schemas to build." "")
 
 option(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
 option(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
@@ -449,8 +456,8 @@ include_directories(${OPENCOLLADA_INCLUDE_DIRS}
 )
 
 if(NOT SCHEMA_VERSIONS)
-    if(WASM_BUILD)
-        # super arbitrarily try to keep size down at least a little bit
+    # `WASM_BUILD` - super arbitrarily try to keep size down at least a little bit
+    if(BUILD_ONLY_COMMON_SCHEMAS OR WASM_BUILD)
         set(SCHEMA_VERSIONS "2x3" "4" "4x3_add2")
     else()
         set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3" "4x3_tc1" "4x3_add1" "4x3_add2")
