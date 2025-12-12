@@ -16,7 +16,6 @@ list(REMOVE_ITEM IFCPARSE_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/alignment_helper.cpp
 )
 
-message(STATUS "SCHEMA_VERSIONS from ifcparse: ${SCHEMA_VERSIONS}")
 foreach(schema ${SCHEMA_VERSIONS})
     list(APPEND IFCPARSE_SCHEMA_H_FILES
         schemas/Ifc${schema}.h

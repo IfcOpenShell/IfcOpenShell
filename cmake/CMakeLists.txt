@@ -108,6 +108,15 @@ if(BUILD_BONSAIVIEWER AND NOT BUILD_BONSAIVIEWER_WGPU)
 endif()
 # TODO: still needed?
 option(BUILD_PACKAGE "Install the Python module to lib/python3/dist-packages under the install prefix" OFF)
+# Most users probably need just common schemas,
+# but we're keeping it `OFF` by default to avoid disruption
+# (e.g. all Python distribution would need to adapt this option to be set).
+option(
+    BUILD_ONLY_COMMON_SCHEMAS
+    "Build only common IFC schemas (2x3, 4, 4x3_add2). By default all schemas will be built."
+    OFF
+)
+option(SCHEMA_VERSIONS "Explicitly specify schemas to build." "")
 
 option(
     BUILD_FUZZERS
@@ -528,8 +537,8 @@ else()
 endif(MSVC)
 
 if(NOT SCHEMA_VERSIONS)
-    if(WASM_BUILD)
-        # super arbitrarily try to keep size down at least a little bit
+    # `WASM_BUILD` - super arbitrarily try to keep size down at least a little bit
+    if(BUILD_ONLY_COMMON_SCHEMAS OR WASM_BUILD)
         set(SCHEMA_VERSIONS "2x3" "4" "4x3_add2")
     else()
         set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3" "4x3_tc1" "4x3_add1" "4x3_add2")
