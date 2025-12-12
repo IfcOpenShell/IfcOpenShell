@@ -55,7 +55,8 @@ if(SCHEMA_VERSIONS MATCHES "2x3")
     endif()
     install(TARGETS IfcParseExamples)
 
-    if(WITH_OPENCASCADE)
+    # TODO: enable after figuring out where to get get OCCT config for CI.
+    if(WITH_OPENCASCADE AND NOT STANDALONE_PROJECT)
         add_executable(IfcOpenHouse IfcOpenHouse.cpp)
         add_executable(IfcAdvancedHouse IfcAdvancedHouse.cpp)
         add_library(IfcHouseInterface INTERFACE)
