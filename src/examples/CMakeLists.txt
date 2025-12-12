@@ -45,8 +45,6 @@ if(SCHEMA_VERSIONS MATCHES "2x3")
     add_executable(IfcParseExamples IfcParseExamples.cpp)
 
     if(STANDALONE_PROJECT)
-        target_include_directories(IfcParseExamples PRIVATE ${Boost_INCLUDE_DIRS})
-        target_link_libraries(IfcParseExamples ${Boost_LIBRARIES})
         target_link_libraries(IfcParseExamples IfcOpenShell::IfcParse)
         target_compile_features(IfcParseExamples PRIVATE cxx_std_17)
     else()
@@ -69,7 +67,6 @@ if(SCHEMA_VERSIONS MATCHES "2x3")
             add_library(CGAL::CGAL_INTERFACE INTERFACE IMPORTED)
             target_link_libraries(CGAL::CGAL_INTERFACE INTERFACE CGAL::CGAL)
 
-            target_include_directories(IfcHouseInterface INTERFACE ${Boost_INCLUDE_DIRS})
             target_link_libraries(IfcHouseInterface
                 INTERFACE ${OpenCASCADE_LIBRARIES} RocksDB::rocksdb
                 IfcOpenShell::IfcParse IfcOpenShell::geometry_serializer
@@ -92,7 +89,6 @@ if(SCHEMA_VERSIONS MATCHES "4x3_add2")
     add_library(IfcAlignmentInterface INTERFACE)
 
     if(STANDALONE_PROJECT)
-        target_include_directories(IfcAlignmentInterface INTERFACE ${Boost_INCLUDE_DIRS})
         target_link_libraries(IfcAlignment PRIVATE IfcOpenShell::IfcParse)
         target_link_libraries(IfcSimplifiedAlignment PRIVATE IfcOpenShell::IfcParse)
     else()
