@@ -31,6 +31,7 @@ endforeach()
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
+target_include_directories(IfcParse PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 set_target_properties(IfcParse
     PROPERTIES
     COMPILE_FLAGS -DIFC_PARSE_EXPORTS
