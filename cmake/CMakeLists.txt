@@ -170,14 +170,6 @@ endif()
 
 include(GNUInstallDirs)
 
-if(NOT INCLUDEDIR)
-    set(INCLUDEDIR include)
-endif()
-if(NOT IS_ABSOLUTE ${INCLUDEDIR})
-    set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
-endif()
-message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
-
 set(IFCOPENSHELL_EXPORT_TARGETS "${PROJECT_NAME}Targets")
 
 # On Windows Release and Debug binaries are not compatible.

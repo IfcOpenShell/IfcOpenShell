@@ -9,11 +9,15 @@ foreach(kernel ${GEOMETRY_KERNELS})
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
 
     add_library(${KERNEL_TARGET} OBJECT ${IFCGEOM_FILES})
-    set_property(TARGET ${KERNEL_TARGET} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
+    set_target_properties(${KERNEL_TARGET} PROPERTIES
+        COMPILE_FLAGS "-DIFC_GEOM_EXPORTS"
+        PUBLIC_HEADER "${IFCGEOM_H_FILES}"
+    )
     list(APPEND kernel_libraries ${KERNEL_TARGET})
     target_link_libraries(${KERNEL_TARGET} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
     install(TARGETS ${KERNEL_TARGET}
         EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+        PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ifcgeom/kernels/${kernel}"
     )
 
     if(${kernel} STREQUAL "cgal")
@@ -33,10 +37,6 @@ foreach(kernel ${GEOMETRY_KERNELS})
     elseif(${kernel} STREQUAL "opencascade")
         target_link_libraries(${KERNEL_TARGET} ${OpenCASCADE_LIBRARIES})
     endif()
-
-    install(FILES ${IFCGEOM_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom/kernels/${kernel}
-    )
 endforeach()
 
 set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
