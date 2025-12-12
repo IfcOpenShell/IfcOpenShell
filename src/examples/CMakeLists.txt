@@ -52,6 +52,7 @@ if(STANDALONE_PROJECT OR SCHEMA_VERSIONS MATCHES "2x3")
         set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
         target_compile_features(IfcParseExamples PRIVATE cxx_std_17)
     endif()
+    install(TARGETS IfcParseExamples)
 
     if(NOT STANDALONE_PROJECT AND WITH_OPENCASCADE)
         add_executable(IfcOpenHouse IfcOpenHouse.cpp)
@@ -61,6 +62,8 @@ if(STANDALONE_PROJECT OR SCHEMA_VERSIONS MATCHES "2x3")
         add_executable(IfcAdvancedHouse IfcAdvancedHouse.cpp)
         target_link_libraries(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
         set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
+
+        install(TARGETS IfcOpenHouse IfcAdvancedHouse)
     endif()
 endif()
 
@@ -72,4 +75,6 @@ if(NOT STANDALONE_PROJECT AND SCHEMA_VERSIONS MATCHES "4x3_add2")
     add_executable(IfcSimplifiedAlignment IfcSimplifiedAlignment.cpp)
     target_link_libraries(IfcSimplifiedAlignment ${IFCOPENSHELL_LIBRARIES})
     set_target_properties(IfcSimplifiedAlignment PROPERTIES FOLDER Examples)
+
+    install(TARGETS IfcAlignment IfcSimplifiedAlignment)
 endif()
