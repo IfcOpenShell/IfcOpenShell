@@ -21,6 +21,7 @@ if(NOT OPENCOLLADA_INCLUDE_DIR AND NOT OPENCOLLADA_LIBRARY_DIR)
     # If package is found, automatically sets
     # OPENCOLLADA_INCLUDE_DIRS and OPENCOLLADA_LIBRARIES (list of targets, not paths).
     find_package(OpenCOLLADA CONFIG)
+    mark_as_advanced(OpenCOLLADA_DIR)
     if(OpenCOLLADA_DIR)
         message(STATUS "Found OpenCOLLADA: '${OpenCOLLADA_DIR}'.")
         set(OPENCOLLADA_FOUND TRUE)
