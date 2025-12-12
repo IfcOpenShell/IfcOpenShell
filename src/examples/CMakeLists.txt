@@ -17,31 +17,59 @@
 #                                                                              #
 ################################################################################
 
-if(SCHEMA_VERSIONS MATCHES "2x3")
-    ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
-    TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
-    set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
-    target_compile_features(IfcParseExamples PUBLIC cxx_std_17)
+# Thils file can also be build standalone, outside of the IfcOpenShell build tree,
+# to demonstrate the usage IfcOpenShell as a cmake package.
+if(NOT BUILD_EXAMPLES)
+    set(STANDALONE_PROJECT ON)
+endif()
 
-    if(WITH_OPENCASCADE)
+if(STANDALONE_PROJECT)
+    cmake_minimum_required(VERSION 3.21)
+    project(IfcOpenShellExamples)
 
-        ADD_EXECUTABLE(IfcOpenHouse IfcOpenHouse.cpp)
-        TARGET_LINK_LIBRARIES(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
+    set(Boost_USE_STATIC_LIBS ON)
+    set(Boost_USE_STATIC_RUNTIME OFF)
+    set(Boost_USE_MULTITHREADED ON)
+    set(Boost_COMPONENTS system program_options regex thread date_time iostreams)
+    find_package(Boost CONFIG REQUIRED COMPONENTS ${Boost_COMPONENTS})
+    find_package(zstd CONFIG REQUIRED)
+    find_package(RocksDB CONFIG REQUIRED)
+    find_package(LibXml2 CONFIG REQUIRED)
+    find_package(IfcOpenShell CONFIG REQUIRED)
+endif()
+
+if(STANDALONE_PROJECT OR SCHEMA_VERSIONS MATCHES "2x3")
+    add_executable(IfcParseExamples IfcParseExamples.cpp)
+
+    if(STANDALONE_PROJECT)
+        target_include_directories(IfcParseExamples PRIVATE ${Boost_INCLUDE_DIRS})
+        target_link_libraries(IfcParseExamples ${Boost_LIBRARIES})
+        target_link_libraries(IfcParseExamples IfcOpenShell::IfcParse)
+        target_compile_features(IfcParseExamples PRIVATE cxx_std_17)
+        target_compile_definitions(IfcParseExamples PRIVATE "SCHEMA_SEQ=(2x3)" HAS_SCHEMA_2x3 IFOPSH_WITH_ROCKSDB)
+    else()
+        target_link_libraries(IfcParseExamples IfcParse)
+        set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
+        target_compile_features(IfcParseExamples PRIVATE cxx_std_17)
+    endif()
+
+    if(NOT STANDALONE_PROJECT AND WITH_OPENCASCADE)
+        add_executable(IfcOpenHouse IfcOpenHouse.cpp)
+        target_link_libraries(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
         set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
 
-        ADD_EXECUTABLE(IfcAdvancedHouse IfcAdvancedHouse.cpp)
-        TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
+        add_executable(IfcAdvancedHouse IfcAdvancedHouse.cpp)
+        target_link_libraries(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
         set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
-
     endif()
-endif(SCHEMA_VERSIONS MATCHES "2x3")
+endif()
 
-if(SCHEMA_VERSIONS MATCHES "4x3_add2")
-    ADD_EXECUTABLE(IfcAlignment IfcAlignment.cpp)
-    TARGET_LINK_LIBRARIES(IfcAlignment ${IFCOPENSHELL_LIBRARIES})
+if(NOT STANDALONE_PROJECT AND SCHEMA_VERSIONS MATCHES "4x3_add2")
+    add_executable(IfcAlignment IfcAlignment.cpp)
+    target_link_libraries(IfcAlignment ${IFCOPENSHELL_LIBRARIES})
     set_target_properties(IfcAlignment PROPERTIES FOLDER Examples)
 
-    ADD_EXECUTABLE(IfcSimplifiedAlignment IfcSimplifiedAlignment.cpp)
-    TARGET_LINK_LIBRARIES(IfcSimplifiedAlignment ${IFCOPENSHELL_LIBRARIES})
+    add_executable(IfcSimplifiedAlignment IfcSimplifiedAlignment.cpp)
+    target_link_libraries(IfcSimplifiedAlignment ${IFCOPENSHELL_LIBRARIES})
     set_target_properties(IfcSimplifiedAlignment PROPERTIES FOLDER Examples)
 endif()

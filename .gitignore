@@ -4,6 +4,7 @@
 /_deps-vs*-x*-installed/
 /_installed-vs*-x*/
 /build/
+/src/examples/build/
 
 # output directories
 /cmake/out/
