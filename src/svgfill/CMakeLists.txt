@@ -10,16 +10,6 @@ if(POLICY CMP0167) # 3.30 find_package(Boost) to use BoostConfig instead of Find
     cmake_policy(SET CMP0167 OLD)
 endif()
 
-include(GNUInstallDirs)
-
-
-if(NOT INCLUDEDIR)
-    set(INCLUDEDIR include)
-endif()
-if(NOT IS_ABSOLUTE ${INCLUDEDIR})
-    set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
-endif()
-message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
 if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
 	set(Boost_USE_STATIC_LIBS ON)
@@ -57,6 +47,9 @@ file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp)
 set(LIB_SRC_FILES ${LIB_H_FILES} ${LIB_CPP_FILES})
 add_library(svgfill ${LIB_SRC_FILES})
 target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 CGAL::CGAL_INTERFACE)
+set_target_properties(svgfill PROPERTIES
+    PUBLIC_HEADER "${LIB_H_FILES}"
+)
 
 add_executable(svgfill_exe src/main.cpp)
 target_link_libraries(svgfill_exe svgfill)
@@ -74,5 +67,5 @@ endif()
 
 install(TARGETS svgfill_exe svgfill
     EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/svgfill"
 )
-install(FILES ${LIB_H_FILES} DESTINATION ${INCLUDEDIR})
