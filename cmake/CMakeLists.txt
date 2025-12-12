@@ -319,7 +319,7 @@ endif()
 # Otherwise it will find components needed for CGAL and we might some libraries.
 if(WITH_CGAL)
     find_package(CGAL REQUIRED)
-    set(CGAL_LIBRARIES CGAL::CGAL_INTERFACE)
+    set(CGAL_LIBRARIES IFCOPENSHELL_CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 

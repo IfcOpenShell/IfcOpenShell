@@ -22,7 +22,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
     if(${kernel} STREQUAL "cgal")
         find_package(CGAL REQUIRED)
-        target_link_libraries(${KERNEL_TARGET} CGAL::CGAL_INTERFACE)
+        target_link_libraries(${KERNEL_TARGET} IFCOPENSHELL_CGAL)
         set_property(TARGET ${KERNEL_TARGET} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
 
         set(KERNEL_TARGET_SIMPLE "${KERNEL_TARGET}_simple")
@@ -30,7 +30,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
         set_target_properties(${KERNEL_TARGET_SIMPLE} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS")
         list(APPEND kernel_libraries ${KERNEL_TARGET_SIMPLE})
         target_link_libraries(${KERNEL_TARGET_SIMPLE} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
-        target_link_libraries(${KERNEL_TARGET_SIMPLE} CGAL::CGAL_INTERFACE)
+        target_link_libraries(${KERNEL_TARGET_SIMPLE} IFCOPENSHELL_CGAL)
         install(TARGETS ${KERNEL_TARGET_SIMPLE}
             EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
         )
