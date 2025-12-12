@@ -258,9 +258,6 @@ if (WITH_ROCKSDB)
         mark_as_advanced(zstd_DIR)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
         link_libraries(zstd::libzstd_static)
-
-        add_definitions(-DIFOPSH_WITH_ROCKSDB_ZSTD)
-        set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB_ZSTD)
     endif()
 endif()
 
