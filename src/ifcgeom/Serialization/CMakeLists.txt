@@ -8,12 +8,11 @@ set_target_properties(
     PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS" PUBLIC_HEADER "${IFCGEOM_SERIALIZATION_H_FILE}"
 )
 target_link_libraries(geometry_serializer ${geometry_serializer_libraries} IfcParse)
-set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} "geometry_serializer" ${geometry_serializer_libraries})
-set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} PARENT_SCOPE)
+set(geometry_serializer_libraries "geometry_serializer" ${geometry_serializer_libraries})
 
 install(
-    TARGETS geometry_serializer ${geometry_serializer_libraries}
-    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+    TARGETS geometry_serializer
+    EXPORT ${IFCOPENSHELL_EXPORT_TAGETS}
     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ifcgeom/Serialization"
 )
 

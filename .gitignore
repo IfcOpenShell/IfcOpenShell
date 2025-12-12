@@ -17,6 +17,7 @@
 /src/ifctester/webapp/public/pyodide/
 
 /win/BuildDepsCache*.txt
+CMakeUserPresets.json
 
 # General Python residue
 __pycache__

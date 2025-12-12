@@ -28,8 +28,8 @@
 #include <optional>
 
 #define IfcSchema Ifc4
-#include "ifcparse/Ifc4.h"
-#include "ifcparse/IfcHierarchyHelper.h"
+#include <ifcparse/Ifc4.h>
+#include <ifcparse/IfcHierarchyHelper.h>
 
 #include "suzanne_geometry.h"
 

@@ -28,7 +28,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(VERSION_OVERRIDE)
-    file(READ "../VERSION" "RELEASE_VERSION_")
+    file(READ "VERSION" "RELEASE_VERSION_")
     string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
     message(STATUS "Detected version '${RELEASE_VERSION}'")
 else()
@@ -53,9 +53,6 @@ project(IfcOpenShell VERSION ${RELEASE_VERSION})
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
-
-# Include utility macros and functions
-include(utilities.cmake)
 
 # use extra version to make pre-release using eg semver
 if(NOT DEFINED EXTRA_VERSION)
@@ -97,7 +94,7 @@ option(SCHEMA_VERSIONS "Explicitly specify schemas to build." "")
 
 option(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
 option(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
-option(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
+option(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." OFF)
 option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
@@ -105,6 +102,7 @@ option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." O
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate geometrical relationships." OFF)
 option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcOpenShell" OFF)
+# TODO: manage this option through conan only
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
@@ -123,13 +121,10 @@ set(PYTHON_MODULE_INSTALL_DIR
     "Directory to install IfcPython package to. By default package is installed in found Python's site-packages."
 )
 
-# Make sure CMake modules in this project are found first
-list(PREPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
-
 if(MINIMAL_BUILD)
     message(STATUS "Setting options for minimal build")
     set(BUILD_GEOMSERVER OFF)
-    set(BUILD_IFCPYTHON OFF)
+    # set(BUILD_IFCPYTHON OFF)
     set(WITH_CGAL OFF)
     set(COLLADA_SUPPORT OFF)
     set(GLTF_SUPPORT OFF)
@@ -198,22 +193,6 @@ if(BUILD_SHARED_LIBS)
     endif()
 endif()
 
-UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
-
-if(NOT MINIMAL_BUILD)
-    UNIFY_ENVVARS_AND_CACHE(PYTHON_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(PYTHON_LIBRARY)
-    UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
-endif()
-
-# Get a list of all OPTION flags from the CMakeLists.txt
-get_all_option_flags(option_flags)
-
-# Loop through the list of OPTION flags and convert the corresponding environment variables
-foreach(option_flag IN LISTS option_flags)
-    convert_env_var_to_bool("${option_flag}")
-endforeach()
-
 if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
     add_definitions(-DIFOPSH_WITH_OPENCASCADE)
@@ -236,7 +215,6 @@ if(USD_SUPPORT)
     set(USD_LIBRARIES pxr::USD)
 endif(USD_SUPPORT)
 
-set(ROCKSDB_LIBRARIES "")
 if(WITH_ROCKSDB)
     # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
     # find it's zstd dependency on Windows.
@@ -248,15 +226,10 @@ if(WITH_ROCKSDB)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
     endif()
     find_package(RocksDB CONFIG REQUIRED)
-    mark_as_advanced(RocksDB_DIR)
-    if(WIN32)
-        set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
-    endif()
-
+    # set(ROCKSDB_LIBRARIES $<IF:$<TARGET_EXISTS:RocksDB::rocksdb-shared>,RocksDB::rocksdb-shared,RocksDB::rocksdb>)
+    set(ROCKSDB_LIBRARIES RocksDB::rocksdb)
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
-    add_library(IFCOPENSHELL_RocksDB INTERFACE)
-    set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
-    target_compile_definitions(IFCOPENSHELL_RocksDB INTERFACE IFOPSH_WITH_ROCKSDB)
+    # add_definitions(-DIFOPSH_WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
     # Shared binaries for `rocksdb` only support limited API (only `c.h`), but we use `db.h` API.
     # So rocksdb supported only as a static library.
@@ -335,7 +308,9 @@ endif()
 # Otherwise it will find components needed for CGAL and we might some libraries.
 if(WITH_CGAL)
     find_package(CGAL REQUIRED)
-    set(CGAL_LIBRARIES IFCOPENSHELL_CGAL)
+    set(CGAL_LIBRARIES CGAL::CGAL)
+    add_definitions(-DIFOPSH_WITH_CGAL)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
@@ -471,10 +446,6 @@ else()
         add_definitions(-Wno-deprecated-copy)
     endif()
 
-    # -fPIC is not relevant on Windows and creates pointless warnings
-    if(UNIX)
-        add_definitions(-fPIC)
-    endif()
 endif(MSVC)
 
 include_directories(${OPENCOLLADA_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR})
@@ -555,7 +526,7 @@ if(COMPILE_SCHEMA)
     message(STATUS "Compiling schema, this will take a while...")
     execute_process(
         COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf
-        WORKING_DIRECTORY ../src/ifcexpressparser
+        WORKING_DIRECTORY src/ifcexpressparser
         OUTPUT_FILE express_parser.py
         RESULT_VARIABLE SUCCESS
     )
@@ -566,8 +537,8 @@ if(COMPILE_SCHEMA)
 
     # Generate code
     execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
-        WORKING_DIRECTORY ../src/ifcparse
+        COMMAND ${PYTHON_EXECUTABLE} ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
+        WORKING_DIRECTORY src/ifcparse
         OUTPUT_VARIABLE COMPILED_SCHEMA_NAME
     )
 
@@ -584,25 +555,25 @@ if(NOT Boost_VERSION LESS 105800)
     add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
 endif()
 
-add_subdirectory(../src/ifcparse ifcparse)
+add_subdirectory(src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 
 if(BUILD_IFCGEOM)
-    add_subdirectory(../src/ifcgeom ifcgeom)
+    add_subdirectory(src/ifcgeom ifcgeom)
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-    add_subdirectory(../src/serializers serializers)
+    add_subdirectory(src/serializers serializers)
     set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} ${SERIALIZER_SCHEMA_LIBRARIES})
 endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 if(BUILD_CONVERT)
-    add_subdirectory(../src/ifcconvert ifcconvert)
+    add_subdirectory(src/ifcconvert ifcconvert)
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
 if(BUILD_GEOMSERVER)
-    add_subdirectory(../src/ifcgeomserver ifcgeomserver)
+    add_subdirectory(src/ifcgeomserver ifcgeomserver)
 endif(BUILD_GEOMSERVER)
 
 if(ADD_COMMIT_SHA)
@@ -665,40 +636,28 @@ endif()
 
 # Documentation
 if(BUILD_DOCUMENTATION)
-    set(CMAKE_MODULE_PATH "../docs/cmake")
-    add_subdirectory(../docs docs)
+    set(CMAKE_MODULE_PATH "docs/cmake")
+    add_subdirectory(docs docs)
 endif()
 
 if(BUILD_IFCPYTHON)
-    add_subdirectory(../src/ifcwrap ifcwrap)
+    add_subdirectory(src/ifcwrap ifcwrap)
 endif()
 
 if(BUILD_EXAMPLES)
-    add_subdirectory(../src/examples examples)
+    add_subdirectory(src/examples examples)
 endif()
 
 if(BUILD_IFCMAX)
-    add_subdirectory(../src/ifcmax ifcmax)
+    add_subdirectory(src/ifcmax ifcmax)
 endif()
 
 if(BUILD_IFCPYTHON AND WITH_CGAL)
-    add_subdirectory(../src/svgfill svgfill)
+    add_subdirectory(src/svgfill svgfill)
 endif()
 
 if(BUILD_QTVIEWER)
-    add_subdirectory(../src/qtviewer qtviewer)
-endif()
-
-# Cmake uninstall target
-if(NOT TARGET uninstall)
-    configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-        IMMEDIATE
-        @ONLY
-    )
-
-    add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+    add_subdirectory(src/qtviewer qtviewer)
 endif()
 
 # Packaging
@@ -743,7 +702,3 @@ set(CPACK_DEBIAN_PACKAGE_VERSION
 )
 set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
 # set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
-
-include(CPack)
-
-include(package_export.cmake)

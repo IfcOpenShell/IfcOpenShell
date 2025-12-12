@@ -29,8 +29,8 @@
 #include <fstream>
 
 #define IfcSchema Ifc4
-#include "ifcparse/Ifc4.h"
-#include "ifcparse/IfcHierarchyHelper.h"
+#include <ifcparse/Ifc4.h>
+#include <ifcparse/IfcHierarchyHelper.h>
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;

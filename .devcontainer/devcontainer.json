@@ -1,0 +1,53 @@
+{
+  "name": "IfcOpenShell Dev",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylint",
+        "ms-python.black-formatter",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "llvm-vs-code-extensions.vscode-clangd"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.linting.enabled": true,
+        "editor.formatOnSave": true,
+        "cmake.buildDirectory": "${workspaceFolder}/build",
+        "cmake.configureArgs": [
+          "-DOCC_INCLUDE_DIR=/usr/include/opencascade",
+          "-DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu",
+          "-DLIBXML2_INCLUDE_DIR=/usr/include/libxml2",
+          "-DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so",
+          "-DUSERSPACE_PYTHON_PREFIX=ON",
+          "-DCOLLADA_SUPPORT=OFF"
+        ],
+        "C_Cpp.default.includePath": [
+          "${workspaceFolder}/src",
+          "/usr/include/opencascade",
+          "/usr/include/boost",
+          "/usr/include/eigen3"
+        ]
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    }
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspaces/IfcOpenShell,type=bind,consistency=cached"
+  ],
+  "workspaceFolder": "/workspaces/IfcOpenShell",
+  "forwardPorts": []
+}

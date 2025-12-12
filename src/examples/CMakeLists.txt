@@ -17,48 +17,27 @@
 #                                                                              #
 ################################################################################
 
-# Thils file can also be build standalone, outside of the IfcOpenShell build tree,
-# to demonstrate the usage IfcOpenShell as a cmake package.
-if(NOT BUILD_EXAMPLES)
-    set(STANDALONE_PROJECT ON)
-endif()
+cmake_minimum_required(VERSION 3.21)
+project(IfcOpenShellExamples)
 
-if(STANDALONE_PROJECT)
-    cmake_minimum_required(VERSION 3.21)
-    project(IfcOpenShellExamples)
-
-    set(CMAKE_CXX_STANDARD 17)
-    find_package(IfcOpenShell CONFIG REQUIRED)
-    set(SCHEMA_VERSIONS ${IFCOPENSHELL_SCHEMA_VERSIONS})
-    set(WITH_OPENCASCADE ${IFCOPENSHELL_WITH_OPENCASCADE})
-else()
-    include_directories("${CMAKE_SOURCE_DIR}/../src")
-endif()
+set(CMAKE_CXX_STANDARD 17)
+find_package(IfcOpenShell CONFIG REQUIRED)
 
 macro(build_example exe_name)
     set(additional_targets ${ARGN})
     add_executable(${exe_name} ${exe_name}.cpp)
-
-    if(STANDALONE_PROJECT)
-        target_link_libraries(
-            ${exe_name}
-            IfcOpenShell::IfcParse
-            $<$<BOOL:${additional_targets}>:IfcOpenShell::${additional_targets}>
-        )
-    else()
-        target_include_directories(${exe_name} PRIVATE "${CMAKE_SOURCE_DIR}/../src")
-        target_link_libraries(${exe_name} IfcParse ${additional_targets})
-        set_target_properties(${exe_name} PROPERTIES FOLDER Examples)
-    endif()
+    target_link_libraries(${exe_name} IfcOpenShell::IfcParse $<$<BOOL:${additional_targets}>:IfcOpenShell::${additional_targets}>)
     install(TARGETS ${exe_name})
 endmacro()
 
-if("4" IN_LIST SCHEMA_VERSIONS)
+message(STATUS "Building examples for IFC schema versions: ${SCHEMA_VERSIONS}")
+message(STATUS "SCHEMA_SEQ: ${SCHEMA_SEQ}")
+# if("4" IN_LIST SCHEMA_VERSIONS)
     build_example(arbitrary_open_profile_def)
     build_example(triangulated_faceset)
-endif()
+# endif()
 
-if("2x3" IN_LIST SCHEMA_VERSIONS)
+# if("2x3" IN_LIST SCHEMA_VERSIONS)
     build_example(composite_profile_def)
     build_example(csg_primitive)
     build_example(ellipse_pies)
@@ -67,13 +46,13 @@ if("2x3" IN_LIST SCHEMA_VERSIONS)
     build_example(profiles)
     build_example(IfcParseExamples)
 
-    if(WITH_OPENCASCADE)
+    # if(WITH_OPENCASCADE)
         build_example(IfcOpenHouse geometry_serializer)
         build_example(IfcAdvancedHouse geometry_serializer)
-    endif()
-endif()
+    # endif()
+# endif()
 
-if("4x3_add2" IN_LIST SCHEMA_VERSIONS)
+# if("4x3_add2" IN_LIST SCHEMA_VERSIONS)
     build_example(IfcAlignment)
     build_example(IfcSimplifiedAlignment)
-endif()
+# endif()

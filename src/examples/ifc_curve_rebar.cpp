@@ -28,8 +28,8 @@
 #include <fstream>
 
 #define IfcSchema Ifc2x3
-#include "ifcparse/Ifc2x3.h"
-#include "ifcparse/IfcHierarchyHelper.h"
+#include <ifcparse/Ifc2x3.h>
+#include <ifcparse/IfcHierarchyHelper.h>
 
 #include <boost/math/constants/constants.hpp>
 const static double PI = boost::math::constants::pi<double>();

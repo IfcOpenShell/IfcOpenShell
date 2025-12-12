@@ -65,6 +65,10 @@ endif()
 set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(WITH_ROCKSDB)
+    add_definitions(-DIFOPSH_WITH_ROCKSDB)
+endif()
+
 set(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 
 if(WITH_CGAL)
@@ -113,7 +117,29 @@ else()
 endif()
 
 target_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
-set_property(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
+set(OpenCASCADE_LIBRARIES
+    TKernel
+    TKMath
+    TKBRep
+    TKGeomBase
+    TKGeomAlgo
+    TKG3d
+    TKG2d
+    TKShHealing
+    TKTopAlgo
+    TKMesh
+    TKPrim
+    TKBool
+    TKBO
+    TKFillet
+    TKXSBase
+    TKOffset
+    TKHLR
+    # @todo investigate the exact conditions when this is necessary
+    TKBin
+)
+
+set_property(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES})
 if(WASM_BUILD)
     # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
     # Since currently libIfcGeom.a seems to be linked twice it results in duplicated symbols and compilation errors.
@@ -130,14 +156,18 @@ if(WASM_BUILD)
         PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2"
     )
 endif()
+message(STATUS "$ENV{LDFLAGS}: ${$ENV{LDFLAGS}}")
+message(STATUS "IFCOPENSHELL_LIBRARIES: ${IFCOPENSHELL_LIBRARIES}")
+
+message(STATUS "OpenCASCADE_LIBRARIES: ${OpenCASCADE_LIBRARIES}")
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
     # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
     target_link_libraries(
         ifcopenshell_wrapper
-        PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL}
+        PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${SERIALIZER_SCHEMA_LIBRARIES} ${LIBSVGFILL}
     )
 else()
-    target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${LIBSVGFILL})
+    target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${SERIALIZER_SCHEMA_LIBRARIES} ${LIBSVGFILL})
 endif()
 target_link_libraries(ifcopenshell_wrapper PRIVATE ${CGAL_LIBRARIES})
 target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom ${kernel_libraries})
@@ -184,6 +214,7 @@ if(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
     if("${python_package_dir}" STREQUAL "")
         message(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
     else()
+        # TODO make local installation in ~/.local/lib/python3.XX/site-packages/ to avoid root permission issues
         message(STATUS "Python wrapper will be installed to '${python_package_dir}'.")
         file(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*")
         foreach(file ${sourcefiles})
