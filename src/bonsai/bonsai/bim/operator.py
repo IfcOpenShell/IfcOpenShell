@@ -269,21 +269,54 @@ def remove_ifc_collections():
         if collection.name.startswith('IfcProject'):
             collections_to_remove.append(collection)
     
-    # Remove objects in these collections first
+    # First, use bim.override_outliner_delete to properly remove IFC data
     for collection in collections_to_remove:
-        for obj in list(collection.objects):
-            bpy.data.objects.remove(obj, do_unlink=True)
+        # Collect all objects in the collection and its children
+        objects_to_delete = []
         
-        # Also remove any child collections
+        def collect_objects(col):
+            for obj in col.objects:
+                if obj not in objects_to_delete:
+                    objects_to_delete.append(obj)
+            for child in col.children:
+                collect_objects(child)
+        
+        collect_objects(collection)
+        
+        # Use bim.override_outliner_delete for each object to clean up IFC data
+        for obj in objects_to_delete:
+            # Select only this object
+            bpy.ops.object.select_all(action='DESELECT')
+            obj.select_set(True)
+            bpy.context.view_layer.objects.active = obj
+            
+            # Try to use Bonsai's delete operator which cleans up IFC data
+            try:
+                bpy.ops.bim.override_outliner_delete()
+            except:
+                # If that fails, use standard delete
+                bpy.data.objects.remove(obj, do_unlink=True)
+        
+        # Remove any remaining child collections
         for child in list(collection.children):
-            bpy.data.collections.remove(child, do_unlink=True)
+            try:
+                bpy.data.collections.remove(child, do_unlink=True)
+            except:
+                pass
     
     # Remove the IfcProject collections themselves
     for collection in collections_to_remove:
-        bpy.data.collections.remove(collection, do_unlink=True)
+        try:
+            bpy.data.collections.remove(collection, do_unlink=True)
+        except:
+            pass
 
 # Remove IFC-related data
 remove_ifc_collections()
+
+# Note: Scene-level BIM properties are saved with the metadata.blend file but will be
+# overwritten when the IFC is loaded. Screen-level properties (BIMTabProperties, 
+# BIMPanelProperties, BIMAreaProperties) preserve UI customization settings.
 
 # Save the metadata file
 bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
@@ -301,7 +334,15 @@ bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
             temp_path,
             '--background',
             '--python', script_path
-        ], capture_output=True)
+        ], capture_output=True, text=True)
+
+        # Print the output from the background process (includes debug info)
+        if result.stdout:
+            print("\n=== Background Blender Output ===")
+            print(result.stdout)
+        if result.stderr:
+            print("\n=== Background Blender Errors ===")
+            print(result.stderr)
 
         try:
             os.remove(temp_path)

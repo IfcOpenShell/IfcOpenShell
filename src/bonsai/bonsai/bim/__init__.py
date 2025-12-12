@@ -370,4 +370,3 @@ def unregister():
     del bpy.types.Scene.active_tab_name
     del bpy.types.Scene.tab_panels
     del bpy.types.Scene.active_tab_panel_index
-    unregister_panel_visibility_properties()
