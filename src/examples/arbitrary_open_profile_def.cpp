@@ -31,12 +31,16 @@
 #define IfcSchema Ifc4
 #include "ifcparse/Ifc4.h"
 #include "ifcparse/IfcHierarchyHelper.h"
+#define IfcSchema Ifc4
+#include "ifcparse/Ifc4.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
 boost::none_t const null = boost::none;
 static int i = 0;
 
+void create_product_from_item(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::IfcRepresentationItem* item, const std::string& s) {
 void create_product_from_item(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::IfcRepresentationItem* item, const std::string& s) {
 	IfcSchema::IfcBuildingElementProxy* product = new IfcSchema::IfcBuildingElementProxy(
 		guid(), 0, S("product"), null, null, 0, 0, null, null);

@@ -35,6 +35,33 @@ else()
     include_directories("${CMAKE_SOURCE_DIR}/../src")
 endif()
 
+if(SCHEMA_VERSIONS MATCHES "4")
+    # arbitrary_open_profile_def
+    add_executable(arbitrary_open_profile_def arbitrary_open_profile_def.cpp)
+
+    if(STANDALONE_PROJECT)
+        target_link_libraries(arbitrary_open_profile_def IfcOpenShell::IfcParse)
+    else()
+        target_include_directories(arbitrary_open_profile_def PRIVATE "${CMAKE_SOURCE_DIR}/../src")
+        target_link_libraries(arbitrary_open_profile_def IfcParse)
+        set_target_properties(arbitrary_open_profile_def PROPERTIES FOLDER Examples)
+    endif()
+    install(TARGETS arbitrary_open_profile_def)
+
+    # triangulated_faceset
+    add_executable(triangulated_faceset triangulated_faceset.cpp)
+
+    if(STANDALONE_PROJECT)
+        target_link_libraries(triangulated_faceset IfcOpenShell::IfcParse)
+    else()
+        target_include_directories(triangulated_faceset PRIVATE "${CMAKE_SOURCE_DIR}/../src")
+        target_link_libraries(triangulated_faceset IfcParse)
+        set_target_properties(triangulated_faceset PROPERTIES FOLDER Examples)
+    endif()
+    install(TARGETS triangulated_faceset)
+
+endif()
+
 macro(build_example exe_name)
     set (additional_targets ${ARGN})
     add_executable(${exe_name} ${exe_name}.cpp)

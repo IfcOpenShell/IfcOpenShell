@@ -30,6 +30,9 @@
 #define IfcSchema Ifc2x3
 #include "ifcparse/Ifc2x3.h"
 #include "ifcparse/IfcHierarchyHelper.h"
+#define IfcSchema Ifc2x3
+#include "ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
