@@ -30,8 +30,8 @@
 // Disable warnings coming from IfcOpenShell
 #pragma warning(disable : 4018 4267 4250 4984 4985)
 
-#include "../ifcparse/Ifc4x3_add2.h"
-#include "../ifcparse/IfcAlignmentHelper.h"
+#include "ifcparse/Ifc4x3_add2.h"
+#include "ifcparse/IfcAlignmentHelper.h"
 
 #include <fstream>
 

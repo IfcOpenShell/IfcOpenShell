@@ -212,6 +212,8 @@ jobs:
           ./IfcParseExamples "../IfcParseExamples_test.ifc"
           ./IfcOpenHouse
           ./IfcAdvancedHouse
+          ./IfcAlignment
+          ./IfcSimplifiedAlignment
 
       - name: Test ifcopenshell-python
         run: |
