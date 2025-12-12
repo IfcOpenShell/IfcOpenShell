@@ -46,12 +46,10 @@ if(SCHEMA_VERSIONS MATCHES "2x3")
 
     if(STANDALONE_PROJECT)
         target_link_libraries(IfcParseExamples IfcOpenShell::IfcParse)
-        target_compile_features(IfcParseExamples PRIVATE cxx_std_17)
     else()
         target_include_directories(IfcParseExamples PRIVATE "${CMAKE_SOURCE_DIR}/../src")
         target_link_libraries(IfcParseExamples IfcParse)
         set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
-        target_compile_features(IfcParseExamples PRIVATE cxx_std_17)
     endif()
     install(TARGETS IfcParseExamples)
 
