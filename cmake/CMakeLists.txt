@@ -173,6 +173,12 @@ message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
 set(IFCOPENSHELL_EXPORT_TARGETS "${PROJECT_NAME}Targets")
 
+# On Windows Release and Debug binaries are not compatible.
+# So we add a postfix to avoid issues and allow release and debug installations to coexist.
+if(WIN32)
+    set(CMAKE_DEBUG_POSTFIX "_d")
+endif()
+
 if(BUILD_SHARED_LIBS)
     add_definitions(-DIFC_SHARED_BUILD)
     if(MSVC)
