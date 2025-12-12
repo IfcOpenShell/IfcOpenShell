@@ -54,6 +54,7 @@ else()
     target_link_libraries(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
 endif()
 
+target_link_libraries(IfcParse ${ROCKSDB_LIBRARIES})
 
 install(TARGETS IfcParse
     EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
