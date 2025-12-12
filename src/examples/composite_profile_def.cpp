@@ -27,9 +27,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#define IfcSchema Ifc2x3
+#include "ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
@@ -37,8 +37,8 @@ boost::none_t const null = boost::none;
 
 int main(int argc, char** argv) {
 	const char filename[] = "IfcCompositeProfileDef.ifc";
-	IfcHierarchyHelper file;
-	file.header().file_name().name(filename);
+	IfcHierarchyHelper<IfcSchema> file;
+	file.header().file_name()->setname(filename);
 
 	double coords1[] = {100.0, 0.0};
 	double coords2[] = {200.0, 0.0};
@@ -112,7 +112,8 @@ int main(int argc, char** argv) {
 		
 	product->setRepresentation(shape);
 
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcCompositeProfileDef");
+	using namespace std::string_literals;
+	file.getSingle<IfcSchema::IfcProject>()->setName("IfcCompositeProfileDef"s);
 
 	std::ofstream f(filename);
 	f << file;

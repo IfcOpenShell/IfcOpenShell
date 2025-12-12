@@ -215,11 +215,22 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build .
+          # To display executed command
+          set -x
+          ./arbitrary_open_profile_def
+          ./composite_profile_def
+          ./csg_primitive
+          ./ellipse_pies
+          ./faces
+          ./ifc_curve_rebar
+          ./profiles
           ./IfcParseExamples "../IfcParseExamples_test.ifc"
           ./IfcOpenHouse
           ./IfcAdvancedHouse
           ./IfcAlignment
           ./IfcSimplifiedAlignment
+          ./triangulated_faceset
+          set +x
 
       - name: Test ifcopenshell-python
         run: |

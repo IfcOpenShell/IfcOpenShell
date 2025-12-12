@@ -23,15 +23,19 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcparse/Ifc4.h"
-#include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include <iostream>
+#include <fstream>
+#include <optional>
+
+#define IfcSchema Ifc4
+#include "ifcparse/Ifc4.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 #include "suzanne_geometry.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
-boost::none_t const null = (static_cast<boost::none_t>(0));
+boost::none_t const null = boost::none;
 
 template <typename T>
 std::vector< std::vector<T> > create_vector_from_array(const T* arr, unsigned size) {
@@ -50,7 +54,7 @@ std::vector< std::vector<T> > create_vector_from_array(const T* arr, unsigned si
 }
 
 int main(int argc, char** argv) {
-	IfcHierarchyHelper file;
+	IfcHierarchyHelper<IfcSchema> file;
 
 	IfcSchema::IfcBuildingElementProxy* product = new IfcSchema::IfcBuildingElementProxy(
 		guid(), 0, S("Blender's Suzanne"), null, null, 0, 0, null, null);
@@ -73,13 +77,13 @@ int main(int argc, char** argv) {
 		file.getRepresentationContext("Model"), S("Body"), S("SurfaceModel"), items);
 	reps->push(rep);
 
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
+	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	file.addEntity(shape);
 		
 	product->setRepresentation(shape);
 
 	const std::string filename = "tesselated_faceset.ifc";
-	file.header().file_name().name(filename);
-	std::ofstream f(filename.c_str());
+	file.header().file_name()->setname(filename);
+	std::ofstream f(filename);
 	f << file;
 }
