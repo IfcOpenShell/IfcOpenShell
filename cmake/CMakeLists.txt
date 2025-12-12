@@ -230,6 +230,7 @@ if(USD_SUPPORT)
     set(USD_LIBRARIES pxr::USD)
 endif(USD_SUPPORT)
 
+set(ROCKSDB_LIBRARIES "")
 if (WITH_ROCKSDB)
     # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
     # find it's zstd dependency on Windows.
@@ -246,9 +247,11 @@ if (WITH_ROCKSDB)
     endif()
 
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
-    add_definitions(-DIFOPSH_WITH_ROCKSDB)
+    add_library(IFCOPENSHELL_RocksDB INTERFACE)
+    set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
+    target_compile_definitions(IFCOPENSHELL_RocksDB INTERFACE IFOPSH_WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
-    link_libraries($<IF:$<TARGET_EXISTS:RocksDB::rocksdb-shared>,RocksDB::rocksdb-shared,RocksDB::rocksdb>)
+    target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE $<IF:$<TARGET_EXISTS:RocksDB::rocksdb-shared>,RocksDB::rocksdb-shared,RocksDB::rocksdb>)
 
     if (WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
@@ -257,8 +260,11 @@ if (WITH_ROCKSDB)
         find_package(zstd CONFIG REQUIRED)
         mark_as_advanced(zstd_DIR)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
-        link_libraries(zstd::libzstd_static)
+        target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE zstd::libzstd_static)
     endif()
+
+    install(TARGETS IFCOPENSHELL_RocksDB
+        EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endif()
 
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
