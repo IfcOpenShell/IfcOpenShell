@@ -233,6 +233,12 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
+# On Windows Release and Debug binaries are not compatible.
+# So we add a postfix to avoid issues and allow release and debug installations to coexist.
+if(WIN32)
+    set(CMAKE_DEBUG_POSTFIX "_d")
+endif()
+
 if(MSVC)
     # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
     # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
