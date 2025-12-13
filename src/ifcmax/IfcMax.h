@@ -21,23 +21,27 @@
 #define IFCMAX_H
 
 #include "Max.h"
+#include "../ifcgeom/IfcGeomElement.h"
 
-extern ClassDesc* GetIFCImpDesc();
+class IFCImp : public SceneImport {
+  public:
+    int ExtCount();                  //  = 1
+    const TCHAR* Ext(int n);         //  = "IFC"
+    const TCHAR* LongDesc();         //  = "IFC Importer for 3ds Max"
+    const TCHAR* ShortDesc();        //  = "Industry Foundation Classes"
+    const TCHAR* AuthorName();       //  = "Josef Wienerroither"
+    const TCHAR* CopyrightMessage(); //  = "Copyright (c) 2025 Josef Wienerroither,  2011-2016 IfcOpenShell"
+    const TCHAR* OtherMessage1();    //  = ""
+    const TCHAR* OtherMessage2();    //  = ""
+    unsigned int Version();          //  = 25
+    void ShowAbout(HWND hWnd);
+    int DoImport(const TCHAR* name, ImpInterface* ei, Interface* i, BOOL suppressPrompts);
+    BOOL VerifyCancel();
 
-class IFCImp : public SceneImport 
-{
-public:
-	int ExtCount();                   //  = 1
-	const TCHAR * Ext(int n);         //  = "IFC"
-	const TCHAR * LongDesc();         //  = "IfcOpenShell IFC Importer for 3ds Max"
-	const TCHAR * ShortDesc();        //  = "Industry Foundation Classes"
-	const TCHAR * AuthorName();       //  = "Thomas Krijnen"
-	const TCHAR * CopyrightMessage(); //  = "Copyright (c) 2011-2016 IfcOpenShell"
-	const TCHAR * OtherMessage1();    //  = ""
-	const TCHAR * OtherMessage2();    //  = ""
-	unsigned int Version();           //  = 12
-	void	ShowAbout(HWND hWnd);
-	int		DoImport(const TCHAR *name,ImpInterface *ei,Interface *i, BOOL suppressPrompts);
+  private:
+    inline Point3 Point3ByIndex(const std::vector<double>& verts, int index);
+    void BuildFullName(const IfcUtil::IfcBaseEntity& entity, MSTR& long_name);
+    TriObject* BuildMesh(const IfcGeom::TriangulationElement* triElement);
 };
 
 #endif
