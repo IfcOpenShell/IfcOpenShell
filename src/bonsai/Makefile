@@ -249,8 +249,7 @@ ifeq ($(PLATFORM), win)
 	$(call Download,build/bonsai/libs/bin,https://github.com/brunopostle/ifcmerge/releases/download/2025-01-26/ifcmerge.zip)
 	cd build/bonsai/libs/bin && unzip ifcmerge.zip && rm ifcmerge.zip
 else
-	$(call Download,build/bonsai/libs/bin,https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge)
-	cd build/bonsai/libs/bin && chmod +x ifcmerge
+	$(call Download,build/bonsai/libs/bin,https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge && chmod +x ifcmerge)
 endif
 
 	# Generate translations module for Bonsai build
