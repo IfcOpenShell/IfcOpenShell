@@ -41,6 +41,8 @@ echo.
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
 
+set SCRIPT_DIR=%~dp0
+
 :: Make sure vcvarsall.bat is called and dev env set is up.
 IF "%VSINSTALLDIR%"=="" (
    call utils\cecho.cmd 0 12 "Visual Studio environment variables not set- cannot proceed."
@@ -108,6 +110,7 @@ FOR %%i IN (powershell git cmake) DO (
 :: Check powershell version
 powershell -c "exit $PSVersionTable.PSVersion.Major -lt 5"
 IF NOT %ERRORLEVEL%==0 call cecho.cmd 0 12 "Powershell version 5 or higher required" && goto :ErrorAndPrintUsage
+set PWSH_TOOLS=powershell -NonInteractive -File %SCRIPT_DIR%\utils\tools.ps1
 
 cmake --version | findstr version > temp.txt
 set /p CMAKE_VERSION=<temp.txt
@@ -134,6 +137,7 @@ set BOOST_VERSION=1.86.0
 set BOOST_VER=%BOOST_VERSION:.=_%
 
 :: Print build configuration information
+
 call cecho.cmd 0 10 "Script configuration:"
 call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR%`'`t
 echo   - Passed to CMake -G option.
@@ -193,8 +197,6 @@ IF DEFINED PYTHON_VERSION (
 )
 
 :: VERSION DERIVATIONS
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     set PYTHONHOME=%DEPS_DIR%\python.%PYTHON_VERSION%\tools
 )
@@ -204,8 +206,6 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 :: executed by jumping (using goto) to different labels.
 if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
@@ -259,9 +259,11 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :proj
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\proj-9.2.1" (
-    echo Found existing "%INSTALL_DIR%\proj-9.2.1", skipping
-    goto :mpir
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK (
+	IF EXIST "%INSTALL_DIR%\proj-9.2.1" (
+		echo Found existing "%INSTALL_DIR%\proj-9.2.1", skipping
+		goto :mpir
+	)
 )
 
 set DEPENDENCY_NAME=sqlite3
@@ -301,9 +303,11 @@ popd
 
 :mpir
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\mpir" (
-    echo Found existing "%INSTALL_DIR%\mpir", skipping
-    goto :mpfr
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK (
+	IF EXIST "%INSTALL_DIR%\mpir" (
+		echo Found existing "%INSTALL_DIR%\mpir", skipping
+		goto :mpfr
+	)
 )
 
 set DEPENDENCY_NAME=mpir
@@ -331,9 +335,11 @@ popd
 
 :mpfr
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\mpfr" (
-    echo Found existing "%INSTALL_DIR%\mpfr", skipping
-    goto :HDF5
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK (
+	IF EXIST "%INSTALL_DIR%\mpfr" (
+		echo Found existing "%INSTALL_DIR%\mpfr", skipping
+		goto :HDF5
+	)
 )
 
 set DEPENDENCY_NAME=mpfr
@@ -368,12 +374,12 @@ popd
 set DEPENDENCY_NAME=hdf5
 set DEPENDENCY_DIR=%DEPS_DIR%\hdf5-%HDF5_VERSION%
 set HDF5_CMAKE_ZIP=hdf5-%HDF5_VERSION%.zip
-set HDF5_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+set DEPENDENCY_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+set HDF5_INSTALL_NAME=%DEPENDENCY_INSTALL_NAME%
+set NEXT_DEPENDENCY_LABEL=Boost
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_NAME%" (
-    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_NAME%", skipping
-    goto :Boost
-)
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
 call :DownloadFile ^
@@ -393,6 +399,7 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\HDF5.sln" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :MarkInstallation
 popd
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
@@ -405,7 +412,6 @@ set DEPENDENCY_INSTALL_DIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%
 echo BOOST_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 :: Needed for CGAL build.
 set BOOST_ROOT=%DEPENDENCY_DIR%
-set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost-%BOOST_VERSION%-b2-nodocs.%ZIP_EXT%
@@ -453,15 +459,14 @@ call :DownloadFile https://github.com/nlohmann/json/releases/download/v%JSON_VER
 :: Note OpenCOLLADA has only Release and Debug builds.
 set DEPENDENCY_NAME=OpenCOLLADA
 set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
+set DEPENDENCY_INSTALL_NAME=OpenCOLLADA
+set NEXT_DEPENDENCY_LABEL=OCCT
 :: Always clone it, even if it's installed, because it contains xml headers we need.
-:: Use a fixed revision in order to prevent introducing breaking changes							 
+:: Use a fixed revision in order to prevent introducing breaking changes
 call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" %OPENCOLLADA_VERSION%
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\OpenCOLLADA" (
-    echo Found existing "%INSTALL_DIR%\OpenCOLLADA", skipping
-    :: we do need to clone though because the bundled libxml includes are not installed
-    goto :OCCT
-)
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
@@ -473,7 +478,7 @@ IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOL
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
 :: NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with arbitrary versions of the libraries.
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
                -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES=""
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
@@ -481,15 +486,24 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OPENCOLLADA.sln" %DEBUG_OR_REL
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :MarkInstallation
 
 :OCCT
 
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\opencascade-%OCCT_VERSION%" (
-    echo Found existing "%INSTALL_DIR%\opencascade-%OCCT_VERSION%", skipping
-    goto :Python
-)
+set DEPENDENCY_NAME=OpenCASCADE
+:: `new-layout` suffix can be removed on the next OCCT version update
+:: it's needed to separate legacy layout installation from the new one.
+set OCCT_DEPENDENCY_INSTALL_NAME=opencascade-%OCCT_VERSION%-new-layout
+set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
+set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
+set NEXT_DEPENDENCY_LABEL=Python
+echo OCC_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
+
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
@@ -512,6 +526,7 @@ if not %ERRORLEVEL%==0 goto :Error
 
 set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
+set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
 cd "%DEPS_DIR%"
 call :GitCloneAndCheckoutRevision https://github.com/Open-Cascade-SAS/OCCT "%DEPENDENCY_DIR%" %OCCT_VER%
 if not %ERRORLEVEL%==0 goto :Error
@@ -527,8 +542,12 @@ findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
 
 cd "%DEPENDENCY_DIR%"
-call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade-%OCCT_VERSION%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
-    -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
+:: TODO: remove CMAKE_DEBUG_POSTFIX setting later.
+:: Temporarily explicitly set `CMAKE_DEBUG_POSTFIX` to empty to override it's perviously being set to `d`.
+:: OCCT don't need it, since it's layout is separating debug and release build by different folders.
+call :RunCMake -DINSTALL_DIR="%DEPENDENCY_INSTALL_DIR%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX="" ^
+    -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype" ^
+    -DBUILD_USE_PCH=ON
 if not %ERRORLEVEL%==0 goto :Error
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
@@ -540,26 +559,22 @@ IF %ARCH_BITS%==32 (
 
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
+
+:: If `inc` is present in installation folder, then installation takes much longer
+:: See https://github.com/Open-Cascade-SAS/OCCT/issues/901
+powershell -c "$path = '%DEPENDENCY_INSTALL_DIR%\inc'; if (Test-Path $path) { Remove-Item -Recurse -Force $path }"
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 
-SET COMPILE_WITH_WPO=FALSE
+:: Fix upstream bug in cmake config file with unescaped quotes preventing configuration.
+:: The issue is fixed in 7.9.0+.
+:: See https://github.com/Open-Cascade-SAS/OCCT/pull/373
+powershell -c "$path='%DEPENDENCY_INSTALL_DIR%\cmake\OpenCASCADEConfig.cmake'; (Get-Content $path) -replace '/wd\"(\d+)\"','/wd$1' | Set-Content $path"
+if not %ERRORLEVEL%==0 goto :Error
 
-:: Use a single lib directory for release and debug libraries as is done with OCE
-if not exist "%OCC_LIBRARY_DIR%". mkdir "%OCC_LIBRARY_DIR%"
-:: NOTE OCCT (at least occt-V7_0_0-9059ca1) directory creation code is hardcoded and doesn't seem handle future VC versions
-set OCCT_VC_VER=%VC_VER%
-IF %OCCT_VC_VER% GTR 14 (
-    set OCCT_VC_VER=14
-)
-move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\lib\*.*" "%OCC_LIBRARY_DIR%"
-rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%"
-:: Removed unneeded bits
-rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\data"
-rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\samples"
-del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
+call :MarkInstallation
+
+SET COMPILE_WITH_WPO=FALSE
 
 :Python
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
@@ -598,22 +613,24 @@ set DEPENDENCY_DIR=%DEPS_DIR%\swig-%SWIG_VERSION%
 set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\swig-%SWIG_VERSION%
 echo SWIG_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
-    echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
-    goto :cgal
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK (
+	IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
+		echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
+		goto :cgal
+	)
 )
 
 cd "%DEPS_DIR%"
 
-:: Install bizon dependency for SWIG.
+:: Install bison dependency for SWIG.
 set SWIG_DEPENDENCY_NAME=%DEPENDENCY_NAME%
 set DEPENDENCY_NAME=win_flex_bison
-set WIN_FLEX_BIZON=win_flex_bison-2.5.25
-set WIN_FLEX_BIZON_ZIP=%WIN_FLEX_BIZON%.zip
-call :DownloadFile https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/%WIN_FLEX_BIZON_ZIP% "%DEPS_DIR%" %WIN_FLEX_BIZON_ZIP%
+set WIN_FLEX_BISON=win_flex_bison-2.5.25
+set WIN_FLEX_BISON_ZIP=%WIN_FLEX_BISON%.zip
+call :DownloadFile https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/%WIN_FLEX_BISON_ZIP% "%DEPS_DIR%" %WIN_FLEX_BISON_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-echo test %WIN_FLEX_BIZON%
-call :ExtractArchive %WIN_FLEX_BIZON_ZIP% "%DEPS_DIR%\%WIN_FLEX_BIZON%" "%DEPS_DIR%\%WIN_FLEX_BIZON%"
+echo test %WIN_FLEX_BISON%
+call :ExtractArchive %WIN_FLEX_BISON_ZIP% "%DEPS_DIR%\%WIN_FLEX_BISON%" "%DEPS_DIR%\%WIN_FLEX_BISON%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 set DEPENDENCY_NAME=%SWIG_DEPENDENCY_NAME%
 
@@ -627,7 +644,7 @@ cd "%DEPENDENCY_DIR%"
 
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DWITH_PCRE=OFF ^
-               -DBISON_EXECUTABLE="%DEPS_DIR%\%WIN_FLEX_BIZON%\win_bison.exe"
+               -DBISON_EXECUTABLE="%DEPS_DIR%\%WIN_FLEX_BISON%\win_bison.exe"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\swig.sln" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -637,9 +654,11 @@ robocopy "%INSTALL_DIR%\swigwin\bin" "%INSTALL_DIR%\swigwin" /move /e
 
 :cgal
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\cgal" (
-    echo Found existing "%INSTALL_DIR%\cgal", skipping
-    goto :Eigen
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK (
+	IF EXIST "%INSTALL_DIR%\cgal" (
+		echo Found existing "%INSTALL_DIR%\cgal", skipping
+		goto :Eigen
+	)
 )
 
 set DEPENDENCY_NAME=cgal
@@ -650,13 +669,7 @@ cd "%DEPENDENCY_DIR%"
 git reset --hard
 git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
-               -DBOOST_ROOT="%BOOST_ROOT%"    ^
-               -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
-               -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
-               -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
-               -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
-               -DCGAL_HEADER_ONLY=On                          ^
-               -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%"
+               -DCGAL_HEADER_ONLY=On
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -667,9 +680,11 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 set DEPENDENCY_NAME=Eigen
 set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
-    echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
-    goto :zstd
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK (
+	IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
+		echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
+		goto :zstd
+	)
 )
 call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" %EIGEN_VERSION%
 
@@ -679,9 +694,11 @@ set ZSTD_VERSION=1.5.7
 set ZSTD_ZIP=zstd-%ZSTD_VERSION%.zip
 set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%-%ZSTD_VERSION%
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
-    echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
-    goto :rocksdb
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK ( 
+	IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
+		echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
+		goto :rocksdb
+	)
 )
 
 cd %DEPS_DIR%
@@ -704,11 +721,11 @@ set DEPENDENCY_NAME=rocksdb
 set ROCKSDB_VERSION=9.11.2
 set ROCKSDB_ZIP=rocksdb-%ROCKSDB_VERSION%.zip
 set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%-%ROCKSDB_VERSION%
+set DEPENDENCY_INSTALL_NAME=%DEPENDENCY_NAME%
+set NEXT_DEPENDENCY_LABEL=Successful
 
-IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK IF EXIST "%INSTALL_DIR%\%DEPENDENCY_NAME%" (
-    echo Found existing "%INSTALL_DIR%\%DEPENDENCY_NAME%", skipping
-    goto :Successful
-)
+IF NOT DEFINED SKIP_INSTALLED_DEPS_CHECK call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 cd %DEPS_DIR%
 call :DownloadFile ^
@@ -723,17 +740,23 @@ cd "%DEPENDENCY_DIR%"
 set ZSTD_INCLUDE=%INSTALL_DIR%\zstd\include
 set ZSTD_LIB_DEBUG=%INSTALL_DIR%\zstd\lib\zstd_static.lib
 set ZSTD_LIB_RELEASE=%INSTALL_DIR%\zstd\lib\zstd_static.lib
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" ^
                -DROCKSDB_INSTALL_ON_WINDOWS=On ^
                -DFAIL_ON_WARNINGS=Off ^
                -DWITH_TESTS=OFF ^
+               -DWITH_TOOLS=OFF ^
+               -DWITH_BENCHMARK_TOOLS=OFF ^
+               -DWITH_CORE_TOOLS=OFF ^
+               -DROCKSDB_BUILD_SHARED=OFF ^
                -DWITH_ZSTD=On ^
-               -DPORTABLE=1
+               -DPORTABLE=1 ^
+               -DCMAKE_DEBUG_POSTFIX="_d"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\rocksdb.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :MarkInstallation
 
 :: :tbb
 :: set DEPENDENCY_NAME=tbb
@@ -767,7 +790,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 ::                -DPXR_BUILD_USD_TOOLS=FALSE                 ^
 ::                -DPXR_BUILD_TESTS=FALSE                     ^
 ::                -DBUILD_SHARED_LIBS=Off                     ^
-::                -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\USD.sln" %BUILD_CFG%
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -926,11 +948,11 @@ IF [%~3]==[] (
 call cecho.cmd 0 13 "Building %TARGET% of %DEPENDENCY_NAME%. Please be patient, this will take a while."
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
-IF %COMPILE_WITH_WPO%==FALSE (
-	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM% /t:"%TARGET%"
-) ELSE (
-	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE /t:"%TARGET%"
+set COMPILE_WITH_WPO_SETTING=
+IF NOT %COMPILE_WITH_WPO%==FALSE (
+    set COMPILE_WITH_WPO_SETTING=;WholeProgramOptimization=TRUE
 )
+%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%%COMPILE_WITH_WPO_SETTING% /t:"%TARGET%"
 exit /b %ERRORLEVEL%
 
 :: InstallCMakeProject - Builds the INSTALL project of CMake-based project
@@ -942,14 +964,41 @@ pushd %1
 call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
-IF %COMPILE_WITH_WPO%==FALSE (
-	%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
-) ELSE (
-	%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+set COMPILE_WITH_WPO_SETTING=
+IF NOT %COMPILE_WITH_WPO%==FALSE (
+    set COMPILE_WITH_WPO_SETTING=;WholeProgramOptimization=TRUE
 )
+%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%%COMPILE_WITH_WPO_SETTING%
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
+
+:: Checks whether a dependency is already installed for the specified config
+:: Doesn't work for dependencies, only for those that need separate Debug/Release installs.
+:: Required vars:
+:: - DEPENDENCY_NAME
+:: - DEPENDENCY_INSTALL_NAME
+:: - NEXT_DEPENDENCY_LABEL
+:: Always intended to be used with the code below
+:: (unfortunately we can't move `GOTO` to the this label too,
+:: because of how it would interact with `call` and `exit /b`):
+:: ```
+:: call :CheckInstallation
+:: if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
+:: ```
+:CheckInstallation
+%PWSH_TOOLS% check_installation %DEPENDENCY_NAME% "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
+set RET=%ERRORLEVEL%
+if %RET%==200 echo Found existing "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" for %BUILD_CFG%, skipping && exit /b 200
+if %RET% NEQ 404 GOTO :Error
+exit /b 0
+
+:: Required vars:
+:: - DEPENDENCY_INSTALL_NAME
+:MarkInstallation
+%PWSH_TOOLS% mark "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+exit /b 0
 
 :: PrintUsage - Prints usage information
 :PrintUsage
@@ -967,3 +1016,4 @@ echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
 echo NB: This script needs to be ran from the directory directly containing it.
 echo.
+
