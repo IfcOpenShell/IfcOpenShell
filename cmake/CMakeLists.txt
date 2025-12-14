@@ -327,6 +327,7 @@ message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 if(COLLADA_SUPPORT)
     find_package(OpenCOLLADA REQUIRED)
+    add_definitions(-DWITH_OPENCOLLADA)
 endif()
 
 if(HDF5_SUPPORT)
