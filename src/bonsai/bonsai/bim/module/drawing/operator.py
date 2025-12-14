@@ -3876,3 +3876,67 @@ class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
                 if referenced_element := tool.Drawing.get_annotation_element(element):
                     tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
+
+class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.activate_drawing_by_annotation"
+    bl_label = "Activate Drawing"
+    bl_description = "Activate the drawing corresponding to the selected annotation"
+    bl_options = {"REGISTER", "UNDO"}
+    
+    @classmethod
+    def poll(cls, context):
+        # Check if an annotation object is selected
+        if not context.selected_objects:
+            cls.poll_message_set("No object selected")
+            return False
+        
+        active_obj = context.active_object
+        if not active_obj:
+            cls.poll_message_set("No active object")
+            return False
+            
+        element = tool.Ifc.get_entity(active_obj)
+        if not element:
+            cls.poll_message_set("Selected object is not an IFC element")
+            return False
+            
+        # Check if it's an IfcAnnotation with ObjectType = "SECTION" or "ELEVATION"
+        if not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
+            cls.poll_message_set("Selected object is not a drawing annotation")
+            return False
+            
+        return True
+
+    def _execute(self, context):
+        active_obj = context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        
+        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
+            self.report({"ERROR"}, "Selected object is not a drawing annotation")
+            return {"CANCELLED"}
+        
+        # Find the drawing/camera element that this annotation references
+        drawing_element = self.find_drawing_from_annotation(element)
+        
+        if not drawing_element:
+            self.report({"ERROR"}, "Could not find drawing element for this annotation")
+            return {"CANCELLED"}
+        
+        # Use the existing ActivateDrawing operator with the drawing element's ID
+        bpy.ops.bim.activate_drawing(drawing=drawing_element.id())
+        
+        return {"FINISHED"}
+    
+    def find_drawing_from_annotation(self, annotation_element):
+        """Find the drawing/camera element that this annotation references."""
+        ifc = tool.Ifc.get()
+        
+        # Check IfcRelAssignsToProduct relationships
+        for rel in ifc.get_inverse(annotation_element):
+            if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct:
+                if rel.RelatingProduct.is_a("IfcAnnotation"):
+                    # Found the drawing element!
+                    return rel.RelatingProduct
+    
+        
+        return None
