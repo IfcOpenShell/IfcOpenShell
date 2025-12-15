@@ -3050,10 +3050,21 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".svg"
+    
+    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype='DIR_PATH')
 
     def _execute(self, context):
-        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
+        # Handle both single and multiple file selection
+        if self.files:
+            for file_elem in self.files:
+                filepath = os.path.join(self.directory, file_elem.name)
+                uri = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
+                core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=uri)
+        else:
+            # Fallback for single file (backward compatibility)
+            filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+            core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
 
 
 class RemoveReference(bpy.types.Operator, tool.Ifc.Operator):
