@@ -405,8 +405,6 @@ if any(f.startswith("py-") for f in flags):
 if any(f.startswith("occt-") for f in flags):
     OCCT_VERSION = next(f.split("-", 1)[1] for f in flags if f.startswith("occt-"))
 
-print(OCCT_VERSION)
-
 if explicit_targets:
     targets = {dep for target in explicit_targets for dep in gather_dependencies(target)}
 else:
