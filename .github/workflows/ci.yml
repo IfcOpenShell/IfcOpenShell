@@ -172,7 +172,6 @@ jobs:
           
           mkdir build && cd build
           cmake \
-               -DCMAKE_CXX_STANDARD=17 \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
