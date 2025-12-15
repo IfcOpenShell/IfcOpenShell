@@ -9,7 +9,6 @@ set LIBXML2="%LIBRARY_PREFIX%/lib/libxml2.lib"
 cmake -G "Ninja" ^
  -D SCHEMA_VERSIONS="2x3;4;4x1;4x3_add2" ^
  -D CMAKE_BUILD_TYPE:STRING=Release ^
- -D CMAKE_CXX_STANDARD=17 ^
  -D CMAKE_INSTALL_PREFIX:FILEPATH="%LIBRARY_PREFIX%" ^
  -D CMAKE_PREFIX_PATH:FILEPATH="%LIBRARY_PREFIX%" ^
  -D CMAKE_SYSTEM_PREFIX_PATH:FILEPATH="%LIBRARY_PREFIX%" ^
@@ -43,7 +42,7 @@ cmake -G "Ninja" ^
  -D Boost_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
  -D Boost_USE_STATIC_LIBS:BOOL=OFF ^
  ../cmake
- 
+
 if errorlevel 1 exit 1
 
 ninja install -j 1
