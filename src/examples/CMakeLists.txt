@@ -65,6 +65,13 @@ if(SCHEMA_VERSIONS MATCHES "2x3")
             find_package(CGAL CONFIG REQUIRED)
             find_package(OpenCASCADE CONFIG REQUIRED)
 
+            if(OpenCASCADE_VERSION VERSION_LESS "7.7.0")
+                # cmake configs < 7.7.0 were not adding include directories to targets automatically.
+                set_target_properties(TKernel PROPERTIES
+                    INTERFACE_INCLUDE_DIRECTORIES "${OpenCASCADE_INCLUDE_DIR}"
+                )
+            endif()
+
             target_link_libraries(IfcHouseInterface INTERFACE IfcOpenShell::IfcParse IfcOpenShell::geometry_serializer)
         else()
             target_link_libraries(IfcHouseInterface INTERFACE IfcParse geometry_serializer)
