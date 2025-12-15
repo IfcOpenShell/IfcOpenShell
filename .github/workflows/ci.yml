@@ -150,9 +150,8 @@ jobs:
           # Remove default swig to avoid conflicts.
           sudo apt remove --purge swig swig4.0
           sudo apt-get install -y libpcre2-dev bison
-          git clone https://github.com/swig/swig
+          git clone https://github.com/swig/swig --branch v4.1.0 --depth 1
           cd swig
-          git checkout v4.1.0
           mkdir build && cd build
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
