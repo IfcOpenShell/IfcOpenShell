@@ -46,7 +46,7 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
         )
     endif()
 
-    if(OpenCASCADE_VERSION VERSION_LESS "7.9.0")
+    if(OpenCASCADE_VERSION VERSION_LESS "7.9.0" AND WIN32)
         # Bug in OCCT cmake configs < 7.9.0 - missing linked library.
         list(APPEND OpenCASCADE_LIBRARIES WSOCK32.lib)
     endif()
