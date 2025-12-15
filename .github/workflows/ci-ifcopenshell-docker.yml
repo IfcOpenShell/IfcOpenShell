@@ -73,7 +73,7 @@ jobs:
         make package
       working-directory: build
     - name: Upload 
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         # Artifact name
         name: ifcos-artifacts
