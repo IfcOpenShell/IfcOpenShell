@@ -589,7 +589,7 @@ class BIMProperties(PropertyGroup):
     add_mass_time_units: bpy.props.BoolProperty(
         name="Add Mass and Time Units",
         description="Enable to define mass and time units for the project",
-        default=False
+        default=False,
     )
     mass_unit: EnumProperty(
         items=[

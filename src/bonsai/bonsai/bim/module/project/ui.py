@@ -359,22 +359,22 @@ class BIM_PT_new_project_wizard(Panel):
         row = self.layout.row()
         prop_with_search(self.layout, pprops, "template_file", text="Template")
 
-        header, body = self.layout.panel("Mass and Time Units", default_closed=True)
-        if header:
-            header.label(text="Mass and Time Units")
-        if body:
-            label = "Add Mass and Time Units" if not props.add_mass_time_units else "Remove Mass and Time Units"
-            body.prop(props, "add_mass_time_units", toggle=True, text=label)
-            if props.add_mass_time_units:
-                row = body.row()
-                row.prop(props, "mass_unit", text="Mass Unit")
-                row = body.row()
-                row.prop(props, "time_unit", text="Time Unit")
+        if tool.Blender.get_addon_preferences().mass_time_units_in_wizard:
+            header, body = self.layout.panel("Mass and Time Units", default_closed=True)
+            if header:
+                header.label(text="Mass and Time Units")
+            if body:
+                label = "Add Mass and Time Units" if not props.add_mass_time_units else "Remove Mass and Time Units"
+                body.prop(props, "add_mass_time_units", toggle=True, text=label)
+                if props.add_mass_time_units:
+                    row = body.row()
+                    row.prop(props, "mass_unit", text="Mass Unit")
+                    row = body.row()
+                    row.prop(props, "time_unit", text="Time Unit")
 
         self.layout.use_property_split = True
         row = self.layout.row()
         row.operator("bim.create_project")
-
 
 
 class BIM_PT_project_library(Panel):
