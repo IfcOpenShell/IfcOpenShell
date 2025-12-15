@@ -208,7 +208,9 @@ jobs:
         run: |
           cd src/examples
           mkdir build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build .
           ./IfcParseExamples "../IfcParseExamples_test.ifc"
           ./IfcOpenHouse
