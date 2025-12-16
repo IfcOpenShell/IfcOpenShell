@@ -55,6 +55,11 @@ jobs:
       - name: Install C++ dependencies
         run: |
           sudo apt update
+          # `occt-misc` is only needed for 22.04, since it has cmake configs.
+          # In 24.04+, the needed files were moved `libocct-foundation-dev` and `occt-misc` can be removed.
+          # Other libs in `OCCT_CMAKE_DEPS` are needed only for cmake config to work properly, they're not used directly.
+          OCCT_CMAKE_DEPS="occt-misc libocct-draw-dev tcl-dev tk-dev libxi-dev"
+
           sudo apt-get install --no-install-recommends \
           git cmake gcc g++ \
           libboost-date-time-dev \
@@ -67,6 +72,7 @@ jobs:
           libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
           libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
+          ${OCCT_CMAKE_DEPS} \
           libhdf5-dev libcgal-dev libeigen3-dev
           
       - name: ccache
@@ -150,9 +156,8 @@ jobs:
           # Remove default swig to avoid conflicts.
           sudo apt remove --purge swig swig4.0
           sudo apt-get install -y libpcre2-dev bison
-          git clone https://github.com/swig/swig
+          git clone https://github.com/swig/swig --branch v4.1.0 --depth 1
           cd swig
-          git checkout v4.1.0
           mkdir build && cd build
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
@@ -166,15 +171,10 @@ jobs:
           echo ${{ env.pythonLocation }}
           
           mkdir build && cd build
-          # Ubuntu 22.04's libocct-foundation-dev package doesn't have Config.cmake, so we provide OCC paths directly.
-          # In later versions of Ubuntu, this can be simplified and the OCC paths can be removed.
           cmake \
-               -DCMAKE_CXX_STANDARD=17 \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
-               -DOCC_INCLUDE_DIR=/usr/include/opencascade \
-               -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
                -DPYTHON_EXECUTABLE:FILEPATH=${{ env.pythonLocation }}/bin/python \
                -DPYTHON_INCLUDE_DIR:PATH=${{ env.pythonLocation }}/include/python3.11 \
                -DUSE_MMAP=On \
@@ -207,11 +207,13 @@ jobs:
         run: |
           cd src/examples
           mkdir build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build .
           ./IfcParseExamples "../IfcParseExamples_test.ifc"
-          # ./IfcOpenHouse
-          # ./IfcAdvancedHouse
+          ./IfcOpenHouse
+          ./IfcAdvancedHouse
           ./IfcAlignment
           ./IfcSimplifiedAlignment
 
