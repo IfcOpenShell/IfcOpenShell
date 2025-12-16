@@ -3688,7 +3688,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         description="Existing object name to add a style with reference image to. If not provided will create a new object.",
         options={"SKIP_SAVE"},
     )
-    
+
     x_length: bpy.props.FloatProperty(
         name="X Length",
         description="Width of the reference image in project units",
@@ -3698,20 +3698,20 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         precision=3,
     )
     y_length: bpy.props.FloatProperty(
-        name="Y Length", 
+        name="Y Length",
         description="Height of the reference image in project units",
         default=1.0,
         min=0.001,
         soft_min=0.01,
         precision=3,
     )
-    
+
     show_dimensions_dialog: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     def draw(self, context):
         layout = self.layout
-        
-        if getattr(self, 'show_dimensions_dialog', False):
+
+        if getattr(self, "show_dimensions_dialog", False):
             if tool.Ifc.get():
                 length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
                 if length_unit:
@@ -3733,47 +3733,47 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 layout.label(text="to use relative paths.")
             layout.prop(self, "override_existing_image")
             layout.prop(self, "use_existing_object_by_name")
-    
+
     def invoke(self, context, event):
-        if not getattr(self, 'show_dimensions_dialog', False):
+        if not getattr(self, "show_dimensions_dialog", False):
             context.window_manager.fileselect_add(self)
-            return {'RUNNING_MODAL'}
+            return {"RUNNING_MODAL"}
         else:
             return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        if not getattr(self, 'show_dimensions_dialog', False):
+        if not getattr(self, "show_dimensions_dialog", False):
             abs_path = Path(self.filepath).absolute().resolve()
             if self.override_existing_image:
                 params = {"check_existing": True, "force_reload": True}
             else:
                 params = {"check_existing": False}
-            
+
             try:
                 image = load_image(abs_path.name, str(abs_path.parent), **params)
-                
+
                 image_width_px = image.size[0]
                 image_height_px = image.size[1]
                 aspect_ratio = image_width_px / image_height_px
-                
+
                 if aspect_ratio >= 1.0:
                     self.x_length = 1.0
                     self.y_length = 1.0 / aspect_ratio
                 else:
                     self.x_length = aspect_ratio
                     self.y_length = 1.0
-                
+
                 bpy.data.images.remove(image)
-                
+
             except Exception as e:
-                self.report({'ERROR'}, f"Failed to load image: {str(e)}")
-                return {'CANCELLED'}
-            
+                self.report({"ERROR"}, f"Failed to load image: {str(e)}")
+                return {"CANCELLED"}
+
             self.show_dimensions_dialog = True
             return context.window_manager.invoke_props_dialog(self)
-        
+
         return self._execute(context)
-    
+
     def _execute(self, context):
         space = tool.Blender.get_view3d_space()
         if space.shading.color_type != "TEXTURE":
@@ -3795,7 +3795,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
         def bm_add_image_plane(mesh):
             bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
-            
+
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             plane_scale = Vector((self.x_length * unit_scale / 2.0, self.y_length * unit_scale / 2.0, 1.0))
             matrix = Matrix.LocRotScale(None, None, plane_scale)
@@ -3810,16 +3810,16 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             max_x = max(v.co.x for v in bm.verts)
             min_y = min(v.co.y for v in bm.verts)
             max_y = max(v.co.y for v in bm.verts)
-            
+
             width = max_x - min_x
             height = max_y - min_y
-            
+
             for face in bm.faces:
                 for loop in face.loops:
                     vert = loop.vert
                     u = (vert.co.x - min_x) / width if width > 0 else 0.5
                     v = (vert.co.y - min_y) / height if height > 0 else 0.5
-                    
+
                     u = max(0.0, min(1.0, u))
                     v = max(0.0, min(1.0, v))
                     loop[uv_layer].uv = (u, v)
@@ -3844,7 +3844,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             )
             tool.Blender.remove_data_block(temp_mesh)
 
-
         element = tool.Ifc.get_entity(obj)
         if element and isinstance(obj.data, bpy.types.Mesh):
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
@@ -3853,9 +3852,9 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 num_faces = len(obj.data.polygons)
                 obj.data["ios_item_ids"] = [item_id] * num_faces
                 tool.Blender.Attribute.fill_attribute(obj.data, "ios_item_ids", "FACE", "INT", [item_id] * num_faces)
-                
+
                 for item in representation.Items:
-                    if item.is_a('IfcPolygonalFaceSet') and item.Coordinates:
+                    if item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
                         new_coords = []
                         for vertex in obj.data.vertices:
                             co = obj.matrix_world @ vertex.co
@@ -3901,8 +3900,8 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         )
         tool.Style.reload_material_from_ifc(material)
         tool.Geometry.record_object_materials(obj)
-        
-        return {'FINISHED'}
+
+        return {"FINISHED"}
 
 
 class ConvertSVGToDXF(bpy.types.Operator):

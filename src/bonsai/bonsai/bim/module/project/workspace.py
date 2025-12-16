@@ -78,6 +78,7 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row = layout.row(align=True)
         op = row.operator("bim.explore_hotkey", text="Image Scaling Tool", icon="IMAGE_PLANE")
         op.hotkey = "S_S"
+        op.description = "Scale Image Annotation. Allows to scale an IfcReferenceImage. Select image, select tool. Check lower left corner instructions to select two points and provide real distance between them"
 
 
 class ExploreHotkey(bpy.types.Operator):
@@ -123,12 +124,14 @@ class ExploreHotkey(bpy.types.Operator):
         active_obj = bpy.context.active_object
         selected_objects = tool.Blender.get_selected_objects()
         element = tool.Ifc.get_entity(active_obj) if active_obj else None
-        
-        if (not active_obj or 
-            not element or 
-            not element.is_a("IfcAnnotation") or 
-            len(selected_objects) != 1 or
-            not tool.Drawing.is_annotation_object_type(element, "IMAGE")):
+
+        if (
+            not active_obj
+            or not element
+            or not element.is_a("IfcAnnotation")
+            or len(selected_objects) != 1
+            or not tool.Drawing.is_annotation_object_type(element, "IMAGE")
+        ):
             self.report({"ERROR"}, "Please select one image annotation first.")
             return
 

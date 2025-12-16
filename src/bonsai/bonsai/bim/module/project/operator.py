@@ -2843,6 +2843,7 @@ class ClearMeasurement(bpy.types.Operator):
         tool.Blender.update_viewport()
         return {"FINISHED"}
 
+
 class ImageScalingTool(bpy.types.Operator, PolylineOperator):
     bl_idname = "bim.image_scaling_tool"
     bl_label = "Image Scaling Tool"
@@ -2862,7 +2863,7 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         self.current_distance_value = ""
         self.is_typing_distance = False
         self.calculated_distance = 0.0
-        
+
         if tool.Ifc.get():
             self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         else:
@@ -2872,7 +2873,7 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         if not self.target_object or not context.active_object or context.active_object != self.target_object:
             self.report({"ERROR"}, "Image annotation was deselected. Tool cancelled.")
             return self.cancel_tool(context)
-        
+
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
 
@@ -2891,9 +2892,9 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         if event.type == "LEFTMOUSE" and event.value == "PRESS":
             if len(self.selected_points) < 2:
                 snapped_point = self.snapping_points[0]
-                point_3d = snapped_point['point'].copy()
+                point_3d = snapped_point["point"].copy()
                 self.selected_points.append(point_3d)
-                
+
                 if len(self.selected_points) == 2:
                     self.calculate_distance()
                     self.current_distance_value = f"{self.calculated_distance:.3f}"
@@ -2903,7 +2904,7 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         elif len(self.selected_points) == 2:
             if event.type in {"RET", "NUMPAD_ENTER"} and event.value == "PRESS":
                 return self.apply_scaling(context)
-            
+
             if event.unicode and event.unicode.isprintable() and event.value == "PRESS":
                 if event.unicode.isdigit() or event.unicode == ".":
                     if not self.is_typing_distance:
@@ -2911,14 +2912,16 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
                         self.is_typing_distance = True
                     else:
                         self.current_distance_value += event.unicode
-                    
+
                     distance_value = float(self.current_distance_value)
                     self.input_ui.set_value("DISTANCE", distance_value)
-            
+
             elif event.type in {"BACK_SPACE", "DEL"} and event.value == "PRESS":
                 if len(self.current_distance_value) > 0:
                     self.current_distance_value = self.current_distance_value[:-1]
-                    distance_value = float(self.current_distance_value) if self.current_distance_value else self.calculated_distance
+                    distance_value = (
+                        float(self.current_distance_value) if self.current_distance_value else self.calculated_distance
+                    )
                     self.input_ui.set_value("DISTANCE", distance_value)
 
         self.handle_keyboard_input(context, event)
@@ -2937,7 +2940,7 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
 
     def cancel_tool(self, context):
         context.workspace.status_text_set(text=None)
-        if hasattr(self, 'tool_state'):
+        if hasattr(self, "tool_state"):
             self.tool_state.plane_method = None
         PolylineDecorator.uninstall()
         tool.Blender.update_viewport()
@@ -2955,7 +2958,7 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
                 instruction_text = f"Measured: {self.calculated_distance:.3f} - Type New Distance or Press Enter"
         else:
             instruction_text = "Image Scaling Tool"
-        
+
         context.workspace.status_text_set(text=instruction_text)
 
     def calculate_distance(self):
@@ -2984,51 +2987,51 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
 
         if self.target_object:
             import bmesh
-            
+
             mesh = self.target_object.data
-            
+
             bm = bmesh.new()
             bm.from_mesh(mesh)
-            
+
             bmesh.ops.scale(bm, vec=(scale_factor, scale_factor, 1.0), verts=bm.verts)
-            
+
             if bm.loops.layers.uv:
                 uv_layer = bm.loops.layers.uv.active
-                
+
                 min_x = min(v.co.x for v in bm.verts)
                 max_x = max(v.co.x for v in bm.verts)
                 min_y = min(v.co.y for v in bm.verts)
                 max_y = max(v.co.y for v in bm.verts)
-                
+
                 width = max_x - min_x
                 height = max_y - min_y
-                
+
                 for face in bm.faces:
                     for loop in face.loops:
                         vert = loop.vert
                         u = (vert.co.x - min_x) / width if width > 0 else 0.5
                         v = (vert.co.y - min_y) / height if height > 0 else 0.5
-                        
+
                         u = max(0.0, min(1.0, u))
                         v = max(0.0, min(1.0, v))
                         loop[uv_layer].uv = (u, v)
-            
+
             bm.to_mesh(mesh)
             bm.free()
             mesh.update()
-            
+
             element = tool.Ifc.get_entity(self.target_object)
             if element and element.Representation:
                 for representation in element.Representation.Representations:
                     for item in representation.Items:
-                        if item.is_a('IfcPolygonalFaceSet') and item.Coordinates:
+                        if item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
                             new_coords = []
                             for vertex in mesh.vertices:
                                 co = self.target_object.matrix_world @ vertex.co
                                 new_coords.append([co.x, co.y, co.z])
-                            
+
                             item.Coordinates.CoordList = new_coords
-            
+
             self.report({"INFO"}, f"Applied scale factor: {scale_factor:.4f}")
 
         context.workspace.status_text_set(text=None)
@@ -3037,5 +3040,3 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         tool.Blender.update_viewport()
 
         return {"FINISHED"}
-
-
