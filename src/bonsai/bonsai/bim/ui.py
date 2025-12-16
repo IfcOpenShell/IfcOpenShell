@@ -689,6 +689,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Show mass and time units section in the new project wizard panel",
         default=False,
     )
+    
+    search_filter_suggestions: BoolProperty(
+        name="Enable advanced search with filter suggestions",
+        description="Enable filter mode (ADD/SUBTRACT/FILTER) and value suggestions for search filters",
+        default=False,
+    )
 
     if TYPE_CHECKING:
         svg2pdf_command: str
@@ -727,6 +733,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default_parameters: DefaultParameters
         container_hide_show_isolate: bool
         mass_time_units_in_wizard: bool
+        search_filter_suggestions: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -909,6 +916,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
         layout.prop(self, "mass_time_units_in_wizard")
+        layout.prop(self, "search_filter_suggestions")
 
 
 # Scene panel groups
