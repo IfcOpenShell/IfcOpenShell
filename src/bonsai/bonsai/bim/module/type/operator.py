@@ -24,6 +24,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
+import ifcopenshell.api.attribute
 import ifcopenshell.api.type
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -416,3 +417,80 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             self.layout.prop(
                 self, "assign_selected_objects", text=f"Assign {len(ifc_objects)} Selected Object(s) to New Type"
             )
+
+
+class EnableEditingTypeAttributes(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_type_attributes"
+    bl_label = "Enable Editing Type Attributes"
+    bl_description = "Enable editing the attributes of the relating type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+        
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return {"CANCELLED"}
+        
+        element_type = ifcopenshell.util.element.get_type(element)
+        if not element_type:
+            return {"CANCELLED"}
+        
+        props = tool.Type.get_object_type_props(obj)
+        props.type_attributes.clear()
+        
+        bonsai.bim.helper.import_attributes(element_type, props.type_attributes)
+        props.is_editing_type_attributes = True
+        return {"FINISHED"}
+
+
+class DisableEditingTypeAttributes(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_type_attributes"
+    bl_label = "Disable Editing Type Attributes"
+    bl_description = "Disable editing the attributes of the relating type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+        
+        props = tool.Type.get_object_type_props(obj)
+        props.type_attributes.clear()
+        props.property_unset("is_editing_type_attributes")
+        return {"FINISHED"}
+
+
+class EditTypeAttributes(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_type_attributes"
+    bl_label = "Edit Type Attributes"
+    bl_description = "Save the changes to the relating type's attributes"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+        
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return {"CANCELLED"}
+        
+        element_type = ifcopenshell.util.element.get_type(element)
+        if not element_type:
+            return {"CANCELLED"}
+        
+        props = tool.Type.get_object_type_props(obj)
+        attributes = bonsai.bim.helper.export_attributes(props.type_attributes)
+        
+        ifcopenshell.api.attribute.edit_attributes(tool.Ifc.get(), product=element_type, attributes=attributes)
+        
+        type_obj = tool.Ifc.get_object(element_type)
+        if type_obj:
+            tool.Root.set_object_name(type_obj, element_type)
+        
+        bpy.ops.bim.disable_editing_type_attributes()
+         
+        return {"FINISHED"}
