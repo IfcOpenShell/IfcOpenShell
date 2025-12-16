@@ -489,6 +489,8 @@ def draw_filter(
         data.load()
 
     sprops = tool.Search.get_search_props()
+    preferences = tool.Blender.get_addon_preferences()
+    enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
 
     if tool.Ifc.get():
         row = layout.row(align=True)
@@ -498,6 +500,8 @@ def draw_filter(
         if data.data["saved_searches"]:
             row.operator("bim.load_search", text="", icon="IMPORT").module = module
         row.operator("bim.save_search", text="", icon="EXPORT").module = module
+        if data.data["saved_searches"] and enable_suggestions:
+            row.operator("bim.remove_search", text="", icon="REMOVE").module = module
         if module != "search":
             if module == "drawing_include":
                 row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "INCLUDE"
@@ -505,7 +509,15 @@ def draw_filter(
                 row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "EXCLUDE"
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
     row = layout.row(align=True)
-    row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
+    if not enable_suggestions:
+        row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
+    else:
+        # When suggestions are enabled, show a simple "Add Filter" button if no filters exist
+        if not filter_groups or not any(fg.filters for fg in filter_groups):
+            op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+            op.type = "entity"
+            op.index = 0
+            op.module = module
     row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
 
     for i, filter_group in enumerate(filter_groups):
@@ -524,43 +536,247 @@ def draw_filter(
         for j, ifc_filter in enumerate(filter_group.filters):
             if ifc_filter.type == "entity":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="FILE_3D")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
             elif ifc_filter.type == "attribute":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "name", text="", icon="COPY_ID")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "attribute_name"
                 row.prop(ifc_filter, "value", text="")
+                if enable_suggestions and ifc_filter.name:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "attribute_value"
             elif ifc_filter.type == "type":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="FILE_VOLUME")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
             elif ifc_filter.type == "material":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="MATERIAL")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
             elif ifc_filter.type == "property":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "pset"
                 row.prop(ifc_filter, "name", text="")
+                if enable_suggestions and ifc_filter.pset:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "property_name"
                 row.prop(ifc_filter, "comparison", text="")
                 row.prop(ifc_filter, "value", text="")
+                if enable_suggestions and ifc_filter.pset and ifc_filter.name:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "property_value"
             elif ifc_filter.type == "classification":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="OUTLINER")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
             elif ifc_filter.type == "location":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="PACKAGE")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
             elif ifc_filter.type == "group":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="OUTLINER_COLLECTION")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
             elif ifc_filter.type == "parent":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="FILE_PARENT")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
             elif ifc_filter.type == "query":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")
                 row.prop(ifc_filter, "comparison", text="")
                 row.prop(ifc_filter, "value", text="")
             elif ifc_filter.type == "instance":
                 row = box.row(align=True)
+                if enable_suggestions and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="GRIP")
+                if enable_suggestions:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
                 op = row.operator("bim.select_filter_elements", text="", icon="EYEDROPPER")
                 op.group_index = i
                 op.index = j
