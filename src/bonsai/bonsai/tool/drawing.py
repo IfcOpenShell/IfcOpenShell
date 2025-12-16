@@ -2275,10 +2275,54 @@ class Drawing(bonsai.core.tool.Drawing):
             # This can probably be smarter
             elements = set(ifc_file.by_type("IfcElement"))
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
-        include = pset.get("Include", None)
-        if include:
-            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
-        else:
+        
+        include_structure_str = pset.get("IncludeStructure", None)
+        include_query = pset.get("Include", None)
+        
+        if include_structure_str:
+            try:
+                drawing_obj = tool.Ifc.get_object(drawing)
+                if drawing_obj:
+                    camera_props = tool.Drawing.get_camera_props(drawing_obj)
+                    temp_filter_groups = camera_props.include_filter_groups
+                    
+                    original_data = []
+                    for fg in temp_filter_groups:
+                        group_filters = []
+                        for f in fg.filters:
+                            group_filters.append({
+                                "type": f.type, "name": f.name, "value": f.value,
+                                "pset": f.pset, "comparison": f.comparison, "filter_mode": f.filter_mode
+                            })
+                        original_data.append(group_filters)
+                    
+                    try:
+                        filter_structure = json.loads(include_structure_str)
+                        tool.Search.import_filter_structure(filter_structure, temp_filter_groups)
+                        elements = tool.Search.execute_filter_groups(temp_filter_groups)
+                        elements = {e for e in elements if e.is_a("IfcObjectDefinition")}
+                    finally:
+                        tool.Search.import_filter_structure(original_data, temp_filter_groups)
+                else:
+                    raise Exception("Drawing object not found")
+            except Exception as e:
+                logger = logging.getLogger("Bonsai")
+                logger.error(f"Invalid filter structure in IncludeStructure: {e}")
+                include_structure_str = None
+        
+        if not include_structure_str and include_query:
+            try:
+                elements = ifcopenshell.util.selector.filter_elements(ifc_file, include_query)
+                elements = {e for e in elements if e.is_a("IfcObjectDefinition")}
+            except Exception as e:
+                logger = logging.getLogger("Bonsai")
+                logger.error(f"Invalid filter query in Include: {include_query}. Error: {e}")
+                if ifc_file.schema == "IFC2X3":
+                    base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
+                else:
+                    base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
+                elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
+        elif not include_structure_str and not include_query:
             if ifc_file.schema == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
@@ -2302,9 +2346,46 @@ class Drawing(bonsai.core.tool.Drawing):
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
         elements.update(annotations)
 
-        exclude = pset.get("Exclude", None)
-        if exclude:
-            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+        exclude_structure_str = pset.get("ExcludeStructure", None)
+        exclude_query = pset.get("Exclude", None)
+        
+        if exclude_structure_str:
+            try:
+                drawing_obj = tool.Ifc.get_object(drawing)
+                if drawing_obj:
+                    camera_props = tool.Drawing.get_camera_props(drawing_obj)
+                    temp_filter_groups = camera_props.exclude_filter_groups
+                    original_data = []
+                    for fg in temp_filter_groups:
+                        group_filters = []
+                        for f in fg.filters:
+                            group_filters.append({
+                                "type": f.type, "name": f.name, "value": f.value,
+                                "pset": f.pset, "comparison": f.comparison, "filter_mode": f.filter_mode
+                            })
+                        original_data.append(group_filters)
+                    
+                    try:
+                        filter_structure = json.loads(exclude_structure_str)
+                        tool.Search.import_filter_structure(filter_structure, temp_filter_groups)
+                        exclude_elements = tool.Search.execute_filter_groups(temp_filter_groups)
+                        elements -= exclude_elements
+                    finally:
+                        tool.Search.import_filter_structure(original_data, temp_filter_groups)
+                else:
+                    raise Exception("Drawing object not found")
+            except Exception as e:
+                logger = logging.getLogger("Bonsai")
+                logger.error(f"Invalid filter structure in ExcludeStructure: {e}")
+                exclude_structure_str = None
+        
+        if not exclude_structure_str and exclude_query:
+            try:
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude_query)
+            except Exception as e:
+                logger = logging.getLogger("Bonsai")
+                logger.error(f"Invalid filter query in Exclude: {exclude_query}. Error: {e}")
+        
         elements -= set(ifc_file.by_type("IfcOpeningElement"))
         return elements
 

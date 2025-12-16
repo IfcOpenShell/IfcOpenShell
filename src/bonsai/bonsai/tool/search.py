@@ -108,38 +108,53 @@ class Search(bonsai.core.tool.Search):
     def export_filter_query(cls, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]) -> str:
         query = []
         for filter_group in filter_groups:
-            filter_group_query = []
+            current_group = []
+            last_mode = None
+            
             for ifc_filter in filter_group.filters:
                 if not ifc_filter.value:
                     continue
+                    
                 filter_type = ifc_filter.type
                 if filter_type == "systems":
                     filter_type = "instance"
+                
+                current_mode = ifc_filter.filter_mode if filter_type in ("entity", "instance") else "FILTER"
+                
+                if last_mode is not None and last_mode != current_mode and current_mode != "SUBTRACT" and last_mode != "SUBTRACT":
+                    if current_group:
+                        query.append(", ".join(current_group))
+                        current_group = []
+                
+                last_mode = current_mode
+                
                 if filter_type == "instance":
                     if "bpy.data.texts" in ifc_filter.value:
                         data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
                         value = bpy.data.texts[data_name].as_string()
                     else:
                         value = ifc_filter.value
+                    value = value.lstrip("!")
                     if ifc_filter.filter_mode == "SUBTRACT":
                         value = f"!{value}"
-                    filter_group_query.append(value)
+                    current_group.append(value)
                 elif filter_type == "entity":
                     value = ifc_filter.value
+                    value = value.lstrip("!")
                     if ifc_filter.filter_mode == "SUBTRACT":
                         value = f"!{value}"
-                    filter_group_query.append(value)
+                    current_group.append(value)
                 elif filter_type == "attribute":
                     if not ifc_filter.name:
                         continue
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"{ifc_filter.name}{comparison}{value}")
+                    current_group.append(f"{ifc_filter.name}{comparison}{value}")
                 elif filter_type == "type":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"type{comparison}{value}")
+                    current_group.append(f"type{comparison}{value}")
                 elif filter_type == "material":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"material{comparison}{value}")
+                    current_group.append(f"material{comparison}{value}")
                 elif filter_type == "property":
                     if not ifc_filter.pset or not ifc_filter.name:
                         continue
@@ -147,25 +162,28 @@ class Search(bonsai.core.tool.Search):
                     name = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison = ifc_filter.comparison
                     value = cls.wrap_value(ifc_filter, ifc_filter.value)
-                    filter_group_query.append(f"{pset}.{name} {comparison} {value}")
+                    current_group.append(f"{pset}.{name} {comparison} {value}")
                 elif filter_type == "classification":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"classification{comparison}{value}")
+                    current_group.append(f"classification{comparison}{value}")
                 elif filter_type == "location":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"location{comparison}{value}")
+                    current_group.append(f"location{comparison}{value}")
                 elif filter_type == "group":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"group{comparison}{value}")
+                    current_group.append(f"group{comparison}{value}")
                 elif filter_type == "parent":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f'parent{comparison}{value}')
+                    current_group.append(f'parent{comparison}{value}')
                 elif filter_type == "query":
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison = ifc_filter.comparison or "="
                     value = cls.wrap_value(ifc_filter, ifc_filter.value)
-                    filter_group_query.append(f"query:{keys}{comparison}{value}")
-            query.append(", ".join(filter_group_query))
+                    current_group.append(f"query:{keys}{comparison}{value}")
+            
+            if current_group:
+                query.append(", ".join(current_group))
+                
         return " + ".join(query)
 
     @classmethod
@@ -500,7 +518,8 @@ class ImportFilterQueryTransformer(lark.Transformer):
     def facet_list(self, args):
         new = self.filter_groups.add()
         global_ids = []
-        for arg in args:
+        is_first_group = len(self.filter_groups) == 1
+        for filter_index, arg in enumerate(args):
             if arg["type"] == "instance" and global_ids:
                 if "bpy.data.texts" in new2.value:
                     data_name = new2.value.split("bpy.data.texts")[1][2:-2]
@@ -525,21 +544,26 @@ class ImportFilterQueryTransformer(lark.Transformer):
                 new2.pset = arg["pset"]
             if "comparison" in arg:
                 new2.comparison = arg["comparison"] or "="
+            if "filter_mode" in arg:
+                new2.filter_mode = arg["filter_mode"]
+            elif not is_first_group and filter_index == 0 and arg["type"] in ("entity", "instance"):
+                if arg.get("filter_mode", "ADD") != "SUBTRACT":
+                    new2.filter_mode = "FILTER"
 
     def facet(self, args):
         return args[0]
 
     def instance(self, args):
         if args[0].data == "not":
-            return {"type": "instance", "value": "!" + args[1].children[0].value}
+            return {"type": "instance", "value": args[1].children[0].value, "filter_mode": "SUBTRACT"}
         else:
-            return {"type": "instance", "value": args[0].children[0].value}
+            return {"type": "instance", "value": args[0].children[0].value, "filter_mode": "ADD"}
 
     def entity(self, args):
         if args[0].data == "not":
-            return {"type": "entity", "value": "!" + args[1].children[0].value}
+            return {"type": "entity", "value": args[1].children[0].value, "filter_mode": "SUBTRACT"}
         else:
-            return {"type": "entity", "value": args[0].children[0].value}
+            return {"type": "entity", "value": args[0].children[0].value, "filter_mode": "ADD"}
 
     def attribute(self, args):
         name, comparison, value = args

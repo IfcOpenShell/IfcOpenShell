@@ -3656,10 +3656,22 @@ class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         assert (camera := context.scene.camera)
         props = tool.Drawing.get_camera_props(camera)
         props.filter_mode = self.filter_mode
+        
+        if self.filter_mode == "NONE":
+            return
+        
         element = tool.Ifc.get_entity(obj)
         assert element
-        if query := ifcopenshell.util.element.get_pset(element, "EPset_Drawing", self.filter_mode.title()):
-            filter_groups = tool.Search.get_filter_groups(f"drawing_{self.filter_mode.lower()}")
+        filter_groups = tool.Search.get_filter_groups(f"drawing_{self.filter_mode.lower()}")
+        
+        if filter_structure_str := ifcopenshell.util.element.get_pset(element, "EPset_Drawing", f"{self.filter_mode.title()}Structure"):
+            try:
+                import json
+                filter_structure = json.loads(filter_structure_str)
+                tool.Search.import_filter_structure(filter_structure, filter_groups)
+            except:
+                pass
+        elif query := ifcopenshell.util.element.get_pset(element, "EPset_Drawing", self.filter_mode.title()):
             try:
                 tool.Search.import_filter_query(query, filter_groups)
             except:
@@ -3682,12 +3694,40 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         assert element
         pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
         assert pset
+        
         if self.filter_mode == "INCLUDE":
-            query = tool.Search.export_filter_query(props.include_filter_groups) or None
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Include": query})
+            filter_groups = props.include_filter_groups
         elif self.filter_mode == "EXCLUDE":
-            query = tool.Search.export_filter_query(props.exclude_filter_groups) or None
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": query})
+            filter_groups = props.exclude_filter_groups
+        else:
+            return
+        
+        query = tool.Search.export_filter_query(filter_groups) or None
+        
+        import json
+        filter_structure = []
+        for filter_group in filter_groups:
+            group_data = []
+            for ifc_filter in filter_group.filters:
+                filter_data = {
+                    "type": ifc_filter.type,
+                    "name": ifc_filter.name,
+                    "value": ifc_filter.value,
+                    "pset": ifc_filter.pset,
+                    "comparison": ifc_filter.comparison,
+                    "filter_mode": ifc_filter.filter_mode,
+                }
+                group_data.append(filter_data)
+            filter_structure.append(group_data)
+        
+        filter_structure_str = json.dumps(filter_structure) if filter_structure else None
+        
+        properties = {
+            self.filter_mode.title(): query,
+            f"{self.filter_mode.title()}Structure": filter_structure_str
+        }
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=properties)
+        
         props.filter_mode = "NONE"
         bpy.ops.bim.activate_drawing(drawing=element.id(), should_view_from_camera=False)
 
