@@ -889,6 +889,48 @@ class IfcImporter:
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             )
 
+        if element.is_a("IfcAnnotation") and getattr(element, "ObjectType", None) == "IMAGE":
+            image = None
+            if obj.data and obj.data.materials and obj.data.materials[0]:
+                material = obj.data.materials[0]
+                if material.use_nodes and material.node_tree:
+                    for node in material.node_tree.nodes:
+                        if node.type == "TEX_IMAGE" and node.image:
+                            image = node.image
+                            break
+            if image:
+                import bmesh
+
+                bm = bmesh.new()
+                bm.from_mesh(obj.data)
+                if not bm.loops.layers.uv:
+                    uv_layer = bm.loops.layers.uv.new()
+                else:
+                    uv_layer = bm.loops.layers.uv.active
+
+                if bm.verts:
+                    min_x = min(v.co.x for v in bm.verts)
+                    max_x = max(v.co.x for v in bm.verts)
+                    min_y = min(v.co.y for v in bm.verts)
+                    max_y = max(v.co.y for v in bm.verts)
+
+                    width = max_x - min_x
+                    height = max_y - min_y
+
+                    for face in bm.faces:
+                        for loop in face.loops:
+                            vert = loop.vert
+                            u = (vert.co.x - min_x) / width if width > 0 else 0.5
+                            v = (vert.co.y - min_y) / height if height > 0 else 0.5
+
+                            u = max(0.0, min(1.0, u))
+                            v = max(0.0, min(1.0, v))
+
+                            loop[uv_layer].uv = (u, v)
+
+                bm.to_mesh(obj.data)
+                bm.free()
+                obj.data.update()
         return obj
 
     def load_existing_meshes(self) -> None:
