@@ -119,6 +119,8 @@ class NewProject(bpy.types.Operator):
             bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
             bim_props.area_unit = "SQUARE_METRE"
             bim_props.volume_unit = "CUBIC_METRE"
+            bim_props.mass_unit = "KILOGRAM"
+            bim_props.time_unit = "SECOND"
             pprops.template_file = "IFC4 Demo Template.ifc"
 
         if self.preset != "wizard":

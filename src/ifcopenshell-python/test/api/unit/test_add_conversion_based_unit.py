@@ -40,6 +40,54 @@ class TestAddConversionBasedUnitIFC2X3(test.bootstrap.IFC2X3):
         assert si_unit.Prefix is None
         assert si_unit.Name == "METRE"
 
+    def test_adding_mass_units_creates_proper_massunit(self):
+        mass_units = [
+            ("tonne", 1000.0),
+            ("pound", 0.454),
+            ("ounce", 0.02835),
+            ("ton UK", 1016.0469088),
+            ("ton US", 907.18474),
+        ]
+
+        for name, expected_conversion in mass_units:
+            unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name=name)
+
+            assert unit.is_a("IfcConversionBasedUnit")
+            assert unit.UnitType == "MASSUNIT"
+            assert unit.Name == name
+
+            actual_conversion = unit.ConversionFactor.ValueComponent.wrappedValue
+            assert actual_conversion == expected_conversion
+
+            target_unit = unit.ConversionFactor.UnitComponent
+            assert target_unit.is_a("IfcSIUnit")
+            assert target_unit.UnitType == "MASSUNIT"
+            assert target_unit.Name == "GRAM"
+            assert target_unit.Prefix == "KILO"
+
+    def test_adding_time_units_creates_proper_timeunit(self):
+        time_units = [
+            ("minute", 60),
+            ("hour", 3600),
+            ("day", 86400),
+        ]
+
+        for name, expected_conversion in time_units:
+            unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name=name)
+
+            assert unit.is_a("IfcConversionBasedUnit")
+            assert unit.UnitType == "TIMEUNIT"
+            assert unit.Name == name
+
+            actual_conversion = unit.ConversionFactor.ValueComponent.wrappedValue
+            assert actual_conversion == expected_conversion
+
+            target_unit = unit.ConversionFactor.UnitComponent
+            assert target_unit.is_a("IfcSIUnit")
+            assert target_unit.UnitType == "TIMEUNIT"
+            assert target_unit.Name == "SECOND"
+            assert target_unit.Prefix is None
+
 
 class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBasedUnitIFC2X3):
     def test_adding_a_unit_with_offset(self):
@@ -61,3 +109,8 @@ class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBased
         assert si_unit.Prefix is None
         assert si_unit.Name == "KELVIN"
         assert unit.ConversionOffset == -459.67
+
+    def test_unknown_units_fall_back_to_userdefined(self):
+        unknown_unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="unknown_unit")
+        assert unknown_unit.UnitType == "USERDEFINED"
+        assert unknown_unit.Name == "unknown_unit"

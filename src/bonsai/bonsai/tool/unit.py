@@ -266,7 +266,7 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
 
 
 class Unit(bonsai.core.tool.Unit):
-    UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT"]
+    UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT", "MASSUNIT", "TIMEUNIT"]
 
     @staticmethod
     def format_distance(meters: float, use_imperial: bool = None, **kwargs) -> str:
@@ -343,6 +343,10 @@ class Unit(bonsai.core.tool.Unit):
             return bim_props.area_unit
         elif unit_type == "VOLUMEUNIT":
             return bim_props.volume_unit
+        elif unit_type == "MASSUNIT":
+            return bim_props.mass_unit.lower()
+        elif unit_type == "TIMEUNIT":
+            return bim_props.time_unit.lower()
         else:
             assert_never(unit_type)
 
@@ -359,6 +363,24 @@ class Unit(bonsai.core.tool.Unit):
             unit = bim_props.area_unit
         elif unit_type == "VOLUMEUNIT":
             unit = bim_props.volume_unit
+        elif unit_type == "MASSUNIT":
+            unit = bim_props.mass_unit
+            if unit == "GRAM":
+                return None
+            elif unit == "KILOGRAM":
+                return "KILO"
+            elif unit == "TONNE":
+                return "MEGA"
+            elif unit in ["POUND", "OUNCE"]:
+                return "CONVERSION"
+            else:
+                return None
+        elif unit_type == "TIMEUNIT":
+            unit = bim_props.time_unit
+            if unit == "SECOND":
+                return None
+            else:
+                return "CONVERSION"
         else:
             assert_never(unit_type)
         if "/" in unit:
@@ -477,3 +499,9 @@ class Unit(bonsai.core.tool.Unit):
         elif ifc_class == "IfcMonetaryUnit":
             return "COPY_ID"
         return "MOD_MESHDEFORM"
+
+    @classmethod
+    def add_mass_and_time_units(cls) -> bool:
+        """Return True if the user wants to add mass and time units, False otherwise."""
+        bim_props = tool.Blender.get_bim_props()
+        return getattr(bim_props, "add_mass_time_units", False)
