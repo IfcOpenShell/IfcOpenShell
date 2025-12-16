@@ -1363,7 +1363,7 @@ class BIM_PT_tab_sandbox(Panel):
 
 # Object panel groups
 class BIM_PT_tab_object_metadata(Panel):
-    bl_label = "Object Metadata"
+    bl_label = "Object"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

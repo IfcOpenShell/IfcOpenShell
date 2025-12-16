@@ -58,7 +58,7 @@ def draw_ui(context: bpy.types.Context, layout: bpy.types.UILayout, attributes) 
 
 
 class BIM_PT_object_attributes(Panel):
-    bl_label = "Attributes"
+    bl_label = "Object Attributes"
     bl_idname = "BIM_PT_object_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
