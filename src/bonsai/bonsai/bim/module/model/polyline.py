@@ -421,7 +421,7 @@ class PolylineOperator:
                     tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
 
                 tool.Blender.update_viewport()
-                return {"RUNNING_MODAL"}
+            return {"RUNNING_MODAL"}
 
     def set_offset(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_instance) -> None:
         props = tool.Model.get_model_props()
@@ -461,6 +461,7 @@ class PolylineOperator:
         self.tool_state.axis_method = None
         self.tool_state.plane_method = None
         self.tool_state.mode = "Mouse"
+        tool.Raycast.clear_snap_objs()
         self.visible_objs = tool.Raycast.get_visible_objects(context)
         for obj in self.visible_objs:
             if bbox_2d := tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj):
