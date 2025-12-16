@@ -234,6 +234,102 @@ class Search(bonsai.core.tool.Search):
         return final_results
 
     @classmethod
+    def execute_filter_groups_from_json(
+        cls, data: dict, ifc_file: ifcopenshell.file
+    ) -> set[ifcopenshell.entity_instance]:
+        """Execute filter groups from JSON data with filter_structure
+        
+        This is used by drawing include/exclude to properly handle ADD/SUBTRACT/FILTER modes
+        without needing to instantiate Blender property groups.
+        """
+        filter_structure = data.get("filter_structure", [])
+        
+        all_group_results = []
+        for group_data in filter_structure:
+            group_results = set()
+            
+            for filter_data in group_data:
+                filter_mode = filter_data.get("filter_mode", "ADD")
+                filter_type = filter_data.get("type", "")
+                value = filter_data.get("value", "")
+                
+                if not filter_type or not value:
+                    continue
+                
+                query_part = None
+                if filter_type == "entity":
+                    query_part = value
+                elif filter_type == "attribute":
+                    name = filter_data.get("name", "")
+                    if not name:
+                        continue
+                    comparison = filter_data.get("comparison", "=")
+                    query_part = f"{name}{comparison}{cls._wrap_json_value(value)}"
+                elif filter_type == "property":
+                    pset = filter_data.get("pset", "")
+                    name = filter_data.get("name", "")
+                    if not pset or not name:
+                        continue
+                    comparison = filter_data.get("comparison", " = ")
+                    wrapped_pset = cls._wrap_json_value(pset)
+                    wrapped_name = cls._wrap_json_value(name)
+                    wrapped_value = cls._wrap_json_value(value)
+                    query_part = f"{wrapped_pset}.{wrapped_name} {comparison} {wrapped_value}"
+                elif filter_type == "type":
+                    query_part = f"type={cls._wrap_json_value(value)}"
+                elif filter_type == "material":
+                    query_part = f"material={cls._wrap_json_value(value)}"
+                elif filter_type == "classification":
+                    query_part = f"classification={cls._wrap_json_value(value)}"
+                elif filter_type == "location":
+                    query_part = f"location={cls._wrap_json_value(value)}"
+                elif filter_type == "group":
+                    query_part = f"group={cls._wrap_json_value(value)}"
+                elif filter_type == "parent":
+                    query_part = f"parent={cls._wrap_json_value(value)}"
+                elif filter_type == "query":
+                    name = filter_data.get("name", "")
+                    if not name:
+                        continue
+                    keys = cls._wrap_json_value(name)
+                    comparison = filter_data.get("comparison", "=")
+                    wrapped_value = cls._wrap_json_value(value)
+                    query_part = f"query:{keys}{comparison}{wrapped_value}"
+                elif filter_type == "instance":
+                    query_part = value
+                
+                if not query_part:
+                    continue
+                
+                if filter_mode == "FILTER" and group_results:
+                    results = ifcopenshell.util.selector.filter_elements(ifc_file, query_part, elements=group_results)
+                    group_results = results
+                elif filter_mode == "SUBTRACT":
+                    results = ifcopenshell.util.selector.filter_elements(ifc_file, query_part)
+                    group_results -= results
+                else:  # ADD
+                    results = ifcopenshell.util.selector.filter_elements(ifc_file, query_part)
+                    group_results.update(results)
+            
+            if group_results:
+                all_group_results.append(group_results)
+        
+        final_results = set()
+        for group_results in all_group_results:
+            final_results.update(group_results)
+        
+        return final_results
+
+    @classmethod
+    def _wrap_json_value(cls, value: str) -> str:
+        """Wrap value for use in query string"""
+        if value.startswith("/") and value.endswith("/"):
+            return value
+        elif value in ("NULL", "TRUE", "FALSE"):
+            return value
+        return '"' + value.replace('"', '\\"') + '"'
+
+    @classmethod
     def get_comparison_and_value(
         cls, ifc_filter: BIMFacet
     ) -> Union[tuple[Literal["!="], str], tuple[Literal["="], str]]:

@@ -2277,7 +2277,16 @@ class Drawing(bonsai.core.tool.Drawing):
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
         if include:
-            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
+            try:
+                data = json.loads(include)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    elements = tool.Search.execute_filter_groups_from_json(data, ifc_file)
+                elif isinstance(data, dict) and "query" in data:
+                    elements = ifcopenshell.util.selector.filter_elements(ifc_file, data["query"])
+                else:
+                    elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
+            except (json.JSONDecodeError, ValueError):
+                elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
         else:
             if ifc_file.schema == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
@@ -2291,7 +2300,7 @@ class Drawing(bonsai.core.tool.Drawing):
             if not i.is_a("IfcAnnotation"):
                 updated_set.add(i)
                 # add aggregate too, if element is host by one
-                if decomposes := i.Decomposes:
+                if hasattr(i, "Decomposes") and (decomposes := i.Decomposes):
                     aggregate = decomposes[0].RelatingObject
                     # remove IfcProject for class iterator. See https://github.com/IfcOpenShell/IfcOpenShell/issues/4361#issuecomment-2081223615
                     if aggregate.is_a("IfcProduct"):
@@ -2304,7 +2313,18 @@ class Drawing(bonsai.core.tool.Drawing):
 
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+            try:
+                data = json.loads(exclude)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    exclude_elements = tool.Search.execute_filter_groups_from_json(data, ifc_file)
+                    elements -= exclude_elements
+                elif isinstance(data, dict) and "query" in data:
+                    elements -= ifcopenshell.util.selector.filter_elements(ifc_file, data["query"])
+                else:
+                    elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+            except (json.JSONDecodeError, ValueError):
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
         elements -= set(ifc_file.by_type("IfcOpeningElement"))
         return elements
 
@@ -2318,7 +2338,18 @@ class Drawing(bonsai.core.tool.Drawing):
         # NOTE: EPset_Drawing.Include is not used to avoid adding other elements besides spaces
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+            try:
+                data = json.loads(exclude)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    exclude_elements = tool.Search.execute_filter_groups_from_json(data, ifc_file)
+                    elements -= exclude_elements
+                elif isinstance(data, dict) and "query" in data:
+                    elements -= ifcopenshell.util.selector.filter_elements(ifc_file, data["query"])
+                else:
+                    elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+            except (json.JSONDecodeError, ValueError):
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
         return elements
 
     @classmethod

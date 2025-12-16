@@ -3661,8 +3661,12 @@ class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         if query := ifcopenshell.util.element.get_pset(element, "EPset_Drawing", self.filter_mode.title()):
             filter_groups = tool.Search.get_filter_groups(f"drawing_{self.filter_mode.lower()}")
             try:
-                tool.Search.import_filter_query(query, filter_groups)
-            except:
+                data = json.loads(query)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    tool.Search.import_filter_structure(data["filter_structure"], filter_groups)
+                else:
+                    tool.Search.import_filter_query(query, filter_groups)
+            except Exception:
                 pass
 
 
@@ -3682,12 +3686,48 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         assert element
         pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
         assert pset
+        
+        preferences = tool.Blender.get_addon_preferences()
+        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+        
         if self.filter_mode == "INCLUDE":
-            query = tool.Search.export_filter_query(props.include_filter_groups) or None
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Include": query})
+            filter_groups = props.include_filter_groups
         elif self.filter_mode == "EXCLUDE":
-            query = tool.Search.export_filter_query(props.exclude_filter_groups) or None
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": query})
+            filter_groups = props.exclude_filter_groups
+        else:
+            return
+        
+        query = tool.Search.export_filter_query(filter_groups) or None
+        
+        if enable_suggestions and query:
+            filter_structure = []
+            for filter_group in filter_groups:
+                group_data = []
+                for ifc_filter in filter_group.filters:
+                    filter_data = {
+                        "type": ifc_filter.type,
+                        "name": ifc_filter.name,
+                        "value": ifc_filter.value,
+                        "pset": ifc_filter.pset,
+                        "comparison": ifc_filter.comparison,
+                        "filter_mode": ifc_filter.filter_mode,
+                    }
+                    group_data.append(filter_data)
+                filter_structure.append(group_data)
+            
+            value = json.dumps({
+                "type": "BBIM_Search",
+                "query": query,
+                "filter_structure": filter_structure
+            })
+        else:
+            value = query
+        
+        if self.filter_mode == "INCLUDE":
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Include": value})
+        elif self.filter_mode == "EXCLUDE":
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": value})
+        
         props.filter_mode = "NONE"
         bpy.ops.bim.activate_drawing(drawing=element.id(), should_view_from_camera=False)
 
