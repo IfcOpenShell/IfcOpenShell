@@ -114,7 +114,6 @@ class BIM_PT_type_attributes(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_parent_id = "BIM_PT_type"
-    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
