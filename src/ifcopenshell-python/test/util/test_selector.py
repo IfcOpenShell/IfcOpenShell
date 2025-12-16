@@ -289,6 +289,22 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, group!=Foo") == {element2}
         assert subject.filter_elements(self.file, f"IfcWall, group={group.GlobalId}") == {element}
 
+    def test_selecting_by_group_recursively(self):
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        
+        parent_group = ifcopenshell.api.group.add_group(self.file, name="Parent")
+        child_group = ifcopenshell.api.group.add_group(self.file, name="Child")
+        
+        ifcopenshell.api.group.assign_group(self.file, products=[element1], group=parent_group)
+        ifcopenshell.api.group.assign_group(self.file, products=[element2], group=child_group)
+        ifcopenshell.api.group.assign_group(self.file, products=[child_group], group=parent_group)
+        
+        assert subject.filter_elements(self.file, "IfcWall, group=Parent") == {element1, element2}
+        assert subject.filter_elements(self.file, "IfcWall, group=Child") == {element2}
+        assert subject.filter_elements(self.file, "IfcWall, group!=Parent") == {element3}
+
     def test_selecting_by_parent(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Element1")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Element2")

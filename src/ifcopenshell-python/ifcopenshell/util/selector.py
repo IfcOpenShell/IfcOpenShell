@@ -983,18 +983,23 @@ class FacetTransformer(lark.Transformer):
     def group(self, args):
         comparison, value = args
 
+        matching_groups = []
+        for group in self.file.by_type("IfcGroup"):
+            if self.compare(group.Name, "=", value) or self.compare(group.GlobalId, "=", value):
+                matching_groups.append(group)
+
+        grouped_elements = set()
+        for group in matching_groups:
+            grouped_elements.update(ifcopenshell.util.element.get_grouped_by(group, is_recursive=True))
+
         def filter_function(element: ifcopenshell.entity_instance) -> bool:
-            result = False
-            for rel in getattr(element, "HasAssignments", []):
-                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
-                    if self.compare(rel.RelatingGroup.Name, "=", value):
-                        result = True
-                    elif self.compare(rel.RelatingGroup.GlobalId, "=", value):
-                        result = True
-            return result if comparison == "=" else not result
+            return element in grouped_elements
 
         self.add_default_elements()
-        self.elements = set(filter(filter_function, self.elements))
+        if comparison == "=":
+            self.elements = set(filter(filter_function, self.elements))
+        else:
+            self.elements = set(e for e in self.elements if not filter_function(e))
 
     def parent(self, args):
         comparison, value = args
