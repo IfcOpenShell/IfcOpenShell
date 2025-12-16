@@ -511,14 +511,13 @@ def draw_filter(
     row = layout.row(align=True)
     if not enable_suggestions:
         row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
+        row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
     else:
-        # When suggestions are enabled, show a simple "Add Filter" button if no filters exist
         if not filter_groups or not any(fg.filters for fg in filter_groups):
             op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
             op.type = "entity"
             op.index = 0
             op.module = module
-    row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
 
     for i, filter_group in enumerate(filter_groups):
         box = layout.box()
