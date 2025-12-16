@@ -243,7 +243,6 @@ class Raycast(bonsai.core.tool.Raycast):
         event: bpy.types.Event,
         snap_obj,
     ):
-        # TODO Clean unnecessary code
 
         def divide_vector(start, end, n):
             points = []
@@ -690,7 +689,6 @@ class Raycast(bonsai.core.tool.Raycast):
 
     @classmethod
     def create_snap_obj(cls, obj):
-        # TODO Will this be done for every object or only wireframe?
         for snap_obj in cls.snap_objs:
             if obj.name == snap_obj.obj.name:
                 return snap_obj
