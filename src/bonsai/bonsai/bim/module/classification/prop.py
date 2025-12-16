@@ -95,6 +95,7 @@ class BIMClassificationReferenceProperties(PropertyGroup):
     classifications: EnumProperty(items=get_classifications, name="Classifications")
     reference_attributes: CollectionProperty(name="Reference Attributes", type=Attribute)
     active_reference_id: IntProperty(name="Active Reference Id")
+    classification_system_name: StringProperty(name="Classification System Name")
 
     if TYPE_CHECKING:
         is_adding: bool
