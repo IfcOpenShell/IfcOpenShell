@@ -119,6 +119,8 @@ class NewProject(bpy.types.Operator):
             bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
             bim_props.area_unit = "SQUARE_METRE"
             bim_props.volume_unit = "CUBIC_METRE"
+            bim_props.mass_unit = "KILOGRAM"
+            bim_props.time_unit = "SECOND"
             pprops.template_file = "IFC4 Demo Template.ifc"
 
         if self.preset != "wizard":
@@ -2893,4 +2895,202 @@ class ClearMeasurement(bpy.types.Operator):
         polyline_props.measurement_polyline.clear()
         MeasureDecorator.uninstall()
         tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ImageScalingTool(bpy.types.Operator, PolylineOperator):
+    bl_idname = "bim.image_scaling_tool"
+    bl_label = "Image Scaling Tool"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
+        self.input_options = ["DISTANCE"]
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
+        self.selected_points = []
+        self.target_object = None
+        self.current_distance_value = ""
+        self.is_typing_distance = False
+        self.calculated_distance = 0.0
+
+        if tool.Ifc.get():
+            self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        else:
+            self.unit_scale = tool.Blender.get_unit_scale()
+
+    def modal(self, context, event):
+        if not self.target_object or not context.active_object or context.active_object != self.target_object:
+            self.report({"ERROR"}, "Image annotation was deselected. Tool cancelled.")
+            return self.cancel_tool(context)
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        self.handle_lock_axis(context, event)
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_custom_instructions(context)
+        self.handle_mouse_move(context, event)
+        self.choose_axis(event, z=True)
+        self.choose_plane(event)
+        self.handle_snap_selection(context, event)
+
+        if event.type == "LEFTMOUSE" and event.value == "PRESS":
+            if len(self.selected_points) < 2:
+                snapped_point = self.snapping_points[0]
+                point_3d = snapped_point["point"].copy()
+                self.selected_points.append(point_3d)
+
+                if len(self.selected_points) == 2:
+                    self.calculate_distance()
+                    self.current_distance_value = f"{self.calculated_distance:.3f}"
+                    self.is_typing_distance = False
+                    self.input_ui.set_value("DISTANCE", self.calculated_distance)
+
+        elif len(self.selected_points) == 2:
+            if event.type in {"RET", "NUMPAD_ENTER"} and event.value == "PRESS":
+                return self.apply_scaling(context)
+
+            if event.unicode and event.unicode.isprintable() and event.value == "PRESS":
+                if event.unicode.isdigit() or event.unicode == ".":
+                    if not self.is_typing_distance:
+                        self.current_distance_value = event.unicode
+                        self.is_typing_distance = True
+                    else:
+                        self.current_distance_value += event.unicode
+
+                    distance_value = float(self.current_distance_value)
+                    self.input_ui.set_value("DISTANCE", distance_value)
+
+            elif event.type in {"BACK_SPACE", "DEL"} and event.value == "PRESS":
+                if len(self.current_distance_value) > 0:
+                    self.current_distance_value = self.current_distance_value[:-1]
+                    distance_value = (
+                        float(self.current_distance_value) if self.current_distance_value else self.calculated_distance
+                    )
+                    self.input_ui.set_value("DISTANCE", distance_value)
+
+        self.handle_keyboard_input(context, event)
+
+        result = self.handle_cancelation(context, event)
+        if result is not None:
+            return result
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        active_obj = context.active_object
+        self.target_object = active_obj
+        super().invoke(context, event)
+        return {"RUNNING_MODAL"}
+
+    def cancel_tool(self, context):
+        context.workspace.status_text_set(text=None)
+        if hasattr(self, "tool_state"):
+            self.tool_state.plane_method = None
+        PolylineDecorator.uninstall()
+        tool.Blender.update_viewport()
+        return {"CANCELLED"}
+
+    def handle_custom_instructions(self, context):
+        if len(self.selected_points) == 0:
+            instruction_text = "Click First Point on Image"
+        elif len(self.selected_points) == 1:
+            instruction_text = "Click Second Point on Image"
+        elif len(self.selected_points) == 2:
+            if self.is_typing_distance:
+                instruction_text = f"Distance: {self.current_distance_value} - Press Enter to Apply"
+            else:
+                instruction_text = f"Measured: {self.calculated_distance:.3f} - Type New Distance or Press Enter"
+        else:
+            instruction_text = "Image Scaling Tool"
+
+        context.workspace.status_text_set(text=instruction_text)
+
+    def calculate_distance(self):
+        if len(self.selected_points) == 2:
+            point1 = self.selected_points[0]
+            point2 = self.selected_points[1]
+            distance_3d = (point2 - point1).length
+            self.calculated_distance = distance_3d / self.unit_scale
+
+    def apply_scaling(self, context):
+        if len(self.selected_points) != 2:
+            self.report({"ERROR"}, "Two points must be selected")
+            return {"CANCELLED"}
+
+        target_distance = float(self.current_distance_value)
+
+        if target_distance <= 0:
+            self.report({"ERROR"}, "Distance must be positive")
+            return {"CANCELLED"}
+
+        if self.calculated_distance <= 0:
+            self.report({"ERROR"}, "Selected points are too close together")
+            return {"CANCELLED"}
+
+        scale_factor = target_distance / self.calculated_distance
+
+        if self.target_object:
+            import bmesh
+
+            mesh = self.target_object.data
+
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+
+            bmesh.ops.scale(bm, vec=(scale_factor, scale_factor, 1.0), verts=bm.verts)
+
+            if bm.loops.layers.uv:
+                uv_layer = bm.loops.layers.uv.active
+
+                min_x = min(v.co.x for v in bm.verts)
+                max_x = max(v.co.x for v in bm.verts)
+                min_y = min(v.co.y for v in bm.verts)
+                max_y = max(v.co.y for v in bm.verts)
+
+                width = max_x - min_x
+                height = max_y - min_y
+
+                for face in bm.faces:
+                    for loop in face.loops:
+                        vert = loop.vert
+                        u = (vert.co.x - min_x) / width if width > 0 else 0.5
+                        v = (vert.co.y - min_y) / height if height > 0 else 0.5
+
+                        u = max(0.0, min(1.0, u))
+                        v = max(0.0, min(1.0, v))
+                        loop[uv_layer].uv = (u, v)
+
+            bm.to_mesh(mesh)
+            bm.free()
+            mesh.update()
+
+            element = tool.Ifc.get_entity(self.target_object)
+            if element and element.Representation:
+                for representation in element.Representation.Representations:
+                    for item in representation.Items:
+                        if item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
+                            new_coords = []
+                            for vertex in mesh.vertices:
+                                co = self.target_object.matrix_world @ vertex.co
+                                new_coords.append([co.x, co.y, co.z])
+
+                            item.Coordinates.CoordList = new_coords
+
+            self.report({"INFO"}, f"Applied scale factor: {scale_factor:.4f}")
+
+        context.workspace.status_text_set(text=None)
+        self.tool_state.plane_method = None
+        PolylineDecorator.uninstall()
+        tool.Blender.update_viewport()
+
         return {"FINISHED"}

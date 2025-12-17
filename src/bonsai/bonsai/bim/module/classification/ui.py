@@ -21,6 +21,8 @@ import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.bim.module.classification.prop as classification_prop
+import ifcopenshell.util.classification
+
 from bpy.types import Panel, UIList
 from bonsai.bim.module.classification.data import (
     ClassificationsData,
@@ -152,7 +154,15 @@ class ReferenceUI:
             row = self.layout.row(align=True)
             row.label(text="No References")
 
-        for reference in self.data.data["references"]:
+        def get_classification_name(reference):
+            classification_entity = ifcopenshell.util.classification.get_classification(
+                reference["ifcClassificationReference"]
+            )
+            return classification_entity.Name if classification_entity else ""
+
+        sorted_references = sorted(self.data.data["references"], key=get_classification_name)
+
+        for reference in sorted_references:
             if self.props.active_reference_id == reference["id"]:
                 self.draw_editable_ui()
             else:
@@ -248,10 +258,20 @@ class ReferenceUI:
         row = self.layout.row(align=True)
         row.operator("bim.edit_classification_reference", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
+        row = self.layout.row()
+        row.prop(self.props, "classification_system_name", text="Classification System Name")
+
         bonsai.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
 
     def draw_reference_ui(self, reference: dict[str, Any]) -> None:
         row = self.layout.row(align=True)
+
+        classification_entity = ifcopenshell.util.classification.get_classification(
+            reference["ifcClassificationReference"]
+        )
+        classification_name = classification_entity.Name if classification_entity else ""
+        row.label(text=classification_name, icon="OUTLINER_COLLECTION")
+
         if self.file.schema == "IFC2X3":
             name = reference["ItemReference"] or "No Identification"
         else:

@@ -55,8 +55,12 @@ def assign_unit(
         length = ifcopenshell.api.unit.add_si_unit(model, unit_type="LENGTHUNIT", prefix="MILLI")
         area = ifcopenshell.api.unit.add_si_unit(model, unit_type="AREAUNIT")
 
-        # Make it our default units, if we are doing a metric building
-        ifcopenshell.api.unit.assign_unit(model, units=[length, area])
+        # Optionally, add mass and time units
+        mass = ifcopenshell.api.unit.add_si_unit(model, unit_type="MASSUNIT", prefix="KILO")
+        time = ifcopenshell.api.unit.add_si_unit(model, unit_type="TIMEUNIT")
+
+        # Make these the default units for the project
+        ifcopenshell.api.unit.assign_unit(model, units=[length, area, mass, time])
 
         # Alternatively, you may specify without any arguments to
         # automatically create millimeters, square meters, and cubic meters
@@ -139,6 +143,7 @@ class Usecase:
         elif unit_type == "volume":
             dimensional_exponents = self.file.createIfcDimensionalExponents(3, 0, 0, 0, 0, 0, 0)
             name_prefix = "cubic"
+
         si_unit = self.file.createIfcSIUnit(
             None,
             "{}UNIT".format(unit_type.upper()),

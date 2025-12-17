@@ -104,6 +104,7 @@ class ReferencesData:
         if element:
             for reference in ifcopenshell.util.classification.get_references(element):
                 data = reference.get_info()
+                data["ifcClassificationReference"] = reference
                 del data["ReferencedSource"]
                 results.append(data)
         return results

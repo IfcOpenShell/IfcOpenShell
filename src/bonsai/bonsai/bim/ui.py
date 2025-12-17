@@ -684,6 +684,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=False,
     )
 
+    mass_time_units_in_wizard: BoolProperty(
+        name="Mass and time units in project wizard",
+        description="Show mass and time units section in the new project wizard panel",
+        default=False,
+    )
+
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -720,6 +726,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         doc: DocPreferences
         default_parameters: DefaultParameters
         container_hide_show_isolate: bool
+        mass_time_units_in_wizard: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -901,6 +908,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
+        layout.prop(self, "mass_time_units_in_wizard")
 
 
 # Scene panel groups
@@ -1355,7 +1363,7 @@ class BIM_PT_tab_sandbox(Panel):
 
 # Object panel groups
 class BIM_PT_tab_object_metadata(Panel):
-    bl_label = "Object Metadata"
+    bl_label = "Object"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
