@@ -3188,8 +3188,6 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 
             captured_apply_settings["literals"].append(literal_data)
 
-<<<<<<< HEAD
-=======
         obj["_bonsai_element_value_rows_backup"] = json.dumps(captured_apply_settings["literals"])
 
         core.edit_text(tool.Drawing, obj=obj)
@@ -4237,7 +4235,6 @@ class FilterSelectedObjectsIfIntersectedByCamera(bpy.types.Operator):
             {"INFO"}, f"Filtered to {remaining_selected} object(s) intersecting camera plane (deselected {deselected})"
         )
         return {"FINISHED"}
->>>>>>> 085d0e373 (revamped UI for intelligent TAGs creation)
 
 
 class SelectElementValues(bpy.types.Operator):

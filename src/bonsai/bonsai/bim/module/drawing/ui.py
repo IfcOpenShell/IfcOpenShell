@@ -669,28 +669,40 @@ class BIM_PT_text(Panel):
         row.prop(props, "hyperlink_url")
         row = self.layout.row()
         row.prop(props, "hyperlink_target")
+
+    def draw(self, context):
+        obj = context.active_object
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
+
+        if props.is_editing:
+            self.draw_text_editing_ui(context)
+        else:
+            text_data = DecoratorData.get_text_data(obj)
+
+            row = self.layout.row()
+            row.operator("bim.enable_editing_text", icon="GREASEPENCIL")
+
+            row = self.layout.row(align=True)
+            row.label(text="FontSize")
+            row.label(text=str(text_data["FontSize"]))
+            row = self.layout.row(align=True)
+            row.label(text="Newline_At")
+            row.label(text=str(text_data["Newline_At"]))
+            row = self.layout.row(align=True)
+            row.label(text="Reverse_List")
+            row.label(text=str(text_data["Reverse_List"]))
+            row = self.layout.row(align=True)
+            row.label(text="List_Separator")
+            row.label(text=str(text_data["List_Separator"]))
+
+            for literal_data in text_data["Literals"]:
                 box = self.layout.box()
-                box.label(text=f"Literal[{i}]:")
-                
                 for attribute in literal_data:
                     row = box.row(align=True)
                     row.label(text=attribute)
-                    click_op = row.operator(
-                        "bim.select_similar_text_literal_value",
-                        text=str(literal_data[attribute]),
-                        emboss=False,
-                    )
-                    click_op.literal_value = str(literal_data[attribute])
-                    click_op.literal_index = i
-                    if attribute == "Literal":
-                        click_op.attribute_type = "literal"
-                    elif attribute == "Path":
-                        click_op.attribute_type = "path"
-                    elif attribute == "BoxAlignment":
-                        click_op.attribute_type = "box_alignment"
-                    else:
-                        click_op.attribute_type = "text"
-                    click_op.display_text = str(literal_data[attribute])
+                    row.label(text=literal_data[attribute])
+
 
 class BIM_UL_drawinglist(bpy.types.UIList):
     def draw_item(
