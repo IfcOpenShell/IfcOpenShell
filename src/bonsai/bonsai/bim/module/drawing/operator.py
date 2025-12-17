@@ -3688,7 +3688,7 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         assert pset
         
         preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
         
         if self.filter_mode == "INCLUDE":
             filter_groups = props.include_filter_groups

@@ -663,7 +663,7 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         module = getattr(self, "module", "search")
         preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
         
         if not enable_suggestions:
             if self.query == self.old_query:
@@ -677,7 +677,7 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
 
     def draw(self, context):
         preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
         
         if not enable_suggestions:
             row = self.layout.row()
@@ -687,7 +687,7 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
         module = getattr(self, "module", "search")
         filter_groups = tool.Search.get_filter_groups(module)
         preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
 
         if enable_suggestions:
             filter_structure = []
@@ -767,7 +767,7 @@ class Search(Operator):
             assert_never(self.property_group)
 
         preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
         
         if enable_suggestions:
             results = tool.Search.execute_filter_groups(props.filter_groups)
