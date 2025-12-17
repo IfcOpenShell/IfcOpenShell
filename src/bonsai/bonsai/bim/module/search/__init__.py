@@ -24,6 +24,7 @@ classes = (
     operator.ActivateIfcClassFilter,
     operator.AddFilter,
     operator.AddFilterGroup,
+    operator.ApplyFilterFromText,
     operator.ColourByProperty,
     operator.EditFilterQuery,
     operator.FilterValueSuggestions,
@@ -58,7 +59,9 @@ classes = (
 
 def register():
     bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
+    bpy.types.TEXT_HT_header.append(operator.draw_text_editor_header)
 
 
 def unregister():
     del bpy.types.Scene.BIMSearchProperties
+    bpy.types.TEXT_HT_header.remove(operator.draw_text_editor_header)
