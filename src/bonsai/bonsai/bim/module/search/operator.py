@@ -154,7 +154,7 @@ class FilterValueSuggestions(Operator):
         for suggestion in natsorted(string_suggestions):
             self.collection_values.add().name = suggestion
 
-        return context.window_manager.invoke_props_dialog(self, width=300)
+        return context.window_manager.invoke_props_dialog(self, width=800)
 
     def draw(self, context):
         layout = self.layout
