@@ -2119,19 +2119,30 @@ class Drawing(bonsai.core.tool.Drawing):
 
         for command in re.findall("``.*?``", text):
             original_command = command
+            has_none = False
             for variable in re.findall("{{.*?}}", command):
                 value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
+                if value is None:
+                    has_none = True
+                    break
                 value = '"' + str(value).replace('"', '\\"') + '"'
                 command = command.replace(variable, value)
-            text = text.replace(original_command, ifcopenshell.util.selector.format(command[2:-2]))
+            if has_none:
+                text = text.replace(original_command, "")
+            else:
+                text = text.replace(original_command, ifcopenshell.util.selector.format(command[2:-2]))
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
-            if isinstance(value, (list, tuple)):
+            if value is None:
+                value = ""
+            elif isinstance(value, (list, tuple)):
                 if reverse_list:
                     value = list_separator.join(str(v) for v in reversed(value))
                 else:
                     value = list_separator.join(str(v) for v in value)
-            text = text.replace(variable, str(value))
+            else:
+                value = str(value)
+            text = text.replace(variable, value)
         return text
 
     @classmethod
