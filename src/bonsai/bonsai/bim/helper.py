@@ -490,7 +490,7 @@ def draw_filter(
 
     sprops = tool.Search.get_search_props()
     preferences = tool.Blender.get_addon_preferences()
-    enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+    enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
 
     if tool.Ifc.get():
         row = layout.row(align=True)

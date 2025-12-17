@@ -690,9 +690,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=False,
     )
     
-    search_filter_suggestions: BoolProperty(
-        name="Enable advanced search with filter suggestions",
-        description="Enable filter mode (ADD/SUBTRACT/FILTER) and value suggestions for search filters",
+    chain_filter_with_set_operations: BoolProperty(
+        name="Enable chained filters with set operations",
+        description="Enable chaining search filters with set operations: ADD (union: combine sets), SUBTRACT (difference: remove from set), FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values",
         default=False,
     )
 
@@ -733,7 +733,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default_parameters: DefaultParameters
         container_hide_show_isolate: bool
         mass_time_units_in_wizard: bool
-        search_filter_suggestions: bool
+        chain_filter_with_set_operations: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -916,7 +916,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
         layout.prop(self, "mass_time_units_in_wizard")
-        layout.prop(self, "search_filter_suggestions")
+        layout.prop(self, "chain_filter_with_set_operations")
 
 
 # Scene panel groups
