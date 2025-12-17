@@ -665,11 +665,6 @@ class BIM_PT_text(Panel):
             select_op.literal_value = str(props.newline_at)
             select_op.attribute_type = "newline"
 
-        row = self.layout.row()
-        row.prop(props, "hyperlink_url")
-        row = self.layout.row()
-        row.prop(props, "hyperlink_target")
-
     def draw(self, context):
         obj = context.active_object
         assert obj
