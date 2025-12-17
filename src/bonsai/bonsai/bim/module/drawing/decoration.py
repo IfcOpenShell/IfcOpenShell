@@ -2093,5 +2093,6 @@ class DecorationsHandler:
         if not DecoratorData.is_loaded:
             DecoratorData.load(self)
 
-        for obj, decorator in DecoratorData.data["object_decorators"]:
+        object_decorators = DecoratorData.data.get("object_decorators", [])
+        for obj, decorator in object_decorators:
             decorator.decorate(context, obj)
