@@ -44,6 +44,13 @@ from bonsai.bim.prop import StrProperty
 from typing import TYPE_CHECKING, Literal, get_args, assert_never
 
 
+def draw_text_editor_header(self, context):
+    if context.space_data.text and context.space_data.text.name.startswith("FilterQuery_"):
+        layout = self.layout
+        layout.separator()
+        op = layout.operator("bim.apply_filter_from_text", text="Apply Filter Configuration", icon="CHECKMARK")
+
+
 def update_filter_search_value(self: "FilterValueSuggestions", context: bpy.types.Context) -> None:
     filter_groups = tool.Search.get_filter_groups(self.module)
     ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
@@ -112,7 +119,7 @@ class FilterValueSuggestions(Operator):
 
     group_index: IntProperty()
     filter_index: IntProperty()
-    module: StringProperty()
+    module: StringProperty(default="search")
     filter_type: StringProperty()
     suggestion_type: StringProperty(default="value")
     
@@ -603,6 +610,47 @@ class SelectFilterElements(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ApplyFilterFromText(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.apply_filter_from_text"
+    bl_label = "Apply Filter Configuration"
+    bl_description = "Apply the JSON filter configuration from the current text block"
+    bl_options = {"REGISTER", "UNDO"}
+    
+    @classmethod
+    def poll(cls, context):
+        if context.area and context.area.type == 'TEXT_EDITOR':
+            space = context.space_data
+            if space.text and space.text.name.startswith("FilterQuery_"):
+                return True
+        return False
+    
+    def execute(self, context):
+        space = context.space_data
+        text = space.text
+        
+        if not text or not text.name.startswith("FilterQuery_"):
+            self.report({"ERROR"}, "No valid filter configuration text block")
+            return {'CANCELLED'}
+        
+        module = text.name.replace("FilterQuery_", "")
+        
+        try:
+            json_data = json.loads(text.as_string())
+            filter_structure = json_data.get("filter_structure", [])
+            filter_groups = tool.Search.get_filter_groups(module)
+            tool.Search.import_filter_structure(filter_structure, filter_groups)
+            self.report({"INFO"}, "Filter configuration applied successfully")
+            
+            if len(context.window_manager.windows) > 1:
+                bpy.ops.wm.window_close()
+            
+        except Exception as e:
+            self.report({"ERROR"}, f"Invalid JSON: {str(e)}")
+            return {'CANCELLED'}
+        
+        return {'FINISHED'}
+
+
 class EditFilterQuery(Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_filter_query"
     bl_label = "Edit Filter Query"
@@ -610,29 +658,90 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     query: StringProperty(name="Query")
     old_query: StringProperty(name="Old Query")
-    module: StringProperty()
+    module: StringProperty(default="search")
 
     def _execute(self, context):
-        if self.query == self.old_query:
-            return
+        module = getattr(self, "module", "search")
+        preferences = tool.Blender.get_addon_preferences()
+        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+        
+        if not enable_suggestions:
+            if self.query == self.old_query:
+                return
 
-        filter_groups = tool.Search.get_filter_groups(self.module)
-        try:
-            tool.Search.import_filter_query(self.query, filter_groups)
-        except:
-            return
+            filter_groups = tool.Search.get_filter_groups(module)
+            try:
+                tool.Search.import_filter_query(self.query, filter_groups)
+            except:
+                return
 
     def draw(self, context):
-        row = self.layout.row()
-        row.prop(self, "query", text="")
+        preferences = tool.Blender.get_addon_preferences()
+        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
+        
+        if not enable_suggestions:
+            row = self.layout.row()
+            row.prop(self, "query", text="")
 
     def invoke(self, context, event):
-        filter_groups = tool.Search.get_filter_groups(self.module)
+        module = getattr(self, "module", "search")
+        filter_groups = tool.Search.get_filter_groups(module)
+        preferences = tool.Blender.get_addon_preferences()
+        enable_suggestions = getattr(preferences, "search_filter_suggestions", False)
 
-        self.query = tool.Search.export_filter_query(filter_groups)
-        self.old_query = self.query
+        if enable_suggestions:
+            filter_structure = []
+            for filter_group in filter_groups:
+                group_data = []
+                for ifc_filter in filter_group.filters:
+                    filter_data = {
+                        "type": ifc_filter.type,
+                        "name": ifc_filter.name,
+                        "value": ifc_filter.value,
+                        "pset": ifc_filter.pset,
+                        "comparison": ifc_filter.comparison,
+                        "filter_mode": ifc_filter.filter_mode,
+                    }
+                    group_data.append(filter_data)
+                filter_structure.append(group_data)
+            
+            query = tool.Search.export_filter_query(filter_groups)
+            json_data = {
+                "type": "BBIM_Search",
+                "query": query,
+                "filter_structure": filter_structure
+            }
+            
+            text_block_name = f"FilterQuery_{module}"
+            text = bpy.data.texts.get(text_block_name)
+            if not text:
+                text = bpy.data.texts.new(text_block_name)
+            
+            text.clear()
+            text.write(json.dumps(json_data, indent=2))
+            
+            bpy.ops.wm.window_new()
+            new_window = context.window_manager.windows[-1]
+            
+            new_area = new_window.screen.areas[0]
+            new_area.type = 'TEXT_EDITOR'
+            
+            text_space = None
+            for space in new_area.spaces:
+                if space.type == 'TEXT_EDITOR':
+                    text_space = space
+                    break
+            
+            if text_space:
+                text_space.text = text
+            
+            self.report({"INFO"}, "Compact text editor opened. Edit JSON and click 'Apply Filter Configuration' in header")
+            return {'FINISHED'}
 
-        return context.window_manager.invoke_props_dialog(self)
+        else:
+            self.query = tool.Search.export_filter_query(filter_groups)
+            self.old_query = self.query
+            return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 class Search(Operator):
