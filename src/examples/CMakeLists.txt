@@ -28,14 +28,6 @@ if(STANDALONE_PROJECT)
     project(IfcOpenShellExamples)
 
     set(CMAKE_CXX_STANDARD 17)
-    set(Boost_USE_STATIC_LIBS ON)
-    set(Boost_USE_STATIC_RUNTIME OFF)
-    set(Boost_USE_MULTITHREADED ON)
-    set(Boost_COMPONENTS system program_options regex thread date_time iostreams)
-    find_package(Boost CONFIG REQUIRED COMPONENTS ${Boost_COMPONENTS})
-    find_package(zstd CONFIG REQUIRED)
-    find_package(RocksDB CONFIG REQUIRED)
-    find_package(LibXml2 CONFIG REQUIRED)
     find_package(IfcOpenShell CONFIG REQUIRED)
     set(SCHEMA_VERSIONS ${IFCOPENSHELL_SCHEMA_VERSIONS})
     set(WITH_OPENCASCADE ${IFCOPENSHELL_WITH_OPENCASCADE})
@@ -61,17 +53,6 @@ if(SCHEMA_VERSIONS MATCHES "2x3")
         add_library(IfcHouseInterface INTERFACE)
 
         if (STANDALONE_PROJECT)
-            find_package(Eigen3 CONFIG REQUIRED)
-            find_package(CGAL CONFIG REQUIRED)
-            find_package(OpenCASCADE CONFIG REQUIRED)
-
-            if(OpenCASCADE_VERSION VERSION_LESS "7.7.0")
-                # cmake configs < 7.7.0 were not adding include directories to targets automatically.
-                set_target_properties(TKernel PROPERTIES
-                    INTERFACE_INCLUDE_DIRECTORIES "${OpenCASCADE_INCLUDE_DIR}"
-                )
-            endif()
-
             target_link_libraries(IfcHouseInterface INTERFACE IfcOpenShell::IfcParse IfcOpenShell::geometry_serializer)
         else()
             target_link_libraries(IfcHouseInterface INTERFACE IfcParse geometry_serializer)
