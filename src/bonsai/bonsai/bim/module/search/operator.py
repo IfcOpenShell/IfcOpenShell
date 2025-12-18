@@ -761,7 +761,17 @@ class Search(Operator):
             assert_never(self.property_group)
 
         preferences = tool.Blender.get_addon_preferences()
+        
+        # Migrate old ! prefix filters to new filter_mode system when preferences are enabled
         if preferences.chain_filter_with_set_operations or preferences.default_filter_with_set_operations_for_globalid_and_class:
+            for filter_group in props.filter_groups:
+                for ifc_filter in filter_group.filters:
+                    if ifc_filter.type not in ["entity", "instance"]:
+                        continue
+                    if ifc_filter.value.startswith("!"):
+                        ifc_filter.value = ifc_filter.value[1:]
+                        ifc_filter.filter_mode = "SUBTRACT"
+            
             results = tool.Search.execute_filter_groups(props.filter_groups)
         else:
             results = ifcopenshell.util.selector.filter_elements(
