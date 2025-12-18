@@ -715,32 +715,6 @@ class Client:
                     params[param] = value
         return self.get(endpoint, params)
 
-    def get_class_properties(
-        self,
-        class_uri: str,
-        property_set: str = "",
-        property_code: str = "",
-        search_text: str = "",
-        offset: int = 0,
-        limit: int = 1000,
-        language_code: str = "",
-        version=1,
-    ) -> ClassPropertiesContractV1:
-        """
-        Get class properties (paginated)
-        """
-        endpoint = f"Class/Properties/v1"
-        params = {
-            "ClassUri": class_uri,
-            "PropertySet": property_set,
-            "PropertyCode": property_code,
-            "SearchText": search_text,
-            "Offset": offset,
-            "Limit": limit,
-            "languageCode": language_code,
-        }
-        return self.get(endpoint, params)
-
     def get_properties(
         self,
         dictionary_uri: str,
@@ -789,6 +763,34 @@ class Client:
             "languageCode": language_code,
         }
         params = {k: v for k, v in params.items() if v is not None}
+        return self.get(endpoint, params)
+
+
+
+    def get_class_properties(
+        self,
+        class_uri: str,
+        property_set: str = "",
+        property_code: str = "",
+        search_text: str = "",
+        offset: int = 0,
+        limit: int = 1000,
+        language_code: str = "",
+        version=1,
+    ) -> ClassPropertiesContractV1:
+        """
+        Get class properties (paginated)
+        """
+        endpoint = f"Class/Properties/v{version}"
+        params = {
+            "ClassUri": class_uri,
+            "PropertySet": property_set,
+            "PropertyCode": property_code,
+            "SearchText": search_text,
+            "Offset": offset,
+            "Limit": limit,
+            "languageCode": language_code,
+        }
         return self.get(endpoint, params)
 
     def get_property(self, uri, include_classes=False, language_code="", version: int = 4) -> PropertyContractV4:
