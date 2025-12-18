@@ -34,6 +34,10 @@ jobs:
   compile-and-test:
     runs-on: ubuntu-22.04
     needs: activate
+    env:
+      # Colored output for cmake.
+      CLICOLOR_FORCE: "1"
+      CMAKE_COLOR_DIAGNOSTICS: "ON"
     steps:
       - uses: actions/checkout@v5
         with:
