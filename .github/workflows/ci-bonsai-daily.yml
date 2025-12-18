@@ -54,7 +54,7 @@ jobs:
             short_name: macosm1,
           }
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6 # https://github.com/actions/setup-python
         with:
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout bonsai_unstable_repo repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: IfcOpenShell/bonsai_unstable_repo
           token: ${{ secrets.IFCOPENBOT_TOKEN }}
