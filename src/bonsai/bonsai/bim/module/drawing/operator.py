@@ -296,6 +296,8 @@ class CreateDrawing(bpy.types.Operator):
             self.drawing_index = drawing_i
             if self.print_all:
                 bpy.ops.bim.activate_drawing(drawing=drawing_id, should_view_from_camera=False)
+                original_cache_setting = self.props.should_use_underlay_cache
+                self.props.should_use_underlay_cache = False
 
             self.camera = context.scene.camera
             assert (camera_element := tool.Ifc.get_entity(self.camera))
@@ -339,6 +341,23 @@ class CreateDrawing(bpy.types.Operator):
                                 f"Failed to create drawing '{self.drawing.Name}' - drawing has underlay but there's no active drawing underlay style.",
                             )
                             return {"FINISHED"}
+
+                        # Clear any local camera setup and force viewport to use scene camera
+                        for area in context.screen.areas:
+                            if area.type == 'VIEW_3D':
+                                for space in area.spaces:
+                                    if space.type == 'VIEW_3D':
+                                        # Clear local camera to ensure we use scene.camera
+                                        space.use_local_camera = False
+                                        space.camera = context.scene.camera
+                                        space.region_3d.view_perspective = 'CAMERA'
+                                        print(f"Set viewport camera to: {context.scene.camera.name}")
+                                        break
+                        
+                        # Force complete scene update
+                        context.view_layer.update()
+                        context.evaluated_depsgraph_get()
+                        
                         underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
@@ -429,11 +448,24 @@ class CreateDrawing(bpy.types.Operator):
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
+        print(f"\n--- GENERATE UNDERLAY ---")
+        print(f"Drawing: {self.drawing.Name}")
+        print(f"SVG path: {svg_path}")
+        print(f"Cache exists: {os.path.isfile(svg_path)}")
+        print(f"Use cache: {self.props.should_use_underlay_cache}")
+        print(f"Render filepath will be: {context.scene.render.filepath}")
+        
         if os.path.isfile(svg_path) and self.props.should_use_underlay_cache:
+            print(f"RETURNING CACHED UNDERLAY")
             return svg_path
 
+        print(f"GENERATING NEW UNDERLAY")
+
+        render_png_path = str(Path(svg_path).with_suffix(".png"))
+        context.scene.render.filepath = render_png_path
+        print(f"SET Render filepath to: {context.scene.render.filepath}")
+
         assert context.scene and context.view_layer and context.screen
-        context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
         assert (drawing_style := self.cprops.get_active_drawing_style())
 
         tool.Blender.sync_render_visibility()
