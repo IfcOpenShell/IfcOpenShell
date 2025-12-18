@@ -662,10 +662,8 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         module = getattr(self, "module", "search")
-        preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
         
-        if not enable_suggestions:
+        if not tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
             if self.query == self.old_query:
                 return
 
@@ -676,20 +674,16 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
                 return
 
     def draw(self, context):
-        preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
         
-        if not enable_suggestions:
+        if not tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
             row = self.layout.row()
             row.prop(self, "query", text="")
 
     def invoke(self, context, event):
         module = getattr(self, "module", "search")
         filter_groups = tool.Search.get_filter_groups(module)
-        preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
 
-        if enable_suggestions:
+        if tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
             filter_structure = []
             for filter_group in filter_groups:
                 group_data = []
@@ -766,10 +760,8 @@ class Search(Operator):
         else:
             assert_never(self.property_group)
 
-        preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
         
-        if enable_suggestions:
+        if tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
             results = tool.Search.execute_filter_groups(props.filter_groups)
         else:
             results = ifcopenshell.util.selector.filter_elements(

@@ -3687,9 +3687,6 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
         assert pset
         
-        preferences = tool.Blender.get_addon_preferences()
-        enable_suggestions = getattr(preferences, "chain_filter_with_set_operations", False)
-        
         if self.filter_mode == "INCLUDE":
             filter_groups = props.include_filter_groups
         elif self.filter_mode == "EXCLUDE":
@@ -3699,7 +3696,7 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         
         query = tool.Search.export_filter_query(filter_groups) or None
         
-        if enable_suggestions and query:
+        if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and query:
             filter_structure = []
             for filter_group in filter_groups:
                 group_data = []

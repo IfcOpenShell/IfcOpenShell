@@ -916,7 +916,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
         layout.prop(self, "mass_time_units_in_wizard")
-        layout.prop(self, "chain_filter_with_set_operations")
+        row = layout.row(align=True)
+        row.prop(self, "chain_filter_with_set_operations")
+        row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/3270"
 
 
 # Scene panel groups
