@@ -448,24 +448,11 @@ class CreateDrawing(bpy.types.Operator):
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
-        print(f"\n--- GENERATE UNDERLAY ---")
-        print(f"Drawing: {self.drawing.Name}")
-        print(f"SVG path: {svg_path}")
-        print(f"Cache exists: {os.path.isfile(svg_path)}")
-        print(f"Use cache: {self.props.should_use_underlay_cache}")
-        print(f"Render filepath will be: {context.scene.render.filepath}")
-        
         if os.path.isfile(svg_path) and self.props.should_use_underlay_cache:
-            print(f"RETURNING CACHED UNDERLAY")
             return svg_path
 
-        print(f"GENERATING NEW UNDERLAY")
-
-        render_png_path = str(Path(svg_path).with_suffix(".png"))
-        context.scene.render.filepath = render_png_path
-        print(f"SET Render filepath to: {context.scene.render.filepath}")
-
         assert context.scene and context.view_layer and context.screen
+        context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
         assert (drawing_style := self.cprops.get_active_drawing_style())
 
         tool.Blender.sync_render_visibility()
