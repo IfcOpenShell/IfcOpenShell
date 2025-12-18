@@ -143,6 +143,7 @@ def menu_func(self, context):
         if element and element.is_a("IfcAnnotation") and element.ObjectType in ["SECTION", "ELEVATION"]:
             self.layout.operator("bim.activate_drawing_by_annotation", text="Go to Drawing")
 
+
 def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=False)
@@ -155,7 +156,7 @@ def register():
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.depsgraph_update_pre.append(handler.depsgraph_update_pre_handler)
     bpy.types.VIEW3D_MT_image_add.append(ui.add_object_button)
-    bpy.types.VIEW3D_MT_object_context_menu.append(menu_func) 
+    bpy.types.VIEW3D_MT_object_context_menu.append(menu_func)
 
 
 def unregister():
