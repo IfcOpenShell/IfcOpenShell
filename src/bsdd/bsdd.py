@@ -184,6 +184,23 @@ class ClassPropertyContractV1(TypedDict):
     qudtCodes: NotRequired[list[str]]
 
 
+class ClassRelationItemContractV1(TypedDict):
+    relationType: str
+    classUri: str
+    className: NotRequired[str]
+    fraction: NotRequired[float]
+    dictionaryUri: NotRequired[str]
+
+
+class ClassRelationsContractV1(TypedDict):
+    totalCount: NotRequired[int]
+    offset: NotRequired[int]
+    count: NotRequired[int]
+    classUri: NotRequired[str]
+    areReversedRelations: NotRequired[bool]
+    classRelations: NotRequired[list[ClassRelationItemContractV1]]
+
+
 class ClassPropertiesContractV1(TypedDict):
     classUri: NotRequired[str]
     totalCount: NotRequired[int]
@@ -765,7 +782,29 @@ class Client:
         params = {k: v for k, v in params.items() if v is not None}
         return self.get(endpoint, params)
 
-
+    def get_class_relations(
+        self,
+        class_uri: str,
+        get_reverse_relations: bool = False,
+        search_text: str = "",
+        offset: int = 0,
+        limit: int = 1000,
+        language_code: str = "",
+        version=1,
+    ) -> ClassRelationsContractV1:
+        """
+        Get class relations or reverse relations (paginated)
+        """
+        endpoint = f"Class/Relations/v{version}"
+        params = {
+            "ClassUri": class_uri,
+            "GetReverseRelations": get_reverse_relations,
+            "SearchText": search_text,
+            "Offset": offset,
+            "Limit": limit,
+            "languageCode": language_code,
+        }
+        return self.get(endpoint, params)
 
     def get_class_properties(
         self,
