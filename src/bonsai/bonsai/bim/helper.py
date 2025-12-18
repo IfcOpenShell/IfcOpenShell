@@ -535,7 +535,12 @@ def draw_filter(
         for j, ifc_filter in enumerate(filter_group.filters):
             if ifc_filter.type == "entity":
                 row = box.row(align=True)
-                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                preferences = tool.Blender.get_addon_preferences()
+                if preferences.chain_filter_with_set_operations:
+                    show_mode_toggle = j > 0
+                else:
+                    show_mode_toggle = preferences.default_filter_with_set_operations_for_globalid_and_class and j > 0  # PR 7315 mode
+                if show_mode_toggle:
                     mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
                     op = row.operator(
                         "bim.toggle_filter_inclusion",
@@ -749,7 +754,12 @@ def draw_filter(
                 row.prop(ifc_filter, "value", text="")
             elif ifc_filter.type == "instance":
                 row = box.row(align=True)
-                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                preferences = tool.Blender.get_addon_preferences()
+                if preferences.chain_filter_with_set_operations:
+                    show_mode_toggle = j > 0
+                else:
+                    show_mode_toggle = preferences.default_filter_with_set_operations_for_globalid_and_class and j > 0  # PR 7315 mode
+                if show_mode_toggle:
                     mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
                     op = row.operator(
                         "bim.toggle_filter_inclusion",
