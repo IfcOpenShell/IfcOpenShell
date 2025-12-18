@@ -184,23 +184,64 @@ class Search(bonsai.core.tool.Search):
         Within a single group chain, all filters chain sequentially with ADD/SUBTRACT/FILTER modes.
         Groups are combined with union (same as original " + " behavior).
         """
+        preferences = tool.Blender.get_addon_preferences()
+        #print(f"\n{'='*80}")
+        #print(f"DEBUG: execute_filter_groups - Starting execution")
+        #print(f"DEBUG: Preferences - chain_filter_with_set_operations: {preferences.chain_filter_with_set_operations}")
+        #print(f"DEBUG: Preferences - default_filter_with_set_operations_for_globalid_and_class: {preferences.default_filter_with_set_operations_for_globalid_and_class}")
+        #print(f"DEBUG: Total filter groups: {len(filter_groups)}")
+        
         all_group_results = []
         
-        for filter_group in filter_groups:
+        for group_idx, filter_group in enumerate(filter_groups):
+            #print(f"\n--- Group {group_idx} ---")
             group_results = set()
             
             for filter_index, ifc_filter in enumerate(filter_group.filters):
+                #print(f"\n  Filter {filter_index}:")
+                #print(f"    Type: {ifc_filter.type}")
+                #print(f"    Value: {ifc_filter.value}")
+                #print(f"    filter_mode property: {ifc_filter.filter_mode}")
+                
                 if not ifc_filter.value:
+                    #print(f"    SKIPPED: No value")
                     continue
                 
                 query = cls._export_single_filter(ifc_filter)
                 if not query:
+                    #print(f"    SKIPPED: No query generated")
                     continue
                 
-                mode = "ADD" if filter_index == 0 else ifc_filter.filter_mode
+                #print(f"    Generated query: {query}")
+                #print(f"    Current group_results size before this filter: {len(group_results)}")
+                
+                # Determine the mode for this filter
+                if filter_index == 0:
+                    mode = "ADD"  # First filter is always ADD
+                    #print(f"    Mode decision: ADD (first filter)")
+                else:
+                    # For entity and instance filters, check if set operations are enabled
+                    if ifc_filter.type in ["entity", "instance"]:
+                        # Use filter_mode only if chain mode OR default mode preference is enabled
+                        if preferences.chain_filter_with_set_operations or preferences.default_filter_with_set_operations_for_globalid_and_class:
+                            mode = ifc_filter.filter_mode
+                            #print(f"    Mode decision: {mode} (entity/instance with preference enabled)")
+                        else:
+                            # Default behavior: sequential filtering (FILTER mode)
+                            mode = "FILTER" if group_results else "ADD"
+                            #print(f"    Mode decision: {mode} (entity/instance default behavior)")
+                    else:
+                        # For other filter types, use chain mode if enabled, otherwise FILTER
+                        if preferences.chain_filter_with_set_operations:
+                            mode = ifc_filter.filter_mode
+                            #print(f"    Mode decision: {mode} (other type with chain mode)")
+                        else:
+                            mode = "FILTER" if group_results else "ADD"
+                            #print(f"    Mode decision: {mode} (other type default behavior)")
                 
                 if mode == "ADD":
                     results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+                    #print(f"    ADD: Found {len(results)} elements, adding to group_results")
                     group_results.update(results)
                     
                 elif mode == "SUBTRACT":
@@ -209,9 +250,11 @@ class Search(bonsai.core.tool.Search):
                         elements_to_remove = ifcopenshell.util.selector.filter_elements(
                             tool.Ifc.get(), query_without_prefix, elements=group_results
                         )
+                        #print(f"    SUBTRACT: Removing {len(elements_to_remove)} elements from group_results")
                         group_results -= elements_to_remove
                     else:
                         results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+                        #print(f"    SUBTRACT: group_results empty, adding {len(results)} elements (fallback to ADD)")
                         group_results.update(results)
                         
                 elif mode == "FILTER":
@@ -219,17 +262,26 @@ class Search(bonsai.core.tool.Search):
                         results = ifcopenshell.util.selector.filter_elements(
                             tool.Ifc.get(), query, elements=group_results
                         )
+                        #print(f"    FILTER: Filtering group_results, result: {len(results)} elements")
                         group_results = results
                     else:
                         results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+                        #print(f"    FILTER: group_results empty, found {len(results)} elements (fallback to ADD)")
                         group_results.update(results)
+                
+                #print(f"    Group results size after this filter: {len(group_results)}")
             
+            #print(f"\n  Group {group_idx} final size: {len(group_results)}")
             if group_results:
                 all_group_results.append(group_results)
         
         final_results = set()
         for group_results in all_group_results:
             final_results.update(group_results)
+        
+        #print(f"\n{'='*80}")
+        #print(f"DEBUG: Final combined results: {len(final_results)} elements")
+        #print(f"{'='*80}\n")
         
         return final_results
 

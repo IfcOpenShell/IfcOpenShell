@@ -760,8 +760,8 @@ class Search(Operator):
         else:
             assert_never(self.property_group)
 
-        
-        if tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
+        preferences = tool.Blender.get_addon_preferences()
+        if preferences.chain_filter_with_set_operations or preferences.default_filter_with_set_operations_for_globalid_and_class:
             results = tool.Search.execute_filter_groups(props.filter_groups)
         else:
             results = ifcopenshell.util.selector.filter_elements(
