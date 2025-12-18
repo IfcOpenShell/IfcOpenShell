@@ -184,6 +184,61 @@ class ClassPropertyContractV1(TypedDict):
     qudtCodes: NotRequired[list[str]]
 
 
+class ClassPropertiesContractV1(TypedDict):
+    classUri: NotRequired[str]
+    totalCount: NotRequired[int]
+    offset: NotRequired[int]
+    count: NotRequired[int]
+    classProperties: list[ClassPropertyContractV1]
+
+
+class ClassPropertyItemContractV1(TypedDict):
+    name: str
+    propertySet: str
+    uri: str
+    description: NotRequired[str]
+    definition: NotRequired[str]
+    dataType: NotRequired[str]
+    dimension: NotRequired[str]
+    dimensionLength: NotRequired[int]
+    dimensionMass: NotRequired[int]
+    dimensionTime: NotRequired[int]
+    dimensionElectricCurrent: NotRequired[int]
+    dimensionThermodynamicTemperature: NotRequired[int]
+    dimensionAmountOfSubstance: NotRequired[int]
+    dimensionLuminousIntensity: NotRequired[int]
+    dynamicParameterPropertyCodes: NotRequired[list[str]]
+    example: NotRequired[str]
+    isDynamic: NotRequired[bool]
+    isRequired: NotRequired[bool]
+    isWritable: NotRequired[bool]
+    maxExclusive: NotRequired[float]
+    maxInclusive: NotRequired[float]
+    minExclusive: NotRequired[float]
+    minInclusive: NotRequired[float]
+    pattern: NotRequired[str]
+    physicalQuantity: NotRequired[str]
+    allowedValues: NotRequired[list[ClassPropertyValueItemContractV1]]
+    predefinedValue: NotRequired[str]
+    propertyCode: NotRequired[str]
+    propertyDictionaryName: NotRequired[str]
+    propertyDictionaryUri: NotRequired[str]
+    propertyUri: NotRequired[str]
+    propertyStatus: NotRequired[str]
+    propertyValueKind: NotRequired[str]
+    symbol: NotRequired[str]
+    units: NotRequired[list[str]]
+    qudtCodes: NotRequired[list[str]]
+
+
+class ClassPropertyValueItemContractV1(TypedDict):
+    uri: NotRequired[str]
+    code: NotRequired[str]
+    value: str
+    description: NotRequired[str]
+    sortNumber: NotRequired[int]
+
+
 class PropertyContractV4(TypedDict):
     dictionaryUri: NotRequired[str]
     activationDateUtc: str
@@ -670,7 +725,7 @@ class Client:
         limit: int = 1000,
         language_code: str = "",
         version=1,
-    ):
+    ) -> ClassPropertiesContractV1:
         """
         Get class properties (paginated)
         """
