@@ -660,6 +660,32 @@ class Client:
                     params[param] = value
         return self.get(endpoint, params)
 
+    def get_class_properties(
+        self,
+        class_uri: str,
+        property_set: str = "",
+        property_code: str = "",
+        search_text: str = "",
+        offset: int = 0,
+        limit: int = 1000,
+        language_code: str = "",
+        version=1,
+    ):
+        """
+        Get class properties (paginated)
+        """
+        endpoint = f"Class/Properties/v1"
+        params = {
+            "ClassUri": class_uri,
+            "PropertySet": property_set,
+            "PropertyCode": property_code,
+            "SearchText": search_text,
+            "Offset": offset,
+            "Limit": limit,
+            "languageCode": language_code,
+        }
+        return self.get(endpoint, params)
+
     def get_properties(
         self,
         dictionary_uri: str,
