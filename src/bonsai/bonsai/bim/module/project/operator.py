@@ -715,11 +715,8 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             if element.is_a("IfcSurfaceStyle") and not tool.Ifc.get_object_by_identifier(element.id()):
                 ifc_importer.create_style(element)
 
-
     def store_opening_template_from_library(
-        self,
-        element: ifcopenshell.entity_instance,
-        library_file: ifcopenshell.file
+        self, element: ifcopenshell.entity_instance, library_file: ifcopenshell.file
     ) -> None:
         """
         Find an opening representation in the library and copy it to the current file
@@ -729,36 +726,36 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             library_element = library_file.by_guid(element.GlobalId)
         except:
             return
-        
+
         # Find occurrences with openings in the library
         library_occurrences = ifcopenshell.util.element.get_types(library_element)
-        
+
         for occurrence in library_occurrences:
             if not getattr(occurrence, "FillsVoids", None):
                 continue
-            
+
             library_opening = occurrence.FillsVoids[0].RelatingOpeningElement
             library_opening_rep = ifcopenshell.util.representation.get_representation(
                 library_opening, "Model", "Body", "MODEL_VIEW"
             )
-            
+
             if not library_opening_rep:
                 continue
-                
+
             # Check if mapped representation
-            if (library_opening_rep.RepresentationType == 'MappedRepresentation' and 
-                len(library_opening_rep.Items) == 1 and 
-                library_opening_rep.Items[0].is_a("IfcMappedItem")):
-                
+            if (
+                library_opening_rep.RepresentationType == "MappedRepresentation"
+                and len(library_opening_rep.Items) == 1
+                and library_opening_rep.Items[0].is_a("IfcMappedItem")
+            ):
+
                 mapped_rep = library_opening_rep.Items[0].MappingSource.MappedRepresentation
-                
+
                 # Store ALL representation types (Tessellation, SweptSolid, etc.)
                 template_rep = ifcopenshell.util.element.copy_deep(
-                    self.file,
-                    mapped_rep,
-                    exclude=["IfcGeometricRepresentationContext"]
+                    self.file, mapped_rep, exclude=["IfcGeometricRepresentationContext"]
                 )
-                
+
                 # Store reference in type's Description
                 current_desc = element.Description or ""
                 element.Description = f"{current_desc}||BonsaiOpeningTemplate:{template_rep.id()}"

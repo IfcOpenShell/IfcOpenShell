@@ -28,9 +28,13 @@ if TYPE_CHECKING:
 
 def assign_scene_units(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> None:
     if unit.is_scene_unit_metric():
-        lengthunit = ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix=unit.get_scene_unit_si_prefix("LENGTHUNIT"))
+        lengthunit = ifc.run(
+            "unit.add_si_unit", unit_type="LENGTHUNIT", prefix=unit.get_scene_unit_si_prefix("LENGTHUNIT")
+        )
         areaunit = ifc.run("unit.add_si_unit", unit_type="AREAUNIT", prefix=unit.get_scene_unit_si_prefix("AREAUNIT"))
-        volumeunit = ifc.run("unit.add_si_unit", unit_type="VOLUMEUNIT", prefix=unit.get_scene_unit_si_prefix("VOLUMEUNIT"))
+        volumeunit = ifc.run(
+            "unit.add_si_unit", unit_type="VOLUMEUNIT", prefix=unit.get_scene_unit_si_prefix("VOLUMEUNIT")
+        )
         planeangleunit = ifc.run("unit.add_conversion_based_unit", name="degree")
         units = [lengthunit, areaunit, volumeunit, planeangleunit]
 
