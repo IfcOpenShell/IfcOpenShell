@@ -299,6 +299,14 @@ class CreateDrawing(bpy.types.Operator):
                 original_cache_setting = self.props.should_use_underlay_cache
                 self.props.should_use_underlay_cache = False
 
+                # Force Blender to process all pending operations
+                for area in context.screen.areas:
+                    area.tag_redraw()
+                
+                # Process events to let Blender finish internal cleanup
+                bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            
+
             self.camera = context.scene.camera
             assert (camera_element := tool.Ifc.get_entity(self.camera))
             self.camera_element = camera_element
