@@ -24,12 +24,15 @@ classes = (
     operator.ActivateIfcClassFilter,
     operator.AddFilter,
     operator.AddFilterGroup,
+    operator.ApplyFilterFromText,
     operator.ColourByProperty,
     operator.EditFilterQuery,
+    operator.FilterValueSuggestions,
     operator.LoadColourscheme,
     operator.LoadSearch,
     operator.RemoveFilter,
     operator.RemoveFilterGroup,
+    operator.RemoveSearch,
     operator.ResetObjectColours,
     operator.SaveColourscheme,
     operator.SaveSearch,
@@ -40,6 +43,7 @@ classes = (
     operator.SelectIfcClass,
     operator.SelectSimilar,
     operator.ShowAllElements,
+    operator.ToggleFilterInclusion,
     operator.ToggleFilterSelection,
     prop.BIMColour,
     prop.BIMFilterItem,
@@ -55,7 +59,9 @@ classes = (
 
 def register():
     bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
+    bpy.types.TEXT_HT_header.append(operator.draw_text_editor_header)
 
 
 def unregister():
     del bpy.types.Scene.BIMSearchProperties
+    bpy.types.TEXT_HT_header.remove(operator.draw_text_editor_header)
