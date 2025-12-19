@@ -240,8 +240,6 @@ def on_register(scene):
     is_registering = False
 
 
-
-
 # Classes that need to be registered after modules (due to cross-module dependencies)
 late_classes = (
     ui.DefaultParameters,  # Register before BIM_ADDON_preferences
@@ -285,7 +283,7 @@ def register():
     bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.PointLight.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
-    
+
     if hasattr(bpy.types, "UI_MT_button_context_menu"):
         bpy.types.UI_MT_button_context_menu.append(ui.draw_custom_context_menu)
     bpy.types.STATUSBAR_HT_header.append(ui.draw_statusbar)

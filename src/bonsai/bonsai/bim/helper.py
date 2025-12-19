@@ -539,7 +539,9 @@ def draw_filter(
                 if preferences.chain_filter_with_set_operations:
                     show_mode_toggle = j > 0
                 else:
-                    show_mode_toggle = preferences.default_filter_with_set_operations_for_globalid_and_class and j > 0  # PR 7315 mode
+                    show_mode_toggle = (
+                        preferences.default_filter_with_set_operations_for_globalid_and_class and j > 0
+                    )  # PR 7315 mode
                 if show_mode_toggle:
                     mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
                     op = row.operator(
@@ -758,7 +760,9 @@ def draw_filter(
                 if preferences.chain_filter_with_set_operations:
                     show_mode_toggle = j > 0
                 else:
-                    show_mode_toggle = preferences.default_filter_with_set_operations_for_globalid_and_class and j > 0  # PR 7315 mode
+                    show_mode_toggle = (
+                        preferences.default_filter_with_set_operations_for_globalid_and_class and j > 0
+                    )  # PR 7315 mode
                 if show_mode_toggle:
                     mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
                     op = row.operator(
@@ -785,19 +789,22 @@ def draw_filter(
             op.index = j
             op.module = module
 
+
 # ============================================================================
 # UI Panel Visibility Helpers
 # ============================================================================
 
+
 def get_tab_names():
     from bonsai.bim.prop import get_tab
+
     enum_items = get_tab(None, None)
     # Exclude None separators and the BLENDER tab (not part of BIM tab system)
     return [item[0] for item in enum_items if item is not None and item[0] != "BLENDER"]
 
 
 def get_panel_tab_name(panel_class):
-    if hasattr(panel_class, 'bim_tab_name'):
+    if hasattr(panel_class, "bim_tab_name"):
         return panel_class.bim_tab_name
     return "PROJECT"  # Default fallback
 
@@ -805,10 +812,10 @@ def get_panel_tab_name(panel_class):
 def should_show_panel(panel_id, panel_tab_name, context):
     if tool.Blender.is_tab(context, "BOOKMARK"):
         return is_panel_bookmarked(panel_id) and get_panel_visibility(panel_id, "BOOKMARK")
-    
+
     if tool.Blender.is_tab(context, panel_tab_name):
         return get_tab_visibility(panel_tab_name) and get_panel_visibility(panel_id, panel_tab_name)
-    
+
     return False
 
 
@@ -851,11 +858,11 @@ def get_panel_config(panel_id, create_if_missing=False):
         bim_props = tool.Blender.get_bim_props()
     except (AttributeError, AssertionError):
         return None
-    
+
     for prop in bim_props.panel_properties:
         if prop.name == panel_id:
             return prop
-    
+
     if create_if_missing:
         try:
             prop = bim_props.panel_properties.add()
@@ -866,15 +873,13 @@ def get_panel_config(panel_id, create_if_missing=False):
             return prop
         except AttributeError:
             pass
-    
-    return None
 
+    return None
 
 
 def get_all_tab_panels(force_refresh=False):
     panels = {tab_name: [] for tab_name in get_tab_names() if tab_name != "BOOKMARK"}
     panels["BOOKMARK"] = []
-    
 
     bim_props = tool.Blender.get_bim_props()
     for prop in bim_props.panel_properties:
@@ -884,25 +889,25 @@ def get_all_tab_panels(force_refresh=False):
             if tab_name and tab_name != "BOOKMARK":
                 bl_label = getattr(panel_class, "bl_label", prop.name)
                 panels[tab_name].append({"bl_idname": prop.name, "bl_label": bl_label})
-        
+
         if prop.is_bookmarked:
             panel_class = getattr(bpy.types, prop.name, None)
             if panel_class:
                 bl_label = getattr(panel_class, "bl_label", prop.name)
                 panels["BOOKMARK"].append({"bl_idname": prop.name, "bl_label": bl_label})
-    
+
     if not panels["BOOKMARK"]:
         panels["BOOKMARK"] = [{}]
-    
+
     return panels
 
 
 def initialize_tab_visibilities():
     bim_props = tool.Blender.get_bim_props()
-    
+
     if len(bim_props.tab_visibilities) > 0:
         return
-    
+
     for tab_name in get_tab_names():
         tab_vis = bim_props.tab_visibilities.add()
         tab_vis.name = tab_name
@@ -910,20 +915,20 @@ def initialize_tab_visibilities():
 
 
 def initialize_panel_properties():
-    
+
     bim_props = tool.Blender.get_bim_props()
-    
+
     if len(bim_props.panel_properties) > 0:
         return
-    
+
     for attr_name in dir(bpy.types):
         if attr_name.startswith("BIM_PT_tab_"):
             panel_class = getattr(bpy.types, attr_name)
-            if not hasattr(panel_class, 'bl_idname'):
+            if not hasattr(panel_class, "bl_idname"):
                 continue
-            
+
             panel_id = panel_class.bl_idname
-            
+
             prop = bim_props.panel_properties.add()
             prop.name = panel_id
             prop.is_visible_in_tab = True
