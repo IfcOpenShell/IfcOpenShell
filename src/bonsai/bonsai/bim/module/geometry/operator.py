@@ -3892,6 +3892,8 @@ class OverrideMoveSelect(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
+        context.window_manager.aggregate_move_active = True
+        
         # Get filling objects
         selection: list[bpy.types.Object] = []
         for obj in context.selected_objects:

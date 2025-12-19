@@ -136,6 +136,9 @@ def register():
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
+    bpy.types.WindowManager.aggregate_move_active = bpy.props.BoolProperty(
+        name="Aggregate Move Active", description="Flag to track if IFC Move Aggregate (G key) is active", default=False
+    )
     bpy.types.VIEW3D_MT_object.append(ui.object_menu)
     bpy.types.OUTLINER_MT_object.append(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
@@ -214,6 +217,7 @@ def unregister():
     bpy.types.VIEW3D_HT_header.remove(ui.mode_menu)
     del bpy.types.Scene.BIMGeometryProperties
     del bpy.types.Object.BIMGeometryProperties
+    del bpy.types.WindowManager.aggregate_move_active
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
