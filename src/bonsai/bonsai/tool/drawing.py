@@ -2125,7 +2125,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 command = command.replace(variable, value)
             # Defensive: skip if command[2:-2] is None or 'None'
             command_content = command[2:-2]
-            if command_content is None or str(command_content).strip().lower() == 'none':
+            if command_content is None or str(command_content).strip().lower() == "none":
                 text = text.replace(original_command, "")
             else:
                 try:

@@ -302,10 +302,9 @@ class CreateDrawing(bpy.types.Operator):
                 # Force Blender to process all pending operations
                 for area in context.screen.areas:
                     area.tag_redraw()
-                
+
                 # Process events to let Blender finish internal cleanup
-                bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-            
+                bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
 
             self.camera = context.scene.camera
             assert (camera_element := tool.Ifc.get_entity(self.camera))
@@ -3713,16 +3712,16 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         assert element
         pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
         assert pset
-        
+
         if self.filter_mode == "INCLUDE":
             filter_groups = props.include_filter_groups
         elif self.filter_mode == "EXCLUDE":
             filter_groups = props.exclude_filter_groups
         else:
             return
-        
+
         query = tool.Search.export_filter_query(filter_groups) or None
-        
+
         if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and query:
             filter_structure = []
             for filter_group in filter_groups:
@@ -3738,20 +3737,16 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
                     }
                     group_data.append(filter_data)
                 filter_structure.append(group_data)
-            
-            value = json.dumps({
-                "type": "BBIM_Search",
-                "query": query,
-                "filter_structure": filter_structure
-            })
+
+            value = json.dumps({"type": "BBIM_Search", "query": query, "filter_structure": filter_structure})
         else:
             value = query
-        
+
         if self.filter_mode == "INCLUDE":
             ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Include": value})
         elif self.filter_mode == "EXCLUDE":
             ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": value})
-        
+
         props.filter_mode = "NONE"
         bpy.ops.bim.activate_drawing(drawing=element.id(), should_view_from_camera=False)
 
