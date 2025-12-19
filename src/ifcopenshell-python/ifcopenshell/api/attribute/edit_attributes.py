@@ -20,11 +20,7 @@ import sys
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
 from typing import Any, Union
-
-if sys.version_info >= (3, 10):
-    from types import EllipsisType
-else:
-    EllipsisType = type(...)
+from types import EllipsisType
 
 
 def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:

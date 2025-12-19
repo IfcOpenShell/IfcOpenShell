@@ -43,7 +43,8 @@ import numpy
 import inspect
 import importlib
 import ifcopenshell
-from typing import Callable, Any, Optional, TYPE_CHECKING
+from collections.abc import Callable
+from typing import Any, Optional, TYPE_CHECKING
 from functools import partial
 
 if TYPE_CHECKING:

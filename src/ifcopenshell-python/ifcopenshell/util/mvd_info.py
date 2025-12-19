@@ -26,7 +26,7 @@ try:
 except ImportError:
     LARK_AVAILABLE = False
 
-from typing import Callable, Union
+from typing import Union
 import re
 
 if LARK_AVAILABLE:
@@ -51,9 +51,9 @@ if LARK_AVAILABLE:
 
         value: /[A-Za-z0-9 _\.-]+/
 
-        other_keyword: /[^\[\]]+/  
-        
-        dynamic_option_word: /[^\[\]]+/ 
+        other_keyword: /[^\[\]]+/
+
+        dynamic_option_word: /[^\[\]]+/
 
         %import common.WS
         %ignore WS
