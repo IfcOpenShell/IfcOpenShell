@@ -40,8 +40,7 @@ jobs:
 
       - name: Black formatter
         id: black
-        run: |
-          black --diff --check .
+        uses: psf/black@stable
         continue-on-error: true
 
       - name: Ruff check
@@ -60,7 +59,7 @@ jobs:
             echo "::error::Syntax errors check failed, see 'syntax-errors' step for the details." && ERROR=1
           fi
           if [ "${{ steps.black.outcome }}" != "success" ]; then
-            echo "::error::Black formatting check failed, see 'black' step for the details." && ERROR=1
+            echo "::error::Black formatting check failed, see Summary or 'black' step for the details." && ERROR=1
           fi
           if [ "${{ steps.ruff.outcome }}" != "success" ]; then
             echo "::error::Ruff check failed, see 'ruff' step for the details." && ERROR=1
