@@ -484,7 +484,7 @@ class BIM_PT_sheets(Panel):
                 for annotation in ifc_file.by_type("IfcAnnotation"):
                     if annotation.ObjectType != "DRAWING":
                         continue
-                    
+
                     Annotation_Name = annotation.Name.replace(",", "")  # Remove commas
                     if Annotation_Name == drawingname:
                         drawingid = annotation.id()

@@ -51,17 +51,17 @@ class Search(bonsai.core.tool.Search):
         cls, filter_structure: list, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
     ) -> None:
         filter_groups.clear()
-        
+
         for group_data in filter_structure:
             if not isinstance(group_data, list):
                 continue
-                
+
             filter_group = filter_groups.add()
-            
+
             for filter_data in group_data:
                 if not isinstance(filter_data, dict):
                     continue
-                    
+
                 ifc_filter = filter_group.filters.add()
                 ifc_filter.type = filter_data.get("type", "")
                 ifc_filter.name = filter_data.get("name", "")
@@ -112,11 +112,11 @@ class Search(bonsai.core.tool.Search):
             for ifc_filter in filter_group.filters:
                 if not ifc_filter.value:
                     continue
-                
+
                 query_part = cls._export_single_filter(ifc_filter)
                 if query_part:
                     filter_group_query.append(query_part)
-                    
+
             if filter_group_query:
                 query.append(", ".join(filter_group_query))
         return " + ".join(query)
@@ -124,24 +124,30 @@ class Search(bonsai.core.tool.Search):
     @classmethod
     def _export_single_filter(cls, ifc_filter: BIMFacet) -> str:
         preferences = tool.Blender.get_addon_preferences()
-        
+
         if ifc_filter.type == "instance":
             if "bpy.data.texts" in ifc_filter.value:
                 data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
                 value = bpy.data.texts[data_name].as_string()
             else:
                 value = ifc_filter.value
-            
-            if preferences.chain_filter_with_set_operations or preferences.default_filter_with_set_operations_for_globalid_and_class:
+
+            if (
+                preferences.chain_filter_with_set_operations
+                or preferences.default_filter_with_set_operations_for_globalid_and_class
+            ):
                 value = value.lstrip("!")
                 if ifc_filter.filter_mode == "SUBTRACT":
                     value = f"!{value}"
             return value
-            
+
         elif ifc_filter.type == "entity":
             value = ifc_filter.value
-            
-            if preferences.chain_filter_with_set_operations or preferences.default_filter_with_set_operations_for_globalid_and_class:
+
+            if (
+                preferences.chain_filter_with_set_operations
+                or preferences.default_filter_with_set_operations_for_globalid_and_class
+            ):
                 value = value.lstrip("!")
                 if ifc_filter.filter_mode == "SUBTRACT":
                     value = f"!{value}"
@@ -192,25 +198,28 @@ class Search(bonsai.core.tool.Search):
         Groups are combined with union (same as original " + " behavior).
         """
         preferences = tool.Blender.get_addon_preferences()
-        
+
         all_group_results = []
-        
+
         for group_idx, filter_group in enumerate(filter_groups):
             group_results = set()
-            
+
             for filter_index, ifc_filter in enumerate(filter_group.filters):
                 if not ifc_filter.value:
                     continue
-                
+
                 query = cls._export_single_filter(ifc_filter)
                 if not query:
                     continue
-                
+
                 if filter_index == 0:
                     mode = "ADD"
                 else:
                     if ifc_filter.type in ["entity", "instance"]:
-                        if preferences.chain_filter_with_set_operations or preferences.default_filter_with_set_operations_for_globalid_and_class:
+                        if (
+                            preferences.chain_filter_with_set_operations
+                            or preferences.default_filter_with_set_operations_for_globalid_and_class
+                        ):
                             mode = ifc_filter.filter_mode
                         else:
                             mode = "FILTER" if group_results else "ADD"
@@ -219,11 +228,11 @@ class Search(bonsai.core.tool.Search):
                             mode = ifc_filter.filter_mode
                         else:
                             mode = "FILTER" if group_results else "ADD"
-                
+
                 if mode == "ADD":
                     results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
                     group_results.update(results)
-                    
+
                 elif mode == "SUBTRACT":
                     if group_results:
                         query_without_prefix = query[1:] if query.startswith("!") else query
@@ -234,7 +243,7 @@ class Search(bonsai.core.tool.Search):
                     else:
                         results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
                         group_results.update(results)
-                        
+
                 elif mode == "FILTER":
                     if group_results:
                         results = ifcopenshell.util.selector.filter_elements(
@@ -244,14 +253,14 @@ class Search(bonsai.core.tool.Search):
                     else:
                         results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
                         group_results.update(results)
-            
+
             if group_results:
                 all_group_results.append(group_results)
-        
+
         final_results = set()
         for group_results in all_group_results:
             final_results.update(group_results)
-        
+
         return final_results
 
     @classmethod
@@ -259,24 +268,24 @@ class Search(bonsai.core.tool.Search):
         cls, data: dict, ifc_file: ifcopenshell.file
     ) -> set[ifcopenshell.entity_instance]:
         """Execute filter groups from JSON data with filter_structure
-        
+
         This is used by drawing include/exclude to properly handle ADD/SUBTRACT/FILTER modes
         without needing to instantiate Blender property groups.
         """
         filter_structure = data.get("filter_structure", [])
-        
+
         all_group_results = []
         for group_data in filter_structure:
             group_results = set()
-            
+
             for filter_data in group_data:
                 filter_mode = filter_data.get("filter_mode", "ADD")
                 filter_type = filter_data.get("type", "")
                 value = filter_data.get("value", "")
-                
+
                 if not filter_type or not value:
                     continue
-                
+
                 query_part = None
                 if filter_type == "entity":
                     query_part = value
@@ -318,10 +327,10 @@ class Search(bonsai.core.tool.Search):
                     query_part = f"query:{keys}{comparison}{wrapped_value}"
                 elif filter_type == "instance":
                     query_part = value
-                
+
                 if not query_part:
                     continue
-                
+
                 if filter_mode == "FILTER" and group_results:
                     results = ifcopenshell.util.selector.filter_elements(ifc_file, query_part, elements=group_results)
                     group_results = results
@@ -331,14 +340,14 @@ class Search(bonsai.core.tool.Search):
                 else:  # ADD
                     results = ifcopenshell.util.selector.filter_elements(ifc_file, query_part)
                     group_results.update(results)
-            
+
             if group_results:
                 all_group_results.append(group_results)
-        
+
         final_results = set()
         for group_results in all_group_results:
             final_results.update(group_results)
-        
+
         return final_results
 
     @classmethod
