@@ -944,6 +944,7 @@ class SvgWriter:
         return element
 
     def draw_text_annotation(self, text_obj: bpy.types.Object, position: Vector) -> None:
+        # --- Restoring and reinforcing PR 7500 logic for text annotation SVG output ---
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         element = tool.Ifc.get_entity(text_obj)
@@ -972,45 +973,37 @@ class SvgWriter:
         template_text_fields = []
         if symbol:
             symbol_transform = self.get_symbol_transform(text_position_svg_str, angle, text_obj)
-
             symbol_svg = self.find_xml_symbol_by_id(symbol)
             if symbol_svg:
                 symbol_xml = symbol_svg.get_xml()
                 template_text_fields = symbol_xml.findall('.//text[@data-type="text-template"]')
-                # if there is a symbol with template text fields
-                # then we just populate it's fields with the data from text literals
+                # If there is a symbol with template text fields, populate them with the data from text literals
                 if template_text_fields:
                     symbol_xml.attrib["transform"] = symbol_transform
-                    symbol_xml.attrib.pop("id")
-                    # NOTE: zip makes sure that we iterate over the shortest list
+                    symbol_xml.attrib.pop("id", None)
                     for field, text_literal in zip(template_text_fields, text_literals):
                         field.text = tool.Drawing.replace_text_literal_variables(
                             text_literal.Literal, product or element, reverse_list, list_separator
                         )
                         field.attrib["class"] = classes_str
-
                     if fill_bg:
                         symbol_copied = symbol_svg.copy()
                         for text_tag in symbol_copied.xml.findall("text"):
                             self.add_fill_bg(text_tag, copy=False)
-                        # NOTE: in case we'll later need to add fill-bg for the entire symbol:
-                        # self.add_fill_bg(symbol_svg, copy=False)
                         self.svg.add(symbol_copied)
                     self.svg.add(symbol_svg)
-                    return None
-
+                    return
+            # If no template fields, just draw the symbol as fallback
             if not symbol_svg or not template_text_fields:
                 self.draw_symbol(symbol, symbol_transform)
 
         line_number = 0
-
         for text_literal in text_literals:
             text = tool.Drawing.replace_text_literal_variables(
                 text_literal.Literal, product or element, reverse_list, list_separator
             )
-
             text_segments = parse_markdown_it(text)
-
+            # If simple text (no markdown, no url, no break), use create_text_tag
             if len(text_segments) == 1 and text_segments[0]["url"] is None and not text_segments[0].get("break", False):
                 text_tags = self.create_text_tag(
                     text,
@@ -1029,9 +1022,7 @@ class SvgWriter:
                 base_text_attrs = SvgWriter.get_box_alignment_parameters(text_literal.BoxAlignment)
                 text_position_svg_str = ", ".join(map(str, text_position_svg))
                 text_transform = f"translate({text_position_svg_str}) rotate({angle})"
-
                 text_tag = self.svg.text("", transform=text_transform, class_=classes_str, **base_text_attrs)
-
                 line_idx = 0
                 new_line = True
                 bullet_next = False
@@ -1048,13 +1039,11 @@ class SvgWriter:
                     if bullet_next:
                         text_content = "\u2022 " + (text_content or "")
                         bullet_next = False
-
                     if new_line:
                         dy, x, y = f"{line_idx}em", 0, 0
                         new_line = False
                     else:
                         dy, x, y = None, None, None
-
                     tspan = self.svg.tspan(text_content, class_=classes_str)
                     if segment.get("bold", False):
                         tspan.attribs["font-weight"] = "bold"
@@ -1066,18 +1055,15 @@ class SvgWriter:
                         tspan.attribs["x"] = x
                     if y is not None:
                         tspan.attribs["y"] = y
-
                     if segment["url"]:
                         link_element = self.svg.a(href=segment["url"], target="_blank")
                         link_element.add(tspan)
                         text_tag.add(link_element)
                     else:
                         text_tag.add(tspan)
-
                 if fill_bg:
                     fill_bg_tag = self.add_fill_bg(text_tag)
                     self.svg.add(fill_bg_tag)
-
                 self.svg.add(text_tag)
                 line_number += 1
 

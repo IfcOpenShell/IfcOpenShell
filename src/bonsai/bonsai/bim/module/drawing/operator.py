@@ -4284,15 +4284,15 @@ class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
 
-            for i, classification in enumerate(classifications_list):
-                classification_info = classification.get_info()
-                
-                for attr_name in sorted(all_classification_attrs):
-                    if attr_name in classification_info:
-                        value = getattr(classification, attr_name, None)
-                        if value is not None and value != '' and value != 'NOTDEFINED':
-                            if not hasattr(value, 'is_a'):
-                                classification_keys.append((f"Class Ref.{attr_name}.{i}", f"Classification {i+1} {attr_name}: {value}"))
+        for i, classification in enumerate(classifications_list):
+            classification_info = classification.get_info()
+            
+            for attr_name in sorted(all_classification_attrs):
+                if attr_name in classification_info:
+                    value = getattr(classification, attr_name, None)
+                    if value is not None and value != '' and value != 'NOTDEFINED':
+                        if not hasattr(value, 'is_a'):
+                            classification_keys.append((f"Class Ref.{attr_name}.{i}", f"Classification {i+1} {attr_name}: {value}"))
 
 class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.activate_drawing_by_annotation"

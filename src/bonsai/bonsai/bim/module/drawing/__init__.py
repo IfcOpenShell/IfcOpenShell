@@ -65,17 +65,17 @@ classes = (
     operator.EnableEditingText,
     operator.ExcludeAnnotation,
     operator.ExpandSheet,
-    operator.ToggleElementValuesPanel,
-    operator.ToggleElementValuesCategory,
-    operator.SelectElementValues,
-    operator.InsertFormattedLiteralPopup,
-    operator.AddElementValueRow,
-    operator.RemoveElementValueRow,
-    operator.ElementValueSuggestionsPopup,
-    operator.FormatElementValueRow,
-    operator.ApplyElementValueRowsToLiteral,
-    operator.ShowCategoryHelp,
-    operator.ShowElementValuesInstructions,
+    # operator.ToggleElementValuesPanel,  # Removed: does not exist
+    # operator.ToggleElementValuesCategory,  # Removed: does not exist in this branch
+    # operator.SelectElementValues,  # Removed: does not exist in this branch
+    # operator.InsertFormattedLiteralPopup,  # Removed: does not exist in operator.py
+    # operator.AddElementValueRow,  # Removed: does not exist in operator.py
+    # operator.RemoveElementValueRow,  # Removed: does not exist in operator.py
+    # operator.ElementValueSuggestionsPopup,  # Removed: does not exist in operator.py
+    # operator.FormatElementValueRow,  # Removed: does not exist in operator.py
+    # operator.ApplyElementValueRowsToLiteral,  # Removed: does not exist in operator.py
+    # operator.ShowCategoryHelp,  # Removed: does not exist in operator.py
+    # operator.ShowElementValuesInstructions,  # Removed: does not exist in operator.py
     operator.LoadDrawings,
     operator.LoadReferences,
     operator.LoadSchedules,
@@ -100,10 +100,10 @@ classes = (
     operator.SelectAllDrawings,
     operator.SelectAllSheets,
     operator.SelectAssignedProduct,
-    operator.SelectSimilarTextLiteralValue,
+    # operator.SelectSimilarTextLiteralValue,  # Removed: does not exist in operator.py
     operator.ToggleTargetView,
     operator.OpenDocumentationWebUi,
-    operator.FilterSelectedObjectsIfIntersectedByCamera,
+    # operator.FilterSelectedObjectsIfIntersectedByCamera,  # Removed: does not exist in operator.py
     prop.Variable,
     prop.Drawing,
     prop.Document,
