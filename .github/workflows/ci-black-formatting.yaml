@@ -46,9 +46,36 @@ jobs:
       - name: Ruff check
         id: ruff
         run: |
+          # Ensure execution continues, since we need to cache the output.
+          set +e
+
           ERROR=0
-          poe ruff-main || ERROR=1
-          poe ruff-old || ERROR=1
+          # Keep colored output inside action logs, strip it from color codes for summary.
+          uv tool install ansi2txt
+          # `ruff` disables color output in CI by default.
+          export FORCE_COLOR="1"
+
+          run_check() {
+            local out
+            out="$("$@" 2>&1)"
+            local exit_code=$?
+
+            if [ "$exit_code" -ne 0 ]; then
+              ERROR=1
+            fi
+
+            # Rerun just for GitHub annotations.
+            "$@" --output-format=github || true
+
+            echo "$out"
+            echo "\`\`\`python" >> $GITHUB_STEP_SUMMARY
+            echo "$out" | ansi2txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          }
+
+          run_check poe ruff-main
+          run_check poe ruff-old
+
           exit $ERROR
         continue-on-error: true
 
@@ -62,6 +89,6 @@ jobs:
             echo "::error::Black formatting check failed, see Summary or 'black' step for the details." && ERROR=1
           fi
           if [ "${{ steps.ruff.outcome }}" != "success" ]; then
-            echo "::error::Ruff check failed, see 'ruff' step for the details." && ERROR=1
+            echo "::error::Ruff check failed, see Summary or 'ruff' step for the details." && ERROR=1
           fi
           exit $ERROR
