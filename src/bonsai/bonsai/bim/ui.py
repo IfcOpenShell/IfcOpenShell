@@ -702,16 +702,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Show mass and time units section in the new project wizard panel",
         default=False,
     )
-    save_metadata_blend_file: BoolProperty(
-        name="Save non ifc data to .metadata.blend File",
-        description="Save session data (window layout, settings) to a .metadata.blend file alongside the IFC file. This file is automatically loaded when opening the project.",
-        default=False,
-    )
-        user_ui_customization: BoolProperty(
-        name="User UI Customization",
-        description="Enable user interface customization features (hide/show tabs and panels, bookmark panels) and save the session settings as part of the .metadata.blend file",
-        default=False,
-    )
 
     chain_filter_with_set_operations: BoolProperty(
         name="NEW filter mode: Enable chained filters with set operations",
@@ -721,6 +711,17 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     default_filter_with_set_operations_for_globalid_and_class: BoolProperty(
         name="DEFAULT filter mode: Enable set operations for GlobalId/Class",
         description="Enable ADD/SUBTRACT/FILTER toggle buttons on entity (Class) and instance (GlobalId) filters for the DEFAULT filter mode",
+        default=False,
+    )
+
+    save_metadata_blend_file: BoolProperty(
+        name="Save non ifc data to .metadata.blend File",
+        description="Save session data (window layout, settings) to a .metadata.blend file alongside the IFC file. This file is automatically loaded when opening the project.",
+        default=False,
+    )
+    user_ui_customization: BoolProperty(
+        name="User UI Customization",
+        description="Enable user interface customization features (hide/show tabs and panels, bookmark panels) and save the session settings as part of the .metadata.blend file",
         default=False,
     )
 
@@ -1007,7 +1008,11 @@ class BIM_PT_tabs(Panel):
             self.draw_tab_entry(row_left, "PACKAGE", "FM", True, aprops.tab == "FM")
         if get_tab_visibility("QUALITY"):
             self.draw_tab_entry(row_left, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-        if addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization and get_tab_visibility("BOOKMARK"):
+        if (
+            addon_prefs.save_metadata_blend_file
+            and addon_prefs.user_ui_customization
+            and get_tab_visibility("BOOKMARK")
+        ):
             self.draw_tab_entry(row_left, "SOLO_ON", "BOOKMARK", True, aprops.tab == "BOOKMARK")
         row_left.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
@@ -1018,7 +1023,7 @@ class BIM_PT_tabs(Panel):
 
         if not (addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization):
             row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
-        
+
         for tab in get_tab_names():
             # Draw a little underscore below the active tab icon.
             if get_tab_visibility(tab):

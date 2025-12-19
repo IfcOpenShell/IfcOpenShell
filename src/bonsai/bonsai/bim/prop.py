@@ -633,7 +633,7 @@ class BIMProperties(PropertyGroup):
         ],
         name="Time Unit",
         default="HOUR",
-    )    
+    )
     tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
     panel_properties: CollectionProperty(type=BIMPanelProperties, name="Panel Properties")
 

@@ -33,7 +33,15 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
 from enum import Enum
-from bonsai.bim.helper import get_all_tab_panels, get_tab_visibility, set_tab_visibility, get_tab_names, get_panel_config, initialize_panel_properties, initialize_tab_visibilities
+from bonsai.bim.helper import (
+    get_all_tab_panels,
+    get_tab_visibility,
+    set_tab_visibility,
+    get_tab_names,
+    get_panel_config,
+    initialize_panel_properties,
+    initialize_tab_visibilities,
+)
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -236,6 +244,7 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
             return res
         return ImportHelper.invoke(self, context, event)
 
+
 class SaveBlendMetadataFile(bpy.types.Operator):
     bl_idname = "bim.save_blend_metadata_file"
     bl_label = "Save Blend Metadata File"
@@ -254,7 +263,7 @@ class SaveBlendMetadataFile(bpy.types.Operator):
         blendmetadata_path = ifc_file + ".metadata.blend"
 
         # Save a temporary copy of the current blend file
-        temp_path = bpy.path.abspath('//__temp_blendmetadata.blend')
+        temp_path = bpy.path.abspath("//__temp_blendmetadata.blend")
         bpy.ops.wm.save_as_mainfile(filepath=temp_path, copy=True)
 
         cleanup_script = f"""
@@ -323,18 +332,17 @@ bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
 """
 
         import tempfile
-        with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as script_file:
+
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as script_file:
             script_file.write(cleanup_script)
             script_path = script_file.name
 
         blender_exe = bpy.app.binary_path
         import subprocess
-        result = subprocess.run([
-            blender_exe,
-            temp_path,
-            '--background',
-            '--python', script_path
-        ], capture_output=True, text=True)
+
+        result = subprocess.run(
+            [blender_exe, temp_path, "--background", "--python", script_path], capture_output=True, text=True
+        )
 
         # Print the output from the background process (includes debug info)
         if result.stdout:
@@ -352,6 +360,7 @@ bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
 
         return {"FINISHED"}
 
+
 class LoadBlendMetadataAndIFC(bpy.types.Operator):
     bl_idname = "bim.load_blend_metadata_and_ifc"
     bl_label = "Load Blend Metadata and IFC"
@@ -363,7 +372,7 @@ class LoadBlendMetadataAndIFC(bpy.types.Operator):
         if not ifc_file:
             props = tool.Blender.get_bim_props()
             ifc_file = getattr(props, "ifc_file", None)
-        
+
         if not ifc_file:
             self.report({"WARNING"}, "No IFC file path set.")
             return {"CANCELLED"}
@@ -378,6 +387,7 @@ class LoadBlendMetadataAndIFC(bpy.types.Operator):
         bpy.ops.bim.load_project(filepath=ifc_file, should_start_fresh_session=False)
         self.report({"INFO"}, f"Loaded metadata and IFC: {metadata_path}, {ifc_file}")
         return {"FINISHED"}
+
 
 # TODO: Unused operator.
 # Is there a need for this or 'DIR_PATH' propety subtype does almost the same,
@@ -1781,9 +1791,11 @@ class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
 
     def execute(self, context):
         panel_name = self.action.replace("TOGGLE_VISIBILITY_", "")
-        active_tab = getattr(context.scene, "active_tab_name", None) or getattr(tool.Blender.get_bim_props(), "tab", None)
+        active_tab = getattr(context.scene, "active_tab_name", None) or getattr(
+            tool.Blender.get_bim_props(), "tab", None
+        )
         is_bookmark_tab = active_tab == "BOOKMARK"
-        
+
         panel_config = get_panel_config(panel_name, create_if_missing=True)
         if panel_config:
             if is_bookmark_tab:
@@ -1792,16 +1804,16 @@ class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
             else:
                 panel_config.is_visible_in_tab = not panel_config.is_visible_in_tab
                 new_value = panel_config.is_visible_in_tab
-            
+
             for item in context.scene.tab_panels:
                 if item.name == panel_name:
                     item["visible"] = new_value
                     break
-        
+
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
-        
+
         tab_context = "Bookmarks" if is_bookmark_tab else "Tab"
         self.report({"INFO"}, f"Toggled visibility for {panel_name} in {tab_context}.")
         return {"FINISHED"}
@@ -1819,19 +1831,19 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
     def execute(self, context):
         panel_name = self.action.replace("BOOKMARK_", "")
         panel_config = get_panel_config(panel_name, create_if_missing=True)
-        
+
         if panel_config:
             panel_config.is_bookmarked = not panel_config.is_bookmarked
-            
+
             for item in context.scene.tab_panels:
                 if item.name == panel_name:
                     item["bookmarked"] = panel_config.is_bookmarked
                     break
-        
+
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
-        
+
         self.report({"INFO"}, f"Toggled bookmark for {panel_name}.")
         return {"FINISHED"}
 
@@ -1846,20 +1858,20 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
     tab_name: bpy.props.StringProperty()
 
     def invoke(self, context, event):
-        
+
         context.scene.active_tab_name = self.tab_name
         context.scene.tab_panels.clear()
-        
+
         initialize_tab_visibilities()
         initialize_panel_properties()
         all_panels = get_all_tab_panels(force_refresh=True)
-        
+
         for panel_data in all_panels.get(self.tab_name, []):
             panel_name = panel_data.get("bl_idname", "")
             panel_label = panel_data.get("bl_label", "")
             if not panel_name or not panel_label:
                 continue
-                
+
             item = context.scene.tab_panels.add()
             item.name = panel_name
             item["bl_label"] = panel_label
@@ -1893,8 +1905,6 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
                 else:
                     panel_config.is_visible_in_tab = item["visible"]
                 panel_config.is_bookmarked = item["bookmarked"]
-
-
 
         self.report({"INFO"}, f"Panels for {self.tab_name} managed successfully.")
         return {"FINISHED"}
@@ -1953,9 +1963,6 @@ class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
 
         self.report({"INFO"}, f"Toggled visibility for {self.tab_name}.")
         return {"FINISHED"}
-
-
-
 
 
 class BIM_OT_reset_ui_layout(bpy.types.Operator):
