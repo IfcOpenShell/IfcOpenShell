@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
-from behave import step, given, when, then, use_step_matcher
+from behave import given, step, then, use_step_matcher, when
 
 use_step_matcher("parse")
 

@@ -18,18 +18,20 @@
 
 
 from __future__ import annotations
-import os
-import time
+
 import argparse
 import datetime
 import logging
+import os
+import time
+from collections import Counter
+from typing import Any, Optional, TypedDict, Union
+
 import ifcopenshell
-import ifcopenshell.util.element
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from collections import Counter
-from typing import Union, Optional, Any, TypedDict
 
 
 class CostItem(TypedDict):
@@ -418,9 +420,9 @@ class Ifc5DCsvWriter(Ifc5Dwriter):
 
 class Ifc5DOdsWriter(Ifc5Dwriter):
     def write(self) -> None:
+        from odf.number import CurrencyStyle, CurrencySymbol, Number, NumberStyle, Text
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
-        from odf.number import NumberStyle, CurrencyStyle, CurrencySymbol, Number, Text
 
         super().write()
 
@@ -448,9 +450,9 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
         self.doc.save(os.path.join(self.output, file_name), True)
 
     def write_table(self, cost_schedule):
-        from odf.table import Table, TableRow, TableCell
+        from odf.number import CurrencyStyle, CurrencySymbol, Number, NumberStyle, Text
+        from odf.table import Table, TableCell, TableRow
         from odf.text import P
-        from odf.number import NumberStyle, CurrencyStyle, CurrencySymbol, Number, Text
 
         def row():
             return TableRow()
@@ -594,10 +596,12 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
 
     def write(self) -> None:
         import os
-        import ifc5d
         import shutil
-        import typst
         import tempfile
+
+        import typst
+
+        import ifc5d
 
         DEFAULT_OPTIONS = {
             "nested_structure_depth": 0,

@@ -16,22 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-
-import ifcopenshell
-import sverchok.core.sockets
-import ifcsverchok.helper
-import ifcsverchok.helper as helper
-from ifcsverchok.ifcstore import SvIfcStore
-
 import json
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
-
+import sverchok.core.sockets
 from bpy.props import StringProperty
+from sverchok.data_structure import flatten_data, updateNode
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, flatten_data
+
+import ifcsverchok.helper
+import ifcsverchok.helper as helper
+from ifcsverchok.ifcstore import SvIfcStore
 
 
 class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

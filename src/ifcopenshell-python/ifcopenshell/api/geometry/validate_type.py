@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
 import ifcopenshell.api.geometry
 import ifcopenshell.util.representation
-from typing import Union
 
 
 def validate_type(

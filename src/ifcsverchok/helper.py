@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, TypeVar, Union
+
 import bpy
 import ifcopenshell
 import sverchok.core.sockets
 from sverchok.data_structure import zip_long_repeat
-from typing import Any, Union, TypeVar
 
 T_socket = TypeVar("T_socket", bound=sverchok.core.sockets.SvSocketCommon)
 

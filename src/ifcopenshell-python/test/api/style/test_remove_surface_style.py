@@ -17,8 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-import test.bootstrap
+
 import ifcopenshell.api.style
+import test.bootstrap
 
 
 class TestRemoveSurfaceStyleIFC2X3(test.bootstrap.IFC2X3):

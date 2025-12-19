@@ -17,7 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 try:
-    from server import get_resource_path, resource_documentation_builder, process_markdown, R
+    from server import (
+        R,
+        get_resource_path,
+        process_markdown,
+        resource_documentation_builder,
+    )
 except ModuleNotFoundError as e:
     print(
         "ERROR. Failed to import `server.py`.\n"
@@ -26,12 +31,14 @@ except ModuleNotFoundError as e:
     raise e
 
 import itertools
-import operator
 import json
-import ifcopenshell
+import operator
 from collections import Counter
-from bs4 import BeautifulSoup
 from typing import Any, Union
+
+from bs4 import BeautifulSoup
+
+import ifcopenshell
 
 
 # Hacky modified functions from server.py to make parser work

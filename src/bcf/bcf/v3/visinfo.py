@@ -1,12 +1,12 @@
 import uuid
 import zipfile
-from typing import Any, Optional, Literal, Union
 from collections.abc import Iterable
+from typing import Any, Literal, Optional, Union
 
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import numpy as np
 from ifcopenshell import entity_instance
-import ifcopenshell.util.unit
-import ifcopenshell.util.placement
 from numpy.typing import NDArray
 
 import bcf.v3.model as mdl

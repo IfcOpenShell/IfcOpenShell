@@ -17,10 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import tempfile
-import ifcpatch
-import ifcopenshell
 from pathlib import Path
+
+import ifcpatch
 from ifcpatch.recipes import Ifc2Sql
+
+import ifcopenshell
 
 TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
 SQLITE_PATH = None

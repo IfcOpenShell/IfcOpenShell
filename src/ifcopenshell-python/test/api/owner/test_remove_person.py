@@ -17,9 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-import test.bootstrap
+
 import ifcopenshell.api.owner
 import ifcopenshell.guid
+import test.bootstrap
 
 
 class TestRemovePersonIFC2X3(test.bootstrap.IFC2X3):

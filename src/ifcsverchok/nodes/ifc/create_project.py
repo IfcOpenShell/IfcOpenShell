@@ -22,9 +22,10 @@ import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
-from sverchok.node_tree import SverchCustomTreeNode
 
 
 class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

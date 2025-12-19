@@ -30,6 +30,7 @@ import ast
 import difflib
 from pathlib import Path
 from typing import Union
+
 from typing_extensions import assert_never
 
 

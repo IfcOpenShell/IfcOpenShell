@@ -39,7 +39,9 @@ from .edit_structural_load import edit_structural_load
 from .edit_structural_load_case import edit_structural_load_case
 from .remove_structural_analysis_model import remove_structural_analysis_model
 from .remove_structural_boundary_condition import remove_structural_boundary_condition
-from .remove_structural_connection_condition import remove_structural_connection_condition
+from .remove_structural_connection_condition import (
+    remove_structural_connection_condition,
+)
 from .remove_structural_load import remove_structural_load
 from .remove_structural_load_case import remove_structural_load_case
 from .remove_structural_load_group import remove_structural_load_group

@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+from types import EllipsisType
+from typing import Any, Union
+
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
-from typing import Any, Union
-from types import EllipsisType
 
 
 def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:

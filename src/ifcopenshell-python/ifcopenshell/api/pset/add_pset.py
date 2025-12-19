@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Optional
+
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.api.pset
 import ifcopenshell.guid
-from typing import Optional, Any
 
 
 def add_pset(

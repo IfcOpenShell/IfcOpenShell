@@ -31,6 +31,7 @@ bl_info = {
 import importlib
 import logging
 import types
+
 import bpy
 from bpy_extras.io_utils import ExportHelper
 
@@ -141,12 +142,14 @@ imported_modules = make_node_list()
 reload_event = False
 
 from os.path import splitext
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
+
 from ifcsverchok.ifcstore import SvIfcStore
 
 

@@ -17,8 +17,9 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import ifcopenshell
 import logging
+
+import ifcopenshell
 
 
 class Patcher:
@@ -79,10 +80,11 @@ class Patcher:
         self.is_solid = is_solid
 
     def patch(self) -> None:
-        import bpy
+        from math import degrees
+
         import bmesh
         import bonsai.tool as tool
-        from math import degrees
+        import bpy
 
         props = tool.Project.get_project_props()
         props.should_use_native_meshes = True

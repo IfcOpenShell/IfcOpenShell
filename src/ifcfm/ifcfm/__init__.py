@@ -17,15 +17,17 @@
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import re
+
 import csv
 import importlib
-import ifcopenshell.util.selector
-from pathlib import Path
+import os
+import re
 from collections import defaultdict
-from typing import Literal, Union, Any, TYPE_CHECKING
 from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import ifcopenshell.util.selector
 
 try:
     from openpyxl import Workbook
@@ -37,7 +39,7 @@ try:
     import odf.namespaces as odf_ns
     from odf.opendocument import OpenDocumentSpreadsheet
     from odf.style import Style, TableCellProperties, TableProperties
-    from odf.table import Table, TableRow, TableCell
+    from odf.table import Table, TableCell, TableRow
     from odf.text import P
 except:
     pass  # No ODF support

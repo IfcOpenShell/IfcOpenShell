@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
+
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.alignment
-from ifcopenshell import ifcopenshell_wrapper
 import ifcopenshell.geom
-from ifcopenshell import entity_instance
-import numpy as np
-import math
+from ifcopenshell import entity_instance, ifcopenshell_wrapper
 
 
 def _update_curve_segment_transition_code(prev_segment: entity_instance, segment: entity_instance) -> None:

@@ -17,19 +17,21 @@
 # along with Ifc5D.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import csv
+import locale
+from pathlib import Path
+from typing import Optional, TypedDict, Union
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
 import ifcopenshell.api.root
-import ifcopenshell.util.unit
-import ifcopenshell.util.selector
-import ifcopenshell.util.element
 import ifcopenshell.util.cost
-import locale
-from pathlib import Path
-from typing import Union, Optional, TypedDict
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
+import ifcopenshell.util.unit
 from typing_extensions import NotRequired
 
 

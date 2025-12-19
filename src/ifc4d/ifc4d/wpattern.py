@@ -7,8 +7,9 @@ for each day as a key there is a list of working times with the format
 """
 
 import re
-from datetime import time, datetime
+from datetime import datetime, time
 from typing import Any
+
 from ifc4d.common import WorkSlot
 
 

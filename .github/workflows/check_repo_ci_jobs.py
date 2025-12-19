@@ -1,9 +1,9 @@
+import os
 import pathlib
 import shutil
+import zipfile
 
 import requests
-import zipfile
-import os
 
 # To test this locally, set these environment variables
 REPO_OWNER = os.environ.get("REPO_OWNER", "IfcOpenShell/IfcOpenShell")

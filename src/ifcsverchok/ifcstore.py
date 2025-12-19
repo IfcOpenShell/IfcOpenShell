@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.util.representation
 from ifcopenshell import template
-from typing import Union, Any
 
 
 class SvIfcStore:

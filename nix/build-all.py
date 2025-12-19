@@ -99,35 +99,36 @@ Used environment variables:
 
 """
 
-import logging
-import os
-import re
-import sys
 import glob
-import subprocess as sp
-import shutil
-import tarfile
+import logging
 import multiprocessing
+import os
 import platform
-import threading
-import sysconfig
-from datetime import datetime
+import re
+import shutil
 
 # @todo temporary for expired mpfr.org certificate on 2023-04-08
 import ssl
+import subprocess as sp
+import sys
+import sysconfig
+import tarfile
+import threading
+from datetime import datetime
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import time
-from urllib.request import urlretrieve
 from collections.abc import Generator, Sequence
 from pathlib import Path
+from urllib.request import urlretrieve
 
 try:
-    from typing import Union, Literal
+    from typing import Literal, Union
 except:
     # python 3.6 compatibility for rocky 8
     from typing import Union
+
     from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)

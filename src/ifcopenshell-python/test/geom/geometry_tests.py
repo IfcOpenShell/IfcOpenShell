@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import test.bootstrap
-import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
 

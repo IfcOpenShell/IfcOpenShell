@@ -18,22 +18,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import shutil
-import sys
-import ifcopenshell
-import logging
-import typing
-import inspect
 import collections
 import importlib
 import importlib.util
+import inspect
+import logging
+import os
 import re
-from pathlib import Path
-from typing import Union, Optional, Any, TypedDict
-from typing_extensions import NotRequired
+import shutil
+import sys
+import typing
 from collections.abc import Sequence
+from pathlib import Path
+from typing import Any, Optional, TypedDict, Union
 
+import ifcopenshell
+from typing_extensions import NotRequired
 
 __version__ = version = "0.0.0"
 

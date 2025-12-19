@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
+from logging import Logger
+from typing import Union
+
 import ifcopenshell
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
+import ifcopenshell.util.unit
+import numpy as np
+
 from ifcpatch.recipes.SetFalseOrigin import Patcher as SetFalseOrigin
-from typing import Union
-from logging import Logger
 
 
 class Patcher:

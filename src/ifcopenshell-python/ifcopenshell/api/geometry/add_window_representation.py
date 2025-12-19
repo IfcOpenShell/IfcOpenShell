@@ -17,14 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import numpy as np
+
 import dataclasses
+from itertools import chain
+from typing import Any, Literal, Optional, Union, overload
+
+import numpy as np
+
 import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
-from itertools import chain
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
-from typing import Any, Optional, Literal, Union, overload
-
 
 # SCHEMAS describe panels setup
 # where:

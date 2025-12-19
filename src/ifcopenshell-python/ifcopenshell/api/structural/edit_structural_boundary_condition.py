@@ -15,8 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+from typing import Any, Literal, TypedDict, Union
+
 import ifcopenshell
-from typing import Any, TypedDict, Literal, Union
 
 
 class AttributeDict(TypedDict):

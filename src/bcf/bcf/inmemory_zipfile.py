@@ -7,6 +7,7 @@ original idea from https://stackoverflow.com/a/19722365/1307905
 """
 
 from __future__ import annotations
+
 import zipfile
 from io import BytesIO
 from os import PathLike

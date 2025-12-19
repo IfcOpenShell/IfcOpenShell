@@ -17,8 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Literal, Optional, Union
+
 import ifcopenshell.util.system
-from typing import Optional, Union, Literal
 
 group_types: dict[str, tuple[str, ...]] = {
     "IfcZone": ("IfcZone", "IfcSpace", "IfcSpatialZone"),

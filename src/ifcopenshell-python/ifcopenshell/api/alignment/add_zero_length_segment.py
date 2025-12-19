@@ -16,21 +16,30 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
+
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 import ifcopenshell.geom
-import ifcopenshell.util.alignment
-from ifcopenshell import entity_instance
 import ifcopenshell.ifcopenshell_wrapper as wrapper
+import ifcopenshell.util.alignment
 import ifcopenshell.util.unit
-import numpy as np
-import math
-
-from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
-from ifcopenshell.api.alignment._map_alignment_horizontal_segment import _map_alignment_horizontal_segment
-from ifcopenshell.api.alignment._map_alignment_vertical_segment import _map_alignment_vertical_segment
-from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
+from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment._get_segment_start_point_label import (
+    _get_segment_start_point_label,
+)
+from ifcopenshell.api.alignment._map_alignment_horizontal_segment import (
+    _map_alignment_horizontal_segment,
+)
+from ifcopenshell.api.alignment._map_alignment_vertical_segment import (
+    _map_alignment_vertical_segment,
+)
+from ifcopenshell.api.alignment._update_curve_segment_transition_code import (
+    _update_curve_segment_transition_code,
+)
 
 
 def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, include_referent: bool = True) -> bool:

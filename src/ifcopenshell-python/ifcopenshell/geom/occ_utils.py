@@ -18,24 +18,25 @@
 
 
 from __future__ import annotations
-import inspect
-import random
-import operator
-import warnings
-import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
-from typing import NamedTuple, Any, Union
-from typing_extensions import assert_never
+import inspect
+import operator
+import random
+import warnings
 from collections.abc import Iterable
+from typing import Any, NamedTuple, Union
 
 import OCC
+from typing_extensions import assert_never
+
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
 try:
-    from OCC.Core import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
+    from OCC.Core import AIS, BRepTools, Graphic3d, Quantity, TopoDS, V3d, gp
 
     USE_OCCT_HANDLE = False
 except ImportError:
-    from OCC import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
+    from OCC import AIS, BRepTools, Graphic3d, Quantity, TopoDS, V3d, gp
 
     USE_OCCT_HANDLE = True
 

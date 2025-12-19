@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
-from xerparser.reader import Reader
+from datetime import date, datetime, timedelta
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
-from datetime import datetime, timedelta, date
+from xerparser.reader import Reader
+
 from .common import ScheduleIfcGenerator
 
 

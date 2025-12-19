@@ -26,8 +26,8 @@ try:
 except ImportError:
     LARK_AVAILABLE = False
 
-from typing import Union
 import re
+from typing import Union
 
 if LARK_AVAILABLE:
     mvd_grammar = r"""

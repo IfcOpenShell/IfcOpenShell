@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Literal, Optional
+
 import ifcopenshell
 import ifcopenshell.api.style
-from typing import Any, Optional, Literal
-
 
 SURFACE_STYLE_TYPES = Literal[
     "IfcSurfaceStyleShading",

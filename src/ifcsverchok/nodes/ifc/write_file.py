@@ -17,6 +17,7 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 from os.path import abspath, splitext
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
@@ -24,12 +25,13 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
+from bpy.props import BoolProperty, StringProperty
+from sverchok.data_structure import flatten_data, updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
 from ifcsverchok.ifcstore import SvIfcStore
-from bpy.props import StringProperty, BoolProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, flatten_data
 
 
 class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

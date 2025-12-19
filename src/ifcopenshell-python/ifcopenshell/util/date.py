@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
 import datetime
-import isodate
 from re import findall
+from typing import Any, Literal, Union, overload
+
+import isodate
 from dateutil import parser
-from typing import Literal, Union, Any, overload
+
+import ifcopenshell
 
 
 def timedelta2duration(timedelta):

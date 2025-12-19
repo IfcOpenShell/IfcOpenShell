@@ -17,22 +17,23 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
 import csv
-import numpy as np
+import os
+from itertools import cycle
+
 import ifcopenshell
-import ifcopenshell.api.pset
-import ifcopenshell.api.root
-import ifcopenshell.api.unit
-import ifcopenshell.api.style
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.document
-import ifcopenshell.api.project
-import ifcopenshell.api.spatial
 import ifcopenshell.api.geometry
-import ifcopenshell.api.aggregate
+import ifcopenshell.api.project
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.style
+import ifcopenshell.api.unit
 import ifcopenshell.util.shape_builder
-from itertools import cycle
+import numpy as np
 from ifcopenshell.util.shape_builder import V
 
 

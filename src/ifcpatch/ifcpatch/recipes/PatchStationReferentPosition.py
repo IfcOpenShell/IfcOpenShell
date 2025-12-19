@@ -1,11 +1,12 @@
+import typing
+from logging import Logger
+from typing import Union
+
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.util.element
-import ifcpatch
-from logging import Logger
 
-import typing
-from typing import Union
+import ifcpatch
 
 
 class Patcher(ifcpatch.BasePatcher):

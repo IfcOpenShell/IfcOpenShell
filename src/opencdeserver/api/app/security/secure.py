@@ -1,17 +1,15 @@
 from __future__ import annotations
-from fastapi import Depends, HTTPException, status, Security
-from fastapi.security import OAuth2AuthorizationCodeBearer, SecurityScopes
 
+import os
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
-from jose import jwt, JWTError
-
-from models.other import TokenData
-from models.request import User
 
 from database.neo4j import db
-import os
-
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import OAuth2AuthorizationCodeBearer, SecurityScopes
+from jose import JWTError, jwt
+from models.other import TokenData
+from models.request import User
+from passlib.context import CryptContext
 from security.secrets import get_secrets
 
 secrets = get_secrets()

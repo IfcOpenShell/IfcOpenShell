@@ -1,11 +1,10 @@
 import collections
 
 import numpy as np
-import ifcopenshell
-import ifcopenshell.geom
-
 import pytest
 
+import ifcopenshell
+import ifcopenshell.geom
 from test.bootstrap import file
 
 

@@ -15,10 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-import ifcopenshell
-import ifcopenshell.util.date
 import datetime
 from typing import Any
+
+import ifcopenshell
+import ifcopenshell.util.date
 
 
 def edit_library(file: ifcopenshell.file, library: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:

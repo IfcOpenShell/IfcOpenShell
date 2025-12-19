@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-import test.bootstrap
+
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import ifcopenshell.util.brick as subject
+import test.bootstrap
 
 
 class TestGetBrickTypeIFC4(test.bootstrap.IFC4):

@@ -1,11 +1,12 @@
-from fastapi import FastAPI, APIRouter, Response, Request
+import logging
+from collections.abc import Callable
+
+import httpx
+from fastapi import APIRouter, FastAPI, Request, Response
+from fastapi.routing import APIRoute
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
-from fastapi.routing import APIRoute
 from starlette.types import Message
-from collections.abc import Callable
-import logging
-import httpx
 
 
 def log_info(req_body, res_body, route_url):

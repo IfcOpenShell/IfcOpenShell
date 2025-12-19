@@ -17,8 +17,9 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import ifcopenshell
 from logging import Logger
+
+import ifcopenshell
 
 
 class Patcher:

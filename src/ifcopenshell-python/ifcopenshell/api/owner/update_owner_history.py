@@ -17,11 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+from typing import Union
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
-from typing import Union
 
 
 def update_owner_history(
