@@ -2123,7 +2123,15 @@ class Drawing(bonsai.core.tool.Drawing):
                 value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
                 value = '"' + str(value).replace('"', '\\"') + '"'
                 command = command.replace(variable, value)
-            text = text.replace(original_command, ifcopenshell.util.selector.format(command[2:-2]))
+            # Defensive: skip if command[2:-2] is None or 'None'
+            command_content = command[2:-2]
+            if command_content is None or str(command_content).strip().lower() == 'none':
+                text = text.replace(original_command, "")
+            else:
+                try:
+                    text = text.replace(original_command, ifcopenshell.util.selector.format(command_content))
+                except Exception:
+                    text = text.replace(original_command, "")
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
             if isinstance(value, (list, tuple)):
