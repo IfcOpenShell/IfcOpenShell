@@ -1056,6 +1056,20 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return tooltip
 
     def execute(self, context):
+        if (
+            tool.Blender.get_addon_preferences().save_metadata_blend_file
+            and self.should_start_fresh_session
+            and not self.is_advanced
+        ):
+            filepath = self.get_filepath()
+            metadata_path = Path(str(filepath) + ".metadata.blend")
+            if metadata_path.exists() and metadata_path.is_file():
+                try:
+                    bpy.ops.bim.load_blend_metadata_and_ifc(filepath=filepath)
+                    return {"FINISHED"}
+                except Exception as e:
+                    self.report({"WARNING"}, f"Failed to load metadata file, using regular load: {e}")
+
         @persistent
         def load_handler(*args):
             bpy.app.handlers.load_post.remove(load_handler)
@@ -1744,15 +1758,28 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         bim_props = tool.Blender.get_bim_props()
         if bim_props.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
             tool.Ifc.set_path(output_file)
-        save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
-        if save_blend_file:
-            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         bim_props.is_dirty = False
+
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file:
+            try:
+                bpy.ops.bim.save_blend_metadata_file()
+                blendmetadata_path = output_file + ".metadata.blend"
+                self.report(
+                    {"INFO"},
+                    f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}',
+                )
+            except Exception as e:
+                self.report({"ERROR"}, f"Failed to save blend metadata file: {e}")
+        else:
+            save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
+            if save_blend_file:
+                bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+            self.report(
+                {"INFO"},
+                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+            )
+
         bonsai.bim.handler.refresh_ui_data()
-        self.report(
-            {"INFO"},
-            f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
-        )
 
     @classmethod
     def description(cls, context, properties):
