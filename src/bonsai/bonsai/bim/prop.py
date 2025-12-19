@@ -92,7 +92,12 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
 
     # Support weird buildingSMART dictionary mappings which behave like enums
     items: list[tuple[str, str, str]] = []
-    data = json.loads(prop.enum_items)
+    if not prop.enum_items:
+        return items
+    try:
+        data = json.loads(prop.enum_items)
+    except Exception:
+        return items
 
     if isinstance(data, dict):
         for k, v in data.items():
@@ -633,7 +638,7 @@ class BIMProperties(PropertyGroup):
         ],
         name="Time Unit",
         default="HOUR",
-    )
+    )    
     tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
     panel_properties: CollectionProperty(type=BIMPanelProperties, name="Panel Properties")
 
@@ -774,15 +779,6 @@ class BIMFacet(PropertyGroup):
     pset: StringProperty(name="Pset")
     value: StringProperty(name="Value")
     type: StringProperty(name="Type")
-    filter_mode: EnumProperty(
-        name="Filter Mode",
-        items=[
-            ("ADD", "Add", "Add elements to the result set (query entire IFC file)", "ADD", 0),
-            ("SUBTRACT", "Subtract", "Subtract matching elements from previous results", "REMOVE", 1),
-            ("FILTER", "Filter", "Filter down previous results to matching elements", "FILTER", 2),
-        ],
-        default="ADD",
-    )
     comparison: EnumProperty(
         items=[
             ("=", "equal to", ""),
@@ -800,7 +796,6 @@ class BIMFacet(PropertyGroup):
         pset: str
         value: str
         type: str
-        filter_mode: Literal["ADD", "SUBTRACT", "FILTER"]
         comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
 
 

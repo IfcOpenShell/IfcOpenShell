@@ -42,6 +42,7 @@ from mathutils import geometry, Vector
 from typing import Optional, Self, Union
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from markdown_it import MarkdownIt
 
 
 class External(svgwrite.container.Group):
@@ -59,6 +60,120 @@ class External(svgwrite.container.Group):
 
     def get_xml(self):
         return self.xml
+
+
+def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
+    """
+    Parse markdown (links, breaks, bold, italic, bullet points) from text and return structured information.
+    Returns a list of dicts with keys:
+      - 'text': the text content
+      - 'url': link target if present, else None
+      - 'break': True if this is a line break (\n or <br>), else False
+      - 'bold': True if bold, else False
+      - 'italic': True if italic, else False
+      - \u2022 for bullet points (you start a bullet point list by prefixing \n before the first - bullet point)
+
+    Example:
+        Hello **bold** *italic* [World](http://ex.com)\n
+        - Bullet 1\n
+        - Bullet 2 <br>Another [Link](http://foo.com)
+        [
+            {'text': 'Hello ', 'url': None, 'break': False, 'bold': False, 'italic': False},
+            {'text': 'bold', 'url': None, 'break': False, 'bold': True, 'italic': False},
+            {'text': ' ', 'url': None, 'break': False, 'bold': False, 'italic': False},
+            {'text': 'italic', 'url': None, 'break': False, 'bold': False, 'italic': True},
+            {'text': ' ', 'url': None, 'break': False, 'bold': False, 'italic': False},
+            {'text': 'World', 'url': 'http://ex.com', 'break': False, 'bold': False, 'italic': False},
+            {'text': None, 'url': None, 'break': True, 'bold': False, 'italic': False},
+            {'text': '\u2022 ', 'url': None, 'break': True, 'bold': False, 'italic': False},
+            {'text': 'Bullet 1', 'url': None, 'break': False, 'bold': False, 'italic': False},
+            {'text': None, 'url': None, 'break': True, 'bold': False, 'italic': False},
+            {'text': '\u2022 ', 'url': None, 'break': True, 'bold': False, 'italic': False},
+            {'text': 'Bullet 2 ', 'url': None, 'break': False, 'bold': False, 'italic': False},
+            {'text': None, 'url': None, 'break': True, 'bold': False, 'italic': False},
+            {'text': 'Another ', 'url': None, 'break': False, 'bold': False, 'italic': False},
+            {'text': 'Link', 'url': 'http://foo.com', 'break': False, 'bold': False, 'italic': False}
+        ]
+    """
+    md = MarkdownIt("commonmark")
+    tokens = md.parse(text)
+    segments = []
+    bold = False
+    italic = False
+    link_opening = None
+    link_text = None
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token.type == "bullet_list_open":
+            i += 1
+            while i < len(tokens) and tokens[i].type != "bullet_list_close":
+                if tokens[i].type == "list_item_open":
+                    segments.append({"text": "\u2022 ", "url": None, "break": True, "bold": False, "italic": False})
+                    j = i + 1
+                    while j < len(tokens) and tokens[j].type != "list_item_close":
+                        if tokens[j].type == "inline":
+                            for child in tokens[j].children or []:
+                                if child.type == "softbreak":
+                                    segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+                                elif child.type == "html_inline" and child.content.strip().lower() == "<br>":
+                                    segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+                                elif child.type == "strong_open":
+                                    bold = True
+                                elif child.type == "strong_close":
+                                    bold = False
+                                elif child.type == "em_open":
+                                    italic = True
+                                elif child.type == "em_close":
+                                    italic = False
+                                elif child.type == "link_open":
+                                    link_opening = child
+                                elif child.type == "text" and link_opening:
+                                    link_text = child.content
+                                elif child.type == "link_close" and link_opening:
+                                    url = link_opening.attrGet("href")
+                                    if url and link_text:
+                                        segments.append({"text": link_text, "url": url, "break": False, "bold": bold, "italic": italic})
+                                    link_opening = None
+                                    link_text = None
+                                elif child.type == "text" and not link_opening:
+                                    segments.append({"text": child.content, "url": None, "break": False, "bold": bold, "italic": italic})
+                        j += 1
+                    i = j
+                else:
+                    i += 1
+            i += 1
+        elif token.type == "inline":
+            for child in token.children or []:
+                if child.type == "softbreak":
+                    segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+                elif child.type == "html_inline" and child.content.strip().lower() == "<br>":
+                    segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+                elif child.type == "strong_open":
+                    bold = True
+                elif child.type == "strong_close":
+                    bold = False
+                elif child.type == "em_open":
+                    italic = True
+                elif child.type == "em_close":
+                    italic = False
+                elif child.type == "link_open":
+                    link_opening = child
+                elif child.type == "text" and link_opening:
+                    link_text = child.content
+                elif child.type == "link_close" and link_opening:
+                    url = link_opening.attrGet("href")
+                    if url and link_text:
+                        segments.append({"text": link_text, "url": url, "break": False, "bold": bold, "italic": italic})
+                    link_opening = None
+                    link_text = None
+                elif child.type == "text" and not link_opening:
+                    segments.append({"text": child.content, "url": None, "break": False, "bold": bold, "italic": italic})
+        i += 1
+    segments = [seg for seg in segments if seg.get("text") is not None or seg.get("break", False)]
+    if not segments:
+        return [{"text": text, "url": None, "break": False, "bold": False, "italic": False}]
+    return segments
 
 
 class SvgWriter:
@@ -893,19 +1008,78 @@ class SvgWriter:
             text = tool.Drawing.replace_text_literal_variables(
                 text_literal.Literal, product or element, reverse_list, list_separator
             )
-            text_tags = self.create_text_tag(
-                text,
-                text_position_svg,
-                angle,
-                text_literal.BoxAlignment,
-                classes_str,
-                fill_bg=fill_bg,
-                line_number_start=line_number,
-                newline_at=newline_at,
-            )
-            for tag in text_tags:
-                self.svg.add(tag)
-            line_number += len(tag.elements)
+
+            text_segments = parse_markdown_it(text)
+
+            if len(text_segments) == 1 and text_segments[0]["url"] is None and not text_segments[0].get("break", False):
+                text_tags = self.create_text_tag(
+                    text,
+                    text_position_svg,
+                    angle,
+                    text_literal.BoxAlignment,
+                    classes_str,
+                    fill_bg=fill_bg,
+                    line_number_start=line_number,
+                    newline_at=newline_at,
+                )
+                for tag in text_tags:
+                    self.svg.add(tag)
+                line_number += len(text_tags)
+            else:
+                base_text_attrs = SvgWriter.get_box_alignment_parameters(text_literal.BoxAlignment)
+                text_position_svg_str = ", ".join(map(str, text_position_svg))
+                text_transform = f"translate({text_position_svg_str}) rotate({angle})"
+
+                text_tag = self.svg.text("", transform=text_transform, class_=classes_str, **base_text_attrs)
+
+                line_idx = 0
+                new_line = True
+                bullet_next = False
+                for idx, segment in enumerate(text_segments):
+                    if segment.get("break", False):
+                        if segment.get("text") == "\u2022 ":
+                            bullet_next = True
+                        line_idx += 1
+                        new_line = True
+                        continue
+                    if segment["text"] is None:
+                        continue
+                    text_content = segment["text"]
+                    if bullet_next:
+                        text_content = "\u2022 " + (text_content or "")
+                        bullet_next = False
+
+                    if new_line:
+                        dy, x, y = f"{line_idx}em", 0, 0
+                        new_line = False
+                    else:
+                        dy, x, y = None, None, None
+
+                    tspan = self.svg.tspan(text_content, class_=classes_str)
+                    if segment.get("bold", False):
+                        tspan.attribs["font-weight"] = "bold"
+                    if segment.get("italic", False):
+                        tspan.attribs["font-style"] = "italic"
+                    if dy is not None:
+                        tspan.attribs["dy"] = dy
+                    if x is not None:
+                        tspan.attribs["x"] = x
+                    if y is not None:
+                        tspan.attribs["y"] = y
+
+                    if segment["url"]:
+                        link_element = self.svg.a(href=segment["url"], target="_blank")
+                        link_element.add(tspan)
+                        text_tag.add(link_element)
+                    else:
+                        text_tag.add(tspan)
+
+                if fill_bg:
+                    fill_bg_tag = self.add_fill_bg(text_tag)
+                    self.svg.add(fill_bg_tag)
+
+                self.svg.add(text_tag)
+                line_number += 1
 
     def draw_empty_annotation(self, obj: bpy.types.Object, classes: list[str]) -> None:
         x_offset = self.raw_width / 2
