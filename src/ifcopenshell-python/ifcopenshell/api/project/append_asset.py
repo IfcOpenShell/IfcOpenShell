@@ -27,7 +27,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-from typing import Optional, Any, Union, Literal, get_args, Callable
+from typing import Optional, Any, Union, Literal, get_args
+from collections.abc import Callable
 from functools import partial
 
 

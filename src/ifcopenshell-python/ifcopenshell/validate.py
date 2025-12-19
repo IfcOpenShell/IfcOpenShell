@@ -55,11 +55,7 @@ from collections import namedtuple
 from typing import Union, Any, Optional, TYPE_CHECKING
 from collections.abc import Iterator
 from logging import Logger, Handler
-
-if sys.version_info >= (3, 10):
-    from types import EllipsisType
-else:
-    EllipsisType = type(...)
+from types import EllipsisType
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper

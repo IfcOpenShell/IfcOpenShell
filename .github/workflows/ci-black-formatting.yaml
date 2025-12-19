@@ -14,7 +14,7 @@ jobs:
       - name: Action - install python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.9"
+          python-version: "3.10"
 
       - name: Action - install python
         uses: actions/setup-python@v6
@@ -33,7 +33,7 @@ jobs:
         id: syntax-errors
         run: |
           ERROR=0
-          python3.9 -W error -m compileall -q src/ifcopenshell-python || ERROR=1
+          python3.10 -W error -m compileall -q src/ifcopenshell-python || ERROR=1
           python3.11 -W error -m compileall -q src/bonsai || ERROR=1
           exit $ERROR
         continue-on-error: true

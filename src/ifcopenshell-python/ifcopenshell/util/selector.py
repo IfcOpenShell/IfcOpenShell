@@ -37,11 +37,7 @@ import ifcopenshell.util.unit
 from decimal import Decimal
 from typing import Optional, Any, Union
 from collections.abc import Iterable
-
-if sys.version_info >= (3, 10):
-    from types import EllipsisType
-else:
-    EllipsisType = type(...)
+from types import EllipsisType
 
 
 filter_elements_grammar = lark.Lark(
