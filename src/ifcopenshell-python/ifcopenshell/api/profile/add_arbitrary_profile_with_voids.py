@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.util.unit
-import numpy.typing as npt
-from ifcopenshell.util.shape_builder import SequenceOfVectors, ifc_safe_vector_type, V
 from typing import Optional, Union
+
+import numpy.typing as npt
+
+import ifcopenshell.util.unit
+from ifcopenshell.util.shape_builder import SequenceOfVectors, V, ifc_safe_vector_type
 
 
 def add_arbitrary_profile_with_voids(

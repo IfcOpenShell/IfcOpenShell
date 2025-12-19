@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api.alignment
-import ifcopenshell.api
-from ifcopenshell import entity_instance
-from ifcopenshell.api.alignment import get_axis_subcontext
-
+import csv
 from collections.abc import Sequence
 
-import csv
+import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.alignment
+from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment import get_axis_subcontext
 
 
 def create_from_csv(file: ifcopenshell.file, filepath: str) -> entity_instance:

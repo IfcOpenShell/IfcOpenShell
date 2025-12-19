@@ -17,20 +17,23 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import numpy as np
-import numpy.typing as npt
+
 import collections
 import collections.abc
+from collections.abc import Sequence
+from itertools import chain
+from math import atan, cos, degrees, pi, radians, sin, sqrt, tan
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
+import numpy as np
+import numpy.typing as npt
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
-from typing import Union, Optional, Literal, Any, TYPE_CHECKING
-from collections.abc import Sequence
-from itertools import chain
 
 PRECISION = 1.0e-5
 

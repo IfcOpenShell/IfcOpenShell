@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
+
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
-import ifcopenshell.api.context
 import ifcopenshell.api.cogo
+import ifcopenshell.api.context
 
 
 def test_edit_survey_point():

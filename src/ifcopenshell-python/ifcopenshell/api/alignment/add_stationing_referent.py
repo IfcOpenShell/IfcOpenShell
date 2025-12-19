@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
@@ -24,9 +26,7 @@ import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from ifcopenshell import entity_instance
-from ifcopenshell import ifcopenshell_wrapper
-import numpy as np
+from ifcopenshell import entity_instance, ifcopenshell_wrapper
 
 
 def add_stationing_referent(

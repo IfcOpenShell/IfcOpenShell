@@ -18,18 +18,17 @@
 
 
 from __future__ import annotations
+
+import operator
 import os
 import sys
-import operator
-
-from .. import open, ifcopenshell_wrapper
-from ..file import file
-from ..entity_instance import entity_instance
-
-from . import has_occ
-
-from typing import TypeVar, Union, Optional, Any, Literal, overload, TYPE_CHECKING, cast
 from collections.abc import Generator, Iterable
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
+
+from .. import ifcopenshell_wrapper, open
+from ..entity_instance import entity_instance
+from ..file import file
+from . import has_occ
 
 if TYPE_CHECKING:
     from OCC.Core import TopoDS

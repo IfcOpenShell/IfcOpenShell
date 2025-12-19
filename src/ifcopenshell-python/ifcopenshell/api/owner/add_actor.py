@@ -17,10 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import ifcopenshell
-import ifcopenshell.api.root
 from typing import Literal
 
+import ifcopenshell
+import ifcopenshell.api.root
 
 ACTOR_TYPE = Literal["IfcActor", "IfcOccupant"]
 

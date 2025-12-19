@@ -1,8 +1,8 @@
-import ifcopenshell
-import ifcopenshell.api.root
-import ifcopenshell.api.owner
 from pathlib import Path
 
+import ifcopenshell
+import ifcopenshell.api.owner
+import ifcopenshell.api.root
 
 guid1 = "3pdqyORIn8KBHZAhhtJ72T"
 guid2 = "1sEzC8v31DshmvW5t5P631"

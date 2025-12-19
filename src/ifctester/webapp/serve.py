@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
 import argparse
 import mimetypes
+import os
+import sys
 
 bonsai_lib_path = os.environ.get("BONSAI_LIB_PATH")
 print(os.environ)
@@ -29,7 +29,7 @@ bonsai_version = os.environ.get("BONSAI_VERSION")
 if bonsai_lib_path:
     sys.path.insert(0, bonsai_lib_path)
 
-from flask import Flask, send_from_directory, send_file
+from flask import Flask, send_file, send_from_directory
 
 # Browsers expecting this specific MIME type for .mjs files,
 # otherwise they fail to load.

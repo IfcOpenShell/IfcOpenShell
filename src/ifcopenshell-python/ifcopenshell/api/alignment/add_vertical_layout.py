@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.geometry
@@ -24,9 +25,7 @@ import ifcopenshell.api.nest
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import ifcopenshell.api
 from ifcopenshell import entity_instance
-
 from ifcopenshell.api.alignment._add_zero_length_segment import _add_zero_length_segment
 
 

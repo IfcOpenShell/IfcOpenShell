@@ -18,6 +18,8 @@
 # along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from datetime import datetime
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.context
@@ -26,10 +28,9 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.guid
-from datetime import datetime
 
-from .geometry import GeometryIO
 from . import __version__
+from .geometry import GeometryIO
 
 JSON_TO_IFC = {
     "Building": ["IfcBuilding"],

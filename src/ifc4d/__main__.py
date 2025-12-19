@@ -1,13 +1,12 @@
+import argparse
 import os
 import sys
-import argparse
 
+import ifcopenshell
+from ifc4d.msp2ifc import MSP2Ifc
 from ifc4d.p6xer2ifc import P6XER2Ifc
 from ifc4d.p62ifc import P62Ifc
-from ifc4d.msp2ifc import MSP2Ifc
 from ifc4d.pp2ifc import PP2Ifc
-import ifcopenshell
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--file", action="store", type=str, required=True, help="schedule file name to be parsed")

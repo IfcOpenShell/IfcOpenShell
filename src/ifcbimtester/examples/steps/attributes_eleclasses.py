@@ -17,9 +17,7 @@
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from behave import step
-
 from utils import IfcFile
-
 
 use_step_matcher("re")
 

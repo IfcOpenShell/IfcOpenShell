@@ -1,12 +1,14 @@
 from __future__ import annotations
+
+from datetime import date, datetime, timedelta
+from typing import Any, TypedDict, Union
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.control
 import ifcopenshell.api.resource
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
-from datetime import datetime, timedelta, date
-from typing import Union, Any, TypedDict
 from typing_extensions import NotRequired
 
 

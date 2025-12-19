@@ -29,7 +29,6 @@ from bcf.v3.bcfxml import BcfXml as BcfXml3
 from bcf.v3.model import Version as Version3
 from bcf.xml_parser import AbstractXmlParserSerializer, XmlParserSerializer
 
-
 BcfXml = Union[BcfXml2, BcfXml3]
 
 

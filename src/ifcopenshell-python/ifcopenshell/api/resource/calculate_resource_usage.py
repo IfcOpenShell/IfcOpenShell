@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+
 import ifcopenshell.api
 import ifcopenshell.util.constraint
 import ifcopenshell.util.date

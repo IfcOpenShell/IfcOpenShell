@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.util.unit
-import ifcopenshell.util.element
 from typing import Any
+
+import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
 
 
 def edit_cost_value(

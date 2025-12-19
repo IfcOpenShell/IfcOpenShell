@@ -20,15 +20,14 @@
 # IMPORTS
 # ----------------------------------------------------------------
 
+import string
 from functools import reduce
 from unittest import TestCase
-from pytest import mark
-from pytest import fixture
 from uuid import uuid4
-import string
 
-from ifcopenshell.guid import compress
-from ifcopenshell.guid import expand
+from pytest import fixture, mark
+
+from ifcopenshell.guid import compress, expand
 
 # ----------------------------------------------------------------
 # FIXTURES

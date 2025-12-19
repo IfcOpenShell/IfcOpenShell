@@ -17,15 +17,12 @@
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from behave.model import Scenario
 
+from behave.model import Scenario
 from bimtester.ifc import IfcStore
 from bimtester.lang import switch_locale
-from logfile import append_logfile
-from logfile import create_logfile
-from zoom_smart_view import add_smartview
-from zoom_smart_view import create_zoom_set_of_smartviews
-
+from logfile import append_logfile, create_logfile
+from zoom_smart_view import add_smartview, create_zoom_set_of_smartviews
 
 this_path = os.path.dirname(os.path.realpath(__file__))
 

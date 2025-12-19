@@ -16,15 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
+import json
 import os
 import time
-import json
+from pathlib import Path
+
+import numpy as np
 import salome
 import salome_notebook
 import salome_version
-import numpy as np
-import itertools
-from pathlib import Path
 
 flatten = itertools.chain.from_iterable
 
@@ -155,10 +156,11 @@ class MODEL:
         ###
         ### GEOM component
         ###
-        import GEOM
-        from salome.geom import geomBuilder
         import math
+
+        import GEOM
         import SALOMEDS
+        from salome.geom import geomBuilder
 
         gg = salome.ImportComponentGUI("GEOM")
         if NEW_SALOME:

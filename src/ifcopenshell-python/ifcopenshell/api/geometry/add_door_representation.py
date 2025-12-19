@@ -17,15 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import ifcopenshell.util.unit
-import ifcopenshell.api.geometry
-import dataclasses
-import numpy as np
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
-from ifcopenshell.api.geometry.add_window_representation import create_ifc_window
-from math import cos, radians
-from typing import Any, Optional, Literal, Union, get_args, overload
 
+import dataclasses
+from math import cos, radians
+from typing import Any, Literal, Optional, Union, get_args, overload
+
+import numpy as np
+
+import ifcopenshell.api.geometry
+import ifcopenshell.util.unit
+from ifcopenshell.api.geometry.add_window_representation import create_ifc_window
+from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
 DOOR_TYPE = Literal[
     "SINGLE_SWING_LEFT",

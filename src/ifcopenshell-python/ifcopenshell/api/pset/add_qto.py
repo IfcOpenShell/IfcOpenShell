@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
+
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
-from typing import Any
 
 
 def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name: str) -> ifcopenshell.entity_instance:

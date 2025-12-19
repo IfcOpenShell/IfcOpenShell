@@ -1,22 +1,17 @@
-import os
 import math
-
-from uuid import UUID, uuid4
+import os
 from typing import Union
-
-from fastapi import HTTPException
-
-from database.neo4j import MyDB, driver
-
-from models.documents_request import *
-from models.documents_response import *
-from models.documents_common import *
-from models.documents_other import *
+from uuid import UUID, uuid4
 
 import ifcopenshell
-from py2neo import Graph
-
+from database.neo4j import MyDB, driver
+from fastapi import HTTPException
 from ifcgraph.ifcgraph import create_full_graph
+from models.documents_common import *
+from models.documents_other import *
+from models.documents_request import *
+from models.documents_response import *
+from py2neo import Graph
 
 
 class DOCDB(MyDB):

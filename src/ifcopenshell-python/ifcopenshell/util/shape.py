@@ -16,18 +16,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import shapely
-import shapely.ops
+from math import cos, radians
+from typing import Literal, Optional, Union
+
 import numpy as np
 import numpy.typing as npt
+import shapely
+import shapely.ops
+
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-from ifcopenshell.util.shape_builder import VectorType
-from math import radians, cos
 from ifcopenshell.geom import ShapeElementType
-from typing import Optional, Literal, Union
+from ifcopenshell.util.shape_builder import VectorType
 
 tol = 1e-6
 AXIS_LITERAL = Literal["X", "Y", "Z"]

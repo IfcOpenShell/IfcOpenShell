@@ -19,31 +19,38 @@
 from copy import deepcopy
 from decimal import Context
 from email.policy import default
+from itertools import chain, cycle
+
+import bonsai.core.geometry as core
+import bonsai.tool as tool
 import bpy
 import ifcopenshell
-import ifcsverchok.helper
 import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.util.representation
-from ifcsverchok.ifcstore import SvIfcStore
-import bonsai.tool as tool
-import bonsai.core.geometry as core
+from bonsai.bim.module.root.prop import get_contexts
 from bpy.props import (
-    StringProperty,
+    BoolProperty,
     EnumProperty,
     IntProperty,
-    BoolProperty,
     PointerProperty,
+    StringProperty,
+)
+from mathutils import Matrix
+from sverchok.core.socket_data import sv_get_socket
+from sverchok.data_structure import (
+    fixed_iter,
+    flat_iter,
+    flatten_data,
+    node_id,
+    updateNode,
+    zip_long_repeat,
 )
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, flatten_data, fixed_iter, flat_iter
-from bonsai.bim.module.root.prop import get_contexts
-from sverchok.data_structure import zip_long_repeat, node_id
-from sverchok.core.socket_data import sv_get_socket
 
-from itertools import chain, cycle
-from mathutils import Matrix
+import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 
 
 class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

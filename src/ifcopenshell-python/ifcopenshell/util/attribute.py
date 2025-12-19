@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Literal, Union
+
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-from typing import Union, Literal
 
 PrimitiveType = Literal["entity", "string", "float", "integer", "boolean", "enum", "binary"]
 ComplexPrimitiveType = Literal["list", "array", "set"]

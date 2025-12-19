@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import logging
-import ifcopenshell
+import os
 from pathlib import Path
 from typing import Union
+
+import ifcopenshell
 
 
 class Patcher:
@@ -45,9 +46,10 @@ class Patcher:
         self.output_dir = output_dir
 
     def patch(self) -> None:
-        import ifcopenshell
         import tempfile
         from shutil import copyfile
+
+        import ifcopenshell
 
         if self.output_dir is None:
             output_dir = Path()

@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.type
-import ifcopenshell.api.grid
-import ifcopenshell.api.feature
-import ifcopenshell.api.root
-import ifcopenshell.api.pset
 import ifcopenshell.api.boundary
-import ifcopenshell.api.material
+import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
+import ifcopenshell.api.grid
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 
 

@@ -17,18 +17,21 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import datetime
+import math
 import os
 import re
 import sys
-import math
-import datetime
+from typing import Literal, Optional, TypedDict, Union
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-from .ids import Specification, Ids
+
 from .facet import Facet, FacetFailure
-from typing import TypedDict, Union, Literal, Optional
+from .ids import Ids, Specification
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -555,7 +558,7 @@ class Ods(Json):
     def to_file(self, filepath: str) -> None:
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
-        from odf.table import Table, TableRow, TableCell
+        from odf.table import Table, TableCell, TableRow
         from odf.text import P
 
         self.doc = OpenDocumentSpreadsheet()
@@ -696,7 +699,7 @@ class OdsSummary(Json):
     def to_file(self, filepath: str) -> None:
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
-        from odf.table import Table, TableRow, TableCell
+        from odf.table import Table, TableCell, TableRow
         from odf.text import P
 
         self.doc = OpenDocumentSpreadsheet()

@@ -17,10 +17,11 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from typing import Literal, Optional, Union
+
+import ifcopenshell
 import numpy as np
 import numpy.typing as npt
-import ifcopenshell
-from typing import Literal, Optional, Union
 
 
 class Patcher:

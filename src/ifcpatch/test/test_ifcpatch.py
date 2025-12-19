@@ -17,9 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import tempfile
-import ifcopenshell.api.root
-import ifcpatch
 from pathlib import Path
+
+import ifcopenshell.api.root
+
+import ifcpatch
 
 
 class Test:

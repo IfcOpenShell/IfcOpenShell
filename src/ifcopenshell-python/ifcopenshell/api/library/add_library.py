@@ -17,8 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util.schema
 import ifcopenshell.util.date
+import ifcopenshell.util.schema
 
 
 def add_library(file: ifcopenshell.file, name: str) -> ifcopenshell.entity_instance:

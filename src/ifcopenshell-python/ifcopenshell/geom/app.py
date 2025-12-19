@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+import multiprocessing
+import operator
 import os
 import sys
 import time
-import operator
-import functools
-import multiprocessing
+
 import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
@@ -33,7 +34,7 @@ except ImportError:
 
     USE_OCCT_HANDLE = True
 
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
 
 try:
@@ -69,11 +70,10 @@ except BaseException:
 
     from OCC.Display.qtDisplay import qtViewer3d
 
-from .main import settings, iterator
-from .occ_utils import display_shape
-
 from .. import open as open_ifc_file
 from .. import version as ifcopenshell_version
+from .main import iterator, settings
+from .occ_utils import display_shape
 
 if ifcopenshell_version < "0.6":
     # not yet ported

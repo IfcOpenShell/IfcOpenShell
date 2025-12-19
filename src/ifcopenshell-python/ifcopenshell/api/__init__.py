@@ -38,14 +38,16 @@ Also see how to `create a simple model from scratch
 <https://docs.ifcopenshell.org/ifcopenshell-python/code_examples.html#create-a-simple-model-from-scratch>`_.
 """
 
-import json
-import numpy
-import inspect
 import importlib
-import ifcopenshell
+import inspect
+import json
 from collections.abc import Callable
-from typing import Any, Optional, TYPE_CHECKING
 from functools import partial
+from typing import TYPE_CHECKING, Any, Optional
+
+import numpy
+
+import ifcopenshell
 
 if TYPE_CHECKING:
     import ifcopenshell.api
@@ -187,8 +189,8 @@ def remove_all_listeners():
 
 
 def extract_docs(module: str, usecase: str) -> dict[str, Any]:
-    import typing
     import collections
+    import typing
 
     inputs = collections.OrderedDict()
 
@@ -304,8 +306,8 @@ def wrap_usecase(usecase_path, usecase):
 
 def wrap_usecases(path, name):
     """This developer feature wraps an API module's usecases with listeners."""
-    import sys
     import pkgutil
+    import sys
 
     module_name = name.split(".")[-1]
     module = sys.modules[name]

@@ -19,9 +19,11 @@
 import gc
 import os
 import struct
-import pytest
-import ifcopenshell
 import tempfile
+
+import pytest
+
+import ifcopenshell
 
 try:
     import psutil

@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.root
-import ifcopenshell.api.project
-import ifcopenshell.api.owner.settings
-import ifcopenshell.api.sequence
 from datetime import datetime, time
 from typing import Optional, Union
+
+import ifcopenshell.api.owner.settings
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.sequence
 
 
 def add_work_plan(

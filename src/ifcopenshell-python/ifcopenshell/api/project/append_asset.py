@@ -16,21 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Callable
+from functools import partial
+from typing import Any, Literal, Optional, Union, get_args
+
 import ifcopenshell
-import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.api.geometry
-import ifcopenshell.api.type
-import ifcopenshell.api.project
 import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.owner.settings
+import ifcopenshell.api.project
+import ifcopenshell.api.type
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-from typing import Optional, Any, Union, Literal, get_args
-from collections.abc import Callable
-from functools import partial
-
 
 APPENDABLE_ASSET = Literal[
     "IfcTypeProduct",

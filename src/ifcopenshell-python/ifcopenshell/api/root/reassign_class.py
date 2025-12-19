@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Literal, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
@@ -23,11 +25,10 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import ifcopenshell.guid
-import ifcopenshell.util.representation
-import ifcopenshell.util.type
-import ifcopenshell.util.schema
 import ifcopenshell.util.element
-from typing import Optional, Union, Literal
+import ifcopenshell.util.representation
+import ifcopenshell.util.schema
+import ifcopenshell.util.type
 
 
 def reassign_class(

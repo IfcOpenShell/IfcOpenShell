@@ -40,17 +40,18 @@ if "bpy" in locals():
     if "ifcopenshell" in locals():
         importlib.reload(ifcopenshell)
 
+import logging
+import os
+from collections import defaultdict
+
+import bpy
+import mathutils
 from bpy.props import (
     BoolProperty,
     IntProperty,
     StringProperty,
 )
 from bpy_extras.io_utils import ImportHelper
-from collections import defaultdict
-import bpy
-import logging
-import mathutils
-import os
 
 major, minor = bpy.app.version[0:2]
 transpose_matrices = minor >= 62

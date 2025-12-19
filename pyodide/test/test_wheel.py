@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 WHEEL_FILENAME = next(
     p.name for p in (Path.cwd() / "pyodide").iterdir() if p.name.startswith("ifcopenshell-") and p.suffix == ".whl"
 )

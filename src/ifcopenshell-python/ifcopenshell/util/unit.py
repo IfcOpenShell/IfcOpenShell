@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Generator
 from fractions import Fraction
 from math import pi
 from typing import Literal, Optional, Union
-from collections.abc import Generator
 
 import ifcopenshell
-import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.api.unit
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
 prefixes = {
     "EXA": 1e18,
@@ -869,10 +869,10 @@ def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_
 
 def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "METER") -> ifcopenshell.file:
     """Converts all units in an IFC file to the specified target units. Returns a new file."""
-    import ifcopenshell.util.element
-    import ifcopenshell.util.geolocation
     import ifcopenshell.api.georeference
     import ifcopenshell.api.unit
+    import ifcopenshell.util.element
+    import ifcopenshell.util.geolocation
 
     prefix = get_prefix(target_units)
     si_unit = get_unit_name(target_units)

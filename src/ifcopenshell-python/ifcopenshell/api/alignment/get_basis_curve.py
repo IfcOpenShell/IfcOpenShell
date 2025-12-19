@@ -18,9 +18,8 @@
 
 import ifcopenshell
 import ifcopenshell.util
-from ifcopenshell import entity_instance
-
 import ifcopenshell.util.representation
+from ifcopenshell import entity_instance
 
 
 def get_basis_curve(alignment: entity_instance) -> entity_instance:

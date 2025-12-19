@@ -19,12 +19,13 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.guid
-import ifcsverchok.helper
-import ifcsverchok.helper as helper
 import sverchok.core.sockets
 from bpy.props import StringProperty
-from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
+import ifcsverchok.helper
+import ifcsverchok.helper as helper
 
 
 class SvIfcCreateFileRefresh(bpy.types.Operator):

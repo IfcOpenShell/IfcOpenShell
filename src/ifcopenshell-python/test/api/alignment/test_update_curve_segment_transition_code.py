@@ -17,9 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
+
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
+from ifcopenshell.api.alignment._update_curve_segment_transition_code import (
+    _update_curve_segment_transition_code,
+)
 
 
 def _test1():

@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import toposort
-import ifcpatch
-import ifcpatch.recipes
-import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
-
+import ifcopenshell.util.selector
 import ifcpatch.__main__
+import ifcpatch.recipes
+import toposort
+
+import ifcpatch

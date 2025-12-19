@@ -1,10 +1,10 @@
-from pydantic import BaseModel, Field
 from typing import Optional
 
-from models.documents_common import CallbackLink, Document
-from models.documents_request import FileToUpload, DocumentMetadataEntry
-from models.request import User
+from pydantic import BaseModel, Field
 
+from models.documents_common import CallbackLink, Document
+from models.documents_request import DocumentMetadataEntry, FileToUpload
+from models.request import User
 
 # This file contains models that are neither used in requests nor in responses,
 # and they can be used during both upload and download of documents.

@@ -1,11 +1,8 @@
+from api import bcf, documents, foundation
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
-
-from api import foundation
-from api import bcf
-from api import documents
 
 endpoint_metadata = [
     {"name": "api_versions_get", "description": "/foundation/versions"},

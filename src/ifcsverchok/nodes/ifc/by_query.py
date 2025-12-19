@@ -19,11 +19,12 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.selector
+from bpy.props import StringProperty
+from sverchok.data_structure import updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
-from bpy.props import StringProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
 
 
 class SvIfcByQuery(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

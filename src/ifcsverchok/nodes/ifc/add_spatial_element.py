@@ -16,27 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-
 from itertools import chain
 
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
-import ifcsverchok.helper
-from ifcsverchok.ifcstore import SvIfcStore
-
 from bpy.props import StringProperty
-from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import (
-    updateNode,
+    ensure_min_nesting,
     flatten_data,
     repeat_last_for_length,
-    ensure_min_nesting,
+    updateNode,
 )
+from sverchok.node_tree import SverchCustomTreeNode
+
+import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 
 
 class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

@@ -18,6 +18,7 @@
 
 
 from typing import Any, Optional
+
 import ifcopenshell
 
 
