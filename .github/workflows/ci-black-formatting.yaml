@@ -43,6 +43,15 @@ jobs:
         uses: psf/black@stable
         continue-on-error: true
 
+      # Same check as above, but just for creating github annotations.
+      - name: Black formatter annotations
+        id: black-annotations
+        run: |
+          uv tool install black-codeclimate
+          pip install github_action_utils
+          black --diff --check . | black-codeclimate | python .github/workflows/black_to_github_annotations.py
+        continue-on-error: true
+
       - name: Ruff check
         id: ruff
         run: |
