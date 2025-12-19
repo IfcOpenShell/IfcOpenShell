@@ -104,6 +104,7 @@ option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only ins
 option(USE_DEBUG_PYTHON "Use debug binaries when building Debug IfcPython on Windows." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, requires git" OFF)
 option(VERSION_OVERRIDE "Override the version defined in buildinfo.cpp with the file VERSION in the repository root" OFF)
+option(USE_CCACHE "Enable use of ccache if it's available from PATH." ON)
 
 set(
     PYTHON_MODULE_INSTALL_DIR
@@ -132,7 +133,7 @@ if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM)
 endif()
 
 find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
+if(USE_CCACHE AND CCACHE_FOUND)
     message(STATUS "`ccache` is found, using it as a compiler launcher.")
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_FOUND}")
     if(MSVC)
