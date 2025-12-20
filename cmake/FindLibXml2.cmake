@@ -33,15 +33,15 @@ else()
         set_property(TARGET LibXml2::LibXml2 PROPERTY IMPORTED_LOCATION)
         get_release_variant(LIBXML2_RELEASE_LIB "${LIBXML2_LIBRARIES}" "d")
         get_debug_variant(LIBXML2_DEBUG_LIB "${LIBXML2_LIBRARIES}" "d")
-        set_target_properties(LibXml2::LibXml2
+        set_target_properties(
+            LibXml2::LibXml2
             PROPERTIES
-            IMPORTED_CONFIGURATIONS "Release;Debug"
-            IMPORTED_LOCATION_RELEASE "${LIBXML2_RELEASE_LIB}"
-            IMPORTED_LOCATION_DEBUG "${LIBXML2_DEBUG_LIB}"
+                IMPORTED_CONFIGURATIONS "Release;Debug"
+                IMPORTED_LOCATION_RELEASE "${LIBXML2_RELEASE_LIB}"
+                IMPORTED_LOCATION_DEBUG "${LIBXML2_DEBUG_LIB}"
         )
     endif()
 endif()
-
 
 # Restore module path.
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})

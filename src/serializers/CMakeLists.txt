@@ -5,10 +5,12 @@ file(GLOB SERIALIZERS_CPP_FILES *.cpp)
 set(SERIALIZERS_FILES ${SERIALIZERS_H_FILES} ${SERIALIZERS_CPP_FILES})
 
 add_library(Serializers ${SERIALIZERS_FILES})
-set_target_properties(Serializers PROPERTIES
-    COMPILE_FLAGS "-DSERIALIZERS_EXPORTS"
-    VERSION "${PROJECT_VERSION}"
-    SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+set_target_properties(
+    Serializers
+    PROPERTIES
+        COMPILE_FLAGS "-DSERIALIZERS_EXPORTS"
+        VERSION "${PROJECT_VERSION}"
+        SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
 set(SERIALIZER_SCHEMA_LIBRARIES Serializers ${SERIALIZER_SCHEMA_LIBRARIES} PARENT_SCOPE)
 
@@ -21,18 +23,21 @@ if(WITH_PROJ)
     target_link_libraries(Serializers PRIVATE PROJ::proj)
 endif()
 
-target_link_libraries(Serializers
+target_link_libraries(
+    Serializers
     PRIVATE
-    ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES} ${GLTF_LIBRARIES}
-    IfcGeom ${OpenCASCADE_LIBRARIES} ${kernel_libraries} IfcParse
+        ${SERIALIZER_SCHEMA_LIBRARIES}
+        ${OPENCOLLADA_LIBRARIES}
+        ${USD_LIBRARIES}
+        ${GLTF_LIBRARIES}
+        IfcGeom
+        ${OpenCASCADE_LIBRARIES}
+        ${kernel_libraries}
+        IfcParse
 )
 
 install(TARGETS Serializers)
 
 # Can't use `PUBLIC_HEADER` since we need two folders.
-install(FILES ${SERIALIZERS_H_FILES}
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/serializers/"
-)
-install(FILES ${SERIALIZERS_S_H_FILES}
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/serializers/schema_dependent"
-)
+install(FILES ${SERIALIZERS_H_FILES} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/serializers/")
+install(FILES ${SERIALIZERS_S_H_FILES} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/serializers/schema_dependent")

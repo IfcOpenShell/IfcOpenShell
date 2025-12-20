@@ -52,7 +52,7 @@ if(SCHEMA_VERSIONS MATCHES "2x3")
         add_executable(IfcAdvancedHouse IfcAdvancedHouse.cpp)
         add_library(IfcHouseInterface INTERFACE)
 
-        if (STANDALONE_PROJECT)
+        if(STANDALONE_PROJECT)
             target_link_libraries(IfcHouseInterface INTERFACE IfcOpenShell::IfcParse IfcOpenShell::geometry_serializer)
         else()
             target_link_libraries(IfcHouseInterface INTERFACE IfcParse geometry_serializer)
