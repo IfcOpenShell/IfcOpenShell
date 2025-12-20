@@ -22,7 +22,6 @@ if(OCC_LIBRARY_DIR)
     message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
 endif()
 
-
 if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
     # OCE is not supported for find_package, because it's using a different name (`oce`)
     # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
@@ -41,9 +40,7 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
 
     if(OpenCASCADE_VERSION VERSION_LESS "7.7.0")
         # cmake configs < 7.7.0 were not adding include directories to targets automatically.
-        set_target_properties(TKernel PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "${OpenCASCADE_INCLUDE_DIR}"
-        )
+        set_target_properties(TKernel PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${OpenCASCADE_INCLUDE_DIR}")
     endif()
 
     if(OpenCASCADE_VERSION VERSION_LESS "7.9.0" AND WIN32)
@@ -62,17 +59,11 @@ if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
         "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
     )
     # Parse OCC_VERSION_STRING.
-    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
-        REGEX "#define OCC_VERSION_MAJOR.*"
-    )
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR REGEX "#define OCC_VERSION_MAJOR.*")
     string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
-    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
-        REGEX "#define OCC_VERSION_MINOR.*"
-    )
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR REGEX "#define OCC_VERSION_MINOR.*")
     string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
-    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
-        REGEX "#define OCC_VERSION_MAINTENANCE.*"
-    )
+    file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT REGEX "#define OCC_VERSION_MAINTENANCE.*")
     string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
     set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
 else()
@@ -86,17 +77,37 @@ else()
     )
 endif()
 
-set(
-    OpenCASCADE_LIBRARIES
-    TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-    TKFillet TKXSBase TKOffset TKHLR
-
+set(OpenCASCADE_LIBRARIES
+    TKernel
+    TKMath
+    TKBRep
+    TKGeomBase
+    TKGeomAlgo
+    TKG3d
+    TKG2d
+    TKShHealing
+    TKTopAlgo
+    TKMesh
+    TKPrim
+    TKBool
+    TKBO
+    TKFillet
+    TKXSBase
+    TKOffset
+    TKHLR
     # @todo investigate the exact conditions when this is necessary
     TKBin
 )
 
 if(OCC_VERSION_STRING VERSION_LESS 7.8.0)
-    list(APPEND OpenCASCADE_LIBRARIES  TKIGES TKSTEPBase TKSTEPAttr TKSTEP209 TKSTEP)
+    list(
+        APPEND OpenCASCADE_LIBRARIES
+        TKIGES
+        TKSTEPBase
+        TKSTEPAttr
+        TKSTEP209
+        TKSTEP
+    )
 else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
     list(APPEND OpenCASCADE_LIBRARIES TKDESTEP TKDEIGES)
 endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
@@ -106,10 +117,7 @@ find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAU
 if(libTKernel)
     message(STATUS "Required Open Cascade Library files found")
 else()
-    message(
-        FATAL_ERROR
-        "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting"
-    )
+    message(FATAL_ERROR "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting")
 endif()
 
 if(MSVC)
@@ -138,9 +146,21 @@ if(OCCT_STATIC)
         # OpenCASCADE_LIBRARIES repeated N times below in order to fix cyclic dependencies
         # tfk: --start-group ... --end-group didn't work on the apple linker when last tested
         if(APPLE)
-            set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+            set(OpenCASCADE_LIBRARIES
+                ${OpenCASCADE_LIBRARIES}
+                ${OpenCASCADE_LIBRARIES}
+                ${OpenCASCADE_LIBRARIES}
+                ${OpenCASCADE_LIBRARIES}
+                ${OpenCASCADE_LIBRARIES}
+                ${CMAKE_THREAD_LIBS_INIT}
+            )
         else()
-            set(OpenCASCADE_LIBRARIES -Wl,--start-group ${OpenCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
+            set(OpenCASCADE_LIBRARIES
+                -Wl,--start-group
+                ${OpenCASCADE_LIBRARIES}
+                -Wl,--end-group
+                ${CMAKE_THREAD_LIBS_INIT}
+            )
         endif()
     endif()
 
@@ -157,5 +177,4 @@ target_include_directories(OpenCASCADE_INTERFACE INTERFACE "${OCC_INCLUDE_DIR}")
 target_link_libraries(OpenCASCADE_INTERFACE INTERFACE ${OpenCASCADE_LIBRARIES})
 target_link_directories(OpenCASCADE_INTERFACE INTERFACE "${OCC_LIBRARY_DIR}")
 set(OpenCASCADE_LIBRARIES OpenCASCADE_INTERFACE)
-install(TARGETS OpenCASCADE_INTERFACE
-    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+install(TARGETS OpenCASCADE_INTERFACE EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})

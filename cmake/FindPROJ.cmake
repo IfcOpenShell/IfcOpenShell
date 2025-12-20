@@ -19,20 +19,14 @@ if((NOT PROJ_INCLUDE_DIR AND NOT PROJ_LIBRARIES))
     find_package(PROJ QUIET CONFIG)
 
     if(NOT PROJ_FOUND)
-        find_path(PROJ_INCLUDE_DIR proj.h
-            PATHS
-                /usr/include/proj
-            REQUIRED
-        )
+        find_path(PROJ_INCLUDE_DIR proj.h PATHS /usr/include/proj REQUIRED)
         if(PROJ_INCLUDE_DIR)
             message(STATUS "Found PROJ include files in: ${PROJ_INCLUDE_DIR}")
         else()
             message(FATAL_ERROR "Unable to find PROJ include directory, specify PROJ_INCLUDE_DIR manually.")
         endif()
 
-        find_library(PROJ_LIBRARY
-            NAMES proj
-            PATHS /usr/lib/x86_64-linux-gnu)
+        find_library(PROJ_LIBRARY NAMES proj PATHS /usr/lib/x86_64-linux-gnu)
         if(PROJ_LIBRARY)
             message(STATUS "PROJ libraries ${PROJ_LIBRARY} found in: ${PROJ_LIBRARY_DIR}")
             set(PROJ_LIBRARIES ${PROJ_LIBRARY})
@@ -46,9 +40,7 @@ if((NOT PROJ_INCLUDE_DIR AND NOT PROJ_LIBRARIES))
         target_link_directories(PROJ::proj INTERFACE "${PROJ_LIBRARY}")
     endif()
 else()
-    find_library(PROJ_LIBRARY
-        NAMES proj
-        PATHS ${PROJ_LIBRARY_DIR})
+    find_library(PROJ_LIBRARY NAMES proj PATHS ${PROJ_LIBRARY_DIR})
     if(PROJ_LIBRARY)
         message(STATUS "PROJ libraries ${PROJ_LIBRARY} found in: ${PROJ_LIBRARY_DIR}")
         set(PROJ_LIBRARIES ${PROJ_LIBRARY})

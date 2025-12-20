@@ -9,13 +9,14 @@ foreach(kernel ${GEOMETRY_KERNELS})
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
 
     add_library(${KERNEL_TARGET} OBJECT ${IFCGEOM_FILES})
-    set_target_properties(${KERNEL_TARGET} PROPERTIES
-        COMPILE_FLAGS "-DIFC_GEOM_EXPORTS"
-        PUBLIC_HEADER "${IFCGEOM_H_FILES}"
+    set_target_properties(
+        ${KERNEL_TARGET}
+        PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" PUBLIC_HEADER "${IFCGEOM_H_FILES}"
     )
     list(APPEND kernel_libraries ${KERNEL_TARGET})
     target_link_libraries(${KERNEL_TARGET} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
-    install(TARGETS ${KERNEL_TARGET}
+    install(
+        TARGETS ${KERNEL_TARGET}
         EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
         PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ifcgeom/kernels/${kernel}"
     )
@@ -27,13 +28,14 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
         set(KERNEL_TARGET_SIMPLE "${KERNEL_TARGET}_simple")
         add_library(${KERNEL_TARGET_SIMPLE} OBJECT ${IFCGEOM_FILES})
-        set_target_properties(${KERNEL_TARGET_SIMPLE} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS")
+        set_target_properties(
+            ${KERNEL_TARGET_SIMPLE}
+            PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS"
+        )
         list(APPEND kernel_libraries ${KERNEL_TARGET_SIMPLE})
         target_link_libraries(${KERNEL_TARGET_SIMPLE} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
         target_link_libraries(${KERNEL_TARGET_SIMPLE} IFCOPENSHELL_CGAL)
-        install(TARGETS ${KERNEL_TARGET_SIMPLE}
-            EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
-        )
+        install(TARGETS ${KERNEL_TARGET_SIMPLE} EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
     elseif(${kernel} STREQUAL "opencascade")
         target_link_libraries(${KERNEL_TARGET} ${OpenCASCADE_LIBRARIES})
     endif()

@@ -55,7 +55,6 @@ if(HDF5_LIBRARY_DIR)
             "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
             "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
         )
-
     else()
         message(STATUS "Packaging hdf5 and zlib for conda distribution")
 
