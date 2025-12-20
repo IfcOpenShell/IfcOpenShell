@@ -71,3 +71,5 @@ ruff.sequence = ["ruff-main", "ruff-old"]
 black = "black ."
 
 format.sequence = ["black", "ruff-main", "ruff-old"]
+
+cmake-format = "gersemi cmake src --in-place"
