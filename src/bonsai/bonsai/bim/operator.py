@@ -269,77 +269,74 @@ class SaveBlendMetadataFile(bpy.types.Operator):
         cleanup_script = f"""
 import bpy
 
-def remove_ifc_collections():
-    \"\"\"Remove all collections that start with 'IfcProject' and their contents.\"\"\"
-    collections_to_remove = []
-    
-    # Find all IfcProject collections
-    for collection in bpy.data.collections:
-        if collection.name.startswith('IfcProject'):
-            collections_to_remove.append(collection)
-    
-    # First, use bim.override_outliner_delete to properly remove IFC data
-    for collection in collections_to_remove:
-        # Collect all objects in the collection and its children
-        objects_to_delete = []
-        
-        def collect_objects(col):
-            for obj in col.objects:
-                if obj not in objects_to_delete:
-                    objects_to_delete.append(obj)
-            for child in col.children:
-                collect_objects(child)
-        
-        collect_objects(collection)
-        
-        # Use bim.override_outliner_delete for each object to clean up IFC data
-        for obj in objects_to_delete:
-            # Select only this object
-            bpy.ops.object.select_all(action='DESELECT')
-            obj.select_set(True)
-            bpy.context.view_layer.objects.active = obj
-            
-            # Try to use Bonsai's delete operator which cleans up IFC data
-            try:
-                bpy.ops.bim.override_outliner_delete()
-            except:
-                # If that fails, use standard delete
-                bpy.data.objects.remove(obj, do_unlink=True)
-        
-        # Remove any remaining child collections
-        for child in list(collection.children):
-            try:
-                bpy.data.collections.remove(child, do_unlink=True)
-            except:
-                pass
-    
-    # Remove the IfcProject collections themselves
-    for collection in collections_to_remove:
+# Ensure all styles are loaded before attempting to remove them
+try:
+    bpy.ops.bim.load_styles()
+except Exception:
+    pass
+
+# 1. Collect all IfcStyle material names
+ifcstyle_material_names = []
+try:
+    styles_props = getattr(bpy.context.scene, "BIMStylesProperties", None)
+    if styles_props is None and bpy.data.scenes:
+        styles_props = getattr(bpy.data.scenes[0], "BIMStylesProperties", None)
+    if styles_props:
+        for style in list(styles_props.styles):
+            material = getattr(style, "blender_material", None)
+            if material and material.name:
+                ifcstyle_material_names.append(material.name)
+except Exception:
+    pass
+
+# 2. Purge IfcStore
+try:
+    from bonsai.bim.ifc import IfcStore
+except ImportError:
+    IfcStore = None
+
+if IfcStore:
+    try:
+        IfcStore.purge()
+    except Exception:
+        pass
+
+# 3. Remove all collections named IfcProject*
+for collection in list(bpy.data.collections):
+    if collection.name.startswith('IfcProject'):
         try:
             bpy.data.collections.remove(collection, do_unlink=True)
-        except:
+        except Exception:
             pass
 
-# Remove IFC-related data
-remove_ifc_collections()
+# 4. Purge orphaned data blocks after removing IfcProject collections
+try:
+    bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+except Exception:
+    pass
 
-# Note: Scene-level BIM properties are saved with the metadata.blend file but will be
-# overwritten when the IFC is loaded. Screen-level properties (BIMTabProperties, 
-# BIMPanelProperties, BIMAreaProperties) preserve UI customization settings.
+# 5. Remove all materials corresponding to the IfcStyles we collected
+materials_removed = 0
+try:
+    for mat_name in ifcstyle_material_names:
+        if mat_name in bpy.data.materials:
+            try:
+                bpy.data.materials.remove(bpy.data.materials[mat_name], do_unlink=True)
+                materials_removed += 1
+            except Exception:
+                pass
+except Exception:
+    pass
 
-# Save the metadata file
 bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
 """
-
         import tempfile
-
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as script_file:
             script_file.write(cleanup_script)
             script_path = script_file.name
 
         blender_exe = bpy.app.binary_path
         import subprocess
-
         result = subprocess.run(
             [blender_exe, temp_path, "--background", "--python", script_path], capture_output=True, text=True
         )
