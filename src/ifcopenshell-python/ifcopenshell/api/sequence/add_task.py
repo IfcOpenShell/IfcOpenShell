@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.control
-import ifcopenshell.api.root
-import ifcopenshell.api.nest
-import ifcopenshell
 from typing import Optional
+
+import ifcopenshell
+import ifcopenshell.api.control
+import ifcopenshell.api.nest
+import ifcopenshell.api.root
 
 
 def add_task(

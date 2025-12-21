@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Iterable
+from typing import Literal, Optional
+
 import numpy as np
 import numpy.typing as npt
+
 import ifcopenshell
-from typing import Literal, Optional
-from collections.abc import Iterable
 
 MatrixType = npt.NDArray[np.float64]
 """`npt.NDArray[np.float64]`"""

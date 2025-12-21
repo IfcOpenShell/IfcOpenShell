@@ -1,5 +1,7 @@
 import os
+
 import pytest
+
 import ifcopenshell
 from ifcopenshell.util import mvd_info
 from ifcopenshell.util.mvd_info import parse_mvd

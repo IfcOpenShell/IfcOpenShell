@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Action - checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Action - install python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.9"
+          python-version: "3.10"
 
       - name: Action - install python
         uses: actions/setup-python@v6
@@ -33,23 +33,58 @@ jobs:
         id: syntax-errors
         run: |
           ERROR=0
-          python3.9 -W error -m compileall -q src/ifcopenshell-python || ERROR=1
+          python3.10 -W error -m compileall -q src/ifcopenshell-python || ERROR=1
           python3.11 -W error -m compileall -q src/bonsai || ERROR=1
           exit $ERROR
         continue-on-error: true
 
       - name: Black formatter
         id: black
+        uses: psf/black@stable
+        continue-on-error: true
+
+      # Same check as above, but just for creating github annotations.
+      - name: Black formatter annotations
+        id: black-annotations
         run: |
-          black --diff --check .
+          uv tool install black-codeclimate
+          pip install github_action_utils
+          black --diff --check . | black-codeclimate | python .github/workflows/black_to_github_annotations.py
         continue-on-error: true
 
       - name: Ruff check
         id: ruff
         run: |
+          # Ensure execution continues, since we need to cache the output.
+          set +e
+
           ERROR=0
-          poe ruff-main || ERROR=1
-          poe ruff-old || ERROR=1
+          # Keep colored output inside action logs, strip it from color codes for summary.
+          uv tool install ansi2txt
+          # `ruff` disables color output in CI by default.
+          export FORCE_COLOR="1"
+
+          run_check() {
+            local out
+            out="$("$@" 2>&1)"
+            local exit_code=$?
+
+            if [ "$exit_code" -ne 0 ]; then
+              ERROR=1
+            fi
+
+            # Rerun just for GitHub annotations.
+            "$@" --output-format=github || true
+
+            echo "$out"
+            echo "\`\`\`python" >> $GITHUB_STEP_SUMMARY
+            echo "$out" | ansi2txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          }
+
+          run_check poe ruff-main
+          run_check poe ruff-old
+
           exit $ERROR
         continue-on-error: true
 
@@ -60,9 +95,9 @@ jobs:
             echo "::error::Syntax errors check failed, see 'syntax-errors' step for the details." && ERROR=1
           fi
           if [ "${{ steps.black.outcome }}" != "success" ]; then
-            echo "::error::Black formatting check failed, see 'black' step for the details." && ERROR=1
+            echo "::error::Black formatting check failed, see Summary or 'black' step for the details." && ERROR=1
           fi
           if [ "${{ steps.ruff.outcome }}" != "success" ]; then
-            echo "::error::Ruff check failed, see 'ruff' step for the details." && ERROR=1
+            echo "::error::Ruff check failed, see Summary or 'ruff' step for the details." && ERROR=1
           fi
           exit $ERROR

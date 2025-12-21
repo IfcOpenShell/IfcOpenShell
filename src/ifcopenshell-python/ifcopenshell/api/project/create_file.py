@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+
 import ifcopenshell
 import ifcopenshell.util.schema
 

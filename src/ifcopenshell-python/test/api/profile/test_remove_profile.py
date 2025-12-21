@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
 import ifcopenshell.api.profile
 import ifcopenshell.api.pset
+import test.bootstrap
 
 
 class TestRemoveProfileIFC2X3(test.bootstrap.IFC2X3):

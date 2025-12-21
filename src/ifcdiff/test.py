@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcdiff
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.representation
+
+import ifcdiff
 
 
 def setup_project() -> ifcopenshell.file:

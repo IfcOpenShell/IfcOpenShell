@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-import test.bootstrap
+
 import ifcopenshell.api
 import ifcopenshell.api.resource
 import ifcopenshell.util.resource
+import test.bootstrap
 
 
 class TestAddResourceQuantity(test.bootstrap.IFC4):

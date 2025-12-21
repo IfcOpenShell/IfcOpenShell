@@ -18,24 +18,23 @@
 
 """2D drawing generation and serialisation"""
 
-from functools import reduce
 import itertools
-import math
 import json
+import math
 import operator
 import warnings
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field, fields
+from functools import reduce
+from xml.dom.minidom import parseString
+
+import numpy
 import shapely
 
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
-
-from xml.dom.minidom import parseString
-from dataclasses import dataclass, fields, field
-from collections.abc import Callable, Sequence
-
-import numpy
 
 W = ifcopenshell.ifcopenshell_wrapper
 
@@ -670,9 +669,9 @@ def main(
 
 
 if __name__ == "__main__":
+    import argparse
     import sys
     import time
-    import argparse
 
     times = []
 

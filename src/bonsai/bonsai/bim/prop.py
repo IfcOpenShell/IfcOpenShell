@@ -493,8 +493,9 @@ def get_tab(
             ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
             ("FM", "Facility Management", "", "PACKAGE", 7),
             ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
+            ("BOOKMARK", "Bookmark", "", "SOLO_ON", 9),
             None,
-            ("BLENDER", "Blender Properties", "", "BLENDER", 9),
+            ("BLENDER", "Blender Properties", "", "BLENDER", 10),
         ]
     return get_tab.enum_items
 
@@ -527,6 +528,26 @@ class BIMTabProperties(PropertyGroup):
         tab: str
         active_tab: bool
         inactive_tab: bool
+
+
+class BIMTabVisibility(PropertyGroup):
+    name: StringProperty(name="Tab Name")
+    is_visible: BoolProperty(name="Is Visible", default=True)
+
+    if TYPE_CHECKING:
+        name: str
+        is_visible: bool
+
+
+class BIMPanelProperties(PropertyGroup):
+    is_visible_in_tab: BoolProperty(name="Is Visible in Tab", default=True)
+    is_visible_in_bookmarks: BoolProperty(name="Is Visible in Bookmarks", default=True)
+    is_bookmarked: BoolProperty(name="Is Bookmarked", default=False)
+
+    if TYPE_CHECKING:
+        is_visible_in_tab: bool
+        is_visible_in_bookmarks: bool
+        is_bookmarked: bool
 
 
 class BIMProperties(PropertyGroup):
@@ -613,6 +634,9 @@ class BIMProperties(PropertyGroup):
         name="Time Unit",
         default="HOUR",
     )
+    tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
+    panel_properties: CollectionProperty(type=BIMPanelProperties, name="Panel Properties")
+
     if TYPE_CHECKING:
         is_dirty: bool
         schema_dir: str
@@ -627,6 +651,8 @@ class BIMProperties(PropertyGroup):
         volume_unit: str
         mass_unit: str
         time_unit: str
+        tab_visibilities: bpy.types.bpy_prop_collection[BIMTabVisibility]
+        panel_properties: bpy.types.bpy_prop_collection[BIMPanelProperties]
 
 
 class IfcParameter(PropertyGroup):
@@ -748,6 +774,15 @@ class BIMFacet(PropertyGroup):
     pset: StringProperty(name="Pset")
     value: StringProperty(name="Value")
     type: StringProperty(name="Type")
+    filter_mode: EnumProperty(
+        name="Filter Mode",
+        items=[
+            ("ADD", "Add", "Add elements to the result set (query entire IFC file)", "ADD", 0),
+            ("SUBTRACT", "Subtract", "Subtract matching elements from previous results", "REMOVE", 1),
+            ("FILTER", "Filter", "Filter down previous results to matching elements", "FILTER", 2),
+        ],
+        default="ADD",
+    )
     comparison: EnumProperty(
         items=[
             ("=", "equal to", ""),
@@ -765,6 +800,7 @@ class BIMFacet(PropertyGroup):
         pset: str
         value: str
         type: str
+        filter_mode: Literal["ADD", "SUBTRACT", "FILTER"]
         comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
 
 

@@ -18,6 +18,7 @@
 
 
 import uuid
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.aggregate
@@ -33,9 +34,17 @@ import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.util.pset
-import ifctester.ids
 import ifctester.facet
-from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
+import ifctester.ids
+from ifctester.facet import (
+    Attribute,
+    Classification,
+    Entity,
+    Material,
+    PartOf,
+    Property,
+    Restriction,
+)
 
 
 def set_facet(facet):

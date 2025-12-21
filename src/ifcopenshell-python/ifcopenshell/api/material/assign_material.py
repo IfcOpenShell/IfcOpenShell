@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import defaultdict
+from typing import Any, Optional, Union
+
 import ifcopenshell
-import ifcopenshell.api.owner
 import ifcopenshell.api.material
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from collections import defaultdict
-from typing import Optional, Union, Any
 
 
 def assign_material(

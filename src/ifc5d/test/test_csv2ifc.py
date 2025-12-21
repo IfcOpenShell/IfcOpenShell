@@ -16,17 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import tempfile
 import csv
-import pytest
+import tempfile
+from pathlib import Path
+
+import ifc5d.csv2ifc
+import ifc5d.ifc5Dspreadsheet
 import ifcopenshell
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.cost
 import ifcopenshell.util.element
-import ifc5d.csv2ifc
-import ifc5d.ifc5Dspreadsheet
-from pathlib import Path
+import pytest
 
 
 class TestCsv2Ifc:

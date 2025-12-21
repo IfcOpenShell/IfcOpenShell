@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import datetime
-import test.bootstrap
+
+import pytest
+
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
+import test.bootstrap
 
 
 # NOTE: sequence module features relies on entities introduced in IFC4

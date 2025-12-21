@@ -1,13 +1,10 @@
-import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
 from xsdata.models.datatype import XmlDateTime
 
-DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
-
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class BimSnippet:
     reference: str = field(
         metadata={
@@ -41,7 +38,7 @@ class BimSnippet:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class CommentViewpoint:
     class Meta:
         global_type = False
@@ -56,7 +53,7 @@ class CommentViewpoint:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class HeaderFile:
     class Meta:
         global_type = False
@@ -112,7 +109,7 @@ class HeaderFile:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicDocumentReference:
     class Meta:
         global_type = False
@@ -150,7 +147,7 @@ class TopicDocumentReference:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicRelatedTopic:
     class Meta:
         global_type = False
@@ -165,7 +162,7 @@ class TopicRelatedTopic:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ViewPoint:
     viewpoint: Optional[str] = field(
         default=None,
@@ -201,7 +198,7 @@ class ViewPoint:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Comment:
     date: XmlDateTime = field(
         metadata={
@@ -261,7 +258,7 @@ class Comment:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Header:
     file: list[HeaderFile] = field(
         default_factory=list,
@@ -274,7 +271,7 @@ class Header:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Topic:
     reference_link: list[str] = field(
         default_factory=list,
@@ -428,7 +425,7 @@ class Topic:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Markup:
     header: Optional[Header] = field(
         default=None,

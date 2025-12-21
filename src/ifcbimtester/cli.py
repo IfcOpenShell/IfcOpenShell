@@ -19,8 +19,9 @@
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
 import argparse
+import os
+
 import bimtester.clean
 import bimtester.reports
 import bimtester.run

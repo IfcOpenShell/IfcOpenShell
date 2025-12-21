@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+from typing import Optional, Union
+
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 from ifcopenshell.util.sequence import DURATION_TYPE
-from typing import Union, Optional
 
 
 def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:

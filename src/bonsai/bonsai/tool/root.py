@@ -91,20 +91,21 @@ class Root(bonsai.core.tool.Root):
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
                 return copied_entities
-            
+
             # Copy representation maps while preserving mapped representation structures
             new_maps = []
             for i, rep_map in enumerate(source.RepresentationMaps):
                 source_rep = rep_map.MappedRepresentation
 
-                
                 # Copy the map itself
                 new_map = ifcopenshell.util.element.copy(tool.Ifc.get(), rep_map)
-                
+
                 # Handle the mapped representation - preserve mapping structure if present
-                if (source_rep.RepresentationType == 'MappedRepresentation' and 
-                    len(source_rep.Items) == 1 and 
-                    source_rep.Items[0].is_a("IfcMappedItem")):
+                if (
+                    source_rep.RepresentationType == "MappedRepresentation"
+                    and len(source_rep.Items) == 1
+                    and source_rep.Items[0].is_a("IfcMappedItem")
+                ):
                     # This is a mapped representation - preserve the structure
                     new_rep = ifcopenshell.util.element.copy(tool.Ifc.get(), source_rep)
                     new_rep.Items = [ifcopenshell.util.element.copy(tool.Ifc.get(), item) for item in source_rep.Items]
@@ -118,9 +119,9 @@ class Root(bonsai.core.tool.Root):
                         exclude_callback=exclude_callback,
                         copied_entities=copied_entities,
                     )
-                
+
                 new_maps.append(new_map)
-            
+
             dest.RepresentationMaps = new_maps
         return copied_entities
 

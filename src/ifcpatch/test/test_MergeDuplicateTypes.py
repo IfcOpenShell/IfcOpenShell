@@ -17,8 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import pytest
-import ifcpatch
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -27,6 +26,9 @@ import ifcopenshell.api.root
 import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import pytest
+
+import ifcpatch
 import test.bootstrap
 
 

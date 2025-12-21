@@ -21,12 +21,12 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: IfcOpenShell/build-outputs
           path: ./build
@@ -81,7 +81,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-logs-osx-${{ matrix.arch }}
           path: |

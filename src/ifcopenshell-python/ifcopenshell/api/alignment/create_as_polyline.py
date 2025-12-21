@@ -16,18 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
+from collections.abc import Sequence
+
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 import ifcopenshell.util.alignment
-
 from ifcopenshell import entity_instance
-
-from ifcopenshell.api.alignment._create_polyline_representation import _create_polyline_representation
-
-import math
-from collections.abc import Sequence
+from ifcopenshell.api.alignment._create_polyline_representation import (
+    _create_polyline_representation,
+)
 
 
 def _create_layout(file: ifcopenshell.file, alignment: entity_instance, points: Sequence[entity_instance]):

@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.unit
+
 import ifcpatch
+import test.bootstrap
 
 
 class TestConvertLengthUnit(test.bootstrap.IFC4):

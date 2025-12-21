@@ -331,6 +331,13 @@ class BIM_PT_project(Panel):
         col.prop(props, "ifc_file", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file:
+            row = self.layout.row(align=True)
+            col = row.column()
+            col.enabled = False
+            metadata_filename = os.path.basename(props.ifc_file) + ".metadata.blend"
+            col.label(text=f"Saving session data to: {metadata_filename}")
+
 
 class BIM_PT_new_project_wizard(Panel):
     bl_label = "New Project Wizard"

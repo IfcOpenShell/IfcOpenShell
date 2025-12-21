@@ -17,7 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+from collections import namedtuple
+from math import cos, sin
+from typing import Optional
+
 import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -26,9 +31,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-from collections import namedtuple
-from math import sin, cos
-from typing import Optional
 
 # https://stackoverflow.com/a/9184560/9627415
 # Possible optimisation to linalg.norm?

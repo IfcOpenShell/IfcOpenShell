@@ -1,15 +1,12 @@
-import jsonpickle
 import os
-import pytz
-
-from dateutil import parser
-from uuid import uuid4, UUID
-
-from neo4j import GraphDatabase
-
 from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
+import jsonpickle
+import pytz
+from dateutil import parser
 from models.request import UserInDB
+from neo4j import GraphDatabase
 from security.secrets import get_secrets
 
 get_secrets()

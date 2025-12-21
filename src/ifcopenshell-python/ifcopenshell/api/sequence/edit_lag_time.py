@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
+
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
-from typing import Any
 
 
 def edit_lag_time(file: ifcopenshell.file, lag_time: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:

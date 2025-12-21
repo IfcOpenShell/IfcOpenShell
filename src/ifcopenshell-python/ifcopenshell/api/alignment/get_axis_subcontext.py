@@ -17,8 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util.representation
 import ifcopenshell.api.context
+import ifcopenshell.util.representation
 from ifcopenshell import entity_instance
 
 

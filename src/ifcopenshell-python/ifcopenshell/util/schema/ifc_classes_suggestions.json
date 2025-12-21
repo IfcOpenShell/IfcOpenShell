@@ -5,6 +5,16 @@
             "predefined_type": "NOTDEFINED"
         }
     ],
+    "IfcAirTerminal": [
+        {
+            "name": "Commercial Kitchen Hood"
+        }
+    ],
+    "IfcAirTerminalType": [
+        {
+            "name": "Commercial Kitchen Hood"
+        }
+    ],
     "IfcAirTerminalBox": [
         {
             "name": "VAV Box"

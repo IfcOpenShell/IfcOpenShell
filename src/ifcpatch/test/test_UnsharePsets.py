@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcpatch
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.util.element
+
+import ifcpatch
 import test.bootstrap
 
 

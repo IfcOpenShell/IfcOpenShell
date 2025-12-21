@@ -18,22 +18,23 @@
 
 RUN_FROM_DEV_REPO = False
 
-import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.api.unit
-import ifcopenshell.api.project
-import ifcopenshell.guid
-import ifcopenshell.util.attribute
 import glob
 import sys
-from pathlib import Path
-from lxml import etree
 from itertools import chain
+from pathlib import Path
 from typing import cast
 
+from lxml import etree
+
+import ifcopenshell.api.project
+import ifcopenshell.api.unit
+import ifcopenshell.guid
+import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.attribute
 
 if not RUN_FROM_DEV_REPO:
-    import zipfile
     import shutil
+    import zipfile
 
 BASE_MODULE_PATH = Path(__file__).parent
 

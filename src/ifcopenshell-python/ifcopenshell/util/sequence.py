@@ -17,13 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+from collections.abc import Generator
+from functools import cache
+from math import floor
+from typing import Literal, Optional, Union
+
 import ifcopenshell.util.date
 import ifcopenshell.util.element
-from math import floor
-from functools import cache
-from typing import Union, Literal, Optional
-from collections.abc import Generator
-
 
 DURATION_TYPE = Literal["ELAPSEDTIME", "WORKTIME", "NOTDEFINED"]
 RECURRENCE_TYPE = Literal[

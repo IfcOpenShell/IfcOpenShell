@@ -17,8 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api.project
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.project
 import ifcopenshell.util.element
 
 

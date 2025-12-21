@@ -17,15 +17,15 @@
 # along with bSDD.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import uuid
+import http.server
 import time
 import urllib.parse
-import requests
+import uuid
 import webbrowser
-import http.server
-from typing import TypedDict, Literal, Optional, TYPE_CHECKING, Any
-from typing_extensions import NotRequired
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
 
+import requests
+from typing_extensions import NotRequired
 
 if TYPE_CHECKING:
     import ifcopenshell

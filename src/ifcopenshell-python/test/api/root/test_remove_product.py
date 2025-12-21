@@ -16,24 +16,24 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api.unit
-import ifcopenshell.api.nest
-import ifcopenshell.api.root
-import ifcopenshell.api.feature
-import ifcopenshell.api.grid
-import ifcopenshell.api.type
-import ifcopenshell.api.pset
-import ifcopenshell.api.group
-import ifcopenshell.api.owner
-import ifcopenshell.api.system
-import ifcopenshell.api.spatial
-import ifcopenshell.api.drawing
-import ifcopenshell.api.context
-import ifcopenshell.api.geometry
-import ifcopenshell.api.material
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.drawing
+import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
+import ifcopenshell.api.grid
+import ifcopenshell.api.group
+import ifcopenshell.api.material
+import ifcopenshell.api.nest
+import ifcopenshell.api.owner
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.system
+import ifcopenshell.api.type
+import ifcopenshell.api.unit
 import ifcopenshell.guid
+import test.bootstrap
 
 
 class TestRemoveProduct(test.bootstrap.IFC4):

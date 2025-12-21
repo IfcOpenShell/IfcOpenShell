@@ -296,6 +296,15 @@ class CreateDrawing(bpy.types.Operator):
             self.drawing_index = drawing_i
             if self.print_all:
                 bpy.ops.bim.activate_drawing(drawing=drawing_id, should_view_from_camera=False)
+                original_cache_setting = self.props.should_use_underlay_cache
+                self.props.should_use_underlay_cache = False
+
+                # Force Blender to process all pending operations
+                for area in context.screen.areas:
+                    area.tag_redraw()
+
+                # Process events to let Blender finish internal cleanup
+                bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
 
             self.camera = context.scene.camera
             assert (camera_element := tool.Ifc.get_entity(self.camera))
@@ -339,6 +348,23 @@ class CreateDrawing(bpy.types.Operator):
                                 f"Failed to create drawing '{self.drawing.Name}' - drawing has underlay but there's no active drawing underlay style.",
                             )
                             return {"FINISHED"}
+
+                        # Clear any local camera setup and force viewport to use scene camera
+                        for area in context.screen.areas:
+                            if area.type == "VIEW_3D":
+                                for space in area.spaces:
+                                    if space.type == "VIEW_3D":
+                                        # Clear local camera to ensure we use scene.camera
+                                        space.use_local_camera = False
+                                        space.camera = context.scene.camera
+                                        space.region_3d.view_perspective = "CAMERA"
+                                        print(f"Set viewport camera to: {context.scene.camera.name}")
+                                        break
+
+                        # Force complete scene update
+                        context.view_layer.update()
+                        context.evaluated_depsgraph_get()
+
                         underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
@@ -3050,9 +3076,9 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".svg"
-    
+
     files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
-    directory: bpy.props.StringProperty(subtype='DIR_PATH')
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
 
     def _execute(self, context):
         # Handle both single and multiple file selection
@@ -3661,8 +3687,12 @@ class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         if query := ifcopenshell.util.element.get_pset(element, "EPset_Drawing", self.filter_mode.title()):
             filter_groups = tool.Search.get_filter_groups(f"drawing_{self.filter_mode.lower()}")
             try:
-                tool.Search.import_filter_query(query, filter_groups)
-            except:
+                data = json.loads(query)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    tool.Search.import_filter_structure(data["filter_structure"], filter_groups)
+                else:
+                    tool.Search.import_filter_query(query, filter_groups)
+            except Exception:
                 pass
 
 
@@ -3682,12 +3712,41 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         assert element
         pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
         assert pset
+
         if self.filter_mode == "INCLUDE":
-            query = tool.Search.export_filter_query(props.include_filter_groups) or None
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Include": query})
+            filter_groups = props.include_filter_groups
         elif self.filter_mode == "EXCLUDE":
-            query = tool.Search.export_filter_query(props.exclude_filter_groups) or None
-            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": query})
+            filter_groups = props.exclude_filter_groups
+        else:
+            return
+
+        query = tool.Search.export_filter_query(filter_groups) or None
+
+        if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and query:
+            filter_structure = []
+            for filter_group in filter_groups:
+                group_data = []
+                for ifc_filter in filter_group.filters:
+                    filter_data = {
+                        "type": ifc_filter.type,
+                        "name": ifc_filter.name,
+                        "value": ifc_filter.value,
+                        "pset": ifc_filter.pset,
+                        "comparison": ifc_filter.comparison,
+                        "filter_mode": ifc_filter.filter_mode,
+                    }
+                    group_data.append(filter_data)
+                filter_structure.append(group_data)
+
+            value = json.dumps({"type": "BBIM_Search", "query": query, "filter_structure": filter_structure})
+        else:
+            value = query
+
+        if self.filter_mode == "INCLUDE":
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Include": value})
+        elif self.filter_mode == "EXCLUDE":
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": value})
+
         props.filter_mode = "NONE"
         bpy.ops.bim.activate_drawing(drawing=element.id(), should_view_from_camera=False)
 
@@ -4015,66 +4074,66 @@ class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
 
+
 class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.activate_drawing_by_annotation"
     bl_label = "Activate Drawing"
     bl_description = "Activate the drawing corresponding to the selected annotation"
     bl_options = {"REGISTER", "UNDO"}
-    
+
     @classmethod
     def poll(cls, context):
         # Check if an annotation object is selected
         if not context.selected_objects:
             cls.poll_message_set("No object selected")
             return False
-        
+
         active_obj = context.active_object
         if not active_obj:
             cls.poll_message_set("No active object")
             return False
-            
+
         element = tool.Ifc.get_entity(active_obj)
         if not element:
             cls.poll_message_set("Selected object is not an IFC element")
             return False
-            
+
         # Check if it's an IfcAnnotation with ObjectType = "SECTION" or "ELEVATION"
         if not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
             cls.poll_message_set("Selected object is not a drawing annotation")
             return False
-            
+
         return True
 
     def _execute(self, context):
         active_obj = context.active_object
         element = tool.Ifc.get_entity(active_obj)
-        
+
         if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
             self.report({"ERROR"}, "Selected object is not a drawing annotation")
             return {"CANCELLED"}
-        
+
         # Find the drawing/camera element that this annotation references
         drawing_element = self.find_drawing_from_annotation(element)
-        
+
         if not drawing_element:
             self.report({"ERROR"}, "Could not find drawing element for this annotation")
             return {"CANCELLED"}
-        
+
         # Use the existing ActivateDrawing operator with the drawing element's ID
         bpy.ops.bim.activate_drawing(drawing=drawing_element.id())
-        
+
         return {"FINISHED"}
-    
+
     def find_drawing_from_annotation(self, annotation_element):
         """Find the drawing/camera element that this annotation references."""
         ifc = tool.Ifc.get()
-        
+
         # Check IfcRelAssignsToProduct relationships
         for rel in ifc.get_inverse(annotation_element):
             if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct:
                 if rel.RelatingProduct.is_a("IfcAnnotation"):
                     # Found the drawing element!
                     return rel.RelatingProduct
-    
-        
+
         return None

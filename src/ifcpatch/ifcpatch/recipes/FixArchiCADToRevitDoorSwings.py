@@ -22,12 +22,13 @@ import math
 import os
 from typing import Union
 
-import ifcpatch
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
+
+import ifcpatch
 
 
 class Patcher(ifcpatch.BasePatcher):

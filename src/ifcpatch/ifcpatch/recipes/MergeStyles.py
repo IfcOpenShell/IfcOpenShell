@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.util.element
-import ifcpatch
 import logging
 from typing import Union
+
+import ifcopenshell
+import ifcopenshell.util.element
+
+import ifcpatch
 
 
 class Patcher(ifcpatch.BasePatcher):

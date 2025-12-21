@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import get_args
+
 import pytest
-import test.bootstrap
+
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.system
 import ifcopenshell.util.schema
 import ifcopenshell.util.system as subject
-from typing import get_args
+import test.bootstrap
 
 
 class TestValidateGroupTypes:

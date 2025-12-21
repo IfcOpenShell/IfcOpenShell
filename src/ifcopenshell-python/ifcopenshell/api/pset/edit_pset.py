@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+from typing import Any, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.pset
-from typing import Optional, Any, Union
 
 
 def edit_pset(

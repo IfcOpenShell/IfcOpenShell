@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-import ifcopenshell.api.cogo
 import math
+
+import pytest
+
+import ifcopenshell.api.cogo
 
 
 def test_bearing2dd():

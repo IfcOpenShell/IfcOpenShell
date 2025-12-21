@@ -17,28 +17,30 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
+
 import datetime
-import ifcopenshell
-from xmlschema.validators.exceptions import XMLSchemaValidationError
-from xmlschema import XMLSchema
-from xmlschema import etree_tostring
+import os
+from typing import Any, Optional, Union
 from xml.etree import ElementTree as ET
+
+import ifcopenshell
+from xmlschema import XMLSchema, etree_tostring
+from xmlschema.validators.exceptions import XMLSchemaValidationError
+
 from .facet import (
-    Facet,
-    Entity,
     Attribute,
+    Cardinality,
     Classification,
-    Property,
-    PartOf,
+    Entity,
+    Facet,
+    FacetFailure,
     Material,
+    PartOf,
+    Property,
     Restriction,
     get_pset,
     get_psets,
-    Cardinality,
-    FacetFailure,
 )
-from typing import Optional, Union, Any
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None

@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcfm
 import argparse
+
 import ifcopenshell
+
+import ifcfm
 
 parser = argparse.ArgumentParser(description="Extracts FM data from IFC to spreadsheets")
 parser.add_argument(

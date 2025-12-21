@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-from ifcopenshell import ifcopenshell_wrapper
-from ifcopenshell import entity_instance
-from collections.abc import Sequence
 import math
+from collections.abc import Sequence
+
+import ifcopenshell
+from ifcopenshell import entity_instance, ifcopenshell_wrapper
 
 
 def _polynomial_length(A: float, B: float, C: float, L: float) -> float:

@@ -16,19 +16,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
-import re
+
 import json
+import re
 import types
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, NoReturn, Optional, TypedDict, Union
+
 import numpy as np
 import numpy.typing as npt
+
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
-from pathlib import Path
-from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING, TypedDict
+
 from . import ifcopenshell_wrapper
-from .file import file
 from .entity_instance import entity_instance
+from .file import file
 
 if TYPE_CHECKING:
     import sqlite3

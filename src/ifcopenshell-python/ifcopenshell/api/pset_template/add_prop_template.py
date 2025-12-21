@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional
+
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.pset
-from typing import Optional
 
 
 def add_prop_template(

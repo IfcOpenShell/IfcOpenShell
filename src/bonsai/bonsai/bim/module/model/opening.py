@@ -151,23 +151,23 @@ class FilledOpeningGenerator:
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
             assert representation
-            
+
             # Check if mapped representation - preserve it
-            if (representation.RepresentationType == 'MappedRepresentation' and 
-                len(representation.Items) == 1 and 
-                representation.Items[0].is_a("IfcMappedItem")):
+            if (
+                representation.RepresentationType == "MappedRepresentation"
+                and len(representation.Items) == 1
+                and representation.Items[0].is_a("IfcMappedItem")
+            ):
                 source_rep = representation.Items[0].MappingSource.MappedRepresentation
                 representation = ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(),
-                    source_rep,
-                    exclude=["IfcGeometricRepresentationContext"]
+                    tool.Ifc.get(), source_rep, exclude=["IfcGeometricRepresentationContext"]
                 )
             else:
                 representation = ifcopenshell.util.representation.resolve_representation(representation)
         else:
             # Check for library template before generating from filling
             template_rep = self.get_opening_template_from_type(filling)
-            
+
             if template_rep:
                 representation = template_rep
             else:
@@ -222,68 +222,68 @@ class FilledOpeningGenerator:
         voided_element = opening.VoidsElements[0].RelatingBuildingElement
 
         opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
-        
+
         # ALWAYS preserve the existing opening representation (Tessellation, SweptSolid, etc.)
         preserved_representation = None
         if opening_rep:
-            if (opening_rep.RepresentationType == 'MappedRepresentation' and 
-                len(opening_rep.Items) == 1 and 
-                opening_rep.Items[0].is_a("IfcMappedItem")):
+            if (
+                opening_rep.RepresentationType == "MappedRepresentation"
+                and len(opening_rep.Items) == 1
+                and opening_rep.Items[0].is_a("IfcMappedItem")
+            ):
                 # For mapped representations, copy the underlying representation
                 preserved_representation = ifcopenshell.util.element.copy_deep(
                     tool.Ifc.get(),
                     opening_rep.Items[0].MappingSource.MappedRepresentation,
-                    exclude=["IfcGeometricRepresentationContext"]
+                    exclude=["IfcGeometricRepresentationContext"],
                 )
             else:
                 # For direct representations (non-mapped), copy them too
                 preserved_representation = ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(),
-                    opening_rep,
-                    exclude=["IfcGeometricRepresentationContext"]
+                    tool.Ifc.get(), opening_rep, exclude=["IfcGeometricRepresentationContext"]
                 )
-        
+
         ifcopenshell.api.geometry.unassign_representation(tool.Ifc.get(), product=opening, representation=opening_rep)
         ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=opening_rep)
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
-        
+
         # Priority order for choosing representation:
         # 1. Existing occurrence with Tessellation (best quality)
         # 2. Library template with Tessellation
         # 3. Preserved representation from old opening (maintain user's work)
         # 4. Generate from filling (last resort)
-        
+
         representation_to_use = None
-        
+
         if existing_opening_occurrence:
             representation = ifcopenshell.util.representation.get_representation(
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
-            
-            if (representation and 
-                representation.RepresentationType == 'MappedRepresentation' and 
-                len(representation.Items) == 1 and 
-                representation.Items[0].is_a("IfcMappedItem")):
+
+            if (
+                representation
+                and representation.RepresentationType == "MappedRepresentation"
+                and len(representation.Items) == 1
+                and representation.Items[0].is_a("IfcMappedItem")
+            ):
                 source_rep = representation.Items[0].MappingSource.MappedRepresentation
                 # Prefer Tessellation from existing occurrence over preserved representation
-                if source_rep.RepresentationType == 'Tessellation':
+                if source_rep.RepresentationType == "Tessellation":
                     representation_to_use = ifcopenshell.util.element.copy_deep(
-                        tool.Ifc.get(),
-                        source_rep,
-                        exclude=["IfcGeometricRepresentationContext"]
+                        tool.Ifc.get(), source_rep, exclude=["IfcGeometricRepresentationContext"]
                     )
             else:
                 representation_to_use = ifcopenshell.util.representation.resolve_representation(representation)
-        
+
         if not representation_to_use:
             template_rep = self.get_opening_template_from_type(filling)
-            if template_rep and template_rep.RepresentationType == 'Tessellation':
+            if template_rep and template_rep.RepresentationType == "Tessellation":
                 representation_to_use = template_rep
-        
+
         if not representation_to_use and preserved_representation:
             representation_to_use = preserved_representation
-        
+
         if not representation_to_use:
             opening_obj = tool.Ifc.get_object(opening)
             if opening_obj:
@@ -299,7 +299,7 @@ class FilledOpeningGenerator:
         ifcopenshell.api.geometry.assign_representation(
             tool.Ifc.get(), product=opening, representation=mapped_representation
         )
-        
+
         # update voided object representation...
         voided_elements = ifcopenshell.util.element.get_parts(voided_element) or [voided_element]
         for voided_element in voided_elements:
@@ -314,31 +314,31 @@ class FilledOpeningGenerator:
                 representation=representation,
             )
 
-    def get_opening_template_from_type(self, filling: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    def get_opening_template_from_type(
+        self, filling: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
         Check if the filling's type has a stored opening template from library import.
         """
         element_type = ifcopenshell.util.element.get_type(filling)
-        
+
         if not element_type:
             return None
-        
+
         desc = element_type.Description
-        
+
         if not desc or "||BonsaiOpeningTemplate:" not in desc:
             return None
-        
+
         # Extract template ID
         marker = desc.split("||BonsaiOpeningTemplate:")[-1]
         template_id = int(marker.split("||")[0])
-        
+
         try:
             template_rep = tool.Ifc.get().by_id(template_id)
             # Make a copy so we don't reuse the same representation instance
             copied = ifcopenshell.util.element.copy_deep(
-                tool.Ifc.get(),
-                template_rep,
-                exclude=["IfcGeometricRepresentationContext"]
+                tool.Ifc.get(), template_rep, exclude=["IfcGeometricRepresentationContext"]
             )
             return copied
         except:

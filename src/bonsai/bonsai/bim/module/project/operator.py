@@ -715,11 +715,8 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             if element.is_a("IfcSurfaceStyle") and not tool.Ifc.get_object_by_identifier(element.id()):
                 ifc_importer.create_style(element)
 
-
     def store_opening_template_from_library(
-        self,
-        element: ifcopenshell.entity_instance,
-        library_file: ifcopenshell.file
+        self, element: ifcopenshell.entity_instance, library_file: ifcopenshell.file
     ) -> None:
         """
         Find an opening representation in the library and copy it to the current file
@@ -729,36 +726,36 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             library_element = library_file.by_guid(element.GlobalId)
         except:
             return
-        
+
         # Find occurrences with openings in the library
         library_occurrences = ifcopenshell.util.element.get_types(library_element)
-        
+
         for occurrence in library_occurrences:
             if not getattr(occurrence, "FillsVoids", None):
                 continue
-            
+
             library_opening = occurrence.FillsVoids[0].RelatingOpeningElement
             library_opening_rep = ifcopenshell.util.representation.get_representation(
                 library_opening, "Model", "Body", "MODEL_VIEW"
             )
-            
+
             if not library_opening_rep:
                 continue
-                
+
             # Check if mapped representation
-            if (library_opening_rep.RepresentationType == 'MappedRepresentation' and 
-                len(library_opening_rep.Items) == 1 and 
-                library_opening_rep.Items[0].is_a("IfcMappedItem")):
-                
+            if (
+                library_opening_rep.RepresentationType == "MappedRepresentation"
+                and len(library_opening_rep.Items) == 1
+                and library_opening_rep.Items[0].is_a("IfcMappedItem")
+            ):
+
                 mapped_rep = library_opening_rep.Items[0].MappingSource.MappedRepresentation
-                
+
                 # Store ALL representation types (Tessellation, SweptSolid, etc.)
                 template_rep = ifcopenshell.util.element.copy_deep(
-                    self.file,
-                    mapped_rep,
-                    exclude=["IfcGeometricRepresentationContext"]
+                    self.file, mapped_rep, exclude=["IfcGeometricRepresentationContext"]
                 )
-                
+
                 # Store reference in type's Description
                 current_desc = element.Description or ""
                 element.Description = f"{current_desc}||BonsaiOpeningTemplate:{template_rep.id()}"
@@ -1059,6 +1056,20 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return tooltip
 
     def execute(self, context):
+        if (
+            tool.Blender.get_addon_preferences().save_metadata_blend_file
+            and self.should_start_fresh_session
+            and not self.is_advanced
+        ):
+            filepath = self.get_filepath()
+            metadata_path = Path(str(filepath) + ".metadata.blend")
+            if metadata_path.exists() and metadata_path.is_file():
+                try:
+                    bpy.ops.bim.load_blend_metadata_and_ifc(filepath=filepath)
+                    return {"FINISHED"}
+                except Exception as e:
+                    self.report({"WARNING"}, f"Failed to load metadata file, using regular load: {e}")
+
         @persistent
         def load_handler(*args):
             bpy.app.handlers.load_post.remove(load_handler)
@@ -1747,15 +1758,28 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         bim_props = tool.Blender.get_bim_props()
         if bim_props.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
             tool.Ifc.set_path(output_file)
-        save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
-        if save_blend_file:
-            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         bim_props.is_dirty = False
+
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file:
+            try:
+                bpy.ops.bim.save_blend_metadata_file()
+                blendmetadata_path = output_file + ".metadata.blend"
+                self.report(
+                    {"INFO"},
+                    f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}',
+                )
+            except Exception as e:
+                self.report({"ERROR"}, f"Failed to save blend metadata file: {e}")
+        else:
+            save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
+            if save_blend_file:
+                bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+            self.report(
+                {"INFO"},
+                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+            )
+
         bonsai.bim.handler.refresh_ui_data()
-        self.report(
-            {"INFO"},
-            f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
-        )
 
     @classmethod
     def description(cls, context, properties):

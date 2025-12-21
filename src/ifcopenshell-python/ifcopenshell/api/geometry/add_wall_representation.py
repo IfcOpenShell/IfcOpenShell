@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import cos, pi, sin
+from typing import Any, Optional, Union
+
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from math import sin, cos, pi
-from typing import Optional, Union, Any
 from ifcopenshell.util.data import Clipping
 
 

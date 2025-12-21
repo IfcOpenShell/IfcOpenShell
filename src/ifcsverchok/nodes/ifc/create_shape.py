@@ -16,16 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import logging
+
+import bonsai.bim.import_ifc
+import bpy
 import ifcopenshell
 import ifcopenshell.geom
+from bpy.props import BoolProperty, PointerProperty, StringProperty
+from sverchok.data_structure import flatten_data, updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
-import bonsai.bim.import_ifc
-from bpy.props import StringProperty, PointerProperty, BoolProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, flatten_data
 
 
 class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

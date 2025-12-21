@@ -1,9 +1,11 @@
 import gc
-import sys
-import pytest
-import pprint
-import weakref
 import itertools
+import pprint
+import sys
+import weakref
+
+import pytest
+
 import ifcopenshell
 import ifcopenshell.api
 

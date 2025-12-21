@@ -86,7 +86,7 @@ overlapping with geometry. The get_local_view_direction() helper determines if t
 camera is viewing from the positive or negative side of each axis.
 """
 
-__all__ = [
+__all__ = [  # noqa: RUF022 (unsorted `__all__`)
     "GizmoColor",
     "GizmoAxis",
     "TextAlignment",

@@ -17,12 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import ifcopenshell.api.sequence
+from typing import Any
+
 import ifcopenshell.api.resource
+import ifcopenshell.api.sequence
 import ifcopenshell.util.constraint
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
-from typing import Any
 
 
 def edit_task_time(

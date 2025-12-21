@@ -101,7 +101,7 @@ class TypeData:
         element_type = ifcopenshell.util.element.get_type(element)
         if not element_type:
             return results
-        
+
         data = element_type.get_info()
         if "GlobalId" in data:
             excluded_keys = ["id", "type"]

@@ -93,7 +93,6 @@ class TestAssignSceneUnits:
         ifc.run("unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit"]).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
-
     def test_creating_metric_units_with_conversion_based_mass_and_time(self, ifc, unit):
         unit.is_scene_unit_metric().should_be_called().will_return(True)
         unit.get_scene_unit_si_prefix("LENGTHUNIT").should_be_called().will_return("MILLI")

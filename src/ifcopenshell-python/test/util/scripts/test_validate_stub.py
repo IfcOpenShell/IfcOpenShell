@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
+
 import ifcopenshell.util.scripts.validate_stub as subject
 
 

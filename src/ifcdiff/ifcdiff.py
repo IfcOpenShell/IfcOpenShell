@@ -20,23 +20,23 @@
 
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifcdiff.py`
 
-import time
+import argparse
 import json
 import logging
-import argparse
-import numpy as np
 import multiprocessing
+import time
+from typing import Any, Literal, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.geom
-import ifcopenshell.util.element
-import ifcopenshell.util.selector
-import ifcopenshell.util.placement
 import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.selector
+import numpy as np
 from deepdiff import DeepDiff
 from orderly_set import OrderedSet
-from typing import Optional, Union, Literal, Any
-
 
 __version__ = version = "0.0.0"
 

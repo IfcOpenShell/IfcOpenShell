@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from datetime import datetime, time, timedelta
+from typing import Optional, Union
+
 import ifcopenshell.api
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
-from datetime import datetime, time
-from datetime import timedelta
-from typing import Optional, Union
 
 
 def add_time_period(

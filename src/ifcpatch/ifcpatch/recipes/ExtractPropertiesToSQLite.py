@@ -17,11 +17,12 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import json
 import os
 import re
-import json
-import time
 import tempfile
+import time
+
 import ifcopenshell
 import ifcopenshell.util.element
 

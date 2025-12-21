@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.classification
@@ -24,8 +26,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.fm
 import ifcopenshell.util.placement
 import ifcopenshell.util.system
-from typing import Any, Union, Optional
-
 
 # The original BIMServer plugin has a function called ifcToCOBie:
 # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBieShared/src/org/bimserver/cobie/shared/serialization/COBieTabSerializer.java#L54

@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 import sys
-import logging
-
 from code import InteractiveConsole
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
@@ -29,14 +29,14 @@ except BaseException:
     QtWidgets = QtGui
 
 try:
-    from pyqode.core.panels import CheckerPanel
-    from pyqode.core import api
-    from pyqode.core import modes
-    from pyqode.core import panels
+    from pyqode.core import api, modes, panels
     from pyqode.core.api import CodeEdit, ColorScheme
-    from pyqode.python.modes import PyAutoIndentMode, PythonSH
+    from pyqode.core.panels import CheckerPanel
+    from pyqode.python import modes as pymodes
+    from pyqode.python import panels as pypanels
+    from pyqode.python import widgets
     from pyqode.python.backend import server
-    from pyqode.python import modes as pymodes, panels as pypanels, widgets
+    from pyqode.python.modes import PyAutoIndentMode, PythonSH
     from pyqode.python.widgets import PyInteractiveConsole
 
     has_pyqode = True

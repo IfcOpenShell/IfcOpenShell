@@ -18,10 +18,16 @@
 
 import re
 import sys
+from collections.abc import Iterable
+from decimal import Decimal
+from types import EllipsisType
+from typing import Any, Optional, Union
+
 import lark
 import numpy as np
-import ifcopenshell.api.pset
+
 import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import ifcopenshell.util
 import ifcopenshell.util.attribute
 import ifcopenshell.util.classification
@@ -34,15 +40,6 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
-from decimal import Decimal
-from typing import Optional, Any, Union
-from collections.abc import Iterable
-
-if sys.version_info >= (3, 10):
-    from types import EllipsisType
-else:
-    EllipsisType = type(...)
-
 
 filter_elements_grammar = lark.Lark(
     """start: filter_group

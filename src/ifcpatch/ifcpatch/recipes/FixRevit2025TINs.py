@@ -17,12 +17,13 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
+from typing import Optional
+
 import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-import logging
-from typing import Optional
 
 
 class Patcher:
@@ -110,9 +111,9 @@ class Patcher:
         self.should_create_edges = should_create_edges
 
     def patch(self) -> None:
-        import bpy
         import bmesh
         import bonsai.tool as tool
+        import bpy
         import ifcopenshell.util.shape_builder
 
         bpy.context.scene.BIMProjectProperties.should_use_native_meshes = True
@@ -161,15 +162,15 @@ class Patcher:
         self.file = tool.Ifc.get()
 
     def create_edges(self, obj):
-        import bpy
         import bmesh
         import bonsai.tool as tool
+        import bpy
+        import ifcopenshell.api.geometry
+        import ifcopenshell.api.root
+        import ifcopenshell.api.spatial
+        import ifcopenshell.api.type
         import ifcopenshell.util.element
         import ifcopenshell.util.representation
-        import ifcopenshell.api.root
-        import ifcopenshell.api.type
-        import ifcopenshell.api.spatial
-        import ifcopenshell.api.geometry
 
         element = tool.Ifc.get_entity(obj)
         data = obj.data
@@ -229,16 +230,17 @@ class Patcher:
 
     def create_face_sampleable_object(self, obj):
         # No sharp faces
-        import bpy
+        from math import degrees
+
         import bmesh
         import bonsai.tool as tool
+        import bpy
+        import ifcopenshell.api.geometry
+        import ifcopenshell.api.root
+        import ifcopenshell.api.spatial
+        import ifcopenshell.api.type
         import ifcopenshell.util.element
         import ifcopenshell.util.representation
-        import ifcopenshell.api.root
-        import ifcopenshell.api.type
-        import ifcopenshell.api.spatial
-        import ifcopenshell.api.geometry
-        from math import degrees
 
         print("working on ", obj.name)
         element = tool.Ifc.get_entity(obj)
@@ -278,16 +280,17 @@ class Patcher:
 
     def create_edge_sampleable_object(self, obj):
         # This is crazy but we need a sharp face per island
-        import bpy
+        from math import degrees, radians, sin
+
         import bmesh
         import bonsai.tool as tool
+        import bpy
+        import ifcopenshell.api.geometry
+        import ifcopenshell.api.root
+        import ifcopenshell.api.spatial
+        import ifcopenshell.api.type
         import ifcopenshell.util.element
         import ifcopenshell.util.representation
-        import ifcopenshell.api.root
-        import ifcopenshell.api.type
-        import ifcopenshell.api.spatial
-        import ifcopenshell.api.geometry
-        from math import degrees, radians, sin
         from mathutils import Matrix
 
         # Get the active object (assumed to have a mesh)

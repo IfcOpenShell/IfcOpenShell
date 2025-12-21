@@ -1655,7 +1655,7 @@ class CutDecorator:
                 if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
                     in_local_view = True
                     break
-        
+
         # If just entering local view (transition from False to True)
         if in_local_view and not self.__class__.was_in_local_view:
             self.__class__.local_view_has_annotation = False
@@ -1664,10 +1664,10 @@ class CutDecorator:
                 if element and element.is_a("IfcAnnotation"):
                     self.__class__.local_view_has_annotation = True
                     break
-        
+
         # Update the state for next time
         self.__class__.was_in_local_view = in_local_view
-        
+
         # Skip decorations if in local view and no IfcAnnotation was selected when entering
         if in_local_view and not self.__class__.local_view_has_annotation:
             return
@@ -2066,7 +2066,7 @@ class DecorationsHandler:
                 if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
                     in_local_view = True
                     break
-        
+
         # If just entering local view (transition from False to True)
         if in_local_view and not self.__class__.was_in_local_view:
             self.__class__.local_view_has_annotation = False
@@ -2075,10 +2075,10 @@ class DecorationsHandler:
                 if element and element.is_a("IfcAnnotation"):
                     self.__class__.local_view_has_annotation = True
                     break
-        
+
         # Update the state for next time
         self.__class__.was_in_local_view = in_local_view
-        
+
         # Skip decorations if in local view and no IfcAnnotation was selected when entering
         if in_local_view and not self.__class__.local_view_has_annotation:
             return
@@ -2093,5 +2093,6 @@ class DecorationsHandler:
         if not DecoratorData.is_loaded:
             DecoratorData.load(self)
 
-        for obj, decorator in DecoratorData.data["object_decorators"]:
+        object_decorators = DecoratorData.data.get("object_decorators", [])
+        for obj, decorator in object_decorators:
             decorator.decorate(context, obj)

@@ -26,13 +26,13 @@
 #                                                                             #
 ###############################################################################
 
-import os
-import sys
-import shutil
 import inspect
+import os
+import shutil
 import subprocess
-from zipfile import ZipFile
+import sys
 from urllib.request import urlretrieve
+from zipfile import ZipFile
 
 # Test whether Blender and IfcOpenShell are installed
 if subprocess.call(['blender','-b','-P','bpy.py','TEST']) != 0:

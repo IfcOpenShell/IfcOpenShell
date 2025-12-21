@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Literal, Optional, Union, get_args
+
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 from ifcopenshell.util.data import Clipping
-from typing import Any, Union, Optional, Literal, get_args
 
 VECTOR_3D = tuple[float, float, float]
 CardinalPointNumeric = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]

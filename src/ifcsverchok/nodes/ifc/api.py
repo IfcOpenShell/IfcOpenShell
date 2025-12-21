@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+from typing import Any, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import sverchok.core.sockets
+from bpy.props import EnumProperty, StringProperty
+from sverchok.data_structure import updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
-from bpy.props import StringProperty, EnumProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
-import logging
-from typing import Union, Any
 
 logger = logging.getLogger("sverchok.ifc")
 

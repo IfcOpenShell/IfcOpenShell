@@ -99,35 +99,36 @@ Used environment variables:
 
 """
 
-import logging
-import os
-import re
-import sys
 import glob
-import subprocess as sp
-import shutil
-import tarfile
+import logging
 import multiprocessing
+import os
 import platform
-import threading
-import sysconfig
-from datetime import datetime
+import re
+import shutil
 
 # @todo temporary for expired mpfr.org certificate on 2023-04-08
 import ssl
+import subprocess as sp
+import sys
+import sysconfig
+import tarfile
+import threading
+from datetime import datetime
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import time
-from urllib.request import urlretrieve
 from collections.abc import Generator, Sequence
 from pathlib import Path
+from urllib.request import urlretrieve
 
 try:
-    from typing import Union, Literal
+    from typing import Literal, Union
 except:
     # python 3.6 compatibility for rocky 8
     from typing import Union
+
     from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
@@ -139,7 +140,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
+PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
 JSON_VERSION = "3.11.3"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"

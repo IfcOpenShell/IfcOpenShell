@@ -16,15 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Generator, Sequence
+from typing import Literal, Optional, TypedDict, Union
+
 import numpy as np
 import numpy.typing as npt
-import ifcopenshell
-import ifcopenshell.util.representation
-import ifcopenshell.util.placement
-import ifcopenshell.util.shape
-from typing import Optional, Union, TypedDict, Literal
-from collections.abc import Generator, Sequence
 
+import ifcopenshell
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 
 CONTEXT_TYPE = Literal["Model", "Plan", "NotDefined"]
 REPRESENTATION_IDENTIFIER = Literal[
