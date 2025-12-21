@@ -260,10 +260,11 @@ class SaveBlendMetadataFile(bpy.types.Operator):
             self.report({"WARNING"}, "No IFC file path set.")
             return {"CANCELLED"}
 
+
         blendmetadata_path = ifc_file + ".metadata.blend"
 
-        # Save a temporary copy of the current blend file
-        temp_path = bpy.path.abspath("//__temp_blendmetadata.blend")
+        ifc_dir = os.path.dirname(ifc_file)
+        temp_path = os.path.join(ifc_dir, "__temp_blendmetadata.blend")
         bpy.ops.wm.save_as_mainfile(filepath=temp_path, copy=True)
 
         cleanup_script = f"""
