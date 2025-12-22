@@ -35,11 +35,10 @@ else()
     set(RELEASE_VERSION "0.8.0")
 endif()
 
-project(IfcOpenShell VERSION ${RELEASE_VERSION})
-
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 if(POLICY CMP0141) # 3.25+
+    # Has to be set before `project` to take effect.
     cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
 endif()
 if(POLICY CMP0144) # 3.27
@@ -48,6 +47,8 @@ endif()
 if(POLICY CMP0167) # 3.30
     cmake_policy(SET CMP0167 OLD)
 endif()
+
+project(IfcOpenShell VERSION ${RELEASE_VERSION})
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
