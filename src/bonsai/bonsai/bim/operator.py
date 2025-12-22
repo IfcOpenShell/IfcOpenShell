@@ -260,7 +260,6 @@ class SaveBlendMetadataFile(bpy.types.Operator):
             self.report({"WARNING"}, "No IFC file path set.")
             return {"CANCELLED"}
 
-
         blendmetadata_path = ifc_file + ".metadata.blend"
 
         ifc_dir = os.path.dirname(ifc_file)
@@ -332,12 +331,14 @@ except Exception:
 bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
 """
         import tempfile
+
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as script_file:
             script_file.write(cleanup_script)
             script_path = script_file.name
 
         blender_exe = bpy.app.binary_path
         import subprocess
+
         result = subprocess.run(
             [blender_exe, temp_path, "--background", "--python", script_path], capture_output=True, text=True
         )

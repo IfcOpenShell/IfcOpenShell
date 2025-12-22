@@ -488,28 +488,28 @@ def sync_references(
 
     for element in potential_reference_elements:
         # Skip spatial elements - their IFC placement is the source of truth
-        if element.is_a("IfcSpatialElement"): 
+        if element.is_a("IfcSpatialElement"):
             continue
-        
+
         # Skip grids - their IFC placement is the source of truth
         if element.is_a("IfcGrid") or element.is_a("IfcGridAxis"):
             continue
-        
+
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
             drawing_tool.sync_object_placement(obj)
 
     for element in drawing_tool.get_group_elements(group):
         if not drawing_tool.is_auto_annotation(element):
             continue
- 
+
         # Skip spatial elements - should never sync their placement
         if element.is_a("IfcSpatialElement"):
             continue
-            
+
         # Skip grids
         if element.is_a("IfcGrid") or element.is_a("IfcGridAxis"):
-            continue  
-        
+            continue
+
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
             drawing_tool.sync_object_placement(obj)
         if not (reference_element := drawing_tool.get_assigned_product(element)):
