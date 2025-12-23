@@ -54,9 +54,6 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-# Include utility macros and functions
-include(utilities.cmake)
-
 # use extra version to make pre-release using eg semver
 if(NOT DEFINED EXTRA_VERSION)
     set(EXTRA_VERSION "-alpha.3")
@@ -198,22 +195,6 @@ if(BUILD_SHARED_LIBS)
     endif()
 endif()
 
-UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
-
-if(NOT MINIMAL_BUILD)
-    UNIFY_ENVVARS_AND_CACHE(PYTHON_INCLUDE_DIR)
-    UNIFY_ENVVARS_AND_CACHE(PYTHON_LIBRARY)
-    UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
-endif()
-
-# Get a list of all OPTION flags from the CMakeLists.txt
-get_all_option_flags(option_flags)
-
-# Loop through the list of OPTION flags and convert the corresponding environment variables
-foreach(option_flag IN LISTS option_flags)
-    convert_env_var_to_bool("${option_flag}")
-endforeach()
-
 if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
     add_definitions(-DIFOPSH_WITH_OPENCASCADE)
@@ -335,7 +316,7 @@ endif()
 # Otherwise it will find components needed for CGAL and we might some libraries.
 if(WITH_CGAL)
     find_package(CGAL REQUIRED)
-    set(CGAL_LIBRARIES IFCOPENSHELL_CGAL)
+    set(CGAL_LIBRARIES CGAL::CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
@@ -681,18 +662,6 @@ if(BUILD_QTVIEWER)
     add_subdirectory(../src/qtviewer qtviewer)
 endif()
 
-# Cmake uninstall target
-if(NOT TARGET uninstall)
-    configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-        IMMEDIATE
-        @ONLY
-    )
-
-    add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
-endif()
-
 # Packaging
 list(APPEND CPACK_SOURCE_IGNORE_FILES "/\\\\.git" "/build/" "/.pytest_cache/" "/__pycache__/")
 set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR}/..;/")
@@ -735,7 +704,3 @@ set(CPACK_DEBIAN_PACKAGE_VERSION
 )
 set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
 # set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
-
-include(CPack)
-
-include(package_export.cmake)
