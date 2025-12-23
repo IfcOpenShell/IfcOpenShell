@@ -260,7 +260,11 @@ class SaveBlendMetadataFile(bpy.types.Operator):
             self.report({"WARNING"}, "No IFC file path set.")
             return {"CANCELLED"}
 
-        blendmetadata_path = ifc_file + ".metadata.blend"
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            blendmetadata_path = ifc_file[:-4] + suffix
+        else:
+            blendmetadata_path = ifc_file + suffix
 
         ifc_dir = os.path.dirname(ifc_file)
         temp_path = os.path.join(ifc_dir, "__temp_blendmetadata.blend")
@@ -376,7 +380,11 @@ class LoadBlendMetadataAndIFC(bpy.types.Operator):
             self.report({"WARNING"}, "No IFC file path set.")
             return {"CANCELLED"}
 
-        metadata_path = ifc_file + ".metadata.blend"
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            metadata_path = ifc_file[:-4] + suffix
+        else:
+            metadata_path = ifc_file + suffix
         # Open the metadata blend file
         bpy.ops.wm.open_mainfile(filepath=metadata_path)
         # After loading metadata, clear blend warning (no geometry loaded yet)
