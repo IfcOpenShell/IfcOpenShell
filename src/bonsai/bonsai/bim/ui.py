@@ -715,13 +715,18 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     )
 
     save_metadata_blend_file: BoolProperty(
-        name="Save non ifc data to .metadata.blend File",
-        description="Save session data (window layout, settings) to a .metadata.blend file alongside the IFC file. This file is automatically loaded when opening the project.",
+        name="Save non ifc data to metadata blend File",
+        description="Save session data (window layout, settings) to a metadata blend file alongside the IFC file. This file is automatically loaded when opening the project.",
         default=False,
+    )
+    metadata_blend_file_suffix: StringProperty(
+        name="Metadata File Suffix",
+        description="Custom suffix for the metadata blend file. Will be appended to the filename (without .ifc).",
+        default=".ifc.metadata.blend",
     )
     user_ui_customization: BoolProperty(
         name="User UI Customization",
-        description="Enable user interface customization features (hide/show tabs and panels, bookmark panels) and save the session settings as part of the .metadata.blend file",
+        description="Enable user interface customization features (hide/show tabs and panels, bookmark panels) and save the session settings as part of the metadata blend file",
         default=False,
     )
 
@@ -958,6 +963,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/comment/27030"
         layout.prop(self, "save_metadata_blend_file")
         if self.save_metadata_blend_file:
+            row = layout.row()
+            row.separator()
+            row.prop(self, "metadata_blend_file_suffix")
             row = layout.row()
             row.separator()
             row.prop(self, "user_ui_customization")

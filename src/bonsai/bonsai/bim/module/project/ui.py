@@ -332,10 +332,14 @@ class BIM_PT_project(Panel):
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         if tool.Blender.get_addon_preferences().save_metadata_blend_file:
+            suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+            if props.ifc_file.lower().endswith(".ifc"):
+                metadata_filename = os.path.basename(props.ifc_file)[:-4] + suffix
+            else:
+                metadata_filename = os.path.basename(props.ifc_file) + suffix
             row = self.layout.row(align=True)
             col = row.column()
             col.enabled = False
-            metadata_filename = os.path.basename(props.ifc_file) + ".metadata.blend"
             col.label(text=f"Saving session data to: {metadata_filename}")
 
 
