@@ -349,14 +349,13 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "boost": (),
     "libxml2": (),
     "python": (),
-    "occ": ("freetype",),
+    "occ": (),
     "pcre": (),
     "pcre2": (),
     "json": (),
     "hdf5": (),
     "cgal": (),
     "eigen": (),
-    "freetype": (),
     "rocksdb": ("zstd",),
     "zstd": (),
     # 'usd': ('boost', 'oneTBB')
@@ -951,17 +950,6 @@ if "swig" in targets:
         revision=f"v{SWIG_VERSION}",
     )
 
-if "freetype" in targets:
-    build_dependency(
-        name=f"freetype",
-        mode="cmake",
-        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/freetype"],
-        download_url="https://github.com/freetype/freetype",
-        download_name="freetype2",
-        download_tool=download_tool_git,
-        revision="VER-2-14-0",
-    )
-
 if USE_OCCT and "occ" in targets:
     patches = []
     if OCCT_VERSION < "7.4":
@@ -996,7 +984,6 @@ if USE_OCCT and "occ" in targets:
             f"-DUSE_FREETYPE=OFF",
             f"-DUSE_OPENGL=OFF",
             f"-DUSE_GLES2=OFF",
-            f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
