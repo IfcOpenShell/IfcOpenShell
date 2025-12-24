@@ -387,7 +387,11 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
         temp_override = cls.get_shader_editor_context()
-        if not temp_override or any(k not in temp_override for k in ("area", "space", "screen")) or temp_override.get("window") is None:
+        if (
+            not temp_override
+            or any(k not in temp_override for k in ("area", "space", "screen"))
+            or temp_override.get("window") is None
+        ):
             return
         shader_editor = temp_override["space"]
 
