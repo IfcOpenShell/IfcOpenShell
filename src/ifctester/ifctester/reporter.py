@@ -367,6 +367,12 @@ class Json(Reporter):
             cardinality = "optional"
         elif specification.minOccurs == 0 and specification.maxOccurs == 0:
             cardinality = "prohibited"
+        elif specification.minOccurs >= 1:
+            # Any minimum occurrence >= 1 means the specification is required
+            cardinality = "required"
+        else:
+            # minOccurs == 0 with any other maxOccurs value means optional
+            cardinality = "optional"
 
         return ResultsSpecification(
             name=specification.name,
