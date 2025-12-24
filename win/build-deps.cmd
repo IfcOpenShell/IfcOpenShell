@@ -282,7 +282,7 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-9.2.1" ^
     -DBUILD_SHARED_LIBS=Off ^
     -DBUILD_TESTING=Off
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\PROJ.sln" %BUILD_CFG%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -379,7 +379,7 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%HDF5_INSTALL_NAME%" ^
                -DHDF5_BUILD_TOOLS=OFF -DHDF5_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=OFF -DHDF5_BUILD_UTILS=OFF ^
                -DHDF5_BUILD_CPP_LIB=ON
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\HDF5.sln" %DEBUG_OR_RELEASE%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -466,7 +466,7 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" 
                -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES=""
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OPENCOLLADA.sln" %DEBUG_OR_RELEASE%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -502,7 +502,7 @@ cd "%DEPENDENCY_DIR%"
 :: NOTE FreeType is built as a static library by default
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\freetype"
 if not %ERRORLEVEL%==0 goto :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\freetype.sln" %BUILD_CFG%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
@@ -540,7 +540,7 @@ IF %ARCH_BITS%==32 (
 	)
 )
 
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 
 :: If `inc` is present in installation folder, then installation takes much longer
@@ -627,7 +627,7 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DWITH_PCRE=OFF ^
                -DBISON_EXECUTABLE="%DEPS_DIR%\%WIN_FLEX_BISON%\win_bison.exe"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\swig.sln" Release
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -650,7 +650,7 @@ git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
                -DCGAL_HEADER_ONLY=On
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -686,7 +686,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"\build\cmake
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\zstd" -DZSTD_BUILD_STATIC=ON -DZSTD_BUILD_SHARED=OFF
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\build\cmake\%BUILD_DIR%\zstd.sln" %BUILD_CFG%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\build\cmake\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\build\cmake\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -727,7 +727,7 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" 
                -DPORTABLE=1 ^
                -DCMAKE_DEBUG_POSTFIX="_d"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\rocksdb.sln" %BUILD_CFG%
+call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -742,7 +742,7 @@ call :MarkInstallation
 :: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\tbb"  ^
 ::                -DBUILD_SHARED_LIBS=Off
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
-:: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\TBB.sln" %BUILD_CFG%
+:: call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -766,7 +766,7 @@ call :MarkInstallation
 ::                -DPXR_BUILD_TESTS=FALSE                     ^
 ::                -DBUILD_SHARED_LIBS=Off                     ^
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
-:: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\USD.sln" %BUILD_CFG%
+:: call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 :: IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -895,20 +895,36 @@ pushd %BUILD_DIR%
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
 
+set VS_TOOLSET_CMAKE_ARG=
 IF NOT "%VS_TOOLSET_HOST%"=="" (
-    cmake .. -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% %*
-) ELSE (
-    cmake .. -G %GENERATOR% -A %VS_PLATFORM% %*
+    set VS_TOOLSET_CMAKE_ARG=-T %VS_TOOLSET_HOST%
 )
-
+set COMMAND=cmake .. -G %GENERATOR% -A %VS_PLATFORM% %VS_TOOLSET_CMAKE_ARG% %*
+echo %COMMAND%
+%COMMAND%
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
 
-:: TODO add BuildCMakeProject which utilizes cmake --build
+:: Params: %1 buildDir, %2 configuration
+:: Required vars:
+:: - DEPENDENCY_NAME
+:BuildCMakeProject
+pushd %1
+call cecho.cmd 0 13 "Building %DEPENDENCY_NAME%. Please be patient, this will take a while."
+set COMPILE_WITH_WPO_SETTING=
+IF NOT %COMPILE_WITH_WPO%==FALSE (
+    set COMPILE_WITH_WPO_SETTING=;WholeProgramOptimization=TRUE
+)
+set COMMAND=cmake --build . --config %2 -- %MSBUILD_MULTIPROC%
+echo %COMMAND%
+%COMMAND%
+set RET=%ERRORLEVEL%
+popd
+exit /b %RET%
 
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
-:: Params: %1 solutioName, %2 configuration
+:: Params: %1 solutionName, %2 configuration
 :BuildSolution
 IF [%~3]==[] (
     set TARGET=%BUILD_TYPE%
@@ -930,20 +946,15 @@ IF NOT %COMPILE_WITH_WPO%==FALSE (
 %MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%%COMPILE_WITH_WPO_SETTING% /t:"%TARGET%"
 exit /b %ERRORLEVEL%
 
-:: InstallCMakeProject - Builds the INSTALL project of CMake-based project
-:: Params: %1 buildDir, %2 == configuration
-:: NOTE the actual install dir is set during cmake run.
-:: TODO Utilize cmake --build --target INSTALL
+:: Params: %1 buildDir, %2 configuration
+:: Required vars:
+:: - DEPENDENCY_NAME
 :InstallCMakeProject
 pushd %1
 call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-
-:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
-set COMPILE_WITH_WPO_SETTING=
-IF NOT %COMPILE_WITH_WPO%==FALSE (
-    set COMPILE_WITH_WPO_SETTING=;WholeProgramOptimization=TRUE
-)
-%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%%COMPILE_WITH_WPO_SETTING%
+set COMMAND=cmake --install . --config %2
+echo %COMMAND%
+%COMMAND%
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
