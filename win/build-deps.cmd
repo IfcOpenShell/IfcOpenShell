@@ -488,25 +488,6 @@ echo OCC_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 call :CheckInstallation
 if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
-:: OCCT has many dependencies but FreeType is the only mandatory
-set DEPENDENCY_NAME=FreeType
-set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
-set FREETYPE_ZIP=VER-2-7-1.zip
-cd "%DEPS_DIR%"
-call :DownloadFile https://github.com/freetype/freetype/archive/refs/tags/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
-if not %ERRORLEVEL%==0 goto :Error
-call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
-if not %ERRORLEVEL%==0 goto :Error
-if exist "%DEPS_DIR%\freetype-VER-2-7-1" ren "%DEPS_DIR%\freetype-VER-2-7-1" "freetype-2.7.1"
-cd "%DEPENDENCY_DIR%"
-:: NOTE FreeType is built as a static library by default
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\freetype"
-if not %ERRORLEVEL%==0 goto :Error
-call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-if not %ERRORLEVEL%==0 goto :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-if not %ERRORLEVEL%==0 goto :Error
-
 set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
 set DEPENDENCY_INSTALL_NAME=%OCCT_DEPENDENCY_INSTALL_NAME%
@@ -529,7 +510,7 @@ cd "%DEPENDENCY_DIR%"
 :: Temporarily explicitly set `CMAKE_DEBUG_POSTFIX` to empty to override it's perviously being set to `d`.
 :: OCCT don't need it, since it's layout is separating debug and release build by different folders.
 call :RunCMake -DINSTALL_DIR="%DEPENDENCY_INSTALL_DIR%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX="" ^
-    -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype" ^
+    -DBUILD_MODULE_Draw=0 -DUSE_FREETYPE=OFF ^
     -DBUILD_USE_PCH=ON
 if not %ERRORLEVEL%==0 goto :Error
 
