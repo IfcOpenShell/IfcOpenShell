@@ -793,76 +793,31 @@ exit %IFCOS_SCRIPT_RET%
 
 :: DownloadFile - Downloads a file using PowerShell
 :: Params: %1 url, %2 destinationDir, %3 filename
+:: Required vars:
+:: - DEPENDENCY_NAME
 :DownloadFile
-mkdir "%2"
-pushd "%2"
-if not exist "%~3". (
-    call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into %~2."
-    powershell -Command "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; $webClient = new-object System.Net.WebClient; $webClient.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials; $webClient.DownloadFile('%1', '%3')"
-    REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate %1
-) else (
-    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
-)
-set RET=%ERRORLEVEL%
-set LAST_ACTION=DownloadFile '%DEPENDENCY_NAME%'.
-popd
-exit /b %RET%
+%PWSH_TOOLS% download_file "%DEPENDENCY_NAME%" "%1" "%2" "%3"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+exit /b 0
 
 :: ExtractArchive - Extracts an archive file using 7-zip
 :: Params: %1 filename, %2 destinationDir, %3 dirAfterExtraction
+:: Required vars:
+:: - DEPENDENCY_NAME
 :ExtractArchive
-if not exist "%~3". (
-    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %~2 from %1"
-    7za x %1 -y -o%2 > nul
-) else (
-    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
-)
-set RET=%ERRORLEVEL%
-set LAST_ACTION=ExtractArchive '%DEPENDENCY_NAME%'.
-exit /b %RET%
-
-:: GitCloneOrPullRepository - Clones or pulls (if repository already cloned) a Git repository
-:: Params: %1 gitUrl, %2 destDir
-:: F.ex. call :GitCloneRepository https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPS_DIR%\OpenCOLLADA\"
-:GitCloneOrPullRepository
-if not exist "%~2". (
-    call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
-    pushd "%DEPS_DIR%"
-    call git clone %1 %2
-    set RET=!ERRORLEVEL!
-) else (
-    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Pulling latest changes."
-    git reset --hard
-    pushd %2
-    call git pull
-    set RET=0
-)
-popd
-exit /b %RET%
+%PWSH_TOOLS% extract_file "%DEPENDENCY_NAME%" "%1" "%2" "%3"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+exit /b 0
 
 :: GitCloneAndCheckoutRevision - Clones a Git repository and checks out a specific revision or tag
 :: Params: %1 gitUrl, %2 destDir, %3 revision
 :: F.ex. call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
+:: Required vars:
+:: - DEPENDENCY_NAME
 :GitCloneAndCheckoutRevision
-if not exist "%~2". (
-    call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
-    pushd "%DEPS_DIR%"
-    call git clone %1 %2
-    set RET=!ERRORLEVEL!
-    if not "!RET!"=="0" exit /b !RET!
-    popd
-) else (
-    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
-    set RET=0
-)
-pushd "%2"
-call git fetch
-call cecho.cmd 0 13 "Checking out %DEPENDENCY_NAME% revision %3."
-call git reset --hard
-call git checkout %3
-set RET=%ERRORLEVEL%
-popd
-exit /b %RET%
+%PWSH_TOOLS% git_clone_and_checkout_revision "%DEPENDENCY_NAME%" "%1" "%2" "%3"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+exit /b 0
 
 :: RunCMake - Runs CMake for a CMake-based project
 :: Params: %* cmakeOptions
@@ -931,14 +886,9 @@ exit /b %ERRORLEVEL%
 :: Required vars:
 :: - DEPENDENCY_NAME
 :InstallCMakeProject
-pushd %1
-call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-set COMMAND=cmake --install . --config %2
-echo %COMMAND%
-%COMMAND%
-set RET=%ERRORLEVEL%
-popd
-exit /b %RET%
+%PWSH_TOOLS% install_cmake_project "%DEPENDENCY_NAME%" "%1" "%2"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+exit /b 0
 
 :: Checks whether a dependency is already installed for the specified config
 :: Doesn't work for dependencies, only for those that need separate Debug/Release installs.
