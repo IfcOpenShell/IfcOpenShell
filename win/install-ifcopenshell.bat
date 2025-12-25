@@ -58,7 +58,8 @@ call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo.
 
 call cecho.cmd 0 13 "Installing %VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME%"
-cmake --build ..\%BUILD_DIR% --target INSTALL -- /nologo /m:%IFCOS_NUM_BUILD_PROCS% /p:Platform=%VS_PLATFORM% ^
+set MSBUILD_MULTIPROC=/m /p:CL_MPCount=%IFCOS_NUM_BUILD_PROCS% /p:UseMultiToolTask=true /p:EnforceProcessCountAcrossBuilds=true
+cmake --build ..\%BUILD_DIR% --target INSTALL -- /nologo %MSBUILD_MULTIPROC% /p:Platform=%VS_PLATFORM% ^
     /p:Configuration=%BUILD_CFG% %3 %4 %5 %6 %7 %8 %9
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 

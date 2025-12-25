@@ -260,10 +260,14 @@ class SaveBlendMetadataFile(bpy.types.Operator):
             self.report({"WARNING"}, "No IFC file path set.")
             return {"CANCELLED"}
 
-        blendmetadata_path = ifc_file + ".metadata.blend"
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            blendmetadata_path = ifc_file[:-4] + suffix
+        else:
+            blendmetadata_path = ifc_file + suffix
 
-        # Save a temporary copy of the current blend file
-        temp_path = bpy.path.abspath("//__temp_blendmetadata.blend")
+        ifc_dir = os.path.dirname(ifc_file)
+        temp_path = os.path.join(ifc_dir, "__temp_blendmetadata.blend")
         bpy.ops.wm.save_as_mainfile(filepath=temp_path, copy=True)
 
         cleanup_script = f"""
@@ -331,12 +335,14 @@ except Exception:
 bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
 """
         import tempfile
+
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as script_file:
             script_file.write(cleanup_script)
             script_path = script_file.name
 
         blender_exe = bpy.app.binary_path
         import subprocess
+
         result = subprocess.run(
             [blender_exe, temp_path, "--background", "--python", script_path], capture_output=True, text=True
         )
@@ -374,7 +380,11 @@ class LoadBlendMetadataAndIFC(bpy.types.Operator):
             self.report({"WARNING"}, "No IFC file path set.")
             return {"CANCELLED"}
 
-        metadata_path = ifc_file + ".metadata.blend"
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            metadata_path = ifc_file[:-4] + suffix
+        else:
+            metadata_path = ifc_file + suffix
         # Open the metadata blend file
         bpy.ops.wm.open_mainfile(filepath=metadata_path)
         # After loading metadata, clear blend warning (no geometry loaded yet)

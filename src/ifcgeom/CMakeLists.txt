@@ -14,12 +14,13 @@ file(GLOB SCHEMA_AGNOSTIC_CPP_FILES *.cpp)
 set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
 
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
-set_target_properties(IfcGeom
+set_target_properties(
+    IfcGeom
     PROPERTIES
-    COMPILE_FLAGS -DIFC_GEOM_EXPORTS
-    VERSION "${PROJECT_VERSION}"
-    SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
-    PUBLIC_HEADER "${SCHEMA_AGNOSTIC_H_FILES}"
+        COMPILE_FLAGS -DIFC_GEOM_EXPORTS
+        VERSION "${PROJECT_VERSION}"
+        SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+        PUBLIC_HEADER "${SCHEMA_AGNOSTIC_H_FILES}"
 )
 
 if(UNIX)
@@ -28,16 +29,20 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 
-target_link_libraries(IfcGeom
-    ${kernel_libraries} ${mapping_libraries}
-    ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen"
+target_link_libraries(
+    IfcGeom
+    ${kernel_libraries}
+    ${mapping_libraries}
+    ${CMAKE_THREAD_LIBS_INIT}
+    "Eigen3::Eigen"
     ${CGAL_LIBRARIES}
 )
 if(NOT WASM_BUILD)
     target_link_libraries(IfcGeom IfcParse)
 endif()
 
-install(TARGETS IfcGeom
+install(
+    TARGETS IfcGeom
     EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ifcgeom"
 )

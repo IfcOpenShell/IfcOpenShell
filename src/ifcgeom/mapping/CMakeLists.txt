@@ -7,13 +7,14 @@ foreach(schema ${SCHEMA_VERSIONS})
     set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
 
     add_library(geometry_mapping_ifc${schema} OBJECT ${IFCGEOM_FILES})
-    set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-    target_link_libraries(geometry_mapping_ifc${schema} IfcParse  Eigen3::Eigen)
+    set_target_properties(
+        geometry_mapping_ifc${schema}
+        PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}"
+    )
+    target_link_libraries(geometry_mapping_ifc${schema} IfcParse Eigen3::Eigen)
 
     list(APPEND mapping_libraries geometry_mapping_ifc${schema})
-    install(TARGETS geometry_mapping_ifc${schema}
-        EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
-    )
+    install(TARGETS geometry_mapping_ifc${schema} EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endforeach()
 
 set(mapping_libraries ${mapping_libraries} PARENT_SCOPE)
