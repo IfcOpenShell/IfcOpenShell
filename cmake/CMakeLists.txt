@@ -242,6 +242,7 @@ if(WITH_ROCKSDB)
     # find it's zstd dependency on Windows.
     # Only do it on Windows, otherwise it might create problems as
     # findzstd and zstd-config target names do not match.
+    # https://github.com/facebook/rocksdb/pull/13975
     if(WIN32)
         set(TEMP CMAKE_FIND_PACKAGE_PREFER_CONFIG)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)

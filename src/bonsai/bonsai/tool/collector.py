@@ -52,12 +52,12 @@ class Collector(bonsai.core.tool.Collector):
                 tool.Geometry.lock_object(obj)
             element = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
             if not tool.Spatial.get_grid_props().is_visible:
-                obj.hide_viewport = True
+                obj.hide_set(True)
         elif element.is_a("IfcGrid"):
             if tool.Geometry.is_locked(element):
                 tool.Geometry.lock_object(obj)
             if not tool.Spatial.get_grid_props().is_visible:
-                obj.hide_viewport = True
+                obj.hide_set(True)
 
         if element.is_a("IfcProject"):
             if tool.Geometry.is_locked(element):
@@ -73,8 +73,6 @@ class Collector(bonsai.core.tool.Collector):
                 tool.Geometry.lock_object(obj)
             collection = cls._create_project_child_collection("IfcSpace")
             cls.link_collection_object_safe(collection, obj)
-            if not tool.Spatial.get_spatial_props().is_visible:
-                obj.hide_viewport = True
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
             cls.link_collection_object_safe(collection, obj)
