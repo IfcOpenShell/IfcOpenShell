@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.cost
+import ifcopenshell.api.control
+import ast
 from typing import Any
 
 import ifcopenshell.api.control
@@ -27,6 +30,8 @@ def assign_cost_item_quantity(
     cost_item: ifcopenshell.entity_instance,
     products: list[ifcopenshell.entity_instance],
     prop_name: str = "",
+    formula: str = "",
+    ifc_class: str = "IfcQuantityLength",
 ) -> None:
     """Adds a cost item quantity that is parametrically connected to a product
 
@@ -57,6 +62,12 @@ def assign_cost_item_quantity(
     :param prop_name: The name of the quantity. If this is not specified,
         then it is assumed that there is no calculated quantity, and the
         number of objects are counted instead.
+    :param formula: The string that contains the formula
+    :param ifc_class: The quantity class of the calculated value if the formula is
+        specified. Can be ['IfcQuantityCount', 'IfcQuantityNumber',
+        'IfcQuantityLength', 'IfcQuantityArea', 'IfcQuantityVolume',
+        'IfcQuantityWeight', 'IfcQuantityTime']. Check
+        ifcopenshell.util.unit.QUANTITY_CLASS for more info.
     :return: None
 
     Example:
@@ -84,6 +95,18 @@ def assign_cost_item_quantity(
         # item.
         ifcopenshell.api.cost.assign_cost_item_quantity(model,
             cost_item=item, products=[slab], prop_name="NetVolume")
+
+        # Now let's use the formula in order to calculate the quantity value.
+        # For example, let's say that a IfcWall has the reinfocement volume ratio
+        # stored in the Pset_ConcreteElementGeneral.ReinforcementVolumeRatio
+        # and of course it has also the gross volume stored in the
+        # Qto_WallBaseQuantities.GrossVolume. So we can add an IfcQuantity that stores the
+        # reinforcement volume calculated with reinfocement volume ratio * gross volume.
+        ifcopenshell.api.cost.assign_cost_item_quantity(model,
+            cost_item=item, products=[wall],
+            formula="Pset_ConcreteElementGeneral.ReinforcementVolumeRatio * NetVolume"
+            ifc_class="IfcQuantityVolume")
+
     """
     usecase = Usecase()
     usecase.file = file
@@ -91,6 +114,8 @@ def assign_cost_item_quantity(
         "cost_item": cost_item,
         "products": products or [],
         "prop_name": prop_name,
+        "formula": formula,
+        "ifc_class" : ifc_class
     }
     return usecase.execute()
 
@@ -106,6 +131,42 @@ class Usecase:
             if product.is_a("IfcSpatialElement"):
                 continue
             self.assign_cost_control(related_object=product, cost_item=self.settings["cost_item"])
+            if self.settings["formula"]:
+                # not so much elegant, but simple and useful because variables can't has the dot in the name
+                # and Psets have the dot
+                separator = "0"
+                variables = self.extract_variables(self.settings["formula"])
+                variables_modified = {v.replace(".", separator) : None for v in variables}
+                for v in variables_modified:
+                    if separator in v:
+                        variables_modified[v] = self.get_value_from_pset(product, v, separator)
+                    else:
+                        variables_modified[v] = self.get_value_from_qset(product, v)
+
+                formula_modified = self.settings["formula"].replace(".", separator)
+                if any(v is None for v in variables_modified.values()):
+                    for k, v in variables_modified.items():
+                        if v == None:
+                            print(f"Property {k.replace(separator, '.')} not found")
+                    raise ValueError("Formula contains variables that are not found in properties. Please check the output")
+
+                result = eval(formula_modified, {}, variables_modified)
+
+                new_quantity = None
+                self.quantities = set(self.settings["cost_item"].CostQuantities or [])
+                for quantity in self.quantities:
+                    if quantity.Formula == self.settings["formula"]:
+                        new_quantity = quantity
+                        self.settings["ifc_class"] = quantity.is_a()
+                        continue
+                if new_quantity is None:
+                    new_quantity = self.file.create_entity(self.settings["ifc_class"], Name="Unnamed")
+                    new_quantity.Formula = self.settings["formula"]
+                    self.quantities.add(new_quantity)
+
+                new_quantity[3] = result
+                continue
+
             if self.settings["prop_name"]:
                 if (
                     self.settings["cost_item"].CostQuantities
@@ -113,7 +174,7 @@ class Usecase:
                 ):
                     continue
                 self.add_quantity_from_related_object(product)
-        if self.settings["prop_name"]:
+        if self.settings["prop_name"] or self.settings["formula"]:
             self.settings["cost_item"].CostQuantities = list(self.quantities)
         else:
             self.update_cost_item_count()
@@ -158,3 +219,58 @@ class Usecase:
                         if not obj.is_a("IfcConstructionResource"):
                             count += 1
                 quantity[3] = count
+
+    def extract_variables(self, expr: str):
+        tree = ast.parse(expr, mode="eval")
+        extractor = VariableExtractor()
+        extractor.visit(tree)
+        return extractor.variables
+
+    def get_value_from_pset(
+            self,
+            product:ifcopenshell.entity_instance,
+            v: str,
+            separator: str,
+    ) -> float:
+        for relationship in product.IsDefinedBy:
+            if relationship.is_a("IfcRelDefinesByProperties"):
+                pset = relationship.RelatingPropertyDefinition
+                if pset.Name == v.split(separator)[0]:
+                    for prop in pset.HasProperties:
+                        if prop.Name.lower() == v.split(separator)[1].lower():
+                            return prop[2].wrappedValue
+
+    def get_value_from_qset(
+            self,
+            product:ifcopenshell.entity_instance,
+            v: str,
+    ) -> float:
+        for relationship in product.IsDefinedBy:
+            if relationship.is_a("IfcRelDefinesByProperties"):
+                qto = relationship.RelatingPropertyDefinition
+                if qto.is_a("IfcElementQuantity"):
+                    for prop in qto.Quantities:
+                        if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == v.lower():
+                            return prop[3]
+
+class VariableExtractor(ast.NodeVisitor):
+    def __init__(self):
+        self.variables = set()
+
+    def visit_Name(self, node):
+        # simple variables wothout dots
+        self.variables.add(node.id)
+
+    def visit_Attribute(self, node):
+        # for variables with dots (chains)
+        parts = []
+        current = node
+        while isinstance(current, ast.Attribute):
+            parts.append(current.attr)
+            current = current.value
+        if isinstance(current, ast.Name):
+            parts.append(current.id)
+
+        full_name = ".".join(reversed(parts))
+        self.variables.add(full_name)
+
