@@ -507,7 +507,7 @@ def ortho_view_frame(
 
 
 def almost_zero(v):
-    return abs(v) < 1e-5
+    return abs(v) < 1e-4
 
 
 def clip_segment(bounds, segm):
