@@ -115,7 +115,6 @@ classes = [
     operator.EditBlenderCollection,
     operator.FileAssociate,
     operator.FileUnassociate,
-    operator.LoadBlendMetadataAndIFC,
     operator.OpenPath,
     operator.OpenUpstream,
     operator.OpenUri,
