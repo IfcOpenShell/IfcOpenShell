@@ -364,36 +364,6 @@ bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
         return {"FINISHED"}
 
 
-class LoadBlendMetadataAndIFC(bpy.types.Operator):
-    bl_idname = "bim.load_blend_metadata_and_ifc"
-    bl_label = "Load Blend Metadata and IFC"
-    bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(name="IFC File Path", default="")
-
-    def execute(self, context):
-        ifc_file = self.filepath
-        if not ifc_file:
-            props = tool.Blender.get_bim_props()
-            ifc_file = getattr(props, "ifc_file", None)
-
-        if not ifc_file:
-            self.report({"WARNING"}, "No IFC file path set.")
-            return {"CANCELLED"}
-
-        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
-        if ifc_file.lower().endswith(".ifc"):
-            metadata_path = ifc_file[:-4] + suffix
-        else:
-            metadata_path = ifc_file + suffix
-        # Open the metadata blend file
-        bpy.ops.wm.open_mainfile(filepath=metadata_path)
-        # After loading metadata, clear blend warning (no geometry loaded yet)
-        props = tool.Blender.get_bim_props()
-        props.has_blend_warning = False
-        # Load the IFC file into the current session (preserve layout)
-        bpy.ops.bim.load_project(filepath=ifc_file, should_start_fresh_session=False)
-        self.report({"INFO"}, f"Loaded metadata and IFC: {metadata_path}, {ifc_file}")
-        return {"FINISHED"}
 
 
 # TODO: Unused operator.
