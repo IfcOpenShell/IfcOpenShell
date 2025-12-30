@@ -3127,3 +3127,42 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         tool.Blender.update_viewport()
 
         return {"FINISHED"}
+
+class LoadBlendMetadataAndIFC(bpy.types.Operator):
+    bl_idname = "bim.load_blend_metadata_and_ifc"
+    bl_label = "Load Blend Metadata and IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(name="IFC File Path", default="")
+
+    def execute(self, context):
+        ifc_file = self.filepath
+        if not ifc_file:
+            props = tool.Blender.get_bim_props()
+            ifc_file = getattr(props, "ifc_file", None)
+
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file path set.")
+            return {"CANCELLED"}
+
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            metadata_path = ifc_file[:-4] + suffix
+        else:
+            metadata_path = ifc_file + suffix
+
+        # Define a handler to load the IFC project after the blend file is loaded and context is restored
+        @persistent
+        def load_handler(*args):
+            bpy.app.handlers.load_post.remove(load_handler)
+            # After loading metadata, clear blend warning (no geometry loaded yet)
+            props = tool.Blender.get_bim_props()
+            props.has_blend_warning = False
+            # Load the IFC file into the current session (preserve layout)
+            bpy.ops.bim.load_project(filepath=ifc_file, should_start_fresh_session=False)
+            # Disable editing styles
+            bpy.ops.bim.disable_editing_styles()
+            self.report({"INFO"}, f"Loaded metadata and IFC: {metadata_path}, {ifc_file}")
+
+        bpy.app.handlers.load_post.append(load_handler)
+        bpy.ops.wm.open_mainfile(filepath=metadata_path)
+        return {"FINISHED"}

@@ -382,17 +382,22 @@ class Blender(bonsai.core.tool.Blender):
                     assert isinstance(space, bpy.types.SpaceNodeEditor)
                     if space.tree_type == "ShaderNodeTree":
                         context_override = {"area": area, "space": space, "screen": screen}
+                        
+                        # Add window if screen differs from current context
+                        context = bpy.context
+                        if context and context.screen != screen:
+                            window = next(
+                                (w for w in context.window_manager.windows if w.screen == screen), 
+                                None
+                            )
+                            if window:
+                                context_override["window"] = window
+                        
                         return context_override
 
     @classmethod
     def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
         temp_override = cls.get_shader_editor_context()
-        if (
-            not temp_override
-            or any(k not in temp_override for k in ("area", "space", "screen"))
-            or temp_override.get("window") is None
-        ):
-            return
         shader_editor = temp_override["space"]
 
         # remove all nodes from the current material
