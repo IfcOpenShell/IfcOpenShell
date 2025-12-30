@@ -68,6 +68,7 @@ classes = (
     operator.UnassignLibraryDeclaration,
     operator.UnlinkIfc,
     operator.UnloadLink,
+    operator.LoadBlendMetadataAndIFC,
     workspace.ExploreHotkey,
     prop.LibraryBreadcrumb,
     prop.LibraryElement,
