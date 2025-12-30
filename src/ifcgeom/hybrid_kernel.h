@@ -22,6 +22,29 @@
 
 #include "AbstractKernel.h"
 
+// ============================================================================
+// SIGSEGV RECOVERY SUPPORT (best-effort)
+//
+// Why this exists:
+// - OpenCASCADE (OCC) can crash (SIGSEGV/SIGBUS) on complex boolean operations,
+//   especially with nested CSG built from tessellated sources (e.g. Archicad).
+// - SIGSEGV is an OS signal, not a C++ exception, so try/catch cannot handle it.
+//
+// What this does:
+// - Installs a temporary signal handler around each kernel call.
+// - On SIGSEGV/SIGBUS, uses sigsetjmp/siglongjmp to return control to the
+//   HybridKernel and try the next kernel (e.g. CGAL).
+//
+// Limitations:
+// - Recovery from SIGSEGV is inherently unsafe if memory/stack is corrupted.
+// - Some libraries may override signal handlers internally.
+// - This is "best-effort" to avoid whole-process abort.
+// ============================================================================
+#include <signal.h>
+#include <setjmp.h>
+#include <cstdio>
+#include <cstdlib>
+
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
 #undef Handle
@@ -53,6 +76,72 @@ namespace {
 #endif
 		return false;
 	}
+
+	// Per-thread jump buffer and crash flag
+	thread_local sigjmp_buf hybrid_kernel_sig_jmp_buf;
+	thread_local volatile sig_atomic_t hybrid_kernel_sig_caught = 0;
+
+	// Async-signal-safe handler: set a flag and jump back.
+	static void hybrid_kernel_sig_handler(int sig) {
+		if (sig == SIGSEGV || sig == SIGBUS) {
+			hybrid_kernel_sig_caught = 1;
+			siglongjmp(hybrid_kernel_sig_jmp_buf, 1);
+		}
+	}
+
+	class SigGuard {
+	public:
+		struct sigaction old_segv_{};
+		struct sigaction old_bus_{};
+		stack_t old_stack_{};
+		bool stack_installed_ = false;
+		bool handlers_installed_ = false;
+
+		// Use an alternate signal stack to improve odds when stack is corrupted.
+		SigGuard() {
+			hybrid_kernel_sig_caught = 0;
+
+			// Install alt stack (best-effort)
+			stack_t ss{};
+			ss.ss_size = 64 * 1024;
+			ss.ss_sp = std::malloc(ss.ss_size);
+			ss.ss_flags = 0;
+			if (ss.ss_sp && sigaltstack(&ss, &old_stack_) == 0) {
+				stack_installed_ = true;
+			} else {
+				if (ss.ss_sp) std::free(ss.ss_sp);
+			}
+
+			struct sigaction sa{};
+			sa.sa_handler = hybrid_kernel_sig_handler;
+			sigemptyset(&sa.sa_mask);
+			sa.sa_flags = SA_ONSTACK | SA_NODEFER;
+
+			bool ok = true;
+			if (sigaction(SIGSEGV, &sa, &old_segv_) != 0) ok = false;
+			if (sigaction(SIGBUS, &sa, &old_bus_) != 0) ok = false;
+			handlers_installed_ = ok;
+		}
+
+		~SigGuard() {
+			// Restore handlers
+			if (handlers_installed_) {
+				sigaction(SIGSEGV, &old_segv_, nullptr);
+				sigaction(SIGBUS, &old_bus_, nullptr);
+			}
+			// Restore alt stack and free our buffer
+			if (stack_installed_) {
+				// Restore previous stack; free ours (current)
+				stack_t cur{};
+				if (sigaltstack(nullptr, &cur) == 0) {
+					if (!(cur.ss_flags & SS_DISABLE) && cur.ss_sp) {
+						std::free(cur.ss_sp);
+					}
+				}
+				sigaltstack(&old_stack_, nullptr);
+			}
+		}
+	};
 }
 
 namespace ifcopenshell {
@@ -97,9 +186,22 @@ namespace ifcopenshell {
 						}
 #endif
 						bool success = false;
-						try {
-							success = k->convert(item, rs);
-						} catch (...) {}
+
+						SigGuard guard;
+						if (sigsetjmp(hybrid_kernel_sig_jmp_buf, 1) == 0) {
+							try {
+								success = k->convert(item, rs);
+							} catch (...) {
+								success = false;
+							}
+						} else {
+							// We got here via siglongjmp after SIGSEGV/SIGBUS.
+							fprintf(stderr, "[HYBRID_KERNEL] Caught SIGSEGV/SIGBUS in kernel '%s', trying next kernel...\n",
+								k->geometry_library().c_str());
+							success = false;
+							rs.clear();
+						}
+
 						if (success) {
 							return true;
 						}
@@ -110,9 +212,18 @@ namespace ifcopenshell {
 				{
 					for (auto& k : kernels_) {
 						bool success = false;
-						try {
-							success = k->apply_layerset(items, layers);
-						} catch (...) {}
+						SigGuard guard;
+						if (sigsetjmp(hybrid_kernel_sig_jmp_buf, 1) == 0) {
+							try {
+								success = k->apply_layerset(items, layers);
+							} catch (...) {
+								success = false;
+							}
+						} else {
+							fprintf(stderr, "[HYBRID_KERNEL] Caught SIGSEGV/SIGBUS in apply_layerset '%s', trying next kernel...\n",
+								k->geometry_library().c_str());
+							success = false;
+						}
 						if (success) {
 							return true;
 						}
@@ -123,9 +234,18 @@ namespace ifcopenshell {
 				{
 					for (auto& k : kernels_) {
 						bool success = false;
-						try {
-							success = k->apply_folded_layerset(items, layers, folds);
-						} catch (...) {}
+						SigGuard guard;
+						if (sigsetjmp(hybrid_kernel_sig_jmp_buf, 1) == 0) {
+							try {
+								success = k->apply_folded_layerset(items, layers, folds);
+							} catch (...) {
+								success = false;
+							}
+						} else {
+							fprintf(stderr, "[HYBRID_KERNEL] Caught SIGSEGV/SIGBUS in apply_folded_layerset '%s', trying next kernel...\n",
+								k->geometry_library().c_str());
+							success = false;
+						}
 						if (success) {
 							return true;
 						}
@@ -147,9 +267,19 @@ namespace ifcopenshell {
 							continue;
 						}
 						bool success = false;
-						try {
-							success = k->convert_openings(entity, openings, entity_shapes, entity_trsf, cut_shapes);
-						} catch (...) {}
+						SigGuard guard;
+						if (sigsetjmp(hybrid_kernel_sig_jmp_buf, 1) == 0) {
+							try {
+								success = k->convert_openings(entity, openings, entity_shapes, entity_trsf, cut_shapes);
+							} catch (...) {
+								success = false;
+							}
+						} else {
+							fprintf(stderr, "[HYBRID_KERNEL] Caught SIGSEGV/SIGBUS in convert_openings '%s', trying next kernel...\n",
+								k->geometry_library().c_str());
+							success = false;
+							cut_shapes.clear();
+						}
 						if (success) {
 							return true;
 						}
