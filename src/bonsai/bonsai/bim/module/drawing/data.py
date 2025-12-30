@@ -365,13 +365,11 @@ class DecoratorData:
 
         for literal in literals:
             literal_value = literal.Literal
-
             try:
-                current_value = cls.evaluate_formatting_expressions(literal_value)
-                current_value = tool.Drawing.replace_text_literal_variables(current_value, product)
+                eval_value = cls.evaluate_formatting_expressions(literal_value, product)
+                current_value = tool.Drawing.replace_text_literal_variables(eval_value, product)
             except Exception:
                 current_value = literal_value
-
             literal_data = {
                 "Literal": literal_value,
                 "BoxAlignment": literal.BoxAlignment,
@@ -404,14 +402,14 @@ class DecoratorData:
         return element
 
     @classmethod
-    def evaluate_formatting_expressions(cls, text: str) -> str:
-        """Evaluate formatting expressions wrapped in backticks using ifcopenshell.util.selector.format"""
+    def evaluate_formatting_expressions(cls, text: str, element=None) -> str:
+        """Evaluate formatting expressions wrapped in backticks using ifcopenshell.util.selector.format, always passing element context"""
         import re
 
         def evaluate_expression(match):
             try:
                 expression = match.group(1)
-                result = ifcopenshell.util.selector.format(expression)
+                result = ifcopenshell.util.selector.format(expression, element)
                 return str(result)
             except Exception as e:
                 return match.group(0)
