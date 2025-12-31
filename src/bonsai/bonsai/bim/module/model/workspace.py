@@ -407,7 +407,7 @@ class EditItemUI:
             parent_element = tool.Ifc.get_entity(props.representation_obj)
             if parent_element:
                 material_usage = tool.Model.get_usage_type(parent_element)
-                has_layer_set_usage = material_usage in ("LAYER2", "LAYER3")
+                has_layer_set_usage = material_usage == "LAYER3"
         
         if AuthoringData.data["is_representation_item_swept_solid"]:
             # TODO: support EndSweptArea for IfcRevolvedAreaSolidTapered,
@@ -422,7 +422,7 @@ class EditItemUI:
                 op.profile_id = int(mesh_props.item_profile)
 
         for item_attribute in mesh_props.item_attributes:
-            # Skip depth attribute for objects with layer set usage
+            # Skip depth attribute for LAYER3 objects with layer set usage
             if has_layer_set_usage and item_attribute.name.lower() == "depth":
                 continue
             row = cls.layout.row()
