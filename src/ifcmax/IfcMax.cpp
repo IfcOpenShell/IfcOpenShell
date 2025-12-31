@@ -155,16 +155,16 @@ static void LogToListener(const MCHAR* format, ...)
 
 #if BUILD_FREE_TIER
 	if(result < 0) {
-		the_listener->edit_stream->printf(_M("IfcImp (Free): Skipped invalid log output !\n"));
+		the_listener->edit_stream->printf(_M("IfcImp[Free]: Skipped invalid log output !\n"));
 		return;
 	}
-	the_listener->edit_stream->printf(_M("IfcImp (Free): %s"), buffer);
+	the_listener->edit_stream->printf(_M("IfcImp[Free]: %s"), buffer);
 #else
 	if(result < 0) {
-		the_listener->edit_stream->printf(_M("IfcImp: Skipped invalid log output !\n"));
+		the_listener->edit_stream->printf(_M("IfcImp[Pro]: Skipped invalid log output !\n"));
 		return;
 	}
-	the_listener->edit_stream->printf(_M("IfcImp: %s"), buffer);
+	the_listener->edit_stream->printf(_M("IfcImp[Pro]: %s"), buffer);
 #endif
 }
 
