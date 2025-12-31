@@ -152,6 +152,7 @@ if(HAS_MAX)
         set_target_properties(IfcMax_${max_year} PROPERTIES SUFFIX ".dli")
 		
 		if(BUILD_TIER_NAME)
+		    string(TOUPPER "${BUILD_TIER_NAME}" BUILD_TIER_NAME)
 			target_compile_definitions(IfcMax_${max_year} PRIVATE BUILD_${BUILD_TIER_NAME}_TIER)
 
 			string(TOLOWER "${BUILD_TIER_NAME}" BUILD_TIER_lower)
