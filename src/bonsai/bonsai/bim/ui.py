@@ -837,7 +837,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         gizmo_prop_names = {p.attr_name for p in GizmoDoorEdition.dimension_gizmo_props}
         # Add special gizmos not in dimension_gizmo_props
         gizmo_prop_names.update(("swing_arc", "flip_arc"))
-        for prop in door_gizmos.__annotations__:
+        try:
+            annotations = door_gizmos.__annotations__
+        except AttributeError:
+            annotations = type(door_gizmos).__annotations__
+        for prop in annotations:
             if prop in gizmo_prop_names:
                 layout.prop(door_gizmos, prop)
 
@@ -846,7 +850,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
         window_gizmos = self.gizmos.window
         gizmo_prop_names = {p.attr_name for p in GizmoWindowEdition.dimension_gizmo_props}
-        for prop in window_gizmos.__annotations__:
+        try:
+            annotations = window_gizmos.__annotations__
+        except AttributeError:
+            annotations = type(window_gizmos).__annotations__
+        for prop in annotations:
             if prop in gizmo_prop_names:
                 layout.prop(window_gizmos, prop)
 
@@ -857,7 +865,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         gizmo_prop_names = {p.attr_name for p in GizmoStairEdition.dimension_gizmo_props}
         # Add special gizmos not in dimension_gizmo_props
         special_gizmo_names = {"lock", "plus", "minus", "cycle"}
-        for prop in stair_gizmos.__annotations__:
+        try:
+            annotations = stair_gizmos.__annotations__
+        except AttributeError:
+            annotations = type(stair_gizmos).__annotations__
+        for prop in annotations:
             if prop in gizmo_prop_names or prop in special_gizmo_names:
                 layout.prop(stair_gizmos, prop)
 
