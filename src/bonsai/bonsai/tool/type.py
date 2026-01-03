@@ -74,7 +74,7 @@ class Type(bonsai.core.tool.Type):
     def get_model_types(cls) -> list[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         types = ifc_file.by_type("IfcElementType")
-        # exclude IfcSpatialElementType
+        types += ifc_file.by_type("IfcSpatialElementType")
         types += ifc_file.by_type("IfcTypeProduct", include_subtypes=False)
         if not tool.Ifc.get_schema().startswith("IFC4X3"):
             types += ifc_file.by_type("IfcWindowStyle")
