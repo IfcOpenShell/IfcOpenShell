@@ -428,7 +428,11 @@ def get_enum_items(
     else:
         annotations_data = data
 
-    prop = annotations_data.__annotations__[prop_name]
+    try:
+        annotations = annotations_data.__annotations__
+    except AttributeError:
+        annotations = type(annotations_data).__annotations__
+    prop = annotations[prop_name]
     items = prop.keywords.get("items")
     if items is None:
         return

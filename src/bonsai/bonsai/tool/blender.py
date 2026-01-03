@@ -742,7 +742,11 @@ class Blender(bonsai.core.tool.Blender):
         # Yes, accessing items through annotations is a bit hacky
         # but it's the only way to get the dynamic enum items
         # besides providing them to get_enum_safe explicitly.
-        prop_keywords = props.__annotations__[prop_name].keywords
+        try:
+            annotations = props.__annotations__
+        except AttributeError:
+            annotations = type(props).__annotations__
+        prop_keywords = annotations[prop_name].keywords
         items = prop_keywords.get("items")
         if items is None:
             return None
