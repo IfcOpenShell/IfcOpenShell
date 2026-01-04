@@ -264,7 +264,7 @@ class Usecase:
             name = element.Name
             return next((e for e in self.file.by_type("IfcMaterial") if e.Name == name), None)
 
-        elif element in MATERIAL_SETS:
+        elif element.is_a() in MATERIAL_SETS:
             ifc_class = element.is_a()
             name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
             material_set_name = getattr(element, name_attr)
