@@ -257,14 +257,16 @@ class SvgWriter:
         self.height = self.raw_height * self.svg_scale
 
     def add_stylesheet(self):
-        path = self.resource_paths["Stylesheet"]
-        if not path:
+        paths = self.resource_paths["Stylesheet"]
+        if not paths:
             return
-        if not os.path.exists(path):
-            print(f"WARNING. Couldn't find stylesheet for the drawing by the path: {path}")
-            return
-        with open(path, "r") as stylesheet:
-            self.svg.defs.add(self.svg.style(stylesheet.read()))
+        path_list = [p.strip() for p in paths.split(',')]
+        for path in path_list:
+            if not os.path.exists(path):
+                print(f"WARNING. Couldn't find stylesheet for the drawing by the path: {path}")
+                continue
+            with open(path, "r") as stylesheet:
+                self.svg.defs.add(self.svg.style(stylesheet.read()))
 
     def add_markers(self):
         path = self.resource_paths["Markers"]
