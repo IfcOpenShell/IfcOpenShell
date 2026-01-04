@@ -54,8 +54,8 @@ public:
         return adjacency_list.find(p);
     }
 
-    boost::optional< CGAL::Segment_2<Kernel> > query(const Point_2& p, typename Kernel::FT eps) {
-        boost::optional< CGAL::Segment_2<Kernel> > closest_segment;
+    std::optional< CGAL::Segment_2<Kernel> > query(const Point_2& p, typename Kernel::FT eps) {
+        std::optional< CGAL::Segment_2<Kernel> > closest_segment;
         typename Kernel::FT closest_distance = std::numeric_limits<double>::infinity();
         for (auto& p1 : adjacency_list) {
             for (auto& p2 : p1.second) {

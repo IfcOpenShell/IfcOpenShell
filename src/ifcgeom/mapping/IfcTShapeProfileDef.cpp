@@ -23,19 +23,19 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef* inst) {
-	const bool doFlangeEdgeFillet = !!inst->FlangeEdgeRadius();
-	const bool doWebEdgeFillet = !!inst->WebEdgeRadius();
-	const bool doFillet = !!inst->FilletRadius();
-	const bool hasFlangeSlope = !!inst->FlangeSlope();
-	const bool hasWebSlope = !!inst->WebSlope();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef& inst) {
+	const bool doFlangeEdgeFillet = !!inst.FlangeEdgeRadius();
+	const bool doWebEdgeFillet = !!inst.WebEdgeRadius();
+	const bool doFillet = !!inst.FilletRadius();
+	const bool hasFlangeSlope = !!inst.FlangeSlope();
+	const bool hasWebSlope = !!inst.WebSlope();
 
-	const double y = inst->Depth() / 2.0f * length_unit_;
-	const double x = inst->FlangeWidth() / 2.0f * length_unit_;
-	const double d1 = inst->WebThickness() * length_unit_;
-	const double d2 = inst->FlangeThickness() * length_unit_;
-	const double flangeSlope = hasFlangeSlope ? (*inst->FlangeSlope() * angle_unit_) : 0.;
-	const double webSlope = hasWebSlope ? (*inst->WebSlope() * angle_unit_) : 0.;
+	const double y = inst.Depth() / 2.0f * length_unit_;
+	const double x = inst.FlangeWidth() / 2.0f * length_unit_;
+	const double d1 = inst.WebThickness() * length_unit_;
+	const double d2 = inst.FlangeThickness() * length_unit_;
+	const double flangeSlope = hasFlangeSlope ? (*inst.FlangeSlope() * angle_unit_) : 0.;
+	const double webSlope = hasWebSlope ? (*inst.WebSlope() * angle_unit_) : 0.;
 
 	const double tol = settings_.get<settings::Precision>().get();
 
@@ -53,13 +53,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef* inst) {
 	double f3 = 0.0f;
 
 	if (doFillet) {
-		f1 = *inst->FilletRadius() * length_unit_;
+		f1 = *inst.FilletRadius() * length_unit_;
 	}
 	if (doWebEdgeFillet) {
-		f2 = *inst->WebEdgeRadius() * length_unit_;
+		f2 = *inst.WebEdgeRadius() * length_unit_;
 	}
 	if (doFlangeEdgeFillet) {
-		f3 = *inst->FlangeEdgeRadius() * length_unit_;
+		f3 = *inst.FlangeEdgeRadius() * length_unit_;
 	}
 
 	double xx, xy;
@@ -102,10 +102,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef* inst) {
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	return profile_helper(m4, {

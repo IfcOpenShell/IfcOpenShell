@@ -21,9 +21,9 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipseProfileDef* inst) {
-	double rx = inst->SemiAxis1() * length_unit_;
-	double ry = inst->SemiAxis2() * length_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipseProfileDef& inst) {
+	double rx = inst.SemiAxis1() * length_unit_;
+	double ry = inst.SemiAxis2() * length_unit_;
 	const double tol = settings_.get<settings::Precision>().get();
 	if (rx < tol || ry < tol) {
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", inst);
@@ -35,10 +35,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipseProfileDef* inst) {
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	} else {
 		// matrix needs to be set on elementary curves.
 		m4 = taxonomy::make<taxonomy::matrix4>();

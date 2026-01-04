@@ -76,7 +76,7 @@ class IFC_GEOM_API function_item_evaluator {
     taxonomy::item::ptr evaluate(const std::vector<double>& dist) const;
     fn_evaluator* fn_evaluator_ = nullptr;
 
-    mutable boost::optional<std::vector<double>> eval_points_; // cache evaluation points
+    mutable std::optional<std::vector<double>> eval_points_; // cache evaluation points
 };
 
 }}

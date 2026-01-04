@@ -21,7 +21,7 @@
 #define IFCSPFHEADER_H
 
 #include "ifc_parse_api.h"
-#include "IfcEntityInstanceData.h"
+#include "InstanceData.h"
 #include "Header_section_schema.h"
 #include "storage.h"
 
@@ -34,9 +34,13 @@ class IFC_PARSE_API IfcSpfHeader {
     IfcFile* file_;
 	IfcParse::impl::in_memory_file_storage* storage_ = nullptr;
 
+    std::array<std::shared_ptr<InstanceData>, 3> header_entities_;
+
+    /*
     mutable Header_section_schema::file_description* file_description_;
     mutable Header_section_schema::file_name* file_name_;
     mutable Header_section_schema::file_schema* file_schema_;
+    */ 
     void readSemicolon();
     enum Trail {
         TRAILING_SEMICOLON,
@@ -45,26 +49,29 @@ class IFC_PARSE_API IfcSpfHeader {
     void readTerminal(const std::string& term, Trail trail);
 
   public:
-    explicit IfcSpfHeader(IfcParse::IfcFile* file = nullptr);
+    explicit IfcSpfHeader(IfcParse::IfcFile* file);
     explicit IfcSpfHeader(IfcParse::IfcSpfLexer* lexer);
 
     ~IfcSpfHeader();
 
-    IfcParse::IfcFile* file() { return file_; }
-    void file(IfcParse::IfcFile* file);
+    // IfcParse::IfcFile* file() { return file_; }
+    // void file(IfcParse::IfcFile* file);
 
     void read();
     bool tryRead();
 
     void write(std::ostream& out) const;
 
-    const Header_section_schema::file_description* file_description() const;
-    const Header_section_schema::file_name* file_name() const;
-    const Header_section_schema::file_schema* file_schema() const;
+    IfcParse::IfcFile* file() { return file_; }
+    void file(IfcParse::IfcFile* file);
 
-    Header_section_schema::file_description* file_description();
-    Header_section_schema::file_name* file_name();
-    Header_section_schema::file_schema* file_schema();
+    const Header_section_schema::file_description file_description() const;
+    const Header_section_schema::file_name file_name() const;
+    const Header_section_schema::file_schema file_schema() const;
+
+    Header_section_schema::file_description file_description();
+    Header_section_schema::file_name file_name();
+    Header_section_schema::file_schema file_schema();
 };
 
 } // namespace IfcParse

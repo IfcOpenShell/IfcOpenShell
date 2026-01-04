@@ -30,7 +30,7 @@ RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const st
 }
 
 namespace {
-	// @nb copied from IfcEntityInstanceData.cpp but operating on unresolved instances
+	// @nb copied from InstanceData.cpp but operating on unresolved instances
 	bool serialize(std::string& val, const IfcParse::reference_or_simple_type& t)
 	{
 		auto s = sizeof(size_t);

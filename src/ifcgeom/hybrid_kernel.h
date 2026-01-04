@@ -82,8 +82,8 @@ namespace ifcopenshell {
 				}
 				virtual bool convert(const taxonomy::ptr item, IfcGeom::ConversionResults& rs)
 				{
-					auto ops = mapping_->find_openings(item->instance->as<IfcUtil::IfcBaseEntity>());
-					bool has_openings = ops && ops->size();
+					auto ops = mapping_->find_openings(item->instance);
+					bool has_openings = ops.size();
 					for (auto& k : kernels_) {
 #ifdef IFOPSH_WITH_CGAL
 						if (has_openings && !k->supports_boolean_operations()) {
@@ -119,7 +119,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual bool apply_folded_layerset(IfcGeom::ConversionResults& items, const ifcopenshell::geometry::layerset_information& layers, const std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information>& folds)
+				virtual bool apply_folded_layerset(IfcGeom::ConversionResults& items, const ifcopenshell::geometry::layerset_information& layers, const std::map<express::Base, ifcopenshell::geometry::layerset_information>& folds)
 				{
 					for (auto& k : kernels_) {
 						bool success = false;
@@ -132,7 +132,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+                virtual bool convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 					const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes)
 				{
 					for (auto& k : kernels_) {

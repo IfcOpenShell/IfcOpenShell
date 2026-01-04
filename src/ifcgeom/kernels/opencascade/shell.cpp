@@ -112,7 +112,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::shell::ptr shell, IfcGeom::
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		shell->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		shell->instance.id(),
 		shell->matrix,
 		new OpenCascadeShape(shape),
 		shell->surface_style

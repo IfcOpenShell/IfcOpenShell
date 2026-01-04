@@ -23,10 +23,10 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularPyramid* inst) {
-	const double dx = inst->XLength() * length_unit_;
-	const double dy = inst->YLength() * length_unit_;
-	const double dz = inst->Height() * length_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularPyramid& inst) {
+	const double dx = inst.XLength() * length_unit_;
+	const double dy = inst.YLength() * length_unit_;
+	const double dz = inst.Height() * length_unit_;
 
 	auto solid = taxonomy::make<taxonomy::solid>();
 	auto shell = taxonomy::make<taxonomy::shell>();
@@ -105,7 +105,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularPyramid* inst) {
 		face->children.push_back(polygon_from_points(points));
 	}
 
-	solid->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+	solid->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 
 	return solid;
 }

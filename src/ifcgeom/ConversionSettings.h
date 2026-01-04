@@ -5,16 +5,15 @@
 #include <limits>
 #include <string>
 #include <iostream>
-#include <string>
 #include <map>
 #include <tuple>
 #include <type_traits>
+#include <optional>
+#include <variant>
 
 #include <boost/program_options.hpp>
 #include <boost/optional.hpp>
-#include <boost/variant.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/optional/optional_io.hpp>
 
 #include "ifc_geom_api.h"
 
@@ -48,7 +47,8 @@ namespace ifcopenshell {
 				// of vector settings we need to strip away the optional and detect argument presence
 				// with !vector::empty()
 				// tfk: we no longer do this because negative values can not be passed like this as boost confuses them with options
-				// std::conditional_t<std::is_same_v<T, std::vector<double>>, T, boost::optional<T>> value;
+				// std::conditional_t<std::is_same_v<T, std::vector<double>>, T, std::optional<T>> value;
+                // tfk: note that we use boost::optional to avoid a lack of deserialization support with std::optional and boost program options
 				boost::optional<T> value;
 
 				SettingBase() {}
@@ -80,7 +80,7 @@ namespace ifcopenshell {
 						return value;
 					} else {
 						if (value) {
-							return value.get();
+							return value.value();
 						}
 						if constexpr (HasDefault<Derived>()) {
 							return Derived::defaultvalue;
@@ -539,7 +539,7 @@ namespace ifcopenshell {
 		template <typename settings_t>
 		class SettingsContainer {
 		public:
-         typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, FunctionStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
+         typedef std::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, FunctionStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
 		private:
 			settings_t settings;
 
@@ -579,15 +579,15 @@ namespace ifcopenshell {
 			void set_option_(const std::string& name, const value_variant_t& val) {
 				if (std::tuple_element_t<Index, settings_t>::name == name) {
 					if constexpr (std::is_enum_v<typename std::tuple_element_t<Index, settings_t>::base_type>) {
-						if (auto* val_ptr = boost::get<int>(&val)) {
+						if (auto* val_ptr = std::get_if<int>(&val)) {
 							auto val_as_enum = (typename std::tuple_element_t<Index, settings_t>::base_type) *val_ptr;
 							std::get<Index>(settings).value = val_as_enum;
 							return;
 						}
 					}
 					try {
-						std::get<Index>(settings).value = boost::get<typename std::tuple_element_t<Index, settings_t>::base_type>(val);
-					} catch (const boost::bad_get&) {
+                        std::get<Index>(settings).value = std::get<typename std::tuple_element_t<Index, settings_t>::base_type>(val);
+					} catch (const std::bad_variant_access&) {
 						std::string ty = impl::readable_name<typename std::tuple_element_t<Index, settings_t>::base_type>::name;
 						throw std::runtime_error("Expected a value of type <" + ty + "> for setting '" + name + "'");
 					}

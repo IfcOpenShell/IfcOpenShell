@@ -20,8 +20,7 @@
 #ifndef ABSTRACT_MAPPING_H
 #define ABSTRACT_MAPPING_H
 
-#include "../ifcparse/IfcBaseClass.h"
-#include "../ifcparse/aggregate_of_instance.h"
+#include "../ifcparse/express.h"
 #include "../ifcgeom/taxonomy.h"
 #include "../ifcgeom/ConversionSettings.h"
 
@@ -37,11 +36,14 @@ namespace geometry {
 
 	struct IFC_GEOM_API geometry_conversion_task {
 		int index;
-		IfcUtil::IfcBaseEntity* representation;
-		aggregate_of_instance::ptr products;
+        express::Base representation;
+		std::vector<express::Base> products;
 	};
 
-	typedef boost::function<bool(IfcUtil::IfcBaseEntity*)> filter_t;
+    /// The filter function (free or member function) or function object (use boost::ref() to reference to it)
+    /// should return true if the geometry for the product is wanted to be included in the output.
+    /// http://www.boost.org/doc/libs/1_62_0/doc/html/function/tutorial.html
+	typedef boost::function<bool(const express::Base&)> filter_t;
     
     class IFC_GEOM_API abstract_mapping {
 	protected:
@@ -53,19 +55,19 @@ namespace geometry {
 		abstract_mapping(Settings& s) : settings_(s) {}
 		virtual ~abstract_mapping() {}
 
-		virtual ifcopenshell::geometry::taxonomy::ptr map(const IfcUtil::IfcBaseInterface*) = 0;
-		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) = 0;
-		virtual IfcUtil::IfcBaseEntity* get_decomposing_entity(const IfcUtil::IfcBaseEntity* product, bool include_openings = true) = 0;
-		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*) = 0;
-		virtual aggregate_of_instance::ptr find_openings(const IfcUtil::IfcBaseEntity*) = 0;
+		virtual ifcopenshell::geometry::taxonomy::ptr map(const express::Base&) = 0;
+        virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) = 0;
+        virtual express::Base get_decomposing_entity(const express::Base& product, bool include_openings = true) = 0;
+		virtual std::map<std::string, express::Base> get_layers(const express::Base&) = 0;
+		virtual std::vector<express::Base> find_openings(const express::Base&) = 0;
 		virtual void initialize_settings() = 0;
-		virtual bool get_layerset_information(const IfcUtil::IfcBaseInterface*, layerset_information&, int&) = 0;
-		virtual bool get_wall_neighbours(const IfcUtil::IfcBaseInterface*, std::vector<endpoint_connection>&) = 0;
-		virtual const IfcUtil::IfcBaseEntity* get_product_type(const IfcUtil::IfcBaseEntity*) = 0;
-		virtual const IfcUtil::IfcBaseEntity* get_single_material_association(const IfcUtil::IfcBaseEntity*) = 0;
+		virtual bool get_layerset_information(const express::Base&, layerset_information&, int&) = 0;
+        virtual bool get_wall_neighbours(const express::Base&, std::vector<endpoint_connection>&) = 0;
+        virtual const express::Base get_product_type(const express::Base&) = 0;
+        virtual const express::Base get_single_material_association(const express::Base&) = 0;
 		virtual double get_length_unit() const = 0;
 		virtual const std::string& get_length_unit_name() const = 0;
-		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product) = 0;
+        virtual express::Base representation_of(const express::Base& product) = 0;
 
 		const Settings& settings() const { return settings_; }
 		Settings& settings() { return settings_; }

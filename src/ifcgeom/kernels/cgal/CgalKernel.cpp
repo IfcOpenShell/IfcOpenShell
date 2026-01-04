@@ -47,7 +47,7 @@ namespace {
 	private:
 		std::list<cgal_face_t> *face_list;
 	public:
-		boost::optional<cgal_shape_t> from_soup;
+		std::optional<cgal_shape_t> from_soup;
 		PolyhedronBuilder(std::list<cgal_face_t> *face_list);
 		void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds);
 	};
@@ -232,7 +232,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 	int num_outer_bounds = 0;
 
 	for (auto& bound : face->children) {
-		if (bound->external.get_value_or(false)) num_outer_bounds++;
+		if (bound->external.value_or(false)) num_outer_bounds++;
 	}
 
 	if (face->children.size() > 1 && num_outer_bounds > 1 && face->children.size() != num_outer_bounds) {
@@ -244,7 +244,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 
 	for (auto& bound : face->children) {
 
-		const bool is_interior = !(bound->external.get_value_or(false) || face->children.size() == 1);
+		const bool is_interior = !(bound->external.value_or(false) || face->children.size() == 1);
 		// single face bound is always external... even if not marked as such
 
 		cgal_wire_t wire;
@@ -284,11 +284,11 @@ namespace {
 		if (auto e = taxonomy::dcast<taxonomy::edge>(curve)) {
 			if (true || e->basis == nullptr) {
 				if (builder.empty()) {
-					const auto& p = boost::get<taxonomy::point3::ptr>(e->start);
+					const auto& p = std::get<taxonomy::point3::ptr>(e->start);
 					cgal_point_t pnt(p->ccomponents()(0), p->ccomponents()(1), p->ccomponents()(2));
 					builder.push_back(pnt);
 				}
-				const auto& p = boost::get<taxonomy::point3::ptr>(e->end);
+				const auto& p = std::get<taxonomy::point3::ptr>(e->end);
 				cgal_point_t pnt(p->ccomponents()(0), p->ccomponents()(1), p->ccomponents()(2));
 				builder.push_back(pnt);
 			} else if (e->basis->kind() == taxonomy::CIRCLE) {
@@ -450,17 +450,17 @@ namespace {
 		void operator()(const taxonomy::trimmed_curve::ptr& e) {
 			auto e_basis = e->basis;
 
-			while (e_basis->kind() == taxonomy::EDGE && e_basis->instance && e_basis->instance->declaration().name() == "IfcTrimmedCurve") {
+			while (e_basis->kind() == taxonomy::EDGE && e_basis->instance && e_basis->instance.declaration().name() == "IfcTrimmedCurve") {
 				// @todo we still might have something to wrt orientation on periodic curves
 				// to make sure we select the correct arc later on.
 				e_basis = taxonomy::cast<taxonomy::edge>(e_basis)->basis;
 			}
 
 			point_projection_visitor v1{ e->basis }, v2{ e->basis };
-			boost::apply_visitor(v1, e->start);
-			boost::apply_visitor(v2, e->end);
+			std::visit(v1, e->start);
+			std::visit(v2, e->end);
 
-			if (!e->curve_sense.get_value_or(true)) {
+			if (!e->curve_sense.value_or(true)) {
 				std::swap(v1.u, v2.u);
 			}
 
@@ -469,7 +469,7 @@ namespace {
 			dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(e->basis, v);
 			this->points = v.points;
 
-			if (!e->curve_sense.get_value_or(true)) {
+			if (!e->curve_sense.value_or(true)) {
 				std::reverse(this->points.begin(), this->points.end());
 			}
 		}
@@ -581,7 +581,7 @@ namespace {
 	CGAL::Polygon_2<Kernel_> loop_to_polygon_2(taxonomy::loop::ptr loop) {
 		CGAL::Polygon_2<Kernel_> polygon;
 		for (auto& e : loop->children) {
-			auto& p = *boost::get<taxonomy::point3::ptr>(e->start);
+			auto& p = *std::get<taxonomy::point3::ptr>(e->start);
 			CGAL::Point_2<Kernel_> pnt(p.ccomponents()(0), p.ccomponents()(1));
 			polygon.push_back(pnt);
 		}
@@ -685,12 +685,12 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 			convert_curve(settings_, e, edge);
 		} else {
 			edge = {
-				*boost::get<taxonomy::point3::ptr>(e->start),
-				*boost::get<taxonomy::point3::ptr>(e->end)
+				*std::get<taxonomy::point3::ptr>(e->start),
+				*std::get<taxonomy::point3::ptr>(e->end)
 			};
 		}
 
-		if (!e->orientation.get_value_or(true)) {
+		if (!e->orientation.value_or(true)) {
 			std::reverse(edge.begin(), edge.end());
 		}
 
@@ -809,7 +809,7 @@ bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResult
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		shell->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		shell->instance.id(),
 		shell->matrix,
 		new CgalShape(shape),
 		shell->surface_style
@@ -834,7 +834,7 @@ bool CgalKernel::convert_impl(const taxonomy::solid::ptr solid, ConversionResult
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		solid->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		solid->instance.id(),
 		solid->matrix,
 		new CgalShape(shape),
 		solid->surface_style
@@ -857,7 +857,7 @@ namespace {
 	}
 }
 
-bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil::IfcBaseEntity * entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings, const IfcGeom::ConversionResults & entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4 & entity_trsf, IfcGeom::ConversionResults & cut_shapes)
+bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings, const IfcGeom::ConversionResults & entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4 & entity_trsf, IfcGeom::ConversionResults & cut_shapes)
 {
 #ifdef IFOPSH_SIMPLE_KERNEL
 	return false;
@@ -865,9 +865,9 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<Kernel_>> second_operand_collector;
 	size_t second_operand_collector_size = 0;
 	
-	std::list<std::pair<const IfcUtil::IfcBaseClass*, std::list<cgal_shape_t>>> operands;
+	std::list<std::pair<express::Base, std::list<cgal_shape_t>>> operands;
 
-	std::list<const IfcUtil::IfcBaseClass*> second_operand_instances;
+	std::list<express::Base> second_operand_instances;
 	std::list<cgal_shape_t> first_operands, second_operands;
 	std::list<CGAL::Nef_polyhedron_3<Kernel_>> first_operands_nef, second_operands_nef;
 
@@ -916,13 +916,13 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 				}
 			}
 			CGAL::Nef_polyhedron_3<Kernel_> nef;
-			if (!preprocess_boolean_operand(op.first->instance->as<IfcUtil::IfcBaseClass>(), {}, {}, {}, entity_shape, nef, PP_NONE)) {
+			if (!preprocess_boolean_operand(op.first->instance, {}, {}, {}, entity_shape, nef, PP_NONE)) {
 				continue;
 			}
 
 			// auto tree = build_halfspace_tree_decomposed(nef, all_operand_planes);
 
-			second_operand_instances.push_back(op.first->instance->as<IfcUtil::IfcBaseClass>());
+			second_operand_instances.push_back(op.first->instance);
 			second_operands.push_back(entity_shape);
 			second_operands_nef.push_back(nef);
 		}
@@ -984,7 +984,7 @@ bool CgalKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, Conversi
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		extrusion->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		extrusion->instance.id(),
 		extrusion->matrix,
 		new CgalShape(shape),
 		extrusion->surface_style
@@ -1321,7 +1321,7 @@ bool CgalKernel::thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_
 	return true;
 }
 
-bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<Kernel_>>& first_operands_nef, const std::list<Kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, boolean_operand_preprocess proc) {
+bool CgalKernel::preprocess_boolean_operand(const express::Base& log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<Kernel_>>& first_operands_nef, const std::list<Kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, boolean_operand_preprocess proc) {
 	cgal_shape_t shape = shape_const;
 
 	if (!shape.is_valid()) {
@@ -1727,7 +1727,7 @@ namespace {
 	}
 }
 
-bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<const IfcUtil::IfcBaseClass*, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1) {
+bool CgalKernel::process_as_2d_polygon(const std::list<std::list<std::pair<express::Base, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1) {
 	if (operands.front().size() != 1) {
 		return false;
 	}
@@ -1887,7 +1887,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			}
 
 			return ConversionResult(
-				br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+				br->instance.id(),
 				br->matrix,
 				new CgalShape(shp),
 				br->surface_style ? br->surface_style : first_item_style
@@ -1912,7 +1912,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 
 	taxonomy::style::ptr first_item_style = nullptr;
 
-	std::list<std::pair<const IfcUtil::IfcBaseClass*, std::list<cgal_shape_t>>> operands;
+	std::list<std::pair<express::Base, std::list<cgal_shape_t>>> operands;
 
 	for (auto& c : br->children) {
 		// AbstractKernel::convert(c, results);
@@ -1921,9 +1921,9 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 		ConversionResults cr;
 
 		operands.emplace_back();
-		operands.back().first = c->instance->as<IfcUtil::IfcBaseClass>();
+		operands.back().first = c->instance;
 
-		if (c->kind() == taxonomy::SOLID && c->instance->declaration().is("IfcHalfSpaceSolid") && !first) {
+		if (c->kind() == taxonomy::SOLID && c->instance.declaration().is("IfcHalfSpaceSolid") && !first) {
 			auto face = taxonomy::cast<taxonomy::solid>(c)->children[0]->children[0];
 
 			if (face->basis == nullptr || face->basis->kind() != taxonomy::PLANE) {
@@ -1951,7 +1951,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			});
 
 			double wmin, wmax;
-			if (face->orientation.get_value_or(false)) {
+			if (face->orientation.value_or(false)) {
 				wmin = 0.;
 				wmax = uvw_max[2] + eps;
 			} else {
@@ -2043,7 +2043,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	for (auto& li : operands) {
 		for (auto& s : li.second) {
 			results.emplace_back(ConversionResult(
-				br->instance->data().id(),
+				br->instance.data().id(),
 				br->matrix,
 				new CgalShape(s),
 				br->surface_style ? br->surface_style : first_item_style
@@ -2065,7 +2065,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	for (auto& p : operands) {
 		for (auto& s : p.second) {
 			results.emplace_back(ConversionResult(
-				br->instance->data().id(),
+				br->instance.data().id(),
 				br->matrix,
 				new CgalShape(s),
 				br->surface_style ? br->surface_style : first_item_style
@@ -2131,7 +2131,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	}
 
 	results.emplace_back(ConversionResult(
-		br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		br->instance.id(),
 		br->matrix,
 		new CgalShape(a_poly),
 		br->surface_style ? br->surface_style : first_item_style

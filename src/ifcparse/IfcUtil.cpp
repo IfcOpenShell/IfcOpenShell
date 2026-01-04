@@ -51,9 +51,8 @@
 #include <Windows.h>
 #endif
 
-#include "aggregate_of_instance.h"
 #include "Argument.h"
-#include "IfcBaseClass.h"
+#include "express.h"
 #include "IfcException.h"
 #include "utils.h"
 #include "IfcFile.h"
@@ -61,85 +60,6 @@
 #include <algorithm>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
-
-void aggregate_of_instance::push(IfcUtil::IfcBaseClass* instance) {
-    if (instance != nullptr) {
-        list_.push_back(instance);
-    }
-}
-void aggregate_of_instance::push(const aggregate_of_instance::ptr& instance) {
-    if (instance) {
-        for (it i = instance->begin(); i != instance->end(); ++i) {
-            if (*i != nullptr) {
-                list_.push_back(*i);
-            }
-        }
-    }
-}
-size_t aggregate_of_instance::size() const { return list_.size(); }
-void aggregate_of_instance::reserve(size_t capacity) { list_.reserve(capacity); }
-aggregate_of_instance::it aggregate_of_instance::begin() { return list_.begin(); }
-aggregate_of_instance::it aggregate_of_instance::end() { return list_.end(); }
-IfcUtil::IfcBaseClass* aggregate_of_instance::operator[](int i) {
-    return list_[i];
-}
-bool aggregate_of_instance::contains(IfcUtil::IfcBaseClass* instance) const {
-    return std::find(list_.begin(), list_.end(), instance) != list_.end();
-}
-void aggregate_of_instance::remove(IfcUtil::IfcBaseClass* instance) {
-    std::vector<IfcUtil::IfcBaseClass*>::iterator iter;
-    while ((iter = std::find(list_.begin(), list_.end(), instance)) != list_.end()) {
-        list_.erase(iter);
-    }
-}
-
-aggregate_of_instance::ptr aggregate_of_instance::filtered(const std::set<const IfcParse::declaration*>& entities) {
-    aggregate_of_instance::ptr return_value(new aggregate_of_instance);
-    for (it it = begin(); it != end(); ++it) {
-        bool contained = false;
-        for (std::set<const IfcParse::declaration*>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
-            if ((*it)->declaration().is(**jt)) {
-                contained = true;
-                break;
-            }
-        }
-        if (!contained) {
-            return_value->push(*it);
-        }
-    }
-    return return_value;
-}
-
-aggregate_of_instance::ptr aggregate_of_instance::unique() {
-    std::set<IfcUtil::IfcBaseClass*> encountered;
-    aggregate_of_instance::ptr return_value(new aggregate_of_instance);
-    for (it it = begin(); it != end(); ++it) {
-        if (encountered.find(*it) == encountered.end()) {
-            return_value->push(*it);
-            encountered.insert(*it);
-        }
-    }
-    return return_value;
-}
-
-/*
-//Note: some of these methods are overloaded in derived classes
-Argument::operator int() const { throw IfcParse::IfcException("Argument is not an integer"); }
-Argument::operator bool() const { throw IfcParse::IfcException("Argument is not a boolean"); }
-Argument::operator boost::logic::tribool() const { throw IfcParse::IfcException("Argument is not a logical"); }
-Argument::operator double() const { throw IfcParse::IfcException("Argument is not a number"); }
-Argument::operator std::string() const { throw IfcParse::IfcException("Argument is not a string"); }
-Argument::operator boost::dynamic_bitset<>() const { throw IfcParse::IfcException("Argument is not a binary"); }
-Argument::operator IfcUtil::IfcBaseClass*() const { throw IfcParse::IfcException("Argument is not an entity instance"); }
-Argument::operator std::vector<double>() const { throw IfcParse::IfcException("Argument is not a list of floats"); }
-Argument::operator std::vector<int>() const { throw IfcParse::IfcException("Argument is not a list of ints"); }
-Argument::operator std::vector<std::string>() const { throw IfcParse::IfcException("Argument is not a list of strings"); }
-Argument::operator std::vector<boost::dynamic_bitset<>>() const { throw IfcParse::IfcException("Argument is not a list of binaries"); }
-Argument::operator aggregate_of_instance::ptr() const { throw IfcParse::IfcException("Argument is not a list of entity instances"); }
-Argument::operator std::vector<std::vector<int>>() const { throw IfcParse::IfcException("Argument is not a list of list of ints"); }
-Argument::operator std::vector<std::vector<double>>() const { throw IfcParse::IfcException("Argument is not a list of list of floats"); }
-Argument::operator aggregate_of_aggregate_of_instance::ptr() const { throw IfcParse::IfcException("Argument is not a list of list of entity instances"); }
-*/
 
 static const char* const argument_type_string[] = {
     "NULL",
@@ -202,11 +122,7 @@ void IfcUtil::unescape_xml(std::string& str) {
     boost::replace_all(str, "&gt;", ">");
 }
 
-IfcUtil::IfcBaseEntity::IfcBaseEntity(IfcEntityInstanceData&& data)
-    : IfcBaseClass(std::move(data))
-{}
-
-void IfcUtil::IfcBaseEntity::populate_derived() {
+void express::Entity::populate_derived() {
     for (auto it = declaration().as_entity()->derived().begin(); it != declaration().as_entity()->derived().end(); ++it) {
         if (*it) {
             set_attribute_value(
@@ -217,8 +133,7 @@ void IfcUtil::IfcBaseEntity::populate_derived() {
     }
 }
 
-AttributeValue IfcUtil::IfcBaseEntity::get(const std::string& name) const
-{
+AttributeValue express::Entity::get(const std::string& name) const {
     auto attrs = declaration().as_entity()->all_attributes();
     auto iter = attrs.begin();
     size_t idx = 0;
@@ -230,16 +145,13 @@ AttributeValue IfcUtil::IfcBaseEntity::get(const std::string& name) const
     throw IfcParse::IfcException(name + " not found on " + declaration().name());
 }
 
-aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string& name) const {
-    if (file_ == nullptr) {
-        throw IfcParse::IfcException("Instance not added to file");
-    }
+std::vector<express::Entity> express::Entity::get_inverse(const std::string& name) const {
     const std::vector<const IfcParse::inverse_attribute*> attrs = declaration().as_entity()->all_inverse_attributes();
     std::vector<const IfcParse::inverse_attribute*>::const_iterator iter = attrs.begin();
     for (; iter != attrs.end(); ++iter) {
         if ((*iter)->name() == name) {
-            return file_->getInverse(
-                id_,
+            return data()->file()->getInverse(
+                id(),
                 (*iter)->entity_reference(),
                 (int)(*iter)->entity_reference()->attribute_index((*iter)->attribute_reference()));
         }
@@ -248,7 +160,7 @@ aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string
 }
 
 /*
-void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* data) {
+void IfcUtil::IfcBaseClass::data(InstanceData* data) {
     delete data_;
     data_ = data;
 }

@@ -24,7 +24,7 @@
 
 // map_transformer: wraps a map-like construct so that its iterator returns
 // a value_type where the mapped element is transformed via a function.
-template <typename BaseMap, typename Transform, typename TransformBack>
+template <typename BaseMap, typename Transform, typename TransformBack = void>
 class map_transformer {
 public:
     using key_type = typename BaseMap::key_type;
@@ -33,15 +33,28 @@ public:
     using value_type = std::pair<key_type, transformed_mapped_type>;
     using mapped_type = transformed_mapped_type;
 
-private:
+    static constexpr bool read_only = std::is_void<TransformBack>::value;
+    struct back_storage_fallback {};
+    using back_storage_t = typename std::conditional<read_only, back_storage_fallback, TransformBack>::type;
+
+  private:
     BaseMap* base_map_;
     Transform transform_;
 
-    TransformBack transform_back_;
+    back_storage_t transform_back_;
 
 public:
-    map_transformer(BaseMap* map, Transform transform, TransformBack transform_back)
-        : base_map_(map), transform_(transform), transform_back_(transform_back){}
+    // read-only constructor with TransformBack=void
+    template <typename TB = TransformBack,
+              typename std::enable_if<std::is_void<TB>::value, int>::type = 0>
+    map_transformer(BaseMap* map, Transform transform)
+        : base_map_(map), transform_(std::move(transform)), transform_back_{} {}
+
+    // read-write constructor with TransformBack provided
+    template <typename TB = TransformBack,
+              typename std::enable_if<!std::is_void<TB>::value, int>::type = 0>
+    map_transformer(BaseMap* map, Transform transform, TB transform_back)
+        : base_map_(map), transform_(std::move(transform)), transform_back_(std::move(transform_back)) {}
 
     class iterator {
     public:
@@ -51,12 +64,12 @@ public:
         using key_type = typename BaseMap::key_type;
         using transformed_mapped_type = std::invoke_result_t<Transform, typename BaseMap::mapped_type>;
         using value_type = std::pair<key_type, transformed_mapped_type>;
-
     private:
         base_iterator base_it_;
         Transform* transform_ptr_;
 
         mutable value_type cached_value_;
+
 
     public:
         iterator() : base_it_(), transform_ptr_(nullptr) {}
@@ -111,6 +124,7 @@ public:
 
     // @todo still not sure if this is a good idea, do we want to insert into the transformed map?
     std::pair<iterator, bool> insert(const value_type& val) {
+        static_assert(!read_only, "insert() requires TransformBack");
         auto p = base_map_->insert({ val.first, transform_back_(val.second) });
         return { iterator(p.first, &transform_), p.second };
     }

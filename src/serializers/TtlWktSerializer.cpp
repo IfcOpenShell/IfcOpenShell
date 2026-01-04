@@ -284,7 +284,7 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
 
         Eigen::Map<const Eigen::Matrix<double, 3, Eigen::Dynamic>> vertex_map(o->geometry().verts().data(), 3, o->geometry().verts().size() / 3);
 
-        boost::optional<std::vector<std::vector<int>>::const_iterator> lowest_face;
+        std::optional<std::vector<std::vector<int>>::const_iterator> lowest_face;
         double lowest_z = std::numeric_limits<double>::infinity();
 
         for (const auto& f : o->geometry().polyhedral_faces_with_holes()) {

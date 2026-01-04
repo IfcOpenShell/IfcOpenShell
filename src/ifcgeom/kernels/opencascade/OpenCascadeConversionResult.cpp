@@ -53,7 +53,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 	// above can be static?
 
 	// A 3x3 matrix to rotate the vertex normals
-	boost::optional<gp_Mat> rotation_matrix;
+	std::optional<gp_Mat> rotation_matrix;
 	
 	if (place.components_) {
 		const auto& m = *place.components_;

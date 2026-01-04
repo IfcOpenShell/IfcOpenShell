@@ -57,56 +57,56 @@
 #include <limits>
 #include <array>
 
-typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
+typedef std::pair<express::Base, std::string> drawing_key;
 
 struct storey_sorter {
 	bool operator()(const drawing_key& ad, const drawing_key& bd) const {
-		if (ad.first == nullptr && bd.first != nullptr) {
+		if (!ad.first && bd.first) {
 			return false;
-		} else if (bd.first == nullptr && ad.first != nullptr) {
+		} else if (!bd.first && ad.first) {
 			return true;
-		} else if (ad.first == nullptr && bd.first == nullptr) {
+		} else if (!ad.first && !bd.first) {
 			return std::less<std::string>()(ad.second, bd.second);
 		}
 
 		auto a = ad.first;
 		auto b = bd.first;
 
-		const bool a_is_storey = a->declaration().is("IfcBuildingStorey");
-		const bool b_is_storey = b->declaration().is("IfcBuildingStorey");
+		const bool a_is_storey = a.declaration().is("IfcBuildingStorey");
+		const bool b_is_storey = b.declaration().is("IfcBuildingStorey");
 		if (a_is_storey && b_is_storey) {
-			boost::optional<double> a_elev, b_elev;
+			std::optional<double> a_elev, b_elev;
 			try {
-				a_elev = static_cast<double>(a->get("Elevation"));
-				b_elev = static_cast<double>(b->get("Elevation"));
+				a_elev = static_cast<double>(a.as<express::Entity>().get("Elevation"));
+				b_elev = static_cast<double>(b.as<express::Entity>().get("Elevation"));
 			} catch (...) {};
 			if (a_elev && b_elev) {
 				if (std::equal_to<double>()(*a_elev, *b_elev)) {
-					return std::less<unsigned int>()(a->id(), b->id());
+					return std::less<unsigned int>()(a.id(), b.id());
 				} else {
 					return std::less<double>()(*a_elev, *b_elev);
 				}
 			}
 
-			boost::optional<std::string> a_name, b_name;
+			std::optional<std::string> a_name, b_name;
 			try {
-				a_name = static_cast<std::string>(a->get("Name"));
-				b_name = static_cast<std::string>(b->get("Name"));
+				a_name = static_cast<std::string>(a.as<express::Entity>().get("Name"));
+				b_name = static_cast<std::string>(b.as<express::Entity>().get("Name"));
 			} catch (...) {};
 			if (a_name && b_name) {
 				if (std::equal_to<std::string>()(*a_name, *b_name)) {
-					return std::less<unsigned int>()(a->id(), b->id());
+					return std::less<unsigned int>()(a.id(), b.id());
 				} else {
 					return std::less<std::string>()(*a_name, *b_name);
 				}
 			}
 		}
-		return std::less<const IfcUtil::IfcBaseEntity*>()(a, b);
+		return std::less<express::Base>()(a, b);
 	}
 };
 
 struct horizontal_plan {
-	const IfcUtil::IfcBaseEntity* storey;
+	express::Base storey;
 	double elevation, offset, next_elevation;
 };
 
@@ -116,18 +116,18 @@ struct vertical_section {
 	gp_Pln plane;
 	std::string name;
 	bool with_projection;
-	boost::optional<double> scale;
-	boost::optional<std::pair<double, double>> size;
+	std::optional<double> scale;
+	std::optional<std::pair<double, double>> size;
 };
 
 typedef boost::variant<horizontal_plan, horizontal_plan_at_element, vertical_section> section_data;
 
 struct geometry_data {
 	TopoDS_Shape compound_local;
-	std::vector<boost::optional<std::vector<double>>> dash_arrays;
+	std::vector<std::optional<std::vector<double>>> dash_arrays;
 	gp_Trsf trsf;
-	const IfcUtil::IfcBaseEntity* product;
-	const IfcUtil::IfcBaseEntity* storey;
+	express::Base product;
+	express::Base storey;
 	double storey_elevation;
 	std::string ifc_name, svg_name;
 };
@@ -211,15 +211,15 @@ namespace {
 	class hlr_calc {
 	private:
 		const HLRAlgo_Projector& projector_;
-		const std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>* product_shapes_ = nullptr;
+		const std::list<std::pair<express::Base, TopoDS_Shape>>* product_shapes_ = nullptr;
 
 	public:
-		typedef std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> result_type;
+		typedef std::list<std::pair<express::Base, TopoDS_Shape>> result_type;
 
 		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
 		{}
 
-		void set_product_shape(const std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>* product_shapes) {
+		void set_product_shape(const std::list<std::pair<express::Base, TopoDS_Shape>>* product_shapes) {
 			product_shapes_ = product_shapes;
 		}
 
@@ -233,13 +233,13 @@ namespace {
 			algo->Hide();
 			HLRBRep_HLRToShape hlr_shapes(algo);
 			if (product_shapes_) {
-				std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> r;
+				std::list<std::pair<express::Base, TopoDS_Shape>> r;
 				for (auto& p : *product_shapes_) {
 					r.push_back({ p.first, occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
 				}
 				return r;
 			} else {
-				return { {nullptr, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound())}};
+                return {{express::Base{}, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound())}};
 			}
 		}
 
@@ -249,13 +249,13 @@ namespace {
 			HLRBRep_PolyHLRToShape hlr_shapes;
 			hlr_shapes.Update(algo);
 			if (product_shapes_) {
-				std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> r;
+				std::list<std::pair<express::Base, TopoDS_Shape>> r;
 				for (auto& p : *product_shapes_) {
 					r.push_back({ p.first, occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
 				}
 				return r;
 			} else {
-				return { {nullptr, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound()) } };
+                return {{express::Base{}, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound())}};
 			}
 		}
 	};
@@ -366,7 +366,7 @@ namespace {
 		HLRAlgo_Projector projector_;
 
 		std::multimap<double, face_info> large_ortho_faces_;
-		std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> items_;
+		std::list<std::pair<express::Base, TopoDS_Shape>> items_;
 
 	public:
 
@@ -429,7 +429,7 @@ namespace {
 			return false;
 		}
 		
-		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product) {
+		void add(const TopoDS_Shape& s, express::Base product) {
 			if (!use_prefiltering_) {
 				items_.insert(items_.end(), {product, s});
 				return;
@@ -507,7 +507,7 @@ namespace {
 			}
 		}
 
-		std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> build() {
+		std::list<std::pair<express::Base, TopoDS_Shape>> build() {
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
 				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
@@ -541,15 +541,15 @@ public:
 protected:
 	stream_or_filename svg_file;
 	double xmin, ymin, xmax, ymax;
-	boost::optional<std::vector<section_data>> section_data_;
-	boost::optional<std::vector<section_data>> deferred_section_data_;
-	boost::optional<double> scale_, calculated_scale_, center_x_, center_y_;
-	boost::optional<double> storey_height_line_length_;
-	boost::optional<std::pair<double, double>> size_, offset_2d_;
-	boost::optional<std::string> space_name_transform_;
+	std::optional<std::vector<section_data>> section_data_;
+	std::optional<std::vector<section_data>> deferred_section_data_;
+	std::optional<double> scale_, calculated_scale_, center_x_, center_y_;
+	std::optional<double> storey_height_line_length_;
+	std::optional<std::pair<double, double>> size_, offset_2d_;
+	std::optional<std::string> space_name_transform_;
 
 #if OCC_VERSION_HEX >= 0x70300	
-	boost::optional<Bnd_OBB> view_box_3d_;
+	std::optional<Bnd_OBB> view_box_3d_;
 #endif
 	
 
@@ -568,15 +568,15 @@ protected:
 	int profile_threshold_;
 
 	IfcParse::IfcFile* file;
-	const IfcUtil::IfcBaseEntity* storey_;
+	express::Base storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 	std::map<drawing_key, drawing_meta> drawing_metadata;
-	std::map<const IfcUtil::IfcBaseEntity*, hlr_t> storey_hlr;
+    std::map<express::Base, hlr_t> storey_hlr;
 
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
 
-	boost::optional<std::string> section_ref_, elevation_ref_, elevation_ref_guid_;
+	std::optional<std::string> section_ref_, elevation_ref_, elevation_ref_guid_;
 	
 	std::list<geometry_data> element_buffer_;
 
@@ -621,7 +621,6 @@ public:
 		, unify_inputs_(false)
 		, profile_threshold_(-1)
 		, file(0)
-		, storey_(0)
 		, xcoords_begin(0)
 		, ycoords_begin(0)
 		, radii_begin(0)
@@ -638,16 +637,16 @@ public:
     bool ready();
     void write(const IfcGeom::TriangulationElement* /*o*/) {}
     void write(const IfcGeom::BRepElement* o);
-    void write(path_object& p, const TopoDS_Shape& wire, boost::optional<std::vector<double>> dash_array=boost::none);
+    void write(path_object& p, const TopoDS_Shape& wire, std::optional<std::vector<double>> dash_array=std::nullopt);
 	void write(const geometry_data& data);
-    path_object& start_path(const gp_Pln& p, const IfcUtil::IfcBaseEntity* storey, const std::string& id);
+    path_object& start_path(const gp_Pln& p, const express::Base& storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
 	bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
-	void setSectionHeight(double h, const IfcUtil::IfcBaseEntity* storey = 0);
+    void setSectionHeight(double h, express::Base storey = express::Base());
 	void setSectionHeightsFromStoreys(double offset=1.2);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
@@ -660,17 +659,17 @@ public:
 	std::array<std::array<double, 3>, 3> resize();
 	void resetScale();
 
-	void setSectionRef(const boost::optional<std::string>& s) { 
+	void setSectionRef(const std::optional<std::string>& s) { 
 		section_ref_ = s; 
 	}
 
-	void setElevationRef(const boost::optional<std::string>& s) {
+	void setElevationRef(const std::optional<std::string>& s) {
 		elevation_ref_ = s; 
-		elevation_ref_guid_ = boost::none;
+		elevation_ref_guid_ = std::nullopt;
 	}
 
-	void setElevationRefGuid(const boost::optional<std::string>& s) {
-		elevation_ref_ = boost::none;
+	void setElevationRefGuid(const std::optional<std::string>& s) {
+		elevation_ref_ = std::nullopt;
 		elevation_ref_guid_ = s;
 	}
 
@@ -743,10 +742,10 @@ public:
 	void setDrawingCenter(double x, double y) {
 		center_x_ = x; center_y_ = y;
 	}
-    std::string nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element* elem);
-	std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
-	std::string idElement(const IfcUtil::IfcBaseEntity* elem);
-	std::string object_id(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element* o) {
+    std::string nameElement(express::Base storey, const IfcGeom::Element* elem);
+	std::string nameElement(express::Base elem);
+	std::string idElement(express::Base elem);
+    std::string object_id(express::Base storey, const IfcGeom::Element* o) {
 		if (storey) {
 			return idElement(storey) + "-" + GeometrySerializer::object_id(o);
 		} else {

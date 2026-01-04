@@ -111,12 +111,12 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
 
 %typemap(out) ifcopenshell::geometry::Settings::value_variant_t {
 	pythonizing_visitor vis;
-	$result = $1.apply_visitor(vis);
+	$result = std::visit(vis, $1);
 }
 
 %typemap(out) ifcopenshell::geometry::SerializerSettings::value_variant_t {
 	pythonizing_visitor vis;
-	$result = $1.apply_visitor(vis);
+	$result = std::visit(vis, $1);
 }
 
 %typemap(out) std::pair<const char*, size_t> {

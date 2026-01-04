@@ -21,16 +21,17 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcHalfSpaceSolid* inst) {
-	IfcSchema::IfcSurface* surface = inst->BaseSurface();
-	if (!surface->declaration().is(IfcSchema::IfcPlane::Class())) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcHalfSpaceSolid& inst) {
+    auto surface = inst.BaseSurface();
+    auto plane = surface.as<IfcSchema::IfcPlane>();
+    if (!plane) {
 		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface);
 		return nullptr;
 	}
 	auto p = taxonomy::make<taxonomy::plane>();
-	p->matrix = taxonomy::cast<taxonomy::matrix4>(map(((IfcSchema::IfcPlane*)surface)->Position()));
+    p->matrix = taxonomy::cast<taxonomy::matrix4>(map(plane.Position()));
 	auto f = taxonomy::make<taxonomy::face>();
-	f->orientation.reset(!inst->AgreementFlag());
+	f->orientation.emplace(!inst.AgreementFlag());
 	f->basis = p;
 	auto sh = taxonomy::make<taxonomy::shell>();
 	sh->children.push_back(f);

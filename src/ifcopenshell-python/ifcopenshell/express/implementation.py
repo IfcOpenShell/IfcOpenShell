@@ -22,8 +22,6 @@ import templates
 
 from schema import OrderedCaseInsensitiveDict
 
-from header import USE_VIRTUAL_INHERITANCE
-
 
 class Implementation(codegen.Base):
     def __init__(self, mapping):
@@ -70,15 +68,14 @@ class Implementation(codegen.Base):
                 ),
             )
             
-        if USE_VIRTUAL_INHERITANCE:
-            for name, enum in mapping.schema.selects.items():
-                write(
-                    templates.select_function,
-                    name=name,
-                    schema_name=schema_name,
-                    schema_name_upper=schema_name_upper,
-                    index_in_schema=self.names.index(str(name)),
-                )
+        for name, enum in mapping.schema.selects.items():
+            write(
+                templates.select_function,
+                name=name,
+                schema_name=schema_name,
+                schema_name_upper=schema_name_upper,
+                index_in_schema=self.names.index(str(name)),
+            )
 
         write = lambda str, **kwargs: entity_implementations.append(str % kwargs)
 
@@ -101,7 +98,6 @@ class Implementation(codegen.Base):
 
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg["list_instance_type"])
-                        select = arg["list_instance_type"] == "IfcUtil::IfcBaseClass"
                         express = (
                             mapping.flatten_type_string(arg["list_instance_type"]) in mapping.express_to_cpp_typemapping
                         )
@@ -109,9 +105,9 @@ class Implementation(codegen.Base):
                             return templates.get_attr_stmt_enum
                         elif arg["is_nested"] and arg["is_templated_list"]:
                             return templates.get_attr_stmt_nested_array
-                        elif arg["is_templated_list"] and not (select or simple or express):
+                        elif arg["is_templated_list"] and not (simple or express):
                             return templates.get_attr_stmt_array
-                        elif arg["non_optional_type"].endswith("*"):
+                        elif arg["argument_type_enum"] == 'IfcUtil::Argument_ENTITY_INSTANCE':
                             return templates.get_attr_stmt_entity
                         else:
                             return templates.get_attr_stmt
@@ -122,10 +118,10 @@ class Implementation(codegen.Base):
                             "if(get_attribute_value(%d).isNull()) { return %%s; }"
                             % (arg["index"] - 1,)
                         )
-                        if "boost::optional" in arg["full_type"]:
-                            null_check = attr_check % "boost::none"
+                        if "std::optional" in arg["full_type"]:
+                            null_check = attr_check % "std::nullopt"
                         else:
-                            null_check = attr_check % "nullptr"
+                            null_check = attr_check % (arg['full_type'] + "{}")
 
                     tmpl = find_template(arg)
                     write_attr(
@@ -151,13 +147,14 @@ class Implementation(codegen.Base):
 
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg["list_instance_type"])
-                        select = arg["list_instance_type"] == "IfcUtil::IfcBaseClass"
                         express = arg["list_instance_type"] in mapping.express_to_cpp_typemapping
                         if arg["is_enum"]:
                             return templates.set_attr_stmt_enum
-                        elif arg["is_templated_list"] and not (select or simple or express):
+                        elif arg["is_nested"] and arg["is_templated_list"]:
+                            return templates.set_attr_stmt_nested_array
+                        elif arg["is_templated_list"] and not (simple or express):
                             return templates.set_attr_stmt_array
-                        elif arg["full_type"].endswith('*'):
+                        elif arg["argument_type_enum"] == 'IfcUtil::Argument_ENTITY_INSTANCE':
                             return templates.set_attr_instance
                         else:
                             return templates.set_attr_stmt
@@ -167,7 +164,7 @@ class Implementation(codegen.Base):
                         templates.function,
                         class_name=name,
                         name="set%s" % arg["name"],
-                        arguments="%s v" % arg["full_type"],
+                        arguments="const %s& v" % arg["full_type"],
                         return_type="void",
                         schema_name=schema_name,
                         schema_name_upper=schema_name_upper,
@@ -176,10 +173,10 @@ class Implementation(codegen.Base):
                             "index": arg["index"] - 1,
                             "type": arg["full_type"].replace("::Value", ""),
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
-                            "star_if_optional": "*" if "boost::optional" in arg["full_type"] else "",
-                            "check_optional_set_begin": "if (v) {" if "boost::optional" in arg["full_type"] else "",
-                            "check_optional_set_else": "} else {" if "boost::optional" in arg["full_type"] else "if constexpr (false)",
-                            "check_optional_set_end": "}" if "boost::optional" in arg["full_type"] else "",
+                            "star_if_optional": "*" if "std::optional" in arg["full_type"] else "",
+                            "check_optional_set_begin": "if (v) {" if "std::optional" in arg["full_type"] else "",
+                            "check_optional_set_else": "} else {" if "std::optional" in arg["full_type"] else "if constexpr (false)",
+                            "check_optional_set_end": "}" if "std::optional" in arg["full_type"] else "",
                         },
                     )
 
@@ -226,7 +223,7 @@ class Implementation(codegen.Base):
                     "schema_name_upper": schema_name_upper,
                     "name": i.name,
                     "arguments": "",
-                    "return_type": "::%s::%s::list::ptr" % (schema_name, i.entity),
+                    "return_type": "std::vector<::%s::%s>" % (schema_name, i.entity),
                     "body": templates.get_inverse
                     % {
                         "type": i.entity,
@@ -240,15 +237,15 @@ class Implementation(codegen.Base):
             ]
 
             superclass = (
-                "%s(std::move(e))" % type.supertypes[0]
+                "%s(e)" % type.supertypes[0]
                 if len(type.supertypes) == 1
-                else "IfcUtil::IfcBaseEntity(std::move(e))"
+                else "express::Entity(e)"
             )
 
             superclass_num_attrs = (
-                "%s(IfcEntityInstanceData(in_memory_attribute_storage(%%d)))" % type.supertypes[0]
+                "%s(const std::weak_ptr<InstanceData>&(in_memory_attribute_storage(%%d)))" % type.supertypes[0]
                 if len(type.supertypes) == 1
-                else "IfcUtil::IfcBaseEntity(IfcEntityInstanceData(in_memory_attribute_storage(%d)))"
+                else "express::Entity(const std::weak_ptr<InstanceData>&(in_memory_attribute_storage(%d)))"
             ) % len(constructor_arguments)
 
             write(
@@ -313,7 +310,7 @@ class Implementation(codegen.Base):
         for class_name, type in mapping.schema.simpletypes.items():
             type_str = mapping.make_type_string(mapping.flatten_type_string(type))
             attr_type = mapping.make_argument_type(type)
-            superclass = mapping.simple_type_parent(class_name) or "IfcUtil::IfcBaseType"
+            superclass = mapping.simple_type_parent(class_name) or "express::DeclaredType"
 
             simpletype_impl_is = (
                 templates.simpletype_impl_is_with_supertype
@@ -358,24 +355,24 @@ class Implementation(codegen.Base):
                                 (),
                                 templates.simpletype_impl_class,
                             ),
-                            (
-                                "",
-                                "declaration",
-                                templates.const_function,
-                                "const IfcParse::type_declaration&",
-                                (),
-                                templates.simpletype_impl_declaration,
-                            ),
-                            (
-                                "std::move(e)",
-                                "",
-                                constructor,
-                                "",
-                                ("IfcEntityInstanceData&& e",),
-                                "",
-                            ),
-                            ("", "", constructor, "", ("%s v" % type_str,), ("set_attribute_value(0, v%s);" % ("->generalize()" if mapping.is_templated_list(type) else ""))) if mapping.simple_type_parent(class_name) is None else \
-                            ("v", "", constructor, "", ("%s v" % type_str,), ""),
+                            # (
+                            #     "",
+                            #     "declaration",
+                            #     templates.const_function,
+                            #     "const IfcParse::type_declaration&",
+                            #     (),
+                            #     templates.simpletype_impl_declaration,
+                            # ),
+                            # (
+                            #     "e",
+                            #     "",
+                            #     constructor,
+                            #     "",
+                            #     ("const std::weak_ptr<InstanceData>& e",),
+                            #     "",
+                            # ),
+                            # ("", "", constructor, "", ("%s v" % type_str,), ("set_attribute_value(0, v%s);" % ("->generalize()" if mapping.is_templated_list(type) else ""))) if mapping.simple_type_parent(class_name) is None else \
+                            # ("v", "", constructor, "", ("%s v" % type_str,), ""),
                             ("", "", templates.cast_function, type_str, (), simpletype_impl_cast),
                         ),
                     ),

@@ -61,6 +61,7 @@
 #endif
 
 #include <boost/program_options.hpp>
+#include <boost/optional/optional_io.hpp>
 #include <boost/make_shared.hpp>
 
 #include <fstream>
@@ -202,7 +203,7 @@ struct exclusion_traverse_filter : public geom_filter { exclusion_traverse_filte
 
 size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_traverse_filter&, exclusion_filter&, exclusion_traverse_filter&);
 void parse_filter(geom_filter &, const std::vector<std::string>&);
-std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
+std::vector<ifcopenshell::geometry::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
 bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false);
 
@@ -755,7 +756,7 @@ int main(int argc, char** argv) {
     if (exclude_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_filter); }
     if (exclude_traverse_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_traverse_filter); }
 
-    std::vector<IfcGeom::filter_t> filter_funcs = setup_filters(used_filters, IfcUtil::path::to_utf8(output_extension));
+    std::vector<ifcopenshell::geometry::filter_t> filter_funcs = setup_filters(used_filters, IfcUtil::path::to_utf8(output_extension));
     if (filter_funcs.empty()) {
         cerr_ << "[Error] Failed to set up geometry filters\n";
         return EXIT_FAILURE;
@@ -1277,9 +1278,9 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 	bool requires_init = false;
 
 #ifdef WITH_IFCXML
-	if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
-		ifc_file = IfcParse::parse_ifcxml(filename);
-    } else
+	// if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
+	// 	ifc_file = IfcParse::parse_ifcxml(filename);
+    // } else
 #endif
     {
         ifc_file = new IfcParse::IfcFile(IfcParse::uninitialized_tag{});
@@ -1451,9 +1452,9 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_t
 
 /// @todo Clean up this filter initialization code further.
 /// @return References to the used filter functors, if none an error occurred.
-std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
+std::vector<ifcopenshell::geometry::filter_t> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
 {
-    std::vector<IfcGeom::filter_t> filter_funcs;
+    std::vector<ifcopenshell::geometry::filter_t> filter_funcs;
     for(auto& f: filters) {
         if (f.type == geom_filter::ENTITY_TYPE) {
             entity_filter.include = f.include;
@@ -1493,13 +1494,13 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& fil
 namespace latebound_access {
 
 	template <typename T>
-	void set(IfcUtil::IfcBaseClass* inst, const std::string& attr, T t);
+	void set(express::Base inst, const std::string& attr, T t);
 
 	template <typename T>
-	void set_enumeration(IfcUtil::IfcBaseClass*, const std::string&, const IfcParse::enumeration_type*, T) {}
+    void set_enumeration(express::Base, const std::string&, const IfcParse::enumeration_type*, T) {}
 
 	template <>
-	void set_enumeration(IfcUtil::IfcBaseClass* inst, const std::string& attr, const IfcParse::enumeration_type* enum_type, std::string t) {
+    void set_enumeration(express::Base inst, const std::string& attr, const IfcParse::enumeration_type* enum_type, std::string t) {
 		std::vector<std::string>::const_iterator it = std::find(
 			enum_type->enumeration_items().begin(),
 			enum_type->enumeration_items().end(),
@@ -1509,50 +1510,41 @@ namespace latebound_access {
 	}
 
 	template <typename T>
-	void set(IfcUtil::IfcBaseClass* inst, const std::string& attr, T t) {
-		auto decl = inst->declaration().as_entity();
+    void set(express::Base inst, const std::string& attr, T t) {
+		auto decl = inst.declaration().as_entity();
 		auto i = decl->attribute_index(attr);
 
 		auto attr_type = decl->attribute_by_index(i)->type_of_attribute();
 		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, EnumerationReference>::value) {
 			set_enumeration(inst, attr, attr_type->as_named_type()->declared_type()->as_enumeration_type(), t);
 		} else {
-			inst->set_attribute_value(i, t);
+			inst.set_attribute_value(i, t);
 		}
 	}
 
-	IfcUtil::IfcBaseClass* create(IfcParse::IfcFile& f, const std::string& entity) {
+	express::Base create(IfcParse::IfcFile& f, const std::string& entity) {
 		auto decl = f.schema()->declaration_by_name(entity);
-		auto data = IfcEntityInstanceData(in_memory_attribute_storage(decl->as_entity()->attribute_count()));
-		auto inst = f.schema()->instantiate(decl, std::move(data));
-		if (decl->is("IfcRoot")) {
-			IfcParse::IfcGlobalId guid;
-			latebound_access::set(inst, "GlobalId", (std::string) guid);
-		}
-		return f.addEntity(inst);
+        return f.create(decl);
 	}
 }
 
 void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
 	{
-		auto delete_reversed = [&f](const aggregate_of_instance::ptr& insts) {
-			if (!insts) {
-				return;
-			}
+		auto delete_reversed = [&f](const std::vector<express::Base>& insts) {
 			// Lists are traversed back to front as the list may be mutated when
 			// instances are removed from the grouping by type.
-			for (auto it = insts->end() - 1; it >= insts->begin(); --it) {
-				IfcUtil::IfcBaseClass* const inst = *it;
-				f.removeEntity(inst);
+			for (auto it = insts.end() - 1; it >= insts.begin(); --it) {
+                f.removeEntity(*it);
 			}
 		};
 
 		// Delete quantities
 		auto quantities = f.instances_by_type("IfcPhysicalQuantity");
-		if (quantities) {
-			quantities = quantities->filtered({ f.schema()->declaration_by_name("IfcPhysicalComplexQuantity") });
-			delete_reversed(quantities);
-		}
+        for (auto it = quantities.end() - 1; it >= quantities.begin(); --it) {
+            if (!it->declaration().is("IfcPhysicalComplexQuantity")) {
+                f.removeEntity(*it);
+            }
+        }
 
 		// Delete complexes
 		delete_reversed(f.instances_by_type("IfcPhysicalComplexQuantity"));
@@ -1560,19 +1552,18 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		auto element_quantities = f.instances_by_type("IfcElementQuantity");
 
 		// Capture relationship nodes
-		std::vector<IfcUtil::IfcBaseClass*> relationships;
+		std::vector<express::Entity> relationships;
 		auto IfcRelDefinesByProperties = f.schema()->declaration_by_name("IfcRelDefinesByProperties");
-		if (element_quantities) {
-			for (auto& eq : *element_quantities) {
-				auto rels = eq->file_->getInverse(eq->id(), IfcRelDefinesByProperties, -1);
-				for (auto& rel : *rels) {
-					relationships.push_back(rel);
-				}
-			}
 
-			// Delete element quantities
-			delete_reversed(element_quantities);
+		for (auto& eq : element_quantities) {
+            auto rels = eq.data()->file()->getInverse(eq.id(), IfcRelDefinesByProperties, -1);
+			for (auto& rel : rels) {
+				relationships.push_back(rel);
+			}
 		}
+
+		// Delete element quantities
+		delete_reversed(element_quantities);
 
 
 		// Delete relationship nodes
@@ -1620,8 +1611,8 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	latebound_access::set(ownerhist, "ChangeAction", std::string("MODIFIED"));
 	latebound_access::set(ownerhist, "CreationDate", (int)time(0));
 
-	IfcUtil::IfcBaseClass* quantity = nullptr;
-	aggregate_of_instance::ptr objects;
+	express::Base quantity;
+	std::vector<express::Base> objects;
 	boost::shared_ptr<IfcGeom::Representation::BRep> previous_geometry_pointer;
 
 	for (;; ++num_created) {
@@ -1636,7 +1627,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 
 		if (geom_object && geom_object->geometry_pointer() == previous_geometry_pointer) {
 			// @todo
-			objects->push(const_cast<IfcUtil::IfcBaseEntity*>(geom_object->product()));
+			objects.push_back(geom_object->product());
 		} else {
 			if (quantity) {
 				auto rel = latebound_access::create(f, "IfcRelDefinesByProperties");
@@ -1649,35 +1640,35 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				break;
 			}
 
-			aggregate_of_instance::ptr quantities(new aggregate_of_instance);
+			std::vector<express::Base> quantities;
 
 			double a, b, c;
 			if (geom_object->geometry().calculate_surface_area(a)) {
 				auto quantity_area = latebound_access::create(f, "IfcQuantityArea");
 				latebound_access::set(quantity_area, "Name", std::string("Total Surface Area"));
 				latebound_access::set(quantity_area, "AreaValue", a);
-				quantities->push(quantity_area);
+				quantities.push_back(quantity_area);
 			}
 			
 			if (geom_object->geometry().calculate_volume(a)) {
 				auto quantity_volume = latebound_access::create(f, "IfcQuantityVolume");
 				latebound_access::set(quantity_volume, "Name", std::string("Volume"));
 				latebound_access::set(quantity_volume, "VolumeValue", a);
-				quantities->push(quantity_volume);
+				quantities.push_back(quantity_volume);
 			}
 
 			if (geom_object->calculate_projected_surface_area(a, b, c)) {
 				auto quantity_area = latebound_access::create(f, "IfcQuantityArea");
 				latebound_access::set(quantity_area, "Name", std::string("Footprint Area"));
 				latebound_access::set(quantity_area, "AreaValue", c);
-				quantities->push(quantity_area);
+				quantities.push_back(quantity_area);
 			}
 
 			auto quantity_complex = latebound_access::create(f, "IfcPhysicalComplexQuantity");
 			latebound_access::set(quantity_complex, "Name", std::string("Shape Validation Properties"));
-			quantities->push(quantity_complex);
+			quantities.push_back(quantity_complex);
 
-			aggregate_of_instance::ptr quantities_2(new aggregate_of_instance);
+			std::vector<express::Base> quantities_2;
 
 			for (auto& part : geom_object->geometry()) {				
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
@@ -1685,20 +1676,19 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
 				latebound_access::set(quantity_count, "CountValue", part.Shape()->surface_genus());
 
-				quantities_2->push(quantity_count);				
+				quantities_2.push_back(quantity_count);				
 			}
 
 			latebound_access::set(quantity_complex, "HasQuantities", quantities_2);
 
-			if (quantities->size()) {
+			if (!quantities.empty()) {
 				quantity = latebound_access::create(f, "IfcElementQuantity");
 				latebound_access::set(quantity, "OwnerHistory", ownerhist);
 				latebound_access::set(quantity, "Quantities", quantities);
 			}
 
-			objects.reset(new aggregate_of_instance);
 			// @todo
-			objects->push(const_cast<IfcUtil::IfcBaseEntity*>(geom_object->product()));
+			objects.push_back(geom_object->product());
 		}
 
 		previous_geometry_pointer = geom_object->geometry_pointer();

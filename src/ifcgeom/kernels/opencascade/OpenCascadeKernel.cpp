@@ -40,7 +40,7 @@ namespace {
 
 using namespace ifcopenshell::geometry;
 
-bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 	const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
 
 	util::boolean_settings bst;
@@ -260,7 +260,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 	}
 
 	results.emplace_back(ConversionResult(
-		r->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		r->instance.id(),
 		r->matrix,
 		new OpenCascadeShape(shape),
 		r->surface_style
@@ -297,7 +297,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 // 	std::for_each(rs.begin(), rs.end(), [&openings](IfcSchema::IfcRelVoidsElement* rel) {
 // 		if (rel->RelatedOpeningElement()->ObjectPlacement() && rel->RelatedOpeningElement()->Representation()) {
 // 			auto reps = rel->RelatedOpeningElement()->Representation()->Representations();
-// 			if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier().get_value_or("") == "Reference")) {
+// 			if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier().value_or("") == "Reference")) {
 // 				openings->push(rel);
 // 			}
 // 		}
@@ -428,7 +428,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 // 
 // 	int parent_id = -1;
 // 	try {
-// 		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
+// 		express::Entity* parent_object = get_decomposing_entity(product);
 // 		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
 // 			parent_id = parent_object->data().id();
 // 		}
@@ -436,7 +436,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 // 		Logger::Error(e);
 // 	}
 // 
-// 	const std::string name = product->Name().get_value_or("");
+// 	const std::string name = product->Name().value_or("");
 // 	const std::string guid = product->GlobalId();
 // 
 // 	gp_Trsf trsf;
@@ -677,7 +677,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 // {
 // 	int parent_id = -1;
 // 	try {
-// 		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
+// 		express::Entity* parent_object = get_decomposing_entity(product);
 // 		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
 // 			parent_id = parent_object->data().id();
 // 		}
@@ -685,7 +685,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 // 		Logger::Error(e);
 // 	}
 // 
-// 	const std::string name = product->Name().get_value_or("");
+// 	const std::string name = product->Name().value_or("");
 // 	const std::string guid = product->GlobalId();
 // 
 // 	gp_Trsf trsf;
@@ -998,7 +998,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 // 			layer_offset += *thickness++;
 // 
 // 			bool found_intersection = false, parallel = false;
-// 			boost::optional<gp_Pnt> point_outside_param_range;
+// 			std::optional<gp_Pnt> point_outside_param_range;
 // 
 // 			const Handle_Geom_Surface& surface = *jt;
 // 
@@ -1209,7 +1209,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 // 	placement_rel_to_type_ = type;
 // }
 // 
-// void IfcGeom::Kernel::set_conversion_placement_rel_to_instance(const IfcUtil::IfcBaseEntity* instance) {
+// void IfcGeom::Kernel::set_conversion_placement_rel_to_instance(const express::Entity* instance) {
 // 	placement_rel_to_instance_ = instance;
 // }
 // 
@@ -1281,7 +1281,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 // 	if (shading_styles.second->declaration().is(IfcSchema::IfcSurfaceStyleRendering::Class())) {
 // 		IfcSchema::IfcSurfaceStyleRendering* rendering_style = static_cast<IfcSchema::IfcSurfaceStyleRendering*>(shading_styles.second);
 // 		if (rendering_style->DiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
-// 			SurfaceStyle::ColorComponent diffuse = surface_style.Diffuse().get_value_or(SurfaceStyle::ColorComponent(1, 1, 1));
+// 			SurfaceStyle::ColorComponent diffuse = surface_style.Diffuse().value_or(SurfaceStyle::ColorComponent(1, 1, 1));
 // 			surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(diffuse.R() * rgb[0], diffuse.G() * rgb[1], diffuse.B() * rgb[2]));
 // 		}
 // 		if (rendering_style->DiffuseTransmissionColour()) {

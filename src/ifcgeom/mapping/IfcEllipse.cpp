@@ -21,9 +21,9 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipse* inst) {
-	double x = inst->SemiAxis1() * length_unit_;
-	double y = inst->SemiAxis2() * length_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipse& inst) {
+	double x = inst.SemiAxis1() * length_unit_;
+	double y = inst.SemiAxis2() * length_unit_;
 	const double tol = settings_.get<settings::Precision>().get();
 	if (x < tol || y < tol) {
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", inst);
@@ -31,7 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipse* inst) {
 	}
 
 	auto el = taxonomy::make<taxonomy::ellipse>();
-	el->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+	el->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 
 	// Open Cascade does not allow ellipses of which the minor radius
 	// is greater than the major radius. Hence, in this case, the

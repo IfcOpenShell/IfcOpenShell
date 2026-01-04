@@ -8,22 +8,22 @@ namespace ifcopenshell {
 	namespace geometry {
 		struct profile_point {
 			std::array<double, 2> xy;
-			boost::optional<double> radius;
+			std::optional<double> radius;
 
-			profile_point(const std::array<double, 2>& p, const boost::optional<double>& r = boost::none)
+			profile_point(const std::array<double, 2>& p, const std::optional<double>& r = std::nullopt)
 				: xy(p), radius(r) {
 			}
 		};
 
 		struct profile_point_with_edges {
 			Eigen::Vector2d xy;
-			boost::optional<double> radius;
+			std::optional<double> radius;
 			taxonomy::edge::ptr previous, next;
 		};
 
 		struct profile_point_with_edges_3d {
 			Eigen::Vector3d xy;
-			boost::optional<double> radius;
+			std::optional<double> radius;
 			taxonomy::edge::ptr previous, next;
 		};
 
@@ -34,6 +34,8 @@ namespace ifcopenshell {
 		taxonomy::loop::ptr fillet_loop(taxonomy::loop::ptr lp, double radius);
 
 		void remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol);
+
+		std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> remove_duplicate_points_from_loop(const std::vector<taxonomy::point3::ptr>& polygon, const std::vector<std::string>& tags);
 	}
 
 }

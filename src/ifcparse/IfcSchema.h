@@ -30,13 +30,7 @@
 #include <vector>
 
 // Forward declarations
-class IfcEntityInstanceData;
-
-namespace IfcUtil {
-class IfcBaseClass;
-class IfcBaseEntity;
-class IfcBaseType;
-} // namespace IfcUtil
+class InstanceData;
 
 namespace IfcParse {
 
@@ -437,13 +431,6 @@ class IFC_PARSE_API entity : public declaration {
     virtual const entity* as_entity() const { return this; }
 };
 
-class IFC_PARSE_API instance_factory {
-  public:
-    virtual ~instance_factory() {}
-
-    virtual IfcUtil::IfcBaseClass* operator()(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const = 0;
-};
-
 class IFC_PARSE_API schema_definition {
   private:
     std::string name_;
@@ -469,15 +456,13 @@ class IFC_PARSE_API schema_definition {
         }
     };
 
-    instance_factory* factory_;
-
     std::string& temp_string_() const {
         static my_thread_local std::string string;
         return string;
     }
 
   public:
-    schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory);
+    schema_definition(const std::string& name, const std::vector<const declaration*>& declarations);
 
     ~schema_definition();
 
@@ -506,8 +491,6 @@ class IFC_PARSE_API schema_definition {
     const std::vector<const entity*>& entities() const { return entities_; }
 
     const std::string& name() const { return name_; }
-
-    IfcUtil::IfcBaseClass* instantiate(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const;
 };
 
 IFC_PARSE_API const schema_definition* schema_by_name(const std::string&);

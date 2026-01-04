@@ -1,4 +1,4 @@
-#include "profile_helper.h"
+﻿#include "profile_helper.h"
 #include "infra_sweep_helper.h"
 #include "function_item_evaluator.h"
 
@@ -35,7 +35,7 @@ bool has_intersection(const std::set<T, Cmp>& A,
 
 }
 
-taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections)
+taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const express::Base inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections)
 {
 	std::sort(cross_sections.begin(), cross_sections.end());
 
@@ -98,12 +98,12 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 				(profile_index + 1 < longitudes.end()) &&
 				(relative_dist_along >= 1.e-9 || offset_a.cwiseAbs().maxCoeff() > 0. || rotation_a);
 
-			boost::optional<Eigen::Matrix3d> interpolated_rotation;
+			std::optional<Eigen::Matrix3d> interpolated_rotation;
 
 			if (should_interpolate) {
 				taxonomy::geom_item::ptr profile_b;
 				Eigen::Vector3d offset_b;
-				boost::optional<Eigen::Matrix3d> rotation_b;
+				std::optional<Eigen::Matrix3d> rotation_b;
 				if ((profile_index + 1 < longitudes.end())) {
 					profile_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].section_geometry;
 					offset_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].offset;
@@ -180,7 +180,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 							return nullptr;
                         }
 
-						if (w1->tags.is_initialized() != w2->tags.is_initialized()) {
+						if (w1->tags.has_value() != w2->tags.has_value()) {
 							Logger::Warning("Mismatching availability tags on loops", inst);
 							return nullptr;
                         }
@@ -211,21 +211,21 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 
 						std::map<std::string, taxonomy::point3::ptr> tag_to_point_on_w1, tag_to_point_on_w2;
 
-						auto loop_to_points = [](const taxonomy::loop::ptr& loop, const boost::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
+						auto loop_to_points = [](const taxonomy::loop::ptr& loop, const std::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
                             std::vector<taxonomy::point3::ptr> points;
                             std::vector<std::set<std::string>> tags;
                             std::vector<std::string>::const_iterator tag_it;
                             
-							if (!loop->closed.get_value_or(false)) {
-                                points = {boost::get<taxonomy::point3::ptr>(loop->children[0]->start)};
+							if (!loop->closed.value_or(false)) {
+                                points = {std::get<taxonomy::point3::ptr>(loop->children[0]->start)};
                                 if (input_tags) {
                                     tags = {{input_tags->front()}};
                                     tag_it = ++input_tags->begin();
                                 }
 							}
 							for (auto& e : loop->children) {
-								const auto& p1 = boost::get<taxonomy::point3::ptr>(e->start);
-								const auto& p2 = boost::get<taxonomy::point3::ptr>(e->end);
+								const auto& p1 = std::get<taxonomy::point3::ptr>(e->start);
+								const auto& p2 = std::get<taxonomy::point3::ptr>(e->end);
                                 if (input_tags && p1->ccomponents() == p2->ccomponents()) {
                                     tags.back().insert(*tag_it);
                                     ++tag_it;
@@ -239,7 +239,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
                                 }
 							}
                             if (!input_tags) {
-                                if (loop->closed.get_value_or(false)) {
+                                if (loop->closed.value_or(false)) {
 									// close polygon by referencing first point
 									points.push_back(points.front());
                                 }
@@ -365,13 +365,13 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 						/*
 						// This is handled in the loop_to_points() function above
                         if (!points.empty()) {
-							if (!w1->closed.get_value_or(true) && !w2->closed.get_value_or(true)) {
+							if (!w1->closed.value_or(true) && !w2->closed.value_or(true)) {
                                 // open polygon, add last point
-                                auto& p1 = boost::get<taxonomy::point3::ptr>(w1->children.back()->end);
-                                auto& p2 = boost::get<taxonomy::point3::ptr>(w2->children.back()->end);
+                                auto& p1 = std::get<taxonomy::point3::ptr>(w1->children.back()->end);
+                                auto& p2 = std::get<taxonomy::point3::ptr>(w2->children.back()->end);
                                 auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
                                 points.push_back(taxonomy::make<taxonomy::point3>(p3));
-                            } else if (w1->closed.get_value_or(true) && w2->closed.get_value_or(true)) {
+                            } else if (w1->closed.value_or(true) && w2->closed.value_or(true)) {
                                 // close polygon by referencing first point
                                 // @todo add a closed=true|false to polygon_from_points()?
                                 points.push_back(points.front());

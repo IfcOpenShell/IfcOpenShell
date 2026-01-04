@@ -21,15 +21,17 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge* inst) {
-	if (!inst->EdgeStart()->declaration().is(IfcSchema::IfcVertexPoint::Class()) || !inst->EdgeEnd()->declaration().is(IfcSchema::IfcVertexPoint::Class())) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge& inst) {
+    auto v1 = inst.EdgeStart().as<IfcSchema::IfcVertexPoint>();
+    auto v2 = inst.EdgeStart().as<IfcSchema::IfcVertexPoint>();
+    if (!v1 || !v2) {
 		Logger::Message(Logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", inst);
 		return nullptr;
 	}
 
-	IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) inst->EdgeStart())->VertexGeometry();
-	IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) inst->EdgeEnd())->VertexGeometry();
-	if (!pnt1->declaration().is(IfcSchema::IfcCartesianPoint::Class()) || !pnt2->declaration().is(IfcSchema::IfcCartesianPoint::Class())) {
+	auto pnt1 = v1.VertexGeometry();
+	auto pnt2 = v2.VertexGeometry();
+	if (!pnt1.declaration().is(IfcSchema::IfcCartesianPoint::Class()) || !pnt2.declaration().is(IfcSchema::IfcCartesianPoint::Class())) {
 		Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", inst);
 		return nullptr;
 	}
@@ -39,15 +41,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge* inst) {
 	e->start = taxonomy::cast<taxonomy::point3>(map(pnt1));
 	e->end = taxonomy::cast<taxonomy::point3>(map(pnt2));
 
-	if (inst->as<IfcSchema::IfcEdgeCurve>()) {
-		auto basis = map(inst->as<IfcSchema::IfcEdgeCurve>()->EdgeGeometry());
+	if (auto ec = inst.as<IfcSchema::IfcEdgeCurve>()) {
+		auto basis = map(ec.EdgeGeometry());
 		auto loop = taxonomy::dcast<taxonomy::loop>(basis);
 		if (loop && loop->children.size() == 1) {
 			loop->calculate_linear_edge_curves();
 			basis = loop->children[0]->basis;
 		}
 		e->basis = basis;
-		e->curve_sense = inst->as<IfcSchema::IfcEdgeCurve>()->SameSense();
+		e->curve_sense = ec.SameSense();
 	}
 
 	return e;

@@ -21,26 +21,26 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3D* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3D& inst) {
 
 	Eigen::Vector4d origin;
 	Eigen::Vector4d axis1(1., 0., 0., 0.);
 	Eigen::Vector4d axis2(0., 1., 0., 0.);
 	Eigen::Vector4d axis3(0., 0., 1., 0.);
 
-	taxonomy::point3::ptr O = taxonomy::cast<taxonomy::point3>(map(inst->LocalOrigin()));
+	taxonomy::point3::ptr O = taxonomy::cast<taxonomy::point3>(map(inst.LocalOrigin()));
 	origin << *O->components_, 1.0;
 
-	if (inst->Axis1()) {
-		taxonomy::direction3::ptr ax1 = taxonomy::cast<taxonomy::direction3>(map(inst->Axis1()));
+	if (inst.Axis1()) {
+		taxonomy::direction3::ptr ax1 = taxonomy::cast<taxonomy::direction3>(map(inst.Axis1()));
 		axis1 << *ax1->components_, 0.0;
 	}
-	if (inst->Axis2()) {
-		taxonomy::direction3::ptr ax2 = taxonomy::cast<taxonomy::direction3>(map(inst->Axis2()));
+	if (inst.Axis2()) {
+		taxonomy::direction3::ptr ax2 = taxonomy::cast<taxonomy::direction3>(map(inst.Axis2()));
 		axis2 << *ax2->components_, 0.0;
 	}
-	if (inst->Axis3()) {
-		taxonomy::direction3::ptr ax3 = taxonomy::cast<taxonomy::direction3>(map(inst->Axis3()));
+	if (inst.Axis3()) {
+		taxonomy::direction3::ptr ax3 = taxonomy::cast<taxonomy::direction3>(map(inst.Axis3()));
 		axis3 << *ax3->components_, 0.0;
 	}
 
@@ -52,13 +52,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpera
 	double scale1, scale2, scale3;
 	scale1 = 1.;
 
-	if (inst->Scale()) {
-		scale1 = *inst->Scale();
+	if (inst.Scale()) {
+		scale1 = *inst.Scale();
 	}
-	if (inst->as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>()) {
-		auto nu = inst->as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>();
-		scale2 = nu->Scale2() ? *nu->Scale2() : scale1;
-		scale3 = nu->Scale3() ? *nu->Scale3() : scale1;
+	if (inst.as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>()) {
+		auto nu = inst.as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>();
+		scale2 = nu.Scale2() ? *nu.Scale2() : scale1;
+		scale3 = nu.Scale3() ? *nu.Scale3() : scale1;
 	} else {
 		scale2 = scale3 = scale1;
 	}

@@ -35,46 +35,43 @@ static const double PI = boost::math::constants::pi<double>();
 #ifdef HAS_SCHEMA_4x3_add2
 
 // sets the segment name like ("H1" for horizontal, "V1" for vertical, "C1" for cant)
-void _name_segments(const char* prefix, typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr segments) {
+void _name_segments(const char* prefix, std::vector<Ifc4x3_add2::IfcObjectDefinition>& segments) {
     unsigned idx = 1;
-    for (auto& segment : *segments) {
+    for (auto& segment : segments) {
         std::ostringstream os;
         os << prefix << idx++;
-        segment->setName(os.str());
+        segment.setName(os.str());
     }
 }
 
 // creates representations for each IfcAlignmentSegment per CT 4.1.7.1.1.4
 // https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Product_Shape/Product_Geometric_Representation/Alignment_Geometry/Alignment_Geometry_-_Segments/content.html
-void _createSegmentRepresentations(IfcHierarchyHelper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcLocalPlacement* global_placement, Ifc4x3_add2::IfcGeometricRepresentationSubContext* segment_axis_subcontext, typename aggregate_of<Ifc4x3_add2::IfcSegment>::ptr curve_segments, typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr segments) {
-    auto cs_iter = curve_segments->begin();
-    auto s_iter = segments->begin();
-    for (; cs_iter != curve_segments->end(); cs_iter++, s_iter++) {
+void _createSegmentRepresentations(IfcHierarchyHelper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcLocalPlacement global_placement, Ifc4x3_add2::IfcGeometricRepresentationSubContext segment_axis_subcontext, std::vector<Ifc4x3_add2::IfcSegment>& curve_segments, std::vector<Ifc4x3_add2::IfcObjectDefinition>& segments) {
+    auto cs_iter = curve_segments.begin();
+    auto s_iter = segments.begin();
+    for (; cs_iter != curve_segments.end(); cs_iter++, s_iter++) {
         auto curve_segment = *cs_iter;
-        auto alignment_segment = (*s_iter)->as<Ifc4x3_add2::IfcAlignmentSegment>();
+        auto alignment_segment = (s_iter)->as<Ifc4x3_add2::IfcAlignmentSegment>();
 
-        typename aggregate_of<Ifc4x3_add2::IfcRepresentationItem>::ptr representation_items(new aggregate_of<Ifc4x3_add2::IfcRepresentationItem>());
-        representation_items->push(curve_segment);
+        auto axis_representation = file.create<Ifc4x3_add2::IfcShapeRepresentation>();
+        axis_representation.setContextOfItems(segment_axis_subcontext);
+        axis_representation.setRepresentationIdentifier("Axis");
+        axis_representation.setRepresentationType("Segment");
+        axis_representation.setItems(std::vector<Ifc4x3_add2::IfcRepresentationItem>{curve_segment});
 
-        auto axis_representation = new Ifc4x3_add2::IfcShapeRepresentation(segment_axis_subcontext, std::string("Axis"), std::string("Segment"), representation_items);
-        file.addEntity(axis_representation);
+        auto product = file.create<Ifc4x3_add2::IfcProductDefinitionShape>();
+        product.setRepresentations(std::vector<Ifc4x3_add2::IfcRepresentation>{axis_representation});
 
-        typename aggregate_of<Ifc4x3_add2::IfcRepresentation>::ptr representations(new aggregate_of<Ifc4x3_add2::IfcRepresentation>());
-        representations->push(axis_representation);
-
-        auto product = new Ifc4x3_add2::IfcProductDefinitionShape(boost::none, boost::none, representations);
-        file.addEntity(product);
-
-        alignment_segment->setObjectPlacement(global_placement);
-        alignment_segment->setRepresentation(product);
+        alignment_segment.setObjectPlacement(global_placement);
+        alignment_segment.setRepresentation(product);
     }
 }
 
 // creates a horizontal alignment using a vector of PI points and curve radii
 // returns a list of object definitions, curve segments, and a composite curve
-std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typename aggregate_of<Ifc4x3_add2::IfcSegment>::ptr, Ifc4x3_add2::IfcCompositeCurve*> _createHorizontalAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii,bool include_geometry) {
-    typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr horizontal_segments(new aggregate_of<Ifc4x3_add2::IfcObjectDefinition>()); // business logic
-    typename aggregate_of<Ifc4x3_add2::IfcSegment>::ptr horizontal_curve_segments(include_geometry ? new aggregate_of<Ifc4x3_add2::IfcSegment>() : nullptr);             // geometry
+std::tuple<std::vector<Ifc4x3_add2::IfcObjectDefinition>, std::vector<Ifc4x3_add2::IfcSegment>, Ifc4x3_add2::IfcCompositeCurve> _createHorizontalAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii,bool include_geometry) {
+    std::vector<Ifc4x3_add2::IfcObjectDefinition> horizontal_segments; // business logic
+    std::vector<Ifc4x3_add2::IfcSegment> horizontal_curve_segments;    // geometry
 
     auto point_iter = points.begin();
     double xBT, yBT, xPI, yPI;
@@ -118,24 +115,44 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
         // create back tangent run
         {
             auto pt = file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(xBT, yBT);
-            auto design_parameters = new Ifc4x3_add2::IfcAlignmentHorizontalSegment(boost::none, boost::none, pt, angleBT, 0.0, 0.0, tangent_run, boost::none, Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE);
-            auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
-            horizontal_segments->push(alignment_segment);
+            auto design_parameters = file.create<Ifc4x3_add2::IfcAlignmentHorizontalSegment>();
+            design_parameters.setStartPoint(pt);
+            design_parameters.setStartDirection(angleBT);
+            design_parameters.setStartRadiusOfCurvature(0.0);
+            design_parameters.setEndRadiusOfCurvature(0.0);
+            design_parameters.setSegmentLength(tangent_run);
+            design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE);
+
+            auto alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
+            alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+            alignment_segment.setDesignParameters(design_parameters);
+
+            horizontal_segments.push_back(alignment_segment);
 
             if (include_geometry) {
-                horizontal_curve_segments->push(mapAlignmentHorizontalSegment(design_parameters).first);
+                horizontal_curve_segments.push_back(mapAlignmentHorizontalSegment(file, design_parameters).first);
             }
         }
 
         // create circular curve
         {
             auto pc = file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(xPC, yPC);
-            auto design_parameters = new Ifc4x3_add2::IfcAlignmentHorizontalSegment(boost::none, boost::none, pc, angleBT, radius, radius, lc, boost::none, Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_CIRCULARARC);
-            auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
-            horizontal_segments->push(alignment_segment);
+            auto design_parameters = file.create<Ifc4x3_add2::IfcAlignmentHorizontalSegment>();
+            design_parameters.setStartPoint(pc);
+            design_parameters.setStartDirection(angleBT);
+            design_parameters.setStartRadiusOfCurvature(radius);
+            design_parameters.setEndRadiusOfCurvature(radius);
+            design_parameters.setSegmentLength(lc);
+            design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_CIRCULARARC);
+
+            auto alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
+            alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+            alignment_segment.setDesignParameters(design_parameters);
+
+            horizontal_segments.push_back(alignment_segment);
 
             if (include_geometry) {
-                horizontal_curve_segments->push(mapAlignmentHorizontalSegment(design_parameters).first);
+                horizontal_curve_segments.push_back(mapAlignmentHorizontalSegment(file, design_parameters).first);
             }
         }
 
@@ -151,34 +168,56 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
     auto angleBT = atan2(dy, dx);
     auto tangent_run = sqrt(dx * dx + dy * dy);
     auto pt = file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(xBT, yBT);
-    auto design_parameters = new Ifc4x3_add2::IfcAlignmentHorizontalSegment(boost::none, boost::none, pt, angleBT, 0.0, 0.0, tangent_run, boost::none, Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE);
-    auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
-    horizontal_segments->push(alignment_segment);
+    auto design_parameters = file.create<Ifc4x3_add2::IfcAlignmentHorizontalSegment>();
+    design_parameters.setStartPoint(pt);
+    design_parameters.setStartDirection(angleBT);
+    design_parameters.setStartRadiusOfCurvature(0);
+    design_parameters.setEndRadiusOfCurvature(0);
+    design_parameters.setSegmentLength(tangent_run);
+    design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE);
+
+    auto alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
+    alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment_segment.setDesignParameters(design_parameters);
+
+    horizontal_segments.push_back(alignment_segment);
+
     if (include_geometry) {
-        horizontal_curve_segments->push(mapAlignmentHorizontalSegment(design_parameters).first);
+        horizontal_curve_segments.push_back(mapAlignmentHorizontalSegment(file, design_parameters).first);
     }
 
     // create zero length terminator segment
     auto poe = file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(xPI, yPI);
-    design_parameters = new Ifc4x3_add2::IfcAlignmentHorizontalSegment(boost::none, boost::none, poe, angleBT, 0.0, 0.0, 0.0, boost::none, Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE);
-    alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
-    horizontal_segments->push(alignment_segment);
+    design_parameters = file.create<Ifc4x3_add2::IfcAlignmentHorizontalSegment>();
+    design_parameters.setStartPoint(poe);
+    design_parameters.setStartDirection(angleBT);
+    design_parameters.setStartRadiusOfCurvature(0);
+    design_parameters.setEndRadiusOfCurvature(0);
+    design_parameters.setSegmentLength(0.0);
+    design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE);
+    
+    alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
+    alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment_segment.setDesignParameters(design_parameters);
+    
+    horizontal_segments.push_back(alignment_segment);
     if (include_geometry) {
-        auto segment = mapAlignmentHorizontalSegment(design_parameters).first;
-        segment->setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_DISCONTINUOUS);
-        horizontal_curve_segments->push(segment);
+        auto segment = mapAlignmentHorizontalSegment(file, design_parameters).first;
+        segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_DISCONTINUOUS);
+        horizontal_curve_segments.push_back(segment);
     }
 
-    Ifc4x3_add2::IfcCompositeCurve* composite_curve = nullptr;
+    Ifc4x3_add2::IfcCompositeCurve composite_curve;
     if (include_geometry) {
-        composite_curve = new Ifc4x3_add2::IfcCompositeCurve(horizontal_curve_segments, false /*not self-intersecting*/);
-        file.addEntity(composite_curve);
+        composite_curve = file.create<Ifc4x3_add2::IfcCompositeCurve>();
+        composite_curve.setSegments(horizontal_curve_segments);
+        composite_curve.setSelfIntersect(false);
     }
 
     return {horizontal_segments, horizontal_curve_segments, composite_curve};
 }
 
-Ifc4x3_add2::IfcAlignment* addHorizontalAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, const std::string& alignment_name, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii,bool include_geometry) {
+Ifc4x3_add2::IfcAlignment addHorizontalAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, const std::string& alignment_name, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii,bool include_geometry) {
 
     auto [horizontal_segments, horizontal_curve_segments, composite_curve] = _createHorizontalAlignment(file, points, radii, include_geometry);
     _name_segments("H", horizontal_segments);
@@ -186,50 +225,54 @@ Ifc4x3_add2::IfcAlignment* addHorizontalAlignment(IfcHierarchyHelper<Ifc4x3_add2
     //
     // Create the horizontal alignment (IfcAlignmentHorizontal) and nest alignment segments
     //
-    auto horizontal_alignment = new Ifc4x3_add2::IfcAlignmentHorizontal(IfcParse::IfcGlobalId(), nullptr, alignment_name + std::string(" - Horizontal"), boost::none, boost::none, nullptr, nullptr);
-    file.addEntity(horizontal_alignment);
+    auto horizontal_alignment = file.create<Ifc4x3_add2::IfcAlignmentHorizontal>();
+    horizontal_alignment.setGlobalId(IfcParse::IfcGlobalId());
+    horizontal_alignment.setName(alignment_name + " - Horizontal");
 
-    auto nests_horizontal_segments = new Ifc4x3_add2::IfcRelNests(IfcParse::IfcGlobalId(), nullptr, boost::none, std::string("Nests horizontal alignment segments with horizontal alignment"), horizontal_alignment, horizontal_segments);
-    file.addEntity(nests_horizontal_segments);
+    auto nests_horizontal_segments = file.create<Ifc4x3_add2::IfcRelNests>();
+    nests_horizontal_segments.setGlobalId(IfcParse::IfcGlobalId());
+    nests_horizontal_segments.setName("Nests horizontal alignment segments with horizontal alignment");
+    nests_horizontal_segments.setRelatingObject(horizontal_alignment);
+    nests_horizontal_segments.setRelatedObjects(horizontal_segments);
 
     //
     // Create geometric representation
     //
-    Ifc4x3_add2::IfcLocalPlacement* placement = nullptr;
-    Ifc4x3_add2::IfcProductDefinitionShape* product_definition_shape = nullptr;
+    Ifc4x3_add2::IfcLocalPlacement placement;
+    Ifc4x3_add2::IfcProductDefinitionShape product_definition_shape;
     if (include_geometry) { 
-       typename aggregate_of<Ifc4x3_add2::IfcRepresentationItem>::ptr alignment_representation_items(new aggregate_of<Ifc4x3_add2::IfcRepresentationItem>());
-       alignment_representation_items->push(composite_curve);
-
        // create the footprint representation
        auto axis_model_representation_subcontext = file.getRepresentationSubContext("Axis", "Model");
-       auto footprint_shape_representation = new Ifc4x3_add2::IfcShapeRepresentation(axis_model_representation_subcontext, std::string("FootPrint"), std::string("Curve2D"), alignment_representation_items);
-       file.addEntity(footprint_shape_representation);
-
+       auto footprint_shape_representation = file.create<Ifc4x3_add2::IfcShapeRepresentation>();
+       footprint_shape_representation.setContextOfItems(axis_model_representation_subcontext);
+       footprint_shape_representation.setRepresentationIdentifier("FootPrint");
+       footprint_shape_representation.setRepresentationType("Curve2D");
+       footprint_shape_representation.setItems(std::vector<Ifc4x3_add2::IfcRepresentationItem>{composite_curve});
+       
        placement = file.addLocalPlacement();
-
        // the alignment has a plan view footprint representation
-       typename aggregate_of<Ifc4x3_add2::IfcRepresentation>::ptr alignment_representations(new aggregate_of<Ifc4x3_add2::IfcRepresentation>());
-       alignment_representations->push(footprint_shape_representation); // 2D footprint
-
        // create the alignment product definition
-       product_definition_shape = new Ifc4x3_add2::IfcProductDefinitionShape(std::string("Alignment Product Definition Shape"), boost::none, alignment_representations);
+       product_definition_shape = file.create<Ifc4x3_add2::IfcProductDefinitionShape>();
+       product_definition_shape.setName("Alignment Product Definition Shape");
+       product_definition_shape.setRepresentations(std::vector<Ifc4x3_add2::IfcRepresentation>{footprint_shape_representation});
 
        // create representations for each segment
        _createSegmentRepresentations(file, placement, axis_model_representation_subcontext, horizontal_curve_segments, horizontal_segments);
     }
 
     // create the alignment
-    auto alignment = new Ifc4x3_add2::IfcAlignment(IfcParse::IfcGlobalId(), nullptr, alignment_name, boost::none, boost::none, placement, product_definition_shape, boost::none);
-    file.addEntity(alignment);
-    
+    auto alignment = file.create<Ifc4x3_add2::IfcAlignment>();
+    alignment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment.setName(alignment_name);
+    alignment.setObjectPlacement(placement);
+    alignment.setRepresentation(product_definition_shape);    
 
     return alignment;
 }
 
-std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typename aggregate_of<Ifc4x3_add2::IfcSegment>::ptr, Ifc4x3_add2::IfcGradientCurve*> _createVerticalAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcCompositeCurve* composite_curve,const std::vector<std::pair<double, double>>& vpoints, const std::vector<double>& vclengths, bool include_geometry) {
-    typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr vertical_segments(new aggregate_of<Ifc4x3_add2::IfcObjectDefinition>()); // business logic
-    typename aggregate_of<Ifc4x3_add2::IfcSegment>::ptr vertical_curve_segments(new aggregate_of<Ifc4x3_add2::IfcSegment>());             // geometry
+std::tuple<typename std::vector<Ifc4x3_add2::IfcObjectDefinition>&, typename std::vector<Ifc4x3_add2::IfcSegment>&, Ifc4x3_add2::IfcGradientCurve> _createVerticalAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcCompositeCurve composite_curve,const std::vector<std::pair<double, double>>& vpoints, const std::vector<double>& vclengths, bool include_geometry) {
+    std::vector<Ifc4x3_add2::IfcObjectDefinition> vertical_segments; // business logic
+    std::vector<Ifc4x3_add2::IfcSegment> vertical_curve_segments;    // geometry
 
     auto point_iter = vpoints.begin();
     double xPBG, yPBG, xPVI, yPVI;
@@ -259,11 +302,21 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
         // create gradient
         {
             auto gradient_length = dxBG - length/2;
-            auto design_parameters = new Ifc4x3_add2::IfcAlignmentVerticalSegment(boost::none, boost::none, xPBG, gradient_length, yPBG, start_slope, start_slope, boost::none, Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
-            auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
-            vertical_segments->push(alignment_segment);
+            auto design_parameters = file.create<Ifc4x3_add2::IfcAlignmentVerticalSegment>();
+            design_parameters.setStartDistAlong(xPBG);
+            design_parameters.setHorizontalLength(gradient_length);
+            design_parameters.setStartHeight(yPBG);
+            design_parameters.setStartGradient(start_slope);
+            design_parameters.setEndGradient(start_slope);
+            design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
+
+            auto alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
+            alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+            alignment_segment.setDesignParameters(design_parameters);
+
+            vertical_segments.push_back(alignment_segment);
             if (include_geometry) {
-               vertical_curve_segments->push(mapAlignmentVerticalSegment(design_parameters).first);
+               vertical_curve_segments.push_back(mapAlignmentVerticalSegment(file, design_parameters).first);
             }
         }
 
@@ -273,11 +326,22 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
             double xBVC = xPVI - length / 2;
             double yBVC = yPVI - start_slope * length / 2;
 
-            auto design_parameters = new Ifc4x3_add2::IfcAlignmentVerticalSegment(boost::none, boost::none, xBVC, length, yBVC, start_slope, end_slope, 1 / k, Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_PARABOLICARC);
-            auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
-            vertical_segments->push(alignment_segment);
+            auto design_parameters = file.create<Ifc4x3_add2::IfcAlignmentVerticalSegment>();
+            design_parameters.setStartDistAlong(xBVC);
+            design_parameters.setHorizontalLength(length);
+            design_parameters.setStartHeight(yBVC);
+            design_parameters.setStartGradient(start_slope);
+            design_parameters.setEndGradient(end_slope);
+            design_parameters.setRadiusOfCurvature(1/k);
+            design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_PARABOLICARC);
+
+            auto alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
+            alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+            alignment_segment.setDesignParameters(design_parameters);
+
+            vertical_segments.push_back(alignment_segment);
             if (include_geometry) {
-                vertical_curve_segments->push(mapAlignmentVerticalSegment(design_parameters).first);
+                vertical_curve_segments.push_back(mapAlignmentVerticalSegment(file, design_parameters).first);
             }
         }
 
@@ -293,33 +357,55 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
     auto slope = tan(atan2(dy,dx));
     auto gradient_length = dx;
 
-    auto design_parameters = new Ifc4x3_add2::IfcAlignmentVerticalSegment(boost::none, boost::none, xPBG, gradient_length, yPBG, slope, slope, boost::none, Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
-    auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
-    vertical_segments->push(alignment_segment);
+    auto design_parameters = file.create<Ifc4x3_add2::IfcAlignmentVerticalSegment>();
+    design_parameters.setStartDistAlong(xPBG);
+    design_parameters.setHorizontalLength(gradient_length);
+    design_parameters.setStartHeight(yPBG);
+    design_parameters.setStartGradient(slope);
+    design_parameters.setEndGradient(slope);
+    design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
+
+    auto alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
+    alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment_segment.setDesignParameters(design_parameters);
+
+    vertical_segments.push_back(alignment_segment);
     if (include_geometry) {
-        vertical_curve_segments->push(mapAlignmentVerticalSegment(design_parameters).first);
+        vertical_curve_segments.push_back(mapAlignmentVerticalSegment(file, design_parameters).first);
     }
 
     // create zero length terminator segment
-    design_parameters = new Ifc4x3_add2::IfcAlignmentVerticalSegment(boost::none, boost::none, xPVI, 0.0, yPVI, slope, slope, boost::none, Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
-    alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
-    vertical_segments->push(alignment_segment);
+    design_parameters = file.create<Ifc4x3_add2::IfcAlignmentVerticalSegment>();
+    design_parameters.setStartDistAlong(xPVI);
+    design_parameters.setHorizontalLength(0.);
+    design_parameters.setStartHeight(yPVI);
+    design_parameters.setStartGradient(slope);
+    design_parameters.setEndGradient(slope);
+    design_parameters.setPredefinedType(Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
+
+    alignment_segment = file.create<Ifc4x3_add2::IfcAlignmentSegment>();
+    alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment_segment.setDesignParameters(design_parameters);
+
+    vertical_segments.push_back(alignment_segment);
     if (include_geometry) {
-        auto segment = mapAlignmentVerticalSegment(design_parameters).first;
-        segment->setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_DISCONTINUOUS);
-        vertical_curve_segments->push(segment);
+        auto segment = mapAlignmentVerticalSegment(file, design_parameters).first;
+        segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_DISCONTINUOUS);
+        vertical_curve_segments.push_back(segment);
     }
 
-    Ifc4x3_add2::IfcGradientCurve* gradient_curve = nullptr;
+    Ifc4x3_add2::IfcGradientCurve gradient_curve;
     if (include_geometry) {
-        gradient_curve = new Ifc4x3_add2::IfcGradientCurve(vertical_curve_segments, false, composite_curve, nullptr);
-        file.addEntity(gradient_curve);
+        gradient_curve = file.create<Ifc4x3_add2::IfcGradientCurve>();
+        gradient_curve.setSegments(vertical_curve_segments);
+        gradient_curve.setSelfIntersect(false);
+        gradient_curve.setBaseCurve(composite_curve);
     }
 
     return {vertical_segments, vertical_curve_segments, gradient_curve};
 }
 
-Ifc4x3_add2::IfcAlignment* addAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, const std::string& alignment_name, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii, const std::vector<std::pair<double, double>>& vpoints, const std::vector<double>& vclengths,bool include_geometry) {
+Ifc4x3_add2::IfcAlignment addAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, const std::string& alignment_name, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii, const std::vector<std::pair<double, double>>& vpoints, const std::vector<double>& vclengths,bool include_geometry) {
     auto [horizontal_segments, horizontal_curve_segments, composite_curve] = _createHorizontalAlignment(file, points, radii, include_geometry);
     auto [vertical_segments, vertical_curve_segments, gradient_curve] = _createVerticalAlignment(file, composite_curve, vpoints, vclengths, include_geometry);
 
@@ -329,137 +415,152 @@ Ifc4x3_add2::IfcAlignment* addAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, c
     //
     // Create the horizontal alignment (IfcAlignmentHorizontal) and nest the segments
     //
-    auto horizontal_alignment = new Ifc4x3_add2::IfcAlignmentHorizontal(IfcParse::IfcGlobalId(), nullptr, alignment_name + std::string(" - Horizontal"), boost::none, boost::none, nullptr, nullptr);
-    file.addEntity(horizontal_alignment);
+    auto horizontal_alignment = file.create<Ifc4x3_add2::IfcAlignmentHorizontal>();
+    horizontal_alignment.setGlobalId(IfcParse::IfcGlobalId());
+    horizontal_alignment.setName(alignment_name + " - Horizontal");
 
-    auto nests_horizontal_segments = new Ifc4x3_add2::IfcRelNests(IfcParse::IfcGlobalId(), nullptr, boost::none, std::string("Nests horizontal alignment segments with horizontal alignment"), horizontal_alignment, horizontal_segments);
-    file.addEntity(nests_horizontal_segments);
+    auto nests_horizontal_segments = file.create<Ifc4x3_add2::IfcRelNests>();
+    nests_horizontal_segments.setGlobalId(IfcParse::IfcGlobalId());
+    nests_horizontal_segments.setName("Nests horizontal alignment segments with horizontal alignment");
+    nests_horizontal_segments.setRelatingObject(horizontal_alignment);
+    nests_horizontal_segments.setRelatedObjects(horizontal_segments);
 
     //
     // Create the vertical alignment (IfcAlignmentVertical) and nest the segments
     //
-    auto vertical_profile = new Ifc4x3_add2::IfcAlignmentVertical(IfcParse::IfcGlobalId(), nullptr, alignment_name + std::string("- Vertical"), boost::none, boost::none, nullptr, nullptr);
-    file.addEntity(vertical_profile);
-
-    auto nests_vertical_segments = new Ifc4x3_add2::IfcRelNests(IfcParse::IfcGlobalId(), nullptr, boost::none, std::string("Nests vertical alignment segments with vertical alignment"), vertical_profile, vertical_segments);
-    file.addEntity(nests_vertical_segments);
-
-    Ifc4x3_add2::IfcLocalPlacement* placement = nullptr;
-    Ifc4x3_add2::IfcProductDefinitionShape* product_definition_shape = nullptr;
+    auto vertical_profile = file.create<Ifc4x3_add2::IfcAlignmentVertical>();
+    vertical_profile.setGlobalId(IfcParse::IfcGlobalId());
+    vertical_profile.setName(alignment_name + "- Vertical");
+    
+    auto nests_vertical_segments = file.create<Ifc4x3_add2::IfcRelNests>();
+    nests_vertical_segments.setGlobalId(IfcParse::IfcGlobalId());
+    nests_vertical_segments.setName("Nests vertical alignment segments with vertical alignment");
+    nests_vertical_segments.setRelatingObject(vertical_profile);
+    nests_vertical_segments.setRelatedObjects(vertical_segments);
+    
+    Ifc4x3_add2::IfcLocalPlacement placement;
+    Ifc4x3_add2::IfcProductDefinitionShape product_definition_shape;
     if (include_geometry) {
         auto axis_model_representation_subcontext = file.getRepresentationSubContext("Axis", "Model");
 
-        // the composite curve is a representation item
-        typename aggregate_of<Ifc4x3_add2::IfcRepresentationItem>::ptr alignment_representation_items(new aggregate_of<Ifc4x3_add2::IfcRepresentationItem>());
-        alignment_representation_items->push(composite_curve);
-
-        // the gradient curve is a representation item
-        typename aggregate_of<typename Ifc4x3_add2::IfcRepresentationItem>::ptr profile_representation_items(new aggregate_of<Ifc4x3_add2::IfcRepresentationItem>());
-        profile_representation_items->push(gradient_curve);
-
         // create footprint representation
-        auto footprint_shape_representation = new Ifc4x3_add2::IfcShapeRepresentation(axis_model_representation_subcontext, std::string("FootPrint"), std::string("Curve2D"), alignment_representation_items);
-        file.addEntity(footprint_shape_representation);
+        auto footprint_shape_representation = file.create<Ifc4x3_add2::IfcShapeRepresentation>();
+        footprint_shape_representation.setContextOfItems(axis_model_representation_subcontext);
+        footprint_shape_representation.setRepresentationIdentifier("FootPrint");
+        footprint_shape_representation.setRepresentationType("Curve2D");
+        footprint_shape_representation.setItems(std::vector<Ifc4x3_add2::IfcRepresentationItem>{composite_curve});
 
         // create the axis representation
-        auto axis3d_shape_representation = new Ifc4x3_add2::IfcShapeRepresentation(axis_model_representation_subcontext, std::string("Axis"), std::string("Curve3D"), profile_representation_items);
-        file.addEntity(axis3d_shape_representation);
+        auto axis3d_shape_representation = file.create<Ifc4x3_add2::IfcShapeRepresentation>();
+        axis3d_shape_representation.setContextOfItems(axis_model_representation_subcontext);
+        axis3d_shape_representation.setRepresentationIdentifier("Axis");
+        axis3d_shape_representation.setRepresentationType("Curve3D");
+        axis3d_shape_representation.setItems(std::vector<Ifc4x3_add2::IfcRepresentationItem>{gradient_curve});
 
         // create axis representations for each segment
         placement = file.addLocalPlacement();
         _createSegmentRepresentations(file, placement, axis_model_representation_subcontext, horizontal_curve_segments, horizontal_segments);
         _createSegmentRepresentations(file, placement, axis_model_representation_subcontext, vertical_curve_segments, vertical_segments);
 
-       // the alignment has a 3d curve representation
-        typename aggregate_of<typename Ifc4x3_add2::IfcRepresentation>::ptr alignment_representations(new aggregate_of<Ifc4x3_add2::IfcRepresentation>());
-        alignment_representations->push(footprint_shape_representation); // 2D curve
-        alignment_representations->push(axis3d_shape_representation); // 3D curve
-
+        // the alignment has a 3d curve representation
         // create the alignment product definition
-        product_definition_shape = new Ifc4x3_add2::IfcProductDefinitionShape(std::string("Alignment Product Definition Shape"), boost::none, alignment_representations);
+        product_definition_shape = file.create<Ifc4x3_add2::IfcProductDefinitionShape>();
+        product_definition_shape.setName("Alignment Product Definition Shape");
+        product_definition_shape.setRepresentations(std::vector<Ifc4x3_add2::IfcRepresentation>{footprint_shape_representation, axis3d_shape_representation});
     }
 
     //
     // Create the IfcAlignment
     //
-
-    auto alignment = new Ifc4x3_add2::IfcAlignment(IfcParse::IfcGlobalId(), nullptr, alignment_name, boost::none, boost::none, placement, product_definition_shape, boost::none);
-    file.addEntity(alignment);
-
+    auto alignment = file.create<Ifc4x3_add2::IfcAlignment>();
+    alignment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment.setName(alignment_name);
+    alignment.setObjectPlacement(placement);
+    alignment.setRepresentation(product_definition_shape);
+    
     // Nest the IfcAlignmentHorizontal and IfcAlignmentVertical with the IfcAlignment to complete the business logic
     // 4.1.4.4.1 Alignments nest horizontal and vertical layouts
     // https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Object_Composition/Nesting/Alignment_Layouts/content.html
-    typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr alignment_layout_list(new aggregate_of<Ifc4x3_add2::IfcObjectDefinition>());
-    alignment_layout_list->push(horizontal_alignment);
-    alignment_layout_list->push(vertical_profile);
-
-    auto nests_alignment_layouts = new Ifc4x3_add2::IfcRelNests(IfcParse::IfcGlobalId(), nullptr, std::string("Nest horizontal and vertical alignment layouts with the alignment"), boost::none, alignment, alignment_layout_list);
-    file.addEntity(nests_alignment_layouts);
+    auto nests_alignment_layouts = file.create<Ifc4x3_add2::IfcRelNests>();
+    nests_alignment_layouts.setGlobalId(IfcParse::IfcGlobalId());
+    nests_alignment_layouts.setName("Nest horizontal and vertical alignment layouts with the alignment");
+    nests_alignment_layouts.setRelatingObject(alignment);
+    nests_alignment_layouts.setRelatedObjects(std::vector<Ifc4x3_add2::IfcObjectDefinition>{horizontal_alignment, vertical_profile});
 
     return alignment;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentSegment(const Ifc4x3_add2::IfcAlignmentSegment* segment) {
-    std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> result(nullptr, nullptr);
-    auto design_parameters = segment->DesignParameters();
-    auto horizontal = design_parameters->as<Ifc4x3_add2::IfcAlignmentHorizontalSegment>();
-    auto vertical = design_parameters->as<Ifc4x3_add2::IfcAlignmentVerticalSegment>();
-    auto cant = design_parameters->as<Ifc4x3_add2::IfcAlignmentCantSegment>();
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(IfcHierarchyHelper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentSegment& segment) {
+    std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
+    auto design_parameters = segment.DesignParameters();
+    auto horizontal = design_parameters.as<Ifc4x3_add2::IfcAlignmentHorizontalSegment>();
+    auto vertical = design_parameters.as<Ifc4x3_add2::IfcAlignmentVerticalSegment>();
+    auto cant = design_parameters.as<Ifc4x3_add2::IfcAlignmentCantSegment>();
     if (horizontal) {
-        result = mapAlignmentHorizontalSegment(horizontal);
+        result = mapAlignmentHorizontalSegment(file, horizontal);
     } else if (vertical) {
-        result = mapAlignmentVerticalSegment(vertical);
+        result = mapAlignmentVerticalSegment(file, vertical);
     } else if (cant) {
-        result = mapAlignmentCantSegment(cant);
+        result = mapAlignmentCantSegment(file, cant);
     } else {
         Logger::Error(std::string("Unexpected IfcAlignmentSegment subtype encountered"));
     }
     return result;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentHorizontalSegment(const Ifc4x3_add2::IfcAlignmentHorizontalSegment* segment) {
-    std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> result(nullptr, nullptr);
-    auto start_point = segment->StartPoint();
-    auto start_direction = segment->StartDirection();
-    auto start_radius = segment->StartRadiusOfCurvature();
-    auto end_radius = segment->EndRadiusOfCurvature();
-    auto length = segment->SegmentLength();
-    auto type = segment->PredefinedType();
+namespace {
+Ifc4x3_add2::IfcLengthMeasure create_length(IfcHierarchyHelper<Ifc4x3_add2>& file, double d) {
+    auto inst = file.create<Ifc4x3_add2::IfcLengthMeasure>();
+    inst.set_attribute_value(0, d);
+    return inst;
+}
+}
+
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(IfcHierarchyHelper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment) {
+    std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
+    auto start_point = segment.StartPoint();
+    auto start_direction = segment.StartDirection();
+    auto start_radius = segment.StartRadiusOfCurvature();
+    auto end_radius = segment.EndRadiusOfCurvature();
+    auto length = segment.SegmentLength();
+    auto type = segment.PredefinedType();
 
     double f = (end_radius ? length / end_radius : 0.0) - (start_radius ? length / start_radius : 0.0);
 
     if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE) {
-        Ifc4x3_add2::IfcCurve* parent_curve = new Ifc4x3_add2::IfcLine(
-            new Ifc4x3_add2::IfcCartesianPoint({0.0, 0.0}),
-            new Ifc4x3_add2::IfcVector(new Ifc4x3_add2::IfcDirection({1.0, 0.0}), 1.0));
+        auto parent_curve = file.create<Ifc4x3_add2::IfcLine>();
+        parent_curve.setPnt(file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(0.0, 0.0));
+        auto vec = file.create<Ifc4x3_add2::IfcVector>();
+        vec.setOrientation(file.addDoublet<Ifc4x3_add2::IfcDirection>(1.0, 0.0));
+        vec.setMagnitude(1.);
+        parent_curve.setDir(vec);
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0),
-            new Ifc4x3_add2::IfcLengthMeasure(length),
-            parent_curve);
+        auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentLength(create_length(file, length));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_CIRCULARARC) {
-        Ifc4x3_add2::IfcCurve* parent_curve = new Ifc4x3_add2::IfcCircle(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})),
-                                                 new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})),
-            fabs(start_radius));
+        auto parent_curve = file.create<Ifc4x3_add2::IfcCircle>();
+        parent_curve.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve.setRadius(std::fabs(start_radius));
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0),
-            new Ifc4x3_add2::IfcLengthMeasure(length * start_radius / fabs(start_radius)),
-            parent_curve);
+        auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentLength(create_length(file, length * start_radius / std::fabs(start_radius)));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_CLOTHOID) {
         double A = length / sqrt(fabs(f)) * f / fabs(f);
-        Ifc4x3_add2::IfcCurve* parent_curve = new Ifc4x3_add2::IfcClothoid(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})), new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})),
-            A);
+        auto parent_curve = file.create<Ifc4x3_add2::IfcClothoid>();
+        parent_curve.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve.setClothoidConstant(A);
 
         double offset;
         if ((fabs(start_radius) < fabs(end_radius) && start_radius) || end_radius == 0.) {
@@ -468,12 +569,12 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
             offset = start_radius ? length * end_radius / (start_radius - end_radius) : 0;
         }
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(offset),
-            new Ifc4x3_add2::IfcLengthMeasure(length),
-            parent_curve);
+        auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment.setSegmentLength(create_length(file, offset));
+        curve_segment.setSegmentLength(create_length(file, length));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_BLOSSCURVE) {
@@ -486,7 +587,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
         auto A2 = a2 ? length * pow(fabs(a2), -1. / 3.) * a2 / fabs(a2) : 0.0;
         auto A3 = a3 ? length * pow(fabs(a3), -1. / 4.) * a3 / fabs(a3) : 0.0;
 
-        boost::optional<double> A0_optional, A1_optional, A2_optional;
+        std::optional<double> A0_optional, A1_optional, A2_optional;
         if (A0) {
             A0_optional = A0;
         }
@@ -497,19 +598,19 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
             A2_optional = A2;
         }
 
-        Ifc4x3_add2::IfcCurve* parent_curve = new Ifc4x3_add2::IfcThirdOrderPolynomialSpiral(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})), new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})),
-            A3,
-            A2_optional,
-            A1_optional,
-            A0_optional);
+        auto parent_curve = file.create<Ifc4x3_add2::IfcThirdOrderPolynomialSpiral>();
+        parent_curve.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve.setCubicTerm(A3);
+        parent_curve.setQuadraticTerm(A2_optional);
+        parent_curve.setLinearTerm(A1_optional);
+        parent_curve.setConstantTerm(A0_optional);
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0),
-            new Ifc4x3_add2::IfcLengthMeasure(length),
-            parent_curve);
+        Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentLength(create_length(file, length));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_COSINECURVE) {
@@ -517,22 +618,23 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
         auto a1 = -0.5 * f; // cosine term
         auto A0 = a0 ? length * pow(fabs(a0), -1. / 1.) * a0 / fabs(a0) : 0.0;
         auto A1 = a1 ? length * pow(fabs(a1), -1. / 1.) * a1 / fabs(a1) : 0.0;
-        auto A0_optional = boost::optional<double>();
+        auto A0_optional = std::optional<double>();
         if (A0) {
             A0_optional = A0;
         }
-        Ifc4x3_add2::IfcCurve* parent_curve = new Ifc4x3_add2::IfcCosineSpiral(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})), new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})),
-           A1, A0_optional);
+        auto parent_curve = file.create<Ifc4x3_add2::IfcCosineSpiral>();
+        parent_curve.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve.setCosineTerm(A1);
+        parent_curve.setConstantTerm(A0_optional);
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0),
-            new Ifc4x3_add2::IfcLengthMeasure(length),
-            parent_curve);
+        Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentLength(create_length(file, length));
+        curve_segment.setParentCurve(parent_curve);
 
-         result.first = curve_segment;
+        result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_CUBIC) {
         double offset = 0;
         double A0 = 0; // constant term
@@ -551,19 +653,17 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
             A3 = -1. / (6. * start_radius * length);
             offset = -length;
         }
-        Ifc4x3_add2::IfcCurve* parent_curve = new Ifc4x3_add2::IfcPolynomialCurve(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})), new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})),
-            std::vector<double>{0.0, 1.0},
-            std::vector<double>{A0, A1, A2, A3},
-           boost::none
-        );
+        auto parent_curve = file.create<Ifc4x3_add2::IfcPolynomialCurve>();
+        parent_curve.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve.setCoefficientsX(std::vector<double>{0.0, 1.0});
+        parent_curve.setCoefficientsY(std::vector<double>{A0, A1, A2, A3});
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(offset),
-            new Ifc4x3_add2::IfcLengthMeasure(length),
-            parent_curve);
+        Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment.setSegmentLength(create_length(file, offset));
+        curve_segment.setSegmentLength(create_length(file, length));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_HELMERTCURVE) {
@@ -575,28 +675,28 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
         auto A1_1 = a1_1 ? length * pow(fabs(a1_1), -1. / 2.) * a1_1 / fabs(a1_1) : 0.0;
         auto A2_1 = a2_1 ? length * pow(fabs(a2_1), -1. / 3.) * a2_1 / fabs(a2_1) : 0.0;
 
-        auto A0_1_optional = boost::optional<double>();
+        auto A0_1_optional = std::optional<double>();
         if (A0_1) {
             A0_1_optional = A0_1;
         }
 
-        auto A1_1_optional = boost::optional<double>();
+        auto A1_1_optional = std::optional<double>();
         if (A1_1) {
             A1_1_optional = A1_1;
         }
 
-        Ifc4x3_add2::IfcCurve* parent_curve1 = new Ifc4x3_add2::IfcSecondOrderPolynomialSpiral(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})), new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})),
-            A2_1,
-            A1_1_optional,
-            A0_1_optional);
+        auto parent_curve1 = file.create<Ifc4x3_add2::IfcSecondOrderPolynomialSpiral>();
+        parent_curve1.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve1.setQuadraticTerm(A2_1);
+        parent_curve1.setLinearTerm(A1_1_optional);
+        parent_curve1.setConstantTerm(A0_1_optional);
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment1 = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0),
-            new Ifc4x3_add2::IfcLengthMeasure(length/2),
-            parent_curve1);
+        Ifc4x3_add2::IfcCurveSegment curve_segment1 = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment1.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment1.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment1.setSegmentLength(create_length(file, 0.0));
+        curve_segment1.setSegmentLength(create_length(file, length / 2));
+        curve_segment1.setParentCurve(parent_curve1);
 
         result.first = curve_segment1;
 
@@ -608,27 +708,27 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
         auto A1_2 = a1_2 ? length * pow(fabs(a1_2), -1. / 2.) * a1_2 / fabs(a1_2) : 0.0;
         auto A2_2 = a2_2 ? length * pow(fabs(a2_2), -1. / 3.) * a2_2 / fabs(a2_2) : 0.0;
 
-        auto A0_2_optional = boost::optional<double>();
+        auto A0_2_optional = std::optional<double>();
         if (A0_2) {
             A0_2_optional = A0_2;
         }
-        auto A1_2_optional = boost::optional<double>();
+        auto A1_2_optional = std::optional<double>();
         if (A1_2) {
             A1_2_optional = A1_2;
         }
 
-        Ifc4x3_add2::IfcCurve* parent_curve2 = new Ifc4x3_add2::IfcSecondOrderPolynomialSpiral(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})), new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})),
-            A2_2,
-            A1_2_optional,
-            A0_2_optional);
+        Ifc4x3_add2::IfcCurve parent_curve2 = file.create<Ifc4x3_add2::IfcSecondOrderPolynomialSpiral>();
+        parent_curve1.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve1.setQuadraticTerm(A2_2);
+        parent_curve1.setLinearTerm(A1_2_optional);
+        parent_curve1.setConstantTerm(A0_2_optional);
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment2 = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(length/2),
-            new Ifc4x3_add2::IfcLengthMeasure(length/2),
-            parent_curve2);
+        Ifc4x3_add2::IfcCurveSegment curve_segment2 = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment2.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment2.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment2.setSegmentLength(create_length(file, length / 2));
+        curve_segment2.setSegmentLength(create_length(file, length / 2));
+        curve_segment2.setParentCurve(parent_curve2);
 
         result.second = curve_segment2;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_SINECURVE) {
@@ -640,24 +740,27 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
         auto A1 = a1 ? length * pow(fabs(a1), -1. / 2.) * a1 / fabs(a1) : 0.0;
         auto A2 = a2 ? length * pow(fabs(a2), -1. / 1.) * a2 / fabs(a2) : 0.0;
 
-        auto A0_optional = boost::optional<double>();
+        auto A0_optional = std::optional<double>();
         if (A0) {
             A0_optional = A0;
         }
-        auto A1_optional = boost::optional<double>();
+        auto A1_optional = std::optional<double>();
         if (A1) {
             A1_optional = A1;
         }
 
-        Ifc4x3_add2::IfcCurve* parent_curve = new Ifc4x3_add2::IfcSineSpiral(new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})), new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})), 
-           A2, A1_optional, A0_optional);
+        auto parent_curve = file.create<Ifc4x3_add2::IfcSineSpiral>();
+        parent_curve.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve.setSineTerm(A2);
+        parent_curve.setLinearTerm(A1_optional);
+        parent_curve.setConstantTerm(A0_optional);
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(start_point, new Ifc4x3_add2::IfcDirection({cos(start_direction), sin(start_direction)})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0),
-            new Ifc4x3_add2::IfcLengthMeasure(length),
-            parent_curve);
+        Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_point.Coordinates()[0], start_point.Coordinates()[1], cos(start_direction), sin(start_direction)));
+        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentLength(create_length(file, length));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_VIENNESEBEND) {
@@ -669,48 +772,47 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
     return result;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentVerticalSegment(const Ifc4x3_add2::IfcAlignmentVerticalSegment* segment) {
-    std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> result(nullptr, nullptr);
-    auto start_distance_along = segment->StartDistAlong();
-    auto horizontal_length = segment->HorizontalLength();
-    auto start_height = segment->StartHeight();
-    auto start_gradient = segment->StartGradient();
-    auto end_gradient = segment->EndGradient();
-    auto radius_of_curvature = segment->RadiusOfCurvature();
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(IfcHierarchyHelper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment) {
+    std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
+    auto start_distance_along = segment.StartDistAlong();
+    auto horizontal_length = segment.HorizontalLength();
+    auto start_height = segment.StartHeight();
+    auto start_gradient = segment.StartGradient();
+    auto end_gradient = segment.EndGradient();
+    auto radius_of_curvature = segment.RadiusOfCurvature();
 
-    auto type = segment->PredefinedType();
+    auto type = segment.PredefinedType();
 
     if (type == Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT) {
-        auto parent_curve = new Ifc4x3_add2::IfcLine(
-            new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})),
-            new Ifc4x3_add2::IfcVector(new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0}), 1.0));
+        auto parent_curve = file.create<Ifc4x3_add2::IfcLine>();
+        parent_curve.setPnt(file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(0, 0));
+        auto vec = file.create<Ifc4x3_add2::IfcVector>();
+        vec.setOrientation(file.addDoublet<Ifc4x3_add2::IfcDirection>(1, 0));
+        vec.setMagnitude(1.0);
+        parent_curve.setDir(vec);
 
         // IfcCurveSegment.SegmentLength is the length of the curve segment, not the horizontal length.
         auto dx = cos(atan(start_gradient));
         auto dy = sin(atan(start_gradient));
         auto segment_curve_length = horizontal_length / dx;
 
-        auto curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(
-                new Ifc4x3_add2::IfcCartesianPoint({start_distance_along, start_height}),
-                new Ifc4x3_add2::IfcDirection({dx,dy})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0), // start
-            new Ifc4x3_add2::IfcLengthMeasure(segment_curve_length),
-            parent_curve);
+        auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_distance_along, start_height, dx, dy));
+        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentLength(create_length(file, segment_curve_length));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
-
     } else if (type == Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_PARABOLICARC) {
         double A = start_height;
         double B = start_gradient;
         double C = (end_gradient - start_gradient) / (2 * horizontal_length);
 
-        auto parent_curve = new Ifc4x3_add2::IfcPolynomialCurve(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>{0.0, 0.0}), new Ifc4x3_add2::IfcDirection(std::vector<double>{1.0, 0.0})),
-            std::vector<double>{0.0, 1.0},
-            std::vector<double>{A, B, C},
-            boost::none);
+        auto parent_curve = file.create<Ifc4x3_add2::IfcPolynomialCurve>();
+        parent_curve.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve.setCoefficientsX(std::vector<double>{0.0, 1.0});
+        parent_curve.setCoefficientsY(std::vector<double>{A, B, C});
 
         // IfcCurveSegment.SegmentLength is the length of the curve segment, not the horizontal length.
         // The curve length is calculated by integrating the differential curve length equation sqrt(1 + (dy/dx)^2) from 0 to horizontal_length.
@@ -721,14 +823,12 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
         auto curve_length_fn = [B, C](double x) { return sqrt(1 + pow(B + 2*C * x, 2)); };
         auto segment_curve_length = boost::math::quadrature::trapezoidal(curve_length_fn, 0.0, horizontal_length);
 
-        auto curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(
-               new Ifc4x3_add2::IfcCartesianPoint({start_distance_along, start_height}), 
-               new Ifc4x3_add2::IfcDirection({dx,dy})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0),
-            new Ifc4x3_add2::IfcLengthMeasure(segment_curve_length),
-            parent_curve);
+        auto curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_distance_along, start_height, dx, dy));
+        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentLength(create_length(file, segment_curve_length));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
     } else if (type == Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CLOTHOID) {
@@ -743,20 +843,18 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
             radius = horizontal_length / (sin(start_angle) - sin(end_angle));
         }
 
-        Ifc4x3_add2::IfcCurve* parent_curve = new Ifc4x3_add2::IfcCircle(
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint(std::vector<double>({0, 0})),
-                                                 new Ifc4x3_add2::IfcDirection(std::vector<double>{1, 0})),
-            radius);
-
+        auto parent_curve = file.create<Ifc4x3_add2::IfcCircle>();
+        parent_curve.setPosition(file.addPlacement2d(0., 0., 1.0, 0.));
+        parent_curve.setRadius(radius);
 
         auto segment_curve_length = radius * fabs(end_angle - start_angle);
 
-        Ifc4x3_add2::IfcCurveSegment* curve_segment = new Ifc4x3_add2::IfcCurveSegment(
-            Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint({start_distance_along, start_height}), new Ifc4x3_add2::IfcDirection({1.0, 0.0})),
-            new Ifc4x3_add2::IfcLengthMeasure(0.0),
-            new Ifc4x3_add2::IfcLengthMeasure(segment_curve_length),
-            parent_curve);
+        Ifc4x3_add2::IfcCurveSegment curve_segment = file.create<Ifc4x3_add2::IfcCurveSegment>();
+        curve_segment.setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT);
+        curve_segment.setPlacement(file.addPlacement2d(start_distance_along, start_height, 1.0, 0.));
+        curve_segment.setSegmentLength(create_length(file, 0.0));
+        curve_segment.setSegmentLength(create_length(file, segment_curve_length));
+        curve_segment.setParentCurve(parent_curve);
 
         result.first = curve_segment;
     } else {
@@ -766,9 +864,9 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
     return result;
 }
 
-std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentCantSegment(const Ifc4x3_add2::IfcAlignmentCantSegment* segment) {
-    std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> result(nullptr, nullptr);
-    auto type = segment->PredefinedType();
+std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(IfcHierarchyHelper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcAlignmentCantSegment& segment) {
+    std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> result;
+    auto type = segment.PredefinedType();
     if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_BLOSSCURVE) {
         Logger::Warning(std::string("mapping of AlignmentCantSegmentType BLOSSCURVE not supported"));
     } else if (type == Ifc4x3_add2::IfcAlignmentCantSegmentTypeEnum::IfcAlignmentCantSegmentType_CONSTANTCANT) {

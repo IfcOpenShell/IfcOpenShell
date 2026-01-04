@@ -23,13 +23,13 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
-	IfcSchema::IfcCartesianPoint::list::ptr points = inst->Points();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline& inst) {
+	std::vector<IfcSchema::IfcCartesianPoint> points = inst.Points();
 
 	// Parse and store the points in a sequence
 	std::vector<taxonomy::point3::ptr> polygon;
-	polygon.reserve(points->size());
-	std::transform(points->begin(), points->end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint* p) {
+	polygon.reserve(points.size());
+	std::transform(points.begin(), points.end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint& p) {
 		return taxonomy::cast<taxonomy::point3>(map(p));
 	});
 

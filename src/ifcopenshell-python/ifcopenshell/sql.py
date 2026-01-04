@@ -27,8 +27,8 @@ import ifcopenshell.util.schema
 from pathlib import Path
 from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING, TypedDict
 from . import ifcopenshell_wrapper
-from .file import file
-from .entity_instance import entity_instance
+from . import file
+from . import entity_instance
 
 if TYPE_CHECKING:
     import sqlite3

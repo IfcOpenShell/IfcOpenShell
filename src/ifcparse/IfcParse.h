@@ -27,10 +27,9 @@
 #ifndef IFCPARSE_H
 #define IFCPARSE_H
 
-#include "aggregate_of_instance.h"
 #include "Argument.h"
 #include "ifc_parse_api.h"
-#include "IfcBaseClass.h"
+#include "express.h"
 #include "IfcCharacterDecoder.h"
 #include "FileReader.h"
 #include "macros.h"
@@ -126,9 +125,9 @@ class IFC_PARSE_API IfcSpfLexer {
     void TokenString(size_t offset, std::string& result);
 };
 
-IFC_PARSE_API aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+IFC_PARSE_API std::vector<express::Base> traverse(const express::Base& instance, int max_level = -1);
 
-IFC_PARSE_API aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+IFC_PARSE_API std::vector<express::Base> traverse_breadth_first(const express::Base& instance, int max_level = -1);
 } // namespace IfcParse
 
 IFC_PARSE_API std::ostream& operator<<(std::ostream& out, const IfcParse::IfcFile& file);

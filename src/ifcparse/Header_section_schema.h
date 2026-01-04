@@ -4,16 +4,19 @@
 
 #include <string>
 #include <vector>
-
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "../ifcparse/ifc_parse_api.h"
 
-#include "../ifcparse/aggregate_of_instance.h"
-#include "../ifcparse/IfcBaseClass.h"
+#include "../ifcparse/express.h"
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/Argument.h"
+
+namespace IfcParse {
+class IfcFile;
+class IfcSpfHeader;
+} // namespace IfcParse
 
 struct Header_section_schema {
 
@@ -27,71 +30,78 @@ static const char* const Identifier;
 class file_description; class file_name; class file_schema; class schema_name; class time_stamp_text; 
 
 
-class IFC_PARSE_API schema_name : public  IfcUtil::IfcBaseType {
+class IFC_PARSE_API schema_name : public express::DeclaredType {
 public:
-    virtual const IfcParse::type_declaration& declaration() const;
+    schema_name() {}
+    explicit schema_name (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+
+    // virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit schema_name (IfcEntityInstanceData&& e);
-    schema_name (std::string v);
+    // schema_name (std::string v);
     operator std::string() const;
 };
 
-class IFC_PARSE_API time_stamp_text : public  IfcUtil::IfcBaseType {
+class IFC_PARSE_API time_stamp_text : public express::DeclaredType {
 public:
-    virtual const IfcParse::type_declaration& declaration() const;
+    time_stamp_text() {}
+    explicit time_stamp_text (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+
+    // virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit time_stamp_text (IfcEntityInstanceData&& e);
-    time_stamp_text (std::string v);
+    // time_stamp_text (std::string v);
     operator std::string() const;
 };
 
 
 
-class IFC_PARSE_API file_description : public  IfcUtil::IfcBaseEntity {
+class IFC_PARSE_API file_description : public express::Entity {
 public:
+    file_description() {}
+    explicit file_description (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+
     std::vector< std::string > /*[1:?]*/ description() const;
-    void setdescription(std::vector< std::string > /*[1:?]*/ v);
+    void setdescription(const std::vector< std::string > /*[1:?]*/& v);
     std::string implementation_level() const;
-    void setimplementation_level(std::string v);
-        virtual const IfcParse::entity& declaration() const;
+    void setimplementation_level(const std::string& v);
+        // virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    file_description (IfcEntityInstanceData&& e);
-    file_description (std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level);
-    typedef aggregate_of< file_description > list;
+    // file_description (std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level);
 };
 
-class IFC_PARSE_API file_name : public  IfcUtil::IfcBaseEntity {
+class IFC_PARSE_API file_name : public express::Entity {
 public:
+    file_name() {}
+    explicit file_name (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+
     std::string name() const;
-    void setname(std::string v);
+    void setname(const std::string& v);
     std::string time_stamp() const;
-    void settime_stamp(std::string v);
+    void settime_stamp(const std::string& v);
     std::vector< std::string > /*[1:?]*/ author() const;
-    void setauthor(std::vector< std::string > /*[1:?]*/ v);
+    void setauthor(const std::vector< std::string > /*[1:?]*/& v);
     std::vector< std::string > /*[1:?]*/ organization() const;
-    void setorganization(std::vector< std::string > /*[1:?]*/ v);
+    void setorganization(const std::vector< std::string > /*[1:?]*/& v);
     std::string preprocessor_version() const;
-    void setpreprocessor_version(std::string v);
+    void setpreprocessor_version(const std::string& v);
     std::string originating_system() const;
-    void setoriginating_system(std::string v);
+    void setoriginating_system(const std::string& v);
     std::string authorization() const;
-    void setauthorization(std::string v);
-        virtual const IfcParse::entity& declaration() const;
+    void setauthorization(const std::string& v);
+        // virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    file_name (IfcEntityInstanceData&& e);
-    file_name (std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization);
-    typedef aggregate_of< file_name > list;
+    // file_name (std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization);
 };
 
-class IFC_PARSE_API file_schema : public  IfcUtil::IfcBaseEntity {
+class IFC_PARSE_API file_schema : public express::Entity {
 public:
+    file_schema() {}
+    explicit file_schema (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+
     std::vector< std::string > /*[1:?]*/ schema_identifiers() const;
-    void setschema_identifiers(std::vector< std::string > /*[1:?]*/ v);
-        virtual const IfcParse::entity& declaration() const;
+    void setschema_identifiers(const std::vector< std::string > /*[1:?]*/& v);
+        // virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    file_schema (IfcEntityInstanceData&& e);
-    file_schema (std::vector< std::string > /*[1:?]*/ v1_schema_identifiers);
-    typedef aggregate_of< file_schema > list;
+    // file_schema (std::vector< std::string > /*[1:?]*/ v1_schema_identifiers);
 };
 
 };

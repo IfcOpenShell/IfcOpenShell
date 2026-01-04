@@ -107,7 +107,7 @@ class stream_or_filename {
 private:
 	std::shared_ptr<std::ofstream> ofs_;
 	std::shared_ptr<std::ostringstream> oss_;
-	boost::optional<std::string> filename_;
+	std::optional<std::string> filename_;
 
 public:
 	std::ostream& stream;
@@ -126,7 +126,7 @@ public:
 		return oss_->str();
 	}
 
-	boost::optional<std::string> filename() const {
+	std::optional<std::string> filename() const {
 		return filename_;
 	}
 

@@ -23,11 +23,11 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrapeziumProfileDef* inst) {
-	const double x1 = inst->BottomXDim() / 2. * length_unit_;
-	const double w = inst->TopXDim() * length_unit_;
-	const double dx = inst->TopXOffset() * length_unit_;
-	const double y = inst->YDim() / 2.  * length_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrapeziumProfileDef& inst) {
+	const double x1 = inst.BottomXDim() / 2. * length_unit_;
+	const double w = inst.TopXDim() * length_unit_;
+	const double dx = inst.TopXOffset() * length_unit_;
+	const double y = inst.YDim() / 2.  * length_unit_;
 
 	// See: https://forums.buildingsmart.org/t/how-are-the-sides-of-ifctrapeziumprofiledefs-bounding-box-calculated-in-most-implementations/2945/8
 	// The trapezium x center should not be midway of BottomXDim but rather at the center of the overall bounding box.
@@ -43,10 +43,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrapeziumProfileDef* inst) {
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	return profile_helper(m4, {

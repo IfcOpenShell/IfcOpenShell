@@ -178,7 +178,7 @@ class EarlyBoundCodeWriter:
         num_names = len(self.names)
         self.statements.append("declaration* %(schema_name)s_types[%(num_names)d] = {nullptr};" % locals())
 
-        self.statements.append("{factory_placeholder}")
+        # self.statements.append("{factory_placeholder}")
 
 #         self.statements.append(
 #             """
@@ -285,7 +285,7 @@ class EarlyBoundCodeWriter:
         declarations = ",".join(_())
         schema_name_ref = self.strings.append(schema_name)
         self.statements.append(
-            '    return new schema_definition(%(schema_name_ref)s, {%(declarations)s}, new %(schema_name)s_instance_factory());'
+            '    return new schema_definition(%(schema_name_ref)s, {%(declarations)s});'
             % locals()
         )
         self.statements.append("}");
@@ -340,16 +340,17 @@ class EarlyBoundCodeWriter:
             )
         )
 
-        self.statements[self.statements.index("{factory_placeholder}")] = (
-            """
-class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
-    virtual IfcUtil::IfcBaseClass* operator()(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const {
-        %(instance_mapping)s
-    }
-};
-"""
-            % locals()
-        )
+        # Factor no longer exists because we don't have virtual methods anymore.
+        # self.statements[self.statements.index("{factory_placeholder}")] = (
+        #     """
+        #     class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
+        #         virtual IfcUtil::IfcBaseClass* operator()(const IfcParse::declaration* decl, const std::weak_ptr<InstanceData>& data) const {
+        #             %(instance_mapping)s
+        #         }
+        #     };
+        #     """
+        #     % locals()
+        # )
 
         ""
         self.statements[self.statements.index("{string_pool_placeholder}")] = (

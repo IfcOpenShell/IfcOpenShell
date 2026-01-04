@@ -97,7 +97,7 @@ bool SvgSerializer::ready() {
 	return true;
 }
 
-void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boost::optional<std::vector<double>> dash_array) {
+void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std::optional<std::vector<double>> dash_array) {
 	/* ShapeFix_Wire fix;
 	Handle(ShapeExtend_WireData) data = new ShapeExtend_WireData;
 	for (TopExp_Explorer edges(result, TopAbs_EDGE); edges.More(); edges.Next()) {
@@ -361,7 +361,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 	}
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const IfcUtil::IfcBaseEntity* storey, const std::string& id) {
+SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const express::Base& storey, const std::string& id) {
 	auto key = std::make_pair(std::make_pair(storey, ""), path_object());
 	SvgSerializer::path_object& p = paths.insert(key)->second;
 	drawing_metadata[key.first].pln_3d = pln;
@@ -370,7 +370,7 @@ SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const I
 }
 
 SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const std::string& drawing_name, const std::string& id) {
-	auto key = std::make_pair(std::make_pair(nullptr, drawing_name), path_object());
+    auto key = std::make_pair(std::make_pair(express::Base{}, drawing_name), path_object());
 	SvgSerializer::path_object& p = paths.insert(key)->second;
 	drawing_metadata[key.first].pln_3d = pln;
 	p.first = id;
@@ -378,11 +378,11 @@ SvgSerializer::path_object& SvgSerializer::start_path(const gp_Pln& pln, const s
 }
 
 namespace {
-	boost::optional<std::pair<const IfcUtil::IfcBaseEntity*, double>> storey_elevation_from_element(const IfcGeom::BRepElement* o) {
+	std::optional<std::pair<express::Base, double>> storey_elevation_from_element(const IfcGeom::BRepElement* o) {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
 				try {
-					double e = p->product()->get("Elevation");
+					double e = p->product().get("Elevation");
 					double storey_elevation = e * o->geometry().settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
 					return std::make_pair(p->product(), storey_elevation);
 				} catch (...) {
@@ -391,12 +391,12 @@ namespace {
 				break;
 			}
 		}
-		return boost::none;
+		return std::nullopt;
 	}
 
 	typedef std::pair<std::array<double, 3>, std::array<double, 3>> box_t;
 
-	boost::optional<TopoDS_Edge> edge_from_compound(TopoDS_Shape& compound) {
+	std::optional<TopoDS_Edge> edge_from_compound(TopoDS_Shape& compound) {
 		TopoDS_Iterator it(compound);
 		if (it.More()) {
 			TopoDS_Shape wire = it.Value();
@@ -412,7 +412,7 @@ namespace {
 				}
 			}
 		}
-		return boost::none;
+		return std::nullopt;
 	}
 
 	class almost {
@@ -433,7 +433,7 @@ namespace {
 		}
 	};
 
-	boost::optional<box_t> box_from_compound(TopoDS_Shape& compound) {
+	std::optional<box_t> box_from_compound(TopoDS_Shape& compound) {
 		/*
 		// in v0.8 apparently we don't get a solid/shell anymore because
 		// we no longer use PrimAPI, but rather resolve the box to an
@@ -446,17 +446,17 @@ namespace {
 			shell = TopoDS::Shell(exp.Current());
 			exp.Next();
 			if (exp.More()) {
-				return boost::none;
+				return std::nullopt;
 			}
 		}
 		else {
-			return boost::none;
+			return std::nullopt;
 		}
 		*/
 		auto& shell = compound;
 
 		if (IfcGeom::util::count(shell, TopAbs_FACE) != 6) {
-			return boost::none;
+			return std::nullopt;
 		}
 
 		TopExp_Explorer it(shell, TopAbs_FACE);
@@ -464,16 +464,16 @@ namespace {
 			const auto& face = TopoDS::Face(it.Current());
 			auto surf = BRep_Tool::Surface(face);
 			if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
-				return boost::none;
+				return std::nullopt;
 			}
 			auto pln = Handle(Geom_Plane)::DownCast(surf);
 			auto dz = std::abs(pln->Position().Direction().Z());
 			if (almost(0.) != dz && almost(1.) != dz) {
-				return boost::none;
+				return std::nullopt;
 			}
 			auto dy = std::abs(pln->Position().Direction().Y());
 			if (almost(0.) != dy && almost(1.) != dy) {
-				return boost::none;
+				return std::nullopt;
 			}
 		}
 
@@ -491,27 +491,27 @@ namespace {
 	};
 
 	template <typename It>
-	void enumerate_string_properties(const IfcUtil::IfcBaseEntity* product, It output_it) {
-		auto rels = product->get_inverse("IsDefinedBy");
-		for (auto& rel : *rels) {
-			if (rel->declaration().is("IfcRelDefinesByProperties")) {
-				auto pset = ((IfcUtil::IfcBaseClass*) ((IfcUtil::IfcBaseEntity*) rel)->get("RelatingPropertyDefinition"))->as<IfcUtil::IfcBaseEntity>();
-				if (!pset->declaration().is("IfcPropertySet")) {
+	void enumerate_string_properties(const express::Base& product, It output_it) {
+		auto rels = product.as<express::Entity>().get_inverse("IsDefinedBy");
+		for (auto& rel : rels) {
+			if (rel.declaration().is("IfcRelDefinesByProperties")) {
+				auto pset = ((express::Base)rel.get("RelatingPropertyDefinition")).as<express::Entity>();
+				if (!pset.declaration().is("IfcPropertySet")) {
 					continue;
                 }
 				std::string pset_name;
-				if (!pset->get("Name").isNull()) {
-					pset_name = (std::string) pset->get("Name");
+				if (!pset.get("Name").isNull()) {
+					pset_name = (std::string) pset.get("Name");
 				}
-				aggregate_of_instance::ptr props = pset->get("HasProperties");
-				for (auto& prop : *props) {
-					if (prop->declaration().is("IfcPropertySingleValue")) {
-						std::string name = ((IfcUtil::IfcBaseEntity*) prop)->get("Name");
-                        if (((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue").isNull()) {
+				std::vector<express::Base> props = pset.get("HasProperties");
+				for (auto& prop : props) {
+					if (prop.declaration().is("IfcPropertySingleValue")) {
+                        std::string name = prop.as<express::Entity>().get("Name");
+                        if (prop.as<express::Entity>().get("NominalValue").isNull()) {
                             continue;
                         }
-						IfcUtil::IfcBaseClass* v = ((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
-						auto value = v->get_attribute_value(0);
+                        express::Base v = prop.as<express::Entity>().get("NominalValue");
+						auto value = v.get_attribute_value(0);
 						if (value.type() == IfcUtil::Argument_STRING) {
 							std::string v_str = value;
 							*output_it++ = string_property{ pset_name, name, v_str };
@@ -524,25 +524,24 @@ namespace {
 }
 
 namespace {
-	boost::optional<std::string> get_curve_style_name(IfcUtil::IfcBaseEntity* item) {
-		auto refs = item->get_inverse("StyledByItem");
-		for (auto& ref : *refs) {
-			if (ref->declaration().is("IfcStyledItem")) {
-				aggregate_of_instance::ptr styles = ((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
-				for (auto& s_ : *styles) {
-					auto s = (IfcUtil::IfcBaseEntity*) s_;
-					std::vector<IfcUtil::IfcBaseEntity*> pss;
-					if (s->declaration().is("IfcPresentationStyleAssignment")) {
-						aggregate_of_instance::ptr pstyles = s->get("Styles");
-						for (auto& ssss : *pstyles) {
-							pss.push_back((IfcUtil::IfcBaseEntity*) ssss);
+	std::optional<std::string> get_curve_style_name(const express::Base& item) {
+		auto refs = item.as<express::Entity>().get_inverse("StyledByItem");
+		for (auto& ref : refs) {
+			if (ref.declaration().is("IfcStyledItem")) {
+				std::vector<express::Base> styles = ref.as<express::Entity>().get("Styles");
+				for (auto& s : styles) {
+					std::vector<express::Entity> pss;
+					if (s.declaration().is("IfcPresentationStyleAssignment")) {
+                        std::vector<express::Base> pstyles = s.as<express::Entity>().get("Styles");
+						for (auto& ssss : pstyles) {
+							pss.push_back(ssss.as<express::Entity>());
 						}
 					} else {
-						pss.push_back(s);
+                        pss.push_back(s.as<express::Entity>());
 					}
 					for (auto& ps : pss) {
-						if (ps->declaration().is("IfcCurveStyle")) {
-							auto arg = ps->get("Name");
+						if (ps.declaration().is("IfcCurveStyle")) {
+							auto arg = ps.get("Name");
 							if (!arg.isNull()) {
 								return (std::string) arg;
 							}
@@ -551,18 +550,18 @@ namespace {
 				}
 			}
 		}
-		return boost::none;
+		return std::nullopt;
 	}
 }
 
 void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
-	boost::optional<std::string> object_type;
-	if (!brep_obj->product()->get("ObjectType").isNull()) {
-		object_type = static_cast<std::string>(brep_obj->product()->get("ObjectType"));
+	std::optional<std::string> object_type;
+	if (!brep_obj->product().get("ObjectType").isNull()) {
+		object_type = static_cast<std::string>(brep_obj->product().get("ObjectType"));
 	}
 
-	std::vector<boost::optional<std::vector<double>>> dash_arrays;
+	std::vector<std::optional<std::vector<double>>> dash_arrays;
 
 	auto itm = brep_obj->geometry().as_compound();
 	TopoDS_Shape compound_local = ((ifcopenshell::geometry::OpenCascadeShape*)itm)->shape();
@@ -571,9 +570,9 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	for (auto& x : brep_obj->geometry()) {
 		dash_arrays.emplace_back();
 
-		boost::optional<std::string> curve_style_name;
+		std::optional<std::string> curve_style_name;
 		if (file) {
-			auto item = (IfcUtil::IfcBaseEntity*) this->file->instance_by_id(x.ItemId());
+			auto item = this->file->instance_by_id(x.ItemId());
 			curve_style_name = get_curve_style_name(item);
 		}		
 		
@@ -621,11 +620,11 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	auto compound_unmirrored = make_transform_global.Shape();
 
 	if (is_section || is_elevation) {
-		boost::optional<double> scale;
-		boost::optional<std::pair<double, double>> size;
+		std::optional<double> scale;
+		std::optional<std::pair<double, double>> size;
 
 		auto e = edge_from_compound(compound_unmirrored);
-		boost::optional<gp_Pln> pln;
+		std::optional<gp_Pln> pln;
 		if (e) {
 			TopoDS_Edge global_edge = TopoDS::Edge(e->Moved(trsf));
 			double u0, u1;
@@ -638,7 +637,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 				pln = gp_Pln(gp_Ax3(P, N, V));
 			}
 		}
-		else if (boost::optional<box_t> b = box_from_compound(compound_local)) {
+		else if (std::optional<box_t> b = box_from_compound(compound_local)) {
 			pln = gp_Pln().Transformed(trsf);
 			size = std::make_pair(
 				b->second[0] - b->first[0],
@@ -726,7 +725,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	}
 
 	auto p = storey_elevation_from_element(brep_obj);
-	const IfcUtil::IfcBaseEntity* storey = p ? p->first : nullptr;
+    auto storey = p ? p->first : express::Base{};
 	double elev = p ? p->second : std::numeric_limits<double>::quiet_NaN();
 	// @todo is it correct to call nameElement() here with a single storey (what if this element spans multiple?)
 
@@ -792,7 +791,7 @@ void SvgSerializer::write(const geometry_data& data) {
 	const std::vector<section_data>* section_heights_used = &section_heights_storage;
 
 	if (section_data_) {
-		section_heights_used = section_data_.get_ptr();
+        section_heights_used = section_data_ ? std::addressof(*section_data_) : nullptr;
 	} else {
 		if (data.storey) {
 			section_heights_storage.push_back(horizontal_plan{ data.storey, data.storey_elevation,  +1. });
@@ -836,25 +835,25 @@ void SvgSerializer::write(const geometry_data& data) {
 
 	TopoDS_Wire annotation;
 
-	if (is_floor_plan_ && draw_door_arcs_ && data.product->declaration().is("IfcDoor")) {
+	if (is_floor_plan_ && draw_door_arcs_ && data.product.declaration().is("IfcDoor")) {
 
-		boost::optional<std::string> operation_type;
+		std::optional<std::string> operation_type;
 
 		try {
-			aggregate_of_instance::ptr rels;
-			if (data.product->declaration().schema()->name() == "IFC2X3") {
-				rels = data.product->get_inverse("IsDefinedBy");
+			std::vector<express::Entity> rels;
+			if (data.product.declaration().schema()->name() == "IFC2X3") {
+				rels = data.product.as<express::Entity>().get_inverse("IsDefinedBy");
 			} else {
 				// Damn you, IFC
-				rels = data.product->get_inverse("IsTypedBy");
+                rels = data.product.as<express::Entity>().get_inverse("IsTypedBy");
 			}
-			for (auto& rel : *rels) {
-				if (rel->declaration().name() == "IfcRelDefinesByType") {
-					IfcUtil::IfcBaseClass* ty = ((IfcUtil::IfcBaseEntity*)rel)->get("RelatingType");
-					const std::string& ty_entity_name = ty->declaration().name();
+			for (auto& rel : rels) {
+				if (rel.declaration().name() == "IfcRelDefinesByType") {
+                    express::Base ty = rel.as<express::Entity>().get("RelatingType");
+					const std::string& ty_entity_name = ty.declaration().name();
 					// Damn you, IFC
 					if (ty_entity_name == "IfcDoorStyle" || ty_entity_name == "IfcDoorType") {
-						operation_type = (std::string)((IfcUtil::IfcBaseEntity*)ty)->get("OperationType");
+                        operation_type = ty.as<express::Entity>().get("OperationType");
 					}
 				}
 			}
@@ -936,7 +935,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		gp_Vec projection_direction;
 		gp_Pln projection_plane;
 
-		const IfcUtil::IfcBaseEntity* storey = nullptr;
+		express::Base storey;
 		std::string drawing_name;
 
 		bool use_hlr = always_project_;
@@ -996,7 +995,7 @@ void SvgSerializer::write(const geometry_data& data) {
 			}
 
 			// Exclude annotations, spaces and grids from HLR
-			if (any_in_front && !data.product->declaration().is("IfcAnnotation") && !data.product->declaration().is("IfcSpace") && !data.product->declaration().is("IfcGrid")) {
+			if (any_in_front && !data.product.declaration().is("IfcAnnotation") && !data.product.declaration().is("IfcSpace") && !data.product.declaration().is("IfcGrid")) {
 				
 				TopoDS_Shape* compound_to_hlr = &compound_to_use;
 				TopoDS_Shape subtracted_shape;
@@ -1004,9 +1003,9 @@ void SvgSerializer::write(const geometry_data& data) {
 				bool should_subtract = false;
 
 				if (subtraction_settings_ == ON_SLABS_AT_FLOORPLANS) {
-					should_subtract = data.product->declaration().is("IfcSlab") && is_floor_plan_;
+					should_subtract = data.product.declaration().is("IfcSlab") && is_floor_plan_;
 				} else if (subtraction_settings_ == ON_SLABS_AND_WALLS) {
-					should_subtract = data.product->declaration().is("IfcSlab") || data.product->declaration().is("IfcWall");
+					should_subtract = data.product.declaration().is("IfcSlab") || data.product.declaration().is("IfcWall");
 				} else if (subtraction_settings_ == ALWAYS) {
 					should_subtract = true;
 				}
@@ -1118,7 +1117,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 
 				TopoDS_Compound profile_edges;
-				if (profile_threshold_ != -1 && !(data.product->declaration().is("IfcWall") || data.product->declaration().is("IfcSlab"))) {
+				if (profile_threshold_ != -1 && !(data.product.declaration().is("IfcWall") || data.product.declaration().is("IfcSlab"))) {
 					TopTools_IndexedDataMapOfShapeListOfShape map;
 					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, map);
 					if (map.Extent() > profile_threshold_) {
@@ -1277,7 +1276,7 @@ void SvgSerializer::write(const geometry_data& data) {
 			auto proj = projection_direction ^ bbdif ^ projection_direction;
 
 			std::string object_type;
-			auto ot_arg = data.product->get("ObjectType");
+            auto ot_arg = data.product.as<express::Entity>().get("ObjectType");
 			if (!ot_arg.isNull()) {
 				object_type = (std::string) ot_arg;
 				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
@@ -1287,7 +1286,7 @@ void SvgSerializer::write(const geometry_data& data) {
 			auto xyz_global = gp_Pnt().Transformed(data.trsf);
 			int state = infront_or_behind(projection_plane, xyz_global);
 
-			if (data.product->declaration().is("IfcAnnotation") &&     // is an Annotation
+			if (data.product.declaration().is("IfcAnnotation") &&     // is an Annotation
 				(proj.Magnitude() > 1.e-5) && 					       // when projected onto the view has a length
 				(is_floor_plan_
 					? (zmin >= range.first && zmin < (range.second - 1.e-5)) // the Z-coords are within the range of the building storey,
@@ -1457,7 +1456,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				TopoDS_Wire wire = TopoDS::Wire(wires->Value(i));
 
-				if (wire.Closed() && (print_space_names_ || print_space_areas_) && data.product->declaration().is("IfcSpace")) {
+				if (wire.Closed() && (print_space_names_ || print_space_areas_) && data.product.declaration().is("IfcSpace")) {
 					// we explicitly specify the surface here, to later on
 					// simplify the projection from {x,y,z} to {u, v} because
 					// we know we can simply discard z.
@@ -1475,12 +1474,12 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				}
 				
-				if (file && data.product->declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::util::count(wire, TopAbs_EDGE) == 1) {
+				if (file && data.product.declaration().is("IfcBuildingStorey") && storey_height_display_ != SH_NONE && wires->Length() == 1 && IfcGeom::util::count(wire, TopAbs_EDGE) == 1) {
 					
 					std::string elev_str;
 
 					const double lu = file->getUnit("LENGTHUNIT").second;
-					auto a = data.product->get("Elevation");
+                    auto a = data.product.as<express::Entity>().get("Elevation");
 					if (!a.isNull()) {
 						double elev = a;
 						
@@ -1523,7 +1522,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 						auto d = (p1.XYZ() - p0.XYZ());
 						d.Normalize();
-						const double shll = storey_height_line_length_.get_value_or(2.);
+						const double shll = storey_height_line_length_.value_or(2.);
 						d *= shll;
 						gp_Pnt p1x(p0.XYZ() + d);
 
@@ -1579,7 +1578,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			std::pair<const gp_Pnt*, const gp_Pnt*> furthest_points = { nullptr, nullptr };
 			double furthest_points_distance = 0.;
-			boost::optional<gp_Pnt> center_point;
+			std::optional<gp_Pnt> center_point;
 
 			BRepTopAdaptor_FClass2d fcls(largest_closed_wire_face, BRep_Tool::Tolerance(largest_closed_wire_face));
 
@@ -1625,8 +1624,8 @@ void SvgSerializer::write(const geometry_data& data) {
 				if (print_space_names_) {
 					labels.push_back(data.ifc_name);
 				}
-				if (print_space_names_ && data.product->declaration().is("IfcSpace")) {
-					auto attr = data.product->get("LongName");
+				if (print_space_names_ && data.product.declaration().is("IfcSpace")) {
+                    auto attr = data.product.as<express::Entity>().get("LongName");
 					if (!attr.isNull()) {
 						std::string long_name = attr;
 						if (!long_name.empty()) {
@@ -1708,8 +1707,8 @@ std::array<std::array<double, 3>, 3> SvgSerializer::resize() {
 			cy = offset_2d_->second;
 		} else if (scale_) {
 			sc = (*scale_) * 1000;
-			cx = (xmax + xmin) / 2. * sc - size_->first * center_x_.get_value_or(0.5);
-			cy = (ymax + ymin) / 2. * sc - size_->second * center_y_.get_value_or(0.5);
+			cx = (xmax + xmin) / 2. * sc - size_->first * center_x_.value_or(0.5);
+			cy = (ymax + ymin) / 2. * sc - size_->second * center_y_.value_or(0.5);
 		} else {
 			if (calculated_scale_) {
 				sc = *calculated_scale_;
@@ -1772,7 +1771,7 @@ void SvgSerializer::draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name)
 			// not on the TopoDS_Shape input.
 
 			TopoDS_Shape hlr_compound;
-			if (drawing_name.first == nullptr) {
+			if (!drawing_name.first) {
 				gp_Trsf trsf_mirror;
 				if (!mirror_y_) {
 					trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
@@ -1830,7 +1829,7 @@ void SvgSerializer::resetScale() {
 void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 	auto& meta = drawing_metadata[k];
 
-	boost::optional<std::pair<double, double>> range;
+	std::optional<std::pair<double, double>> range;
 
 	if (k.first && section_data_) {
 		for (auto& sd : *section_data_) {
@@ -1843,130 +1842,128 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 		}
 	}
 
-	aggregate_of_instance::ptr annotations;
+	std::vector<express::Base> annotations;
 	if (file) {
 		annotations = file->instances_by_type("IfcAnnotation");
 	}
-	if (annotations) {
-		for (auto& ann_ : *annotations) {
-			auto ann = (IfcUtil::IfcBaseEntity*) ann_;
+	for (auto& ann_ : annotations) {
+        auto ann = ann_.as<express::Entity>();
 
-			auto ot = ann->get("ObjectType");
-			auto nm = ann->get("Name");
-			auto ds = ann->get("Description");
-			auto pl = ann->get("ObjectPlacement");
+		auto ot = ann.get("ObjectType");
+		auto nm = ann.get("Name");
+		auto ds = ann.get("Description");
+		auto pl = ann.get("ObjectPlacement");
 
-			if (!ot.isNull() && !nm.isNull() && !ds.isNull() && !pl.isNull()) {
-				auto object_type = (std::string) ot;
-				auto name = (std::string) nm;
-				auto desc = (std::string) ds;
+		if (!ot.isNull() && !nm.isNull() && !ds.isNull() && !pl.isNull()) {
+			auto object_type = (std::string) ot;
+			auto name = (std::string) nm;
+			auto desc = (std::string) ds;
 
-				if (object_type == "Text") {
-					auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_);
-					auto item = mapping->map(pl);
-					auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
-					delete mapping;
-					if (item) {
-						gp_Trsf trsf;
-						auto& m = matrix->ccomponents();
-						trsf.SetValues(
-							m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-							m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-							m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-						);
+			if (object_type == "Text") {
+				auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_);
+				auto item = mapping->map(pl);
+				auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
+				delete mapping;
+				if (item) {
+					gp_Trsf trsf;
+					auto& m = matrix->ccomponents();
+					trsf.SetValues(
+						m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+						m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+						m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+					);
 #ifdef TAXONOMY_USE_NAKED_PTR
-						delete matrix;
+					delete matrix;
 #endif
 
-						auto v = gp_Pnt(trsf.TranslationPart());
+					auto v = gp_Pnt(trsf.TranslationPart());
 
-						auto z_local = gp::DZ().Transformed(trsf);
-						auto view_dir = z_local.Dot(meta.pln_3d.Axis().Direction());
+					auto z_local = gp::DZ().Transformed(trsf);
+					auto view_dir = z_local.Dot(meta.pln_3d.Axis().Direction());
 
-						if ((!range || (v.Z() >= range->first && v.Z() < range->second)) && view_dir > 0.99) {
+					if ((!range || (v.Z() >= range->first && v.Z() < range->second)) && view_dir > 0.99) {
 
-							gp_Trsf trsf_view;
-							trsf_view.SetTransformation(gp::XOY(), meta.pln_3d.Position());
-							v.Transform(trsf_view);
+						gp_Trsf trsf_view;
+						trsf_view.SetTransformation(gp::XOY(), meta.pln_3d.Position());
+						v.Transform(trsf_view);
 
-							auto svg_name = nameElement(ann);
+						auto svg_name = nameElement(ann);
 
-							if (object_type.size()) {
-								// postfix the object_type for CSS matching
-								boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
-							}
-
-							path_object* po;
-							if (k.first) {
-								po = &start_path(meta.pln_3d, k.first, svg_name);
-							} else {
-								po = &start_path(meta.pln_3d, k.second, svg_name);
-							}							
-
-							boost::optional<double> font_size;
-							std::vector<std::string> tokens;
-							boost::split(tokens, name, boost::is_any_of("_"));
-							if (tokens.size() == 2) {
-								try {
-									font_size = boost::lexical_cast<double>(tokens.back());
-								}
-								catch (...) {}
-							}
-
-							// @todo column or row?
-							double z_rotation = gp::DX().Transformed(trsf).AngleWithRef(
-								meta.pln_3d.Position().XDirection(),
-								meta.pln_3d.Position().Direction()									
-							);
-							z_rotation *= 180. / M_PI;
-
-							auto y = -v.Y();
-
-							util::string_buffer path;
-							// dominant-baseline="central" is not well supported in IE.
-							// so we add a 0.35 offset to the dy of the tspans
-							path.add("            <text text-anchor=\"left\" x=\"");
-							xcoords.push_back(path.add(v.X()));
-							path.add("\" y=\"");
-							ycoords.push_back(path.add(y));
-
-							path.add("\" transform=\"rotate(");
-							path.add(z_rotation);
-							path.add(" ");
-							xcoords.push_back(path.add(v.X()));
-							path.add(" ");
-							ycoords.push_back(path.add(y));
-							path.add(")\"");
-
-							if (font_size) {
-								path.add(" font-size=\"");
-								path.add(*font_size);
-								path.add("\"");
-							}
-							path.add(">");
-
-							std::vector<std::string> labels{ desc };
-
-							for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-								auto l = *lit;
-								IfcUtil::escape_xml(l);
-								double dy = labels.begin() == lit
-									? 0.0  // align bottom
-									: 1.0; // <- dy is relative to the previous text element, so
-											//    always 1 for successive spans.
-								path.add("<tspan x=\"");
-								xcoords.push_back(path.add(v.X()));
-								path.add("\" dy=\"");
-								path.add(boost::lexical_cast<std::string>(dy));
-								path.add("em\">");
-								path.add(l);
-								path.add("</tspan>");
-							}
-
-							path.add("</text>");
-
-							po->second.push_back(path);
+						if (object_type.size()) {
+							// postfix the object_type for CSS matching
+							boost::replace_all(svg_name, "class=\"IfcAnnotation\"", "class=\"IfcAnnotation " + object_type + "\"");
 						}
+
+						path_object* po;
+						if (k.first) {
+							po = &start_path(meta.pln_3d, k.first, svg_name);
+						} else {
+							po = &start_path(meta.pln_3d, k.second, svg_name);
+						}							
+
+						std::optional<double> font_size;
+						std::vector<std::string> tokens;
+						boost::split(tokens, name, boost::is_any_of("_"));
+						if (tokens.size() == 2) {
+							try {
+								font_size = boost::lexical_cast<double>(tokens.back());
+							}
+							catch (...) {}
+						}
+
+						// @todo column or row?
+						double z_rotation = gp::DX().Transformed(trsf).AngleWithRef(
+							meta.pln_3d.Position().XDirection(),
+							meta.pln_3d.Position().Direction()									
+						);
+						z_rotation *= 180. / M_PI;
+
+						auto y = -v.Y();
+
+						util::string_buffer path;
+						// dominant-baseline="central" is not well supported in IE.
+						// so we add a 0.35 offset to the dy of the tspans
+						path.add("            <text text-anchor=\"left\" x=\"");
+						xcoords.push_back(path.add(v.X()));
+						path.add("\" y=\"");
+						ycoords.push_back(path.add(y));
+
+						path.add("\" transform=\"rotate(");
+						path.add(z_rotation);
+						path.add(" ");
+						xcoords.push_back(path.add(v.X()));
+						path.add(" ");
+						ycoords.push_back(path.add(y));
+						path.add(")\"");
+
+						if (font_size) {
+							path.add(" font-size=\"");
+							path.add(*font_size);
+							path.add("\"");
+						}
+						path.add(">");
+
+						std::vector<std::string> labels{ desc };
+
+						for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+							auto l = *lit;
+							IfcUtil::escape_xml(l);
+							double dy = labels.begin() == lit
+								? 0.0  // align bottom
+								: 1.0; // <- dy is relative to the previous text element, so
+										//    always 1 for successive spans.
+							path.add("<tspan x=\"");
+							xcoords.push_back(path.add(v.X()));
+							path.add("\" dy=\"");
+							path.add(boost::lexical_cast<std::string>(dy));
+							path.add("em\">");
+							path.add(l);
+							path.add("</tspan>");
+						}
+
+						path.add("</text>");
+
+						po->second.push_back(path);
 					}
 				}
 			}
@@ -1992,7 +1989,7 @@ void SvgSerializer::finalize() {
 		drawing_metadata[p.first].matrix_3 = m;
 	}
 
-	if (!deferred_section_data_.is_initialized() && (auto_section_ || auto_elevation_)) {
+	if (!deferred_section_data_ && (auto_section_ || auto_elevation_)) {
 		deferred_section_data_.emplace();
 	}
 
@@ -2078,64 +2075,62 @@ void SvgSerializer::finalize() {
 				const auto& section = boost::get<vertical_section>(sd);
 				const auto& ax = section.plane.Position();
 				
-				draw_hlr(ax, { nullptr, drawing_name });
+				draw_hlr(ax, { express::Base{}, drawing_name });
 			}
 
-			addTextAnnotations({ nullptr, drawing_name });
+			addTextAnnotations({express::Base{}, drawing_name});
 
 			if (file && storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
 				auto storeys = file->instances_by_type("IfcBuildingStorey");
-				if (storeys) {
-					const double lu = file->getUnit("LENGTHUNIT").second;
-					for (auto& s : *storeys) {
-						auto storey = (IfcUtil::IfcBaseEntity*) s;
-						auto a = storey->get("Elevation");
-						if (!a.isNull()) {
-							double elev = a;
-							elev *= lu;
-							auto svg_name = nameElement(storey);
+				const double lu = file->getUnit("LENGTHUNIT").second;
+				for (auto& s : storeys) {
+                    auto storey = s.as<express::Entity>();
+					auto a = storey.get("Elevation");
+					if (!a.isNull()) {
+						double elev = a;
+						elev *= lu;
+						auto svg_name = nameElement(storey);
 
-							gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), gp::DX()));
-							//, pln->Position().XDirection()));
-							// auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
+						gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), gp::DX()));
+						//, pln->Position().XDirection()));
+						// auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
 
-							double x0, y0, z0, x1, y1, z1;
-							bnd_.Get(x0, y0, z0, x1, y1, z1);
+						double x0, y0, z0, x1, y1, z1;
+						bnd_.Get(x0, y0, z0, x1, y1, z1);
 
-							// @todo this is a hack in order to get the auto elevations (which are 0.1 offset from
-							// the global bounding box) to include the storey height symbols.
-							x0 -= 0.2;
-							y0 -= 0.2;
-							z0 -= 0.2;
+						// @todo this is a hack in order to get the auto elevations (which are 0.1 offset from
+						// the global bounding box) to include the storey height symbols.
+						x0 -= 0.2;
+						y0 -= 0.2;
+						z0 -= 0.2;
 
-							x1 += 0.2;
-							y1 += 0.2;
-							z1 += 0.2;
+						x1 += 0.2;
+						y1 += 0.2;
+						z1 += 0.2;
 
-							const double shll = storey_height_line_length_.get_value_or(2.);
+						const double shll = storey_height_line_length_.value_or(2.);
 
-							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - shll, x1 + shll, y0 - shll, y1 + shll);
-							gp_Trsf trsf;
-							TopoDS_Compound C;
-							BRep_Builder B;
-							B.MakeCompound(C);
-							B.Add(C, mf.Face());
-							std::string name;
-							auto a2 = storey->get("Name");
-							if (!a2.isNull()) {
-								name = (std::string) a2;
-							}
-							write(geometry_data{
-								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey)
-							});
+						BRepBuilderAPI_MakeFace mf(elev_pln, x0 - shll, x1 + shll, y0 - shll, y1 + shll);
+						gp_Trsf trsf;
+						TopoDS_Compound C;
+						BRep_Builder B;
+						B.MakeCompound(C);
+						B.Add(C, mf.Face());
+						std::string name;
+						auto a2 = storey.get("Name");
+						if (!a2.isNull()) {
+							name = (std::string) a2;
 						}
+						write(geometry_data{
+							C,{std::nullopt},trsf,storey,storey,elev,name,nameElement(storey)
+						});
 					}
 				}
 			}
 
 			auto m3 = resize();
 
-			auto k = std::make_pair(nullptr, drawing_name);
+			auto k = std::make_pair(express::Base{}, drawing_name);
 			drawing_metadata[k].matrix_3 = m3;
 
 			resetScale();
@@ -2146,7 +2141,7 @@ void SvgSerializer::finalize() {
 
 	std::multimap<drawing_key, path_object, storey_sorter>::const_iterator it;
 
-	boost::optional<drawing_key> previous;
+	std::optional<drawing_key> previous;
 	for (it = paths.begin(); it != paths.end(); ++it) {
 		if (!previous || it->first != *previous) {
 			if (previous) {
@@ -2269,7 +2264,7 @@ return oss.str();
 	}
 }
 
-std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element* elem) {
+std::string SvgSerializer::nameElement(express::Base storey, const IfcGeom::Element* elem) {
 	auto n = elem->name();
 	IfcUtil::escape_xml(n);
 
@@ -2281,26 +2276,28 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, con
 		});
 }
 
-std::string SvgSerializer::idElement(const IfcUtil::IfcBaseEntity* elem) {
-	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
+std::string SvgSerializer::idElement(express::Base elem_) {
+    auto elem = elem_.as<express::Entity>();
+	const std::string type = elem.declaration().is("IfcBuildingStorey") ? "storey" : "product";
 	const std::string name =
 		(settings().get<ifcopenshell::geometry::settings::UseElementGuids>().get()
-			? static_cast<std::string>(elem->get("GlobalId"))
-			: ((settings().get<ifcopenshell::geometry::settings::UseElementNames>().get() && !elem->get("Name").isNull()))
-			? static_cast<std::string>(elem->get("Name"))
+			? static_cast<std::string>(elem.get("GlobalId"))
+			: ((settings().get<ifcopenshell::geometry::settings::UseElementNames>().get() && !elem.get("Name").isNull()))
+			? static_cast<std::string>(elem.get("Name"))
 			: (settings().get<ifcopenshell::geometry::settings::UseElementStepIds>().get())
-			? ("id-" + boost::lexical_cast<std::string>(elem->id()))
-			: IfcParse::IfcGlobalId(elem->get("GlobalId")).formatted());
+			? ("id-" + boost::lexical_cast<std::string>(elem.id()))
+			: IfcParse::IfcGlobalId(elem.get("GlobalId")).formatted());
 	return type + "-" + name;
 }
 
-std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
-	if (elem == 0) { return ""; }
+std::string SvgSerializer::nameElement(express::Base elem_) {
+    auto elem = elem_.as<express::Entity>();
+	if (!elem) { return ""; }
 
-	const std::string& entity = elem->declaration().name();
+	const std::string& entity = elem.declaration().name();
 	std::string ifc_name;
-	if (!elem->get("Name").isNull()) {
-		ifc_name = (std::string) elem->get("Name");
+	if (!elem.get("Name").isNull()) {
+		ifc_name = (std::string) elem.get("Name");
 		IfcUtil::escape_xml(ifc_name);
 	}
 
@@ -2308,7 +2305,7 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 		{"id", idElement(elem)},
 		{"class", entity},
 		{namespace_prefix_ + "name", ifc_name},
-		{namespace_prefix_ + "guid", elem->get("GlobalId")}
+		{namespace_prefix_ + "guid", elem.get("GlobalId")}
 		});
 }
 
@@ -2316,30 +2313,28 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 	file = f;
 
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
-	if (!storeys || storeys->size() == 0) {
+	if (storeys.empty()) {
 		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_);
 
 		std::vector<const IfcParse::declaration*> to_derive_from;
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcSite"));
 		for (auto it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
-			aggregate_of_instance::ptr insts = f->instances_by_type(*it);
-			if (insts) {
-				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
-					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
-					if (!product->get("ObjectPlacement").isNull()) {
-						auto item = mapping->map(product->get("ObjectPlacement"));
-						auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
-						gp_Trsf trsf;
-						if (matrix) {
-							// @todo shouldn't this take into account configurable section height?
-							setSectionHeight(matrix->translation_part()(2) + 1.);
+			auto insts = f->instances_by_type(*it);
+			for (auto& inst : insts) {
+                auto product = inst.as<express::Entity>();	
+				if (!product.get("ObjectPlacement").isNull()) {
+					auto item = mapping->map(product.get("ObjectPlacement"));
+					auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
+					gp_Trsf trsf;
+					if (matrix) {
+						// @todo shouldn't this take into account configurable section height?
+						setSectionHeight(matrix->translation_part()(2) + 1.);
 #ifdef TAXONOMY_USE_NAKED_PTR
-							delete matrix;
+						delete matrix;
 #endif
-							Logger::Warning("No building storeys encountered, used for reference:", product);
-							return;
-						}
+						Logger::Warning("No building storeys encountered, used for reference:", product);
+						return;
 					}
 				}
 			}
@@ -2351,7 +2346,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 	}
 }
 
-void SvgSerializer::setSectionHeight(double h, const IfcUtil::IfcBaseEntity* storey) {
+void SvgSerializer::setSectionHeight(double h, express::Base storey) {
 	section_data_.emplace();
 	section_data_->push_back(horizontal_plan{ storey, h, 0., std::numeric_limits<double>::infinity() });
 }
@@ -2365,23 +2360,23 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	section_data_.emplace();
 	auto storeys = file->instances_by_type("IfcBuildingStorey");
 	const double lu = file->getUnit("LENGTHUNIT").second;
-	if (storeys && storeys->size() > 0) {
-		for (auto& s : *storeys) {
-			auto attr_value = ((IfcUtil::IfcBaseEntity*)s)->get("Elevation");
-			if (!attr_value.isNull()) {
-				double elev;
-				try {
-					elev = attr_value;
-				} catch (std::exception& e) {
-					Logger::Error(e);
-					continue;
-				}
-				if (!section_data_->empty()) {
-					boost::get<horizontal_plan>(section_data_->back()).next_elevation = elev * lu;
-				}
-				section_data_->push_back(horizontal_plan{ (IfcUtil::IfcBaseEntity*)s, elev * lu, offset, std::numeric_limits<double>::infinity() });
-			}			
-		}
+    if (!storeys.empty()) {
+        for (auto& s : storeys) {
+            auto attr_value = s.as<express::Entity>().get("Elevation");	
+            if (!attr_value.isNull()) {
+                double elev;
+                try {
+                    elev = attr_value;
+                } catch (std::exception& e) {
+                    Logger::Error(e);
+                    continue;
+                }
+                if (!section_data_->empty()) {
+                    boost::get<horizontal_plan>(section_data_->back()).next_elevation = elev * lu;
+                }
+                section_data_->push_back(horizontal_plan{s, elev * lu, offset, std::numeric_limits<double>::infinity()});
+            }
+        }
 	} else {
 		section_data_->push_back(horizontal_plan_at_element{});
 	}

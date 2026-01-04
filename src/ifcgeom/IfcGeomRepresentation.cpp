@@ -31,7 +31,7 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 			surface_styles_.push_back(clr(1));
 			surface_styles_.push_back(clr(2));
 
-			sid = it->Style().instance ? it->Style().instance->as<IfcUtil::IfcBaseEntity>()->id() : -1;
+			sid = it->Style().instance ? it->Style().instance.id() : -1;
 		} else {
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);

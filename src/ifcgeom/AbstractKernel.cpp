@@ -20,8 +20,8 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 		auto it = cache_.find(item);
 		if (it != cache_.end()) {
 			results = it->second;
-			Logger::Notice("Cache hit #" + std::to_string(item->instance->as<IfcUtil::IfcBaseEntity>()->id()) +
-				" -> #" + std::to_string(it->first->instance->as<IfcUtil::IfcBaseEntity>()->id()));
+			Logger::Notice("Cache hit #" + std::to_string(item->instance.id()) +
+				" -> #" + std::to_string(it->first->instance.id()));
 			return true;
 		}
 	}

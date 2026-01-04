@@ -171,7 +171,7 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		$1 = aggregate_of_instance::ptr(new aggregate_of_instance());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
-			IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element);
+			express::Base inst = cast_pyobject<express::Base>(element);
 			Py_DECREF(element);
 			if (inst) {
 				$1->push(inst);
@@ -192,11 +192,11 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 			bool b = false;
 			if (PySequence_Check(element)) {
 				b = true;
-				std::vector<IfcUtil::IfcBaseClass*> vector;
+				std::vector<express::Base> vector;
 				vector.reserve(PySequence_Size(element));
 				for(Py_ssize_t j = 0; j < PySequence_Size(element); ++j) {
 					PyObject* element_element = PySequence_GetItem(element, j);
-					IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element_element);
+					express::Base inst = cast_pyobject<express::Base>(element_element);
 					Py_DECREF(element_element);
 					if (inst) {
 						vector.push_back(inst);
@@ -291,9 +291,9 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 
 %define CREATE_OPTIONAL_TYPEMAP_IN(template_type, express_name, python_name)
 
-	%typemap(in) const boost::optional<template_type>& {
+	%typemap(in) const std::optional<template_type>& {
 		if ($input == Py_None) {
-			(*$1) = boost::none;
+			(*$1) = std::nullopt;
 		} else if ($input->ob_type != get_python_type<template_type>()) {
 			SWIG_exception(SWIG_TypeError, "Optional " #express_name " needs a " #python_name " or None");
 		} else {
@@ -301,15 +301,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		}
 	}
 
-	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const boost::optional<template_type>& {
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::optional<template_type>& {
 		$1 = ($input == Py_None || $input->ob_type == get_python_type<template_type>()) ? 1 : 0;
 	}
 
-	%typemap(arginit) const boost::optional<template_type>& {
-		$1 = new boost::optional<template_type>();
+	%typemap(arginit) const std::optional<template_type>& {
+		$1 = new std::optional<template_type>();
 	}
 
-	%typemap(freearg) const boost::optional<template_type>& {
+	%typemap(freearg) const std::optional<template_type>& {
 		delete $1;
 	}
 

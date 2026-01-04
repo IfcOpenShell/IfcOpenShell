@@ -20,6 +20,7 @@
 #include "IfcLogger.h"
 
 #include "Argument.h"
+#include "InstanceData.h"
 
 #include <algorithm>
 #include <boost/algorithm/string/replace.hpp>
@@ -33,7 +34,7 @@
 #include <iostream>
 #include <mutex>
 
-static my_thread_local const IfcUtil::IfcBaseClass* current_product_;
+static my_thread_local express::Base current_product_;
 
 namespace {
 
@@ -63,17 +64,17 @@ template <>
 const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = {L"Performance", L"Debug", L"Notice", L"Warning", L"Error"};
 
 template <typename T>
-void plain_text_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void plain_text_message(T& out, const express::Base& current_product, Logger::Severity type, const std::string& message, const express::Base& instance) {
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
     out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
-        std::string global_id = current_product->as<IfcUtil::IfcBaseEntity>()->get("GlobalId");
+        std::string global_id = current_product.as<express::Entity>().get("GlobalId");
         out << "{" << global_id.c_str() << "} ";
     }
     out << message.c_str() << std::endl;
     if (instance) {
         std::ostringstream oss;
-        instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+        instance.toString(oss);
         auto instance_string = oss.str();
         if (instance_string.size() > 259) {
             instance_string = instance_string.substr(0, 256) + "...";
@@ -90,7 +91,7 @@ std::basic_string<T> string_as(const std::string& string) {
 }
 
 template <typename T>
-void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void json_message(T& out, const express::Base& current_product, Logger::Severity type, const std::string& message, const express::Base& instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
 
     // @todo this is crazy
@@ -103,13 +104,13 @@ void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::
     property_tree.put(level_string, severity_strings<typename T::char_type>::value[type]);
     if (current_product) {
         std::ostringstream oss;
-        current_product->toString(oss);
+        current_product.toString(oss);
         property_tree.put(product_string, string_as<typename T::char_type>(oss.str()));
     }
     property_tree.put(message_string, string_as<typename T::char_type>(message));
     if (instance) {
         std::ostringstream oss;
-        instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+        instance.toString(oss);
         property_tree.put(instance_string, string_as<typename T::char_type>(oss.str()));
     }
 
@@ -125,7 +126,7 @@ void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::
 }
 } // namespace
 
-void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
+void Logger::SetProduct(std::optional<const express::Base> product) {
     if (verbosity_ <= LOG_DEBUG && product) {
         Message(LOG_DEBUG, "Begin processing", *product);
     }
@@ -133,7 +134,7 @@ void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
         PrintPerformanceStats();
         performance_statistics_.clear();
     }
-    current_product_ = product.get_value_or(nullptr);
+    current_product_ = product.value_or(express::Base{});
 }
 
 void Logger::SetOutput(std::ostream* stream1, std::ostream* stream2) {
@@ -154,7 +155,7 @@ void Logger::SetOutput(std::wostream* stream1, std::wostream* stream2) {
     }
 }
 
-void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void Logger::Message(Logger::Severity type, const std::string& message, const express::Base& instance) {
     if (type < verbosity_) {
         return;
     }
@@ -195,7 +196,7 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
     }
 }
 
-void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance) {
+void Logger::Message(Logger::Severity type, const std::exception& exception, const express::Base& instance) {
     Message(type, std::string(exception.what()), instance);
 }
 
@@ -263,7 +264,7 @@ std::stringstream Logger::log_stream_;
 Logger::Severity Logger::verbosity_ = Logger::LOG_NOTICE;
 Logger::Severity Logger::max_severity_ = Logger::LOG_NOTICE;
 Logger::Format Logger::format_ = Logger::FMT_PLAIN;
-boost::optional<long long> Logger::first_timepoint_;
+std::optional<long long> Logger::first_timepoint_;
 std::map<std::string, double> Logger::performance_statistics_;
 std::map<std::string, double> Logger::performance_signal_start_;
 bool Logger::print_perf_stats_on_element_ = false;

@@ -26,9 +26,9 @@ using namespace ifcopenshell::geometry;
 
 #if defined SCHEMA_HAS_IfcPointByDistanceExpression
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* inst) {
-   auto u = (*inst->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>()) * length_unit_;
-   auto basis_curve = map(inst->BasisCurve());
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression& inst) {
+   auto u = (double) inst.DistanceAlong().as<IfcSchema::IfcLengthMeasure>() * length_unit_;
+   auto basis_curve = map(inst.BasisCurve());
    taxonomy::function_item::ptr curve = taxonomy::dcast<taxonomy::function_item>(basis_curve);
    if (!curve) {
       // if the basis curve is not a function_item, the cast it to piecewise_function. the casting operator
@@ -43,19 +43,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* i
    auto z = m.col(2).head<3>();
    auto x = m.col(0).head<3>();
 
-   if (inst->OffsetLateral().has_value()) {
-       auto offset_lateral = inst->OffsetLateral().get() * length_unit_;
+   if (inst.OffsetLateral().has_value()) {
+       auto offset_lateral = inst.OffsetLateral().value() * length_unit_;
        auto y = Eigen::Vector3d(m.col(1)(0), m.col(1)(1), m.col(1)(2)); 
        o += offset_lateral * y;
    }
 
-   if (inst->OffsetVertical().has_value()) {
-       auto offset_vertical = inst->OffsetVertical().get() * length_unit_;
+   if (inst.OffsetVertical().has_value()) {
+       auto offset_vertical = inst.OffsetVertical().value() * length_unit_;
        o += offset_vertical * z;
    }
 
-   if (inst->OffsetLongitudinal().has_value()) {
-       auto offset_longitudinal = inst->OffsetLongitudinal().get() * length_unit_;
+   if (inst.OffsetLongitudinal().has_value()) {
+       auto offset_longitudinal = inst.OffsetLongitudinal().value() * length_unit_;
        o += offset_longitudinal* x;
    }
 

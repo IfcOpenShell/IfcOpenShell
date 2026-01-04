@@ -23,8 +23,6 @@ import nodes
 import templates
 import schema
 
-from header import USE_VIRTUAL_INHERITANCE
-
 class Mapping:
 
     express_to_cpp_typemapping = {
@@ -177,15 +175,8 @@ class Mapping:
         elif isinstance(type_str, nodes.AggregationType):
             is_nested_list = isinstance(attr_type.type, nodes.AggregationType)
             ty = self.get_parameter_type(attr_type.type if is_nested_list else attr_type)
-            # We do not use pointers in aggregate_of<T>. aggregate_of has member vector<T*>
-            ty = ty.replace("*", "")
 
-            # https://github.com/IfcOpenShell/IfcOpenShell/issues/2805
-            # We do support statically typed select types as aggregates when USE_VIRTUAL_INHERITANCE=True
-
-            if not USE_VIRTUAL_INHERITANCE and self.schema.is_select(attr_type.type):
-                type_str = templates.untyped_list
-            elif self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
+            if self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
                 tmpl = templates.nested_array_type if is_nested_list else templates.array_type
                 bounds = (attr_type.bounds.lower, attr_type.bounds.upper) if attr_type.bounds else (-1, -1)
                 type_str = tmpl % {"instance_type": ty, "lower": bounds[0], "upper": bounds[1]}
@@ -193,11 +184,11 @@ class Mapping:
                 tmpl = templates.list_list_type if is_nested_list else templates.list_type
                 type_str = tmpl % {"instance_type": ty}
         elif self.schema.is_entity(type_str) or self.schema.is_select(type_str):
-            type_str = "::%s::%s*" % (self.schema.name.capitalize(), attr_type)
+            type_str = "::%s::%s" % (self.schema.name.capitalize(), attr_type)
             is_ptr = True
         if allow_optional and attr.optional and not is_ptr:
             # pointers are still handled with nullptr for the time being
-            type_str = "boost::optional< %s >" % type_str
+            type_str = "std::optional< %s >" % type_str
         return type_str
 
     def argument_count(self, t):
@@ -224,8 +215,6 @@ class Mapping:
                 isinstance(v, nodes.SimpleType) and isinstance(v.type, nodes.StringType)
             ):
                 return "string"
-            if not USE_VIRTUAL_INHERITANCE and self.schema.is_select(v):
-                return "IfcUtil::IfcBaseClass"
             if str(v) in self.schema.types or str(v) in self.schema.entities:
                 return "::%s::%s" % (self.schema.name.capitalize(), v)
             else:
@@ -254,8 +243,8 @@ class Mapping:
         arr = self.is_array(attr_type)
         simple = self.schema.is_simpletype(ty)
         express = self.flatten_type_string(ty) in self.express_to_cpp_typemapping
-        select = ty == "IfcUtil::IfcBaseClass"
-        return arr and not simple and not express and not select
+        # select = ty == "IfcUtil::IfcBaseClass"
+        return arr and not simple and not express
 
     def get_assignable_arguments(self, t, include_derived=False):
         count = self.argument_count(t)

@@ -80,7 +80,7 @@ namespace ifcopenshell {
 					PP_NONE
 				};
 
-				bool preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<Kernel_>>& first_operands_nef, const std::list<Kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, boolean_operand_preprocess proc);
+				bool preprocess_boolean_operand(const express::Base& log_reference, const std::list<cgal_shape_t>& first_operands, const std::list<CGAL::Nef_polyhedron_3<Kernel_>>& first_operands_nef, const std::list<Kernel_::Plane_3>& all_operand_planes, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, boolean_operand_preprocess proc);
 
 				bool thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result);
 
@@ -115,14 +115,14 @@ namespace ifcopenshell {
 
 				bool process_extrusion(const cgal_face_t& bottom_face, taxonomy::direction3::ptr direction, double height, cgal_shape_t& shape);
 				bool process_as_2d_polygon(const taxonomy::boolean_result::ptr br, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
-				bool process_as_2d_polygon(const std::list<std::list<std::pair<const IfcUtil::IfcBaseClass*, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
+                bool process_as_2d_polygon(const std::list<std::list<std::pair<express::Base, cgal_shape_t>>>& operands, std::list<CGAL::Polygon_2<Kernel_>>& loops, double& z0, double& z1);
 
 				virtual bool convert_impl(const taxonomy::shell::ptr, IfcGeom::ConversionResults&);
 				virtual bool convert_impl(const taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
 				virtual bool convert_impl(const taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
 				virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&);
 
-				virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+				virtual bool convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 					const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
 
 #ifndef IFOPSH_SIMPLE_KERNEL

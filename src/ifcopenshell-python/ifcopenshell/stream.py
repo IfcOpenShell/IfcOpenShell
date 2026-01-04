@@ -24,9 +24,9 @@ try:
 
     import ifcopenshell.util.attribute
     import ifcopenshell.util.schema
-    from .file import file
+    from . import file
     from . import ifcopenshell_wrapper
-    from .entity_instance import entity_instance
+    from . import entity_instance
 
     from lark import Lark, Transformer
     from typing import Any, NoReturn, Union, Optional

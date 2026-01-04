@@ -23,21 +23,21 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
-	const bool doFillet1 = !!inst->FilletRadius();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIShapeProfileDef& inst) {
+	const bool doFillet1 = !!inst.FilletRadius();
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
-	const bool doFlangeEdgeRadius = !!inst->FlangeEdgeRadius();
-	const bool hasSlope = !!inst->FlangeSlope();
+	const bool doFlangeEdgeRadius = !!inst.FlangeEdgeRadius();
+	const bool hasSlope = !!inst.FlangeSlope();
 #else
 	const bool doFlangeEdgeRadius = false;
 #endif
 
-	const double x1 = inst->OverallWidth() / 2.0f * length_unit_;
-	const double y = inst->OverallDepth() / 2.0f * length_unit_;
-	const double d1 = inst->WebThickness() / 2.0f  * length_unit_;
-	const double ft1 = inst->FlangeThickness() * length_unit_;
+	const double x1 = inst.OverallWidth() / 2.0f * length_unit_;
+	const double y = inst.OverallDepth() / 2.0f * length_unit_;
+	const double d1 = inst.WebThickness() / 2.0f  * length_unit_;
+	const double ft1 = inst.FlangeThickness() * length_unit_;
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
-	const double slope = inst->FlangeSlope().get_value_or(0.) * angle_unit_;
+	const double slope = inst.FlangeSlope().value_or(0.) * angle_unit_;
 #endif
 
 	double dy = 0.;
@@ -49,11 +49,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 	double ft2 = ft1;
 
 	if (doFillet1) {
-		f1 = *inst->FilletRadius() * length_unit_;
+		f1 = *inst.FilletRadius() * length_unit_;
 	}
 #ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
 	if (doFlangeEdgeRadius) {
-		fe1 = *inst->FlangeEdgeRadius() * length_unit_;
+		fe1 = *inst.FlangeEdgeRadius() * length_unit_;
 	}
 	if (hasSlope) {
 		dy = (x1 - d1) * tan(slope);
@@ -63,15 +63,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 	bool doFillet2 = doFillet1;
 
 	// @todo in IFC4 a IfcAsymmetricIShapeProfileDef is not a subtype anymore of IfcIShapeProfileDef!
-	if (inst->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
-		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) inst;
-		x2 = assym->TopFlangeWidth() / 2. * length_unit_;
-		doFillet2 = !!assym->TopFlangeFilletRadius();
+    if (auto assym = inst.as<IfcSchema::IfcAsymmetricIShapeProfileDef>()) {
+		x2 = assym.TopFlangeWidth() / 2. * length_unit_;
+		doFillet2 = !!assym.TopFlangeFilletRadius();
 		if (doFillet2) {
-			f2 = *assym->TopFlangeFilletRadius() * length_unit_;
+			f2 = *assym.TopFlangeFilletRadius() * length_unit_;
 		}
-		if (assym->TopFlangeThickness()) {
-			ft2 = *assym->TopFlangeThickness() * length_unit_;
+		if (assym.TopFlangeThickness()) {
+			ft2 = *assym.TopFlangeThickness() * length_unit_;
 		}
 	} else {
 		f2 = f1;
@@ -88,10 +87,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	return profile_helper(m4, {

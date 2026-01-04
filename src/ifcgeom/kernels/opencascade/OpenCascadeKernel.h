@@ -130,11 +130,11 @@ public:
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loft::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&);
 
-	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<ifcopenshell::geometry::taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+	virtual bool convert_openings(const express::Base& entity, const std::vector<std::pair<ifcopenshell::geometry::taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
 	virtual bool unify_shapes(const IfcGeom::ConversionResults& input, IfcGeom::ConversionResults& output);
 
-	typedef boost::variant<boost::blank, Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
+	typedef std::variant<boost::blank, Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
 	curve_creation_visitor_result_type convert_curve(const ifcopenshell::geometry::taxonomy::ptr);
 	Handle(Geom_Surface) convert_surface(const ifcopenshell::geometry::taxonomy::ptr);
 
@@ -151,8 +151,8 @@ public:
 	}
 };
 
-IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate_)(const TopoDS_Shape& shape, double deflection);
-IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise_)(const TopoDS_Shape& shape, bool advanced);
+express::Base POSTFIX_SCHEMA(tesselate_)(const TopoDS_Shape& shape, double deflection);
+express::Base POSTFIX_SCHEMA(serialise_)(const TopoDS_Shape& shape, bool advanced);
 
 }
 #endif

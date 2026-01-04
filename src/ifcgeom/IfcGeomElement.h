@@ -26,6 +26,7 @@
 #include "../ifcparse/Argument.h"
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/InstanceData.h"
 
 #include "../ifcgeom/IfcGeomRepresentation.h"
 #include "../ifcgeom/ifc_geom_api.h"
@@ -60,7 +61,7 @@ namespace IfcGeom {
 		std::string _context;
 		std::string _unique_id;
 		Transformation _transformation;
-        const IfcUtil::IfcBaseEntity* product_;
+        const express::Entity product_;
 		std::vector<const IfcGeom::Element*> _parents;
 	public:
 
@@ -71,9 +72,9 @@ namespace IfcGeom {
 		// Use the id to compare, or the elevation is the elements are IfcBuildingStoreys and the elevation is set
 		friend bool operator < (const Element& element1, const Element& element2) {
 			if (element1.type() == "IfcBuildingStorey" && element2.type() == "IfcBuildingStorey") {
-				size_t attr_index = element1.product()->declaration().as_entity()->attribute_index("Elevation");
-				auto elev_attr1 = element1.product()->get_attribute_value(attr_index);
-				auto elev_attr2 = element2.product()->get_attribute_value(attr_index);
+				size_t attr_index = element1.product().declaration().as_entity()->attribute_index("Elevation");
+				auto elev_attr1 = element1.product().get_attribute_value(attr_index);
+				auto elev_attr2 = element2.product().get_attribute_value(attr_index);
 
 				if (!elev_attr1.isNull() && !elev_attr2.isNull()) {
 					double elev1 = elev_attr1;
@@ -95,12 +96,12 @@ namespace IfcGeom {
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation& transformation() const { return _transformation; }
-        const IfcUtil::IfcBaseEntity* product() const { return product_; }
+        const express::Entity& product() const { return product_; }
 		const std::vector<const IfcGeom::Element*>& parents() const { return _parents; }
 		void SetParents(std::vector<const IfcGeom::Element*>& newparents) { _parents = newparents; }
 
 		Element(const ifcopenshell::geometry::Settings& settings, int id, int parent_id, const std::string& name, const std::string& type,
-            const std::string& guid, const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4::ptr& trsf, const IfcUtil::IfcBaseEntity* product)
+            const std::string& guid, const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4::ptr& trsf, const express::Entity& product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
 		{ 
@@ -137,7 +138,7 @@ namespace IfcGeom {
 		const IfcGeom::Representation::BRep& geometry() const { return *_geometry; }
 		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
             const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4::ptr& trsf, const boost::shared_ptr<IfcGeom::Representation::BRep>& geometry,
-			const IfcUtil::IfcBaseEntity* product)
+			const express::Entity& product)
 			: Element(geometry->settings(), id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
 		{}

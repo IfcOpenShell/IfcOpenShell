@@ -24,6 +24,7 @@
 
 #include "../../../ifcparse/macros.h"
 #include "../../../ifcparse/IfcParse.h"
+#include "../../../ifcparse/IfcFile.h"
 
 #define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../../ifcparse/x.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
@@ -33,27 +34,25 @@
 
 #include <numeric>
 
-#include <numeric>
-
 template <typename T, typename U>
-int convert_to_ifc(const T& t, U*& u, bool /*advanced*/) {
-	std::vector<double> coords(3);
-	coords[0] = t.X(); coords[1] = t.Y(); coords[2] = t.Z();
-	u = new U(coords);
+int convert_to_ifc(IfcParse::IfcFile& f, const T& t, U& u, bool /*advanced*/) {
+	u = f.create<U>();
+    u.set_attribute_value(0, std::vector<double>{t.X(), t.Y(), t.Z()});
 	return 1;
 }
 
 template <>
-int convert_to_ifc(const TopoDS_Vertex& v, IfcSchema::IfcCartesianPoint*& p, bool advanced) {
+int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Vertex& v, IfcSchema::IfcCartesianPoint& p, bool advanced) {
 	gp_Pnt pnt = BRep_Tool::Pnt(v);
-	return convert_to_ifc(pnt, p, advanced);
+	return convert_to_ifc(f, pnt, p, advanced);
 }
 
 template <>
-int convert_to_ifc(const TopoDS_Vertex& v, IfcSchema::IfcVertex*& vertex, bool advanced) {
-	IfcSchema::IfcCartesianPoint* p;
-	if (convert_to_ifc(v, p, advanced)) {
-		vertex = new IfcSchema::IfcVertexPoint(p);
+int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Vertex& v, IfcSchema::IfcVertexPoint& vertex, bool advanced) {
+	IfcSchema::IfcCartesianPoint p;
+	if (convert_to_ifc(f, v, p, advanced)) {
+        vertex = f.create<IfcSchema::IfcVertexPoint>();
+        vertex.setVertexGeometry(p);
 		return 1;
 	} else {
 		return 0;
@@ -61,14 +60,17 @@ int convert_to_ifc(const TopoDS_Vertex& v, IfcSchema::IfcVertex*& vertex, bool a
 }
 
 template <>
-int convert_to_ifc(const gp_Ax2& a, IfcSchema::IfcAxis2Placement3D*& ax, bool advanced) {
-	IfcSchema::IfcCartesianPoint* p;
-	IfcSchema::IfcDirection *x, *z;
-	if (!(convert_to_ifc(a.Location(), p, advanced) && convert_to_ifc(a.Direction(), z, advanced) && convert_to_ifc(a.XDirection(), x, advanced))) {
-        ax = 0;
+int convert_to_ifc(IfcParse::IfcFile& f, const gp_Ax2& a, IfcSchema::IfcAxis2Placement3D& ax, bool advanced) {
+	IfcSchema::IfcCartesianPoint p;
+	IfcSchema::IfcDirection x, z;
+	if (!(convert_to_ifc(f, a.Location(), p, advanced) && convert_to_ifc(f, a.Direction(), z, advanced) && convert_to_ifc(f, a.XDirection(), x, advanced))) {
+        ax = IfcSchema::IfcAxis2Placement3D{};
 		return 0;
 	}
-	ax = new IfcSchema::IfcAxis2Placement3D(p, z, x);
+    ax = f.create<IfcSchema::IfcAxis2Placement3D>();
+    ax.setLocation(p);
+    ax.setAxis(z);
+    ax.setRefDirection(x);
 	return 1;
 }
 
@@ -110,44 +112,55 @@ namespace {
 #endif
 
 template <>
-int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool advanced) {
+int convert_to_ifc(IfcParse::IfcFile& f, const Handle_Geom_Curve& c, IfcSchema::IfcCurve& curve, bool advanced) {
 	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
 		Handle_Geom_TrimmedCurve trim = Handle_Geom_TrimmedCurve::DownCast(c);
 		const Handle_Geom_Curve basis = trim->BasisCurve();
-		return convert_to_ifc(basis, curve, advanced);
+		return convert_to_ifc(f, basis, curve, advanced);
 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
-		IfcSchema::IfcDirection* d;
-		IfcSchema::IfcCartesianPoint* p;
+		IfcSchema::IfcDirection d;
+		IfcSchema::IfcCartesianPoint p;
 
 		Handle_Geom_Line line = Handle_Geom_Line::DownCast(c);
 
-		if (!convert_to_ifc(line->Position().Location(), p, advanced)) {
+		if (!convert_to_ifc(f, line->Position().Location(), p, advanced)) {
 			return 0;
 		}
-		if (!convert_to_ifc(line->Position().Direction(), d, advanced)) {
+		if (!convert_to_ifc(f, line->Position().Direction(), d, advanced)) {
 			return 0;
 		}
 
-		IfcSchema::IfcVector* v = new IfcSchema::IfcVector(d, 1.);
-		curve = new IfcSchema::IfcLine(p, v);
+		IfcSchema::IfcVector v = f.create<IfcSchema::IfcVector>();
+        v.setOrientation(d);
+        v.setMagnitude(1.);
+        IfcSchema::IfcLine l = f.create<IfcSchema::IfcLine>();
+        l.setPnt(p);
+        l.setDir(v);
+        curve = l;
 
 		return 1;
 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
-		IfcSchema::IfcAxis2Placement3D* ax;
+		IfcSchema::IfcAxis2Placement3D ax;
 
 		Handle_Geom_Circle circle = Handle_Geom_Circle::DownCast(c);
 
-		convert_to_ifc(circle->Position(), ax, advanced);
-		curve = new IfcSchema::IfcCircle(ax, circle->Radius());
+		convert_to_ifc(f, circle->Position(), ax, advanced);
+        auto circ = f.create<IfcSchema::IfcCircle>();
+        circ.setPosition(ax);
+        circ.setRadius(circle->Radius());
+        curve = circ;
 
 		return 1;
 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Ellipse)) {
-		IfcSchema::IfcAxis2Placement3D* ax;
+		IfcSchema::IfcAxis2Placement3D ax;
 
 		Handle_Geom_Ellipse ellipse = Handle_Geom_Ellipse::DownCast(c);
 
-		convert_to_ifc(ellipse->Position(), ax, advanced);
-		curve = new IfcSchema::IfcEllipse(ax, ellipse->MajorRadius(), ellipse->MinorRadius());
+		auto el = f.create<IfcSchema::IfcEllipse>();
+        el.setPosition(ax);
+        el.setSemiAxis1(ellipse->MajorRadius());
+        el.setSemiAxis2(ellipse->MinorRadius());
+        curve = el;
 
 		return 1;
 	}
@@ -161,15 +174,15 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 
 		IfcSchema::IfcKnotType::Value knot_spec = IfcSchema::IfcKnotType::IfcKnotType_QUASI_UNIFORM_KNOTS;
 
-		IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
+		std::vector<IfcSchema::IfcCartesianPoint> points;
 		TColgp_Array1OfPnt poles(1, bezier->NbPoles());
 		bezier->Poles(poles);
 		for (int i = 1; i <= bezier->NbPoles(); ++i) {
-			IfcSchema::IfcCartesianPoint* p;
-			if (!convert_to_ifc(poles.Value(i), p, advanced)) {
+			IfcSchema::IfcCartesianPoint p;
+			if (!convert_to_ifc(f, poles.Value(i), p, advanced)) {
 				return 0;
 			}
-			points->push(p);
+			points.push_back(p);
 
 			if (i == 1 || i == bezier->NbPoles()) {
 				mults.push_back(bezier->Degree() + 1);
@@ -184,32 +197,31 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 		bezier->Weights(bspline_weights);
 		opencascade_array_to_vector(bspline_weights, weights);
 
-		curve = new IfcSchema::IfcRationalBSplineCurveWithKnots(
-			bezier->Degree(),
-			points,
-			IfcSchema::IfcBSplineCurveForm::IfcBSplineCurveForm_UNSPECIFIED,
-			bezier->IsClosed() != 0,
-			false,
-			mults,
-			knots,
-			knot_spec,
-			weights
-		);
+		auto bspl = f.create<IfcSchema::IfcRationalBSplineCurveWithKnots>();
+        bspl.setDegree(bezier->Degree());
+        bspl.setControlPointsList(points);
+        bspl.setCurveForm(IfcSchema::IfcBSplineCurveForm::IfcBSplineCurveForm_UNSPECIFIED);
+        bspl.setClosedCurve(bezier->IsClosed() != 0);
+        bspl.setSelfIntersect(false);
+        bspl.setKnotMultiplicities(mults);
+        bspl.setKnots(knots);
+        bspl.setKnotSpec(knot_spec);
+        bspl.setWeightsData(weights);
 
 		return 1;
 	}
 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
 		Handle_Geom_BSplineCurve bspline = Handle_Geom_BSplineCurve::DownCast(c);
 
-		IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
+		std::vector<IfcSchema::IfcCartesianPoint> points;
 		TColgp_Array1OfPnt poles(1, bspline->NbPoles());
 		bspline->Poles(poles);
 		for (int i = 1; i <= bspline->NbPoles(); ++i) {
-			IfcSchema::IfcCartesianPoint* p;
-			if (!convert_to_ifc(poles.Value(i), p, advanced)) {
+			IfcSchema::IfcCartesianPoint p;
+			if (!convert_to_ifc(f, poles.Value(i), p, advanced)) {
 				return 0;
 			}
-			points->push(p);
+			points.push_back(p);
 		}
 		IfcSchema::IfcKnotType::Value knot_spec = opencascade_knotspec_to_ifc(bspline->KnotDistribution());
 
@@ -237,39 +249,33 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 			}
 		}
 
-		if (bspline->IsPeriodic() && points->size()) {
-			points->push(*points->begin());
+		if (bspline->IsPeriodic() && points.size()) {
+			points.push_back(points.front());
 			weights.push_back(weights[0]);
 			auto sum = std::accumulate(mults.begin(), mults.end(), 0);
-			auto d = sum - (bspline->Degree() + (int)points->size() + 1);
+			auto d = sum - (bspline->Degree() + (int) points.size() + 1);
 			(*mults.begin()) -= d / 2;
 			(*mults.rbegin()) -= d / 2;
 		}
 
+		IfcSchema::IfcBSplineCurveWithKnots bspl;
+
 		if (rational) {
-			curve = new IfcSchema::IfcRationalBSplineCurveWithKnots(
-				bspline->Degree(),
-				points,
-				IfcSchema::IfcBSplineCurveForm::IfcBSplineCurveForm_UNSPECIFIED,
-				bspline->IsClosed() != 0,
-				false,
-				mults,
-				knots,
-				knot_spec,
-				weights
-				);
-		} else {
-			curve = new IfcSchema::IfcBSplineCurveWithKnots(
-				bspline->Degree(),
-				points,
-				IfcSchema::IfcBSplineCurveForm::IfcBSplineCurveForm_UNSPECIFIED,
-				bspline->IsClosed() != 0,
-				false,
-				mults,
-				knots,
-				knot_spec
-				);
-		}
+            auto rbspl = f.create<IfcSchema::IfcRationalBSplineCurveWithKnots>();
+            rbspl.setWeightsData(weights);
+            bspl = rbspl;
+        } else {
+            bspl = f.create<IfcSchema::IfcBSplineCurveWithKnots>();
+        }
+
+		bspl.setDegree(bspline->Degree());
+        bspl.setControlPointsList(points);
+        bspl.setCurveForm(IfcSchema::IfcBSplineCurveForm::IfcBSplineCurveForm_UNSPECIFIED);
+        bspl.setClosedCurve(bspline->IsClosed() != 0);
+        bspl.setSelfIntersect(false);
+        bspl.setKnotMultiplicities(mults);
+        bspl.setKnots(knots);
+        bspl.setKnotSpec(knot_spec);
 
 		return 1;
 	}
@@ -278,46 +284,50 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 }
 
 template <>
-int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface, bool advanced) {
+int convert_to_ifc(IfcParse::IfcFile& f, const Handle_Geom_Surface& s, IfcSchema::IfcSurface& surface, bool advanced) {
 	if (s->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		Handle_Geom_Plane plane = Handle_Geom_Plane::DownCast(s);
-		IfcSchema::IfcAxis2Placement3D* place;
+		IfcSchema::IfcAxis2Placement3D place;
 		/// @todo: Note that the Ax3 is converted to an Ax2 here
-		if (!convert_to_ifc(plane->Position().Ax2(), place, advanced)) {
+		if (!convert_to_ifc(f, plane->Position().Ax2(), place, advanced)) {
 			return 0;
 		}
-		surface = new IfcSchema::IfcPlane(place);
+        auto pln = f.create<IfcSchema::IfcPlane>();
+        pln.setPosition(place);
+        surface = pln;
 		return 1;
 	}
 #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
 	else if (s->DynamicType() == STANDARD_TYPE(Geom_CylindricalSurface)) {
 		Handle_Geom_CylindricalSurface cyl = Handle_Geom_CylindricalSurface::DownCast(s);
-		IfcSchema::IfcAxis2Placement3D* place;
+		IfcSchema::IfcAxis2Placement3D place;
 		/// @todo: Note that the Ax3 is converted to an Ax2 here
-		if (!convert_to_ifc(cyl->Position().Ax2(), place, advanced)) {
+		if (!convert_to_ifc(f, cyl->Position().Ax2(), place, advanced)) {
 			return 0;
 		}
-		surface = new IfcSchema::IfcCylindricalSurface(place, cyl->Radius());
+
+		auto surf = f.create<IfcSchema::IfcCylindricalSurface>();
+        surf.setPosition(place);
+        surf.setRadius(cyl->Radius());
+		surface = surf;
+
 		return 1;
 	} else if (s->DynamicType() == STANDARD_TYPE(Geom_BSplineSurface)) {
-		typedef aggregate_of_aggregate_of<IfcSchema::IfcCartesianPoint> points_t;
-
+        std::vector<std::vector<IfcSchema::IfcCartesianPoint>> points;
 		Handle_Geom_BSplineSurface bspline = Handle_Geom_BSplineSurface::DownCast(s);
-		points_t::ptr points(new points_t);
 
 		TColgp_Array2OfPnt poles(1, bspline->NbUPoles(), 1, bspline->NbVPoles());
 		bspline->Poles(poles);
 		for (int i = 1; i <= bspline->NbUPoles(); ++i) {
-			std::vector<IfcSchema::IfcCartesianPoint*> ps;
+            auto& ps = points.emplace_back();
 			ps.reserve(bspline->NbVPoles());
 			for (int j = 1; j <= bspline->NbVPoles(); ++j) {
-				IfcSchema::IfcCartesianPoint* p;
-				if (!convert_to_ifc(poles.Value(i, j), p, advanced)) {
+				IfcSchema::IfcCartesianPoint p;
+				if (!convert_to_ifc(f, poles.Value(i, j), p, advanced)) {
 					return 0;
 				}
 				ps.push_back(p);
 			}
-			points->push(ps);
 		}
 
 		IfcSchema::IfcKnotType::Value knot_spec_u = opencascade_knotspec_to_ifc(bspline->UKnotDistribution());
@@ -361,38 +371,30 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
 			}
 		}
 
+		IfcSchema::IfcBSplineSurfaceWithKnots bspl;
+
 		if (rational) {
-			surface = new IfcSchema::IfcRationalBSplineSurfaceWithKnots(
-				bspline->UDegree(),
-				bspline->VDegree(),
-				points,
-				IfcSchema::IfcBSplineSurfaceForm::IfcBSplineSurfaceForm_UNSPECIFIED,
-				bspline->IsUClosed() != 0,
-				bspline->IsVClosed() != 0,
-				false,
-				umults,
-				vmults,
-				uknots,
-				vknots,
-				knot_spec_u,
-				weights
-				);
+			auto rbspl = f.create<IfcSchema::IfcRationalBSplineSurfaceWithKnots>();
+			rbspl.setWeightsData(weights);
+			bspl = rbspl;
 		} else {
-			surface = new IfcSchema::IfcBSplineSurfaceWithKnots(
-				bspline->UDegree(),
-				bspline->VDegree(),
-				points,
-				IfcSchema::IfcBSplineSurfaceForm::IfcBSplineSurfaceForm_UNSPECIFIED,
-				bspline->IsUClosed() != 0,
-				bspline->IsVClosed() != 0,
-				false,
-				umults,
-				vmults,
-				uknots,
-				vknots,
-				knot_spec_u
-				);
-		}
+			bspl = f.create<IfcSchema::IfcBSplineSurfaceWithKnots>();
+        }
+
+		bspl.setUDegree(bspline->UDegree());
+		bspl.setVDegree(bspline->VDegree());
+		bspl.setControlPointsList(points);
+		bspl.setSurfaceForm(IfcSchema::IfcBSplineSurfaceForm::IfcBSplineSurfaceForm_UNSPECIFIED);
+		bspl.setUClosed(bspline->IsUClosed() != 0);
+		bspl.setVClosed(bspline->IsVClosed() != 0);
+		bspl.setSelfIntersect(false);
+		bspl.setUMultiplicities(umults);
+        bspl.setVMultiplicities(vmults);
+		bspl.setUKnots(uknots);
+		bspl.setVKnots(vknots);
+        bspl.setKnotSpec(knot_spec_u);
+
+		surface = bspl;
 
 		return 1;
 	}
@@ -401,27 +403,37 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
 }
 
 template <>
-int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcCurve*& c, bool advanced) {
+int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Edge& e, IfcSchema::IfcCurve& c, bool advanced) {
 	double a, b;
-	IfcSchema::IfcCurve* base;
+	IfcSchema::IfcCurve base;
 
 	Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
-	if (!convert_to_ifc(crv, base, advanced)) {
+	if (!convert_to_ifc(f, crv, base, advanced)) {
 		return 0;
 	}
 
-	IfcSchema::IfcTrimmingSelect::list::ptr trim1(new IfcSchema::IfcTrimmingSelect::list);
-	IfcSchema::IfcTrimmingSelect::list::ptr trim2(new IfcSchema::IfcTrimmingSelect::list);
-	trim1->push(new IfcSchema::IfcParameterValue(a));
-	trim2->push(new IfcSchema::IfcParameterValue(b));
+	auto ta = f.create<IfcSchema::IfcParameterValue>();
+    ta.set_attribute_value(0, a);
+    auto tb = f.create<IfcSchema::IfcParameterValue>();
+    tb.set_attribute_value(0, b);
 
-	c = new IfcSchema::IfcTrimmedCurve(base, trim1, trim2, true, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	std::vector<IfcSchema::IfcTrimmingSelect> trim1{ta};
+    std::vector<IfcSchema::IfcTrimmingSelect> trim2{tb};
+
+	auto tc = f.create<IfcSchema::IfcTrimmedCurve>();
+    tc.setBasisCurve(base);
+    tc.setTrim1(trim1);
+	tc.setTrim2(trim2);
+    tc.setSenseAgreement(true);
+    tc.setMasterRepresentation(IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+
+	c = tc;
 
 	return 1;
 }
 
 template <>
-int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advanced) {
+int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Edge& e, IfcSchema::IfcEdge& edge, bool advanced) {
 	double a, b;
 
 	TopExp_Explorer exp(e, TopAbs_VERTEX);
@@ -431,8 +443,8 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
 	if (!exp.More()) return 0;
 	TopoDS_Vertex v2 = TopoDS::Vertex(exp.Current());
 
-	IfcSchema::IfcVertex *vertex1, *vertex2;
-	if (!(convert_to_ifc(v1, vertex1, advanced) && convert_to_ifc(v2, vertex2, advanced))) {
+	IfcSchema::IfcVertexPoint vertex1, vertex2;
+	if (!(convert_to_ifc(f, v1, vertex1, advanced) && convert_to_ifc(f, v2, vertex2, advanced))) {
 		return 0;
 	}
 
@@ -443,18 +455,36 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
 	}
 
 	if (crv->DynamicType() == STANDARD_TYPE(Geom_Line) && !advanced) {
-		IfcSchema::IfcEdge* edge2 = new IfcSchema::IfcEdge(vertex1, vertex2);
-		edge = new IfcSchema::IfcOrientedEdge(edge2, true);
+        IfcSchema::IfcEdge edge2 = f.create<IfcSchema::IfcEdge>();
+        edge2.setEdgeStart(vertex1);
+        edge2.setEdgeEnd(vertex2);
+		
+		auto ori = f.create<IfcSchema::IfcOrientedEdge>();
+		ori.setEdgeElement(edge2);
+        ori.setOrientation(true);
+		
+		edge = ori;
 		return 1;
 	} else {
-		IfcSchema::IfcCurve* curve;
-		if (!convert_to_ifc(crv, curve, advanced)) {
+		IfcSchema::IfcCurve curve;
+		if (!convert_to_ifc(f, crv, curve, advanced)) {
 			return 0;
 		}
+
 		/// @todo probably not correct
 		const bool sense = e.Orientation() == TopAbs_FORWARD;
-		IfcSchema::IfcEdge* edge2 = new IfcSchema::IfcEdgeCurve(vertex1, vertex2, curve, true);
-		edge = new IfcSchema::IfcOrientedEdge(edge2, sense);
+
+		auto ec = f.create<IfcSchema::IfcEdgeCurve>();
+		ec.setEdgeStart(vertex1);
+		ec.setEdgeEnd(vertex2);
+		ec.setEdgeGeometry(curve);
+        ec.setSameSense(true);
+
+		auto ori = f.create<IfcSchema::IfcOrientedEdge>();
+		ori.setEdgeElement(ec);
+        ori.setOrientation(sense);
+
+		edge = ori;
 		return 1;
 	}
 }
@@ -475,7 +505,7 @@ namespace {
 }
 
 template <>
-int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool advanced) {
+int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Wire& wire, IfcSchema::IfcLoop& loop, bool advanced) {
 	bool polygonal = true;
 	for (TopExp_Explorer exp(wire, TopAbs_EDGE); exp.More(); exp.Next()) {
 		double a, b;
@@ -491,25 +521,27 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 	if (!polygonal && !advanced) {
 		return 0;
 	} else if (polygonal && !advanced) {
-		IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
+		std::vector<IfcSchema::IfcCartesianPoint> points;
 		BRepTools_WireExplorer exp(wire);
-		IfcSchema::IfcCartesianPoint* p;
+		IfcSchema::IfcCartesianPoint p;
 		for (; exp.More(); exp.Next()) {
-			if (convert_to_ifc(exp.CurrentVertex(), p, advanced)) {
-				points->push(p);
+			if (convert_to_ifc(f, exp.CurrentVertex(), p, advanced)) {
+				points.push_back(p);
 			} else {
 				return 0;
 			}
 		}
-		loop = new IfcSchema::IfcPolyLoop(points);
+		auto pl = f.create<IfcSchema::IfcPolyLoop>();
+        pl.setPolygon(points);
+        loop = pl;
 		return 1;
 	} else {
-		IfcSchema::IfcOrientedEdge::list::ptr edges(new IfcSchema::IfcOrientedEdge::list);
+		std::vector<IfcSchema::IfcOrientedEdge> edges;
 		BRepTools_WireExplorer exp(wire);
 		for (; exp.More(); exp.Next()) {
-			IfcSchema::IfcEdge* edge;
-			// With advanced set to true convert_to_ifc(TopoDS_Edge&) will always create an IfcOrientedEdge
-			if (!convert_to_ifc(exp.Current(), edge, true)) {
+            IfcSchema::IfcEdge edge;
+			// With advanced set to true convert_to_ifc(IfcParse::IfcFile& f, TopoDS_Edge&) will always create an IfcOrientedEdge
+			if (!convert_to_ifc(f, exp.Current(), edge, true)) {
 				double a, b;
 				if (BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b).IsNull()) {
 					continue;
@@ -517,32 +549,37 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 					return 0;
 				}
 			}
-			edges->push(edge->as<IfcSchema::IfcOrientedEdge>());
+			edges.push_back(edge.as<IfcSchema::IfcOrientedEdge>());
 		}
-		loop = new IfcSchema::IfcEdgeLoop(edges);
+		auto el = f.create<IfcSchema::IfcEdgeLoop>();
+        el.setEdgeList(edges);
+        loop = el;
 		return 1;
 	}
 }
 
 template <>
-int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advanced) {
-	Handle_Geom_Surface surf = BRep_Tool::Surface(f);
-	TopExp_Explorer exp(f, TopAbs_WIRE);
-	IfcSchema::IfcFaceBound::list::ptr bounds(new IfcSchema::IfcFaceBound::list);
+int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Face& fa, IfcSchema::IfcFace& face, bool advanced) {
+	Handle_Geom_Surface surf = BRep_Tool::Surface(fa);
+	TopExp_Explorer exp(fa, TopAbs_WIRE);
+	std::vector<IfcSchema::IfcFaceBound> bounds;
 	int index = 0;
-	auto outer = BRepTools::OuterWire(f);
+	auto outer = BRepTools::OuterWire(fa);
 	for (; exp.More(); exp.Next(), ++index) {
-		IfcSchema::IfcLoop* loop;
-		if (!convert_to_ifc(TopoDS::Wire(exp.Current()), loop, advanced)) {
+		IfcSchema::IfcLoop loop;
+		if (!convert_to_ifc(f, TopoDS::Wire(exp.Current()), loop, advanced)) {
 			return 0;
 		}
-		IfcSchema::IfcFaceBound* bnd;
+		IfcSchema::IfcFaceBound bnd;
 		if (outer == exp.Current()) {
-			bnd = new IfcSchema::IfcFaceOuterBound(loop, true);
+            bnd = f.create<IfcSchema::IfcFaceOuterBound>();
 		} else {
-			bnd = new IfcSchema::IfcFaceBound(loop, true);
+            bnd = f.create<IfcSchema::IfcFaceBound>();
 		}
-		bounds->push(bnd);
+        bnd.setBound(loop);
+        bnd.setOrientation(true);
+
+		bounds.push_back(bnd);
 	}
 
 	const bool is_planar = surf->DynamicType() == STANDARD_TYPE(Geom_Plane);
@@ -551,15 +588,20 @@ int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advance
 		return 0;
 	}
 	if (is_planar && !advanced) {
-		face = new IfcSchema::IfcFace(bounds);
+        face = f.create<IfcSchema::IfcFace>();
+        face.setBounds(bounds);
 		return 1;
 	} else {
 #ifdef SCHEMA_HAS_IfcAdvancedFace
-		IfcSchema::IfcSurface* surface;
-		if (!convert_to_ifc(surf, surface, advanced)) {
+		IfcSchema::IfcSurface surface;
+		if (!convert_to_ifc(f, surf, surface, advanced)) {
 			return 0;
 		}
-		face = new IfcSchema::IfcAdvancedFace(bounds, surface, f.Orientation() == TopAbs_FORWARD);
+		auto adv = f.create<IfcSchema::IfcAdvancedFace>();
+		adv.setBounds(bounds);
+		adv.setFaceSurface(surface);
+        adv.setSameSense(fa.Orientation() == TopAbs_FORWARD);
+        face = adv;
 		return 1;
 #else
 		// No IfcAdvancedFace in Ifc2x3
@@ -569,30 +611,33 @@ int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advance
 }
 
 template <typename U>
-int convert_to_ifc(const TopoDS_Shape& s, U*& item, bool advanced) {
-	IfcSchema::IfcFace::list::ptr faces(new IfcSchema::IfcFace::list);
-	IfcSchema::IfcFace* f;
+int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Shape& s, U& item, bool advanced) {
+	std::vector<IfcSchema::IfcFace> faces;
+	IfcSchema::IfcFace fa;
 
 	for (TopExp_Explorer exp(s, TopAbs_FACE); exp.More(); exp.Next()) {
-		if (convert_to_ifc(TopoDS::Face(exp.Current()), f, advanced)) {
-			faces->push(f);
+		if (convert_to_ifc(f, TopoDS::Face(exp.Current()), fa, advanced)) {
+			faces.push_back(fa);
 		} else {
-			/// Cleanup:
-			for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
-				aggregate_of_instance::ptr data = IfcParse::traverse(*it)->unique();
-				for (aggregate_of_instance::it jt = data->begin(); jt != data->end(); ++jt) {
-					delete *jt;
-				}
+			std::set<express::Base> created;
+            for (auto& face : faces) {
+                auto resources = f.traverse(face);
+                created.insert(resources.begin(), resources.end());
 			}
+            for (auto& c : created) {
+                f.removeEntity(c);
+            }
 			return 0;
 		}
 	}
 
-	item = new U(faces);
-	return faces->size();
+	item = f.create<U>();
+    item.setCfsFaces(faces);
+
+	return faces.size();
 }
 
-IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise)(const TopoDS_Shape& shape, bool advanced) {
+express::Base POSTFIX_SCHEMA(serialise)(IfcParse::IfcFile& f, const TopoDS_Shape& shape, bool advanced) {
 
 #ifndef SCHEMA_HAS_IfcAdvancedBrep
 	advanced = false;
@@ -600,25 +645,25 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise)(const TopoDS_Shape& shape, bool
 
 	for (TopExp_Explorer exp(shape, TopAbs_COMPSOLID); exp.More();) {
 		/// @todo CompSolids are not supported
-		return 0;
+        return express::Base{};
 	}
 
-	IfcSchema::IfcRepresentation* rep = 0;
-	IfcSchema::IfcRepresentationItem::list::ptr items(new IfcSchema::IfcRepresentationItem::list);
+	IfcSchema::IfcRepresentation rep;
+	std::vector<IfcSchema::IfcRepresentationItem> items;
 
 	// First check if there is a solid with one or more shells
 	for (TopExp_Explorer exp(shape, TopAbs_SOLID); exp.More(); exp.Next()) {
-		IfcSchema::IfcClosedShell* outer = 0;
-		IfcSchema::IfcClosedShell::list::ptr inner(new IfcSchema::IfcClosedShell::list);
+		IfcSchema::IfcClosedShell outer;
+		std::vector<IfcSchema::IfcClosedShell> inner;
 		for (TopExp_Explorer exp2(exp.Current(), TopAbs_SHELL); exp2.More(); exp2.Next()) {
-			IfcSchema::IfcClosedShell* shell;
-			if (!convert_to_ifc(exp2.Current(), shell, advanced)) {
-				return 0;
+			IfcSchema::IfcClosedShell shell;
+			if (!convert_to_ifc(f, exp2.Current(), shell, advanced)) {
+                return express::Base{};
 			}
 			/// @todo Are shells always in this order or does Orientation() needs to be checked?
 			/// > #4216, no, consider using BRepClass3d::OuterShell()
 			if (outer) {
-				inner->push(shell);
+				inner.push_back(shell);
 			} else {
 				outer = shell;
 			}
@@ -626,89 +671,129 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise)(const TopoDS_Shape& shape, bool
 
 #ifdef SCHEMA_HAS_IfcAdvancedBrep
 		if (advanced) {
-			if (inner->size()) {
-				items->push(new IfcSchema::IfcAdvancedBrepWithVoids(outer, inner));
+			if (inner.size()) {
+				auto inst = f.create<IfcSchema::IfcAdvancedBrepWithVoids>();
+				inst.setOuter(outer);
+                inst.setVoids(inner);
+				items.push_back(inst);
 			} else {
-				items->push(new IfcSchema::IfcAdvancedBrep(outer));
+                auto inst = f.create<IfcSchema::IfcAdvancedBrep>();
+                inst.setOuter(outer);
+                items.push_back(inst);
 			}
 		} else
 #endif
 
 			/// @todo this is not necessarily correct as the shell is not necessarily facetted.
-			if (inner->size()) {
-				items->push(new IfcSchema::IfcFacetedBrepWithVoids(outer, inner));
+			if (inner.size()) {
+                auto inst = f.create<IfcSchema::IfcFacetedBrepWithVoids>();
+                inst.setOuter(outer);
+                inst.setVoids(inner);
+                items.push_back(inst);
 			} else {
-				items->push(new IfcSchema::IfcFacetedBrep(outer));
+				auto inst = f.create<IfcSchema::IfcFacetedBrep>();
+                inst.setOuter(outer);
+				items.push_back(inst);
 			}
 
 	}
 
-	if (items->size() > 0) {
-		rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
+	if (items.size() > 0) {
+		auto srep = f.create<IfcSchema::IfcShapeRepresentation>();
+		srep.setRepresentationIdentifier("Body");
+		srep.setRepresentationType(advanced ? "AdvancedBrep" : "Brep");
+		srep.setItems(items);
+        rep = srep;
 	} else {
 
 		// If not, see if there is a shell
-		IfcSchema::IfcShell::list::ptr shells(new IfcSchema::IfcShell::list);
+		std::vector<IfcSchema::IfcShell> shells;
 		for (TopExp_Explorer exp(shape, TopAbs_SHELL); exp.More(); exp.Next()) {
-			IfcSchema::IfcOpenShell* shell;
-			if (!convert_to_ifc(exp.Current(), shell, advanced)) {
-				return 0;
+			IfcSchema::IfcOpenShell shell;
+			if (!convert_to_ifc(f, exp.Current(), shell, advanced)) {
+                return express::Base{};
 			}
-			shells->push(shell);
+			shells.push_back(shell);
 		}
 
-		if (shells->size() > 0) {
-			items->push(new IfcSchema::IfcShellBasedSurfaceModel(shells));
-			rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
+		if (shells.size() > 0) {
+            auto inst = f.create<IfcSchema::IfcShellBasedSurfaceModel>();
+            inst.setSbsmBoundary(shells);
+			items.push_back(inst);
+
+			auto srep = f.create<IfcSchema::IfcShapeRepresentation>();
+			srep.setRepresentationIdentifier("Body");
+			srep.setRepresentationType(advanced ? "AdvancedBrep" : "Brep");
+            srep.setItems(items);
+
+			rep = srep;
 		} else {
 
 			// If not, see if there is are one of more faces. Note that they will be grouped into a shell.
-			IfcSchema::IfcOpenShell* shell;
-			int face_count = convert_to_ifc(shape, shell, advanced);
+			IfcSchema::IfcOpenShell shell;
+			int face_count = convert_to_ifc(f, shape, shell, advanced);
 
 			if (face_count > 0) {
-				items->push(shell);
-				rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Body"), advanced ? std::string("AdvancedBrep") : std::string("Brep"), items);
+				items.push_back(shell);
+                auto srep = f.create<IfcSchema::IfcShapeRepresentation>();
+                srep.setRepresentationIdentifier("Body");
+                srep.setRepresentationType(advanced ? "AdvancedBrep" : "Brep");
+                srep.setItems(items);
+
+				rep = srep;
 			} else {
 
 				// If not, see if there are any edges. Note that wires are skipped as
 				// they are not commonly top-level geometrical descriptions in IFC.
 				// Also note that edges are written as trimmed curves rather than edges.
 
-				aggregate_of_instance::ptr edges(new aggregate_of_instance);
+				std::vector<express::Entity> edges;
 
 				for (TopExp_Explorer exp(shape, TopAbs_EDGE); exp.More(); exp.Next()) {
-					IfcSchema::IfcCurve* c;
-					if (!convert_to_ifc(TopoDS::Edge(exp.Current()), c, advanced)) {
-						return 0;
+					IfcSchema::IfcCurve c;
+					if (!convert_to_ifc(f, TopoDS::Edge(exp.Current()), c, advanced)) {
+                        return express::Base{};
 					}
-					edges->push(c);
+					edges.push_back(c);
 				}
 
-				if (edges->size() == 0) {
-					return 0;
-				} else if (edges->size() == 1) {
-					rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Axis"), std::string("Curve2D"), edges->as<IfcSchema::IfcRepresentationItem>());
+				if (edges.size() == 0) {
+                    return express::Base{};
+				} else if (edges.size() == 1) {
+                    auto srep = f.create<IfcSchema::IfcShapeRepresentation>();
+                    srep.setRepresentationIdentifier("Axis");
+                    srep.setRepresentationType("Curve2D");
+                    srep.setItems(cast_vector<IfcSchema::IfcRepresentationItem>(edges));
+                    rep = srep;
 				} else {
 					// A geometric set is created as that probably (?) makes more sense in IFC
-					IfcSchema::IfcGeometricCurveSet* curves = new IfcSchema::IfcGeometricCurveSet(edges->as<IfcSchema::IfcGeometricSetSelect>());
-					items->push(curves);
-					rep = new IfcSchema::IfcShapeRepresentation(0, std::string("Axis"), std::string("GeometricCurveSet"), items->as<IfcSchema::IfcRepresentationItem>());
+					auto curves = f.create<IfcSchema::IfcGeometricCurveSet>();
+                    curves.setElements(cast_vector<IfcSchema::IfcGeometricSetSelect>(edges));
+                    items.push_back(curves);
+
+                    auto srep = f.create<IfcSchema::IfcShapeRepresentation>();
+                    srep.setRepresentationIdentifier("Axis");
+                    srep.setRepresentationType("GeometricCurveSet");
+                    srep.setItems(items);
+                    rep = srep;
 				}
 
 			}
 		}
 	}
 
-	IfcSchema::IfcRepresentation::list::ptr reps(new IfcSchema::IfcRepresentation::list);
-	reps->push(rep);
-	return new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
+	auto pds = f.create<IfcSchema::IfcProductDefinitionShape>();
+    pds.setRepresentations({rep});
+
+	return pds;
 }
 
-IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate)(const TopoDS_Shape& shape, double deflection) {
+express::Base POSTFIX_SCHEMA(tesselate)(IfcParse::IfcFile& f, const TopoDS_Shape& shape, double deflection) {
+	// @todo use triangulated face set in ifc4+ schema
+
 	BRepMesh_IncrementalMesh(shape, deflection);
 
-	IfcSchema::IfcFace::list::ptr faces(new IfcSchema::IfcFace::list);
+	std::vector<IfcSchema::IfcFace> faces;
 
 	for (TopExp_Explorer exp(shape, TopAbs_FACE); exp.More(); exp.Next()) {
 		const TopoDS_Face& face = TopoDS::Face(exp.Current());
@@ -716,45 +801,45 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate)(const TopoDS_Shape& shape, doub
 		Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
 
 		if (!tri.IsNull()) {
-			std::vector<IfcSchema::IfcCartesianPoint*> vertices;
+			std::vector<IfcSchema::IfcCartesianPoint> vertices;
 			for (int i = 1; i <= tri->NbNodes(); ++i) {
 				gp_Pnt pnt = tri->Node(i).Transformed(loc);
 				std::vector<double> xyz; xyz.push_back(pnt.X()); xyz.push_back(pnt.Y()); xyz.push_back(pnt.Z());
-				IfcSchema::IfcCartesianPoint* cpnt = new IfcSchema::IfcCartesianPoint(xyz);
+                IfcSchema::IfcCartesianPoint cpnt = f.create<IfcSchema::IfcCartesianPoint>();
+                cpnt.setCoordinates(xyz);
 				vertices.push_back(cpnt);
 			}
 			const Poly_Array1OfTriangle& triangles = tri->Triangles();
 			for (int i = 1; i <= triangles.Length(); ++i) {
 				int n1, n2, n3;
 				triangles(i).Get(n1, n2, n3);
-				IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
-				points->push(vertices[n1 - 1]);
-				points->push(vertices[n2 - 1]);
-				points->push(vertices[n3 - 1]);
-				IfcSchema::IfcPolyLoop* loop = new IfcSchema::IfcPolyLoop(points);
-				IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, face.Orientation() != TopAbs_REVERSED);
-				IfcSchema::IfcFaceBound::list::ptr bounds(new IfcSchema::IfcFaceBound::list);
-				bounds->push(bound);
-				IfcSchema::IfcFace* face2 = new IfcSchema::IfcFace(bounds);
-				faces->push(face2);
+                std::vector<IfcSchema::IfcCartesianPoint> points {
+                    vertices[n1 - 1], vertices[n2 - 1], vertices[n3 - 1]
+                };
+                IfcSchema::IfcPolyLoop loop = f.create<IfcSchema::IfcPolyLoop>();
+                loop.setPolygon(points);
+                IfcSchema::IfcFaceOuterBound bound = f.create<IfcSchema::IfcFaceOuterBound>();
+                bound.setBound(loop);
+                bound.setOrientation(face.Orientation() != TopAbs_REVERSED);
+                IfcSchema::IfcFace face2 = f.create<IfcSchema::IfcFace>();
+                face2.setBounds({bound});
+				faces.push_back(face2);
 			}
 		}
 	}
-	IfcSchema::IfcOpenShell* shell = new IfcSchema::IfcOpenShell(faces);
-	IfcSchema::IfcConnectedFaceSet::list::ptr shells(new IfcSchema::IfcConnectedFaceSet::list);
-	shells->push(shell);
-	IfcSchema::IfcFaceBasedSurfaceModel* surface_model = new IfcSchema::IfcFaceBasedSurfaceModel(shells);
+    auto shell = f.create<IfcSchema::IfcOpenShell>();
+    shell.setCfsFaces(faces);
 
-	IfcSchema::IfcRepresentation::list::ptr reps(new IfcSchema::IfcRepresentation::list);
-	IfcSchema::IfcRepresentationItem::list::ptr items(new IfcSchema::IfcRepresentationItem::list);
+    auto surface_model = f.create<IfcSchema::IfcFaceBasedSurfaceModel>();
+    surface_model.setFbsmFaces({shell});
 
-	items->push(surface_model);
+	auto rep = f.create<IfcSchema::IfcShapeRepresentation>();
+    rep.setRepresentationIdentifier("Tessellation");
+    rep.setRepresentationType("SurfaceModel");
+    rep.setItems({surface_model});
 
-	IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(
-		0, std::string("Facetation"), std::string("SurfaceModel"), items);
-
-	reps->push(rep);
-	IfcSchema::IfcProductDefinitionShape* shapedef = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
+	auto shapedef = f.create<IfcSchema::IfcProductDefinitionShape>();
+    shapedef.setRepresentations({rep});
 
 	return shapedef;
 }

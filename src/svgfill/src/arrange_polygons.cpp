@@ -134,9 +134,9 @@ T take_first_if_single_item(const std::vector<T>& vec) {
 }
 
 template <typename T>
-boost::optional<T> maybe_take_first_if_single_item(const std::vector<T>& vec) {
+std::optional<T> maybe_take_first_if_single_item(const std::vector<T>& vec) {
     if (vec.size() == 0) {
-        return boost::none;
+        return std::nullopt;
     }
     if (true || vec.size() == 1) {
         return vec.front();
@@ -144,9 +144,9 @@ boost::optional<T> maybe_take_first_if_single_item(const std::vector<T>& vec) {
 }
 
 template <typename T>
-boost::optional<Polygon_2> subtract_retain_largest(const T& lhs, const T& rhs) {
+std::optional<Polygon_2> subtract_retain_largest(const T& lhs, const T& rhs) {
     std::vector<Polygon_with_holes_2> result;
-    boost::optional<Polygon_2> mp;
+    std::optional<Polygon_2> mp;
 
     CGAL::difference(lhs, rhs, std::back_inserter(result));
 
@@ -156,12 +156,12 @@ boost::optional<Polygon_2> subtract_retain_largest(const T& lhs, const T& rhs) {
 
     if (result.size() > 0) {
         if (result.front().has_holes()) {
-            return boost::none;
+            return std::nullopt;
         }
         return result.front().outer_boundary();
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
 // Function to write polygons as line segments in OBJ format
@@ -487,7 +487,7 @@ void arrange_cgal_polygons(const std::vector<Polygon_2>& input_polygons_, std::v
                 // std::cerr << poly1.area() << " " << poly2.area() << std::endl;
                 // std::cerr.flush();
 
-                boost::optional<Polygon_2> mp1, mp2, mp3, mp4;
+                std::optional<Polygon_2> mp1, mp2, mp3, mp4;
                 bool swap = false;
 
                 swap = poly1->area() <= poly2->area();
@@ -1209,8 +1209,8 @@ void arrange_cgal_polygons(const std::vector<Polygon_2>& input_polygons_, std::v
                         }
 
                         auto incoming = CGAL::Ray_2<K>(other, neighbour - other);
-                        boost::optional<CGAL::Segment_2<K>> closest_neighbouring_segment;
-                        boost::optional<CGAL::Point_2<K>> closest_intersection_point;
+                        std::optional<CGAL::Segment_2<K>> closest_neighbouring_segment;
+                        std::optional<CGAL::Point_2<K>> closest_intersection_point;
                         K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
 
                         for (auto vlt = vit->second.begin(); vlt != vit->second.end(); ++vlt) {
@@ -1317,8 +1317,8 @@ void arrange_cgal_polygons(const std::vector<Polygon_2>& input_polygons_, std::v
                         // create ray incoming -> M
                         CGAL::Ray_2<K> ray(incoming, M - incoming);
                         // intersect ray with boundary
-                        boost::optional<CGAL::Segment_2<K>> closest_segment;
-                        boost::optional<CGAL::Point_2<K>> closest_intersection_point;
+                        std::optional<CGAL::Segment_2<K>> closest_segment;
+                        std::optional<CGAL::Point_2<K>> closest_intersection_point;
                         K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
                         for (auto jt = bnd.edges_begin(); jt != bnd.edges_end(); ++jt) {
                             const auto& seg = *jt;

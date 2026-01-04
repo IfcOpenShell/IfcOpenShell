@@ -102,6 +102,7 @@ private:
     std::vector<unsigned> bypassed_instances_;
 
   public:
+    IfcParse::IfcFile* owner = nullptr;
 	bool coerce_attribute_count = true;
 
     operator bool() const {
@@ -133,7 +134,7 @@ private:
         return storage_.byref_excl_;
     }
 
-    std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> stealInstances() {
+    std::vector<std::shared_ptr<InstanceData>> stealInstances() {
         return storage_.steal_instances();
     }
 
@@ -161,7 +162,7 @@ private:
         delete header_;
     }
 
-    std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> readInstance();
+    std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<InstanceData>>> readInstance();
 };
 
 class uninitialized_tag {};
@@ -171,7 +172,7 @@ class uninitialized_tag {};
 /// The file takes ownership of instances added to this file and deletes them when the file is deleted.
 class IFC_PARSE_API IfcFile {
 private:
-    typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
+    typedef std::map<uint32_t, express::Base> entity_entity_map_t;
 
     // @todo determine the constness of things (probably needs to be all const, we don't want to overwrite)
     // @todo we have variant_iterator and MapVariant, we probably need to retain only one?
@@ -189,7 +190,6 @@ public:
 
     bool check_existance_before_adding = true;
     bool calculate_unit_factors = true;
-    bool instantiate_typed_instances = true;
 
     // @todo temporarily public for header
     storage_t storage_;
@@ -206,7 +206,7 @@ public:
 
     unsigned int max_id_;
 
-    IfcSpfHeader _header;
+    std::unique_ptr<IfcSpfHeader> header_;
 
     void setDefaultHeaderValues();
 
@@ -219,7 +219,7 @@ public:
         batch_deletion_ids_t;
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
-    void process_deletion_(IfcUtil::IfcBaseClass* entity);
+    void process_deletion_(const express::Base& entity);
 
   public:
 #ifdef USE_MMAP
@@ -300,56 +300,58 @@ public:
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
     template <class T>
-    typename T::list::ptr instances_by_type() {
-        aggregate_of_instance::ptr untyped_list = instances_by_type(&T::Class());
-        if (untyped_list) {
-            return untyped_list->as<T>();
+    typename std::vector<T> instances_by_type() {
+        std::vector<express::Base> untyped_list = instances_by_type(&T::Class());
+        std::vector<T> return_value;
+        for (auto& untyped : untyped_list) {
+            return_value.push_back(untyped.as<T>());
         }
-        return typename T::list::ptr(new typename T::list);
+        return return_value;
     }
 
     template <class T>
-    typename T::list::ptr instances_by_type_excl_subtypes() {
-        aggregate_of_instance::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
-        if (untyped_list) {
-            return untyped_list->as<T>();
+    typename std::vector<T> instances_by_type_excl_subtypes() {
+        std::vector<express::Base> untyped_list = instances_by_type_excl_subtypes(&T::Class());
+        std::vector<T> return_value;
+        for (auto& untyped : untyped_list) {
+            return_value.push_back(untyped.as<T>());
         }
-        return typename T::list::ptr(new typename T::list);
+        return return_value;
     }
 
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    aggregate_of_instance::ptr instances_by_type(const IfcParse::declaration*);
+    std::vector<express::Base> instances_by_type(const IfcParse::declaration*);
 
     /// Returns all entities in the file that match the positional argument.
-    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
+    std::vector<express::Base> instances_by_type_excl_subtypes(const IfcParse::declaration*);
 
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    aggregate_of_instance::ptr instances_by_type(const std::string& type);
+    std::vector<express::Base> instances_by_type(const std::string& type);
 
     /// Returns all entities in the file that match the positional argument.
-    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& type);
+    std::vector<express::Base> instances_by_type_excl_subtypes(const std::string& type);
 
     /// Returns all entities in the file that reference the id
-    aggregate_of_instance::ptr instances_by_reference(int id);
+    std::vector<express::Base> instances_by_reference(int id);
 
     /// Returns the entity with the specified id
-    IfcUtil::IfcBaseClass* instance_by_id(int id);
+    express::Base instance_by_id(int id);
 
     /// Returns the entity with the specified GlobalId
-    IfcUtil::IfcBaseClass* instance_by_guid(const std::string& guid);
+    express::Base instance_by_guid(const std::string& guid);
 
     /// Performs a depth-first traversal, returning all entity instance
     /// attributes as a flat list. NB: includes the root instance specified
     /// in the first function argument.
-    static aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+    static std::vector<express::Base> traverse(const express::Base& instance, int max_level = -1);
 
     /// Same as traverse() but maintains topological order by using a
     /// breadth-first search
-    static aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+    static std::vector<express::Base> traverse_breadth_first(const express::Base& instance, int max_level = -1);
 
     /// Get the attribute indices corresponding to the list of entity instances
     /// returned by getInverse().
@@ -360,7 +362,7 @@ public:
         return getInverse(instance_id, &T::Class(), attribute_index)->template as<T>();
     }
 
-    aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
+    std::vector<express::Entity> getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
     size_t getTotalInverses(int instance_id);
 
@@ -372,8 +374,7 @@ public:
 
     void recalculate_id_counter();
 
-    IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id = -1);
-    void addEntities(aggregate_of_instance::ptr entities);
+    express::Base addEntity(const express::Base& entity);
 
     /// Removes entity instance from file and unsets references.
     ///
@@ -384,54 +385,36 @@ public:
     ///    IfcUtil::IfcBaseClass *const inst = *it;
     ///    model->removeEntity(inst);
     /// }
-    void removeEntity(IfcUtil::IfcBaseClass* entity);
+    void removeEntity(const express::Base& entity);
 
-    const IfcSpfHeader& header() const { return _header; }
-    IfcSpfHeader& header() { return _header; }
+    const IfcSpfHeader& header() const { return *header_; }
+    IfcSpfHeader& header() { return *header_; }
 
     static std::string createTimestamp();
 
     const IfcParse::schema_definition* schema() const;
 
-    std::pair<IfcUtil::IfcBaseClass*, double> getUnit(const std::string& unit_type);
+    std::pair<express::Base, double> getUnit(const std::string& unit_type);
 
     void build_inverses();
 
     void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
-    void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
+    void unregister_inverse(unsigned, const IfcParse::entity* from_entity, const express::Base&, int attribute_index);
 
     entity_instance_by_guid_t internal_guid_map() { return byguid_; };
 
-    void add_type_ref(IfcUtil::IfcBaseClass* new_entity);
-    void remove_type_ref(IfcUtil::IfcBaseClass* new_entity);
-    void process_deletion_inverse(IfcUtil::IfcBaseClass* inst);
+    void add_type_ref(const express::Base& new_entity);
+    void remove_type_ref(const express::Base& new_entity);
+    void process_deletion_inverse(const express::Base& inst);
 
-    void build_inverses_(IfcUtil::IfcBaseClass*);
+    void build_inverses_(const express::Base&);
 
     template <typename T>
-    T* create() {
-        return std::visit([](auto& m) -> T* {
-            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage> || 
-                std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>)
-            {
-                return m.template create<T>();
-            } else {
-                return nullptr;
-            }
-        }, storage_);
+    T create(int id=-1) {
+        return create(&T::Class(), id).template as<T>();
     }
 
-    IfcUtil::IfcBaseClass* create(const IfcParse::declaration* decl) {
-        return std::visit([decl](auto& m) -> IfcUtil::IfcBaseClass* {
-            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage> ||
-                std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>)
-            {
-                return m.create(decl);
-            } else {
-                return nullptr;
-            }
-        }, storage_);
-    }
+    express::Base create(const IfcParse::declaration* decl, int id = -1);
 
     void batch() {
         batch_mode_ = true; 
@@ -441,10 +424,6 @@ public:
     void reset_identity_cache();
 };
 
-#ifdef WITH_IFCXML
-IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename);
-#endif
-
 namespace impl {
     // Trick to have a dependent static assertion
     template <class> inline constexpr bool dependent_false_v = false;
@@ -453,8 +432,9 @@ namespace impl {
 } // namespace IfcParse
 
 template <typename T>
-T* IfcParse::impl::in_memory_file_storage::create() {
-    IfcUtil::IfcBaseClass* inst = nullptr;
+T IfcParse::impl::in_memory_file_storage::create(int id) {
+    express::Base inst;
+    // T::Class() yadaya, id or freshid() I though I changed this elsewhere already
     if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<typename T::Class>>, IfcParse::entity>) {
         inst = new T(in_memory_attribute_storage(T::Class().attribute_count()));
     } else if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<typename T::Class>>, IfcParse::type_declaration>) {
@@ -466,8 +446,10 @@ T* IfcParse::impl::in_memory_file_storage::create() {
     return file->addEntity(inst)->as<T>();
 }
 
+#ifdef IFOPSH_WITH_ROCKSDB
+
 template <typename T>
-T* IfcParse::impl::rocks_db_file_storage::create() {
+T IfcParse::impl::rocks_db_file_storage::create(int id) {
     if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<typename T::Class>>, IfcParse::entity> || std::is_same_v<std::decay_t<std::invoke_result_t<typename T::Class>>, IfcParse::type_declaration>) {
         auto* inst = new T(rocks_db_attribute_storage{});
         inst->file_ = file;
@@ -476,6 +458,8 @@ T* IfcParse::impl::rocks_db_file_storage::create() {
         static_assert(dependent_false_v<T>, "Requires and entity or type declaration");
     }
 }
+
+#endif
 
 namespace std {
 template <>

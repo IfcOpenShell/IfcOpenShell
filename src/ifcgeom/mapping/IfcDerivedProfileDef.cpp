@@ -21,8 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcDerivedProfileDef* inst) {
-	auto it = map(inst->ParentProfile());
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcDerivedProfileDef& inst) {
+	auto it = map(inst.ParentProfile());
 	if (it == nullptr) {
 		return nullptr;
 	}
@@ -32,7 +32,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcDerivedProfileDef* inst) {
 	taxonomy::matrix4::ptr m;
 	bool is_mirror = false;
 #ifdef SCHEMA_HAS_IfcMirroredProfileDef
-	if (inst->as<IfcSchema::IfcMirroredProfileDef>()) {
+	if (inst.as<IfcSchema::IfcMirroredProfileDef>()) {
 		m = taxonomy::make<taxonomy::matrix4>();
 		// @todo test
 		m->components().col(0) *= -1.;
@@ -40,7 +40,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcDerivedProfileDef* inst) {
 	}
 #endif
 	if (!is_mirror) {
-		m = taxonomy::cast<taxonomy::matrix4>(map(inst->Operator()));
+		m = taxonomy::cast<taxonomy::matrix4>(map(inst.Operator()));
 		if (!m) {
 			return nullptr;
 		}

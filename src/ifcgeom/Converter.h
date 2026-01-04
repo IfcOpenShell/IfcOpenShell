@@ -33,8 +33,8 @@ namespace ifcopenshell { namespace geometry {
 
 		/*
 		virtual NativeElement<double, double>* convert(
-			const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
-			IfcUtil::IfcBaseClass* product)
+			const IteratorSettings& settings, express::Base representation,
+			express::Base product)
 		{
 			return implementation_->convert(settings, representation, product);
 		}
@@ -43,13 +43,13 @@ namespace ifcopenshell { namespace geometry {
 		double total_map_time = 0.;
 		double total_geom_time = 0.;
 
-		IfcGeom::ConversionResults convert(IfcUtil::IfcBaseClass* item);
+		IfcGeom::ConversionResults convert(express::Base item);
 
-		IfcGeom::BRepElement* create_brep_for_representation_and_product(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product);
-		// IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product, IfcGeom::BRepElement* brep);
+		IfcGeom::BRepElement* create_brep_for_representation_and_product(const express::Base representation, const express::Base product);
+		// IfcGeom::BRepElement* create_brep_for_processed_representation(const express::Base representation, const express::Base product, IfcGeom::BRepElement* brep);
 
-		IfcGeom::BRepElement* create_brep_for_representation_and_product(ifcopenshell::geometry::taxonomy::ptr, const IfcUtil::IfcBaseEntity* product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place);
-		IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, IfcGeom::BRepElement*);
+		IfcGeom::BRepElement* create_brep_for_representation_and_product(ifcopenshell::geometry::taxonomy::ptr, const express::Base product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place);
+		IfcGeom::BRepElement* create_brep_for_processed_representation(const express::Base product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, IfcGeom::BRepElement*);
 
 		const ifcopenshell::geometry::Settings& settings() { return settings_; }
 	};

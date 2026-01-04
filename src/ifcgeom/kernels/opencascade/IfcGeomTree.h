@@ -73,7 +73,7 @@ namespace IfcGeom {
 	struct ray_intersection_result {
 		double distance;
 		int style_index;
-		const IfcUtil::IfcBaseEntity* instance;
+		express::Entity instance;
 		std::array<double, 3> position;
 		std::array<double, 3> normal;
 		double ray_distance;
@@ -82,8 +82,8 @@ namespace IfcGeom {
 
 	struct clash {
         int clash_type; // 0 = protrusion, 1 = pierce, 2 = collision, 3 = clearance
-		const IfcUtil::IfcBaseClass* a;
-		const IfcUtil::IfcBaseClass* b;
+		express::Base a;
+        express::Base b;
 		double distance;
 		std::array<double, 3> p1;
 		std::array<double, 3> p2;
@@ -1442,9 +1442,9 @@ namespace IfcGeom {
 
             // Temporary structures for H5
             std::vector<IfcGeom::TriangulationElement*> triangulation_elements_;
-            std::map<const IfcUtil::IfcBaseClass*, std::string> global_ids_;
-            std::map<const IfcUtil::IfcBaseClass*, std::string> names_;
-            std::map<const IfcUtil::IfcBaseClass*, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
+            std::map<express::Base, std::string> global_ids_;
+            std::map<express::Base, std::string> names_;
+            std::map<express::Base, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
             std::map<std::string, std::vector<double>> local_verts_;
             std::map<std::string, std::vector<int>> local_faces_;
             std::map<std::string, std::vector<ifcopenshell::geometry::taxonomy::style::ptr>> local_materials_;
@@ -1481,7 +1481,7 @@ namespace IfcGeom {
 		};
 	}
 
-	class tree : public impl::tree<const IfcUtil::IfcBaseEntity*> {
+	class tree : public impl::tree<express::Entity> {
 	public:
 
 		tree() {};

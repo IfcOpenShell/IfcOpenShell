@@ -48,7 +48,7 @@ private:
 	svgfill::point_2 start_, xy_;
 
 public:
-	boost::optional<std::string> class_name;
+	std::optional<std::string> class_name;
 	std::vector<std::vector<svgfill::line_segment_2>> segments;
 
 	void on_enter_element(tag::element::any)
@@ -59,7 +59,7 @@ public:
 	void on_enter_element(tag::element::g)
 	{
 		++depth_;
-		if (enabled_at_ == -1 && !class_name.is_initialized()) {
+        if (enabled_at_ == -1 && !class_name.has_value()) {
 			enabled_at_ = depth_;
 			segments.emplace_back();
 		}
@@ -78,7 +78,7 @@ public:
 
 	template<class Str>
 	void set(tag::attribute::class_, Str const & s) {
-		if (enabled_at_ == -1 && class_name.is_initialized() && std::string(s.begin(), s.size()).find(*class_name) != std::string::npos) {
+		if (enabled_at_ == -1 && class_name.has_value() && std::string(s.begin(), s.size()).find(*class_name) != std::string::npos) {
 			enabled_at_ = depth_;
 			segments.emplace_back();
 		}
@@ -157,7 +157,7 @@ boost::mpl::fold<
 	boost::mpl::insert<boost::mpl::_1, boost::mpl::_2>
 >::type processed_attributes_t;
 
-bool svgfill::svg_to_line_segments(const std::string& data, const boost::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments)
+bool svgfill::svg_to_line_segments(const std::string& data, const std::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments)
 {
 	Context context;
 	context.class_name = class_name;
@@ -187,7 +187,7 @@ bool svgfill::line_segments_to_polygons(solver s, double eps, const std::vector<
 	return line_segments_to_polygons(s, eps, segments, polygons, fn);
 }
 
-bool svgfill::svg_to_polygons(const std::string& data, const boost::optional<std::string>& class_name, std::vector<polygon_2>& polygons) {
+bool svgfill::svg_to_polygons(const std::string& data, const std::optional<std::string>& class_name, std::vector<polygon_2>& polygons) {
 	Context context;
 	context.class_name = class_name;
 	xmlDoc* doc = xmlReadMemory(data.c_str(), data.size(), nullptr, nullptr, 0);

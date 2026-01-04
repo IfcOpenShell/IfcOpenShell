@@ -30,37 +30,37 @@ const double PI = boost::math::constants::pi<double>();
 #ifdef SCHEMA_HAS_IfcOpenCrossProfileDef
 
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef* inst) {
-    if (inst->ProfileType() != IfcSchema::IfcProfileTypeEnum::IfcProfileType_CURVE) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef& inst) {
+    if (inst.ProfileType() != IfcSchema::IfcProfileTypeEnum::IfcProfileType_CURVE) {
         Logger::Warning("Expected IfcOpenCrossProfileDef.ProfileType to be CURVE", inst);
         return nullptr;
     }
 
     std::vector<taxonomy::point3::ptr> points;
     taxonomy::point3::ptr start;
-    if (inst->OffsetPoint()) {
-       start = taxonomy::cast<taxonomy::point3>(map(inst->OffsetPoint()));
+    if (inst.OffsetPoint()) {
+       start = taxonomy::cast<taxonomy::point3>(map(inst.OffsetPoint()));
     } else {
         start = taxonomy::make<taxonomy::point3>(0., 0., 0.);
     }
     points.push_back(start);
 
-    boost::optional<std::vector<std::string>> tags = inst->Tags();
-    boost::optional<std::string> tag = boost::none;
-    if (tags.has_value() && !tags.get().empty()) {
-        tag = tags.get()[0];
+    std::optional<std::vector<std::string>> tags = inst.Tags();
+    std::optional<std::string> tag;
+    if (tags.has_value() && !tags.value().empty()) {
+        tag = tags.value()[0];
     }
     // start->tag = tag;
 
-    auto widths = inst->Widths();
-    auto angles = inst->Slopes(); // these are actually angles, but the attribute is called Slopes
+    auto widths = inst.Widths();
+    auto angles = inst.Slopes(); // these are actually angles, but the attribute is called Slopes
 
 	if (widths.size() != angles.size()) {
         Logger::Warning("Expected Widths and Slopes to be equal length, but got " + std::to_string(widths.size()) + " and " + std::to_string(angles.size()) + " respectively", inst);
         return nullptr;
     }
 
-   auto horizontal_widths = inst->HorizontalWidths();
+   auto horizontal_widths = inst.HorizontalWidths();
 
     double x = start->ccomponents().x();
     double y = start->ccomponents().y();
@@ -75,8 +75,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef* inst) {
         y += dy;
         z += dz;
 
-        if (tags.has_value() && !tags.get().empty()) {
-            tag = tags.get()[i+1];
+        if (tags.has_value() && !tags.value().empty()) {
+            tag = tags.value()[i+1];
         }
 
         points.push_back(taxonomy::make<taxonomy::point3>(x, y, z));

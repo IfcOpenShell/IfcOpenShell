@@ -20,7 +20,7 @@
 #ifndef WIRE_BUILDER_H
 #define WIRE_BUILDER_H
 
-#include "../../../ifcparse/IfcBaseClass.h"
+#include "../../../ifcparse/express.h"
 
 #include <Geom_Curve.hxx>
 
@@ -46,10 +46,10 @@ namespace IfcGeom {
 			double p_;
 			bool override_next_;
 			gp_Pnt next_override_;
-			const IfcUtil::IfcBaseClass* inst_;
+			express::Base inst_;
 
 		public:
-			wire_builder(double p, const IfcUtil::IfcBaseClass* inst = 0) : p_(p), override_next_(false), inst_(inst) {}
+            wire_builder(double p, const express::Base& inst = express::Base()) : p_(p), override_next_(false), inst_(inst) {}
 
 			void operator()(const TopoDS_Shape& a);
 

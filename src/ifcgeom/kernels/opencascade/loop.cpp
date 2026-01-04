@@ -105,32 +105,32 @@ namespace {
 		OpenCascadeKernel::curve_creation_visitor_result_type operator()(const taxonomy::edge::ptr& e) {
 			// @todo for polyloops/-lines we should probably construct edges based on correct oriented TopoDS_Vertex instead.
 
-			if (e->start.which() != e->end.which()) {
+			if (e->start.index() != e->end.index()) {
 				throw std::runtime_error("Different trim types not supported");
 			}
 
-			const bool reversed = !e->orientation.get_value_or(true);
+			const bool reversed = !e->orientation.value_or(true);
 
 			TopoDS_Edge E;
 			auto e_basis = e->basis;
 			if (e_basis) {
-				while (e_basis->kind() == taxonomy::EDGE && e_basis->instance && e_basis->instance->declaration().name() == "IfcTrimmedCurve") {
+				while (e_basis->kind() == taxonomy::EDGE && e_basis->instance && e_basis->instance.declaration().name() == "IfcTrimmedCurve") {
 					// @todo we still might have something to wrt orientation on periodic curves
 					// to make sure we select the correct arc later on.
 					e_basis = taxonomy::cast<taxonomy::edge>(e_basis)->basis;
 				}
 				auto crv_or_wire = kernel->convert_curve(e_basis);
 				Handle(Geom_Curve) curve;
-				if (crv_or_wire.which() == 0) {
+				if (crv_or_wire.index() == 0) {
 					// raise exception
 					return result;
-				} else if (crv_or_wire.which() == 1) {
-					curve = boost::get<Handle(Geom_Curve)>(crv_or_wire);
+				} else if (crv_or_wire.index() == 1) {
+					curve = std::get<Handle(Geom_Curve)>(crv_or_wire);
 				} else {
 					// @todo
 					const double precision_ = 1.e-5;
 					Logger::Warning("Approximating BasisCurve due to possible discontinuities", e->instance);
-					const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+					const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
 					BRepAdaptor_CompCurve cc(w, true);
 					Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
@@ -147,25 +147,25 @@ namespace {
 				auto e_start = e->start;
 				auto e_end = e->end;
 
-				if (!e->curve_sense.get_value_or(true)) {
+				if (!e->curve_sense.value_or(true)) {
 					std::swap(e_start, e_end);
 				}
 
 				// @todo, copy over logic from previous IfcTrimmedCurve handling
-				if (e_start.which() == 0) {
+				if (e_start.index() == 0) {
 					E = BRepBuilderAPI_MakeEdge(curve).Edge();
-				} else if (e_start.which() == 1) {
-					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e_start));
-					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e_end));
+				} else if (e_start.index() == 1) {
+					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*std::get<taxonomy::point3::ptr>(e_start));
+					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*std::get<taxonomy::point3::ptr>(e_end));
 
 					if (curve->IsClosed() && p1.Distance(p2) <= kernel->settings().get<settings::Precision>().get()) {
 						E = BRepBuilderAPI_MakeEdge(curve).Edge();
 					} else {
 						E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
 					}
-				} else if (e_start.which() == 2) {
-					auto v1 = boost::get<double>(e_start);
-					auto v2 = boost::get<double>(e_end);
+				} else if (e_start.index() == 2) {
+					auto v1 = std::get<double>(e_start);
+					auto v2 = std::get<double>(e_end);
 
 					if (is_conic && ALMOST_THE_SAME(fmod(v2 - v1, M_PI * 2.), 0.)) {
 						E = BRepBuilderAPI_MakeEdge(curve).Edge();
@@ -178,15 +178,15 @@ namespace {
 				// comply with the direction of conical curves. The ordering of the
 				// vertices then still needs to be reversed in order to have begin and
 				// end vertex consistent with IFC.
-				if (!e->curve_sense.get_value_or(true)) {
+				if (!e->curve_sense.value_or(true)) {
 					E.Reverse();
 				}
 			} else {
-				if (e->start.which() != 1) {
+				if (e->start.index() != 1) {
 					throw std::runtime_error("Non-cartesian trim on edge without curve");
 				}
-				auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->start));
-				auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->end));
+				auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*std::get<taxonomy::point3::ptr>(e->start));
+				auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*std::get<taxonomy::point3::ptr>(e->end));
 
 				E = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
 			}
@@ -235,10 +235,27 @@ OpenCascadeKernel::curve_creation_visitor_result_type OpenCascadeKernel::convert
 bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire) {
 	TopTools_ListOfShape converted_segments;
 
+	/*
+	if (loop->tags) {
+        std::wcout << "Tags:";
+		for (const auto& t : *loop->tags) {
+            std::wcout << " \"" << t.c_str() << "\"";
+        }
+        std::wcout << std::endl;
+	}*/
+
 	for (auto& segment : loop->children) {
+
+		/*{
+            std::ostringstream oss;
+            segment->print(oss);
+            auto s = oss.str();
+            std::wcout << s.c_str() << std::endl;
+        }*/
+
 		TopoDS_Wire segment_wire;
 		try {
-			segment_wire = boost::get<TopoDS_Wire>(convert_curve(segment));
+			segment_wire = std::get<TopoDS_Wire>(convert_curve(segment));
 		} catch (...) {
 			// @todo we should do some better logging here and catch specific exceptions
 			// but most notably we just want to continue processing when there are
@@ -276,14 +293,14 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
 	bool force_close = false;
-	if (loop->instance && loop->instance->as<IfcUtil::IfcBaseEntity>() && loop->instance->as<IfcUtil::IfcBaseEntity>()->file_) {
-		auto* inst = loop->instance->as<IfcUtil::IfcBaseEntity>();
-		auto* file = loop->instance->as<IfcUtil::IfcBaseEntity>()->file_;
-		auto profile = file->getInverse(inst->id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
-		force_close = profile && profile->size() > 0;
+	if (loop->instance && loop->instance.as<express::Entity>()) {
+		auto inst = loop->instance.as<express::Entity>();
+		auto file = loop->instance.as<express::Entity>().data()->file();
+		auto profile = file->getInverse(inst.id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
+		force_close = profile.size() > 0;
 	}
 
-	wire_builder bld(precision_, loop->instance ? loop->instance->as<IfcUtil::IfcBaseEntity>() : nullptr);
+	wire_builder bld(precision_, loop->instance ? loop->instance.as<express::Entity>() : express::Base{});
 	shape_pair_enumerate(it, bld, force_close);
 	wire = bld.wire();
 
@@ -384,7 +401,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::loop::ptr loop, IfcGeom::Co
 	}
 
 	results.emplace_back(ConversionResult(
-		loop->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		loop->instance.id(),
 		new OpenCascadeShape(shape),
 		loop->surface_style
 	));
@@ -392,10 +409,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::loop::ptr loop, IfcGeom::Co
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::edge::ptr edge, IfcGeom::ConversionResults& results) {
-	TopoDS_Wire shape = boost::get<TopoDS_Wire>(convert_curve(edge));
+	TopoDS_Wire shape = std::get<TopoDS_Wire>(convert_curve(edge));
 
 	results.emplace_back(ConversionResult(
-		edge->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		edge->instance.id(),
 		new OpenCascadeShape(shape),
 		edge->surface_style
 	));

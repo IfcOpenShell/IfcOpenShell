@@ -23,10 +23,10 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcTriangulatedFaceSet
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet* inst) {
-	IfcSchema::IfcCartesianPointList3D* point_list = inst->Coordinates();
-	auto coordinates = point_list->CoordList();
-	std::vector<std::vector<int>> indices_list = inst->CoordIndex();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet& inst) {
+	auto point_list = inst.Coordinates();
+	auto coordinates = point_list.CoordList();
+	std::vector<std::vector<int>> indices_list = inst.CoordIndex();
 
 	std::vector<taxonomy::point3::ptr> points;
 	points.reserve(coordinates.size());

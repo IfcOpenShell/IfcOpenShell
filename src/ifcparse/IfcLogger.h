@@ -21,7 +21,7 @@
 #define IFCLOGGER_H
 
 #include "ifc_parse_api.h"
-#include "IfcBaseClass.h"
+#include "express.h"
 
 #include <boost/optional.hpp>
 #include <boost/scope_exit.hpp>
@@ -59,14 +59,14 @@ class IFC_PARSE_API Logger {
     static Format format_;
     static Severity max_severity_;
 
-    static boost::optional<long long> first_timepoint_;
+    static std::optional<long long> first_timepoint_;
     static std::map<std::string, double> performance_statistics_;
     static std::map<std::string, double> performance_signal_start_;
 
     static bool print_perf_stats_on_element_;
 
   public:
-    static void SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product);
+    static void SetProduct(std::optional<const express::Base> product);
 
     /// Determines to what stream respectively progress and errors are logged
     static void SetOutput(std::wostream* stream1, std::wostream* stream2);
@@ -84,16 +84,16 @@ class IFC_PARSE_API Logger {
     static Format OutputFormat();
 
     /// Log a message to the output stream
-    static void Message(Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0);
-    static void Message(Severity type, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0);
+    static void Message(Severity type, const std::string& message, const express::Base& instance = express::Base());
+    static void Message(Severity type, const std::exception& exception, const express::Base& instance = express::Base());
 
-    static void Notice(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, message, instance); }
-    static void Warning(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, message, instance); }
-    static void Error(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, message, instance); }
+    static void Notice(const std::string& message, const express::Base& instance = express::Base()) { Message(LOG_NOTICE, message, instance); }
+    static void Warning(const std::string& message, const express::Base& instance = express::Base()) { Message(LOG_WARNING, message, instance); }
+    static void Error(const std::string& message, const express::Base& instance = express::Base()) { Message(LOG_ERROR, message, instance); }
 
-    static void Notice(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, exception, instance); }
-    static void Warning(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, exception, instance); }
-    static void Error(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, exception, instance); }
+    static void Notice(const std::exception& exception, const express::Base& instance = express::Base()) { Message(LOG_NOTICE, exception, instance); }
+    static void Warning(const std::exception& exception, const express::Base& instance = express::Base()) { Message(LOG_WARNING, exception, instance); }
+    static void Error(const std::exception& exception, const express::Base& instance = express::Base()) { Message(LOG_ERROR, exception, instance); }
 
     static void Status(const std::string& message, bool new_line = true);
 

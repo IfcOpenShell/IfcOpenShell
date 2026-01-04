@@ -23,16 +23,19 @@ header = """
 
 #include <string>
 #include <vector>
-
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "../ifcparse/ifc_parse_api.h"
 
-#include "../ifcparse/aggregate_of_instance.h"
-#include "../ifcparse/IfcBaseClass.h"
+#include "../ifcparse/express.h"
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/Argument.h"
+
+namespace IfcParse {
+class IfcFile;
+class IfcSpfHeader;
+} // namespace IfcParse
 
 struct %(schema_name)s {
 
@@ -60,7 +63,7 @@ enum_header = """
 #include "../ifcparse/ifc_parse_api.h"
 
 #include <string>
-#include <boost/optional.hpp>
+#include <optional>
 
 #endif
 """
@@ -108,12 +111,14 @@ derived_field_statement = "    {std::set<int> idxs; %(statements)sderived_map[Ty
 derived_field_statement_attrs = "idxs.insert(%d); "
 
 simpletype = """%(documentation)s
-class IFC_PARSE_API %(name)s : %(superclass)s {
+class IFC_PARSE_API %(name)s : public %(superclass)s {
 public:
-    virtual const IfcParse::type_declaration& declaration() const;
+    %(name)s() {}
+    explicit %(name)s (const std::weak_ptr<InstanceData>& data) : %(superclass)s(data) {}
+
+    // virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit %(name)s (IfcEntityInstanceData&& e);
-    %(name)s (%(type)s v);
+    // %(name)s (%(type)s v);
     operator %(type)s() const;
 };
 """
@@ -127,51 +132,60 @@ simpletype_impl_type = "return *((IfcParse::type_declaration*)%(schema_name_uppe
 simpletype_impl_class = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 simpletype_impl_explicit_constructor = "data_ = e;"
 simpletype_impl_constructor = (
-    "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
+    "data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
 )
-simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v->generalize());"
+simpletype_impl_constructor_templated = "data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v->generalize());"
 simpletype_impl_cast = "return get_attribute_value(0);"
-simpletype_impl_cast_templated = (
-    "aggregate_of_instance::ptr es = get_attribute_value(0); return es->as< %(underlying_type)s >();"
-)
+simpletype_impl_cast_templated = "std::vector<express::Base> es = get_attribute_value(0); return cast_vector<%(underlying_type)s>(es);"
+
 simpletype_impl_declaration = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 
-select_virtual = """%(documentation)s
-class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {
+select = """%(documentation)s
+class IFC_PARSE_API %(name)s : public express::Select {
 public:
+    %(name)s() {}
+    explicit %(name)s(const express::Base& c) : express::Select(c) {}
+
     static const IfcParse::select_type& Class();
-    typedef aggregate_of< %(name)s > list;
+%(template_items)s
+%(cast_functions)s
 };
 """
 
-select_plain = """%(documentation)s
-typedef IfcUtil::IfcBaseClass %(name)s;
+select_list_item = """    template<class T, std::enable_if_t<std::is_same_v<T, %(item_name)s>, int> = 0>
+    %(item_name)s as() const { return express::Base::as<%(item_name)s>(); }
 """
 
-enumeration = """class IFC_PARSE_API %(name)s : public IfcUtil::IfcBaseType {
-%(documentation)s
+select_cast_function = """    %(name)s(const %(item_name)s& c) : express::Select(c) {};
+"""
+
+enumeration = """%(documentation)s
+class IFC_PARSE_API %(name)s : public express::DeclaredType {
 public:
+    %(name)s() {}
+    explicit %(name)s (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+
     typedef enum {%(values)s} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    virtual const IfcParse::enumeration_type& declaration() const;
+    // virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    %(name)s (IfcEntityInstanceData&& e);
-    %(name)s (Value v);
-    %(name)s (const std::string& v);
+    // %(name)s (Value v);
+    // %(name)s (const std::string& v);
     operator Value() const;
 };
 """
 
 entity = """%(documentation)s
-class IFC_PARSE_API %(name)s : %(superclass)s {
+class IFC_PARSE_API %(name)s : public %(superclass)s {
 public:
-%(attributes)s    %(inverse)s    virtual const IfcParse::entity& declaration() const;
+    %(name)s() {}
+    explicit %(name)s (const std::weak_ptr<InstanceData>& data) : %(superclass)s(data) {}
+
+%(attributes)s    %(inverse)s    // virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    %(name)s (IfcEntityInstanceData&& e);
-    %(name)s (%(constructor_arguments)s);
-    typedef aggregate_of< %(name)s > list;
+    // %(name)s (%(constructor_arguments)s);
 };
 """
 
@@ -180,20 +194,22 @@ const IfcParse::select_type& %(schema_name)s::%(name)s::Class() { return *((IfcP
 """
 
 enumeration_function = """
-const IfcParse::enumeration_type& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+// const IfcParse::enumeration_type& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *((IfcParse::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 
-%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData&& e)
-    : IfcBaseType(std::move(e))
+/*
+%(schema_name)s::%(name)s::%(name)s(const std::weak_ptr<InstanceData>& e)
+    : express::DeclaredType(e)
 {}
 
 %(schema_name)s::%(name)s::%(name)s(Value v) {
-    set_attribute_value(0, EnumerationReference(&declaration(), static_cast<size_t>(v)));
+    set_attribute_value(0, EnumerationReference(&Class(), static_cast<size_t>(v)));
 }
 
 %(schema_name)s::%(name)s::%(name)s(const std::string& v) {
-    set_attribute_value(0, EnumerationReference(&declaration(), declaration().lookup_enum_offset(v)));
+    set_attribute_value(0, EnumerationReference(&Class(), Class().lookup_enum_offset(v)));
 }
+*/
 
 const char* %(schema_name)s::%(name)s::ToString(Value v) {
     return %(schema_name)s::%(name)s::%(name)s::Class().lookup_enum_value((size_t)v);
@@ -211,14 +227,14 @@ const char* %(schema_name)s::%(name)s::ToString(Value v) {
 entity_implementation = """// Function implementations for %(name)s
 %(attributes)s
 %(inverse)s
-const IfcParse::entity& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+// const IfcParse::entity& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
-%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData&& e) : %(superclass)s { }
-%(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass_num_attrs)s { %(constructor_implementation)s; populate_derived(); }
+// %(schema_name)s::%(name)s::%(name)s(const std::weak_ptr<InstanceData>& e) : %(superclass)s { }
+// %(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass_num_attrs)s { %(constructor_implementation)s; populate_derived(); }
 """
 
 # data_ = e; 
-# data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]);
+# data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]);
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"
 
@@ -232,10 +248,10 @@ cast_function = "%(schema_name)s::%(class_name)s::operator %(return_type)s() con
 
 array_type = "std::vector< %(instance_type)s > /*[%(lower)s:%(upper)s]*/"
 nested_array_type = "std::vector< std::vector< %(instance_type)s > >"
-list_type = "aggregate_of< %(instance_type)s >::ptr"
-list_list_type = "aggregate_of_aggregate_of< %(instance_type)s >::ptr"
+list_type = "std::vector< %(instance_type)s >"
+list_list_type = "std::vector< std::vector< %(instance_type)s > >"
 untyped_list = "aggregate_of_instance::ptr"
-inverse_attr = "aggregate_of< %(entity)s >::ptr %(name)s() const; // INVERSE %(entity)s::%(attribute)s"
+inverse_attr = "std::vector< %(entity)s > %(name)s() const; // INVERSE %(entity)s::%(attribute)s"
 
 enum_from_string_stmt = '    if (s == "%(value)s") return ::%(schema_name)s::%(name)s::%(short_name)s_%(value)s;'
 
@@ -249,21 +265,24 @@ optional_attr_stmt = "return !get_attribute_value(%(index)d).isNull();"
 
 get_attr_stmt = "%(null_check)s %(non_optional_type)s v = get_attribute_value(%(index)d); return v;"
 get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(get_attribute_value(%(index)d));"
-get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(get_attribute_value(%(index)d)))->as<%(non_optional_type_no_pointer)s>(true);"
-get_attr_stmt_array = "%(null_check)s aggregate_of_instance::ptr es = get_attribute_value(%(index)d); return es->as< %(list_instance_type)s >();"
-get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = get_attribute_value(%(index)d); return es->as< %(list_instance_type)s >();"
+get_attr_stmt_entity = "%(null_check)s return ((express::Base)(get_attribute_value(%(index)d))).as<%(non_optional_type_no_pointer)s>();"
+get_attr_stmt_array = "%(null_check)s std::vector<express::Base> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
+get_attr_stmt_nested_array = "%(null_check)s std::vector<std::vector<express::Base>> es = get_attribute_value(%(index)d); return cast_vector_vector<%(list_instance_type)s>(es);"
 
-get_inverse = "if (!file_) { return nullptr; } return file_->getInverse(id_, %(schema_name_upper)s_types[%(type_index)d], %(index)d)->as<%(type)s>();"
+get_inverse = "return cast_vector<%(type)s>(data()->file()->getInverse(data()->id(), %(schema_name_upper)s_types[%(type_index)d], %(index)d));"
 
 set_attr_stmt = (
     "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 )
 set_attr_instance = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, v->as<IfcUtil::IfcBaseClass>());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+    "%(check_optional_set_begin)sset_attribute_value(%(index)d, v);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 )
 set_attr_stmt_enum =  "%(check_optional_set_begin)sset_attribute_value(%(index)d, EnumerationReference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 set_attr_stmt_array = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, (%(star_if_optional)sv)->generalize());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+    "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+)
+set_attr_stmt_nested_array = (
+    "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 )
 
 constructor_stmt = (
@@ -289,3 +308,5 @@ inverse_implementation = '    inverse_map[Type::%(type)s].insert(std::make_pair(
 
 def multi_line_comment(li):
     return ("/// %s" % ("\n/// ".join(li))) if len(li) else ""
+
+

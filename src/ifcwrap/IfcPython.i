@@ -69,8 +69,7 @@
 %ignore instance_factory;
 
 // Not relevant for python usage
-%ignore IfcBaseInterface;
-%ignore IfcBaseClass::data;
+%ignore express::Base::data;
 %ignore *::references_to_resolve;
 
 // SVG serializer internal
@@ -248,7 +247,7 @@
 #include "../ifcparse/Ifc4x3_add2.h"
 #endif
 
-	#include "../ifcparse/IfcBaseClass.h"
+	#include "../ifcparse/express.h"
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"
@@ -351,7 +350,7 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 	#include "../ifcparse/Ifc4x3_add2.h"
 #endif
 
-	#include "../ifcparse/IfcBaseClass.h"
+	#include "../ifcparse/express.h"
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"
 	#include "../ifcparse/utils.h"

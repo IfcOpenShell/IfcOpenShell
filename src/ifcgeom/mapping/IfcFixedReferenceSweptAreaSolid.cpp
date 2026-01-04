@@ -24,10 +24,10 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcFixedReferenceSweptAreaSolid
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid* inst) {
-    auto dir = map(inst->Directrix());
-    auto ref = taxonomy::cast<taxonomy::direction3>(map(inst->FixedReference()));
-    auto profile = taxonomy::cast<taxonomy::face>(map(inst->SweptArea()));
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid& inst) {
+    auto dir = map(inst.Directrix());
+    auto ref = taxonomy::cast<taxonomy::direction3>(map(inst.FixedReference()));
+    auto profile = taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
 
     auto loft = taxonomy::make<taxonomy::loft>();
     // @todo intialize as default
@@ -42,14 +42,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
         // IfcDirectrixCurveSweptAreaSolid introduced in 4.3 changed attribute type
         // from optional IfcParamValue to optional IfcCurveMeasureSelect.
         // Invocation of mapping on pre-4.3 models can never result in a piecewise_function.
-        if (inst->StartParam() && inst->StartParam()->as<IfcSchema::IfcLengthMeasure>()) {
-            double s = *inst->StartParam()->as<IfcSchema::IfcLengthMeasure>();
+        if (inst.StartParam() && inst.StartParam().as<IfcSchema::IfcLengthMeasure>()) {
+            double s = inst.StartParam().as<IfcSchema::IfcLengthMeasure>();
             if (s > start) {
                 start = s;
             }
         }
-        if (inst->EndParam() && inst->EndParam()->as<IfcSchema::IfcLengthMeasure>()) {
-            double e = *inst->EndParam()->as<IfcSchema::IfcLengthMeasure>();
+        if (inst.EndParam() && inst.EndParam().as<IfcSchema::IfcLengthMeasure>()) {
+            double e = inst.EndParam().as<IfcSchema::IfcLengthMeasure>();
             if (e < end) {
                 end = e;
             }
@@ -71,7 +71,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
             bool is_directrix_derived = false;
 
 #ifdef SCHEMA_HAS_IfcDirectrixDerivedReferenceSweptAreaSolid
-            if (inst->as<IfcSchema::IfcDirectrixDerivedReferenceSweptAreaSolid>()) {
+            if (inst.as<IfcSchema::IfcDirectrixDerivedReferenceSweptAreaSolid>()) {
                 is_directrix_derived = true;
             }
 #endif
@@ -116,8 +116,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
         }
     } else {
         taxonomy::matrix4::ptr matrix;
-        if (inst->Position() != nullptr) {
-            matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+        if (inst.Position()) {
+            matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
         }
         // TODO: Implement handling for non-alignment curves using sweep_along_curve
         auto sweep = taxonomy::make<taxonomy::sweep_along_curve>(

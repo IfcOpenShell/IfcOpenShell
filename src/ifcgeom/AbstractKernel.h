@@ -121,8 +121,8 @@ namespace ifcopenshell {
 		*/
 
 		virtual bool apply_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&) { throw not_implemented_error(); }
-		virtual bool apply_folded_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&, const std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information>&) { throw not_implemented_error(); }
-		virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+		virtual bool apply_folded_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&, const std::map<express::Base, ifcopenshell::geometry::layerset_information>&) { throw not_implemented_error(); }
+		virtual bool convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 			const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) = 0;
 		virtual bool unify_shapes(const IfcGeom::ConversionResults&, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
 

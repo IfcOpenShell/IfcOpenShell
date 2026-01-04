@@ -23,19 +23,19 @@ using namespace ifcopenshell::geometry;
 
 #include <boost/math/constants/constants.hpp>
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 	static const double pi = boost::math::constants::pi<double>();
 
-	IfcSchema::IfcCurve* basis_curve = inst->BasisCurve();
-	bool isConic = basis_curve->declaration().is(IfcSchema::IfcConic::Class());
+	auto basis_curve = inst.BasisCurve();
+	bool isConic = basis_curve.declaration().is(IfcSchema::IfcConic::Class());
 	double parameterFactor = isConic ? angle_unit_ : length_unit_;
 	
 	auto tc = taxonomy::make<taxonomy::edge>();
-	tc->basis = map(inst->BasisCurve());
+	tc->basis = map(inst.BasisCurve());
 	
-	bool trim_cartesian = inst->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
-	auto trims1 = inst->Trim1();
-	auto trims2 = inst->Trim2();
+	bool trim_cartesian = inst.MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
+	auto trims1 = inst.Trim1();
+	auto trims2 = inst.Trim2();
 	
 	// reversed orientation handling happens in geometry kernel
 	unsigned sense_agreement = 0;
@@ -44,27 +44,27 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
 	
-	tc->curve_sense = inst->SenseAgreement();
+	tc->curve_sense = inst.SenseAgreement();
 
-	for (auto it = trims1->begin(); it != trims1->end(); it ++) {
+	for (auto it = trims1.begin(); it != trims1.end(); it ++) {
 		auto i = *it;
-		if (i->as<IfcSchema::IfcCartesianPoint>()) {
+		if (i.as<IfcSchema::IfcCartesianPoint>()) {
 			pnts[sense_agreement] = taxonomy::cast<taxonomy::point3>(map(i));
 			has_pnts[sense_agreement] = true;
-		} else if (i->as<IfcSchema::IfcParameterValue>()) {
-			const double value = *i->as<IfcSchema::IfcParameterValue>();
+		} else if (i.as<IfcSchema::IfcParameterValue>()) {
+			const double value = i.as<IfcSchema::IfcParameterValue>();
 			flts[sense_agreement] = value * parameterFactor;
 			has_flts[sense_agreement] = true;
 		}
 	}
 
-	for (auto it = trims2->begin(); it != trims2->end(); it ++) {
+	for (auto it = trims2.begin(); it != trims2.end(); it ++) {
 		auto i = *it;
-		if (i->as<IfcSchema::IfcCartesianPoint>()) {
+		if (i.as<IfcSchema::IfcCartesianPoint>()) {
 			pnts[1 - sense_agreement] = taxonomy::cast<taxonomy::point3>(map(i));
 			has_pnts[1-sense_agreement] = true;
-		} else if (i->as<IfcSchema::IfcParameterValue>()) {
-			const double value = *i->as<IfcSchema::IfcParameterValue>();
+		} else if (i.as<IfcSchema::IfcParameterValue>()) {
+			const double value = i.as<IfcSchema::IfcParameterValue>();
 			flts[1-sense_agreement] = value * parameterFactor;
 			has_flts[1-sense_agreement] = true;
 		}
@@ -86,15 +86,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 		// is defined by an IfcCartesianPoint and an IfcVector with Magnitude. Because
 		// the vector is normalised when passed to Geom_Line constructor the magnitude
 		// needs to be factored in with the IfcParameterValue here.
-		if (basis_curve->declaration().is(IfcSchema::IfcLine::Class())) {
-			IfcSchema::IfcLine* line = static_cast<IfcSchema::IfcLine*>(basis_curve);
-			const double magnitude = line->Dir()->Magnitude();
+		if (auto lin = basis_curve.as<IfcSchema::IfcLine>()) {
+			const double magnitude = lin.Dir().Magnitude();
 			flts[0] *= magnitude; flts[1] *= magnitude;
 		}
-		if (basis_curve->declaration().is(IfcSchema::IfcEllipse::Class())) {
-			IfcSchema::IfcEllipse* ellipse = static_cast<IfcSchema::IfcEllipse*>(basis_curve);
-			double x = ellipse->SemiAxis1() * length_unit_;
-			double y = ellipse->SemiAxis2() * length_unit_;
+        if (auto ellipse = basis_curve.as<IfcSchema::IfcEllipse>()) {
+			double x = ellipse.SemiAxis1() * length_unit_;
+			double y = ellipse.SemiAxis2() * length_unit_;
 			const bool rotated = y > x;
 			// @todo do we apply this rotation here or in the kernel.
 			if (rotated) {
@@ -116,12 +114,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 		// A good criterion for determining whether to take full curve
 		// or trimmed segment would be whether there are other curve segments or this
 		// is the only one.
-		boost::optional<size_t> num_segments;
-		auto segment = inst->file_->getInverse(inst->id(),  & IfcSchema::IfcCompositeCurveSegment::Class(), -1);
-		if (segment->size() == 1) {
-			auto comp = (*segment->begin())->file_->getInverse((*segment->begin())->id(), &IfcSchema::IfcCompositeCurve::Class(), -1);
-			if (comp->size() == 1) {
-				num_segments = (*comp->begin())->as<IfcSchema::IfcCompositeCurve>()->Segments()->size();
+		std::optional<size_t> num_segments;
+		auto segment = inst.data()->file()->getInverse(inst.id(),  & IfcSchema::IfcCompositeCurveSegment::Class(), -1);
+		if (segment.size() == 1) {
+            auto comp = segment.front().data()->file()->getInverse(segment.front().id(), &IfcSchema::IfcCompositeCurve::Class(), -1);
+			if (comp.size() == 1) {
+				num_segments = comp.front().as<IfcSchema::IfcCompositeCurve>().Segments().size();
 			}
 		}
 

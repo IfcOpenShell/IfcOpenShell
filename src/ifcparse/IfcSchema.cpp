@@ -19,7 +19,7 @@
 
 #include "IfcSchema.h"
 
-#include "IfcBaseClass.h"
+#include "express.h"
 
 #include <map>
 
@@ -91,6 +91,14 @@ bool IfcParse::declaration::is(const IfcParse::declaration& decl) const {
         return true;
     }
 
+    if (decl.as_select_type() != nullptr) {
+        const auto& li = decl.as_select_type()->select_list();
+        for (const auto* selected_decl : li) {
+            if (is(*selected_decl)) {
+                return true;
+            }
+        }
+    }
     if ((this->as_entity() != nullptr) && (this->as_entity()->supertype() != nullptr)) {
         return this->as_entity()->supertype()->is(decl);
     }
@@ -122,10 +130,10 @@ IfcParse::entity::~entity() {
 }
 static std::map<std::string, const IfcParse::schema_definition*> schemas;
 
-IfcParse::schema_definition::schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory)
-    : name_(name),
-      declarations_(declarations),
-      factory_(factory) {
+IfcParse::schema_definition::schema_definition(const std::string& name, const std::vector<const declaration*>& declarations)
+    : name_(name)
+    , declarations_(declarations)
+{
     std::sort(declarations_.begin(), declarations_.end(), declaration_by_index_sort());
     for (std::vector<const declaration*>::iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
         (**it).schema_ = this;
@@ -150,14 +158,6 @@ IfcParse::schema_definition::~schema_definition() {
     for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
         delete *it;
     }
-    delete factory_;
-}
-
-IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const {
-    if (factory_ != nullptr) {
-        return (*factory_)(decl, std::move(data));
-    }
-    return new IfcUtil::IfcLateBoundEntity(decl, std::move(data));
 }
 
 void IfcParse::register_schema(schema_definition* schema) {

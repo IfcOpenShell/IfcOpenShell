@@ -86,14 +86,14 @@ void IfcGeom::set_default_style_file(const std::string& json_file) {
 		default_materials.insert(std::make_pair(name, std::make_shared<ifcopenshell::geometry::taxonomy::style>(name)));
 
 		pt::ptree material = material_pair.second;
-		boost::optional<pt::ptree&> diffuse = material.get_child_optional("diffuse");
+		auto diffuse = material.get_child_optional("diffuse");
 		default_materials[name]->diffuse = read_colour_component(diffuse);
 
 		// @todo Is it necessary to get the surface too?
-        // boost::optional<pt::ptree&> surface = material.get_child_optional("surface");
+        // std::optional<pt::ptree&> surface = material.get_child_optional("surface");
         // default_materials[name]->surface = read_colour_component(surface);
 
-		boost::optional<pt::ptree&> specular = material.get_child_optional("specular");
+		auto specular = material.get_child_optional("specular");
 		default_materials[name]->specular = read_colour_component(specular);
 
 		if (material.get_child_optional("specular-roughness")) {

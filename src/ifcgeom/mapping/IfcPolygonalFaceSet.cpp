@@ -23,10 +23,10 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcPolygonalFaceSet
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
-	IfcSchema::IfcCartesianPointList3D* point_list = inst->Coordinates();
-	auto coordinates = point_list->CoordList();
-	auto polygonal_faces = inst->Faces();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet& inst) {
+	auto point_list = inst.Coordinates();
+	auto coordinates = point_list.CoordList();
+	auto polygonal_faces = inst.Faces();
 
 	std::vector<taxonomy::point3::ptr> points;
 	points.reserve(coordinates.size());
@@ -41,7 +41,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
 
 	auto shell = taxonomy::make<taxonomy::shell>();
 	
-	for (auto& f : *polygonal_faces) {
+	for (auto& f : polygonal_faces) {
 		auto fa = taxonomy::make<taxonomy::face>();
 		shell->children.push_back(fa);
 		
@@ -49,7 +49,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
 			auto loop = taxonomy::make<taxonomy::loop>();
 			fa->children = { loop };
 			loop->external = true;
-			auto indices = f->CoordIndex();
+			auto indices = f.CoordIndex();
 			taxonomy::point3::ptr previous;
 			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 				if (*jt < 1 || *jt > max_index) {
@@ -67,8 +67,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet* inst) {
 			}
 		}
 
-		if (f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()) {
-			auto indices = f->as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()->InnerCoordIndices();
+		if (auto withvoids = f.as<IfcSchema::IfcIndexedPolygonalFaceWithVoids>()) {
+            auto indices = withvoids.InnerCoordIndices();
 			{
 				taxonomy::point3::ptr previous;
 				for (auto& li : indices) {

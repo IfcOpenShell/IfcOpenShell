@@ -526,44 +526,42 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 		return;
 	}
 
-	boost::optional<std::string> crs_epsg;
-	boost::optional<std::array<double, 3>> crs_x_axis;
-	boost::optional<std::array<double, 3>> eastings_northings_elevation;
+	std::optional<std::string> crs_epsg;
+	std::optional<std::array<double, 3>> crs_x_axis;
+	std::optional<std::array<double, 3>> eastings_northings_elevation;
 
-	aggregate_of_instance::ptr coordops;
+	std::vector<express::Base> coordops;
 	try {
 		coordops = f->instances_by_type("IfcCoordinateOperation");
 	} catch (IfcParse::IfcException&) {
 		// Ignored. Schema likely doesn't support IfcCoordinateOperation.
 	}
-	if (coordops) {
-		for (auto& coordop : *coordops) {
-			IfcUtil::IfcBaseClass* source_crs = coordop->as<IfcUtil::IfcBaseEntity>()->get("SourceCRS");
-			if (source_crs->declaration().is("IfcGeometricRepresentationContext")) {
-				IfcUtil::IfcBaseClass* target_crs = coordop->as<IfcUtil::IfcBaseEntity>()->get("TargetCRS");
-				auto name_attr = target_crs->as<IfcUtil::IfcBaseEntity>()->get("Name");
-				if (coordop->declaration().is("IfcMapConversion")) {
+	for (auto& coordop : coordops) {
+		express::Base source_crs = coordop.as<express::Entity>().get("SourceCRS");
+		if (source_crs.declaration().is("IfcGeometricRepresentationContext")) {
+            express::Base target_crs = coordop.as<express::Entity>().get("TargetCRS");
+			auto name_attr = target_crs.as<express::Entity>().get("Name");
+			if (coordop.declaration().is("IfcMapConversion")) {
 					
-					if (!name_attr.isNull()) {
-						std::string epsg_code = name_attr;
-						crs_epsg = epsg_code;
+				if (!name_attr.isNull()) {
+					std::string epsg_code = name_attr;
+					crs_epsg = epsg_code;
 
-						// @todo in which unit are these?
-						double eastings = coordop->as<IfcUtil::IfcBaseEntity>()->get("Eastings");
-						double northings = coordop->as<IfcUtil::IfcBaseEntity>()->get("Northings");
-						double height = coordop->as<IfcUtil::IfcBaseEntity>()->get("OrthogonalHeight");
-						height = 0.;
+					// @todo in which unit are these?
+					double eastings = coordop.as<express::Entity>().get("Eastings");
+					double northings = coordop.as<express::Entity>().get("Northings");
+					double height = coordop.as<express::Entity>().get("OrthogonalHeight");
+					height = 0.;
 
-						eastings_northings_elevation = { { eastings, northings, height} };
+					eastings_northings_elevation = { { eastings, northings, height} };
 
-						auto xaxis_attr = coordop->as<IfcUtil::IfcBaseEntity>()->get("XAxisAbscissa");
-						auto yaxis_attr = coordop->as<IfcUtil::IfcBaseEntity>()->get("XAxisOrdinate");
-						if (!xaxis_attr.isNull() && !yaxis_attr.isNull()) {
-							double xaxis = xaxis_attr;
-							double yaxis = yaxis_attr;
+					auto xaxis_attr = coordop.as<express::Entity>().get("XAxisAbscissa");
+					auto yaxis_attr = coordop.as<express::Entity>().get("XAxisOrdinate");
+					if (!xaxis_attr.isNull() && !yaxis_attr.isNull()) {
+						double xaxis = xaxis_attr;
+						double yaxis = yaxis_attr;
 
-							crs_x_axis = { { xaxis, yaxis, 0. } };
-						}
+						crs_x_axis = { { xaxis, yaxis, 0. } };
 					}
 				}
 			}
@@ -573,9 +571,9 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 	if (!crs_epsg) {
 		auto sites = f->instances_by_type("IfcSite");
 
-		if (sites && sites->size() == 1) {
-			auto lat_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLatitude");
-			auto lon_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLongitude");
+		if (sites.size() == 1) {
+			auto lat_attr = sites.front().as<express::Entity>().get("RefLatitude");
+			auto lon_attr = sites.front().as<express::Entity>().get("RefLongitude");
 
 			if (!lat_attr.isNull() && !lon_attr.isNull()) {
 				std::vector<int> lat_dms = lat_attr;
@@ -594,13 +592,13 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 				double elev = 0.;
 
 				/*
-				auto elev_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefElevation");
+				auto elev_attr = (*sites->begin()).as<express::Entity>().get("RefElevation");
 				if (!elev_attr->isNull()) {
 					elev = *elev_attr;
 				}
 				*/
 
-				crs_epsg.reset("EPSG:4326");
+				crs_epsg.emplace("EPSG:4326");
 				eastings_northings_elevation = { { lat, lon, elev } };
 			}
 		}
@@ -608,13 +606,13 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 
 	auto contexts = f->instances_by_type_excl_subtypes("IfcGeometricRepresentationContext");
 
-	if (contexts && contexts->size() > 0) {
-		auto context = (*contexts->begin())->as<IfcUtil::IfcBaseEntity>();
-		auto north_attr = context->get("TrueNorth");
+	if (!contexts.empty()) {
+        auto context = contexts.front().as<express::Entity>();
+		auto north_attr = context.get("TrueNorth");
 		if (!north_attr.isNull()) {
-			IfcUtil::IfcBaseClass* north = north_attr;
-			if (north->declaration().is("IfcDirection")) {
-				std::vector<double> ratios = north->as<IfcUtil::IfcBaseEntity>()->get("DirectionRatios");
+			express::Base north = north_attr;
+			if (north.declaration().is("IfcDirection")) {
+				std::vector<double> ratios = north.as<express::Entity>().get("DirectionRatios");
 				crs_x_axis = { { ratios[1], -ratios[0], 0. } };
 			}
 		}

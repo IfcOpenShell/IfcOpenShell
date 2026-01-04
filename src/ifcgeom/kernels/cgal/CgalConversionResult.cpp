@@ -223,7 +223,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 		}
 	}
 
-	boost::optional<double> smooth_treshold;
+	std::optional<double> smooth_treshold;
 	{
 		auto setting_value = settings.get<ifcopenshell::geometry::settings::CgalSmoothAngleDegrees>().get();
 		if (setting_value > 0.) {

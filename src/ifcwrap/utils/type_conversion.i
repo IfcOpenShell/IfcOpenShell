@@ -86,10 +86,10 @@
 	}
 
 	template <>
-	IfcUtil::IfcBaseClass* cast_pyobject(PyObject* element) {
+	express::Base cast_pyobject(PyObject* element) {
 		void *arg = 0;
-		int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);
-		return static_cast<IfcUtil::IfcBaseClass*>(SWIG_IsOK(res) ? arg : 0);
+		int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_express__Base, 0);
+		return SWIG_IsOK(res) ? *reinterpret_cast<express::Base*>(arg) : express::Base{};
 	}
 
 	template<typename T>
@@ -162,7 +162,7 @@
 	PyObject* pythonize(const boost::logic::tribool& t) { return boost::logic::indeterminate(t) ? PyUnicode_FromString("UNKNOWN") : PyBool_FromLong((bool)t) ;}
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyUnicode_FromString(t.c_str());                                                    }
-	PyObject* pythonize(const IfcUtil::IfcBaseClass* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);        }
+	PyObject* pythonize(const express::Base& t) { return SWIG_NewPointerObj(SWIG_as_voidptr(new express::Base(t)), SWIGTYPE_p_express__Base, SWIG_POINTER_OWN);        }
 	PyObject* pythonize(const IfcParse::attribute* t)   { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__attribute, 0);          }
 	PyObject* pythonize(const IfcParse::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__inverse_attribute, 0); }
 	PyObject* pythonize(const IfcParse::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__entity, 0);             }
@@ -179,15 +179,6 @@
 		return pythonize(bitstring);
 	}
 
-	PyObject* pythonize(const aggregate_of_instance::ptr& t) { 
-		unsigned int i = 0;
-		PyObject* pyobj = PyTuple_New(t->size());
-		for (aggregate_of_instance::it it = t->begin(); it != t->end(); ++it, ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize(*it));
-		}
-		return pyobj;
-	}
-
 	template <typename T>
 	PyObject* pythonize_vector(const T& v) {
 		const size_t size = v.size();
@@ -198,15 +189,6 @@
 			} else {
 				PyTuple_SetItem(pyobj, i, pythonize(v[i]));
 			}
-		}
-		return pyobj;
-	}
-
-	PyObject* pythonize(const aggregate_of_aggregate_of_instance::ptr& t) {
-		unsigned int i = 0;
-		PyObject* pyobj = PyTuple_New(t->size());
-		for (aggregate_of_aggregate_of_instance::outer_it it = t->begin(); it != t->end(); ++it, ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize_vector(*it));
 		}
 		return pyobj;
 	}

@@ -34,7 +34,7 @@ using namespace IfcGeom::util;
 bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& result) {
 	TopoDS_Shape S;
 
-	if (solid->instance->declaration().is("IfcHalfSpaceSolid")) {
+	if (solid->instance.declaration().is("IfcHalfSpaceSolid")) {
 		// halfspace
 		if (solid->children.size() != 1) {
 			throw std::runtime_error("Unexpected number of children on solid");
@@ -44,7 +44,7 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 
 		const auto& m = taxonomy::cast<taxonomy::plane>(face->basis)->matrix->ccomponents();
 		gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
-		const gp_Pnt pnt = pln.Location().Translated(face->orientation.get_value_or(false) ? pln.Axis().Direction() : -pln.Axis().Direction());
+		const gp_Pnt pnt = pln.Location().Translated(face->orientation.value_or(false) ? pln.Axis().Direction() : -pln.Axis().Direction());
 		TopoDS_Shape halfspace = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();
 
 		if (!face->children.empty()) {
@@ -107,7 +107,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		solid->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		solid->instance.id(),
 		solid->matrix,
 		new OpenCascadeShape(shape),
 		solid->surface_style

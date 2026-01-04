@@ -21,19 +21,19 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularTrimmedSurface* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularTrimmedSurface& inst) {
 	// @todo we'll need to add support for p-curves at some point, but not now.
 	return nullptr;
 
 	/*
-	if (!inst->BasisSurface()->declaration().is(IfcSchema::IfcPlane::Class())) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported BasisSurface:", inst->BasisSurface());
+	if (!inst.BasisSurface()->declaration().is(IfcSchema::IfcPlane::Class())) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported BasisSurface:", inst.BasisSurface());
 		return false;
 	}
 	gp_Pln pln;
-	IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst->BasisSurface(), pln);
+	IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst.BasisSurface(), pln);
 
-	BRepBuilderAPI_MakeFace mf(pln, inst->U1(), inst->U2(), inst->V1(), inst->V2());
+	BRepBuilderAPI_MakeFace mf(pln, inst.U1(), inst.U2(), inst.V1(), inst.V2());
 
 	face = mf.Face();
 

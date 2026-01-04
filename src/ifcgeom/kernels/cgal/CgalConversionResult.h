@@ -180,9 +180,9 @@ namespace ifcopenshell { namespace geometry {
 	class IFC_GEOMLIBRARY_API CgalShape : public IfcGeom::ConversionResultShape {
 	private:
 		bool convex_tag_ = false;
-		mutable boost::optional<cgal_shape_t> shape_;
+		mutable std::optional<cgal_shape_t> shape_;
 #ifndef IFOPSH_SIMPLE_KERNEL
-		mutable boost::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
+		mutable std::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
 #endif
     public:
 		CgalShape(const cgal_shape_t& shape, bool convex = false);

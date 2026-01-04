@@ -30,7 +30,7 @@ void IfcParse::parse_context::push(Token t) {
     tokens_.push_back(t);
 }
 
-void IfcParse::parse_context::push(IfcUtil::IfcBaseClass* inst) {
+void IfcParse::parse_context::push(const express::Base& inst) {
     tokens_.push_back(inst);
 }
 
@@ -56,7 +56,7 @@ namespace {
     constexpr bool is_type_in_variant_v = is_type_in_variant<Variant, T>::value;
 
     template <typename Fn>
-    void dispatch_token(boost::optional<size_t> instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
+    void dispatch_token(std::optional<size_t> instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
         if (t.type == IfcParse::Token_BINARY) {
             fn(IfcParse::TokenFunc::asBinary(t));
         } else if (IfcParse::TokenFunc::isBool(t)) {
@@ -89,7 +89,7 @@ namespace {
     }
 
     template <size_t Depth, typename Fn>
-    void construct_(boost::optional<size_t> instance_id, int attribute_id, IfcParse::parse_context& p, const IfcParse::aggregation_type* aggr, Fn fn) {
+    void construct_(std::optional<size_t> instance_id, int attribute_id, IfcParse::parse_context& p, const IfcParse::aggregation_type* aggr, Fn fn) {
         if (p.tokens_.empty()) {
             // @todo instead of ugly if-else we could also default initialize the respective
             // variant types below.
@@ -104,13 +104,13 @@ namespace {
                 } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_BINARY) {
                     fn(std::vector<boost::dynamic_bitset<>>{});
                 } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-                    fn(aggregate_of_instance::ptr(new aggregate_of_instance));
+                    fn(std::vector<express::Base>{});
                 } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
                     fn(std::vector<std::vector<int>>{});
                 } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
                     fn(std::vector<std::vector<double>>{});
                 } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-                    fn(aggregate_of_aggregate_of_instance::ptr(new aggregate_of_aggregate_of_instance));
+                    fn(std::vector<std::vector<express::Base>>{});
                 }
             }
             return;
@@ -234,7 +234,7 @@ namespace {
     }
 }
 
-IfcEntityInstanceData IfcParse::parse_context::construct(boost::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count) {
+std::shared_ptr<InstanceData> IfcParse::parse_context::construct(IfcParse::IfcFile* owner, std::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count) {
     std::vector<const IfcParse::parameter_type*> parameter_types;
     std::unique_ptr<IfcParse::named_type> transient_named_type;
 
@@ -267,7 +267,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(boost::optional<size_t>
     }
 
     if (tokens_.empty()) {
-        return IfcEntityInstanceData(in_memory_attribute_storage(0));
+        return std::make_shared<InstanceData>(owner, decl, name.value_or(0), in_memory_attribute_storage(0));
     }
 
     in_memory_attribute_storage storage(coerce_attribute_count
@@ -336,7 +336,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(boost::optional<size_t>
         }
     }
 
-    return IfcEntityInstanceData(std::move(storage));
+    return std::make_shared<InstanceData>(owner, decl, name.value_or(0), std::move(storage));
 }
 
 /*
@@ -358,17 +358,17 @@ IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::value_type const&
     return storage_->file->schema()->declarations()[*read_id_()];
 }
 
-IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
+express::Base IfcParse::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
 #ifdef IFOPSH_WITH_ROCKSDB
     if (r == IfcParse::impl::rocks_db_file_storage::entityinstance_ref) {
         auto it = instance_cache_.find(number);
         if (it != instance_cache_.end()) {
-            return it->second;
+            return express::Base(it->second);
         }
     } else {
         auto it = type_instance_cache_.find(number);
         if (it != type_instance_cache_.end()) {
-            return it->second;
+            return express::Base(it->second);
         }
     }
     
@@ -386,21 +386,13 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
         if (is_entity != (r == entityinstance_ref)) {
             throw std::runtime_error("Incorrect reference");
         }
-        IfcEntityInstanceData data(rocks_db_attribute_storage{});
-        IfcUtil::IfcBaseClass* inst;
-        if (file->instantiate_typed_instances) {
-            inst = file->schema()->instantiate(decl, std::move(data));
-        } else {
-            inst = new IfcUtil::IfcLateBoundEntity(decl, std::move(data));
-        }
-        inst->id_ = number;
-        inst->file_ = file;
+        auto data = std::make_shared<InstanceData>(file, decl, number, rocks_db_attribute_storage{});
         if (r == IfcParse::impl::rocks_db_file_storage::entityinstance_ref) {
-            instance_cache_.insert({ number, inst });
+            instance_cache_.insert({number, data});
         } else {
-            type_instance_cache_.insert({ number, inst });
+            type_instance_cache_.insert({number, data});
         }
-        return inst;
+        return express::Base(data);
     } else {
         throw IfcException("Instance #" + boost::lexical_cast<std::string>(number) + " not found");
     }
@@ -463,8 +455,8 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
     : file(ffile)
     , db(init_db(filepath, readonly))
     // @todo streaming serializer does not populate the byguid map
-    , byguid_internal_(db, "g|")
-    , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
+    , byguid_internal_(db, "g|"),
+      byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::Base& v) { return v.identity(); })
     , instance_ids_(db, "i|")
     , instance_by_name_(&instance_ids_, [this](size_t v) { return assert_existance(v, entityinstance_ref); })
     , bytype_(db, "t|")
@@ -496,17 +488,17 @@ IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
 }
 
 
-IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::instance_by_id(int id)
+express::Base IfcParse::impl::rocks_db_file_storage::instance_by_id(int id)
 {
     // @todo rename assert_existance() -> instance_by_id();
     // - no cannot be done, because it needs to differentiate between entity instances and typedecls
     return assert_existance(id, entityinstance_ref);
 }
 
-void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::IfcBaseClass* inst)
+void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(const express::Base& inst)
 {
 #ifdef IFOPSH_WITH_ROCKSDB
-    auto id = inst->id();
+    auto id = inst.id();
 
     {
         // compute next prefix that does not start with v|{id}|
@@ -527,13 +519,12 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
 
     // This is based on traversal which needs instances to still be contained in the map.
     // another option would be to keep byid intact for the remainder of this loop
-    aggregate_of_instance::ptr entity_attributes = traverse(inst, 1);
-    for (aggregate_of_instance::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
-        IfcUtil::IfcBaseClass* entity_attribute = *it;
+    auto entity_attributes = traverse(inst, 1);
+    for (auto& entity_attribute : entity_attributes) {
         if (entity_attribute == inst) {
             continue;
         }
-        const unsigned int name = entity_attribute->id();
+        const unsigned int name = entity_attribute.id();
         // Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
         if (name != 0) {
             // Find instances entity -> other
@@ -562,21 +553,16 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
 #endif
 }
 
-IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::instance_by_id(int id)
+express::Base IfcParse::impl::in_memory_file_storage::instance_by_id(int id)
 {
     auto it = byid_.find(id);
     if (it == byid_.end()) {
         throw IfcException("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
     }
-    return it->second;
+    return express::Base(it->second);
 }
 
-IfcParse::IfcFile::~IfcFile() {
-    // @todo this does not make sense for rocksdb, because it would assert existance for the entire lazy model only to free the instances again
-    for (const auto& p : byid_) {
-        delete p.second;
-    }
-}
+IfcParse::IfcFile::~IfcFile() {}
 
 namespace {
 	// Utility functions for path handling in order not to rely on C++17's std::filesystem
@@ -666,27 +652,27 @@ void IfcParse::InstanceStreamer::bypassTypes(const std::set<std::string>& type_n
  }
 
 
-std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> IfcParse::InstanceStreamer::readInstance() {
-    std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstanceData>> return_value;
+std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<InstanceData>>> IfcParse::InstanceStreamer::readInstance() {
+     std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<InstanceData>>> return_value;
 
     if (header_ && yielded_header_instances_ < 3) {
         if (yielded_header_instances_ == 0) {
             return_value.emplace(
                 0,
-                &header_->file_description()->declaration(),
-                std::move(header_->file_description()->data())
+                &header_->file_description().declaration(),
+                header_->file_description().data_weak().lock()
              );
         } else if (yielded_header_instances_ == 1) {
             return_value.emplace(
                 0,
-                &header_->file_name()->declaration(),
-                std::move(header_->file_name()->data())
+                &header_->file_name().declaration(),
+                header_->file_name().data_weak().lock()
             );
         } else if (yielded_header_instances_ == 2) {
             return_value.emplace(
                 0,
-                &header_->file_schema()->declaration(),
-                std::move(header_->file_schema()->data())
+                &header_->file_schema().declaration(),
+                header_->file_schema().data_weak().lock()
             );
         }
         yielded_header_instances_ += 1;
@@ -741,12 +727,12 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
                 Logger::Status(ss.str(), false);
             }
 
-            auto data = ps.construct(current_id, references_to_resolve_, entity_type, boost::none, -1, coerce_attribute_count);
+            auto data = ps.construct(owner, current_id, references_to_resolve_, entity_type, std::nullopt, -1, coerce_attribute_count);
 
             return_value.emplace(
                 (size_t)current_id,
                 entity_type,
-                std::move(data)
+                data
             );
         }
     advance:
@@ -773,7 +759,9 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
     return return_value;
 }
 
-IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl) {
+express::Base IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl, int id) {
+    return express::Base{};
+    /*
     if (decl->as_entity() || decl->as_type_declaration()) {
         auto* inst = file->schema()->instantiate(decl, rocks_db_attribute_storage{});
 		// @todo maybe this needs to be set to file? In order to have a context (ie. rocksdb::db*) to write to?
@@ -782,18 +770,44 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::create(const IfcPa
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
     }
+    */
 }
 
-IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::create(const IfcParse::declaration* decl) {
-    IfcUtil::IfcBaseClass* inst = nullptr;
-    if (auto* ent = decl->as_entity()) {
-        inst = file->schema()->instantiate(decl, in_memory_attribute_storage(ent->attribute_count()));
-    } else if (decl->as_type_declaration() != nullptr) {
-        inst = file->schema()->instantiate(decl, in_memory_attribute_storage(1));
-    } else {
+express::Base IfcParse::impl::in_memory_file_storage::create(const IfcParse::declaration* decl, int id) {
+    auto instance_name = id == -1 ? (int)file->FreshId() : id;
+    if (decl->as_entity() == nullptr && decl->as_type_declaration() == nullptr) {
         throw std::runtime_error("Requires and entity or type declaration");
     }
-	// file_ should be nullptr in order not to bypass addEntity() behaviour of registration in maps
-    inst->file_ = nullptr;
-    return file->addEntity(inst);
+    auto ptr = byid_.insert({instance_name, std::make_shared<InstanceData>(file, decl, instance_name, decl->as_entity() ? in_memory_attribute_storage(decl->as_entity()->attribute_count()) : in_memory_attribute_storage(1))}).first;
+    express::Base inst(ptr->second);
+    // @todo addEntity should only be used for copying behaviour now, not during creation
+    file->addEntity(inst);
+
+    return inst;
 }
+
+express::Base IfcParse::IfcFile::create(const IfcParse::declaration* decl, int id) {
+    if (id != -1) {
+        bool id_already_exists = false;
+        try {
+            if (check_existance_before_adding) {
+                instance_by_id(id);
+                id_already_exists = true;
+            }
+        } catch (...) {
+        }
+        if (id_already_exists) {
+            throw IfcParse::IfcException("An instance with id " + boost::lexical_cast<std::string>(id) + " is already part of this file");
+        }
+    }
+
+    return std::visit([&](auto& m) -> express::Base {
+        if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage> ||
+                      std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>) {
+            return m.create(decl, id);
+        } else {
+            return express::Base{};
+        }
+    }, storage_);
+}
+

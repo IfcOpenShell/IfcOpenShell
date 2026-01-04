@@ -151,8 +151,8 @@ namespace {
 			// It's a bit more convenient to use high level BRepPrimAPI calls that operate on
 			// topology. On a single edge that will create a Geom_TrimmedCurve for us.
 			auto crv_or_wire = kernel->convert_curve(i);
-			if (crv_or_wire.which() == 2) {
-				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+			if (crv_or_wire.index() == 2) {
+				const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 				return w;
 			} else {
 				throw std::runtime_error("Unexpected curve evaluation");
@@ -162,15 +162,15 @@ namespace {
 		Handle(Geom_Curve) get_curve(const taxonomy::item::ptr& i) {
 			// @todo unify with trimmed curve handling
 			auto crv_or_wire = kernel->convert_curve(i);
-			if (crv_or_wire.which() == 0) {
+			if (crv_or_wire.index() == 0) {
 				throw std::runtime_error("Failed to obtain curve");
-			} else if (crv_or_wire.which() == 1) {
-				return boost::get<Handle(Geom_Curve)>(crv_or_wire);
-			} else if (crv_or_wire.which() == 2) {
+			} else if (crv_or_wire.index() == 1) {
+				return std::get<Handle(Geom_Curve)>(crv_or_wire);
+			} else if (crv_or_wire.index() == 2) {
 				// @todo
 				const double precision_ = 1.e-5;
 				Logger::Warning("Approximating BasisCurve due to possible discontinuities", i->instance);
-				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+				const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
 				BRepAdaptor_CompCurve cc(w, true);
 				Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
@@ -279,7 +279,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	int num_outer_bounds = 0;
 
 	for (auto& bound : face->children) {
-		if (bound->external.get_value_or(false)) {
+		if (bound->external.value_or(false)) {
 			num_outer_bounds++;
 		}
 	}
@@ -305,7 +305,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			bool same_sense = true; /* todo bound->Orientation(); */
 
 			const bool is_interior =
-				!bound->external.get_value_or(false) &&
+				!bound->external.value_or(false) &&
 				(num_bounds > 1) &&
 				(num_outer_bounds < num_bounds);
 
@@ -604,7 +604,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::Co
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		face->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		face->instance.id(),
 		new OpenCascadeShape(shape),
 		face->surface_style
 	));

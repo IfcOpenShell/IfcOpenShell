@@ -88,12 +88,12 @@ except Exception:
 
 # `_file`, `_stream` is used only for annotations inside this file,
 # see https://github.com/microsoft/pyright/discussions/9065.
-from .file import file as _file
-from .file import file
+from .ifcopenshell_wrapper import file as _file
+from .ifcopenshell_wrapper import file
 
 from .file import rocksdb_lazy_instance
 from . import guid
-from .entity_instance import entity_instance, register_schema_attributes
+from .ifcopenshell_wrapper import entity_instance
 from .sql import sqlite, sqlite_entity
 
 # explicitly specify available imported symbols
@@ -251,7 +251,6 @@ def register_schema(schema: ifcopenshell.express.schema_class.SchemaClass) -> No
     schema.schema.this.disown()
     schema.disown()
     ifcopenshell_wrapper.register_schema(schema.schema)
-    register_schema_attributes(schema.schema)
 
 
 def schema_by_name(

@@ -27,16 +27,16 @@ using namespace ifcopenshell::geometry;
 #include <vector>
 #include <boost/optional/optional.hpp>
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCShapeProfileDef* inst) {
-	const double y = inst->Depth() / 2.0f * length_unit_;
-	const double x = inst->Width() / 2.0f * length_unit_;
-	const double d1 = inst->WallThickness() * length_unit_;
-	const double d2 = inst->Girth() * length_unit_;
-	bool doFillet = !!inst->InternalFilletRadius();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCShapeProfileDef& inst) {
+	const double y = inst.Depth() / 2.0f * length_unit_;
+	const double x = inst.Width() / 2.0f * length_unit_;
+	const double d1 = inst.WallThickness() * length_unit_;
+	const double d2 = inst.Girth() * length_unit_;
+	bool doFillet = !!inst.InternalFilletRadius();
 	double f1 = 0;
 	double f2 = 0;
 	if ( doFillet ) {
-		f1 = *inst->InternalFilletRadius() * length_unit_;
+		f1 = *inst.InternalFilletRadius() * length_unit_;
 		f2 = f1 + d1;
 	}
 
@@ -50,10 +50,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCShapeProfileDef* inst) {
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	return profile_helper(m4, {

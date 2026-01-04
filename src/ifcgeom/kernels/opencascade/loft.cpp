@@ -156,21 +156,21 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 			// I think make_loft() where should just return a shell instead, because
 			// this faceted lofting does not depend on any functionality in the geometry library
 			// and the branching with tags needs to be solved twice otherwise
-			auto loop_to_points = [](const taxonomy::loop::ptr& loop, const boost::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
+			auto loop_to_points = [](const taxonomy::loop::ptr& loop, const std::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
                 std::vector<taxonomy::point3::ptr> points;
                 std::vector<std::set<std::string>> tags;
                 std::vector<std::string>::const_iterator tag_it;
 
-                if (!loop->closed.get_value_or(false)) {
-                    points = {boost::get<taxonomy::point3::ptr>(loop->children[0]->start)};
+                if (!loop->closed.value_or(false)) {
+                    points = {std::get<taxonomy::point3::ptr>(loop->children[0]->start)};
                     if (input_tags) {
                         tags = {{input_tags->front()}};
                         tag_it = ++input_tags->begin();
                     }
                 }
                 for (auto& e : loop->children) {
-                    const auto& p1 = boost::get<taxonomy::point3::ptr>(e->start);
-                    const auto& p2 = boost::get<taxonomy::point3::ptr>(e->end);
+                    const auto& p1 = std::get<taxonomy::point3::ptr>(e->start);
+                    const auto& p2 = std::get<taxonomy::point3::ptr>(e->end);
                     if (input_tags && p1->ccomponents() == p2->ccomponents()) {
                         tags.back().insert(*tag_it);
                         ++tag_it;
@@ -184,7 +184,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
                     }
                 }
                 if (!input_tags) {
-                    if (loop->closed.get_value_or(false)) {
+                    if (loop->closed.value_or(false)) {
                         // close polygon by referencing first point
                         points.push_back(points.front());
                     }
@@ -409,7 +409,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::loft::ptr loft, IfcGeom::Co
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		loft->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		loft->instance.id(),
 		loft->matrix,
 		new OpenCascadeShape(shape),
 		loft->surface_style

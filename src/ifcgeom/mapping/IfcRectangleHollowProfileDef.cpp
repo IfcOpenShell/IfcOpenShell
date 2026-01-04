@@ -23,16 +23,16 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef* inst) {
-	const double x = inst->XDim() / 2.0f * length_unit_;
-	const double y = inst->YDim() / 2.0f  * length_unit_;
-	const double d = inst->WallThickness() * length_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef& inst) {
+	const double x = inst.XDim() / 2.0f * length_unit_;
+	const double y = inst.YDim() / 2.0f  * length_unit_;
+	const double d = inst.WallThickness() * length_unit_;
 
-	const bool fr1 = !!inst->OuterFilletRadius();
-	const bool fr2 = !!inst->InnerFilletRadius();
+	const bool fr1 = !!inst.OuterFilletRadius();
+	const bool fr2 = !!inst.InnerFilletRadius();
 
-	const double r1 = fr1 ? (*inst->OuterFilletRadius()) * length_unit_ : 0.;
-	const double r2 = fr2 ? (*inst->InnerFilletRadius()) * length_unit_ : 0.;
+	const double r1 = fr1 ? (*inst.OuterFilletRadius()) * length_unit_ : 0.;
+	const double r2 = fr2 ? (*inst.InnerFilletRadius()) * length_unit_ : 0.;
 	
 	const double tol = settings_.get<settings::Precision>().get();
 
@@ -44,10 +44,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef* i
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	auto s1 = profile_helper(m4, {

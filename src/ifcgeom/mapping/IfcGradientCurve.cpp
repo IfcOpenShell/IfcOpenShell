@@ -24,18 +24,18 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcGradientCurve
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
-   if (!inst->BaseCurve()->as<IfcSchema::IfcCompositeCurve>())
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve& inst) {
+   if (!inst.BaseCurve().as<IfcSchema::IfcCompositeCurve>())
        Logger::Warning("Expected IfcGradientCurve.BaseCurve to be IfcCompositeCurve", inst); // CT 4.1.7.1.1.2
 
-	auto segments = inst->Segments();
+	auto segments = inst.Segments();
 
 	taxonomy::piecewise_function::spans_t spans;
 
-	for (auto& segment : *segments) {
-		if (segment->as<IfcSchema::IfcCurveSegment>()) {
+	for (auto& segment : segments) {
+		if (segment.as<IfcSchema::IfcCurveSegment>()) {
 			// @todo check that we don't get a mixture of implicit and explicit definitions
-			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
+			auto crv = map(segment.as<IfcSchema::IfcCurveSegment>());
          if (auto fi = taxonomy::dcast<taxonomy::function_item>(crv); crv && fi /*crv->kind() == taxonomy::FUNCTION_ITEM*/) {
             // crv->kind() is polymorphic and the kind of the actual function_item is returned. PWF can have spans of any FUNCTION_ITEM
             // for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
@@ -52,10 +52,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 
 	// Get starting position of gradient curve, which is relative to the base curve
 	// The gradient curve can start before or after the start of the base curve
-	auto first_segment = *(segments->begin());
+    auto& first_segment = segments.front();
 	taxonomy::matrix4::ptr p;
 #ifdef SCHEMA_IfcCurveSegment_HAS_Placement
-	p = taxonomy::cast<taxonomy::matrix4>(map(first_segment->as<IfcSchema::IfcCurveSegment>()->Placement()));
+	p = taxonomy::cast<taxonomy::matrix4>(map(first_segment.as<IfcSchema::IfcCurveSegment>().Placement()));
 #else
 	throw std::runtime_error("Unsupported schema");
 #endif
@@ -66,7 +66,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 	auto vertical = taxonomy::make<taxonomy::piecewise_function>(gradient_start, spans);
 
 	// create the horizontal pwf
-   auto horizontal = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
+   auto horizontal = taxonomy::cast<taxonomy::piecewise_function>(map(inst.BaseCurve()));
 
 	// create the composite gradient curve function
    auto gradient_function = taxonomy::make<taxonomy::gradient_function>(horizontal, vertical, inst);

@@ -17,13 +17,14 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCENTITYINSTANCEDATA_H
-#define IFCENTITYINSTANCEDATA_H
+#ifndef InstanceData_H
+#define InstanceData_H
 
+#include "express.h"
 #include "ArgumentType.h"
 #include "variantarray.h"
-#include "aggregate_of_instance.h"
 #include "IfcSchema.h"
+#include "storage.h"
 
 #ifdef IFOPSH_WITH_ROCKSDB
 
@@ -36,8 +37,6 @@
 
 #endif
 
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
 
@@ -104,7 +103,7 @@ typedef parameter_pack <
     // An entity instance argument. It will either serialize to
     // e.g. #123 or datatype identifier for simple types, e.g.
     // IFCREAL(12.3)
-    IfcUtil::IfcBaseClass*,
+    express::Base,
 
     // AGGREGATES:
     empty_aggregate_t,
@@ -119,7 +118,7 @@ typedef parameter_pack <
     // An aggregate of entity instances. It will either serialize to
     // e.g. (#1,#2,#3) or datatype identifier for simple types,
     // e.g. (IFCREAL(1.2),IFCINTEGER(3.))
-    aggregate_of_instance::ptr,
+    std::vector<express::Base>,
 
     // AGGREGATES OF AGGREGATES:
     empty_aggregate_of_aggregate_t,
@@ -128,8 +127,8 @@ typedef parameter_pack <
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
     std::vector<std::vector<double>>,
     // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-    aggregate_of_aggregate_of_instance::ptr
-> type_variant_parameter_pack;
+    std::vector<std::vector<express::Base>>>
+type_variant_parameter_pack;
 
 template<typename Pack>
 struct pack_to_variant_array;
@@ -154,7 +153,8 @@ struct TypeEncoder_t<parameter_pack<Types...>> {
 
 using TypeEncoder = TypeEncoder_t<type_variant_parameter_pack>;
 
-struct IFC_PARSE_API MutableAttributeValue {
+class IFC_PARSE_API MutableAttributeValue {
+  public:
     uint32_t name_;
     uint8_t index_;
 };
@@ -220,13 +220,13 @@ namespace impl {
 
     bool serialize(std::string& val, const boost::dynamic_bitset<>& t);
     
-    bool serialize(std::string& val, const IfcUtil::IfcBaseClass* t);
+    bool serialize(std::string& val, const express::Base& t);
 
     bool serialize(std::string& val, const EnumerationReference& v);
 
-    bool serialize(std::string& val, const aggregate_of_instance::ptr& t);
+    bool serialize(std::string& val, const std::vector<express::Base>& t);
 
-    bool serialize(std::string& val, const aggregate_of_aggregate_of_instance::ptr& t);
+    bool serialize(std::string& val, const std::vector<std::vector<express::Base>>& t);
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
     bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, T& t, bool prefixed = true) {
@@ -274,27 +274,32 @@ namespace impl {
 
     bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, boost::dynamic_bitset<>& t);
 
-    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, aggregate_of_instance::ptr& t);
+    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, std::vector<express::Base>& t);
 
-    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, aggregate_of_aggregate_of_instance::ptr& t);
-}
+    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, std::vector<std::vector<express::Base>>& t);
+    }
 
 #endif
 
 // short lived
-struct IFC_PARSE_API AttributeValue {
+class IFC_PARSE_API AttributeValue {
     uint8_t index_;
     uint8_t storage_model_ = 0;
     const IfcParse::declaration* entity_or_type_ = 0;
     size_t instance_name_;
+
+  public:
     union pointer_type {
         const in_memory_attribute_storage* storage_ptr;
         IfcParse::impl::rocks_db_file_storage* db_ptr;
         pointer_type(IfcParse::impl::rocks_db_file_storage* db) : db_ptr(db) {}
         pointer_type(const in_memory_attribute_storage* ims) : storage_ptr(ims) {}
     };
+
+private:
     pointer_type array_;
-    
+
+public:
     AttributeValue()
         : index_(0)
         , storage_model_(0)
@@ -321,17 +326,17 @@ struct IFC_PARSE_API AttributeValue {
     operator double() const;
     operator std::string() const;
     operator boost::dynamic_bitset<>() const;
-    operator IfcUtil::IfcBaseClass* () const;
+    operator express::Base() const;
 
     operator std::vector<int>() const;
     operator std::vector<double>() const;
     operator std::vector<std::string>() const;
     operator std::vector<boost::dynamic_bitset<>>() const;
-    operator boost::shared_ptr<aggregate_of_instance>() const;
+    operator std::vector<express::Base>() const;
 
     operator std::vector<std::vector<int>>() const;
     operator std::vector<std::vector<double>>() const;
-    operator boost::shared_ptr<aggregate_of_aggregate_of_instance>() const;
+    operator std::vector<std::vector<express::Base>>() const;
 
     operator EnumerationReference() const;
 
@@ -362,7 +367,7 @@ struct IFC_PARSE_API AttributeValue {
             case IfcUtil::Argument_ENUMERATION:
                 return visitor((EnumerationReference)*this);
             case IfcUtil::Argument_ENTITY_INSTANCE:
-                return visitor((IfcUtil::IfcBaseClass*)*this);
+                return visitor((express::Base) * this);
             case IfcUtil::Argument_AGGREGATE_OF_INT:
                 return visitor((std::vector<int>)*this);
             case IfcUtil::Argument_AGGREGATE_OF_DOUBLE:
@@ -372,13 +377,13 @@ struct IFC_PARSE_API AttributeValue {
             case IfcUtil::Argument_AGGREGATE_OF_BINARY:
                 return visitor((std::vector<boost::dynamic_bitset<>>)*this);
             case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE:
-                return visitor((boost::shared_ptr<aggregate_of_instance>)*this);
+                return visitor((std::vector<express::Base>)*this);
             case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
                 return visitor((std::vector<std::vector<int>>)*this);
             case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
                 return visitor((std::vector<std::vector<double>>)*this);
             case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:
-                return visitor((boost::shared_ptr<aggregate_of_aggregate_of_instance>)*this);
+                return visitor((std::vector<std::vector<express::Base>>)*this);
             case IfcUtil::Argument_EMPTY_AGGREGATE:
                 return visitor(empty_aggregate_t{});
             case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE:
@@ -408,78 +413,122 @@ public:
 #endif
 };
 
-class IFC_PARSE_API IfcEntityInstanceData {
+class IFC_PARSE_API InstanceData {
+ protected:
+    static std::atomic_uint32_t counter_;
+
+    IfcParse::IfcFile* file_;
+    // @todo this could also be a 2-byte index, because we can get the schema from the file. But it wouldn't save space due to alignment
+    const IfcParse::declaration* declaration_;
+    uint32_t identity_;
+    uint32_t id_;
+
+    template <typename T>
+    T* get_storage_of_type() const {
+        return std::visit([this](auto& m) -> T* {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, T>) {
+                return &m;
+            }
+            return nullptr;
+        },
+                          file()->storage_);
+    }
+
   public:
       // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but in_memory*, where nullptr means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
       in_memory_attribute_storage* storage_;
 
-      IfcEntityInstanceData(in_memory_attribute_storage&& storage)
-          : storage_(new in_memory_attribute_storage(std::move(storage)))
+      const IfcParse::declaration* declaration() const {
+          return declaration_;
+      }
+
+      IfcParse::IfcFile* file() const {
+          return file_;
+      }
+
+      uint32_t identity() const {
+          return identity_;
+      }
+
+      uint32_t id() const {
+          return id_;
+      }
+
+      InstanceData(IfcParse::IfcFile* file, const IfcParse::declaration* declaration, uint32_t id, in_memory_attribute_storage&& storage)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(new in_memory_attribute_storage(std::move(storage)))
       {}
 
-      IfcEntityInstanceData(rocks_db_attribute_storage&&)
-          : storage_(nullptr)
+      InstanceData(IfcParse::IfcFile* file, const IfcParse::declaration* declaration, uint32_t id, rocks_db_attribute_storage&&)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(nullptr)
       {}
 
-      IfcEntityInstanceData(IfcEntityInstanceData&& other) noexcept
-          : storage_(std::exchange(other.storage_, nullptr))
+      /*
+      // now that there are referenced as shared_ptr there is no move constructor anymore
+      InstanceData(InstanceData&& other) noexcept
+          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::exchange(other.storage_, nullptr))
       {}
+      */
 
       // No copy-constructor/-assignment anymore because we need the instance for storage model context
-      IfcEntityInstanceData(const IfcEntityInstanceData&) = delete;
-      IfcEntityInstanceData& operator=(const IfcEntityInstanceData&) = delete;
+      InstanceData(const InstanceData&) = delete;
+      InstanceData& operator=(const InstanceData&) = delete;
+      InstanceData& operator=(InstanceData&&) = delete;
+      InstanceData(InstanceData&& other) noexcept = delete;
 
-      IfcEntityInstanceData& operator=(IfcEntityInstanceData&& other) noexcept {
+      /*
+      // same
+      InstanceData& operator=(InstanceData&& other) noexcept {
           if (this != &other) {
               delete storage_;
               storage_ = std::exchange(other.storage_, nullptr);
           }
           return *this;
       }
+      */
 
-      ~IfcEntityInstanceData() {
+      ~InstanceData() {
           delete storage_;
       }
 
-    AttributeValue get_attribute_value(void* storage, const IfcParse::declaration*, std::size_t identity, size_t index) const;
+    AttributeValue get_attribute_value(size_t index) const;
 
     template<typename T>
-    void set_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, T&& value) {
+    void set_attribute_value(std::size_t index, T&& value) {
         if (storage_) {
             storage_->set(index, value);
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
-            rocks_db_attribute_storage{}.set(storage, decl, identity, index, value);
+            rocks_db_attribute_storage{}.set(get_storage_of_type<IfcParse::impl::rocks_db_file_storage>(), declaration_, identity_, index, value);
         }
 #endif
     }
 
     template<typename T>
-    bool has_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const {
+    bool has_attribute_value(std::size_t index) const {
         if (storage_) {
             return storage_->has<T>(index);
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
-            return rocks_db_attribute_storage{}.has<T>(storage, decl, identity, index);
+            return rocks_db_attribute_storage{}.has<T>(get_storage_of_type<IfcParse::impl::rocks_db_file_storage>(), declaration_, identity_, index);
         }
 #endif
     }
 
     template<typename Visitor>
-    auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, Visitor&& visitor, std::size_t index) const {
+    auto apply_visitor(Visitor&& visitor, std::size_t index) const {
         if (storage_) {
             return storage_->apply_visitor(std::forward<Visitor>(visitor), index);
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
-            return rocks_db_attribute_storage{}.apply_visitor(storage, decl, identity, index, std::forward<Visitor>(visitor));
+            return rocks_db_attribute_storage{}.apply_visitor(get_storage_of_type<IfcParse::impl::rocks_db_file_storage>(), declaration_, identity_, index, std::forward<Visitor>(visitor));
         }
 #endif
     }
 
-    void toString(void* storage, const IfcParse::declaration*, std::size_t identity, std::ostream&, bool upper = false) const;
+    void toString(std::ostream&, bool upper = false) const;
 };
 
 #endif

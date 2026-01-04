@@ -24,8 +24,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
-	const double height = inst->Depth() * length_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid& inst) {
+	const double height = inst.Depth() * length_unit_;
 	if (height < settings_.get<settings::Precision>().get()) {
 		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", inst);
 #ifndef PERMISSIVE_EXTRUSION
@@ -36,10 +36,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = inst->Position() != nullptr;
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 #ifdef PERMISSIVE_EXTRUSION
@@ -49,7 +49,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	}
 #endif
 
-	auto basis = map(inst->SweptArea());
+	auto basis = map(inst.SweptArea());
 	if (auto bases = taxonomy::dcast<taxonomy::collection>(basis)) {
 		// @todo this requires a unified approach for all sweeps
 		auto c = taxonomy::make<taxonomy::collection>();
@@ -58,7 +58,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 				taxonomy::make<taxonomy::extrusion>(
 					matrix,
 					taxonomy::cast<taxonomy::face>(f),
-					taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
+					taxonomy::cast<taxonomy::direction3>(map(inst.ExtrudedDirection())),
 					height
 				)
 			);
@@ -69,7 +69,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 		return taxonomy::make<taxonomy::extrusion>(
 			matrix,
 			taxonomy::cast<taxonomy::face>(basis),
-			taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
+			taxonomy::cast<taxonomy::direction3>(map(inst.ExtrudedDirection())),
 			height
 		);
 	}

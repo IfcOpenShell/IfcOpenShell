@@ -1,4 +1,4 @@
-#include "../../ifcparse/IfcBaseClass.h"
+#include "../../ifcparse/express.h"
 
 #include "ifc_geomserialization_api.h"
 
@@ -7,6 +7,6 @@
 #include <string>
 
 namespace IfcGeom {
-	IFC_GEOMSERIALIZATION_API IfcUtil::IfcBaseClass* tesselate(const std::string& schema_name, const TopoDS_Shape& shape, double deflection);
-	IFC_GEOMSERIALIZATION_API IfcUtil::IfcBaseClass* serialise(const std::string& schema_name, const TopoDS_Shape& shape, bool advanced);
-}
+IFC_GEOMSERIALIZATION_API express::Base tesselate(IfcParse::IfcFile& f, const TopoDS_Shape& shape, double deflection);
+IFC_GEOMSERIALIZATION_API express::Base serialise(IfcParse::IfcFile& f, const TopoDS_Shape& shape, bool advanced);
+} // namespace IfcGeom

@@ -1,7 +1,7 @@
 #ifndef TAXONOMY_H
 #define TAXONOMY_H
 
-#include "../ifcparse/IfcBaseClass.h"
+#include "../ifcparse/express.h"
 #include "../ifcparse/IfcLogger.h"
 
 #include "ConversionSettings.h"
@@ -158,9 +158,9 @@ typedef item const* ptr;
 			public:
 				DECLARE_PTR(item)
 
-				const IfcUtil::IfcBaseInterface* instance;
+				express::Base instance;
 
-				boost::optional<bool> orientation;
+				std::optional<bool> orientation;
 
 				virtual item* clone_() const = 0;
 				virtual kinds kind() const = 0;
@@ -178,7 +178,7 @@ typedef item const* ptr;
 					return computed_hash_;
 				}
 
-				item(const IfcUtil::IfcBaseInterface* instance = nullptr) : identity_(counter_++), computed_hash_(0), instance(instance) {}
+				item(const express::Base& instance = express::Base()) : identity_(counter_++), computed_hash_(0), instance(instance) {}
 
 				virtual ~item() {}
 
@@ -409,8 +409,8 @@ typedef item const* ptr;
 				style::ptr surface_style;
 				matrix4::ptr matrix;
 
-				geom_item(const IfcUtil::IfcBaseInterface* instance = nullptr) : item(instance), surface_style(nullptr) {}
-				geom_item(const IfcUtil::IfcBaseInterface* instance, matrix4::ptr m) : item(instance), surface_style(nullptr), matrix(m) {}
+				geom_item(const express::Base& instance = express::Base()) : item(instance), surface_style(nullptr) {}
+				geom_item(const express::Base instance, matrix4::ptr m) : item(instance), surface_style(nullptr), matrix(m) {}
 				geom_item(matrix4::ptr m) : surface_style(nullptr), matrix(m) {}
 			};
 
@@ -422,7 +422,7 @@ typedef item const* ptr;
 			struct IFC_GEOM_API function_item : public implicit_item {
                 DECLARE_PTR(function_item)
 
-                function_item(const IfcUtil::IfcBaseInterface* instance = nullptr) : implicit_item(instance) {}
+                function_item(const express::Base& instance = express::Base()) : implicit_item(instance) {}
                 function_item(function_item&&) = default;
                 function_item(const function_item&) = default;
 
@@ -443,7 +443,7 @@ typedef item const* ptr;
 			struct IFC_GEOM_API functor_item : public function_item {
             DECLARE_PTR(functor_item)
 
-            functor_item(double length, std::function<Eigen::Matrix4d(double u)> fn, const IfcUtil::IfcBaseInterface* instance = nullptr) : function_item(instance),
+            functor_item(double length, std::function<Eigen::Matrix4d(double u)> fn, const express::Base& instance = express::Base()) : function_item(instance),
 						 length_(length), fn_(fn) {}
             functor_item(functor_item&&) = default;
             functor_item(const functor_item&) = default;
@@ -471,8 +471,8 @@ typedef item const* ptr;
 
 				using spans_t = std::vector<function_item::const_ptr>;
 
-            piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance = nullptr);
-            piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance = nullptr);
+            piecewise_function(double start, const spans_t& s, const express::Base& instance = express::Base());
+            piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const express::Base& instance = express::Base());
             piecewise_function(piecewise_function&&) = default;
             piecewise_function(const piecewise_function&) = default;
             virtual ~piecewise_function() = default;
@@ -500,7 +500,7 @@ typedef item const* ptr;
 
          struct IFC_GEOM_API gradient_function : public function_item {
              DECLARE_PTR(gradient_function)
-             gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const express::Base& instance = express::Base());
              gradient_function(gradient_function&&) = default;
              gradient_function(const gradient_function&) = default;
              virtual ~gradient_function() = default;
@@ -526,7 +526,7 @@ typedef item const* ptr;
 
          struct IFC_GEOM_API cant_function : public function_item {
              DECLARE_PTR(cant_function)
-             cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const express::Base& instance = express::Base());
              cant_function(cant_function&&) = default;
              cant_function(const cant_function&) = default;
              virtual ~cant_function() = default;
@@ -553,7 +553,7 @@ typedef item const* ptr;
 
          struct IFC_GEOM_API offset_function : public function_item {
              DECLARE_PTR(offset_function)
-             offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const express::Base& instance = express::Base());
              offset_function(offset_function&&) = default;
              offset_function(const offset_function&) = default;
              virtual ~offset_function() = default;
@@ -784,7 +784,7 @@ typedef item const* ptr;
 				std::vector<point3::ptr> control_points;
 				std::vector<int> multiplicities;
 				std::vector<double> knots;
-				boost::optional<std::vector<double>> weights;
+				std::optional<std::vector<double>> weights;
 				int degree;
 			};
 
@@ -809,20 +809,20 @@ typedef item const* ptr;
 
 				// @todo The copy constructor of point3 within the variant fails on the avx instruction
 				// on the default gcc in Ubuntu 18.04 and a recent AMD Ryzen. Probably due to allignment.
-				boost::variant<boost::blank, point3::ptr, double> start, end;
+				std::variant<boost::blank, point3::ptr, double> start, end;
 
 				// @todo somehow account for the fact that curve in IFC can be trimmed curve, polyline and composite curve as well.
 				item::ptr basis;
 
 				// @todo does this make sense? this is to accommodate for the fact that orientation is defined on both TrimmedCurve as well CompCurveSegment
-				boost::optional<bool> curve_sense;
+				std::optional<bool> curve_sense;
 
 				trimmed_curve() : basis(nullptr) {}
 				trimmed_curve(const point3::ptr& a, const point3::ptr& b) : start(a), end(b), basis(nullptr) {}
 
 				virtual void reverse() {
 					// std::swap(start, end);
-					orientation = !orientation.get_value_or(true);
+					orientation = !orientation.value_or(true);
 				}
 
 				void print(std::ostream& o, int indent = 0) const;
@@ -927,9 +927,9 @@ typedef item const* ptr;
 			struct IFC_GEOM_API loop : public collection_base<edge> {
 				DECLARE_PTR(loop)
 
-				boost::optional<bool> external, closed;
-				boost::optional<taxonomy::function_item::ptr> fi;
-                boost::optional<std::vector<std::string>> tags;
+				std::optional<bool> external, closed;
+				std::optional<taxonomy::function_item::ptr> fi;
+                std::optional<std::vector<std::string>> tags;
 
 				bool is_polyhedron() const {
 					for (auto& e : children) {
@@ -945,10 +945,10 @@ typedef item const* ptr;
 				void calculate_linear_edge_curves() const {
 					for (auto& e : children) {
 						if (e->basis == nullptr) {
-							if (e->start.which() == 1 && e->end.which() == 1) {
+							if (e->start.index() == 1 && e->end.index() == 1) {
 								auto ln = make<taxonomy::line>();
-								auto a = boost::get<point3::ptr>(e->start)->ccomponents();
-								auto b = boost::get<point3::ptr>(e->end)->ccomponents();
+								auto a = std::get<point3::ptr>(e->start)->ccomponents();
+								auto b = std::get<point3::ptr>(e->end)->ccomponents();
 								ln->matrix = make<matrix4>(a, b - a);
 								e->basis = ln;
 							}
@@ -976,11 +976,11 @@ typedef item const* ptr;
 				taxonomy::point3::ptr centroid() const {
 					Eigen::Vector3d c(0, 0, 0);
 					for (auto& e : children) {
-						if (e->start.which() == 1) {
-							c += boost::get<point3::ptr>(e->start)->ccomponents();
+						if (e->start.index() == 1) {
+							c += std::get<point3::ptr>(e->start)->ccomponents();
 						}
-						if (e->end.which() == 1) {
-							c += boost::get<point3::ptr>(e->end)->ccomponents();
+						if (e->end.index() == 1) {
+							c += std::get<point3::ptr>(e->end)->ccomponents();
 						}
 					}
 					c /= static_cast<double>(children.size());
@@ -1012,7 +1012,7 @@ typedef item const* ptr;
 			struct IFC_GEOM_API shell : public collection_base<face> {
 				DECLARE_PTR(shell)
 
-				boost::optional<bool> closed;
+				std::optional<bool> closed;
 
 				virtual void print_impl(std::ostream& o, int indent) const {
 					using namespace std::string_literals;
@@ -1033,11 +1033,11 @@ typedef item const* ptr;
 					for (auto& f : children) {
 						for (auto& l : f->children) {
 							for (auto& e : l->children) {
-								if (e->start.which() == 1) {
-									c += boost::get<point3::ptr>(e->start)->ccomponents();
+								if (e->start.index() == 1) {
+									c += std::get<point3::ptr>(e->start)->ccomponents();
 								}
-								if (e->end.which() == 1) {
-									c += boost::get<point3::ptr>(e->end)->ccomponents();
+								if (e->end.index() == 1) {
+									c += std::get<point3::ptr>(e->end)->ccomponents();
 								}
 							}
 						}
@@ -1174,7 +1174,7 @@ typedef item const* ptr;
 				std::vector<std::vector<point3::ptr>> control_points;
 				std::array<std::vector<int>, 2> multiplicities;
 				std::array<std::vector<double>, 2> knots;
-				boost::optional<std::vector<std::vector<double>>> weights;
+				std::optional<std::vector<std::vector<double>>> weights;
 				std::array<int, 2> degree;
 			};
 
@@ -1211,12 +1211,12 @@ typedef item const* ptr;
 
 				point3::ptr axis_origin;
 				direction3::ptr direction;
-				boost::optional<double> angle;
+				std::optional<double> angle;
 
 				virtual revolve* clone_() const { return new revolve(*this); }
 				virtual kinds kind() const { return REVOLVE; }
 
-				revolve(matrix4::ptr m, item::ptr basis, point3::ptr pnt, direction3::ptr dir, const boost::optional<double>& a) : sweep(m, basis), axis_origin(pnt), direction(dir), angle(a) {}
+				revolve(matrix4::ptr m, item::ptr basis, point3::ptr pnt, direction3::ptr dir, const std::optional<double>& a) : sweep(m, basis), axis_origin(pnt), direction(dir), angle(a) {}
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(REVOLVE), matrix->hash_components(), basis->calc_hash(), axis_origin->hash_components(), direction->hash_components(), angle ? *angle : 1000.);
@@ -1319,11 +1319,11 @@ typedef item const* ptr;
 				static const size_t max = std::tuple_size<impl::UpgradesTuple>::value;
 			};
 
-			IFC_GEOM_API boost::optional<face::ptr> loop_to_face_upgrade_impl(ptr item);
+			IFC_GEOM_API std::optional<face::ptr> loop_to_face_upgrade_impl(ptr item);
 			template <typename T>
 			class loop_to_face_upgrade {
 			private:
-				boost::optional<taxonomy::face::ptr> face_;
+				std::optional<taxonomy::face::ptr> face_;
 			public:
 				loop_to_face_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, face>) {
@@ -1332,7 +1332,7 @@ typedef item const* ptr;
 				}
 
 				operator bool() const {
-					return face_.is_initialized();
+					return face_.has_value();
 				}
 
 				operator typename T::ptr() const {
@@ -1345,11 +1345,11 @@ typedef item const* ptr;
 				}
 			};
 
-			IFC_GEOM_API boost::optional<edge::ptr> curve_to_edge_upgrade_impl(ptr item);
+			IFC_GEOM_API std::optional<edge::ptr> curve_to_edge_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_edge_upgrade {
 			private:
-				boost::optional<taxonomy::edge::ptr> edge_;
+				std::optional<taxonomy::edge::ptr> edge_;
 			public:
 				curve_to_edge_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, edge>) {
@@ -1358,7 +1358,7 @@ typedef item const* ptr;
 				}
 
 				operator bool() const {
-					return edge_.is_initialized();
+					return edge_.has_value();
 				}
 
 				operator typename T::ptr() const {
@@ -1371,11 +1371,11 @@ typedef item const* ptr;
 				}
 			};
 
-			IFC_GEOM_API boost::optional<loop::ptr> curve_to_loop_upgrade_impl(ptr item);
+			IFC_GEOM_API std::optional<loop::ptr> curve_to_loop_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_loop_upgrade {
 			private:
-				boost::optional<taxonomy::loop::ptr> loop_;
+				std::optional<taxonomy::loop::ptr> loop_;
 			public:
 				curve_to_loop_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, loop>) {
@@ -1384,7 +1384,7 @@ typedef item const* ptr;
 				}
 
 				operator bool() const {
-					return loop_.is_initialized();
+					return loop_.has_value();
 				}
 
 				operator typename T::ptr() const {
@@ -1397,11 +1397,11 @@ typedef item const* ptr;
 				}
 			};
 
-			IFC_GEOM_API boost::optional<loop::ptr> edge_to_loop_upgrade_impl(ptr item);
+			IFC_GEOM_API std::optional<loop::ptr> edge_to_loop_upgrade_impl(ptr item);
 			template <typename T>
 			class edge_to_loop_upgrade {
 			private:
-				boost::optional<taxonomy::loop::ptr> loop_;
+				std::optional<taxonomy::loop::ptr> loop_;
 			public:
 				edge_to_loop_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, loop>) {
@@ -1410,7 +1410,7 @@ typedef item const* ptr;
 				}
 
 				operator bool() const {
-					return loop_.is_initialized();
+					return loop_.has_value();
 				}
 
 				operator typename T::ptr() const {
@@ -1423,11 +1423,11 @@ typedef item const* ptr;
 				}
 			};
 
-			IFC_GEOM_API boost::optional<face::ptr> curve_to_face_upgrade_impl(ptr item);
+			IFC_GEOM_API std::optional<face::ptr> curve_to_face_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_face_upgrade {
 			private:
-				boost::optional<taxonomy::face::ptr> face_;
+				std::optional<taxonomy::face::ptr> face_;
 			public:
 				curve_to_face_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, edge>) {
@@ -1436,7 +1436,7 @@ typedef item const* ptr;
 				}
 
 				operator bool() const {
-					return face_.is_initialized();
+					return face_.has_value();
 				}
 
 				operator typename T::ptr() const {
@@ -1449,11 +1449,11 @@ typedef item const* ptr;
 				}
 			};
 
-			IFC_GEOM_API boost::optional<function_item::ptr> loop_to_function_item_upgrade_impl(ptr item);
+			IFC_GEOM_API std::optional<function_item::ptr> loop_to_function_item_upgrade_impl(ptr item);
             template <typename T>
             class loop_to_function_item_upgrade {
               private:
-                boost::optional<taxonomy::function_item::ptr> fi_;
+                std::optional<taxonomy::function_item::ptr> fi_;
 
               public:
                loop_to_function_item_upgrade(taxonomy::ptr item) {
@@ -1463,7 +1463,7 @@ typedef item const* ptr;
                 }
 
                 operator bool() const {
-                    return fi_.is_initialized();
+                    return fi_.has_value();
                 }
 
                 operator typename T::ptr() const {
@@ -1673,11 +1673,11 @@ typedef item const* ptr;
 					fn(pt);
 				} else if (auto ed = std::dynamic_pointer_cast<taxonomy::edge>(child)) {
 					// @todo maybe make edge a collection then as well?
-					if (ed->start.which() == 1) {
-						fn(boost::get<taxonomy::point3::ptr>(ed->start));
+					if (ed->start.index() == 1) {
+						fn(std::get<taxonomy::point3::ptr>(ed->start));
 					}
-					if (ed->end.which() == 1) {
-						fn(boost::get<taxonomy::point3::ptr>(ed->end));
+					if (ed->end.index() == 1) {
+						fn(std::get<taxonomy::point3::ptr>(ed->end));
 					}
 				}
 			}
@@ -1751,7 +1751,7 @@ typedef item const* ptr;
 			NOTDEFINED
 		};
 
-		typedef std::tuple<connection_type, connection_type, IfcUtil::IfcBaseEntity*> endpoint_connection;
+		typedef std::tuple<connection_type, connection_type, express::Base> endpoint_connection;
 	}
 
 }
