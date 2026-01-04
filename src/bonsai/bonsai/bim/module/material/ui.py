@@ -20,6 +20,8 @@ from __future__ import annotations
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bpy
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
 from bpy.types import Panel, UIList
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.helper import prop_with_search
@@ -228,31 +230,47 @@ class BIM_PT_object_material(Panel):
         self.draw_read_only_set_ui()
 
     def draw_editable_set_ui(self):
-        bonsai.bim.helper.draw_attributes(self.props.material_set_attributes, self.layout)
-        bonsai.bim.helper.draw_attributes(self.props.material_set_usage_attributes, self.layout)
+        # Material Set Attributes Section
+        row = self.layout.row(align=True)
+        box = row.box()
+        
+        bonsai.bim.helper.draw_attributes(self.props.material_set_attributes, box)
+        bonsai.bim.helper.draw_attributes(self.props.material_set_usage_attributes, box)
 
+        # Custom Offset Section
         self.draw_custom_offset()
-        if ObjectMaterialData.data["set_item_name"] == "profile" and not self.mprops.profiles:
-            row = self.layout.row(align=True)
-            row.label(text="No Profiles Available")
-            row.operator("bim.add_profile_def", icon="ADD", text="")
-        else:
-            layout = self.layout
-            layout.separator()
-            layout.separator()
-            row = self.layout.row(align=True)
-            if ObjectMaterialData.data["set_item_name"] == "profile":
-                prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
-            prop_with_search(row, self.props, "material", icon="MATERIAL", text="")
-            op = row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
-            setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
+
+        # Dynamic header based on material set type
+        set_item_name = ObjectMaterialData.data["set_item_name"]
+        header_map = {
+            "layer": "Material Layers",
+            "profile": "Material Profiles",
+            "constituent": "Material Constituents",
+            "list_item": "Material List Items"
+        }
+        header_text = header_map.get(set_item_name, "Material Items")
+        self.layout.label(text=header_text)
 
         total_items = len(ObjectMaterialData.data["set_items"])
 
-        layout = self.layout
-        box = layout.box()
+        row = self.layout.row(align=True)
+        box = row.box()
+        
+        # Add Material Section (at the top of this box)
+        if ObjectMaterialData.data["set_item_name"] == "profile" and not self.mprops.profiles:
+            box_row = box.row(align=True)
+            box_row.label(text="No Profiles Available")
+            box_row.operator("bim.add_profile_def", icon="ADD", text="")
+        else:
+            box_row = box.row(align=True)
+            if ObjectMaterialData.data["set_item_name"] == "profile":
+                prop_with_search(box_row, self.mprops, "profiles", icon="ITALIC", text="")
+            prop_with_search(box_row, self.props, "material", icon="MATERIAL", text="")
+            op = box_row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
+            setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
+        
         active_object = bpy.context.active_object
-        self.layerset_bounds(box, active_object, location="Top_Exterior")
+        self.layerset_bounds(box, active_object, location="Top_Interior")
 
         if not ObjectMaterialData.data["set_items"]:
             row = box.row()
@@ -269,7 +287,7 @@ class BIM_PT_object_material(Panel):
             else:
                 self.draw_read_only_set_item_ui(box, set_item)
 
-        self.layerset_bounds(box, active_object, location="Bottom_Interior")
+        self.layerset_bounds(box, active_object, location="Bottom_Exterior")
 
     def draw_editable_set_item_profile_ui(self, box, set_item):
         # box = self.layout.box()
@@ -335,29 +353,98 @@ class BIM_PT_object_material(Panel):
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_index", set_item["index"])
 
     def draw_read_only_set_ui(self):
+        # Material Set Information Section
+        row = self.layout.row(align=True)
+        box = row.box()
+        
         if ObjectMaterialData.data["material_class"] != "IfcMaterialList":
-            row = self.layout.row(align=True)
+            box_row = box.row(align=True)
             set_name = ObjectMaterialData.data["set"]["name"]
-            row.label(text="Name")
-            row.label(text=set_name)
+            box_row.label(text="Name")
+            box_row.label(text=set_name)
 
         if value := ObjectMaterialData.data["set"]["description"]:
-            row = self.layout.row(align=True)
-            row.label(text="Description")
-            row.label(text=value)
+            box_row = box.row(align=True)
+            box_row.label(text="Description")
+            box_row.label(text=value)
 
         if ObjectMaterialData.data["material_class"] == "IfcMaterialProfileSetUsage":
             if value := ObjectMaterialData.data["set_usage"].get("cardinal_point"):
-                row = self.layout.row(align=True)
-                row.label(text="Cardinal Point")
-                row.label(text=value)
+                box_row = box.row(align=True)
+                box_row.label(text="Cardinal Point")
+                box_row.label(text=value)
 
         if ObjectMaterialData.data["total_thickness"]:
-            row = self.layout.row(align=True)
-            row.label(text="Total Thickness*")
-            row.label(text=ObjectMaterialData.data["total_thickness"])
+            box_row = box.row(align=True)
+            box_row.label(text="Total Thickness*")
+            box_row.label(text=ObjectMaterialData.data["total_thickness"])
 
-        box = self.layout.box()
+        # Display OffsetFromReferenceLine for layer sets
+        if "Layer" in ObjectMaterialData.data["material_class"]:
+            obj = bpy.context.active_object
+            if obj:
+                element = tool.Ifc.get_entity(obj)
+                if element:
+                    material = ifcopenshell.util.element.get_material(element)
+                    if material and material.is_a("IfcMaterialLayerSetUsage"):
+                        offset_value = material.OffsetFromReferenceLine
+                        # Format the offset value
+                        unit_system = bpy.context.scene.unit_settings.system
+                        prefs = tool.Blender.get_addon_preferences()
+                        precision = None
+                        if unit_system == "IMPERIAL":
+                            precision = prefs.doc.imperial_precision
+                        from bonsai.bim.module.drawing.helper import format_distance
+                        formatted_offset = format_distance(
+                            offset_value, precision=precision, suppress_zero_inches=True, in_unit_length=True
+                        )
+                        box_row = box.row(align=True)
+                        box_row.label(text="Offset From Reference Line")
+                        box_row.label(text=formatted_offset)
+
+        # BBIM_MaterialLayer Pset Section
+        if pset_data := ObjectMaterialData.data.get("bbim_material_layer_pset"):
+            self.layout.label(text="BBIM_MaterialLayer Pset")
+            
+            row = self.layout.row(align=True)
+            box = row.box()
+            
+            # Custom Offset value - format using format_distance
+            unit_system = bpy.context.scene.unit_settings.system
+            prefs = tool.Blender.get_addon_preferences()
+            precision = None
+            if unit_system == "IMPERIAL":
+                precision = prefs.doc.imperial_precision
+            from bonsai.bim.module.drawing.helper import format_distance
+            formatted_custom_offset = format_distance(
+                pset_data['custom_offset'], precision=precision, suppress_zero_inches=True, in_unit_length=True
+            )
+            box_row = box.row(align=True)
+            box_row.label(text="Custom Offset")
+            box_row.label(text=formatted_custom_offset)
+            
+            # Reference (if exists)
+            if pset_data["custom_reference"]:
+                box_row = box.row(align=True)
+                box_row.label(text=pset_data["reference_label"])
+                box_row.label(text=pset_data["custom_reference"])
+
+        # Dynamic header based on material set type
+        set_item_name = ObjectMaterialData.data.get("set_item_name")
+        if set_item_name:
+            header_map = {
+                "layer": "Material Layers",
+                "profile": "Material Profiles",
+                "constituent": "Material Constituents",
+                "list_item": "Material List Items"
+            }
+            header_text = header_map.get(set_item_name, "Material Items")
+        else:
+            header_text = "Materials"
+        
+        self.layout.label(text=header_text)
+        row = self.layout.row(align=True)
+        box = row.box()
         active_object = bpy.context.active_object
         self.layerset_bounds(box, active_object, location="Top_Interior")
 
@@ -403,20 +490,27 @@ class BIM_PT_object_material(Panel):
         set_usage = ObjectMaterialData.data.get("set_usage", {})
         layer_set_direction = set_usage.get("layer_set_direction")
         if layer_set_direction:
-            box = self.layout.box()
-            row = box.row(align=True)
-            row.prop(self.props, "use_custom_offset", text="Use Custom Offset")
-            row = box.row(align=True)
+            row = self.layout.row(align=True)
+            row.label(text="BBIM_MaterialLayer Pset")
+            
+            # Add indentation with a row that has a separator
+            row = self.layout.row(align=True)
+            # row.separator(factor=2.0)  # Adjust factor for more/less indent
+            
+            box = row.box()
+            box_row = box.row(align=True)
+            box_row.prop(self.props, "use_custom_offset", text="Use Custom Offset")
+            box_row = box.row(align=True)
             if layer_set_direction == "AXIS2":
-                row.prop(self.props, "custom_wall_reference", text="Reference")
-                row.enabled = self.props.use_custom_offset
+                box_row.prop(self.props, "custom_wall_reference", text="Reference")
+                box_row.enabled = self.props.use_custom_offset
             if layer_set_direction == "AXIS3":
-                row.prop(self.props, "custom_slab_reference", text="Reference")
-                row.enabled = self.props.use_custom_offset
+                box_row.prop(self.props, "custom_slab_reference", text="Reference")
+                box_row.enabled = self.props.use_custom_offset
 
-            row = box.row(align=True)
-            row.prop(self.props, "custom_offset", text="Custom Offset")
-            row.enabled = self.props.use_custom_offset
+            box_row = box.row(align=True)
+            box_row.prop(self.props, "custom_offset", text="Custom Offset")
+            box_row.enabled = self.props.use_custom_offset
 
 
 class BIM_UL_materials(UIList):
