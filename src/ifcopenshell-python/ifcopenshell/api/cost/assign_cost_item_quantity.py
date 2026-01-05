@@ -125,14 +125,14 @@ class Usecase:
     settings: dict[str, Any]
 
     def execute(self):
-        if self.settings["prop_name"]:
+        if self.settings["prop_name"] or self.settings["formula"]:
             self.quantities = set(self.settings["cost_item"].CostQuantities or [])
         for product in self.settings["products"]:
             if product.is_a("IfcSpatialElement"):
                 continue
             self.assign_cost_control(related_object=product, cost_item=self.settings["cost_item"])
             if self.settings["formula"]:
-                # not so much elegant, but simple and useful because variables can't has the dot in the name
+                # not so much elegant, but simple and useful because variables can't have the dot in the name
                 # and Psets have the dot
                 separator = "0"
                 variables = self.extract_variables(self.settings["formula"])
@@ -153,9 +153,8 @@ class Usecase:
                 result = eval(formula_modified, {}, variables_modified)
 
                 new_quantity = None
-                self.quantities = set(self.settings["cost_item"].CostQuantities or [])
                 for quantity in self.quantities:
-                    if quantity.Formula == self.settings["formula"]:
+                    if quantity.Formula == self.settings["formula"] and len(self.settings["products"]) == 1: #Todo improve it
                         new_quantity = quantity
                         self.settings["ifc_class"] = quantity.is_a()
                         continue
