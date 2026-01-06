@@ -845,7 +845,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 	std::string debug_identifier;
 	if (debug) {
-		static my_thread_local size_t operation_counter_ = 0;
+		static thread_local size_t operation_counter_ = 0;
 		std::stringstream ss;
 		ss << "bool-" << std::this_thread::get_id() << "-" << (operation_counter_++);
 		debug_identifier = ss.str();

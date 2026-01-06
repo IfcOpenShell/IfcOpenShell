@@ -141,7 +141,7 @@ class IFC_PARSE_API declaration {
     mutable const schema_definition* schema_;
 
     std::string& temp_string_() const {
-        static my_thread_local std::string string;
+        static thread_local std::string string;
         return string;
     }
 
@@ -457,7 +457,7 @@ class IFC_PARSE_API schema_definition {
     };
 
     std::string& temp_string_() const {
-        static my_thread_local std::string string;
+        static thread_local std::string string;
         return string;
     }
 

@@ -114,7 +114,7 @@ class IFC_PARSE_API IfcSpfLexer {
 
   public:
     std::string& GetTempString() const {
-        static my_thread_local std::string string;
+        static thread_local std::string string;
         return string;
     }
     FileReader* stream;

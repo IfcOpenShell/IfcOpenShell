@@ -66,7 +66,7 @@ typename Schema::IfcLocalPlacement IfcHierarchyHelper<Schema>::addLocalPlacement
                                                                                   double xx,
                                                                                   double xy,
                                                                                   double xz) {
-    auto local_placement = create<Schema::IfcLocalPlacement>();
+    auto local_placement = create<typename Schema::IfcLocalPlacement>();
     if (parent) {
         local_placement.setPlacementRelTo(parent);
     }
@@ -76,24 +76,31 @@ typename Schema::IfcLocalPlacement IfcHierarchyHelper<Schema>::addLocalPlacement
 
 template <typename Schema>
 typename Schema::IfcOwnerHistory IfcHierarchyHelper<Schema>::addOwnerHistory() {
-    typename Schema::IfcPerson person = create<Schema::IfcPerson>();
-    person.setIdentification("");
+    typename Schema::IfcPerson person = create<typename Schema::IfcPerson>();
+#ifdef HAS_SCHEMA_2x3
+    if constexpr (std::is_same_v<Schema, Ifc2x3>) {
+        person.setId("");    
+    } else 
+#endif
+    {
+        person.setIdentification("");
+    }
 
-    auto organization = create<Schema::IfcOrganization>();
+    auto organization = create<typename Schema::IfcOrganization>();
     organization.setName("IfcOpenShell");
 
-    auto person_and_org = create<Schema::IfcPersonAndOrganization>();
+    auto person_and_org = create<typename Schema::IfcPersonAndOrganization>();
     person_and_org.setThePerson(person);
     person_and_org.setTheOrganization(organization);
 
-    auto application = create<Schema::IfcApplication>();
+    auto application = create<typename Schema::IfcApplication>();
     application.setApplicationDeveloper(organization);
     application.setVersion(IFCOPENSHELL_VERSION);
     application.setApplicationFullName("IfcOpenShell");
     application.setApplicationIdentifier("IfcOpenShell");
 
     int timestamp = (int)time(0);
-    auto owner_hist = create<Schema::IfcOwnerHistory>();
+    auto owner_hist = create<typename Schema::IfcOwnerHistory>();
     owner_hist.setOwningUser(person_and_org);
     owner_hist.setOwningApplication(application);
     owner_hist.setChangeAction(Schema::IfcChangeActionEnum::IfcChangeAction_ADDED);
@@ -109,7 +116,7 @@ template <typename Schema>
 typename Schema::IfcProject IfcHierarchyHelper<Schema>::addProject(typename Schema::IfcOwnerHistory owner_hist) {
     std::vector<typename Schema::IfcRepresentationContext> rep_contexts;
 
-    auto dimexp = create<Schema::IfcDimensionalExponents>();
+    auto dimexp = create<typename Schema::IfcDimensionalExponents>();
     dimexp.setLengthExponent(0);
     dimexp.setMassExponent(0);
     dimexp.setTimeExponent(0);
@@ -118,32 +125,32 @@ typename Schema::IfcProject IfcHierarchyHelper<Schema>::addProject(typename Sche
     dimexp.setAmountOfSubstanceExponent(0);
     dimexp.setLuminousIntensityExponent(0);
 
-    auto unit1 = create<Schema::IfcSIUnit>();
+    auto unit1 = create<typename Schema::IfcSIUnit>();
     unit1.setUnitType(Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
     unit1.setPrefix(Schema::IfcSIPrefix::IfcSIPrefix_MILLI);
     unit1.setName(Schema::IfcSIUnitName::IfcSIUnitName_METRE);
 
-    auto unit2a = create<Schema::IfcSIUnit>();
+    auto unit2a = create<typename Schema::IfcSIUnit>();
     unit2a.setUnitType(Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT);
     unit2a.setName(Schema::IfcSIUnitName::IfcSIUnitName_RADIAN);
 
-    auto unit2b = create<Schema::IfcMeasureWithUnit>();
-    auto measure = create<Schema::IfcPlaneAngleMeasure>();
+    auto unit2b = create<typename Schema::IfcMeasureWithUnit>();
+    auto measure = create<typename Schema::IfcPlaneAngleMeasure>();
     measure.set_attribute_value(0, 0.01745329251);
     unit2b.setValueComponent(measure);
     unit2b.setUnitComponent(unit2a);
 
-    auto unit2 = create<Schema::IfcConversionBasedUnit>();
+    auto unit2 = create<typename Schema::IfcConversionBasedUnit>();
     unit2.setDimensions(dimexp);
     unit2.setUnitType(Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT);
     unit2.setName("Degrees");
     unit2.setConversionFactor(unit2b);
     
     std::vector<typename Schema::IfcUnit> units = {unit1, unit2};
-    auto unit_assignment = create<Schema::IfcUnitAssignment>();
+    auto unit_assignment = create<typename Schema::IfcUnitAssignment>();
     unit_assignment.setUnits(units);
 
-    auto project = create<Schema::IfcProject>();
+    auto project = create<typename Schema::IfcProject>();
     project.setGlobalId(IfcParse::IfcGlobalId());
     project.setOwnerHistory(owner_hist ? owner_hist : addOwnerHistory());
     project.setRepresentationContexts(rep_contexts);
@@ -156,7 +163,7 @@ template <typename Schema>
 void IfcHierarchyHelper<Schema>::relatePlacements(typename Schema::IfcProduct parent, typename Schema::IfcProduct product) {
     typename Schema::IfcObjectPlacement place = product.ObjectPlacement();
     if (place) {
-        if (auto local_place = place.as<typename Schema::IfcLocalPlacement>()) {
+        if (auto local_place = place.template as<typename Schema::IfcLocalPlacement>()) {
             if (parent.ObjectPlacement()) {
                 if (local_place != parent.ObjectPlacement()) {
                     local_place.setPlacementRelTo(parent.ObjectPlacement());
@@ -183,7 +190,7 @@ typename Schema::IfcSite IfcHierarchyHelper<Schema>::addSite(typename Schema::If
         proj = addProject(owner_hist);
     }
 
-    auto site = create<Schema::IfcSite>();
+    auto site = create<typename Schema::IfcSite>();
     site.setGlobalId(IfcParse::IfcGlobalId());
     site.setOwnerHistory(owner_hist);
     site.setObjectPlacement(addLocalPlacement());
@@ -208,7 +215,7 @@ typename Schema::IfcBuilding IfcHierarchyHelper<Schema>::addBuilding(typename Sc
         site = addSite(typename Schema::IfcProject{}, owner_hist);
     }
 
-    auto building = create<Schema::IfcBuilding>();
+    auto building = create<typename Schema::IfcBuilding>();
     building.setGlobalId(IfcParse::IfcGlobalId());
     building.setOwnerHistory(owner_hist);
     building.setObjectPlacement(addLocalPlacement());
@@ -236,7 +243,7 @@ typename Schema::IfcBuildingStorey IfcHierarchyHelper<Schema>::addBuildingStorey
         building = addBuilding(typename Schema::IfcSite{}, owner_hist);
     }
 
-    auto storey = create<Schema::IfcBuildingStorey>();
+    auto storey = create<typename Schema::IfcBuildingStorey>();
     storey.setGlobalId(IfcParse::IfcGlobalId());
     storey.setOwnerHistory(owner_hist);
     storey.setObjectPlacement(addLocalPlacement());
@@ -292,14 +299,14 @@ void IfcHierarchyHelper<Schema>::addExtrudedPolyline(typename Schema::IfcShapeRe
         cartesian_points.push_back(cartesian_points.front());
     }
 
-    auto line = create<Schema::IfcPolyline>();
+    auto line = create<typename Schema::IfcPolyline>();
     line.setPoints(cartesian_points);
 
-    auto profile = create<Schema::IfcArbitraryClosedProfileDef>();
+    auto profile = create<typename Schema::IfcArbitraryClosedProfileDef>();
     profile.setProfileType(Schema::IfcProfileTypeEnum::IfcProfileType_AREA);
     profile.setOuterCurve(line);
 
-    auto solid = create<Schema::IfcExtrudedAreaSolid>();
+    auto solid = create<typename Schema::IfcExtrudedAreaSolid>();
     solid.setSweptArea(profile);
     solid.setPosition(place2 ? place2 : addPlacement3d());
     solid.setExtrudedDirection(dir ? dir : addTriplet<typename Schema::IfcDirection>(0, 0, 1));
@@ -315,13 +322,13 @@ typename Schema::IfcProductDefinitionShape IfcHierarchyHelper<Schema>::addExtrud
                                                                                             typename Schema::IfcAxis2Placement3D place2,
                                                                                             typename Schema::IfcDirection dir,
                                                                                             typename Schema::IfcRepresentationContext context) {
-    auto rep = create<Schema::IfcShapeRepresentation>();
+    auto rep = create<typename Schema::IfcShapeRepresentation>();
     rep.setContextOfItems(context ? context : getRepresentationContext("Model"));
     rep.setRepresentationIdentifier(std::string("Body"));
     rep.setRepresentationType(std::string("SweptSolid"));
     rep.setItems(std::vector<typename Schema::IfcRepresentationItem>{});
 
-    auto shape = create<Schema::IfcProductDefinitionShape>();
+    auto shape = create<typename Schema::IfcProductDefinitionShape>();
     shape.setRepresentations(std::vector<typename Schema::IfcRepresentation>{rep});
     addExtrudedPolyline(rep, points, h, place, place2, dir, context);
 
@@ -355,9 +362,9 @@ void IfcHierarchyHelper<Schema>::addAxis(
 {
     auto p1 = addDoublet<typename Schema::IfcCartesianPoint>(-l / 2., 0.);
     auto p2 = addDoublet<typename Schema::IfcCartesianPoint>(+l / 2., 0.);
-    std::vector<Schema::IfcCartesianPoint> pts{p1, p2};
+    std::vector<typename Schema::IfcCartesianPoint> pts{p1, p2};
 
-    auto poly = create<Schema::IfcPolyline>();
+    auto poly = create<typename Schema::IfcPolyline>();
     poly.setPoints(pts);
 
     auto items = rep.Items();
@@ -373,13 +380,13 @@ typename Schema::IfcProductDefinitionShape IfcHierarchyHelper<Schema>::addBox(do
                                                                                typename Schema::IfcAxis2Placement3D place2,
                                                                                typename Schema::IfcDirection dir,
                                                                                typename Schema::IfcRepresentationContext context) {
-    typename Schema::IfcShapeRepresentation rep = create<Schema::IfcShapeRepresentation>();
+    typename Schema::IfcShapeRepresentation rep = create<typename Schema::IfcShapeRepresentation>();
     rep.setContextOfItems(context ? context : getRepresentationContext("Model"));
     rep.setRepresentationIdentifier(std::string("Body"));
     rep.setRepresentationType(std::string("SweptSolid"));
     rep.setItems(std::vector<typename Schema::IfcRepresentationItem>{});
 
-    auto shape = create<Schema::IfcProductDefinitionShape>();
+    auto shape = create<typename Schema::IfcProductDefinitionShape>();
     shape.setRepresentations(std::vector<typename Schema::IfcRepresentation>{rep});
     
     addBox(rep, w, d, h, place, place2, dir, context);
@@ -389,19 +396,19 @@ typename Schema::IfcProductDefinitionShape IfcHierarchyHelper<Schema>::addBox(do
 template <typename Schema>
 typename Schema::IfcProductDefinitionShape IfcHierarchyHelper<Schema>::addAxisBox(
     double w, double d, double h, typename Schema::IfcRepresentationContext context) {
-    auto body_rep = create<Schema::IfcShapeRepresentation>();
+    auto body_rep = create<typename Schema::IfcShapeRepresentation>();
     body_rep.setContextOfItems(context ? context : getRepresentationContext("Model"));
     body_rep.setRepresentationIdentifier(std::string("Body"));
     body_rep.setRepresentationType(std::string("SweptSolid"));
     body_rep.setItems(std::vector<typename Schema::IfcRepresentationItem>{});
 
-    auto axis_rep = create<Schema::IfcShapeRepresentation>();
+    auto axis_rep = create<typename Schema::IfcShapeRepresentation>();
     axis_rep.setContextOfItems(context ? context : getRepresentationContext("Plan"));
     axis_rep.setRepresentationIdentifier(std::string("Axis"));
     axis_rep.setRepresentationType(std::string("Curve2D"));
     axis_rep.setItems(std::vector<typename Schema::IfcRepresentationItem>{});
 
-    auto shape = create<Schema::IfcProductDefinitionShape>();
+    auto shape = create<typename Schema::IfcProductDefinitionShape>();
     shape.setRepresentations(std::vector<typename Schema::IfcRepresentation>{axis_rep, body_rep});
 
     addBox(body_rep, w, d, h, typename Schema::IfcAxis2Placement2D{}, typename Schema::IfcAxis2Placement3D{}, typename Schema::IfcDirection{}, context);
@@ -428,9 +435,9 @@ void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcRepresen
         return;
     }
 
-    auto plane = create<Schema::IfcPlane>();
+    auto plane = create<typename Schema::IfcPlane>();
     plane.setPosition(place);
-    auto half_space = create<Schema::IfcHalfSpaceSolid>();
+    auto half_space = create<typename Schema::IfcHalfSpaceSolid>();
     half_space.setBaseSurface(plane);
     half_space.setAgreementFlag(agree);
 
@@ -438,8 +445,8 @@ void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcRepresen
     auto items = rep.Items();
     decltype(items) new_items;
     for (auto& item : items) {
-        if (auto bop = item.as<typename Schema::IfcBooleanOperand>()) {
-            auto clip = create<Schema::IfcBooleanClippingResult>();
+        if (auto bop = item.template as<typename Schema::IfcBooleanOperand>()) {
+            auto clip = create<typename Schema::IfcBooleanClippingResult>();
             clip.setOperator(Schema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE);
             clip.setFirstOperand(bop);
             clip.setSecondOperand(half_space);
@@ -451,19 +458,19 @@ void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcRepresen
 
 template <typename Schema>
 typename Schema::IfcSurfaceStyle getSurfaceStyle(IfcHierarchyHelper<Schema>& file, double r, double g, double b, double a = 1.0) {
-    auto colour = file.create<typename Schema::IfcColourRgb>();
+    auto colour = file.template create<typename Schema::IfcColourRgb>();
     colour.setRed(r);
     colour.setGreen(g);
     colour.setBlue(b);
 
-    auto rendering = file.create<typename Schema::IfcSurfaceStyleRendering>();
+    auto rendering = file.template create<typename Schema::IfcSurfaceStyleRendering>();
     rendering.setSurfaceColour(colour);
     if (a != 1.0) {
         rendering.setTransparency(1.0 - a);
     }
     rendering.setReflectanceMethod(Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
 
-    auto surface_style = file.create<typename Schema::IfcSurfaceStyle>();
+    auto surface_style = file.template create<typename Schema::IfcSurfaceStyle>();
     surface_style.setSide(Schema::IfcSurfaceSide::IfcSurfaceSide_BOTH);
     surface_style.setStyles(std::vector<typename Schema::IfcSurfaceStyleElementSelect>{rendering});
 
@@ -473,7 +480,7 @@ typename Schema::IfcSurfaceStyle getSurfaceStyle(IfcHierarchyHelper<Schema>& fil
 template <typename Schema>
 typename Schema::IfcPresentationStyleAssignment addStyleAssignment_2x3(IfcHierarchyHelper<Schema>& file, double r, double g, double b, double a = 1.0) {
     auto surface_style = getSurfaceStyle<Schema>(file, r, g, b, a);
-    auto style_assignment = file.create<typename Schema::IfcPresentationStyleAssignment>();
+    auto style_assignment = file.template create<typename Schema::IfcPresentationStyleAssignment>();
     style_assignment.setStyles(std::vector<typename Schema::IfcPresentationStyleSelect>{surface_style});
     return style_assignment;
 }
@@ -513,7 +520,7 @@ typename Schema::IfcPresentationStyle setSurfaceColour_4x3(IfcHierarchyHelper<Sc
 
 template <typename Schema>
 void setSurfaceColour_2x3(IfcHierarchyHelper<Schema>& file, typename Schema::IfcProductRepresentation shape, typename Schema::IfcPresentationStyleAssignment style_assignment) {
-    auto reps = shape->Representations();
+    auto reps = shape.Representations();
     for (auto& rep : reps) {
         setSurfaceColour_2x3(file, rep, style_assignment);
     }
@@ -927,7 +934,7 @@ typename Schema::IfcProductDefinitionShape IfcHierarchyHelper<Schema>::addMapped
     if (maps.size() == 1) {
         map = maps.front();
     } else {
-        map = create<Schema::IfcRepresentationMap>();
+        map = create<typename Schema::IfcRepresentationMap>();
         map.setMappingOrigin(addPlacement3d());
         map.setMappedRepresentation(rep);
     }
@@ -938,14 +945,14 @@ typename Schema::IfcProductDefinitionShape IfcHierarchyHelper<Schema>::addMapped
     }
 
     if (!transform) {
-        transform = create<Schema::IfcCartesianTransformationOperator3D>();
+        transform = create<typename Schema::IfcCartesianTransformationOperator3D>();
         transform.setLocalOrigin(addTriplet<typename Schema::IfcCartesianPoint>(0, 0, 0));
     }
-    auto item = create<Schema::IfcMappedItem>();
+    auto item = create<typename Schema::IfcMappedItem>();
     item.setMappingSource(map);
     item.setMappingTarget(transform);
 
-    auto new_rep = create<Schema::IfcShapeRepresentation>();
+    auto new_rep = create<typename Schema::IfcShapeRepresentation>();
     new_rep.setContextOfItems(rep.ContextOfItems());
     new_rep.setRepresentationType(std::string("MappedRepresentation"));
     new_rep.setItems(std::vector<typename Schema::IfcRepresentationItem>{item});
@@ -957,7 +964,7 @@ typename Schema::IfcProductDefinitionShape IfcHierarchyHelper<Schema>::addMapped
     representations.push_back(new_rep);
 
     if (!def) {
-        def = create<Schema::IfcProductDefinitionShape>();
+        def = create<typename Schema::IfcProductDefinitionShape>();
         def.setRepresentations(representations);
     } else {
         def.setRepresentations(representations);
@@ -980,11 +987,11 @@ typename Schema::IfcProductDefinitionShape IfcHierarchyHelper<Schema>::addMapped
 
 template <typename Schema>
 typename Schema::IfcShapeRepresentation IfcHierarchyHelper<Schema>::addEmptyRepresentation(const std::string& repid, const std::string& reptype) {
-    auto shape_rep = create<Schema::IfcShapeRepresentation>();
+    auto shape_rep = create<typename Schema::IfcShapeRepresentation>();
     shape_rep.setContextOfItems(getRepresentationContext(reptype == "Curve2D" ? "Plan" : "Model"));
     shape_rep.setRepresentationIdentifier(repid);
     shape_rep.setRepresentationType(reptype);
-    shape_rep.setItems(std::vector<Schema::IfcRepresentationItem>{});
+    shape_rep.setItems(std::vector<typename Schema::IfcRepresentationItem>{});
     addEntity(shape_rep);
     return shape_rep;
 }
@@ -1017,7 +1024,7 @@ typename Schema::IfcGeometricRepresentationContext IfcHierarchyHelper<Schema>::g
         project = addProject();
     }
     auto project_contexts = project.RepresentationContexts();
-    auto context = create<Schema::IfcGeometricRepresentationContext>();
+    auto context = create<typename Schema::IfcGeometricRepresentationContext>();
     context.setContextIdentifier(s);
     context.setCoordinateSpaceDimension(3);
     context.setPrecision(1.e-5);
@@ -1046,7 +1053,7 @@ typename Schema::IfcGeometricRepresentationSubContext IfcHierarchyHelper<Schema>
 
     if (!rep_subcontext) {
         // didn't find the subcontext, create it
-        rep_subcontext = create<Schema::IfcGeometricRepresentationSubContext>();
+        rep_subcontext = create<typename Schema::IfcGeometricRepresentationSubContext>();
         rep_subcontext.setContextIdentifier(ident);
         rep_subcontext.setContextType(type);
         rep_subcontext.setParentContext(geometric_representation_context);

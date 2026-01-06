@@ -433,17 +433,7 @@ namespace impl {
 
 template <typename T>
 T IfcParse::impl::in_memory_file_storage::create(int id) {
-    express::Base inst;
-    // T::Class() yadaya, id or freshid() I though I changed this elsewhere already
-    if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<typename T::Class>>, IfcParse::entity>) {
-        inst = new T(in_memory_attribute_storage(T::Class().attribute_count()));
-    } else if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<typename T::Class>>, IfcParse::type_declaration>) {
-        inst = new T(in_memory_attribute_storage(1));
-    } else {
-        static_assert(dependent_false_v<T>, "Requires and entity or type declaration");
-    }
-    inst->file_ = file;
-    return file->addEntity(inst)->as<T>();
+    return create(&T::declaration(), id).template as<T>();
 }
 
 #ifdef IFOPSH_WITH_ROCKSDB

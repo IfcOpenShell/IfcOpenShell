@@ -50,7 +50,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 	relative_to = inst.PlacementRelTo();
 #else
 	if (inst.as<IfcSchema::IfcLocalPlacement>()) {
-		relative_to = inst.as<IfcSchema::IfcLocalPlacement>()->PlacementRelTo();
+		relative_to = inst.as<IfcSchema::IfcLocalPlacement>().PlacementRelTo();
 	}
 #endif
 

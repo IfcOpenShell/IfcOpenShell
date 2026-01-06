@@ -426,7 +426,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                 if (!owner_hist) {
                     owner_hist = addOwnerHistory();
                 }
-                std::vector<Schema::IfcObject> related_objects = {related_object.template as<typename Schema::IfcObject>()};
+                std::vector<typename Schema::IfcObject> related_objects = {related_object.template as<typename Schema::IfcObject>()};
                 auto t = create<Schema::IfcRelDefinesByType>();
                 t.setGlobalId(IfcParse::IfcGlobalId());
                 t.setOwnerHistory(owner_hist);

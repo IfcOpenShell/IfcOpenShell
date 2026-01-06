@@ -325,30 +325,30 @@ const express::Base mapping::get_single_material_association(const express::Base
         }
     }
     if (associated_materials.size() == 1) {
-        IfcSchema::IfcMaterialSelect associated_material;
+        express::Base associated_material;
 
         try {
-            associated_material = associated_materials.front().RelatingMaterial();
+            associated_material = associated_materials.front().RelatingMaterial().concrete();
         } catch(IfcParse::IfcException& e) {
             Logger::Error(e.what());
         }
 
         if (associated_material) {
-            // @todo make sure that chaining as() works in nullptrs
-            single_material = associated_material.as<IfcSchema::IfcMaterialDefinition>().as<IfcSchema::IfcMaterial>();
+            single_material = associated_material.as<IfcSchema::IfcMaterial>();
+
             // NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
             // in accordance with other viewers.
             if (!single_material) {
-                if (associated_material.as<IfcSchema::IfcMaterialUsageDefinition>().as<IfcSchema::IfcMaterialLayerSetUsage>() || associated_material.as<IfcSchema::IfcMaterialDefinition>().as<IfcSchema::IfcMaterialLayerSet>()) {
+                if (associated_material.as<IfcSchema::IfcMaterialLayerSetUsage>() || associated_material.as<IfcSchema::IfcMaterialLayerSet>()) {
                     IfcSchema::IfcMaterialLayerSet layerset;
-                    if (auto m = associated_material.as<IfcSchema::IfcMaterialUsageDefinition>().as<IfcSchema::IfcMaterialLayerSetUsage>()) {
+                    if (auto m = associated_material.as<IfcSchema::IfcMaterialLayerSetUsage>()) {
                         if (m.get("ForLayerSet").isNull()) {
                             Logger::Warning("Missing ForLayerSet for:", m);
                             return express::Base{};
                         }
                         layerset = m.ForLayerSet();
                     } else {
-                        layerset = associated_material.as<IfcSchema::IfcMaterialDefinition>().as<IfcSchema::IfcMaterialLayerSet>();
+                        layerset = associated_material.as<IfcSchema::IfcMaterialLayerSet>();
                     }
                     if (settings_.get<settings::LayersetFirst>().value ? layerset.MaterialLayers().size() >= 1 : layerset.MaterialLayers().size() == 1) {
                         IfcSchema::IfcMaterialLayer layer = layerset.MaterialLayers().front();
@@ -359,16 +359,16 @@ const express::Base mapping::get_single_material_association(const express::Base
                 }
 
 #ifdef SCHEMA_HAS_IfcMaterialProfileSet
-                if (associated_material.as<IfcSchema::IfcMaterialUsageDefinition>().as<IfcSchema::IfcMaterialProfileSetUsage>() || associated_material.as<IfcSchema::IfcMaterialDefinition>().as<IfcSchema::IfcMaterialProfileSet>()) {
+                if (associated_material.as<IfcSchema::IfcMaterialProfileSetUsage>() || associated_material.as<IfcSchema::IfcMaterialProfileSet>()) {
                     IfcSchema::IfcMaterialProfileSet profileset;
-                    if (auto m = associated_material.as<IfcSchema::IfcMaterialUsageDefinition>().as<IfcSchema::IfcMaterialProfileSetUsage>()) {
+                    if (auto m = associated_material.as<IfcSchema::IfcMaterialProfileSetUsage>()) {
                         if (m.get("ForProfileSet").isNull()) {
                             Logger::Warning("Missing ForProfileSet for:", m);
                             return express::Base{};
                         }
                         profileset = m.ForProfileSet();
                     } else {
-                        profileset = associated_material.as<IfcSchema::IfcMaterialDefinition>().as<IfcSchema::IfcMaterialProfileSet>();
+                        profileset = associated_material.as<IfcSchema::IfcMaterialProfileSet>();
                     }
                     if (settings_.get<settings::LayersetFirst>().value ? profileset.MaterialProfiles().size() >= 1 : profileset.MaterialProfiles().size() == 1) {
                         IfcSchema::IfcMaterialProfile profile = profileset.MaterialProfiles().front();
@@ -380,8 +380,8 @@ const express::Base mapping::get_single_material_association(const express::Base
 #endif
 
 #ifdef SCHEMA_HAS_IfcMaterialConstituentSet
-                if (associated_material.as<IfcSchema::IfcMaterialDefinition>().as<IfcSchema::IfcMaterialConstituentSet>() && associated_material.as<IfcSchema::IfcMaterialDefinition>().as<IfcSchema::IfcMaterialConstituentSet>().MaterialConstituents()) {
-                    IfcSchema::IfcMaterialConstituentSet constituentset = associated_material.as<IfcSchema::IfcMaterialDefinition>().as<IfcSchema::IfcMaterialConstituentSet>();
+                if (associated_material.as<IfcSchema::IfcMaterialConstituentSet>() && associated_material.as<IfcSchema::IfcMaterialConstituentSet>().MaterialConstituents()) {
+                    IfcSchema::IfcMaterialConstituentSet constituentset = associated_material.as<IfcSchema::IfcMaterialConstituentSet>();
                     if (settings_.get<settings::LayersetFirst>().value ? constituentset.MaterialConstituents().value().size() >= 1 : constituentset.MaterialConstituents().value().size() == 1) {
                         IfcSchema::IfcMaterialConstituent constituent = constituentset.MaterialConstituents().value().front();
                         if (auto m_ = constituent.Material()) {
@@ -469,12 +469,10 @@ namespace {
             // Only in case of 2x3 or old style IfcPresentationStyleAssignment
             auto styles = style_assignment->Styles();
 #elif defined(SCHEMA_HAS_IfcPresentationStyleAssignment)
-        std::vector<IfcSchema::IfcPresentationStyleAssignment> style_assignments = si->Styles();
-        for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-            IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
-
+        std::vector<IfcSchema::IfcPresentationStyleAssignment> style_assignments = si.Styles();
+        for (auto& style_assignment : style_assignments) {
             // Only in case of 2x3 or old style IfcPresentationStyleAssignment
-            auto styles = style_assignment->Styles();
+            auto styles = style_assignment.Styles();
 #else
             auto styles = si.Styles();
 #endif
@@ -735,7 +733,7 @@ taxonomy::ptr mapping::map(const express::Base& inst) {
 namespace {
     express::Base get_RelatingObject(IfcSchema::IfcRelDecomposes& decompose) {
 #ifdef SCHEMA_IfcRelDecomposes_HAS_RelatingObject
-        return decompose->RelatingObject();
+        return decompose.RelatingObject();
 #else
         IfcSchema::IfcRelAggregates aggr = decompose.as<IfcSchema::IfcRelAggregates>();
         if (aggr) {
@@ -990,7 +988,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
     for (auto it = associations.begin(); it != associations.end(); ++it) {
         IfcSchema::IfcRelAssociatesMaterial associates_material = (*it).as<IfcSchema::IfcRelAssociatesMaterial>();
         if (associates_material) {
-            usage = associates_material.RelatingMaterial().as<IfcSchema::IfcMaterialUsageDefinition>().as<IfcSchema::IfcMaterialLayerSetUsage>();
+            usage = associates_material.RelatingMaterial().as<IfcSchema::IfcMaterialLayerSetUsage>();
             break;
         }
     }

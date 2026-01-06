@@ -34,7 +34,7 @@
 #include <iostream>
 #include <mutex>
 
-static my_thread_local express::Base current_product_;
+static thread_local express::Base current_product_;
 
 namespace {
 

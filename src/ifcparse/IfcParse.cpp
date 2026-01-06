@@ -2447,14 +2447,14 @@ std::vector<express::Entity> IfcFile::getInverse(int instance_id, const IfcParse
 
                     for (auto it = lower; it != upper; ++it) {
                         for (auto& i : it->second) {
-                            return_value.push_back(instance_by_id(i).as<express::Entity>());
+                            return_value.push_back(instance_by_id(i).template as<express::Entity>());
                         }
                     }
                 } else {
                     auto it = x.byref_excl_.find({ instance_id, ent->index_in_schema(), attribute_index });
                     if (it != x.byref_excl_.end()) {
                         for (auto& i : it->second) {
-                            return_value.push_back(instance_by_id(i).as<express::Entity>());
+                            return_value.push_back(instance_by_id(i).template as<express::Entity>());
                         }
                     }
                 }
