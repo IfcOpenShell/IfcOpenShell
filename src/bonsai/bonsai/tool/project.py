@@ -513,3 +513,60 @@ class Project(bonsai.core.tool.Project):
         if tmp.exists():
             shutil.rmtree(tmp)
         bpy.ops.bim.save_project(filepath=cls.TEMP_PROJECT_PATH.__str__(), should_save_as=True)
+
+    @classmethod
+    def get_metadata_document_information(cls) -> Optional[ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return None
+        for doc in ifc_file.by_type("IfcDocumentInformation"):
+            if getattr(doc, "Scope", None) == "BLEND_METADATA":
+                return doc
+        return None
+
+    @classmethod
+    def create_metadata_document_information(cls, metadata_filename: str) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            raise Exception("No IFC file loaded")
+        
+        doc = tool.Ifc.run("document.add_information", parent=None)
+        
+        if ifc_file.schema == "IFC2X3":
+            tool.Ifc.run("document.edit_information", information=doc, attributes={
+                "DocumentId": "BLEND_METADATA",
+                "Name": "Blend Metadata",
+                "Scope": "BLEND_METADATA",
+                "Description": "References to blend metadata file for this IFC project",
+                "Location": metadata_filename
+            })
+        else:
+            tool.Ifc.run("document.edit_information", information=doc, attributes={
+                "Identification": "BLEND_METADATA",
+                "Name": "Blend Metadata",
+                "Scope": "BLEND_METADATA",
+                "Description": "References to blend metadata file for this IFC project",
+                "Location": metadata_filename
+            })
+        
+        return doc
+
+    @classmethod
+    def update_metadata_document_information(cls, metadata_filename: str) -> None:
+        doc = cls.get_metadata_document_information()
+        if not doc:
+            return
+        
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return
+        
+        tool.Ifc.run("document.edit_information", information=doc, attributes={
+            "Location": metadata_filename
+        })
+
+    @classmethod
+    def remove_metadata_document_information(cls) -> None:
+        doc = cls.get_metadata_document_information()
+        if doc:
+            tool.Ifc.run("document.remove_information", information=doc)
