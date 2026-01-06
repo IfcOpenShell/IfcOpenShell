@@ -10,36 +10,6 @@ const char* const Header_section_schema::Identifier = "HEADER_SECTION_SCHEMA";
 
 using namespace IfcParse;
 
-namespace {
-    template <typename T, typename U>
-    std::vector<T> cast_vector(const std::vector<U>& vs) {
-        std::vector<T> result;
-        for (const auto& v : vs) {
-            if constexpr (std::is_base_of_v<T, U> || std::is_same_v<T, U>) {
-                // For a base or identity transform we can just rely on static cast
-                result.push_back(v);
-            } else if constexpr (std::is_base_of_v<express::Select, U> && std::is_same_v<T, express::Base>) {
-                // From a select to concrete we simply call the appropriate method
-                result.push_back(v.concrete());
-            } else {
-                if (auto u = v.as<T>()) {
-                    result.push_back(u);
-                }
-            }
-        }
-        return result;
-    }
-
-    template <typename T, typename U>
-    std::vector<std::vector<T>> cast_vector_vector(const std::vector<std::vector<U>>& vs) {
-        std::vector<std::vector<T>> result;
-        for (const auto& v : vs) {
-            result.push_back(cast_vector<T>(v));
-        }
-        return result;
-    }
-}
-
 // External definitions
 extern declaration* HEADER_SECTION_SCHEMA_types[5];
 
