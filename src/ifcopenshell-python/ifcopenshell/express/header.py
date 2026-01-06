@@ -41,7 +41,7 @@ class Header(codegen.Base):
             % dict({"documentation": templates.multi_line_comment(documentation.description(kwargs["name"]))}, **kwargs)
         )
 
-        forward_names = list(mapping.schema.entities.keys()) + list(mapping.schema.simpletypes.keys()) + list(mapping.schema.selects.keys())
+        forward_names = list(mapping.schema.entities.keys()) + list(mapping.schema.simpletypes.keys()) + list(mapping.schema.selects.keys()) + list(mapping.schema.enumerations.keys())
         forward_definitions = "".join(["class %s; " % n for n in forward_names])
 
         select_super_types = defaultdict(list)
