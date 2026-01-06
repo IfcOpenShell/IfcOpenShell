@@ -152,8 +152,9 @@ public:
 };
 """
 
-select_list_item = """    template<class T, std::enable_if_t<std::is_same_v<T, %(item_name)s>, int> = 0>
-    %(item_name)s as() const { return express::Base::as<%(item_name)s>(); }
+select_list_item = """    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, %(item_name)s>, int> = 0>
+    // %(item_name)s as() const { return express::Base::as<%(item_name)s>(); }
 """
 
 select_cast_function = """    %(name)s(const %(item_name)s& c) : express::Select(c) {};

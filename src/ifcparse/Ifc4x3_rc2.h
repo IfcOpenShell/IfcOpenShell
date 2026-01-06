@@ -71,14 +71,17 @@ public:
     explicit IfcActorSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
-    IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
+    // IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
-    IfcPerson as() const { return express::Base::as<IfcPerson>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
+    // IfcPerson as() const { return express::Base::as<IfcPerson>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
-    IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
+    // IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
 
     IfcActorSelect(const IfcOrganization& c) : express::Select(c) {};
 
@@ -107,347 +110,461 @@ public:
     explicit IfcAppliedValueSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureWithUnit>, int> = 0>
-    IfcMeasureWithUnit as() const { return express::Base::as<IfcMeasureWithUnit>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcReference>, int> = 0>
-    IfcReference as() const { return express::Base::as<IfcReference>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcValue>, int> = 0>
-    IfcValue as() const { return express::Base::as<IfcValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
-    IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
-    IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
-    IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
-    IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
-    IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
-    IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
-    IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
-    IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
-    IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
-    IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
-    IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
-    IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
-    IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
-    IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
-    IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
-    IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
-    IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
-    IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
-    IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
-    IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
-    IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
-    IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
-    IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
-    IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
-    IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
-    IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
-    IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
-    IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
-    IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
-    IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
-    IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
-    IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
-    IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
-    IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
-    IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
-    IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
-    IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
-    IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
-    IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
-    IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
-    IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
-    IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
-    IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
-    IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
-    IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
-    IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
-    IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
-    IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
-    IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
-    IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
-    IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
-    IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
-    IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
-    IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
-    IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
-    IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
-    IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
-    IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
-    IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
-    IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
-    IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
-    IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
-    IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
-    IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
-    IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
-    IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
-    IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
-    IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
-    IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
-    IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
-    IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
-    IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
-    IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
-    IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
-    IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
-    IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
-    IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
-    IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
-    IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
-    IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
-    IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
-    IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
-    IfcBinary as() const { return express::Base::as<IfcBinary>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
-    IfcDate as() const { return express::Base::as<IfcDate>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
-    IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    IfcDuration as() const { return express::Base::as<IfcDuration>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
-    IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
-    IfcInteger as() const { return express::Base::as<IfcInteger>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
-    IfcLabel as() const { return express::Base::as<IfcLabel>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
-    IfcLogical as() const { return express::Base::as<IfcLogical>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
-    IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
-    IfcReal as() const { return express::Base::as<IfcReal>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
-    IfcText as() const { return express::Base::as<IfcText>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
-    IfcTime as() const { return express::Base::as<IfcTime>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
-    IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureWithUnit>, int> = 0>
+    // IfcMeasureWithUnit as() const { return express::Base::as<IfcMeasureWithUnit>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcReference>, int> = 0>
+    // IfcReference as() const { return express::Base::as<IfcReference>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcValue>, int> = 0>
+    // IfcValue as() const { return express::Base::as<IfcValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
+    // IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
+    // IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
+    // IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
+    // IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
+    // IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
+    // IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
+    // IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
+    // IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
+    // IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
+    // IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
+    // IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
+    // IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
+    // IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
+    // IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
+    // IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
+    // IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
+    // IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
+    // IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
+    // IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
+    // IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
+    // IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
+    // IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
+    // IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
+    // IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
+    // IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
+    // IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
+    // IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
+    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
+    // IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
+    // IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
+    // IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
+    // IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
+    // IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
+    // IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
+    // IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
+    // IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
+    // IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
+    // IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
+    // IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
+    // IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
+    // IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
+    // IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
+    // IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
+    // IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
+    // IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
+    // IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
+    // IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
+    // IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
+    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
+    // IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
+    // IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
+    // IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
+    // IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
+    // IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
+    // IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
+    // IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
+    // IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
+    // IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
+    // IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
+    // IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
+    // IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
+    // IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
+    // IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
+    // IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
+    // IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
+    // IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
+    // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
+    // IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
+    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
+    // IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
+    // IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
+    // IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
+    // IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
+    // IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
+    // IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
+    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
+    // IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
+    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
+    // IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
+    // IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
+    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
+    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
+    // IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
+    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
+    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
+    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
+    // IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
+    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
+    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
+    // IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
+    // IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
+    // IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
+    // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
+    // IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
+    // IfcBinary as() const { return express::Base::as<IfcBinary>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
+    // IfcDate as() const { return express::Base::as<IfcDate>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
+    // IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
+    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
+    // IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
+    // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
+    // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
+    // IfcLogical as() const { return express::Base::as<IfcLogical>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
+    // IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
+    // IfcReal as() const { return express::Base::as<IfcReal>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
+    // IfcText as() const { return express::Base::as<IfcText>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
+    // IfcTime as() const { return express::Base::as<IfcTime>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
+    // IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
 
     IfcAppliedValueSelect(const IfcMeasureWithUnit& c) : express::Select(c) {};
 
@@ -689,11 +806,13 @@ public:
     explicit IfcAxis2Placement(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAxis2Placement2D>, int> = 0>
-    IfcAxis2Placement2D as() const { return express::Base::as<IfcAxis2Placement2D>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAxis2Placement2D>, int> = 0>
+    // IfcAxis2Placement2D as() const { return express::Base::as<IfcAxis2Placement2D>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAxis2Placement3D>, int> = 0>
-    IfcAxis2Placement3D as() const { return express::Base::as<IfcAxis2Placement3D>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAxis2Placement3D>, int> = 0>
+    // IfcAxis2Placement3D as() const { return express::Base::as<IfcAxis2Placement3D>(); }
 
     IfcAxis2Placement(const IfcAxis2Placement2D& c) : express::Select(c) {};
 
@@ -709,11 +828,13 @@ public:
     explicit IfcBendingParameterSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
+    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
+    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
 
     IfcBendingParameterSelect(const IfcLengthMeasure& c) : express::Select(c) {};
 
@@ -742,20 +863,25 @@ public:
     explicit IfcBooleanOperand(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBooleanResult>, int> = 0>
-    IfcBooleanResult as() const { return express::Base::as<IfcBooleanResult>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBooleanResult>, int> = 0>
+    // IfcBooleanResult as() const { return express::Base::as<IfcBooleanResult>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCsgPrimitive3D>, int> = 0>
-    IfcCsgPrimitive3D as() const { return express::Base::as<IfcCsgPrimitive3D>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCsgPrimitive3D>, int> = 0>
+    // IfcCsgPrimitive3D as() const { return express::Base::as<IfcCsgPrimitive3D>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHalfSpaceSolid>, int> = 0>
-    IfcHalfSpaceSolid as() const { return express::Base::as<IfcHalfSpaceSolid>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHalfSpaceSolid>, int> = 0>
+    // IfcHalfSpaceSolid as() const { return express::Base::as<IfcHalfSpaceSolid>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidModel>, int> = 0>
-    IfcSolidModel as() const { return express::Base::as<IfcSolidModel>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidModel>, int> = 0>
+    // IfcSolidModel as() const { return express::Base::as<IfcSolidModel>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTessellatedFaceSet>, int> = 0>
-    IfcTessellatedFaceSet as() const { return express::Base::as<IfcTessellatedFaceSet>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTessellatedFaceSet>, int> = 0>
+    // IfcTessellatedFaceSet as() const { return express::Base::as<IfcTessellatedFaceSet>(); }
 
     IfcBooleanOperand(const IfcBooleanResult& c) : express::Select(c) {};
 
@@ -782,11 +908,13 @@ public:
     explicit IfcClassificationReferenceSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcClassification>, int> = 0>
-    IfcClassification as() const { return express::Base::as<IfcClassification>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassification>, int> = 0>
+    // IfcClassification as() const { return express::Base::as<IfcClassification>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcClassificationReference>, int> = 0>
-    IfcClassificationReference as() const { return express::Base::as<IfcClassificationReference>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassificationReference>, int> = 0>
+    // IfcClassificationReference as() const { return express::Base::as<IfcClassificationReference>(); }
 
     IfcClassificationReferenceSelect(const IfcClassification& c) : express::Select(c) {};
 
@@ -812,11 +940,13 @@ public:
     explicit IfcClassificationSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcClassification>, int> = 0>
-    IfcClassification as() const { return express::Base::as<IfcClassification>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassification>, int> = 0>
+    // IfcClassification as() const { return express::Base::as<IfcClassification>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcClassificationReference>, int> = 0>
-    IfcClassificationReference as() const { return express::Base::as<IfcClassificationReference>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassificationReference>, int> = 0>
+    // IfcClassificationReference as() const { return express::Base::as<IfcClassificationReference>(); }
 
     IfcClassificationSelect(const IfcClassification& c) : express::Select(c) {};
 
@@ -834,11 +964,13 @@ public:
     explicit IfcColour(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcColourSpecification>, int> = 0>
-    IfcColourSpecification as() const { return express::Base::as<IfcColourSpecification>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcColourSpecification>, int> = 0>
+    // IfcColourSpecification as() const { return express::Base::as<IfcColourSpecification>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedColour>, int> = 0>
-    IfcPreDefinedColour as() const { return express::Base::as<IfcPreDefinedColour>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedColour>, int> = 0>
+    // IfcPreDefinedColour as() const { return express::Base::as<IfcPreDefinedColour>(); }
 
     IfcColour(const IfcColourSpecification& c) : express::Select(c) {};
 
@@ -854,11 +986,13 @@ public:
     explicit IfcColourOrFactor(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcColourRgb>, int> = 0>
-    IfcColourRgb as() const { return express::Base::as<IfcColourRgb>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcColourRgb>, int> = 0>
+    // IfcColourRgb as() const { return express::Base::as<IfcColourRgb>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
+    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
 
     IfcColourOrFactor(const IfcColourRgb& c) : express::Select(c) {};
 
@@ -874,11 +1008,13 @@ public:
     explicit IfcCoordinateReferenceSystemSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCoordinateReferenceSystem>, int> = 0>
-    IfcCoordinateReferenceSystem as() const { return express::Base::as<IfcCoordinateReferenceSystem>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCoordinateReferenceSystem>, int> = 0>
+    // IfcCoordinateReferenceSystem as() const { return express::Base::as<IfcCoordinateReferenceSystem>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcGeometricRepresentationContext>, int> = 0>
-    IfcGeometricRepresentationContext as() const { return express::Base::as<IfcGeometricRepresentationContext>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcGeometricRepresentationContext>, int> = 0>
+    // IfcGeometricRepresentationContext as() const { return express::Base::as<IfcGeometricRepresentationContext>(); }
 
     IfcCoordinateReferenceSystemSelect(const IfcCoordinateReferenceSystem& c) : express::Select(c) {};
 
@@ -897,11 +1033,13 @@ public:
     explicit IfcCsgSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBooleanResult>, int> = 0>
-    IfcBooleanResult as() const { return express::Base::as<IfcBooleanResult>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBooleanResult>, int> = 0>
+    // IfcBooleanResult as() const { return express::Base::as<IfcBooleanResult>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCsgPrimitive3D>, int> = 0>
-    IfcCsgPrimitive3D as() const { return express::Base::as<IfcCsgPrimitive3D>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCsgPrimitive3D>, int> = 0>
+    // IfcCsgPrimitive3D as() const { return express::Base::as<IfcCsgPrimitive3D>(); }
 
     IfcCsgSelect(const IfcBooleanResult& c) : express::Select(c) {};
 
@@ -919,17 +1057,21 @@ public:
     explicit IfcCurveFontOrScaledCurveFontSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFontAndScaling>, int> = 0>
-    IfcCurveStyleFontAndScaling as() const { return express::Base::as<IfcCurveStyleFontAndScaling>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFontAndScaling>, int> = 0>
+    // IfcCurveStyleFontAndScaling as() const { return express::Base::as<IfcCurveStyleFontAndScaling>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFontSelect>, int> = 0>
-    IfcCurveStyleFontSelect as() const { return express::Base::as<IfcCurveStyleFontSelect>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFontSelect>, int> = 0>
+    // IfcCurveStyleFontSelect as() const { return express::Base::as<IfcCurveStyleFontSelect>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFont>, int> = 0>
-    IfcCurveStyleFont as() const { return express::Base::as<IfcCurveStyleFont>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFont>, int> = 0>
+    // IfcCurveStyleFont as() const { return express::Base::as<IfcCurveStyleFont>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedCurveFont>, int> = 0>
-    IfcPreDefinedCurveFont as() const { return express::Base::as<IfcPreDefinedCurveFont>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedCurveFont>, int> = 0>
+    // IfcPreDefinedCurveFont as() const { return express::Base::as<IfcPreDefinedCurveFont>(); }
 
     IfcCurveFontOrScaledCurveFontSelect(const IfcCurveStyleFontAndScaling& c) : express::Select(c) {};
 
@@ -947,11 +1089,13 @@ public:
     explicit IfcCurveMeasureSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
+    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
+    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
 
     IfcCurveMeasureSelect(const IfcNonNegativeLengthMeasure& c) : express::Select(c) {};
 
@@ -965,14 +1109,17 @@ public:
     explicit IfcCurveOnSurface(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCompositeCurveOnSurface>, int> = 0>
-    IfcCompositeCurveOnSurface as() const { return express::Base::as<IfcCompositeCurveOnSurface>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompositeCurveOnSurface>, int> = 0>
+    // IfcCompositeCurveOnSurface as() const { return express::Base::as<IfcCompositeCurveOnSurface>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPcurve>, int> = 0>
-    IfcPcurve as() const { return express::Base::as<IfcPcurve>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPcurve>, int> = 0>
+    // IfcPcurve as() const { return express::Base::as<IfcPcurve>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceCurve>, int> = 0>
-    IfcSurfaceCurve as() const { return express::Base::as<IfcSurfaceCurve>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceCurve>, int> = 0>
+    // IfcSurfaceCurve as() const { return express::Base::as<IfcSurfaceCurve>(); }
 
     IfcCurveOnSurface(const IfcCompositeCurveOnSurface& c) : express::Select(c) {};
 
@@ -995,11 +1142,13 @@ public:
     explicit IfcCurveOrEdgeCurve(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoundedCurve>, int> = 0>
-    IfcBoundedCurve as() const { return express::Base::as<IfcBoundedCurve>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoundedCurve>, int> = 0>
+    // IfcBoundedCurve as() const { return express::Base::as<IfcBoundedCurve>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcEdgeCurve>, int> = 0>
-    IfcEdgeCurve as() const { return express::Base::as<IfcEdgeCurve>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcEdgeCurve>, int> = 0>
+    // IfcEdgeCurve as() const { return express::Base::as<IfcEdgeCurve>(); }
 
     IfcCurveOrEdgeCurve(const IfcBoundedCurve& c) : express::Select(c) {};
 
@@ -1017,11 +1166,13 @@ public:
     explicit IfcCurveStyleFontSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFont>, int> = 0>
-    IfcCurveStyleFont as() const { return express::Base::as<IfcCurveStyleFont>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFont>, int> = 0>
+    // IfcCurveStyleFont as() const { return express::Base::as<IfcCurveStyleFont>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedCurveFont>, int> = 0>
-    IfcPreDefinedCurveFont as() const { return express::Base::as<IfcPreDefinedCurveFont>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedCurveFont>, int> = 0>
+    // IfcPreDefinedCurveFont as() const { return express::Base::as<IfcPreDefinedCurveFont>(); }
 
     IfcCurveStyleFontSelect(const IfcCurveStyleFont& c) : express::Select(c) {};
 
@@ -1041,11 +1192,13 @@ public:
     explicit IfcDefinitionSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcObjectDefinition>, int> = 0>
-    IfcObjectDefinition as() const { return express::Base::as<IfcObjectDefinition>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcObjectDefinition>, int> = 0>
+    // IfcObjectDefinition as() const { return express::Base::as<IfcObjectDefinition>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertyDefinition>, int> = 0>
-    IfcPropertyDefinition as() const { return express::Base::as<IfcPropertyDefinition>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertyDefinition>, int> = 0>
+    // IfcPropertyDefinition as() const { return express::Base::as<IfcPropertyDefinition>(); }
 
     IfcDefinitionSelect(const IfcObjectDefinition& c) : express::Select(c) {};
 
@@ -1132,218 +1285,289 @@ public:
     explicit IfcDerivedMeasureValue(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
-    IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
-    IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
-    IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
-    IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
-    IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
-    IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
-    IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
-    IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
-    IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
-    IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
-    IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
-    IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
-    IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
-    IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
-    IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
-    IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
-    IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
-    IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
-    IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
-    IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
-    IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
-    IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
-    IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
-    IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
-    IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
-    IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
-    IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
-    IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
-    IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
-    IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
-    IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
-    IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
-    IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
-    IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
-    IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
-    IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
-    IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
-    IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
-    IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
-    IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
-    IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
-    IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
-    IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
-    IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
-    IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
-    IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
-    IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
-    IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
-    IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
-    IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
-    IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
-    IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
-    IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
-    IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
-    IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
-    IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
-    IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
-    IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
-    IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
-    IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
-    IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
-    IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
-    IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
-    IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
-    IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
+    // IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
+    // IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
+    // IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
+    // IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
+    // IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
+    // IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
+    // IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
+    // IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
+    // IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
+    // IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
+    // IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
+    // IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
+    // IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
+    // IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
+    // IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
+    // IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
+    // IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
+    // IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
+    // IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
+    // IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
+    // IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
+    // IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
+    // IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
+    // IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
+    // IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
+    // IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
+    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
+    // IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
+    // IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
+    // IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
+    // IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
+    // IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
+    // IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
+    // IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
+    // IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
+    // IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
+    // IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
+    // IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
+    // IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
+    // IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
+    // IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
+    // IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
+    // IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
+    // IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
+    // IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
+    // IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
+    // IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
+    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
+    // IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
+    // IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
+    // IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
+    // IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
+    // IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
+    // IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
+    // IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
+    // IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
+    // IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
+    // IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
+    // IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
+    // IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
+    // IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
+    // IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
+    // IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
+    // IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
+    // IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
+    // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
+    // IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
+    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
 
     IfcDerivedMeasureValue(const IfcAbsorbedDoseMeasure& c) : express::Select(c) {};
 
@@ -1502,11 +1726,13 @@ public:
     explicit IfcDocumentSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDocumentInformation>, int> = 0>
-    IfcDocumentInformation as() const { return express::Base::as<IfcDocumentInformation>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDocumentInformation>, int> = 0>
+    // IfcDocumentInformation as() const { return express::Base::as<IfcDocumentInformation>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDocumentReference>, int> = 0>
-    IfcDocumentReference as() const { return express::Base::as<IfcDocumentReference>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDocumentReference>, int> = 0>
+    // IfcDocumentReference as() const { return express::Base::as<IfcDocumentReference>(); }
 
     IfcDocumentSelect(const IfcDocumentInformation& c) : express::Select(c) {};
 
@@ -1520,20 +1746,25 @@ public:
     explicit IfcFacilityPartTypeSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBridgePartTypeEnum>, int> = 0>
-    IfcBridgePartTypeEnum as() const { return express::Base::as<IfcBridgePartTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBridgePartTypeEnum>, int> = 0>
+    // IfcBridgePartTypeEnum as() const { return express::Base::as<IfcBridgePartTypeEnum>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFacilityPartCommonTypeEnum>, int> = 0>
-    IfcFacilityPartCommonTypeEnum as() const { return express::Base::as<IfcFacilityPartCommonTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFacilityPartCommonTypeEnum>, int> = 0>
+    // IfcFacilityPartCommonTypeEnum as() const { return express::Base::as<IfcFacilityPartCommonTypeEnum>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMarinePartTypeEnum>, int> = 0>
-    IfcMarinePartTypeEnum as() const { return express::Base::as<IfcMarinePartTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMarinePartTypeEnum>, int> = 0>
+    // IfcMarinePartTypeEnum as() const { return express::Base::as<IfcMarinePartTypeEnum>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRailwayPartTypeEnum>, int> = 0>
-    IfcRailwayPartTypeEnum as() const { return express::Base::as<IfcRailwayPartTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRailwayPartTypeEnum>, int> = 0>
+    // IfcRailwayPartTypeEnum as() const { return express::Base::as<IfcRailwayPartTypeEnum>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRoadPartTypeEnum>, int> = 0>
-    IfcRoadPartTypeEnum as() const { return express::Base::as<IfcRoadPartTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRoadPartTypeEnum>, int> = 0>
+    // IfcRoadPartTypeEnum as() const { return express::Base::as<IfcRoadPartTypeEnum>(); }
 
     IfcFacilityPartTypeSelect(const IfcBridgePartTypeEnum& c) : express::Select(c) {};
 
@@ -1558,23 +1789,29 @@ public:
     explicit IfcFillStyleSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcColour>, int> = 0>
-    IfcColour as() const { return express::Base::as<IfcColour>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcColour>, int> = 0>
+    // IfcColour as() const { return express::Base::as<IfcColour>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcColourSpecification>, int> = 0>
-    IfcColourSpecification as() const { return express::Base::as<IfcColourSpecification>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcColourSpecification>, int> = 0>
+    // IfcColourSpecification as() const { return express::Base::as<IfcColourSpecification>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedColour>, int> = 0>
-    IfcPreDefinedColour as() const { return express::Base::as<IfcPreDefinedColour>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedColour>, int> = 0>
+    // IfcPreDefinedColour as() const { return express::Base::as<IfcPreDefinedColour>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedHatchStyle>, int> = 0>
-    IfcExternallyDefinedHatchStyle as() const { return express::Base::as<IfcExternallyDefinedHatchStyle>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedHatchStyle>, int> = 0>
+    // IfcExternallyDefinedHatchStyle as() const { return express::Base::as<IfcExternallyDefinedHatchStyle>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyleHatching>, int> = 0>
-    IfcFillAreaStyleHatching as() const { return express::Base::as<IfcFillAreaStyleHatching>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyleHatching>, int> = 0>
+    // IfcFillAreaStyleHatching as() const { return express::Base::as<IfcFillAreaStyleHatching>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyleTiles>, int> = 0>
-    IfcFillAreaStyleTiles as() const { return express::Base::as<IfcFillAreaStyleTiles>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyleTiles>, int> = 0>
+    // IfcFillAreaStyleTiles as() const { return express::Base::as<IfcFillAreaStyleTiles>(); }
 
     IfcFillStyleSelect(const IfcColour& c) : express::Select(c) {};
 
@@ -1600,14 +1837,17 @@ public:
     explicit IfcGeometricSetSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurve>, int> = 0>
-    IfcCurve as() const { return express::Base::as<IfcCurve>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurve>, int> = 0>
+    // IfcCurve as() const { return express::Base::as<IfcCurve>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPoint>, int> = 0>
-    IfcPoint as() const { return express::Base::as<IfcPoint>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPoint>, int> = 0>
+    // IfcPoint as() const { return express::Base::as<IfcPoint>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSurface>, int> = 0>
-    IfcSurface as() const { return express::Base::as<IfcSurface>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurface>, int> = 0>
+    // IfcSurface as() const { return express::Base::as<IfcSurface>(); }
 
     IfcGeometricSetSelect(const IfcCurve& c) : express::Select(c) {};
 
@@ -1630,11 +1870,13 @@ public:
     explicit IfcGridPlacementDirectionSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDirection>, int> = 0>
-    IfcDirection as() const { return express::Base::as<IfcDirection>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDirection>, int> = 0>
+    // IfcDirection as() const { return express::Base::as<IfcDirection>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVirtualGridIntersection>, int> = 0>
-    IfcVirtualGridIntersection as() const { return express::Base::as<IfcVirtualGridIntersection>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVirtualGridIntersection>, int> = 0>
+    // IfcVirtualGridIntersection as() const { return express::Base::as<IfcVirtualGridIntersection>(); }
 
     IfcGridPlacementDirectionSelect(const IfcDirection& c) : express::Select(c) {};
 
@@ -1650,11 +1892,13 @@ public:
     explicit IfcHatchLineDistanceSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
+    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVector>, int> = 0>
-    IfcVector as() const { return express::Base::as<IfcVector>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVector>, int> = 0>
+    // IfcVector as() const { return express::Base::as<IfcVector>(); }
 
     IfcHatchLineDistanceSelect(const IfcPositiveLengthMeasure& c) : express::Select(c) {};
 
@@ -1668,14 +1912,17 @@ public:
     explicit IfcImpactProtectionDeviceTypeSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcImpactProtectionDeviceTypeEnum>, int> = 0>
-    IfcImpactProtectionDeviceTypeEnum as() const { return express::Base::as<IfcImpactProtectionDeviceTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcImpactProtectionDeviceTypeEnum>, int> = 0>
+    // IfcImpactProtectionDeviceTypeEnum as() const { return express::Base::as<IfcImpactProtectionDeviceTypeEnum>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVibrationDamperTypeEnum>, int> = 0>
-    IfcVibrationDamperTypeEnum as() const { return express::Base::as<IfcVibrationDamperTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVibrationDamperTypeEnum>, int> = 0>
+    // IfcVibrationDamperTypeEnum as() const { return express::Base::as<IfcVibrationDamperTypeEnum>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVibrationIsolatorTypeEnum>, int> = 0>
-    IfcVibrationIsolatorTypeEnum as() const { return express::Base::as<IfcVibrationIsolatorTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVibrationIsolatorTypeEnum>, int> = 0>
+    // IfcVibrationIsolatorTypeEnum as() const { return express::Base::as<IfcVibrationIsolatorTypeEnum>(); }
 
     IfcImpactProtectionDeviceTypeSelect(const IfcImpactProtectionDeviceTypeEnum& c) : express::Select(c) {};
 
@@ -1691,11 +1938,13 @@ public:
     explicit IfcInterferenceSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElement>, int> = 0>
-    IfcElement as() const { return express::Base::as<IfcElement>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElement>, int> = 0>
+    // IfcElement as() const { return express::Base::as<IfcElement>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSpatialElement>, int> = 0>
-    IfcSpatialElement as() const { return express::Base::as<IfcSpatialElement>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpatialElement>, int> = 0>
+    // IfcSpatialElement as() const { return express::Base::as<IfcSpatialElement>(); }
 
     IfcInterferenceSelect(const IfcElement& c) : express::Select(c) {};
 
@@ -1715,11 +1964,13 @@ public:
     explicit IfcLayeredItem(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentation>, int> = 0>
-    IfcRepresentation as() const { return express::Base::as<IfcRepresentation>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentation>, int> = 0>
+    // IfcRepresentation as() const { return express::Base::as<IfcRepresentation>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentationItem>, int> = 0>
-    IfcRepresentationItem as() const { return express::Base::as<IfcRepresentationItem>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentationItem>, int> = 0>
+    // IfcRepresentationItem as() const { return express::Base::as<IfcRepresentationItem>(); }
 
     IfcLayeredItem(const IfcRepresentation& c) : express::Select(c) {};
 
@@ -1742,11 +1993,13 @@ public:
     explicit IfcLibrarySelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLibraryInformation>, int> = 0>
-    IfcLibraryInformation as() const { return express::Base::as<IfcLibraryInformation>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLibraryInformation>, int> = 0>
+    // IfcLibraryInformation as() const { return express::Base::as<IfcLibraryInformation>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLibraryReference>, int> = 0>
-    IfcLibraryReference as() const { return express::Base::as<IfcLibraryReference>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLibraryReference>, int> = 0>
+    // IfcLibraryReference as() const { return express::Base::as<IfcLibraryReference>(); }
 
     IfcLibrarySelect(const IfcLibraryInformation& c) : express::Select(c) {};
 
@@ -1781,11 +2034,13 @@ public:
     explicit IfcLightDistributionDataSourceSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
-    IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
+    // IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLightIntensityDistribution>, int> = 0>
-    IfcLightIntensityDistribution as() const { return express::Base::as<IfcLightIntensityDistribution>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLightIntensityDistribution>, int> = 0>
+    // IfcLightIntensityDistribution as() const { return express::Base::as<IfcLightIntensityDistribution>(); }
 
     IfcLightDistributionDataSourceSelect(const IfcExternalReference& c) : express::Select(c) {};
 
@@ -1799,11 +2054,13 @@ public:
     explicit IfcLinearAxisSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurve>, int> = 0>
-    IfcCurve as() const { return express::Base::as<IfcCurve>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurve>, int> = 0>
+    // IfcCurve as() const { return express::Base::as<IfcCurve>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearAxisWithInclination>, int> = 0>
-    IfcLinearAxisWithInclination as() const { return express::Base::as<IfcLinearAxisWithInclination>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearAxisWithInclination>, int> = 0>
+    // IfcLinearAxisWithInclination as() const { return express::Base::as<IfcLinearAxisWithInclination>(); }
 
     IfcLinearAxisSelect(const IfcCurve& c) : express::Select(c) {};
 
@@ -1842,14 +2099,17 @@ public:
     explicit IfcMaterialSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
-    IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
+    // IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialList>, int> = 0>
-    IfcMaterialList as() const { return express::Base::as<IfcMaterialList>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialList>, int> = 0>
+    // IfcMaterialList as() const { return express::Base::as<IfcMaterialList>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialUsageDefinition>, int> = 0>
-    IfcMaterialUsageDefinition as() const { return express::Base::as<IfcMaterialUsageDefinition>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialUsageDefinition>, int> = 0>
+    // IfcMaterialUsageDefinition as() const { return express::Base::as<IfcMaterialUsageDefinition>(); }
 
     IfcMaterialSelect(const IfcMaterialDefinition& c) : express::Select(c) {};
 
@@ -1873,74 +2133,97 @@ public:
     explicit IfcMeasureValue(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
-    IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
+    // IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
-    IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
+    // IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
-    IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
+    // IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
-    IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
+    // IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
-    IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
+    // IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
+    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
-    IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
+    // IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
+    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
-    IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
+    // IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
-    IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
+    // IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
+    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
+    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
-    IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
+    // IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
+    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
+    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
+    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
-    IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
+    // IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
+    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
+    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
-    IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
+    // IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
-    IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
+    // IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
-    IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
+    // IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
-    IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
+    // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
 
     IfcMeasureValue(const IfcAmountOfSubstanceMeasure& c) : express::Select(c) {};
 
@@ -2007,356 +2290,473 @@ public:
     explicit IfcMetricValueSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
-    IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureWithUnit>, int> = 0>
-    IfcMeasureWithUnit as() const { return express::Base::as<IfcMeasureWithUnit>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcReference>, int> = 0>
-    IfcReference as() const { return express::Base::as<IfcReference>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTable>, int> = 0>
-    IfcTable as() const { return express::Base::as<IfcTable>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
-    IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcValue>, int> = 0>
-    IfcValue as() const { return express::Base::as<IfcValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
-    IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
-    IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
-    IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
-    IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
-    IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
-    IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
-    IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
-    IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
-    IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
-    IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
-    IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
-    IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
-    IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
-    IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
-    IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
-    IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
-    IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
-    IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
-    IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
-    IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
-    IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
-    IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
-    IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
-    IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
-    IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
-    IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
-    IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
-    IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
-    IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
-    IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
-    IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
-    IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
-    IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
-    IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
-    IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
-    IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
-    IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
-    IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
-    IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
-    IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
-    IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
-    IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
-    IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
-    IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
-    IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
-    IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
-    IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
-    IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
-    IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
-    IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
-    IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
-    IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
-    IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
-    IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
-    IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
-    IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
-    IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
-    IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
-    IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
-    IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
-    IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
-    IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
-    IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
-    IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
-    IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
-    IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
-    IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
-    IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
-    IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
-    IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
-    IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
-    IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
-    IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
-    IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
-    IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
-    IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
-    IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
-    IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
-    IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
-    IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
-    IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
-    IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
-    IfcBinary as() const { return express::Base::as<IfcBinary>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
-    IfcDate as() const { return express::Base::as<IfcDate>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
-    IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    IfcDuration as() const { return express::Base::as<IfcDuration>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
-    IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
-    IfcInteger as() const { return express::Base::as<IfcInteger>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
-    IfcLabel as() const { return express::Base::as<IfcLabel>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
-    IfcLogical as() const { return express::Base::as<IfcLogical>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
-    IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
-    IfcReal as() const { return express::Base::as<IfcReal>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
-    IfcText as() const { return express::Base::as<IfcText>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
-    IfcTime as() const { return express::Base::as<IfcTime>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
-    IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
+    // IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureWithUnit>, int> = 0>
+    // IfcMeasureWithUnit as() const { return express::Base::as<IfcMeasureWithUnit>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcReference>, int> = 0>
+    // IfcReference as() const { return express::Base::as<IfcReference>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTable>, int> = 0>
+    // IfcTable as() const { return express::Base::as<IfcTable>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
+    // IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcValue>, int> = 0>
+    // IfcValue as() const { return express::Base::as<IfcValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
+    // IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
+    // IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
+    // IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
+    // IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
+    // IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
+    // IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
+    // IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
+    // IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
+    // IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
+    // IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
+    // IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
+    // IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
+    // IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
+    // IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
+    // IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
+    // IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
+    // IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
+    // IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
+    // IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
+    // IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
+    // IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
+    // IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
+    // IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
+    // IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
+    // IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
+    // IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
+    // IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
+    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
+    // IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
+    // IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
+    // IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
+    // IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
+    // IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
+    // IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
+    // IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
+    // IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
+    // IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
+    // IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
+    // IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
+    // IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
+    // IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
+    // IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
+    // IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
+    // IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
+    // IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
+    // IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
+    // IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
+    // IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
+    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
+    // IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
+    // IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
+    // IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
+    // IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
+    // IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
+    // IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
+    // IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
+    // IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
+    // IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
+    // IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
+    // IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
+    // IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
+    // IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
+    // IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
+    // IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
+    // IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
+    // IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
+    // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
+    // IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
+    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
+    // IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
+    // IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
+    // IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
+    // IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
+    // IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
+    // IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
+    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
+    // IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
+    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
+    // IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
+    // IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
+    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
+    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
+    // IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
+    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
+    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
+    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
+    // IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
+    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
+    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
+    // IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
+    // IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
+    // IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
+    // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
+    // IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
+    // IfcBinary as() const { return express::Base::as<IfcBinary>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
+    // IfcDate as() const { return express::Base::as<IfcDate>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
+    // IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
+    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
+    // IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
+    // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
+    // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
+    // IfcLogical as() const { return express::Base::as<IfcLogical>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
+    // IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
+    // IfcReal as() const { return express::Base::as<IfcReal>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
+    // IfcText as() const { return express::Base::as<IfcText>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
+    // IfcTime as() const { return express::Base::as<IfcTime>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
+    // IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
 
     IfcMetricValueSelect(const IfcAppliedValue& c) : express::Select(c) {};
 
@@ -2602,11 +3002,13 @@ public:
     explicit IfcModulusOfRotationalSubgradeReactionSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
 
     IfcModulusOfRotationalSubgradeReactionSelect(const IfcBoolean& c) : express::Select(c) {};
 
@@ -2622,11 +3024,13 @@ public:
     explicit IfcModulusOfSubgradeReactionSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
 
     IfcModulusOfSubgradeReactionSelect(const IfcBoolean& c) : express::Select(c) {};
 
@@ -2642,11 +3046,13 @@ public:
     explicit IfcModulusOfTranslationalSubgradeReactionSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
 
     IfcModulusOfTranslationalSubgradeReactionSelect(const IfcBoolean& c) : express::Select(c) {};
 
@@ -2662,32 +3068,41 @@ public:
     explicit IfcObjectReferenceSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAddress>, int> = 0>
-    IfcAddress as() const { return express::Base::as<IfcAddress>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAddress>, int> = 0>
+    // IfcAddress as() const { return express::Base::as<IfcAddress>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
-    IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
+    // IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
-    IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
+    // IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
-    IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
+    // IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
-    IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
+    // IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
-    IfcPerson as() const { return express::Base::as<IfcPerson>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
+    // IfcPerson as() const { return express::Base::as<IfcPerson>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
-    IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
+    // IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTable>, int> = 0>
-    IfcTable as() const { return express::Base::as<IfcTable>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTable>, int> = 0>
+    // IfcTable as() const { return express::Base::as<IfcTable>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
-    IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
+    // IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
 
     IfcObjectReferenceSelect(const IfcAddress& c) : express::Select(c) {};
 
@@ -2721,11 +3136,13 @@ public:
     explicit IfcPointOrVertexPoint(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPoint>, int> = 0>
-    IfcPoint as() const { return express::Base::as<IfcPoint>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPoint>, int> = 0>
+    // IfcPoint as() const { return express::Base::as<IfcPoint>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVertexPoint>, int> = 0>
-    IfcVertexPoint as() const { return express::Base::as<IfcVertexPoint>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVertexPoint>, int> = 0>
+    // IfcVertexPoint as() const { return express::Base::as<IfcVertexPoint>(); }
 
     IfcPointOrVertexPoint(const IfcPoint& c) : express::Select(c) {};
 
@@ -2746,20 +3163,25 @@ public:
     explicit IfcPresentationStyleSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyle>, int> = 0>
-    IfcCurveStyle as() const { return express::Base::as<IfcCurveStyle>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyle>, int> = 0>
+    // IfcCurveStyle as() const { return express::Base::as<IfcCurveStyle>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyle>, int> = 0>
-    IfcFillAreaStyle as() const { return express::Base::as<IfcFillAreaStyle>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyle>, int> = 0>
+    // IfcFillAreaStyle as() const { return express::Base::as<IfcFillAreaStyle>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNullStyle>, int> = 0>
-    IfcNullStyle as() const { return express::Base::as<IfcNullStyle>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNullStyle>, int> = 0>
+    // IfcNullStyle as() const { return express::Base::as<IfcNullStyle>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyle>, int> = 0>
-    IfcSurfaceStyle as() const { return express::Base::as<IfcSurfaceStyle>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyle>, int> = 0>
+    // IfcSurfaceStyle as() const { return express::Base::as<IfcSurfaceStyle>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTextStyle>, int> = 0>
-    IfcTextStyle as() const { return express::Base::as<IfcTextStyle>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTextStyle>, int> = 0>
+    // IfcTextStyle as() const { return express::Base::as<IfcTextStyle>(); }
 
     IfcPresentationStyleSelect(const IfcCurveStyle& c) : express::Select(c) {};
 
@@ -2788,11 +3210,13 @@ public:
     explicit IfcProcessSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcProcess>, int> = 0>
-    IfcProcess as() const { return express::Base::as<IfcProcess>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcProcess>, int> = 0>
+    // IfcProcess as() const { return express::Base::as<IfcProcess>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeProcess>, int> = 0>
-    IfcTypeProcess as() const { return express::Base::as<IfcTypeProcess>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeProcess>, int> = 0>
+    // IfcTypeProcess as() const { return express::Base::as<IfcTypeProcess>(); }
 
     IfcProcessSelect(const IfcProcess& c) : express::Select(c) {};
 
@@ -2806,11 +3230,13 @@ public:
     explicit IfcProductRepresentationSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcProductDefinitionShape>, int> = 0>
-    IfcProductDefinitionShape as() const { return express::Base::as<IfcProductDefinitionShape>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcProductDefinitionShape>, int> = 0>
+    // IfcProductDefinitionShape as() const { return express::Base::as<IfcProductDefinitionShape>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentationMap>, int> = 0>
-    IfcRepresentationMap as() const { return express::Base::as<IfcRepresentationMap>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentationMap>, int> = 0>
+    // IfcRepresentationMap as() const { return express::Base::as<IfcRepresentationMap>(); }
 
     IfcProductRepresentationSelect(const IfcProductDefinitionShape& c) : express::Select(c) {};
 
@@ -2832,11 +3258,13 @@ public:
     explicit IfcProductSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcProduct>, int> = 0>
-    IfcProduct as() const { return express::Base::as<IfcProduct>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcProduct>, int> = 0>
+    // IfcProduct as() const { return express::Base::as<IfcProduct>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeProduct>, int> = 0>
-    IfcTypeProduct as() const { return express::Base::as<IfcTypeProduct>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeProduct>, int> = 0>
+    // IfcTypeProduct as() const { return express::Base::as<IfcTypeProduct>(); }
 
     IfcProductSelect(const IfcProduct& c) : express::Select(c) {};
 
@@ -2850,11 +3278,13 @@ public:
     explicit IfcPropertySetDefinitionSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertySetDefinition>, int> = 0>
-    IfcPropertySetDefinition as() const { return express::Base::as<IfcPropertySetDefinition>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertySetDefinition>, int> = 0>
+    // IfcPropertySetDefinition as() const { return express::Base::as<IfcPropertySetDefinition>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertySetDefinitionSet>, int> = 0>
-    IfcPropertySetDefinitionSet as() const { return express::Base::as<IfcPropertySetDefinitionSet>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertySetDefinitionSet>, int> = 0>
+    // IfcPropertySetDefinitionSet as() const { return express::Base::as<IfcPropertySetDefinitionSet>(); }
 
     IfcPropertySetDefinitionSelect(const IfcPropertySetDefinition& c) : express::Select(c) {};
 
@@ -2870,56 +3300,73 @@ public:
     explicit IfcResourceObjectSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcActorRole>, int> = 0>
-    IfcActorRole as() const { return express::Base::as<IfcActorRole>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcActorRole>, int> = 0>
+    // IfcActorRole as() const { return express::Base::as<IfcActorRole>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
-    IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
+    // IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcApproval>, int> = 0>
-    IfcApproval as() const { return express::Base::as<IfcApproval>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcApproval>, int> = 0>
+    // IfcApproval as() const { return express::Base::as<IfcApproval>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcConstraint>, int> = 0>
-    IfcConstraint as() const { return express::Base::as<IfcConstraint>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcConstraint>, int> = 0>
+    // IfcConstraint as() const { return express::Base::as<IfcConstraint>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentUnit>, int> = 0>
-    IfcContextDependentUnit as() const { return express::Base::as<IfcContextDependentUnit>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentUnit>, int> = 0>
+    // IfcContextDependentUnit as() const { return express::Base::as<IfcContextDependentUnit>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcConversionBasedUnit>, int> = 0>
-    IfcConversionBasedUnit as() const { return express::Base::as<IfcConversionBasedUnit>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcConversionBasedUnit>, int> = 0>
+    // IfcConversionBasedUnit as() const { return express::Base::as<IfcConversionBasedUnit>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalInformation>, int> = 0>
-    IfcExternalInformation as() const { return express::Base::as<IfcExternalInformation>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalInformation>, int> = 0>
+    // IfcExternalInformation as() const { return express::Base::as<IfcExternalInformation>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
-    IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
+    // IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
-    IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
+    // IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
-    IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
+    // IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
-    IfcPerson as() const { return express::Base::as<IfcPerson>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
+    // IfcPerson as() const { return express::Base::as<IfcPerson>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
-    IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
+    // IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPhysicalQuantity>, int> = 0>
-    IfcPhysicalQuantity as() const { return express::Base::as<IfcPhysicalQuantity>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPhysicalQuantity>, int> = 0>
+    // IfcPhysicalQuantity as() const { return express::Base::as<IfcPhysicalQuantity>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcProfileDef>, int> = 0>
-    IfcProfileDef as() const { return express::Base::as<IfcProfileDef>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcProfileDef>, int> = 0>
+    // IfcProfileDef as() const { return express::Base::as<IfcProfileDef>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertyAbstraction>, int> = 0>
-    IfcPropertyAbstraction as() const { return express::Base::as<IfcPropertyAbstraction>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertyAbstraction>, int> = 0>
+    // IfcPropertyAbstraction as() const { return express::Base::as<IfcPropertyAbstraction>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcShapeAspect>, int> = 0>
-    IfcShapeAspect as() const { return express::Base::as<IfcShapeAspect>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcShapeAspect>, int> = 0>
+    // IfcShapeAspect as() const { return express::Base::as<IfcShapeAspect>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
-    IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
+    // IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
 
     IfcResourceObjectSelect(const IfcActorRole& c) : express::Select(c) {};
 
@@ -2971,11 +3418,13 @@ public:
     explicit IfcResourceSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcResource>, int> = 0>
-    IfcResource as() const { return express::Base::as<IfcResource>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcResource>, int> = 0>
+    // IfcResource as() const { return express::Base::as<IfcResource>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeResource>, int> = 0>
-    IfcTypeResource as() const { return express::Base::as<IfcTypeResource>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeResource>, int> = 0>
+    // IfcTypeResource as() const { return express::Base::as<IfcTypeResource>(); }
 
     IfcResourceSelect(const IfcResource& c) : express::Select(c) {};
 
@@ -2991,11 +3440,13 @@ public:
     explicit IfcRotationalStiffnessSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
+    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
 
     IfcRotationalStiffnessSelect(const IfcBoolean& c) : express::Select(c) {};
 
@@ -3009,11 +3460,13 @@ public:
     explicit IfcSegmentIndexSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcArcIndex>, int> = 0>
-    IfcArcIndex as() const { return express::Base::as<IfcArcIndex>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcArcIndex>, int> = 0>
+    // IfcArcIndex as() const { return express::Base::as<IfcArcIndex>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLineIndex>, int> = 0>
-    IfcLineIndex as() const { return express::Base::as<IfcLineIndex>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLineIndex>, int> = 0>
+    // IfcLineIndex as() const { return express::Base::as<IfcLineIndex>(); }
 
     IfcSegmentIndexSelect(const IfcArcIndex& c) : express::Select(c) {};
 
@@ -3037,11 +3490,13 @@ public:
     explicit IfcShell(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcClosedShell>, int> = 0>
-    IfcClosedShell as() const { return express::Base::as<IfcClosedShell>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcClosedShell>, int> = 0>
+    // IfcClosedShell as() const { return express::Base::as<IfcClosedShell>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcOpenShell>, int> = 0>
-    IfcOpenShell as() const { return express::Base::as<IfcOpenShell>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcOpenShell>, int> = 0>
+    // IfcOpenShell as() const { return express::Base::as<IfcOpenShell>(); }
 
     IfcShell(const IfcClosedShell& c) : express::Select(c) {};
 
@@ -3073,47 +3528,61 @@ public:
     explicit IfcSimpleValue(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
-    IfcBinary as() const { return express::Base::as<IfcBinary>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
+    // IfcBinary as() const { return express::Base::as<IfcBinary>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
-    IfcDate as() const { return express::Base::as<IfcDate>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
+    // IfcDate as() const { return express::Base::as<IfcDate>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
-    IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
+    // IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
+    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
-    IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
+    // IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
-    IfcInteger as() const { return express::Base::as<IfcInteger>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
+    // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
-    IfcLabel as() const { return express::Base::as<IfcLabel>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
+    // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
-    IfcLogical as() const { return express::Base::as<IfcLogical>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
+    // IfcLogical as() const { return express::Base::as<IfcLogical>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
-    IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
+    // IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
-    IfcReal as() const { return express::Base::as<IfcReal>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
+    // IfcReal as() const { return express::Base::as<IfcReal>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
-    IfcText as() const { return express::Base::as<IfcText>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
+    // IfcText as() const { return express::Base::as<IfcText>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
-    IfcTime as() const { return express::Base::as<IfcTime>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
+    // IfcTime as() const { return express::Base::as<IfcTime>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
-    IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
+    // IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
 
     IfcSimpleValue(const IfcBinary& c) : express::Select(c) {};
 
@@ -3162,23 +3631,29 @@ public:
     explicit IfcSizeSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
+    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
+    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
+    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
+    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
+    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
+    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
 
     IfcSizeSelect(const IfcDescriptiveMeasure& c) : express::Select(c) {};
 
@@ -3206,11 +3681,13 @@ public:
     explicit IfcSolidOrShell(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcClosedShell>, int> = 0>
-    IfcClosedShell as() const { return express::Base::as<IfcClosedShell>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcClosedShell>, int> = 0>
+    // IfcClosedShell as() const { return express::Base::as<IfcClosedShell>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidModel>, int> = 0>
-    IfcSolidModel as() const { return express::Base::as<IfcSolidModel>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidModel>, int> = 0>
+    // IfcSolidModel as() const { return express::Base::as<IfcSolidModel>(); }
 
     IfcSolidOrShell(const IfcClosedShell& c) : express::Select(c) {};
 
@@ -3235,11 +3712,13 @@ public:
     explicit IfcSpaceBoundarySelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalSpatialElement>, int> = 0>
-    IfcExternalSpatialElement as() const { return express::Base::as<IfcExternalSpatialElement>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalSpatialElement>, int> = 0>
+    // IfcExternalSpatialElement as() const { return express::Base::as<IfcExternalSpatialElement>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSpace>, int> = 0>
-    IfcSpace as() const { return express::Base::as<IfcSpace>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpace>, int> = 0>
+    // IfcSpace as() const { return express::Base::as<IfcSpace>(); }
 
     IfcSpaceBoundarySelect(const IfcExternalSpatialElement& c) : express::Select(c) {};
 
@@ -3253,11 +3732,13 @@ public:
     explicit IfcSpatialReferenceSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcProduct>, int> = 0>
-    IfcProduct as() const { return express::Base::as<IfcProduct>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcProduct>, int> = 0>
+    // IfcProduct as() const { return express::Base::as<IfcProduct>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSystem>, int> = 0>
-    IfcSystem as() const { return express::Base::as<IfcSystem>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSystem>, int> = 0>
+    // IfcSystem as() const { return express::Base::as<IfcSystem>(); }
 
     IfcSpatialReferenceSelect(const IfcProduct& c) : express::Select(c) {};
 
@@ -3280,11 +3761,13 @@ public:
     explicit IfcSpecularHighlightSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecularExponent>, int> = 0>
-    IfcSpecularExponent as() const { return express::Base::as<IfcSpecularExponent>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecularExponent>, int> = 0>
+    // IfcSpecularExponent as() const { return express::Base::as<IfcSpecularExponent>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecularRoughness>, int> = 0>
-    IfcSpecularRoughness as() const { return express::Base::as<IfcSpecularRoughness>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecularRoughness>, int> = 0>
+    // IfcSpecularRoughness as() const { return express::Base::as<IfcSpecularRoughness>(); }
 
     IfcSpecularHighlightSelect(const IfcSpecularExponent& c) : express::Select(c) {};
 
@@ -3306,11 +3789,13 @@ public:
     explicit IfcStructuralActivityAssignmentSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElement>, int> = 0>
-    IfcElement as() const { return express::Base::as<IfcElement>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElement>, int> = 0>
+    // IfcElement as() const { return express::Base::as<IfcElement>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcStructuralItem>, int> = 0>
-    IfcStructuralItem as() const { return express::Base::as<IfcStructuralItem>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcStructuralItem>, int> = 0>
+    // IfcStructuralItem as() const { return express::Base::as<IfcStructuralItem>(); }
 
     IfcStructuralActivityAssignmentSelect(const IfcElement& c) : express::Select(c) {};
 
@@ -3333,11 +3818,13 @@ public:
     explicit IfcStyleAssignmentSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPresentationStyle>, int> = 0>
-    IfcPresentationStyle as() const { return express::Base::as<IfcPresentationStyle>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPresentationStyle>, int> = 0>
+    // IfcPresentationStyle as() const { return express::Base::as<IfcPresentationStyle>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPresentationStyleAssignment>, int> = 0>
-    IfcPresentationStyleAssignment as() const { return express::Base::as<IfcPresentationStyleAssignment>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPresentationStyleAssignment>, int> = 0>
+    // IfcPresentationStyleAssignment as() const { return express::Base::as<IfcPresentationStyleAssignment>(); }
 
     IfcStyleAssignmentSelect(const IfcPresentationStyle& c) : express::Select(c) {};
 
@@ -3359,14 +3846,17 @@ public:
     explicit IfcSurfaceOrFaceSurface(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFaceBasedSurfaceModel>, int> = 0>
-    IfcFaceBasedSurfaceModel as() const { return express::Base::as<IfcFaceBasedSurfaceModel>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFaceBasedSurfaceModel>, int> = 0>
+    // IfcFaceBasedSurfaceModel as() const { return express::Base::as<IfcFaceBasedSurfaceModel>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFaceSurface>, int> = 0>
-    IfcFaceSurface as() const { return express::Base::as<IfcFaceSurface>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFaceSurface>, int> = 0>
+    // IfcFaceSurface as() const { return express::Base::as<IfcFaceSurface>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSurface>, int> = 0>
-    IfcSurface as() const { return express::Base::as<IfcSurface>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurface>, int> = 0>
+    // IfcSurface as() const { return express::Base::as<IfcSurface>(); }
 
     IfcSurfaceOrFaceSurface(const IfcFaceBasedSurfaceModel& c) : express::Select(c) {};
 
@@ -3390,20 +3880,25 @@ public:
     explicit IfcSurfaceStyleElementSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedSurfaceStyle>, int> = 0>
-    IfcExternallyDefinedSurfaceStyle as() const { return express::Base::as<IfcExternallyDefinedSurfaceStyle>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedSurfaceStyle>, int> = 0>
+    // IfcExternallyDefinedSurfaceStyle as() const { return express::Base::as<IfcExternallyDefinedSurfaceStyle>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleLighting>, int> = 0>
-    IfcSurfaceStyleLighting as() const { return express::Base::as<IfcSurfaceStyleLighting>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleLighting>, int> = 0>
+    // IfcSurfaceStyleLighting as() const { return express::Base::as<IfcSurfaceStyleLighting>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleRefraction>, int> = 0>
-    IfcSurfaceStyleRefraction as() const { return express::Base::as<IfcSurfaceStyleRefraction>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleRefraction>, int> = 0>
+    // IfcSurfaceStyleRefraction as() const { return express::Base::as<IfcSurfaceStyleRefraction>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleShading>, int> = 0>
-    IfcSurfaceStyleShading as() const { return express::Base::as<IfcSurfaceStyleShading>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleShading>, int> = 0>
+    // IfcSurfaceStyleShading as() const { return express::Base::as<IfcSurfaceStyleShading>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleWithTextures>, int> = 0>
-    IfcSurfaceStyleWithTextures as() const { return express::Base::as<IfcSurfaceStyleWithTextures>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleWithTextures>, int> = 0>
+    // IfcSurfaceStyleWithTextures as() const { return express::Base::as<IfcSurfaceStyleWithTextures>(); }
 
     IfcSurfaceStyleElementSelect(const IfcExternallyDefinedSurfaceStyle& c) : express::Select(c) {};
 
@@ -3429,11 +3924,13 @@ public:
     explicit IfcTextFontSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedTextFont>, int> = 0>
-    IfcExternallyDefinedTextFont as() const { return express::Base::as<IfcExternallyDefinedTextFont>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedTextFont>, int> = 0>
+    // IfcExternallyDefinedTextFont as() const { return express::Base::as<IfcExternallyDefinedTextFont>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedTextFont>, int> = 0>
-    IfcPreDefinedTextFont as() const { return express::Base::as<IfcPreDefinedTextFont>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedTextFont>, int> = 0>
+    // IfcPreDefinedTextFont as() const { return express::Base::as<IfcPreDefinedTextFont>(); }
 
     IfcTextFontSelect(const IfcExternallyDefinedTextFont& c) : express::Select(c) {};
 
@@ -3448,11 +3945,13 @@ public:
     explicit IfcTimeOrRatioSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
+    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
+    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
 
     IfcTimeOrRatioSelect(const IfcDuration& c) : express::Select(c) {};
 
@@ -3468,11 +3967,13 @@ public:
     explicit IfcTranslationalStiffnessSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
+    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
 
     IfcTranslationalStiffnessSelect(const IfcBoolean& c) : express::Select(c) {};
 
@@ -3486,11 +3987,13 @@ public:
     explicit IfcTransportElementTypeSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTransportElementFixedTypeEnum>, int> = 0>
-    IfcTransportElementFixedTypeEnum as() const { return express::Base::as<IfcTransportElementFixedTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTransportElementFixedTypeEnum>, int> = 0>
+    // IfcTransportElementFixedTypeEnum as() const { return express::Base::as<IfcTransportElementFixedTypeEnum>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTransportElementNonFixedTypeEnum>, int> = 0>
-    IfcTransportElementNonFixedTypeEnum as() const { return express::Base::as<IfcTransportElementNonFixedTypeEnum>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTransportElementNonFixedTypeEnum>, int> = 0>
+    // IfcTransportElementNonFixedTypeEnum as() const { return express::Base::as<IfcTransportElementNonFixedTypeEnum>(); }
 
     IfcTransportElementTypeSelect(const IfcTransportElementFixedTypeEnum& c) : express::Select(c) {};
 
@@ -3508,11 +4011,13 @@ public:
     explicit IfcTrimmingSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCartesianPoint>, int> = 0>
-    IfcCartesianPoint as() const { return express::Base::as<IfcCartesianPoint>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCartesianPoint>, int> = 0>
+    // IfcCartesianPoint as() const { return express::Base::as<IfcCartesianPoint>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
+    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
 
     IfcTrimmingSelect(const IfcCartesianPoint& c) : express::Select(c) {};
 
@@ -3538,14 +4043,17 @@ public:
     explicit IfcUnit(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedUnit>, int> = 0>
-    IfcDerivedUnit as() const { return express::Base::as<IfcDerivedUnit>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedUnit>, int> = 0>
+    // IfcDerivedUnit as() const { return express::Base::as<IfcDerivedUnit>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryUnit>, int> = 0>
-    IfcMonetaryUnit as() const { return express::Base::as<IfcMonetaryUnit>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryUnit>, int> = 0>
+    // IfcMonetaryUnit as() const { return express::Base::as<IfcMonetaryUnit>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNamedUnit>, int> = 0>
-    IfcNamedUnit as() const { return express::Base::as<IfcNamedUnit>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNamedUnit>, int> = 0>
+    // IfcNamedUnit as() const { return express::Base::as<IfcNamedUnit>(); }
 
     IfcUnit(const IfcDerivedUnit& c) : express::Select(c) {};
 
@@ -3570,338 +4078,449 @@ public:
     explicit IfcValue(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
-    IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
-    IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
-    IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
-    IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
-    IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
-    IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
-    IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
-    IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
-    IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
-    IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
-    IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
-    IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
-    IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
-    IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
-    IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
-    IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
-    IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
-    IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
-    IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
-    IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
-    IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
-    IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
-    IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
-    IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
-    IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
-    IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
-    IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
-    IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
-    IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
-    IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
-    IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
-    IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
-    IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
-    IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
-    IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
-    IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
-    IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
-    IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
-    IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
-    IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
-    IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
-    IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
-    IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
-    IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
-    IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
-    IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
-    IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
-    IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
-    IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
-    IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
-    IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
-    IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
-    IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
-    IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
-    IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
-    IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
-    IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
-    IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
-    IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
-    IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
-    IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
-    IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
-    IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
-    IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
-    IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
-    IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
-    IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
-    IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
-    IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
-    IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
-    IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
-    IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
-    IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
-    IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
-    IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
-    IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
-    IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
-    IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
-    IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
-    IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
-    IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
-    IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
-    IfcBinary as() const { return express::Base::as<IfcBinary>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
-    IfcDate as() const { return express::Base::as<IfcDate>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
-    IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    IfcDuration as() const { return express::Base::as<IfcDuration>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
-    IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
-    IfcInteger as() const { return express::Base::as<IfcInteger>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
-    IfcLabel as() const { return express::Base::as<IfcLabel>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
-    IfcLogical as() const { return express::Base::as<IfcLogical>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
-    IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
-    IfcReal as() const { return express::Base::as<IfcReal>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
-    IfcText as() const { return express::Base::as<IfcText>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
-    IfcTime as() const { return express::Base::as<IfcTime>(); }
-
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
-    IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
+    // IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
+    // IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
+    // IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
+    // IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
+    // IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
+    // IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
+    // IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
+    // IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
+    // IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
+    // IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
+    // IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
+    // IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
+    // IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
+    // IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
+    // IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
+    // IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
+    // IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
+    // IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
+    // IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
+    // IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
+    // IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
+    // IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
+    // IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
+    // IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
+    // IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
+    // IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
+    // IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
+    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
+    // IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
+    // IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
+    // IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
+    // IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
+    // IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
+    // IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
+    // IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
+    // IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
+    // IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
+    // IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
+    // IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
+    // IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
+    // IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
+    // IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
+    // IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
+    // IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
+    // IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
+    // IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
+    // IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
+    // IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
+    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
+    // IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
+    // IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
+    // IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
+    // IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
+    // IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
+    // IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
+    // IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
+    // IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
+    // IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
+    // IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
+    // IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
+    // IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
+    // IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
+    // IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
+    // IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
+    // IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
+    // IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
+    // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
+    // IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
+    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
+    // IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
+    // IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
+    // IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
+    // IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
+    // IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
+    // IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
+    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
+    // IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
+    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
+    // IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
+    // IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
+    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
+    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
+    // IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
+    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
+    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
+    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
+    // IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
+    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
+    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
+    // IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
+    // IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
+    // IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
+    // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
+    // IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
+    // IfcBinary as() const { return express::Base::as<IfcBinary>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
+    // IfcDate as() const { return express::Base::as<IfcDate>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
+    // IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
+    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
+    // IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
+    // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
+    // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
+    // IfcLogical as() const { return express::Base::as<IfcLogical>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
+    // IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
+    // IfcReal as() const { return express::Base::as<IfcReal>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
+    // IfcText as() const { return express::Base::as<IfcText>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
+    // IfcTime as() const { return express::Base::as<IfcTime>(); }
+
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
+    // IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
 
     IfcValue(const IfcDerivedMeasureValue& c) : express::Select(c) {};
 
@@ -4140,11 +4759,13 @@ public:
     explicit IfcVectorOrDirection(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcDirection>, int> = 0>
-    IfcDirection as() const { return express::Base::as<IfcDirection>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcDirection>, int> = 0>
+    // IfcDirection as() const { return express::Base::as<IfcDirection>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcVector>, int> = 0>
-    IfcVector as() const { return express::Base::as<IfcVector>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcVector>, int> = 0>
+    // IfcVector as() const { return express::Base::as<IfcVector>(); }
 
     IfcVectorOrDirection(const IfcDirection& c) : express::Select(c) {};
 
@@ -4160,11 +4781,13 @@ public:
     explicit IfcWarpingStiffnessSelect(const express::Base& c) : express::Select(c) {}
 
     static const IfcParse::select_type& Class();
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
+    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
 
-    template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+    // let's just use the as<>() from Base instead directly...
+    // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
+    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
 
     IfcWarpingStiffnessSelect(const IfcBoolean& c) : express::Select(c) {};
 
