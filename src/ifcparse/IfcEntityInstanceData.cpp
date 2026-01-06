@@ -529,8 +529,6 @@ template IFC_PARSE_API void rocks_db_attribute_storage::set<Derived>(void* stora
 template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_t& value);
 template IFC_PARSE_API void rocks_db_attribute_storage::set<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_of_aggregate_t& value);
 
-
-
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<Blank>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<int>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<bool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
@@ -553,5 +551,18 @@ template IFC_PARSE_API bool rocks_db_attribute_storage::has<std::vector<std::vec
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<Derived>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
 template IFC_PARSE_API bool rocks_db_attribute_storage::has<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+
+template <typename T>
+T* InstanceData::get_storage_of_type() const {
+    return std::visit([this](auto& m) -> T* {
+        if constexpr (std::is_same_v<std::decay_t<decltype(m)>, T>) {
+            return &m;
+        }
+        return nullptr;
+    }, file()->storage_);
+}
+
+template IFC_PARSE_API IfcParse::impl::in_memory_file_storage* InstanceData::get_storage_of_type<IfcParse::impl::in_memory_file_storage>() const;
+template IFC_PARSE_API IfcParse::impl::rocks_db_file_storage* InstanceData::get_storage_of_type<IfcParse::impl::rocks_db_file_storage>() const;
 
 #endif

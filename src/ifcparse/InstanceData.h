@@ -424,15 +424,7 @@ class IFC_PARSE_API InstanceData {
     uint32_t id_;
 
     template <typename T>
-    T* get_storage_of_type() const {
-        return std::visit([this](auto& m) -> T* {
-            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, T>) {
-                return &m;
-            }
-            return nullptr;
-        },
-                          file()->storage_);
-    }
+    T* get_storage_of_type() const;
 
   public:
       // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but in_memory*, where nullptr means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
