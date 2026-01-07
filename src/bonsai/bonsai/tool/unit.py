@@ -166,6 +166,11 @@ def parse_distance_string(input_string: str, use_project_unit: bool = True) -> t
                     break
             if inches is None:
                 inches = 0
+            
+            # If feet is negative, inches should also be negative (subtractive)
+            if feet < 0:
+                inches = -inches
+            
             # Convert to meters
             total_meters = (feet * 0.3048) + (inches * 0.0254)
             return total_meters
