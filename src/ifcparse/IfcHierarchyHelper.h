@@ -411,8 +411,8 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
             auto li = instances_by_type<typename Schema::IfcRelDefinesByType>();
             bool found = false;
             for (auto & rel : li) {
-                if (rel->RelatingType() == relating_object) {
-                    auto objects = rel->RelatedObjects();
+                if (rel.RelatingType() == relating_object) {
+                    auto objects = rel.RelatedObjects();
                     objects.push_back(addEntity(related_object).template as<typename Schema::IfcObject>());
                     rel.setRelatedObjects(objects);
                     found = true;
@@ -427,7 +427,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                     owner_hist = addOwnerHistory();
                 }
                 std::vector<typename Schema::IfcObject> related_objects = {related_object.template as<typename Schema::IfcObject>()};
-                auto t = create<Schema::IfcRelDefinesByType>();
+                auto t = create<typename Schema::IfcRelDefinesByType>();
                 t.setGlobalId(IfcParse::IfcGlobalId());
                 t.setOwnerHistory(owner_hist);
                 t.setRelatedObjects(related_objects);
@@ -531,48 +531,48 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
 IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc2x3>& file, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcProductRepresentation& shape, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcRepresentation& shape, double r, double g, double b, double a = 1.0);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcProductRepresentation& shape, Ifc2x3::IfcPresentationStyleAssignment* style_assignment);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcRepresentation& shape, Ifc2x3::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcProductRepresentation& shape, const Ifc2x3::IfcPresentationStyleAssignment& style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcRepresentation& shape, const Ifc2x3::IfcPresentationStyleAssignment& style_assignment);
 #endif
 
 #ifdef HAS_SCHEMA_4
 IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc4>& file, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, const Ifc4::IfcProductRepresentation& shape, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, const Ifc4::IfcRepresentation& shape, double r, double g, double b, double a = 1.0);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, const Ifc4::IfcProductRepresentation& shape, Ifc4::IfcPresentationStyleAssignment* style_assignment);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, const Ifc4::IfcRepresentation& shape, Ifc4::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, const Ifc4::IfcProductRepresentation& shape, const Ifc4::IfcPresentationStyleAssignment& style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, const Ifc4::IfcRepresentation& shape, const Ifc4::IfcPresentationStyleAssignment& style_assignment);
 #endif
 
 #ifdef HAS_SCHEMA_4x1
 IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc4x1>& file, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcProductRepresentation& shape, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcRepresentation& shape, double r, double g, double b, double a = 1.0);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcProductRepresentation& shape, Ifc4x1::IfcPresentationStyleAssignment* style_assignment);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcRepresentation& shape, Ifc4x1::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcProductRepresentation& shape, const Ifc4x1::IfcPresentationStyleAssignment& style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcRepresentation& shape, const Ifc4x1::IfcPresentationStyleAssignment& style_assignment);
 #endif
 
 #ifdef HAS_SCHEMA_4x2
 IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc4x2>& file, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcProductRepresentation& shape, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcRepresentation& shape, double r, double g, double b, double a = 1.0);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcProductRepresentation& shape, Ifc4x2::IfcPresentationStyleAssignment* style_assignment);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcRepresentation& shape, Ifc4x2::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcProductRepresentation& shape, const Ifc4x2::IfcPresentationStyleAssignment& style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcRepresentation& shape, const Ifc4x2::IfcPresentationStyleAssignment& style_assignment);
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc1
 IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc1>& file, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcProductRepresentation& shape, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcRepresentation& shape, double r, double g, double b, double a = 1.0);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcProductRepresentation& shape, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcRepresentation& shape, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcProductRepresentation& shape, const Ifc4x3_rc1::IfcPresentationStyleAssignment& style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcRepresentation& shape, const Ifc4x3_rc1::IfcPresentationStyleAssignment& style_assignment);
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc2
 IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc2>& file, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcProductRepresentation& shape, double r, double g, double b, double a = 1.0);
 IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcRepresentation& shape, double r, double g, double b, double a = 1.0);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcProductRepresentation& shape, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment);
-IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcRepresentation& shape, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcProductRepresentation& shape, const Ifc4x3_rc2::IfcPresentationStyleAssignment& style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcRepresentation& shape, const Ifc4x3_rc2::IfcPresentationStyleAssignment& style_assignment);
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc3

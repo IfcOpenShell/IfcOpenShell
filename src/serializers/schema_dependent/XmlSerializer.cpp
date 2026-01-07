@@ -787,7 +787,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 			ptree node;
 			node.put("<xmlattr>.id", qualify_unrooted_instance(mat));
             // @todo this does not handle IfcMaterialProfileSetUsage and IfcMaterialConstituentSet
-			if (mat.concrete().as<IfcSchema::IfcMaterialUsageDefinition>() || mat.concrete().as<IfcSchema::IfcMaterialLayerSet>()) {				
+            if (mat.concrete().as<IfcSchema::IfcMaterialLayerSetUsage>() || mat.concrete().as<IfcSchema::IfcMaterialLayerSet>()) {				
 				IfcSchema::IfcMaterialLayerSet layerset = mat.concrete().as<IfcSchema::IfcMaterialLayerSet>();
 				if (!layerset) {
 					layerset = mat.concrete().as<IfcSchema::IfcMaterialLayerSetUsage>().ForLayerSet();

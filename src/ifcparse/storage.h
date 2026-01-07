@@ -1,6 +1,10 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+// Avoid conflicts with OpenCascade HANDLE type and RocksDB Handle
+#pragma push_macro("Handle")
+#undef Handle
+
 #ifndef IFOPSH_WITH_ROCKSDB
 
 namespace rocksdb {
@@ -482,5 +486,8 @@ namespace IfcParse {
         };
     }
 }
+
+// redefine Handle macro.
+#pragma pop_macro("Handle")
 
 #endif // STORAGE_H

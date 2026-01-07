@@ -16,7 +16,6 @@ private:
 	IfcParse::IfcFile* output_file_;
 
 	void write_streaming_();
-	void write_non_streaming_();
 public:
 	RocksDbSerializer(IfcParse::IfcFile* file, const std::string& rocksdb_filename);
 	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream);

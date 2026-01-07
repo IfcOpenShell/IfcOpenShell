@@ -1975,6 +1975,7 @@ express::Base IfcFile::addEntity(const express::Base& entity) {
     entity_file_map_.insert(entity_entity_map_t::value_type(entity.identity(), new_entity));
 
     // For subtypes of IfcRoot, the GUID mapping needs to be updated.
+    /*
     if (decl->is(*ifcroot_type_)) {
         try {
             const std::string guid = new_entity.get_attribute_value(0);
@@ -1988,8 +1989,9 @@ express::Base IfcFile::addEntity(const express::Base& entity) {
             Logger::Message(Logger::LOG_ERROR, ex.what());
         }
     }
+    */
 
-    add_type_ref(new_entity);
+    // add_type_ref(new_entity);
 
     return new_entity;
 }

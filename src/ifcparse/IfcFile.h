@@ -36,6 +36,7 @@
 #include <map>
 
 #ifdef IFOPSH_WITH_ROCKSDB
+
 #include <rocksdb/merge_operator.h>
 
 namespace {

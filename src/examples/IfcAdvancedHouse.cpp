@@ -41,7 +41,6 @@
 #define IfcSchema Ifc2x3
 #include "../ifcparse/macros.h"
 #include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
 
 #include "../ifcgeom/Serialization/Serialization.h"
@@ -60,15 +59,15 @@ int main() {
 	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
 	// convenience functions for working with geometry in IFC files.
 	IfcHierarchyHelper<IfcSchema> file;
-	file.header().file_name()->setname("IfcAdvancedHouse.ifc");
+	file.header().file_name().setname("IfcAdvancedHouse.ifc");
 
-	IfcSchema::IfcBuilding* building = file.addBuilding();
+	auto building = file.addBuilding();
 	// By adding a building, a hierarchy has been automatically created that consists of the following
 	// structure: IfcProject > IfcSite > IfcBuilding
 
 	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the 
 	// project, which has been created automatically.
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcAdvancedHouse"s);
+	file.getSingle<IfcSchema::IfcProject>().setName("IfcAdvancedHouse"s);
 
 	// To demonstrate the ability to serialize arbitrary opencascade solids a building envelope is
 	// constructed by applying boolean operations. Naturally, in IFC, building elements should be 
@@ -91,13 +90,13 @@ int main() {
 	// IfcFacetedBRep. If it would not be a polyhedron, serialise() can only be successful when linked
 	// to the IFC4 model and with `advanced` set to `true` which introduces IfcAdvancedFace. It would
 	// return `0` otherwise.
-	IfcSchema::IfcProductDefinitionShape* building_shape = IfcGeom::serialise(STRINGIFY(IfcSchema), building_shell, false)->as<IfcSchema::IfcProductDefinitionShape>();
+	auto building_shape = IfcGeom::serialise(file, building_shell, false).as<IfcSchema::IfcProductDefinitionShape>();
 	
 	file.addEntity(building_shape);
-	IfcSchema::IfcRepresentation* rep = *building_shape->Representations()->begin();
+	auto rep = building_shape.Representations().begin();
 	rep->setContextOfItems(file.getRepresentationContext("model"));
 
-	building->setRepresentation(building_shape);
+	building.setRepresentation(building_shape);
 
 	// A pale white colour is assigned to the building.
 	setSurfaceColour(file, building_shape, 0.75, 0.73, 0.68);
@@ -107,18 +106,18 @@ int main() {
 	TopoDS_Shape shape;
 	createGroundShape(shape);
 
-	auto ground_representation = IfcGeom::serialise(STRINGIFY(IfcSchema), shape, true);
+	auto ground_representation = IfcGeom::serialise(file, shape, true);
 	if (!ground_representation) {
-		ground_representation = IfcGeom::tesselate(STRINGIFY(IfcSchema), shape, 100.);
+        ground_representation = IfcGeom::tesselate(file, shape, 100.);
 	}
-	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation->as<IfcSchema::IfcProductDefinitionShape>());
+	file.getSingle<IfcSchema::IfcSite>().setRepresentation(ground_representation.as<IfcSchema::IfcProductDefinitionShape>());
 	
-	IfcSchema::IfcRepresentation::list::ptr ground_reps = file.getSingle<IfcSchema::IfcSite>()->Representation()->Representations();
-	for (IfcSchema::IfcRepresentation::list::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
-		(*it)->setContextOfItems(file.getRepresentationContext("Model"));
+	auto ground_reps = file.getSingle<IfcSchema::IfcSite>().Representation().Representations();
+	for (auto& rep : ground_reps) {
+		rep.setContextOfItems(file.getRepresentationContext("Model"));
 	}
 	file.addEntity(ground_representation);
-	setSurfaceColour(file, ground_representation->as<IfcSchema::IfcProductDefinitionShape>(), 0.15, 0.25, 0.05);
+	setSurfaceColour(file, ground_representation.as<IfcSchema::IfcProductDefinitionShape>(), 0.15, 0.25, 0.05);
 
     /*
     // Note that IFC lacks elementary surfaces that STEP does have, such as spherical_surface.

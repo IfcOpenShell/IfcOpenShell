@@ -51,21 +51,24 @@ class IFC_PARSE_API Base {
   protected:
     std::weak_ptr<InstanceData> data_;
   public:
-    
     operator bool() const {
         return !data_.expired();
-      }
+    }
 
-        bool operator<(const Base& other) const {
-          return data() < other.data();
-      }
+    bool operator<(const Base& other) const {
+        return data() < other.data();
+    }
 
-        bool operator==(const Base& other) const {
-          return data() == other.data();
-      }
+    bool operator==(const Base& other) const {
+        return data() == other.data();
+    }
 
-      Base() {};
-      Base(const std::weak_ptr<InstanceData>& data) : data_(data) {}
+    bool operator!=(const Base& other) const {
+        return !(*this == other);
+    }
+
+    Base() {};
+    Base(const std::weak_ptr<InstanceData>& data) : data_(data) {}
 
     const InstanceData* data() const;
       InstanceData* data();

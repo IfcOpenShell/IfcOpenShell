@@ -780,8 +780,8 @@ express::Base IfcParse::impl::in_memory_file_storage::create(const IfcParse::dec
     }
     auto ptr = byid_.insert({instance_name, std::make_shared<InstanceData>(file, decl, instance_name, decl->as_entity() ? in_memory_attribute_storage(decl->as_entity()->attribute_count()) : in_memory_attribute_storage(1))}).first;
     express::Base inst(ptr->second);
-    // @todo addEntity should only be used for copying behaviour now, not during creation
-    file->addEntity(inst);
+
+    add_type_ref(inst);
 
     return inst;
 }

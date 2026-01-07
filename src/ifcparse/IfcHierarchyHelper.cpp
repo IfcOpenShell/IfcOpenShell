@@ -310,9 +310,17 @@ void IfcHierarchyHelper<Schema>::addExtrudedPolyline(typename Schema::IfcShapeRe
     solid.setSweptArea(profile);
     solid.setPosition(place2 ? place2 : addPlacement3d());
     solid.setExtrudedDirection(dir ? dir : addTriplet<typename Schema::IfcDirection>(0, 0, 1));
+    solid.setDepth(h);
     
-    // @nb this overwrites, not appends
-    rep.setItems(std::vector<typename Schema::IfcRepresentationItem>{solid});
+    std::vector<typename Schema::IfcRepresentationItem> items;
+    try {
+        auto existing_items = rep.Items();
+        items.insert(items.end(), existing_items.begin(), existing_items.end());
+    } catch (...) {
+        // ignore
+    }
+    items.push_back(solid);
+    rep.setItems(items);
 }
 
 template <typename Schema>
@@ -535,7 +543,7 @@ void setSurfaceColour_4x3(IfcHierarchyHelper<Schema>& file, typename Schema::Ifc
 }
 
 #ifdef HAS_SCHEMA_2x3
-Ifc2x3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc2x3::IfcRepresentationItem item, Ifc2x3::IfcPresentationStyleAssignment style_assignment) {
+Ifc2x3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc2x3::IfcRepresentationItem& item, const Ifc2x3::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc2x3::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc2x3::IfcPresentationStyleAssignment>{style_assignment});
@@ -553,7 +561,7 @@ Ifc4::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4::IfcReprese
 #endif
 
 #ifdef HAS_SCHEMA_4x1
-Ifc4x1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x1::IfcRepresentationItem item, Ifc4x1::IfcPresentationStyleAssignment style_assignment) {
+Ifc4x1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x1::IfcRepresentationItem& item, const Ifc4x1::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc4x1::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x1::IfcPresentationStyleAssignment>{style_assignment});
@@ -562,7 +570,7 @@ Ifc4x1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x1::IfcRep
 #endif
 
 #ifdef HAS_SCHEMA_4x2
-Ifc4x2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x2::IfcRepresentationItem item, Ifc4x2::IfcPresentationStyleAssignment style_assignment) {
+Ifc4x2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x2::IfcRepresentationItem& item, const Ifc4x2::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc4x2::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x2::IfcPresentationStyleAssignment>{style_assignment});
@@ -571,7 +579,7 @@ Ifc4x2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x2::IfcRep
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc1
-Ifc4x3_rc1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_rc1::IfcRepresentationItem item, Ifc4x3_rc1::IfcPresentationStyleAssignment style_assignment) {
+Ifc4x3_rc1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_rc1::IfcRepresentationItem& item, const Ifc4x3_rc1::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc4x3_rc1::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3_rc1::IfcPresentationStyleAssignment>{style_assignment});
@@ -580,7 +588,7 @@ Ifc4x3_rc1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_rc1
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc2
-Ifc4x3_rc2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_rc2::IfcRepresentationItem item, Ifc4x3_rc2::IfcPresentationStyleAssignment style_assignment) {
+Ifc4x3_rc2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_rc2::IfcRepresentationItem& item, const Ifc4x3_rc2::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc4x3_rc2::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3_rc2::IfcPresentationStyleAssignment>{style_assignment});
@@ -589,7 +597,7 @@ Ifc4x3_rc2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_rc2
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc3
-Ifc4x3_rc3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_rc3::IfcRepresentationItem item, Ifc4x3_rc3::IfcPresentationStyle style) {
+Ifc4x3_rc3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_rc3::IfcRepresentationItem& item, const Ifc4x3_rc3::IfcPresentationStyle& style) {
     auto sitem = file->create<Ifc4x3_rc3::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3_rc3::IfcPresentationStyle>{style});
@@ -598,7 +606,7 @@ Ifc4x3_rc3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_rc3
 #endif
 
 #ifdef HAS_SCHEMA_4x3_rc4
-Ifc4x3_rc4::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_rc4::IfcRepresentationItem item, Ifc4x3_rc4::IfcPresentationStyle style) {
+Ifc4x3_rc4::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_rc4::IfcRepresentationItem& item, const Ifc4x3_rc4::IfcPresentationStyle& style) {
     auto sitem = file->create<Ifc4x3_rc4::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3_rc4::IfcPresentationStyle>{style});
@@ -607,7 +615,7 @@ Ifc4x3_rc4::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_rc4
 #endif
 
 #ifdef HAS_SCHEMA_4x3
-Ifc4x3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3::IfcRepresentationItem item, Ifc4x3::IfcPresentationStyle style) {
+Ifc4x3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3::IfcRepresentationItem& item, const Ifc4x3::IfcPresentationStyle& style) {
     auto sitem = file->create<Ifc4x3::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3::IfcPresentationStyle>{style});
@@ -616,7 +624,7 @@ Ifc4x3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3::IfcRep
 #endif
 
 #ifdef HAS_SCHEMA_4x3_tc1
-Ifc4x3_tc1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_tc1::IfcRepresentationItem item, Ifc4x3_tc1::IfcPresentationStyle style) {
+Ifc4x3_tc1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_tc1::IfcRepresentationItem& item, const Ifc4x3_tc1::IfcPresentationStyle& style) {
     auto sitem = file.crefile->createate<Ifc4x3_tc1::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3_tc1::IfcPresentationStyle>{style});
@@ -625,7 +633,7 @@ Ifc4x3_tc1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_tc1
 #endif
 
 #ifdef HAS_SCHEMA_4x3_add1
-Ifc4x3_add1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_add1::IfcRepresentationItem item, Ifc4x3_add1::IfcPresentationStyle style) {
+Ifc4x3_add1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_add1::IfcRepresentationItem& item, const Ifc4x3_add1::IfcPresentationStyle& style) {
     auto sitem = file->create<Ifc4x3_add1::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3_add1::IfcPresentationStyle>{style});
@@ -634,7 +642,7 @@ Ifc4x3_add1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_ad
 #endif
 
 #ifdef HAS_SCHEMA_4x3_add2
-Ifc4x3_add2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4x3_add2::IfcRepresentationItem item, Ifc4x3_add2::IfcPresentationStyle style) {
+Ifc4x3_add2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_add2::IfcRepresentationItem& item, const Ifc4x3_add2::IfcPresentationStyle& style) {
     auto sitem = file->create<Ifc4x3_add2::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3_add2::IfcPresentationStyle>{style});
@@ -664,19 +672,19 @@ Ifc2x3::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc
     return addStyleAssignment_2x3(file, r, g, b, a);
 }
 
-Ifc2x3::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc2x3::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-Ifc2x3::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc2x3::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcProductRepresentation shape, Ifc2x3::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcProductRepresentation& shape, const Ifc2x3::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcRepresentation shape, Ifc2x3::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, const Ifc2x3::IfcRepresentation& shape, const Ifc2x3::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 #endif
@@ -708,19 +716,19 @@ Ifc4x1::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc
     return addStyleAssignment_2x3(file, r, g, b, a);
 }
 
-Ifc4x1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-Ifc4x1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcProductRepresentation shape, Ifc4x1::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcProductRepresentation& shape, const Ifc4x1::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcRepresentation shape, Ifc4x1::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, const Ifc4x1::IfcRepresentation& shape, const Ifc4x1::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 #endif
@@ -730,19 +738,19 @@ Ifc4x2::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper<Ifc
     return addStyleAssignment_2x3(file, r, g, b, a);
 }
 
-Ifc4x2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-Ifc4x2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcProductRepresentation shape, Ifc4x2::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcProductRepresentation& shape, const Ifc4x2::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcRepresentation shape, Ifc4x2::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, const Ifc4x2::IfcRepresentation& shape, const Ifc4x2::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 #endif
@@ -752,19 +760,19 @@ Ifc4x3_rc1::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper
     return addStyleAssignment_2x3(file, r, g, b, a);
 }
 
-Ifc4x3_rc1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_rc1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-Ifc4x3_rc1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_rc1::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcProductRepresentation shape, Ifc4x3_rc1::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcProductRepresentation& shape, const Ifc4x3_rc1::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcRepresentation shape, Ifc4x3_rc1::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, const Ifc4x3_rc1::IfcRepresentation& shape, const Ifc4x3_rc1::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 #endif
@@ -774,19 +782,19 @@ Ifc4x3_rc2::IfcPresentationStyleAssignment addStyleAssignment(IfcHierarchyHelper
     return addStyleAssignment_2x3(file, r, g, b, a);
 }
 
-Ifc4x3_rc2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_rc2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-Ifc4x3_rc2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_rc2::IfcPresentationStyleAssignment setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_2x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcProductRepresentation shape, Ifc4x3_rc2::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcProductRepresentation& shape, const Ifc4x3_rc2::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcRepresentation shape, Ifc4x3_rc2::IfcPresentationStyleAssignment style_assignment) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, const Ifc4x3_rc2::IfcRepresentation& shape, const Ifc4x3_rc2::IfcPresentationStyleAssignment& style_assignment) {
     setSurfaceColour_2x3(file, shape, style_assignment);
 }
 #endif
@@ -796,19 +804,19 @@ Ifc4x3_rc3::IfcPresentationStyle addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc
     return addStyleAssignment_4x3(file, r, g, b, a);
 }
 
-Ifc4x3_rc3::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_rc3::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, const Ifc4x3_rc3::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-Ifc4x3_rc3::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_rc3::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, const Ifc4x3_rc3::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcProductRepresentation shape, Ifc4x3_rc3::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, const Ifc4x3_rc3::IfcProductRepresentation& shape, const Ifc4x3_rc3::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcRepresentation shape, Ifc4x3_rc3::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, const Ifc4x3_rc3::IfcRepresentation& shape, const Ifc4x3_rc3::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 #endif
@@ -818,19 +826,19 @@ Ifc4x3_rc4::IfcPresentationStyle addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc
     return addStyleAssignment_4x3(file, r, g, b, a);
 }
 
-Ifc4x3_rc4::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_rc4::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, const Ifc4x3_rc4::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-Ifc4x3_rc4::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_rc4::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, const Ifc4x3_rc4::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcProductRepresentation shape, Ifc4x3_rc4::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, const Ifc4x3_rc4::IfcProductRepresentation& shape, const Ifc4x3_rc4::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcRepresentation shape, Ifc4x3_rc4::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, const Ifc4x3_rc4::IfcRepresentation& shape, const Ifc4x3_rc4::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 #endif
@@ -840,19 +848,19 @@ Ifc4x3::IfcPresentationStyle addStyleAssignment(IfcHierarchyHelper<Ifc4x3>& file
     return addStyleAssignment_4x3(file, r, g, b, a);
 }
 
-Ifc4x3::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, const Ifc4x3::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-Ifc4x3::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, const Ifc4x3::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcProductRepresentation shape, Ifc4x3::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, const Ifc4x3::IfcProductRepresentation& shape, const Ifc4x3::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcRepresentation shape, Ifc4x3::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, const Ifc4x3::IfcRepresentation& shape, const Ifc4x3::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 #endif
@@ -862,19 +870,19 @@ Ifc4x3_tc1::IfcPresentationStyle addStyleAssignment(IfcHierarchyHelper<Ifc4x3_tc
     return addStyleAssignment_4x3(file, r, g, b, a);
 }
 
-Ifc4x3_tc1::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_tc1::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, const Ifc4x3_tc1::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-Ifc4x3_tc1::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_tc1::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, const Ifc4x3_tc1::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcProductRepresentation shape, Ifc4x3_tc1::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, const Ifc4x3_tc1::IfcProductRepresentation& shape, const Ifc4x3_tc1::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcRepresentation shape, Ifc4x3_tc1::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, const Ifc4x3_tc1::IfcRepresentation& shape, const Ifc4x3_tc1::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 #endif
@@ -884,19 +892,19 @@ Ifc4x3_add1::IfcPresentationStyle addStyleAssignment(IfcHierarchyHelper<Ifc4x3_a
     return addStyleAssignment_4x3(file, r, g, b, a);
 }
 
-Ifc4x3_add1::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_add1::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, const Ifc4x3_add1::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-Ifc4x3_add1::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_add1::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, const Ifc4x3_add1::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation shape, Ifc4x3_add1::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, const Ifc4x3_add1::IfcProductRepresentation& shape, const Ifc4x3_add1::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcRepresentation shape, Ifc4x3_add1::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, const Ifc4x3_add1::IfcRepresentation& shape, const Ifc4x3_add1::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 #endif
@@ -906,19 +914,19 @@ Ifc4x3_add2::IfcPresentationStyle addStyleAssignment(IfcHierarchyHelper<Ifc4x3_a
     return addStyleAssignment_4x3(file, r, g, b, a);
 }
 
-Ifc4x3_add2::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcProductRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_add2::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcProductRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-Ifc4x3_add2::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcRepresentation shape, double r, double g, double b, double a) {
+Ifc4x3_add2::IfcPresentationStyle setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcRepresentation& shape, double r, double g, double b, double a) {
     return setSurfaceColour_4x3(file, shape, r, g, b, a);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcProductRepresentation shape, Ifc4x3_add2::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcProductRepresentation& shape, const Ifc4x3_add2::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 
-void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add2>& file, Ifc4x3_add2::IfcRepresentation shape, Ifc4x3_add2::IfcPresentationStyle style) {
+void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add2>& file, const Ifc4x3_add2::IfcRepresentation& shape, const Ifc4x3_add2::IfcPresentationStyle& style) {
     setSurfaceColour_4x3(file, shape, style);
 }
 #endif
