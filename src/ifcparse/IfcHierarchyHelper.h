@@ -376,6 +376,13 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
         auto t = create<T>();
         t.set_attribute_value(0, std::vector<double>{x, y});
         return t;
+    }    
+
+    template <typename T, typename U>
+    T addValue(U v) {
+        auto measure = create<T>();
+        measure.set_attribute_value(0, v);
+        return measure;
     }
 
     template <class T>
