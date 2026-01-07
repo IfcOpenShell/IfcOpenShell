@@ -1062,18 +1062,34 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             and not self.is_advanced
         ):
             filepath = self.get_filepath()
-            suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
-            if str(filepath).lower().endswith(".ifc"):
-                metadata_path = Path(str(filepath)[:-4] + suffix)
-            else:
-                metadata_path = Path(str(filepath) + suffix)
-            if metadata_path.exists() and metadata_path.is_file():
-                try:
-                    bpy.ops.bim.load_blend_metadata_and_ifc(filepath=filepath)
-                    self.report({"INFO"}, f"Loaded metadata file: {metadata_path.name}")
-                    return {"FINISHED"}
-                except Exception as e:
-                    self.report({"WARNING"}, f"Failed to load metadata file, using regular load: {e}")
+            
+            # First, load the IFC file temporarily to check for metadata document
+            temp_ifc = None
+            has_metadata_doc = False
+            try:
+                temp_ifc = ifcopenshell.open(str(filepath))
+                for doc in temp_ifc.by_type("IfcDocumentInformation"):
+                    if getattr(doc, "Scope", None) == "BLEND_METADATA":
+                        has_metadata_doc = True
+                        break
+            except:
+                pass
+            finally:
+                temp_ifc = None
+            
+            if has_metadata_doc:
+                suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+                if str(filepath).lower().endswith(".ifc"):
+                    metadata_path = Path(str(filepath)[:-4] + suffix)
+                else:
+                    metadata_path = Path(str(filepath) + suffix)
+                if metadata_path.exists() and metadata_path.is_file():
+                    try:
+                        bpy.ops.bim.load_blend_metadata_and_ifc(filepath=filepath)
+                        self.report({"INFO"}, f"Loaded metadata file: {metadata_path.name}")
+                        return {"FINISHED"}
+                    except Exception as e:
+                        self.report({"WARNING"}, f"Failed to load metadata file, using regular load: {e}")
 
         @persistent
         def load_handler(*args):
@@ -1121,6 +1137,10 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             props.is_loading = True
             props.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             props.use_relative_project_path = self.use_relative_path
+            
+            metadata_doc = tool.Project.get_metadata_document_information()
+            props.should_save_metadata_for_this_file = metadata_doc is not None
+            
             tool.Blender.register_toolbar()
             tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
@@ -1749,6 +1769,22 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         settings.json_version = self.json_version
         settings.json_compact = self.json_compact
 
+        pprops = tool.Project.get_project_props()
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file and pprops.should_save_metadata_for_this_file:
+            suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+            if output_file.lower().endswith(".ifc"):
+                metadata_filename = os.path.basename(output_file)[:-4] + suffix
+            else:
+                metadata_filename = os.path.basename(output_file) + suffix
+            
+            if not tool.Project.get_metadata_document_information():
+                tool.Project.create_metadata_document_information(metadata_filename)
+            else:
+                tool.Project.update_metadata_document_information(metadata_filename)
+        else:
+            if not pprops.should_save_metadata_for_this_file:
+                tool.Project.remove_metadata_document_information()
+
         ifc_exporter = export_ifc.IfcExporter(settings)
         print("Starting export")
         settings.logger.info("Starting export")
@@ -1765,7 +1801,8 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
             tool.Ifc.set_path(output_file)
         bim_props.is_dirty = False
 
-        if tool.Blender.get_addon_preferences().save_metadata_blend_file:
+        pprops = tool.Project.get_project_props()
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file and pprops.should_save_metadata_for_this_file:
             try:
                 bpy.ops.bim.save_blend_metadata_file()
                 suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix

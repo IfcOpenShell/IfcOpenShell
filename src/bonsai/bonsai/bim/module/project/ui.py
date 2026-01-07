@@ -338,9 +338,9 @@ class BIM_PT_project(Panel):
             else:
                 metadata_filename = os.path.basename(props.ifc_file) + suffix
             row = self.layout.row(align=True)
-            col = row.column()
-            col.enabled = False
-            col.label(text=f"Saving session data to: {metadata_filename}")
+            row.use_property_split = False
+            pprops = tool.Project.get_project_props()
+            row.prop(pprops, "should_save_metadata_for_this_file", text=f"Save session data to: {metadata_filename}")
 
 
 class BIM_PT_new_project_wizard(Panel):
