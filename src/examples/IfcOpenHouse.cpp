@@ -160,7 +160,11 @@ int main() {
     roof.setOwnerHistory(file.getSingle<IfcSchema::IfcOwnerHistory>());
     roof.setName("Roof");
     roof.setObjectPlacement(file.addLocalPlacement(storey_placement));
+#ifdef USE_IFC4
+    roof.setPredefinedType(IfcSchema::IfcRoofTypeEnum::IfcRoofType_GABLE_ROOF);
+#else
     roof.setShapeType(IfcSchema::IfcRoofTypeEnum::IfcRoofType_GABLE_ROOF);
+#endif
 
     // The roof geometry is slanted 45 degrees by specifying a direction for the box extrusion
     auto roof_rep = file.addEmptyRepresentation();
@@ -190,11 +194,13 @@ int main() {
     north_roof_part.setRepresentation(file.addMappedItem(roof_rep));
     north_roof_part.setObjectPlacement(file.addLocalPlacement(roof.ObjectPlacement(), 0, 5400, 2700, 0, 0, 1, -1, 0, 0));
 
-    auto rel = file.create<IfcSchema::IfcRelAggregates>();
-    rel.setGlobalId(guid());
-    rel.setOwnerHistory(file.getSingle<IfcSchema::IfcOwnerHistory>());
-    rel.setRelatingObject(roof);
-    rel.setRelatedObjects({south_roof_part, north_roof_part});
+    {
+        auto rel = file.create<IfcSchema::IfcRelAggregates>();
+        rel.setGlobalId(guid());
+        rel.setOwnerHistory(file.getSingle<IfcSchema::IfcOwnerHistory>());
+        rel.setRelatingObject(roof);
+        rel.setRelatedObjects({south_roof_part, north_roof_part});
+    }
 
     file.addBuildingProduct(south_roof_part);
     file.addBuildingProduct(north_roof_part);
@@ -368,7 +374,11 @@ int main() {
     stair.setOwnerHistory(file.getSingle<IfcSchema::IfcOwnerHistory>());
     stair.setObjectPlacement(file.addLocalPlacement(storey_placement, 5050, 1000, 0, 0, 1, 0, 1, 0, 0));
     stair.setRepresentation(file.addExtrudedPolyline(stair_points, 1200));
+#ifdef USE_IFC4
+    stair.setNumberOfRisers(2);
+#else
     stair.setNumberOfRiser(2);
+#endif
     stair.setNumberOfTreads(2);
     stair.setRiserHeight(0.2);
     stair.setTreadLength(0.25);

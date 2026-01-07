@@ -555,7 +555,7 @@ Ifc2x3::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc2x3::
 Ifc4::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4::IfcRepresentationItem item, Ifc4::IfcPresentationStyleAssignment style_assignment) {
     auto sitem = file->create<Ifc4::IfcStyledItem>();
     sitem.setItem(item);
-    sitem.setStyles(std::vector<Ifc4::IfcPresentationStyleAssignment>{style_assignment});
+    sitem.setStyles(std::vector<Ifc4::IfcStyleAssignmentSelect>{style_assignment});
     return sitem;
 }
 #endif
@@ -564,7 +564,7 @@ Ifc4::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, Ifc4::IfcReprese
 Ifc4x1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x1::IfcRepresentationItem& item, const Ifc4x1::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc4x1::IfcStyledItem>();
     sitem.setItem(item);
-    sitem.setStyles(std::vector<Ifc4x1::IfcPresentationStyleAssignment>{style_assignment});
+    sitem.setStyles(std::vector<Ifc4x1::IfcStyleAssignmentSelect>{style_assignment});
     return sitem;
 }
 #endif
@@ -573,7 +573,7 @@ Ifc4x1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x1::
 Ifc4x2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x2::IfcRepresentationItem& item, const Ifc4x2::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc4x2::IfcStyledItem>();
     sitem.setItem(item);
-    sitem.setStyles(std::vector<Ifc4x2::IfcPresentationStyleAssignment>{style_assignment});
+    sitem.setStyles(std::vector<Ifc4x2::IfcStyleAssignmentSelect>{style_assignment});
     return sitem;
 }
 #endif
@@ -582,7 +582,7 @@ Ifc4x2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x2::
 Ifc4x3_rc1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_rc1::IfcRepresentationItem& item, const Ifc4x3_rc1::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc4x3_rc1::IfcStyledItem>();
     sitem.setItem(item);
-    sitem.setStyles(std::vector<Ifc4x3_rc1::IfcPresentationStyleAssignment>{style_assignment});
+    sitem.setStyles(std::vector<Ifc4x3_rc1::IfcStyleAssignmentSelect>{style_assignment});
     return sitem;
 }
 #endif
@@ -591,7 +591,7 @@ Ifc4x3_rc1::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4
 Ifc4x3_rc2::IfcStyledItem create_styled_item(IfcParse::IfcFile* file, const Ifc4x3_rc2::IfcRepresentationItem& item, const Ifc4x3_rc2::IfcPresentationStyleAssignment& style_assignment) {
     auto sitem = file->create<Ifc4x3_rc2::IfcStyledItem>();
     sitem.setItem(item);
-    sitem.setStyles(std::vector<Ifc4x3_rc2::IfcPresentationStyleAssignment>{style_assignment});
+    sitem.setStyles(std::vector<Ifc4x3_rc2::IfcStyleAssignmentSelect>{style_assignment});
     return sitem;
 }
 #endif

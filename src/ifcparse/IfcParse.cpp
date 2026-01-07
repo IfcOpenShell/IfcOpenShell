@@ -2472,7 +2472,7 @@ std::vector<express::Entity> IfcFile::getInverse(int instance_id, const IfcParse
                         std::vector<uint32_t> vals(it->value().size() / sizeof(uint32_t));
                         memcpy(vals.data(), it->value().data(), it->value().size());
                         for (auto& v : vals) {
-                            return_value.push_back(instance_by_id(v).as<express::Entity>());
+                            return_value.push_back(instance_by_id(v).template as<express::Entity>());
                         }
                         it->Next();
                     }
@@ -2480,7 +2480,7 @@ std::vector<express::Entity> IfcFile::getInverse(int instance_id, const IfcParse
                     auto it = x.byref_excl_.find({ instance_id, ent->index_in_schema(), attribute_index });
                     if (it != x.byref_excl_.end()) {
                         for (auto& i : it->second) {
-                            return_value.push_back(instance_by_id(i).as<express::Entity>());
+                            return_value.push_back(instance_by_id(i).template as<express::Entity>());
                         }
                     }
                 }
