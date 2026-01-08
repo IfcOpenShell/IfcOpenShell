@@ -196,9 +196,9 @@ void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefi
 			auto rels = ob.IsDefinedBy();
 			for (auto& rel : rels) {
 				if (auto bytype = rel.template as<typename Schema::IfcRelDefinesByType>()) {
-					get_psets_s<Schema>(props, bytype->RelatingType());
+					get_psets_s<Schema>(props, bytype.RelatingType());
 				} else if (auto byprops = rel.template as<typename Schema::IfcRelDefinesByProperties>()) {
-					process_pset<Schema>(props, byprops->RelatingPropertyDefinition());
+					process_pset<Schema>(props, byprops.RelatingPropertyDefinition());
 				}
 			}
 		}

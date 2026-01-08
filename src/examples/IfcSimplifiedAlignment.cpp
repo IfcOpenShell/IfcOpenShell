@@ -39,37 +39,49 @@
 
 // performs basic project setup including created the IfcProject object
 // and initializing the project units to FEET
-Schema::IfcProject* setup_project(IfcHierarchyHelper<Schema>& file) {
+Schema::IfcProject setup_project(IfcHierarchyHelper<Schema>& file) {
     std::vector<std::string> file_description;
     file_description.push_back("ViewDefinition[Alignment-basedReferenceView]");
-    file.header().file_description()->setdescription(file_description);
+    file.header().file_description().setdescription(file_description);
 
     auto project = file.addProject();
-    project->setName(std::string("FHWA Bridge Geometry Manual Example Alignment"));
-    project->setDescription(std::string("C++ Example - Simplified"));
+    project.setName(std::string("FHWA Bridge Geometry Manual Example Alignment"));
+    project.setDescription(std::string("C++ Example - Simplified"));
 
     // set up project units for feet
     // the call to file.addProject() sets up length units as millimeter.
-    auto units_in_context = project->UnitsInContext();
-    auto units = units_in_context->Units();
-    auto begin = units->begin();
+    auto units_in_context = project.UnitsInContext();
+    auto units = units_in_context.Units();
+    auto begin = units.begin();
     auto iter = begin;
-    auto end = units->end();
+    auto end = units.end();
     for (; iter != end; iter++) {
         auto unit = *iter;
-        if (unit->as<Schema::IfcSIUnit>() && unit->as<Schema::IfcSIUnit>()->UnitType() == Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT) {
-            auto dimensions = new Schema::IfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0);
-            file.addEntity(dimensions);
+        if (unit.as<Schema::IfcSIUnit>() && unit.as<Schema::IfcSIUnit>().UnitType() == Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT) {
+            auto dimensions = file.create<Schema::IfcDimensionalExponents>();
+            dimensions.setLengthExponent(1);
+            dimensions.setMassExponent(0);
+            dimensions.setTimeExponent(0);
+            dimensions.setElectricCurrentExponent(0);
+            dimensions.setThermodynamicTemperatureExponent(0);
+            dimensions.setAmountOfSubstanceExponent(0);
+            dimensions.setLuminousIntensityExponent(0);
 
-            auto conversion_factor = new Schema::IfcMeasureWithUnit(new Schema::IfcLengthMeasure(304.80), unit->as<Schema::IfcSIUnit>());
-            file.addEntity(conversion_factor);
+            auto conversion_factor = file.create<Schema::IfcMeasureWithUnit>();
+            auto length = file.create<Schema::IfcLengthMeasure>();
+            length.set_attribute_value(0, 304.80);
+            conversion_factor.setValueComponent(length);
+            conversion_factor.setUnitComponent(unit);
 
-            auto conversion_based_unit = new Schema::IfcConversionBasedUnit(dimensions, Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT, "FEET", conversion_factor);
-            file.addEntity(conversion_based_unit);
+            auto conversion_based_unit = file.create<Schema::IfcConversionBasedUnit>();
+            conversion_based_unit.setDimensions(dimensions);
+            conversion_based_unit.setUnitType(Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
+            conversion_based_unit.setName("FEET");
+            conversion_based_unit.setConversionFactor(conversion_factor);
 
-            units->remove(unit);                // remove the millimeter unit
-            units->push(conversion_based_unit); // add the feet unit
-            units_in_context->setUnits(units);  // update the UnitsInContext
+            units.erase(std::remove(units.begin(), units.end(), unit)); // remove the millimeter unit
+            units.push_back(conversion_based_unit);                     // add the feet unit
+            units_in_context.setUnits(units);                           // update the UnitsInContext
 
             break; // Done!, the length unit was found, so break out of the loop
         }
@@ -129,10 +141,11 @@ int main() {
     // IFC 4.1.4.1.1 "Every IfcAlignment must be related to IfcProject using the IfcRelAggregates relationship"
     // https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Object_Composition/Aggregation/Alignment_Aggregation_To_Project/content.html
     // IfcProject <-> IfcRelAggregates <-> IfcAlignment
-    typename aggregate_of<typename Schema::IfcObjectDefinition>::ptr list_of_alignments_in_project(new aggregate_of<typename Schema::IfcObjectDefinition>());
-    list_of_alignments_in_project->push(alignment);
-    auto aggregate_alignments_with_project = new Schema::IfcRelAggregates(IfcParse::IfcGlobalId(), nullptr, std::string("Alignments in project"), boost::none, project, list_of_alignments_in_project);
-    file.addEntity(aggregate_alignments_with_project);
+    auto aggregate_alignments_with_project = file.create<Schema::IfcRelAggregates>();
+    aggregate_alignments_with_project.setGlobalId(IfcParse::IfcGlobalId());
+    aggregate_alignments_with_project.setName("Alignments in project");
+    aggregate_alignments_with_project.setRelatingObject(project);
+    aggregate_alignments_with_project.setRelatedObjects({alignment});
 
     // Define the spatial structure of the alignment with respect to the site
 
@@ -141,21 +154,21 @@ int main() {
     // IfcSite <-> IfcRelReferencedInSpatialStructure <-> IfcAlignment
     // This means IfcAlignment is not part of the IfcSite (it is not an aggregate component) but instead IfcAlignment is used within
     // the IfcSite by reference. This implies an IfcAlignment can traverse many IfcSite instances within an IfcProject
-    typename Schema::IfcSpatialReferenceSelect::list::ptr list_alignments_referenced_in_site(new Schema::IfcSpatialReferenceSelect::list);
-    list_alignments_referenced_in_site->push(alignment);
-
     // Complete the model by creating sites for the 3 bridges
     for (int i = 1; i <= 3; i++) {
         std::ostringstream os;
         os << "Site of Bridge " << i;
-        auto site = file.addSite(project, nullptr);
-        site->setName(os.str());
+        auto site = file.addSite(project);
+        site.setName(os.str());
 
         std::ostringstream description;
         description << "Alignments referenced into the spatial structure of Bridge Site " << i;
 
-        auto rel_referenced_in_spatial_structure = new Schema::IfcRelReferencedInSpatialStructure(IfcParse::IfcGlobalId(), nullptr, boost::none, description.str(), list_alignments_referenced_in_site, site);
-        file.addEntity(rel_referenced_in_spatial_structure);
+        auto rel_referenced_in_spatial_structure = file.create<Schema::IfcRelReferencedInSpatialStructure>();
+        rel_referenced_in_spatial_structure.setGlobalId(IfcParse::IfcGlobalId());
+        rel_referenced_in_spatial_structure.setDescription(description.str());
+        rel_referenced_in_spatial_structure.setRelatedElements(std::vector<Schema::IfcSpatialReferenceSelect>{alignment});
+        rel_referenced_in_spatial_structure.setRelatingStructure(site);
     }
 
     // That's it - save the model to a file
