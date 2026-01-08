@@ -55,6 +55,18 @@ assert str(prop) == str(prop2).replace(str(prop2.id()), str(prop.id()))
 assert prop2.id() == 1
 # Adding the same instance returns the previous copy
 assert f2.add(prop) == prop2
+f2.remove(f2[1])
+try:
+    print(prop2)
+    assert False
+except:
+    assert True
+try:
+    f2[1]
+    assert False
+except:
+    assert True
+
 
 # A recursively obtained python dictionary representation
 # matches for copied instances as well
