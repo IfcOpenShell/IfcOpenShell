@@ -53,6 +53,8 @@ f2 = ifcopenshell.file(schema=f.schema)
 prop2 = f2.add(prop)
 assert str(prop) == str(prop2).replace(str(prop2.id()), str(prop.id()))
 assert prop2.id() == 1
+# Adding the same instance returns the previous copy
+assert f2.add(prop) == prop2
 
 # A recursively obtained python dictionary representation
 # matches for copied instances as well

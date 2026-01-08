@@ -23,8 +23,7 @@ import sys
 import operator
 
 from .. import open, ifcopenshell_wrapper
-from ..file import file
-from ..entity_instance import entity_instance
+from ifcopenshell import file, entity_instance
 
 from . import has_occ
 
@@ -305,7 +304,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         self.settings = settings
         if isinstance(file_or_filename, file):
             self.file = file
-            file_or_filename = file_or_filename.wrapped_data
+            file_or_filename = file_or_filename
         else:
             file_or_filename = self.file = open(file_or_filename)
 
@@ -367,13 +366,13 @@ class tree(ifcopenshell_wrapper.tree):
     def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
         args = [self]
         if file is not None:
-            args.append(file.wrapped_data)
+            args.append(file)
             if settings is not None:
                 args.append(settings)
         ifcopenshell_wrapper.tree.__init__(*args)
 
     def add_file(self, file: file, settings: settings) -> None:
-        ifcopenshell_wrapper.tree.add_file(self, file.wrapped_data, settings)
+        ifcopenshell_wrapper.tree.add_file(self, file, settings)
 
     def add_iterator(self, iterator: iterator) -> None:
         ifcopenshell_wrapper.tree.add_file(self, iterator)
@@ -387,7 +386,7 @@ class tree(ifcopenshell_wrapper.tree):
     ) -> list[entity_instance]:
         def unwrap(value):
             if isinstance(value, entity_instance):
-                return value.wrapped_data
+                return value
             elif all(map(lambda v: hasattr(value, v), "XYZ")):
                 return value.X(), value.Y(), value.Z()
             return value
@@ -406,12 +405,12 @@ class tree(ifcopenshell_wrapper.tree):
                 args.append(kwargs.get("completely_within", False))
                 if "extend" in kwargs:
                     args.append(kwargs["extend"])
-        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
+        return ifcopenshell_wrapper.tree.select(*args)
 
     def select_box(self, value, **kwargs) -> list[entity_instance]:
         def unwrap(value):
             if isinstance(value, entity_instance):
-                return value.wrapped_data
+                return value
             elif hasattr(value, "Get"):
                 return value.Get()[:3], value.Get()[3:]
             return value
@@ -421,7 +420,7 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("completely_within", False))
         if "extend" in kwargs:
             args.append(kwargs.get("extend", -1.0e-5))
-        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
+        return ifcopenshell_wrapper.tree.select_box(*args)
 
     def clash_intersection_many(
         self,
@@ -430,13 +429,13 @@ class tree(ifcopenshell_wrapper.tree):
         tolerance: float = 0.002,
         check_all: bool = True,
     ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], tolerance, check_all]
+        args = [self, set_a, set_b, tolerance, check_all]
         return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
     def clash_collision_many(
         self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
     ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], allow_touching]
+        args = [self, set_a, set_b, allow_touching]
         return ifcopenshell_wrapper.tree.clash_collision_many(*args)
 
     def clash_clearance_many(
@@ -446,7 +445,7 @@ class tree(ifcopenshell_wrapper.tree):
         clearance: float = 0.05,
         check_all: bool = False,
     ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], clearance, check_all]
+        args = [self, set_a, set_b, clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
 
     @staticmethod
@@ -509,7 +508,7 @@ def create_shape(
     return wrap_shape_creation(
         settings,
         ifcopenshell_wrapper.create_shape(
-            settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None, geometry_library
+            settings, inst, repr if repr is not None else None, geometry_library
         ),
     )
 
@@ -525,7 +524,7 @@ def map_shape(settings: settings, inst: entity_instance) -> ifcopenshell_wrapper
     >>> ifcopenshell.geom.map_shape(ifcopenshell.geom.settings(), point).components
     (0.0, 0.0, 0.0)
     """
-    return ifcopenshell_wrapper.map_shape(settings, inst.wrapped_data)
+    return ifcopenshell_wrapper.map_shape(settings, inst)
 
 
 @overload
@@ -618,20 +617,17 @@ def iterate(
 
 
 def make_shape_function(fn):
-    def entity_instance_or_none(e):
-        return None if e is None else entity_instance(e)
-
     if has_occ:
 
         def _(schema, string_or_shape, *args):
             if isinstance(string_or_shape, TopoDS.TopoDS_Shape):
                 string_or_shape = utils.serialize_shape(string_or_shape)
-            return entity_instance_or_none(fn(schema, string_or_shape, *args))
+            return fn(schema, string_or_shape, *args)
 
     else:
 
         def _(schema, string, *args):
-            return entity_instance_or_none(fn(schema, string, *args))
+            return fn(schema, string, *args)
 
     return _
 

@@ -342,6 +342,7 @@ private:
 
 	%pythoncode %{
 		schema = property(schema_name)
+		header = property(header)
 
 		old_init = __init__
 		def __init__(self, schema=None, schema_version=None):
@@ -519,7 +520,7 @@ private:
 		return IfcUtil::ArgumentTypeToString(helper_fn_attribute_type($self, i));
 	}
 
-	const std::string& get_argument_name(unsigned int i) const {
+	const std::string& attribute_name(unsigned int i) const {
 		if ($self->declaration().as_entity()) {
 			return $self->declaration().as_entity()->attribute_by_index(i)->name();
 		} else if (i == 0) {
@@ -821,31 +822,9 @@ private:
 	}
 }
 
-// Expose FileDescription and FileName header entities
-// to make them readable even if they were not filled properly before.
-// Though it is invalid IFC, technically.
-// FileSchema is not exposed as IFC file won't load if it's invalid.
-
-%extend IfcParse::FileDescription {
-    AttributeValue description() const { return $self->getArgument(0); }
-    AttributeValue implementation_level() const { return $self->getArgument(1); }
-};
-
-%extend IfcParse::FileName {
-    AttributeValue name() const { return $self->getArgument(0); }
-    AttributeValue time_stamp() const { return $self->getArgument(1); }
-    AttributeValue author() const { return $self->getArgument(2); }
-    AttributeValue organization() const { return $self->getArgument(3); }
-    AttributeValue preprocessor_version() const { return $self->getArgument(4); }
-    AttributeValue originating_system() const { return $self->getArgument(5); }
-    AttributeValue authorization() const { return $self->getArgument(6); }
-};
-
 %extend IfcParse::IfcSpfHeader {
-	// Cast to base class pointers for SWIG, because
+	// Upcast to header instances for SWIG, because
 	// it has no idea about the schema definitions.
-	// The code to access these methods as attributes
-	// is in file.py
 	express::Base file_description_py() {
 		return $self->file_description();
 	}
@@ -855,32 +834,11 @@ private:
 	express::Base file_schema_py() {
 		return $self->file_schema();
 	}
-};
 
-%extend IfcParse::FileDescription {
 	%pythoncode %{
-        # Hide the getters with read-write property implementations
-        description = property(description, description)
-        implementation_level = property(implementation_level, implementation_level)
-	%}
-};
-
-%extend IfcParse::FileName {
-	%pythoncode %{
-        name = property(name, name)
-        time_stamp = property(time_stamp, time_stamp)
-        author = property(author, author)
-        organization = property(organization, organization)
-        preprocessor_version = property(preprocessor_version, preprocessor_version)
-        originating_system = property(originating_system, originating_system)
-        authorization = property(authorization, authorization)
-	%}
-};
-
-%extend IfcParse::FileSchema {
-	%pythoncode %{
-        # Hide the getters with read-write property implementations
-        schema_identifiers = property(schema_identifiers, schema_identifiers)
+		file_description = property(file_description_py)
+		file_name = property(file_name_py)
+		file_schema = property(file_schema_py)
 	%}
 };
 

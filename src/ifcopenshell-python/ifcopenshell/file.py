@@ -20,11 +20,9 @@ from __future__ import annotations
 import os
 import re
 import numbers
-import time
 import zipfile
 import functools
 import ifcopenshell
-import weakref
 import types
 from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict
@@ -414,13 +412,13 @@ class rocksdb_file_storage:
         self._prefix = prefix
 
     def items(self):
-        it = self.file.wrapped_data.key_value_store_iter(self._prefix)
+        it = self.file.key_value_store_iter(self._prefix)
         while it and it.valid():
             yield it.key(), it.value()
             it.next()
 
     def read(self, key):
-        return self.file.wrapped_data.key_value_store_query(key)
+        return self.file.key_value_store_query(key)
 
     def by_id(self, name):
         if isinstance(name, tuple):
@@ -478,25 +476,6 @@ class rocksdb_file_storage:
             )
         )
         return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
-
-
-class file_header:
-    def __init__(self, file, header_data):
-        self.file = file
-        self.header_data = header_data
-
-    # @todo these are probably no longer necessary now as we no longer depend on decoration of file
-    @property
-    def file_description(self) -> ifcopenshell.entity_instance:
-        return self.header_data.file_description_py()
-
-    @property
-    def file_name(self) -> ifcopenshell.entity_instance:
-        return self.header_data.file_name_py()
-
-    @property
-    def file_schema(self) -> ifcopenshell.entity_instance:
-        return self.header_data.file_schema_py()
 
 
 class file_mixin:
@@ -611,7 +590,7 @@ class file_mixin:
         # @todo we should probably check that values for
         # attributes are not passed as duplicates using
         # both regular arguments and keyword arguments.
-        kwargs_attrs = [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        kwargs_attrs = [(e.get_argument_index(name), arg) for name, arg in kwargs.items()]
         attrs = list(enumerate(args)) + kwargs_attrs
 
         if len(attrs) > len(e):
@@ -799,28 +778,17 @@ class file_mixin:
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
 
-        inverses = [entity_instance(e, self) for e in self.get_inverse(inst.wrapped_data)]
+        inverses = self.get_inverse(inst)
 
         if allow_duplicate:
             if with_attribute_indices:
-                idxs = self.get_inverse_indices(inst.wrapped_data)
+                idxs = self.get_inverse_indices(inst)
                 # TODO: include in typing.
                 return list(zip(inverses, idxs))
             else:
                 return inverses
 
         return set(inverses)
-
-    def get_total_inverses(self, inst: ifcopenshell.entity_instance) -> int:
-        """Returns the number of entities that reference this entity
-
-        This is equivalent to `len(model.get_inverse(element))`, but
-        significantly faster.
-
-        :param inst: The entity instance to get inverse relationships
-        :returns: The total number of references
-        """
-        return self.get_total_inverses(inst.wrapped_data)
 
     def remove(self, inst: ifcopenshell.entity_instance) -> None:
         """Deletes an IFC object in the file.
@@ -833,7 +801,7 @@ class file_mixin:
         """
         if self.transaction:
             self.transaction.store_delete(inst)
-        return self.remove(inst.wrapped_data)
+        return self.remove(inst)
 
     def batch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
@@ -903,16 +871,6 @@ class file_mixin:
 
     def to_string(self) -> str:
         return self.to_string()
-
-    @property
-    def header(self) -> file_header:
-        # TODO: Workaround for old builds, remove after build stabilizes.
-        # TODO: No need for `wrapped_data.header` to be a method - should use `@property`?
-        header = self.header
-        if isinstance(header, types.MethodType):
-            return file_header(self, self.header())
-        else:
-            return self.header
 
     @property
     def storage(self) -> Optional[rocksdb_file_storage]:

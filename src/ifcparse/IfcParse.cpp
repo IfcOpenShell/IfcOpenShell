@@ -1840,8 +1840,6 @@ express::Base IfcFile::addEntity(const express::Base& entity, int id) {
         return mit->second;
     }
 
-    express::Base new_entity;
-
     // Obtain all forward references by a depth-first
     // traversal and add them to the file.
     try {
@@ -1862,7 +1860,7 @@ express::Base IfcFile::addEntity(const express::Base& entity, int id) {
     // container and entity is created. The attribute references
     // need to be updated to point to instances in this file.
     IfcFile* other_file = entity.file();
-    create(&entity.declaration(), id);
+    auto new_entity = create(&entity.declaration(), id);
     auto* decl = &entity.declaration();
 
     auto num_attributes = (decl->as_entity() ? decl->as_entity()->attribute_count() : 1);

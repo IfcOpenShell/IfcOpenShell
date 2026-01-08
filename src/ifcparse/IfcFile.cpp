@@ -774,8 +774,12 @@ express::Base IfcParse::impl::rocks_db_file_storage::create(const IfcParse::decl
 }
 
 express::Base IfcParse::impl::in_memory_file_storage::create(const IfcParse::declaration* decl, int id) {
-    auto instance_name = id == -1 ? (int)file->FreshId() : id;
-    if (decl->as_entity() == nullptr && decl->as_type_declaration() == nullptr) {
+    uint32_t instance_name;
+    if (decl->as_entity() != nullptr) {
+        instance_name = id == -1 ? (int)file->FreshId() : id;
+    } else if (decl->as_type_declaration() != nullptr) {
+        instance_name = 0;
+    } else {
         throw std::runtime_error("Requires and entity or type declaration");
     }
     auto ptr = byid_.insert({instance_name, std::make_shared<InstanceData>(file, decl, instance_name, decl->as_entity() ? in_memory_attribute_storage(decl->as_entity()->attribute_count()) : in_memory_attribute_storage(1))}).first;

@@ -169,6 +169,7 @@ def open(
         print(products[0].id(), products[0].GlobalId) # 122 2XQ$n5SLP5MBLyL442paFx
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
+
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Path does not exist: '{path}'.")
@@ -205,7 +206,33 @@ def open(
         f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)
     else:
         f = ifcopenshell_wrapper.open(str(path.absolute()))
-    return file(f)
+
+    f.post_init()
+
+    READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
+    NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
+    UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
+    INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
+    UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
+
+    if not f.good():
+        from . import Error, SchemaError
+
+        exc, msg = {
+            READ_ERROR: lambda: (IOError, "Unable to open file for reading"),
+            NO_HEADER: lambda: (Error, "Unable to parse IFC SPF header"),
+            UNSUPPORTED_SCHEMA: lambda: (
+                SchemaError,
+                "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
+            ),
+            INVALID_SYNTAX: lambda: (Error, "Syntax error during parse, check logs"),
+            # This is the case when passing uninitialized_tag
+            UNKNOWN: lambda: (None, None),
+        }[f.good().value()]()
+        if exc is not None:
+            raise exc(msg)
+
+    return f
 
 
 def create_entity(type: str, schema: str = "IFC4", *args: Any, **kwargs: Any) -> entity_instance:
