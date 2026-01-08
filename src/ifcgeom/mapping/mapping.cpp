@@ -58,7 +58,7 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
 
         // IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
         // Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-        auto invs = prodrep.data()->file()->getInverse(prodrep.id(), &IfcSchema::IfcProduct::Class(), -1);
+        auto invs = prodrep.file()->getInverse(prodrep.id(), &IfcSchema::IfcProduct::Class(), -1);
         for (auto& inv : invs) {
             products.push_back(inv.as<IfcSchema::IfcProduct>());
         }        
@@ -91,12 +91,12 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
                     continue;
                 }
 
-                auto reps = item.data()->file()->getInverse(item.id(), (&IfcSchema::IfcRepresentation::Class()), -1);
+                auto reps = item.file()->getInverse(item.id(), (&IfcSchema::IfcRepresentation::Class()), -1);
                 for (auto& rep : reps) {
                     if (rep.as<IfcSchema::IfcRepresentation>().Items().size() != 1) continue;
                     std::vector<IfcSchema::IfcProductRepresentation> prodreps_mapped = rep.as<IfcSchema::IfcRepresentation>().OfProductRepresentation();
                     for (auto& prm : prodreps_mapped) {
-                        auto ps = prm.data()->file()->getInverse(prm.id(), (&IfcSchema::IfcProduct::Class()), -1);
+                        auto ps = prm.file()->getInverse(prm.id(), (&IfcSchema::IfcProduct::Class()), -1);
                         for (auto& p : ps) {
                             products.push_back(p.as<IfcSchema::IfcProduct>());
                         }
@@ -783,8 +783,8 @@ express::Base mapping::get_decomposing_entity(const express::Base& inst, bool in
 
     /* Parent decompositions to the RelatingObject */
     if (!parent) {
-        std::vector<express::Entity> parents = product.data()->file()->getInverse(product.id(), (&IfcSchema::IfcRelAggregates::Class()), -1);
-        auto nests = product.data()->file()->getInverse(product.id(), (&IfcSchema::IfcRelNests::Class()), -1);
+        std::vector<express::Entity> parents = product.file()->getInverse(product.id(), (&IfcSchema::IfcRelAggregates::Class()), -1);
+        auto nests = product.file()->getInverse(product.id(), (&IfcSchema::IfcRelNests::Class()), -1);
         parents.insert(parents.end(), nests.begin(), nests.end());
         for (auto it = parents.begin(); it != parents.end(); ++it) {
             IfcSchema::IfcRelDecomposes decompose = (*it).as<IfcSchema::IfcRelDecomposes>();

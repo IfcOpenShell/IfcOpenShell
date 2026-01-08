@@ -115,9 +115,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 		// or trimmed segment would be whether there are other curve segments or this
 		// is the only one.
 		std::optional<size_t> num_segments;
-		auto segment = inst.data()->file()->getInverse(inst.id(),  & IfcSchema::IfcCompositeCurveSegment::Class(), -1);
+		auto segment = inst.file()->getInverse(inst.id(),  & IfcSchema::IfcCompositeCurveSegment::Class(), -1);
 		if (segment.size() == 1) {
-            auto comp = segment.front().data()->file()->getInverse(segment.front().id(), &IfcSchema::IfcCompositeCurve::Class(), -1);
+            auto comp = segment.front().file()->getInverse(segment.front().id(), &IfcSchema::IfcCompositeCurve::Class(), -1);
 			if (comp.size() == 1) {
 				num_segments = comp.front().as<IfcSchema::IfcCompositeCurve>().Segments().size();
 			}

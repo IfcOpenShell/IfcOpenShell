@@ -50,6 +50,8 @@ class DeclaredType;
 class IFC_PARSE_API Base {
   protected:
     std::weak_ptr<InstanceData> data_;
+    const InstanceData* data() const;
+    InstanceData* data();
   public:
     operator bool() const {
         return !data_.expired();
@@ -70,8 +72,7 @@ class IFC_PARSE_API Base {
     Base() {};
     Base(const std::weak_ptr<InstanceData>& data) : data_(data) {}
 
-    const InstanceData* data() const;
-      InstanceData* data();
+    // @todo try and make this private over time too
     const std::weak_ptr<InstanceData>& data_weak() const { return data_; }
 
     const IfcParse::declaration& declaration() const;
@@ -125,6 +126,8 @@ class IFC_PARSE_API Base {
             }
         }     
     }
+
+    IfcParse::IfcFile* file() const;
 };
 
 class IFC_PARSE_API Entity : public Base {
@@ -175,14 +178,14 @@ namespace std {
 template <>
 struct hash<express::Base> {
     std::size_t operator()(const express::Base& c) const noexcept {
-        return std::hash<void*>{}((void*) c.data());
+        return std::hash<uint32_t>{}(c.identity());
     }
 };
 
 template <>
 struct hash<express::Entity> {
     std::size_t operator()(const express::Entity& c) const noexcept {
-        return std::hash<void*>{}((void*)c.data());
+        return std::hash<uint32_t>{}(c.identity());
     }
 };
 

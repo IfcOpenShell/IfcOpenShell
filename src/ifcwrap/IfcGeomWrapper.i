@@ -864,7 +864,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 	template <typename Schema>
 	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& st, const express::Base& instance, const express::Base& representation = express::Base()) {
-		IfcParse::IfcFile* file = instance.data()->file();
+		IfcParse::IfcFile* file = instance.file();
 			
 		ifcopenshell::geometry::Converter kernel(ifcopenshell::geometry::kernels::construct(file, geometry_library, st), file, st);
 			
@@ -1034,7 +1034,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 
 %inline %{
 	ifcopenshell::geometry::taxonomy::item::ptr map_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance) {
-        std::unique_ptr<ifcopenshell::geometry::abstract_mapping> mapping(ifcopenshell::geometry::impl::mapping_implementations().construct(instance.data()->file(), settings));
+        std::unique_ptr<ifcopenshell::geometry::abstract_mapping> mapping(ifcopenshell::geometry::impl::mapping_implementations().construct(instance.file(), settings));
 		return mapping->map(instance);
 	}
 %}

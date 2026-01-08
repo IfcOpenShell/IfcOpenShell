@@ -150,7 +150,7 @@ std::vector<express::Entity> express::Entity::get_inverse(const std::string& nam
     std::vector<const IfcParse::inverse_attribute*>::const_iterator iter = attrs.begin();
     for (; iter != attrs.end(); ++iter) {
         if ((*iter)->name() == name) {
-            return data()->file()->getInverse(
+            return file()->getInverse(
                 id(),
                 (*iter)->entity_reference(),
                 (int)(*iter)->entity_reference()->attribute_index((*iter)->attribute_reference()));

@@ -1,21 +1,3 @@
-%typemap(out) aggregate_of_instance::ptr {
-	const unsigned size = $1 ? $1->size() : 0;
-	$result = PyTuple_New(size);
-	for (unsigned i = 0; i < size; ++i) {
-		PyTuple_SetItem($result, i, pythonize((*$1)[i]));
-	}
-}
-
-%typemap(out) aggregate_of_aggregate_of_instance::ptr {
-	const unsigned size = $1 ? $1->size() : 0;
-	$result = PyTuple_New(size);
-	for (unsigned i = 0; i < size; ++i) {
-		const auto& r_i = *(result->begin() + i);
-		PyTuple_SetItem($result, i, pythonize_vector(r_i));
-	}
-}
-
-
 %typemap(out) IfcUtil::ArgumentType {
 	$result = SWIG_Python_str_FromChar(IfcUtil::ArgumentTypeToString($1));
 }
@@ -97,6 +79,7 @@
 	}
 %enddef
 
+CREATE_VECTOR_TYPEMAP_OUT(express::Base)
 CREATE_VECTOR_TYPEMAP_OUT(bool)
 CREATE_VECTOR_TYPEMAP_OUT(int)
 CREATE_VECTOR_TYPEMAP_OUT(unsigned int)

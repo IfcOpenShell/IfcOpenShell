@@ -404,12 +404,6 @@ public:
 
     template<typename T>
     IFC_PARSE_API bool has(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const;
-
-    template<typename Visitor>
-    auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, Visitor&& visitor) const {
-        // @todo do we need visitation on all data/storage/attribute levels?
-        AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl, (uint8_t) index).apply_visitor(std::forward<Visitor>(visitor));
-    }
 #endif
 };
 
@@ -504,18 +498,6 @@ class IFC_PARSE_API InstanceData {
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
             return rocks_db_attribute_storage{}.has<T>(get_storage_of_type<IfcParse::impl::rocks_db_file_storage>(), declaration_, identity_, index);
-        }
-#endif
-    }
-
-    template<typename Visitor>
-    auto apply_visitor(Visitor&& visitor, std::size_t index) const {
-        if (storage_) {
-            return storage_->apply_visitor(std::forward<Visitor>(visitor), index);
-        }
-#ifdef IFOPSH_WITH_ROCKSDB
-        else {
-            return rocks_db_attribute_storage{}.apply_visitor(get_storage_of_type<IfcParse::impl::rocks_db_file_storage>(), declaration_, identity_, index, std::forward<Visitor>(visitor));
         }
 #endif
     }

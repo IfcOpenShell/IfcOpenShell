@@ -375,7 +375,7 @@ public:
 
     void recalculate_id_counter();
 
-    express::Base addEntity(const express::Base& entity);
+    express::Base addEntity(const express::Base& entity, int id = -1);
 
     /// Removes entity instance from file and unsets references.
     ///

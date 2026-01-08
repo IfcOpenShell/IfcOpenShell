@@ -72,7 +72,7 @@ namespace IfcGeom {
 			// schema.
 			// @todo pass settings
 			ifcopenshell::geometry::Settings s;
-            static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod.data()->file(), s);
+            static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod.file(), s);
             while ((parent = mapping->get_decomposing_entity(current, traverse_openings))) {
                 if (pred(parent)) {
                     return true;
@@ -180,7 +180,7 @@ namespace IfcGeom {
 		bool match(express::Base prod) const {
 			// @todo
 			ifcopenshell::geometry::Settings s;
-            static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod.data()->file(), s);
+            static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod.file(), s);
 			layer_map_t layers = mapping->get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();
         }

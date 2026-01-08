@@ -946,7 +946,7 @@ void InstanceData::toString(std::ostream& ss, bool upper) const {
                ss << "$";
 	        }
         } else {
-            apply_visitor(vis, i);
+            get_attribute_value(i).apply_visitor(vis);
         }
     }
     ss << ")";
@@ -1112,14 +1112,14 @@ express::Base::set_attribute_value(size_t i, const T& t) {
     auto current_attribute = get_attribute_value(i);
 
     // Deregister old attribute guid in file guid map.
-    if (i == 0 && (data()->file()->ifcroot_type() != nullptr) && this->declaration().is(*data()->file()->ifcroot_type())) {
+    if (i == 0 && (file()->ifcroot_type() != nullptr) && this->declaration().is(*file()->ifcroot_type())) {
         try {
             auto guid = (std::string) current_attribute;
-            auto it = data()->file()->internal_guid_map().find(guid);
-            if (it != data()->file()->internal_guid_map().end()) {
+            auto it = file()->internal_guid_map().find(guid);
+            if (it != file()->internal_guid_map().end()) {
                 const std::pair<const std::string, express::Base>& p = *it;
                 if (p.second == *this) {
-                    data()->file()->internal_guid_map().erase(it);
+                    file()->internal_guid_map().erase(it);
                 }
             }
         } catch (IfcParse::IfcException& e) {
@@ -1129,31 +1129,31 @@ express::Base::set_attribute_value(size_t i, const T& t) {
 
     if constexpr (std::is_same_v<T, express::Base> || std::is_same_v<T, std::vector<express::Base>> || std::is_same_v<T, std::vector<std::vector<express::Base>>> || std::is_same_v<T, Blank>) {
         // Deregister inverse indices in file
-        unregister_inverse_visitor visitor(*data()->file(), *this);
+        unregister_inverse_visitor visitor(*file(), *this);
         apply_individual_instance_visitor(current_attribute, (int)i).apply(visitor);
     }
 
     {
-        void* const storage = std::visit([](const auto& m) { return (void*)&m; }, data()->file()->storage_);
+        void* const storage = std::visit([](const auto& m) { return (void*)&m; }, file()->storage_);
         data()->set_attribute_value(i, t);
     }
     auto new_attribute = get_attribute_value(i);
 
     // Register inverse indices in file
     if constexpr (std::is_same_v<T, express::Base> || std::is_same_v<T, std::vector<express::Base>> || std::is_same_v<T, std::vector<std::vector<express::Base>>>) {
-        register_inverse_visitor visitor(*data()->file(), *this);
+        register_inverse_visitor visitor(*file(), *this);
         apply_individual_instance_visitor(new_attribute, (int)i).apply(visitor);
     }
     
     // Register new attribute guid in guid map
-    if (i == 0 && (data()->file()->ifcroot_type() != nullptr) && this->declaration().is(*data()->file()->ifcroot_type())) {
+    if (i == 0 && (file()->ifcroot_type() != nullptr) && this->declaration().is(*file()->ifcroot_type())) {
         try {
             auto guid = (std::string) new_attribute;
-            auto it = data()->file()->internal_guid_map().find(guid);
-            if (it != data()->file()->internal_guid_map().end()) {
+            auto it = file()->internal_guid_map().find(guid);
+            if (it != file()->internal_guid_map().end()) {
                 Logger::Warning("Duplicate guid " + guid);
             }
-            data()->file()->internal_guid_map().insert({guid, *this});
+            file()->internal_guid_map().insert({guid, *this});
         } catch (IfcParse::IfcException& e) {
             Logger::Error(e);
         }
@@ -1824,8 +1824,8 @@ std::vector<express::Base> IfcFile::traverse_breadth_first(const express::Base& 
     return IfcParse::traverse_breadth_first(instance, max_level);
 }
 
-express::Base IfcFile::addEntity(const express::Base& entity) {
-    if (entity.data()->file() == this) {
+express::Base IfcFile::addEntity(const express::Base& entity, int id) {
+    if (entity.file() == this) {
         return entity;
     }
 
@@ -1861,13 +1861,13 @@ express::Base IfcFile::addEntity(const express::Base& entity) {
     // An instance is being added from another file. A copy of the
     // container and entity is created. The attribute references
     // need to be updated to point to instances in this file.
-    IfcFile* other_file = entity.data()->file();
-    create(&entity.declaration());
+    IfcFile* other_file = entity.file();
+    create(&entity.declaration(), id);
     auto* decl = &entity.declaration();
 
     auto num_attributes = (decl->as_entity() ? decl->as_entity()->attribute_count() : 1);
     for (size_t i = 0; i < num_attributes; ++i) {
-        entity.data()->apply_visitor([this, i, decl, &new_entity](const auto& v) {
+        entity.get_attribute_value(i).apply_visitor([this, i, decl, &new_entity](const auto& v) {
             using U = std::decay_t<decltype(v)>;
             // only need to copy non-instance attribute values, others are assigned below after mapping
             if constexpr (std::is_same_v<U, express::Base>) {
@@ -1876,7 +1876,7 @@ express::Base IfcFile::addEntity(const express::Base& entity) {
             } else {
                 new_entity.set_attribute_value(i, v);
             }
-        }, i);
+        });
     }
         
     // In case an entity is added that contains geometry, the unit
@@ -2680,6 +2680,10 @@ void express::Base::toString(std::ostream& out, bool upper) const
         out << declaration().name();
     }
     data()->toString(out, upper);
+}
+
+IfcParse::IfcFile* express::Base::file() const {
+    return data()->file();
 }
 
 /*

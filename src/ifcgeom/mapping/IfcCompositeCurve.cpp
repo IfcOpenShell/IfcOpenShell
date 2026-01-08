@@ -95,7 +95,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	}
 
 	if (spans.empty()) {
-		std::vector<express::Entity> profile = inst.data()->file()->getInverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
+		std::vector<express::Entity> profile = inst.file()->getInverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
         const bool force_close = !profile.empty();
 		loop->closed = force_close;
 		loop->instance = inst;

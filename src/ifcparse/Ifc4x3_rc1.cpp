@@ -7729,7 +7729,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcActionRequest::Class() { return *((IfcPar
 ::Ifc4x3_rc1::IfcActorSelect Ifc4x3_rc1::IfcActor::TheActor() const {  return ((express::Base)(get_attribute_value(5))).as<::Ifc4x3_rc1::IfcActorSelect>(); }
 void Ifc4x3_rc1::IfcActor::setTheActor(const ::Ifc4x3_rc1::IfcActorSelect& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToActor> Ifc4x3_rc1::IfcActor::IsActingUpon() const { return cast_vector<IfcRelAssignsToActor>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[912], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToActor> Ifc4x3_rc1::IfcActor::IsActingUpon() const { return cast_vector<IfcRelAssignsToActor>(file()->getInverse(data()->id(), IFC4X3_RC1_types[912], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcActor::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[6]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcActor::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[6]); }
@@ -7744,7 +7744,7 @@ void Ifc4x3_rc1::IfcActorRole::setUserDefinedRole(const std::optional< std::stri
 std::optional< std::string > Ifc4x3_rc1::IfcActorRole::Description() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } std::string v = get_attribute_value(2); return v; }
 void Ifc4x3_rc1::IfcActorRole::setDescription(const std::optional< std::string >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcActorRole::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcActorRole::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcActorRole::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[7]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcActorRole::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[7]); }
@@ -7779,8 +7779,8 @@ void Ifc4x3_rc1::IfcAddress::setDescription(const std::optional< std::string >& 
 std::optional< std::string > Ifc4x3_rc1::IfcAddress::UserDefinedPurpose() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } std::string v = get_attribute_value(2); return v; }
 void Ifc4x3_rc1::IfcAddress::setUserDefinedPurpose(const std::optional< std::string >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
 
-std::vector<::Ifc4x3_rc1::IfcPerson> Ifc4x3_rc1::IfcAddress::OfPerson() const { return cast_vector<IfcPerson>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[749], 7)); }
-std::vector<::Ifc4x3_rc1::IfcOrganization> Ifc4x3_rc1::IfcAddress::OfOrganization() const { return cast_vector<IfcOrganization>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[728], 4)); }
+std::vector<::Ifc4x3_rc1::IfcPerson> Ifc4x3_rc1::IfcAddress::OfPerson() const { return cast_vector<IfcPerson>(file()->getInverse(data()->id(), IFC4X3_RC1_types[749], 7)); }
+std::vector<::Ifc4x3_rc1::IfcOrganization> Ifc4x3_rc1::IfcAddress::OfOrganization() const { return cast_vector<IfcOrganization>(file()->getInverse(data()->id(), IFC4X3_RC1_types[728], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAddress::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[12]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAddress::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[12]); }
@@ -7955,7 +7955,7 @@ void Ifc4x3_rc1::IfcAlignment2DCantSegment::setStartCantRight(const double& v) {
 std::optional< double > Ifc4x3_rc1::IfcAlignment2DCantSegment::EndCantRight() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } double v = get_attribute_value(8); return v; }
 void Ifc4x3_rc1::IfcAlignment2DCantSegment::setEndCantRight(const std::optional< double >& v) { if (v) {set_attribute_value(8, *v);} else {unset_attribute_value(8);} }
 
-std::vector<::Ifc4x3_rc1::IfcAlignment2DCant> Ifc4x3_rc1::IfcAlignment2DCantSegment::ToCant() const { return cast_vector<IfcAlignment2DCant>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[30], 0)); }
+std::vector<::Ifc4x3_rc1::IfcAlignment2DCant> Ifc4x3_rc1::IfcAlignment2DCantSegment::ToCant() const { return cast_vector<IfcAlignment2DCant>(file()->getInverse(data()->id(), IFC4X3_RC1_types[30], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DCantSegment::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[32]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DCantSegment::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[32]); }
@@ -7968,7 +7968,7 @@ void Ifc4x3_rc1::IfcAlignment2DHorizontal::setStartDistAlong(const std::optional
 std::vector< ::Ifc4x3_rc1::IfcAlignment2DHorizontalSegment > Ifc4x3_rc1::IfcAlignment2DHorizontal::Segments() const {  std::vector<express::Base> es = get_attribute_value(1); return cast_vector<::Ifc4x3_rc1::IfcAlignment2DHorizontalSegment>(es); }
 void Ifc4x3_rc1::IfcAlignment2DHorizontal::setSegments(const std::vector< ::Ifc4x3_rc1::IfcAlignment2DHorizontalSegment >& v) { set_attribute_value(1, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(1); }
 
-std::vector<::Ifc4x3_rc1::IfcAlignmentCurve> Ifc4x3_rc1::IfcAlignment2DHorizontal::ToAlignmentCurve() const { return cast_vector<IfcAlignmentCurve>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[43], 0)); }
+std::vector<::Ifc4x3_rc1::IfcAlignmentCurve> Ifc4x3_rc1::IfcAlignment2DHorizontal::ToAlignmentCurve() const { return cast_vector<IfcAlignmentCurve>(file()->getInverse(data()->id(), IFC4X3_RC1_types[43], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DHorizontal::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[34]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DHorizontal::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[34]); }
@@ -7979,7 +7979,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DHorizontal::Class() { return *
 ::Ifc4x3_rc1::IfcCurveSegment2D Ifc4x3_rc1::IfcAlignment2DHorizontalSegment::CurveGeometry() const {  return ((express::Base)(get_attribute_value(3))).as<::Ifc4x3_rc1::IfcCurveSegment2D>(); }
 void Ifc4x3_rc1::IfcAlignment2DHorizontalSegment::setCurveGeometry(const ::Ifc4x3_rc1::IfcCurveSegment2D& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
 
-std::vector<::Ifc4x3_rc1::IfcAlignment2DHorizontal> Ifc4x3_rc1::IfcAlignment2DHorizontalSegment::ToHorizontal() const { return cast_vector<IfcAlignment2DHorizontal>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[34], 1)); }
+std::vector<::Ifc4x3_rc1::IfcAlignment2DHorizontal> Ifc4x3_rc1::IfcAlignment2DHorizontalSegment::ToHorizontal() const { return cast_vector<IfcAlignment2DHorizontal>(file()->getInverse(data()->id(), IFC4X3_RC1_types[34], 1)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DHorizontalSegment::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[35]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DHorizontalSegment::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[35]); }
@@ -8054,7 +8054,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DVerSegTransition::Class() { re
 std::vector< ::Ifc4x3_rc1::IfcAlignment2DVerticalSegment > Ifc4x3_rc1::IfcAlignment2DVertical::Segments() const {  std::vector<express::Base> es = get_attribute_value(0); return cast_vector<::Ifc4x3_rc1::IfcAlignment2DVerticalSegment>(es); }
 void Ifc4x3_rc1::IfcAlignment2DVertical::setSegments(const std::vector< ::Ifc4x3_rc1::IfcAlignment2DVerticalSegment >& v) { set_attribute_value(0, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(0); }
 
-std::vector<::Ifc4x3_rc1::IfcAlignmentCurve> Ifc4x3_rc1::IfcAlignment2DVertical::ToAlignmentCurve() const { return cast_vector<IfcAlignmentCurve>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[43], 1)); }
+std::vector<::Ifc4x3_rc1::IfcAlignmentCurve> Ifc4x3_rc1::IfcAlignment2DVertical::ToAlignmentCurve() const { return cast_vector<IfcAlignmentCurve>(file()->getInverse(data()->id(), IFC4X3_RC1_types[43], 1)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DVertical::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[41]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DVertical::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[41]); }
@@ -8071,7 +8071,7 @@ void Ifc4x3_rc1::IfcAlignment2DVerticalSegment::setStartHeight(const double& v) 
 double Ifc4x3_rc1::IfcAlignment2DVerticalSegment::StartGradient() const {  double v = get_attribute_value(6); return v; }
 void Ifc4x3_rc1::IfcAlignment2DVerticalSegment::setStartGradient(const double& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
 
-std::vector<::Ifc4x3_rc1::IfcAlignment2DVertical> Ifc4x3_rc1::IfcAlignment2DVerticalSegment::ToVertical() const { return cast_vector<IfcAlignment2DVertical>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[41], 0)); }
+std::vector<::Ifc4x3_rc1::IfcAlignment2DVertical> Ifc4x3_rc1::IfcAlignment2DVerticalSegment::ToVertical() const { return cast_vector<IfcAlignment2DVertical>(file()->getInverse(data()->id(), IFC4X3_RC1_types[41], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DVerticalSegment::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[42]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAlignment2DVerticalSegment::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[42]); }
@@ -8096,7 +8096,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcAlignmentCurve::Class() { return *((IfcPa
 std::optional< ::Ifc4x3_rc1::IfcAnnotationTypeEnum::Value > Ifc4x3_rc1::IfcAnnotation::PredefinedType() const { if(get_attribute_value(7).isNull()) { return std::nullopt; } return ::Ifc4x3_rc1::IfcAnnotationTypeEnum::FromString(get_attribute_value(7)); }
 void Ifc4x3_rc1::IfcAnnotation::setPredefinedType(const std::optional< ::Ifc4x3_rc1::IfcAnnotationTypeEnum::Value >& v) { if (v) {set_attribute_value(7, EnumerationReference(&::Ifc4x3_rc1::IfcAnnotationTypeEnum::Class(), (size_t) *v));} else {unset_attribute_value(7);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelContainedInSpatialStructure> Ifc4x3_rc1::IfcAnnotation::ContainedInStructure() const { return cast_vector<IfcRelContainedInSpatialStructure>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[937], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelContainedInSpatialStructure> Ifc4x3_rc1::IfcAnnotation::ContainedInStructure() const { return cast_vector<IfcRelContainedInSpatialStructure>(file()->getInverse(data()->id(), IFC4X3_RC1_types[937], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAnnotation::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[49]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAnnotation::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[49]); }
@@ -8153,7 +8153,7 @@ void Ifc4x3_rc1::IfcAppliedValue::setArithmeticOperator(const std::optional< ::I
 std::optional< std::vector< ::Ifc4x3_rc1::IfcAppliedValue > > Ifc4x3_rc1::IfcAppliedValue::Components() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } std::vector<express::Base> es = get_attribute_value(9); return cast_vector<::Ifc4x3_rc1::IfcAppliedValue>(es); }
 void Ifc4x3_rc1::IfcAppliedValue::setComponents(const std::optional< std::vector< ::Ifc4x3_rc1::IfcAppliedValue > >& v) { if (v) {set_attribute_value(9, cast_vector<express::Base>(*v));} else {unset_attribute_value(9);} }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcAppliedValue::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcAppliedValue::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAppliedValue::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[53]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAppliedValue::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[53]); }
@@ -8180,11 +8180,11 @@ void Ifc4x3_rc1::IfcApproval::setRequestingApproval(const ::Ifc4x3_rc1::IfcActor
 ::Ifc4x3_rc1::IfcActorSelect Ifc4x3_rc1::IfcApproval::GivingApproval() const { if(get_attribute_value(8).isNull()) { return ::Ifc4x3_rc1::IfcActorSelect{}; } return ((express::Base)(get_attribute_value(8))).as<::Ifc4x3_rc1::IfcActorSelect>(); }
 void Ifc4x3_rc1::IfcApproval::setGivingApproval(const ::Ifc4x3_rc1::IfcActorSelect& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcApproval::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesApproval> Ifc4x3_rc1::IfcApproval::ApprovedObjects() const { return cast_vector<IfcRelAssociatesApproval>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[920], 5)); }
-std::vector<::Ifc4x3_rc1::IfcResourceApprovalRelationship> Ifc4x3_rc1::IfcApproval::ApprovedResources() const { return cast_vector<IfcResourceApprovalRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[966], 3)); }
-std::vector<::Ifc4x3_rc1::IfcApprovalRelationship> Ifc4x3_rc1::IfcApproval::IsRelatedWith() const { return cast_vector<IfcApprovalRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[56], 3)); }
-std::vector<::Ifc4x3_rc1::IfcApprovalRelationship> Ifc4x3_rc1::IfcApproval::Relates() const { return cast_vector<IfcApprovalRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[56], 2)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcApproval::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesApproval> Ifc4x3_rc1::IfcApproval::ApprovedObjects() const { return cast_vector<IfcRelAssociatesApproval>(file()->getInverse(data()->id(), IFC4X3_RC1_types[920], 5)); }
+std::vector<::Ifc4x3_rc1::IfcResourceApprovalRelationship> Ifc4x3_rc1::IfcApproval::ApprovedResources() const { return cast_vector<IfcResourceApprovalRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[966], 3)); }
+std::vector<::Ifc4x3_rc1::IfcApprovalRelationship> Ifc4x3_rc1::IfcApproval::IsRelatedWith() const { return cast_vector<IfcApprovalRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[56], 3)); }
+std::vector<::Ifc4x3_rc1::IfcApprovalRelationship> Ifc4x3_rc1::IfcApproval::Relates() const { return cast_vector<IfcApprovalRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[56], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcApproval::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[55]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcApproval::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[55]); }
@@ -8345,7 +8345,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcAxis2Placement3D::Class() { return *((Ifc
 
 // Function implementations for IfcAxisLateralInclination
 
-std::vector<::Ifc4x3_rc1::IfcLinearAxisWithInclination> Ifc4x3_rc1::IfcAxisLateralInclination::ToLinearAxis() const { return cast_vector<IfcLinearAxisWithInclination>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[610], 1)); }
+std::vector<::Ifc4x3_rc1::IfcLinearAxisWithInclination> Ifc4x3_rc1::IfcAxisLateralInclination::ToLinearAxis() const { return cast_vector<IfcLinearAxisWithInclination>(file()->getInverse(data()->id(), IFC4X3_RC1_types[610], 1)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcAxisLateralInclination::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[74]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcAxisLateralInclination::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[74]); }
@@ -8632,7 +8632,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcBoundaryNodeConditionWarping::Class() { r
 
 // Function implementations for IfcBoundedCurve
 
-std::vector<::Ifc4x3_rc1::IfcLinearPositioningElement> Ifc4x3_rc1::IfcBoundedCurve::PositioningElement() const { return cast_vector<IfcLinearPositioningElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[615], 7)); }
+std::vector<::Ifc4x3_rc1::IfcLinearPositioningElement> Ifc4x3_rc1::IfcBoundedCurve::PositioningElement() const { return cast_vector<IfcLinearPositioningElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[615], 7)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcBoundedCurve::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[103]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcBoundedCurve::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[103]); }
@@ -9155,8 +9155,8 @@ void Ifc4x3_rc1::IfcClassification::setLocation(const std::optional< std::string
 std::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc1::IfcClassification::ReferenceTokens() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } std::vector< std::string > /*[1:?]*/ v = get_attribute_value(6); return v; }
 void Ifc4x3_rc1::IfcClassification::setReferenceTokens(const std::optional< std::vector< std::string > /*[1:?]*/ >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesClassification> Ifc4x3_rc1::IfcClassification::ClassificationForObjects() const { return cast_vector<IfcRelAssociatesClassification>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[921], 5)); }
-std::vector<::Ifc4x3_rc1::IfcClassificationReference> Ifc4x3_rc1::IfcClassification::HasReferences() const { return cast_vector<IfcClassificationReference>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[175], 3)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesClassification> Ifc4x3_rc1::IfcClassification::ClassificationForObjects() const { return cast_vector<IfcRelAssociatesClassification>(file()->getInverse(data()->id(), IFC4X3_RC1_types[921], 5)); }
+std::vector<::Ifc4x3_rc1::IfcClassificationReference> Ifc4x3_rc1::IfcClassification::HasReferences() const { return cast_vector<IfcClassificationReference>(file()->getInverse(data()->id(), IFC4X3_RC1_types[175], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcClassification::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[174]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcClassification::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[174]); }
@@ -9171,8 +9171,8 @@ void Ifc4x3_rc1::IfcClassificationReference::setDescription(const std::optional<
 std::optional< std::string > Ifc4x3_rc1::IfcClassificationReference::Sort() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } std::string v = get_attribute_value(5); return v; }
 void Ifc4x3_rc1::IfcClassificationReference::setSort(const std::optional< std::string >& v) { if (v) {set_attribute_value(5, *v);} else {unset_attribute_value(5);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesClassification> Ifc4x3_rc1::IfcClassificationReference::ClassificationRefForObjects() const { return cast_vector<IfcRelAssociatesClassification>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[921], 5)); }
-std::vector<::Ifc4x3_rc1::IfcClassificationReference> Ifc4x3_rc1::IfcClassificationReference::HasReferences() const { return cast_vector<IfcClassificationReference>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[175], 3)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesClassification> Ifc4x3_rc1::IfcClassificationReference::ClassificationRefForObjects() const { return cast_vector<IfcRelAssociatesClassification>(file()->getInverse(data()->id(), IFC4X3_RC1_types[921], 5)); }
+std::vector<::Ifc4x3_rc1::IfcClassificationReference> Ifc4x3_rc1::IfcClassificationReference::HasReferences() const { return cast_vector<IfcClassificationReference>(file()->getInverse(data()->id(), IFC4X3_RC1_types[175], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcClassificationReference::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[175]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcClassificationReference::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[175]); }
@@ -9343,7 +9343,7 @@ void Ifc4x3_rc1::IfcCompositeCurveSegment::setSameSense(const bool& v) { set_att
 ::Ifc4x3_rc1::IfcCurve Ifc4x3_rc1::IfcCompositeCurveSegment::ParentCurve() const {  return ((express::Base)(get_attribute_value(2))).as<::Ifc4x3_rc1::IfcCurve>(); }
 void Ifc4x3_rc1::IfcCompositeCurveSegment::setParentCurve(const ::Ifc4x3_rc1::IfcCurve& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
 
-std::vector<::Ifc4x3_rc1::IfcCompositeCurve> Ifc4x3_rc1::IfcCompositeCurveSegment::UsingCurves() const { return cast_vector<IfcCompositeCurve>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[198], 0)); }
+std::vector<::Ifc4x3_rc1::IfcCompositeCurve> Ifc4x3_rc1::IfcCompositeCurveSegment::UsingCurves() const { return cast_vector<IfcCompositeCurve>(file()->getInverse(data()->id(), IFC4X3_RC1_types[198], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcCompositeCurveSegment::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[200]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcCompositeCurveSegment::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[200]); }
@@ -9508,8 +9508,8 @@ void Ifc4x3_rc1::IfcConstraint::setCreationTime(const std::optional< std::string
 std::optional< std::string > Ifc4x3_rc1::IfcConstraint::UserDefinedGrade() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } std::string v = get_attribute_value(6); return v; }
 void Ifc4x3_rc1::IfcConstraint::setUserDefinedGrade(const std::optional< std::string >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcConstraint::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
-std::vector<::Ifc4x3_rc1::IfcResourceConstraintRelationship> Ifc4x3_rc1::IfcConstraint::PropertiesForConstraint() const { return cast_vector<IfcResourceConstraintRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[967], 2)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcConstraint::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcResourceConstraintRelationship> Ifc4x3_rc1::IfcConstraint::PropertiesForConstraint() const { return cast_vector<IfcResourceConstraintRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[967], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcConstraint::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[218]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcConstraint::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[218]); }
@@ -9614,8 +9614,8 @@ void Ifc4x3_rc1::IfcContext::setRepresentationContexts(const std::optional< std:
 ::Ifc4x3_rc1::IfcUnitAssignment Ifc4x3_rc1::IfcContext::UnitsInContext() const { if(get_attribute_value(8).isNull()) { return ::Ifc4x3_rc1::IfcUnitAssignment{}; } return ((express::Base)(get_attribute_value(8))).as<::Ifc4x3_rc1::IfcUnitAssignment>(); }
 void Ifc4x3_rc1::IfcContext::setUnitsInContext(const ::Ifc4x3_rc1::IfcUnitAssignment& v) { set_attribute_value(8, v);if constexpr (false)unset_attribute_value(8); }
 
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByProperties> Ifc4x3_rc1::IfcContext::IsDefinedBy() const { return cast_vector<IfcRelDefinesByProperties>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[944], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelDeclares> Ifc4x3_rc1::IfcContext::Declares() const { return cast_vector<IfcRelDeclares>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[940], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByProperties> Ifc4x3_rc1::IfcContext::IsDefinedBy() const { return cast_vector<IfcRelDefinesByProperties>(file()->getInverse(data()->id(), IFC4X3_RC1_types[944], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelDeclares> Ifc4x3_rc1::IfcContext::Declares() const { return cast_vector<IfcRelDeclares>(file()->getInverse(data()->id(), IFC4X3_RC1_types[940], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcContext::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[231]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcContext::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[231]); }
@@ -9626,7 +9626,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcContext::Class() { return *((IfcParse::en
 std::string Ifc4x3_rc1::IfcContextDependentUnit::Name() const {  std::string v = get_attribute_value(2); return v; }
 void Ifc4x3_rc1::IfcContextDependentUnit::setName(const std::string& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcContextDependentUnit::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcContextDependentUnit::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcContextDependentUnit::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[233]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcContextDependentUnit::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[233]); }
@@ -9637,7 +9637,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcContextDependentUnit::Class() { return *(
 std::optional< std::string > Ifc4x3_rc1::IfcControl::Identification() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } std::string v = get_attribute_value(5); return v; }
 void Ifc4x3_rc1::IfcControl::setIdentification(const std::optional< std::string >& v) { if (v) {set_attribute_value(5, *v);} else {unset_attribute_value(5);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToControl> Ifc4x3_rc1::IfcControl::Controls() const { return cast_vector<IfcRelAssignsToControl>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[913], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToControl> Ifc4x3_rc1::IfcControl::Controls() const { return cast_vector<IfcRelAssignsToControl>(file()->getInverse(data()->id(), IFC4X3_RC1_types[913], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcControl::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[234]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcControl::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[234]); }
@@ -9670,7 +9670,7 @@ void Ifc4x3_rc1::IfcConversionBasedUnit::setName(const std::string& v) { set_att
 ::Ifc4x3_rc1::IfcMeasureWithUnit Ifc4x3_rc1::IfcConversionBasedUnit::ConversionFactor() const {  return ((express::Base)(get_attribute_value(3))).as<::Ifc4x3_rc1::IfcMeasureWithUnit>(); }
 void Ifc4x3_rc1::IfcConversionBasedUnit::setConversionFactor(const ::Ifc4x3_rc1::IfcMeasureWithUnit& v) { set_attribute_value(3, v);if constexpr (false)unset_attribute_value(3); }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcConversionBasedUnit::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcConversionBasedUnit::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcConversionBasedUnit::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[238]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcConversionBasedUnit::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[238]); }
@@ -9769,7 +9769,7 @@ void Ifc4x3_rc1::IfcCoordinateReferenceSystem::setGeodeticDatum(const std::optio
 std::optional< std::string > Ifc4x3_rc1::IfcCoordinateReferenceSystem::VerticalDatum() const { if(get_attribute_value(3).isNull()) { return std::nullopt; } std::string v = get_attribute_value(3); return v; }
 void Ifc4x3_rc1::IfcCoordinateReferenceSystem::setVerticalDatum(const std::optional< std::string >& v) { if (v) {set_attribute_value(3, *v);} else {unset_attribute_value(3);} }
 
-std::vector<::Ifc4x3_rc1::IfcCoordinateOperation> Ifc4x3_rc1::IfcCoordinateReferenceSystem::HasCoordinateOperation() const { return cast_vector<IfcCoordinateOperation>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[249], 0)); }
+std::vector<::Ifc4x3_rc1::IfcCoordinateOperation> Ifc4x3_rc1::IfcCoordinateReferenceSystem::HasCoordinateOperation() const { return cast_vector<IfcCoordinateOperation>(file()->getInverse(data()->id(), IFC4X3_RC1_types[249], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcCoordinateReferenceSystem::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[250]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcCoordinateReferenceSystem::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[250]); }
@@ -9838,8 +9838,8 @@ const IfcParse::entity& Ifc4x3_rc1::IfcCourseType::Class() { return *((IfcParse:
 std::optional< ::Ifc4x3_rc1::IfcCoveringTypeEnum::Value > Ifc4x3_rc1::IfcCovering::PredefinedType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } return ::Ifc4x3_rc1::IfcCoveringTypeEnum::FromString(get_attribute_value(8)); }
 void Ifc4x3_rc1::IfcCovering::setPredefinedType(const std::optional< ::Ifc4x3_rc1::IfcCoveringTypeEnum::Value >& v) { if (v) {set_attribute_value(8, EnumerationReference(&::Ifc4x3_rc1::IfcCoveringTypeEnum::Class(), (size_t) *v));} else {unset_attribute_value(8);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelCoversSpaces> Ifc4x3_rc1::IfcCovering::CoversSpaces() const { return cast_vector<IfcRelCoversSpaces>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[939], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelCoversBldgElements> Ifc4x3_rc1::IfcCovering::CoversElements() const { return cast_vector<IfcRelCoversBldgElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[938], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelCoversSpaces> Ifc4x3_rc1::IfcCovering::CoversSpaces() const { return cast_vector<IfcRelCoversSpaces>(file()->getInverse(data()->id(), IFC4X3_RC1_types[939], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelCoversBldgElements> Ifc4x3_rc1::IfcCovering::CoversElements() const { return cast_vector<IfcRelCoversBldgElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[938], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcCovering::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[261]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcCovering::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[261]); }
@@ -10272,7 +10272,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcDistributionCircuit::Class() { return *((
 
 // Function implementations for IfcDistributionControlElement
 
-std::vector<::Ifc4x3_rc1::IfcRelFlowControlElements> Ifc4x3_rc1::IfcDistributionControlElement::AssignedToFlowElement() const { return cast_vector<IfcRelFlowControlElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[948], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelFlowControlElements> Ifc4x3_rc1::IfcDistributionControlElement::AssignedToFlowElement() const { return cast_vector<IfcRelFlowControlElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[948], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcDistributionControlElement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[324]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcDistributionControlElement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[324]); }
@@ -10289,7 +10289,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcDistributionControlElementType::Class() {
 
 // Function implementations for IfcDistributionElement
 
-std::vector<::Ifc4x3_rc1::IfcRelConnectsPortToElement> Ifc4x3_rc1::IfcDistributionElement::HasPorts() const { return cast_vector<IfcRelConnectsPortToElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[932], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsPortToElement> Ifc4x3_rc1::IfcDistributionElement::HasPorts() const { return cast_vector<IfcRelConnectsPortToElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[932], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcDistributionElement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[326]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcDistributionElement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[326]); }
@@ -10306,7 +10306,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcDistributionElementType::Class() { return
 
 // Function implementations for IfcDistributionFlowElement
 
-std::vector<::Ifc4x3_rc1::IfcRelFlowControlElements> Ifc4x3_rc1::IfcDistributionFlowElement::HasControlElements() const { return cast_vector<IfcRelFlowControlElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[948], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelFlowControlElements> Ifc4x3_rc1::IfcDistributionFlowElement::HasControlElements() const { return cast_vector<IfcRelFlowControlElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[948], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcDistributionFlowElement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[328]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcDistributionFlowElement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[328]); }
@@ -10383,10 +10383,10 @@ void Ifc4x3_rc1::IfcDocumentInformation::setConfidentiality(const std::optional<
 std::optional< ::Ifc4x3_rc1::IfcDocumentStatusEnum::Value > Ifc4x3_rc1::IfcDocumentInformation::Status() const { if(get_attribute_value(16).isNull()) { return std::nullopt; } return ::Ifc4x3_rc1::IfcDocumentStatusEnum::FromString(get_attribute_value(16)); }
 void Ifc4x3_rc1::IfcDocumentInformation::setStatus(const std::optional< ::Ifc4x3_rc1::IfcDocumentStatusEnum::Value >& v) { if (v) {set_attribute_value(16, EnumerationReference(&::Ifc4x3_rc1::IfcDocumentStatusEnum::Class(), (size_t) *v));} else {unset_attribute_value(16);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesDocument> Ifc4x3_rc1::IfcDocumentInformation::DocumentInfoForObjects() const { return cast_vector<IfcRelAssociatesDocument>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[923], 5)); }
-std::vector<::Ifc4x3_rc1::IfcDocumentReference> Ifc4x3_rc1::IfcDocumentInformation::HasDocumentReferences() const { return cast_vector<IfcDocumentReference>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[337], 4)); }
-std::vector<::Ifc4x3_rc1::IfcDocumentInformationRelationship> Ifc4x3_rc1::IfcDocumentInformation::IsPointedTo() const { return cast_vector<IfcDocumentInformationRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[336], 3)); }
-std::vector<::Ifc4x3_rc1::IfcDocumentInformationRelationship> Ifc4x3_rc1::IfcDocumentInformation::IsPointer() const { return cast_vector<IfcDocumentInformationRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[336], 2)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesDocument> Ifc4x3_rc1::IfcDocumentInformation::DocumentInfoForObjects() const { return cast_vector<IfcRelAssociatesDocument>(file()->getInverse(data()->id(), IFC4X3_RC1_types[923], 5)); }
+std::vector<::Ifc4x3_rc1::IfcDocumentReference> Ifc4x3_rc1::IfcDocumentInformation::HasDocumentReferences() const { return cast_vector<IfcDocumentReference>(file()->getInverse(data()->id(), IFC4X3_RC1_types[337], 4)); }
+std::vector<::Ifc4x3_rc1::IfcDocumentInformationRelationship> Ifc4x3_rc1::IfcDocumentInformation::IsPointedTo() const { return cast_vector<IfcDocumentInformationRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[336], 3)); }
+std::vector<::Ifc4x3_rc1::IfcDocumentInformationRelationship> Ifc4x3_rc1::IfcDocumentInformation::IsPointer() const { return cast_vector<IfcDocumentInformationRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[336], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcDocumentInformation::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[335]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcDocumentInformation::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[335]); }
@@ -10413,7 +10413,7 @@ void Ifc4x3_rc1::IfcDocumentReference::setDescription(const std::optional< std::
 ::Ifc4x3_rc1::IfcDocumentInformation Ifc4x3_rc1::IfcDocumentReference::ReferencedDocument() const { if(get_attribute_value(4).isNull()) { return ::Ifc4x3_rc1::IfcDocumentInformation{}; } return ((express::Base)(get_attribute_value(4))).as<::Ifc4x3_rc1::IfcDocumentInformation>(); }
 void Ifc4x3_rc1::IfcDocumentReference::setReferencedDocument(const ::Ifc4x3_rc1::IfcDocumentInformation& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesDocument> Ifc4x3_rc1::IfcDocumentReference::DocumentRefForObjects() const { return cast_vector<IfcRelAssociatesDocument>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[923], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesDocument> Ifc4x3_rc1::IfcDocumentReference::DocumentRefForObjects() const { return cast_vector<IfcRelAssociatesDocument>(file()->getInverse(data()->id(), IFC4X3_RC1_types[923], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcDocumentReference::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[337]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcDocumentReference::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[337]); }
@@ -10812,17 +10812,17 @@ const IfcParse::entity& Ifc4x3_rc1::IfcElectricTimeControlType::Class() { return
 std::optional< std::string > Ifc4x3_rc1::IfcElement::Tag() const { if(get_attribute_value(7).isNull()) { return std::nullopt; } std::string v = get_attribute_value(7); return v; }
 void Ifc4x3_rc1::IfcElement::setTag(const std::optional< std::string >& v) { if (v) {set_attribute_value(7, *v);} else {unset_attribute_value(7);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelFillsElement> Ifc4x3_rc1::IfcElement::FillsVoids() const { return cast_vector<IfcRelFillsElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[947], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelConnectsElements> Ifc4x3_rc1::IfcElement::ConnectedTo() const { return cast_vector<IfcRelConnectsElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[929], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelInterferesElements> Ifc4x3_rc1::IfcElement::IsInterferedByElements() const { return cast_vector<IfcRelInterferesElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[949], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelInterferesElements> Ifc4x3_rc1::IfcElement::InterferesElements() const { return cast_vector<IfcRelInterferesElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[949], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelProjectsElement> Ifc4x3_rc1::IfcElement::HasProjections() const { return cast_vector<IfcRelProjectsElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[952], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelVoidsElement> Ifc4x3_rc1::IfcElement::HasOpenings() const { return cast_vector<IfcRelVoidsElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[959], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelConnectsWithRealizingElements> Ifc4x3_rc1::IfcElement::IsConnectionRealization() const { return cast_vector<IfcRelConnectsWithRealizingElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[936], 7)); }
-std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary> Ifc4x3_rc1::IfcElement::ProvidesBoundaries() const { return cast_vector<IfcRelSpaceBoundary>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[956], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelConnectsElements> Ifc4x3_rc1::IfcElement::ConnectedFrom() const { return cast_vector<IfcRelConnectsElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[929], 6)); }
-std::vector<::Ifc4x3_rc1::IfcRelContainedInSpatialStructure> Ifc4x3_rc1::IfcElement::ContainedInStructure() const { return cast_vector<IfcRelContainedInSpatialStructure>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[937], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelCoversBldgElements> Ifc4x3_rc1::IfcElement::HasCoverings() const { return cast_vector<IfcRelCoversBldgElements>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[938], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelFillsElement> Ifc4x3_rc1::IfcElement::FillsVoids() const { return cast_vector<IfcRelFillsElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[947], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsElements> Ifc4x3_rc1::IfcElement::ConnectedTo() const { return cast_vector<IfcRelConnectsElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[929], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelInterferesElements> Ifc4x3_rc1::IfcElement::IsInterferedByElements() const { return cast_vector<IfcRelInterferesElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[949], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelInterferesElements> Ifc4x3_rc1::IfcElement::InterferesElements() const { return cast_vector<IfcRelInterferesElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[949], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelProjectsElement> Ifc4x3_rc1::IfcElement::HasProjections() const { return cast_vector<IfcRelProjectsElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[952], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelVoidsElement> Ifc4x3_rc1::IfcElement::HasOpenings() const { return cast_vector<IfcRelVoidsElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[959], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsWithRealizingElements> Ifc4x3_rc1::IfcElement::IsConnectionRealization() const { return cast_vector<IfcRelConnectsWithRealizingElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[936], 7)); }
+std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary> Ifc4x3_rc1::IfcElement::ProvidesBoundaries() const { return cast_vector<IfcRelSpaceBoundary>(file()->getInverse(data()->id(), IFC4X3_RC1_types[956], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsElements> Ifc4x3_rc1::IfcElement::ConnectedFrom() const { return cast_vector<IfcRelConnectsElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[929], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelContainedInSpatialStructure> Ifc4x3_rc1::IfcElement::ContainedInStructure() const { return cast_vector<IfcRelContainedInSpatialStructure>(file()->getInverse(data()->id(), IFC4X3_RC1_types[937], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelCoversBldgElements> Ifc4x3_rc1::IfcElement::HasCoverings() const { return cast_vector<IfcRelCoversBldgElements>(file()->getInverse(data()->id(), IFC4X3_RC1_types[938], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcElement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[401]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcElement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[401]); }
@@ -11075,7 +11075,7 @@ void Ifc4x3_rc1::IfcExternalReference::setIdentification(const std::optional< st
 std::optional< std::string > Ifc4x3_rc1::IfcExternalReference::Name() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } std::string v = get_attribute_value(2); return v; }
 void Ifc4x3_rc1::IfcExternalReference::setName(const std::optional< std::string >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcExternalReference::ExternalReferenceForResources() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 2)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcExternalReference::ExternalReferenceForResources() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcExternalReference::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[435]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcExternalReference::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[435]); }
@@ -11098,7 +11098,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcExternalReferenceRelationship::Class() { 
 std::optional< ::Ifc4x3_rc1::IfcExternalSpatialElementTypeEnum::Value > Ifc4x3_rc1::IfcExternalSpatialElement::PredefinedType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } return ::Ifc4x3_rc1::IfcExternalSpatialElementTypeEnum::FromString(get_attribute_value(8)); }
 void Ifc4x3_rc1::IfcExternalSpatialElement::setPredefinedType(const std::optional< ::Ifc4x3_rc1::IfcExternalSpatialElementTypeEnum::Value >& v) { if (v) {set_attribute_value(8, EnumerationReference(&::Ifc4x3_rc1::IfcExternalSpatialElementTypeEnum::Class(), (size_t) *v));} else {unset_attribute_value(8);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary> Ifc4x3_rc1::IfcExternalSpatialElement::BoundedBy() const { return cast_vector<IfcRelSpaceBoundary>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[956], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary> Ifc4x3_rc1::IfcExternalSpatialElement::BoundedBy() const { return cast_vector<IfcRelSpaceBoundary>(file()->getInverse(data()->id(), IFC4X3_RC1_types[956], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcExternalSpatialElement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[437]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcExternalSpatialElement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[437]); }
@@ -11163,7 +11163,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcExtrudedAreaSolidTapered::Class() { retur
 std::vector< ::Ifc4x3_rc1::IfcFaceBound > Ifc4x3_rc1::IfcFace::Bounds() const {  std::vector<express::Base> es = get_attribute_value(0); return cast_vector<::Ifc4x3_rc1::IfcFaceBound>(es); }
 void Ifc4x3_rc1::IfcFace::setBounds(const std::vector< ::Ifc4x3_rc1::IfcFaceBound >& v) { set_attribute_value(0, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(0); }
 
-std::vector<::Ifc4x3_rc1::IfcTextureMap> Ifc4x3_rc1::IfcFace::HasTextureMaps() const { return cast_vector<IfcTextureMap>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1199], 2)); }
+std::vector<::Ifc4x3_rc1::IfcTextureMap> Ifc4x3_rc1::IfcFace::HasTextureMaps() const { return cast_vector<IfcTextureMap>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1199], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcFace::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[442]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcFace::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[442]); }
@@ -11320,7 +11320,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcFeatureElement::Class() { return *((IfcPa
 
 // Function implementations for IfcFeatureElementAddition
 
-std::vector<::Ifc4x3_rc1::IfcRelProjectsElement> Ifc4x3_rc1::IfcFeatureElementAddition::ProjectsElements() const { return cast_vector<IfcRelProjectsElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[952], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelProjectsElement> Ifc4x3_rc1::IfcFeatureElementAddition::ProjectsElements() const { return cast_vector<IfcRelProjectsElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[952], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcFeatureElementAddition::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[462]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcFeatureElementAddition::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[462]); }
@@ -11329,7 +11329,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcFeatureElementAddition::Class() { return 
 
 // Function implementations for IfcFeatureElementSubtraction
 
-std::vector<::Ifc4x3_rc1::IfcRelVoidsElement> Ifc4x3_rc1::IfcFeatureElementSubtraction::VoidsElements() const { return cast_vector<IfcRelVoidsElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[959], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelVoidsElement> Ifc4x3_rc1::IfcFeatureElementSubtraction::VoidsElements() const { return cast_vector<IfcRelVoidsElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[959], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcFeatureElementSubtraction::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[463]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcFeatureElementSubtraction::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[463]); }
@@ -11678,8 +11678,8 @@ void Ifc4x3_rc1::IfcGeometricRepresentationContext::setWorldCoordinateSystem(con
 ::Ifc4x3_rc1::IfcDirection Ifc4x3_rc1::IfcGeometricRepresentationContext::TrueNorth() const { if(get_attribute_value(5).isNull()) { return ::Ifc4x3_rc1::IfcDirection{}; } return ((express::Base)(get_attribute_value(5))).as<::Ifc4x3_rc1::IfcDirection>(); }
 void Ifc4x3_rc1::IfcGeometricRepresentationContext::setTrueNorth(const ::Ifc4x3_rc1::IfcDirection& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
 
-std::vector<::Ifc4x3_rc1::IfcGeometricRepresentationSubContext> Ifc4x3_rc1::IfcGeometricRepresentationContext::HasSubContexts() const { return cast_vector<IfcGeometricRepresentationSubContext>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[516], 6)); }
-std::vector<::Ifc4x3_rc1::IfcCoordinateOperation> Ifc4x3_rc1::IfcGeometricRepresentationContext::HasCoordinateOperation() const { return cast_vector<IfcCoordinateOperation>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[249], 0)); }
+std::vector<::Ifc4x3_rc1::IfcGeometricRepresentationSubContext> Ifc4x3_rc1::IfcGeometricRepresentationContext::HasSubContexts() const { return cast_vector<IfcGeometricRepresentationSubContext>(file()->getInverse(data()->id(), IFC4X3_RC1_types[516], 6)); }
+std::vector<::Ifc4x3_rc1::IfcCoordinateOperation> Ifc4x3_rc1::IfcGeometricRepresentationContext::HasCoordinateOperation() const { return cast_vector<IfcCoordinateOperation>(file()->getInverse(data()->id(), IFC4X3_RC1_types[249], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcGeometricRepresentationContext::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[514]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcGeometricRepresentationContext::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[514]); }
@@ -11784,10 +11784,10 @@ void Ifc4x3_rc1::IfcGridAxis::setAxisCurve(const ::Ifc4x3_rc1::IfcCurve& v) { se
 bool Ifc4x3_rc1::IfcGridAxis::SameSense() const {  bool v = get_attribute_value(2); return v; }
 void Ifc4x3_rc1::IfcGridAxis::setSameSense(const bool& v) { set_attribute_value(2, v);if constexpr (false)unset_attribute_value(2); }
 
-std::vector<::Ifc4x3_rc1::IfcGrid> Ifc4x3_rc1::IfcGridAxis::PartOfW() const { return cast_vector<IfcGrid>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[526], 9)); }
-std::vector<::Ifc4x3_rc1::IfcGrid> Ifc4x3_rc1::IfcGridAxis::PartOfV() const { return cast_vector<IfcGrid>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[526], 8)); }
-std::vector<::Ifc4x3_rc1::IfcGrid> Ifc4x3_rc1::IfcGridAxis::PartOfU() const { return cast_vector<IfcGrid>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[526], 7)); }
-std::vector<::Ifc4x3_rc1::IfcVirtualGridIntersection> Ifc4x3_rc1::IfcGridAxis::HasIntersections() const { return cast_vector<IfcVirtualGridIntersection>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1277], 0)); }
+std::vector<::Ifc4x3_rc1::IfcGrid> Ifc4x3_rc1::IfcGridAxis::PartOfW() const { return cast_vector<IfcGrid>(file()->getInverse(data()->id(), IFC4X3_RC1_types[526], 9)); }
+std::vector<::Ifc4x3_rc1::IfcGrid> Ifc4x3_rc1::IfcGridAxis::PartOfV() const { return cast_vector<IfcGrid>(file()->getInverse(data()->id(), IFC4X3_RC1_types[526], 8)); }
+std::vector<::Ifc4x3_rc1::IfcGrid> Ifc4x3_rc1::IfcGridAxis::PartOfU() const { return cast_vector<IfcGrid>(file()->getInverse(data()->id(), IFC4X3_RC1_types[526], 7)); }
+std::vector<::Ifc4x3_rc1::IfcVirtualGridIntersection> Ifc4x3_rc1::IfcGridAxis::HasIntersections() const { return cast_vector<IfcVirtualGridIntersection>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1277], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcGridAxis::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[527]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcGridAxis::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[527]); }
@@ -11808,7 +11808,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcGridPlacement::Class() { return *((IfcPar
 
 // Function implementations for IfcGroup
 
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToGroup> Ifc4x3_rc1::IfcGroup::IsGroupedBy() const { return cast_vector<IfcRelAssignsToGroup>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[914], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToGroup> Ifc4x3_rc1::IfcGroup::IsGroupedBy() const { return cast_vector<IfcRelAssignsToGroup>(file()->getInverse(data()->id(), IFC4X3_RC1_types[914], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcGroup::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[531]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcGroup::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[531]); }
@@ -11965,7 +11965,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcIndexedPolyCurve::Class() { return *((Ifc
 std::vector< int > /*[3:?]*/ Ifc4x3_rc1::IfcIndexedPolygonalFace::CoordIndex() const {  std::vector< int > /*[3:?]*/ v = get_attribute_value(0); return v; }
 void Ifc4x3_rc1::IfcIndexedPolygonalFace::setCoordIndex(const std::vector< int > /*[3:?]*/& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
 
-std::vector<::Ifc4x3_rc1::IfcPolygonalFaceSet> Ifc4x3_rc1::IfcIndexedPolygonalFace::ToFaceSet() const { return cast_vector<IfcPolygonalFaceSet>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[783], 2)); }
+std::vector<::Ifc4x3_rc1::IfcPolygonalFaceSet> Ifc4x3_rc1::IfcIndexedPolygonalFace::ToFaceSet() const { return cast_vector<IfcPolygonalFaceSet>(file()->getInverse(data()->id(), IFC4X3_RC1_types[783], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcIndexedPolygonalFace::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[552]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcIndexedPolygonalFace::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[552]); }
@@ -12200,8 +12200,8 @@ void Ifc4x3_rc1::IfcLibraryInformation::setLocation(const std::optional< std::st
 std::optional< std::string > Ifc4x3_rc1::IfcLibraryInformation::Description() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } std::string v = get_attribute_value(5); return v; }
 void Ifc4x3_rc1::IfcLibraryInformation::setDescription(const std::optional< std::string >& v) { if (v) {set_attribute_value(5, *v);} else {unset_attribute_value(5);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesLibrary> Ifc4x3_rc1::IfcLibraryInformation::LibraryInfoForObjects() const { return cast_vector<IfcRelAssociatesLibrary>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[924], 5)); }
-std::vector<::Ifc4x3_rc1::IfcLibraryReference> Ifc4x3_rc1::IfcLibraryInformation::HasLibraryReferences() const { return cast_vector<IfcLibraryReference>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[592], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesLibrary> Ifc4x3_rc1::IfcLibraryInformation::LibraryInfoForObjects() const { return cast_vector<IfcRelAssociatesLibrary>(file()->getInverse(data()->id(), IFC4X3_RC1_types[924], 5)); }
+std::vector<::Ifc4x3_rc1::IfcLibraryReference> Ifc4x3_rc1::IfcLibraryInformation::HasLibraryReferences() const { return cast_vector<IfcLibraryReference>(file()->getInverse(data()->id(), IFC4X3_RC1_types[592], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcLibraryInformation::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[591]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcLibraryInformation::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[591]); }
@@ -12216,7 +12216,7 @@ void Ifc4x3_rc1::IfcLibraryReference::setLanguage(const std::optional< std::stri
 ::Ifc4x3_rc1::IfcLibraryInformation Ifc4x3_rc1::IfcLibraryReference::ReferencedLibrary() const { if(get_attribute_value(5).isNull()) { return ::Ifc4x3_rc1::IfcLibraryInformation{}; } return ((express::Base)(get_attribute_value(5))).as<::Ifc4x3_rc1::IfcLibraryInformation>(); }
 void Ifc4x3_rc1::IfcLibraryReference::setReferencedLibrary(const ::Ifc4x3_rc1::IfcLibraryInformation& v) { set_attribute_value(5, v);if constexpr (false)unset_attribute_value(5); }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesLibrary> Ifc4x3_rc1::IfcLibraryReference::LibraryRefForObjects() const { return cast_vector<IfcRelAssociatesLibrary>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[924], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesLibrary> Ifc4x3_rc1::IfcLibraryReference::LibraryRefForObjects() const { return cast_vector<IfcRelAssociatesLibrary>(file()->getInverse(data()->id(), IFC4X3_RC1_types[924], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcLibraryReference::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[592]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcLibraryReference::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[592]); }
@@ -12533,9 +12533,9 @@ void Ifc4x3_rc1::IfcMaterial::setDescription(const std::optional< std::string >&
 std::optional< std::string > Ifc4x3_rc1::IfcMaterial::Category() const { if(get_attribute_value(2).isNull()) { return std::nullopt; } std::string v = get_attribute_value(2); return v; }
 void Ifc4x3_rc1::IfcMaterial::setCategory(const std::optional< std::string >& v) { if (v) {set_attribute_value(2, *v);} else {unset_attribute_value(2);} }
 
-std::vector<::Ifc4x3_rc1::IfcMaterialDefinitionRepresentation> Ifc4x3_rc1::IfcMaterial::HasRepresentation() const { return cast_vector<IfcMaterialDefinitionRepresentation>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[650], 3)); }
-std::vector<::Ifc4x3_rc1::IfcMaterialRelationship> Ifc4x3_rc1::IfcMaterial::IsRelatedWith() const { return cast_vector<IfcMaterialRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[662], 3)); }
-std::vector<::Ifc4x3_rc1::IfcMaterialRelationship> Ifc4x3_rc1::IfcMaterial::RelatesTo() const { return cast_vector<IfcMaterialRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[662], 2)); }
+std::vector<::Ifc4x3_rc1::IfcMaterialDefinitionRepresentation> Ifc4x3_rc1::IfcMaterial::HasRepresentation() const { return cast_vector<IfcMaterialDefinitionRepresentation>(file()->getInverse(data()->id(), IFC4X3_RC1_types[650], 3)); }
+std::vector<::Ifc4x3_rc1::IfcMaterialRelationship> Ifc4x3_rc1::IfcMaterial::IsRelatedWith() const { return cast_vector<IfcMaterialRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[662], 3)); }
+std::vector<::Ifc4x3_rc1::IfcMaterialRelationship> Ifc4x3_rc1::IfcMaterial::RelatesTo() const { return cast_vector<IfcMaterialRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[662], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcMaterial::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[645]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcMaterial::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[645]); }
@@ -12566,7 +12566,7 @@ void Ifc4x3_rc1::IfcMaterialConstituent::setFraction(const std::optional< double
 std::optional< std::string > Ifc4x3_rc1::IfcMaterialConstituent::Category() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } std::string v = get_attribute_value(4); return v; }
 void Ifc4x3_rc1::IfcMaterialConstituent::setCategory(const std::optional< std::string >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 
-std::vector<::Ifc4x3_rc1::IfcMaterialConstituentSet> Ifc4x3_rc1::IfcMaterialConstituent::ToMaterialConstituentSet() const { return cast_vector<IfcMaterialConstituentSet>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[648], 2)); }
+std::vector<::Ifc4x3_rc1::IfcMaterialConstituentSet> Ifc4x3_rc1::IfcMaterialConstituent::ToMaterialConstituentSet() const { return cast_vector<IfcMaterialConstituentSet>(file()->getInverse(data()->id(), IFC4X3_RC1_types[648], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcMaterialConstituent::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[647]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcMaterialConstituent::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[647]); }
@@ -12589,9 +12589,9 @@ const IfcParse::entity& Ifc4x3_rc1::IfcMaterialConstituentSet::Class() { return 
 
 // Function implementations for IfcMaterialDefinition
 
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesMaterial> Ifc4x3_rc1::IfcMaterialDefinition::AssociatedTo() const { return cast_vector<IfcRelAssociatesMaterial>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[925], 5)); }
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcMaterialDefinition::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
-std::vector<::Ifc4x3_rc1::IfcMaterialProperties> Ifc4x3_rc1::IfcMaterialDefinition::HasProperties() const { return cast_vector<IfcMaterialProperties>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[661], 3)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesMaterial> Ifc4x3_rc1::IfcMaterialDefinition::AssociatedTo() const { return cast_vector<IfcRelAssociatesMaterial>(file()->getInverse(data()->id(), IFC4X3_RC1_types[925], 5)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcMaterialDefinition::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcMaterialProperties> Ifc4x3_rc1::IfcMaterialDefinition::HasProperties() const { return cast_vector<IfcMaterialProperties>(file()->getInverse(data()->id(), IFC4X3_RC1_types[661], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcMaterialDefinition::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[649]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcMaterialDefinition::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[649]); }
@@ -12624,7 +12624,7 @@ void Ifc4x3_rc1::IfcMaterialLayer::setCategory(const std::optional< std::string 
 std::optional< int > Ifc4x3_rc1::IfcMaterialLayer::Priority() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } int v = get_attribute_value(6); return v; }
 void Ifc4x3_rc1::IfcMaterialLayer::setPriority(const std::optional< int >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
 
-std::vector<::Ifc4x3_rc1::IfcMaterialLayerSet> Ifc4x3_rc1::IfcMaterialLayer::ToMaterialLayerSet() const { return cast_vector<IfcMaterialLayerSet>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[652], 0)); }
+std::vector<::Ifc4x3_rc1::IfcMaterialLayerSet> Ifc4x3_rc1::IfcMaterialLayer::ToMaterialLayerSet() const { return cast_vector<IfcMaterialLayerSet>(file()->getInverse(data()->id(), IFC4X3_RC1_types[652], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcMaterialLayer::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[651]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcMaterialLayer::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[651]); }
@@ -12699,7 +12699,7 @@ void Ifc4x3_rc1::IfcMaterialProfile::setPriority(const std::optional< int >& v) 
 std::optional< std::string > Ifc4x3_rc1::IfcMaterialProfile::Category() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } std::string v = get_attribute_value(5); return v; }
 void Ifc4x3_rc1::IfcMaterialProfile::setCategory(const std::optional< std::string >& v) { if (v) {set_attribute_value(5, *v);} else {unset_attribute_value(5);} }
 
-std::vector<::Ifc4x3_rc1::IfcMaterialProfileSet> Ifc4x3_rc1::IfcMaterialProfile::ToMaterialProfileSet() const { return cast_vector<IfcMaterialProfileSet>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[657], 2)); }
+std::vector<::Ifc4x3_rc1::IfcMaterialProfileSet> Ifc4x3_rc1::IfcMaterialProfile::ToMaterialProfileSet() const { return cast_vector<IfcMaterialProfileSet>(file()->getInverse(data()->id(), IFC4X3_RC1_types[657], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcMaterialProfile::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[656]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcMaterialProfile::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[656]); }
@@ -12784,7 +12784,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcMaterialRelationship::Class() { return *(
 
 // Function implementations for IfcMaterialUsageDefinition
 
-std::vector<::Ifc4x3_rc1::IfcRelAssociatesMaterial> Ifc4x3_rc1::IfcMaterialUsageDefinition::AssociatedTo() const { return cast_vector<IfcRelAssociatesMaterial>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[925], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociatesMaterial> Ifc4x3_rc1::IfcMaterialUsageDefinition::AssociatedTo() const { return cast_vector<IfcRelAssociatesMaterial>(file()->getInverse(data()->id(), IFC4X3_RC1_types[925], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcMaterialUsageDefinition::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[664]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcMaterialUsageDefinition::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[664]); }
@@ -13009,10 +13009,10 @@ const IfcParse::entity& Ifc4x3_rc1::IfcNavigationElementType::Class() { return *
 std::optional< std::string > Ifc4x3_rc1::IfcObject::ObjectType() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } std::string v = get_attribute_value(4); return v; }
 void Ifc4x3_rc1::IfcObject::setObjectType(const std::optional< std::string >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByObject> Ifc4x3_rc1::IfcObject::IsDeclaredBy() const { return cast_vector<IfcRelDefinesByObject>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[943], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByObject> Ifc4x3_rc1::IfcObject::Declares() const { return cast_vector<IfcRelDefinesByObject>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[943], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByType> Ifc4x3_rc1::IfcObject::IsTypedBy() const { return cast_vector<IfcRelDefinesByType>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[946], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByProperties> Ifc4x3_rc1::IfcObject::IsDefinedBy() const { return cast_vector<IfcRelDefinesByProperties>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[944], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByObject> Ifc4x3_rc1::IfcObject::IsDeclaredBy() const { return cast_vector<IfcRelDefinesByObject>(file()->getInverse(data()->id(), IFC4X3_RC1_types[943], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByObject> Ifc4x3_rc1::IfcObject::Declares() const { return cast_vector<IfcRelDefinesByObject>(file()->getInverse(data()->id(), IFC4X3_RC1_types[943], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByType> Ifc4x3_rc1::IfcObject::IsTypedBy() const { return cast_vector<IfcRelDefinesByType>(file()->getInverse(data()->id(), IFC4X3_RC1_types[946], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByProperties> Ifc4x3_rc1::IfcObject::IsDefinedBy() const { return cast_vector<IfcRelDefinesByProperties>(file()->getInverse(data()->id(), IFC4X3_RC1_types[944], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcObject::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[710]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcObject::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[710]); }
@@ -13021,13 +13021,13 @@ const IfcParse::entity& Ifc4x3_rc1::IfcObject::Class() { return *((IfcParse::ent
 
 // Function implementations for IfcObjectDefinition
 
-std::vector<::Ifc4x3_rc1::IfcRelAssigns> Ifc4x3_rc1::IfcObjectDefinition::HasAssignments() const { return cast_vector<IfcRelAssigns>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[911], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelNests> Ifc4x3_rc1::IfcObjectDefinition::Nests() const { return cast_vector<IfcRelNests>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[950], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelNests> Ifc4x3_rc1::IfcObjectDefinition::IsNestedBy() const { return cast_vector<IfcRelNests>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[950], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelDeclares> Ifc4x3_rc1::IfcObjectDefinition::HasContext() const { return cast_vector<IfcRelDeclares>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[940], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelAggregates> Ifc4x3_rc1::IfcObjectDefinition::IsDecomposedBy() const { return cast_vector<IfcRelAggregates>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[910], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelAggregates> Ifc4x3_rc1::IfcObjectDefinition::Decomposes() const { return cast_vector<IfcRelAggregates>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[910], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelAssociates> Ifc4x3_rc1::IfcObjectDefinition::HasAssociations() const { return cast_vector<IfcRelAssociates>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[919], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssigns> Ifc4x3_rc1::IfcObjectDefinition::HasAssignments() const { return cast_vector<IfcRelAssigns>(file()->getInverse(data()->id(), IFC4X3_RC1_types[911], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelNests> Ifc4x3_rc1::IfcObjectDefinition::Nests() const { return cast_vector<IfcRelNests>(file()->getInverse(data()->id(), IFC4X3_RC1_types[950], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelNests> Ifc4x3_rc1::IfcObjectDefinition::IsNestedBy() const { return cast_vector<IfcRelNests>(file()->getInverse(data()->id(), IFC4X3_RC1_types[950], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelDeclares> Ifc4x3_rc1::IfcObjectDefinition::HasContext() const { return cast_vector<IfcRelDeclares>(file()->getInverse(data()->id(), IFC4X3_RC1_types[940], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelAggregates> Ifc4x3_rc1::IfcObjectDefinition::IsDecomposedBy() const { return cast_vector<IfcRelAggregates>(file()->getInverse(data()->id(), IFC4X3_RC1_types[910], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelAggregates> Ifc4x3_rc1::IfcObjectDefinition::Decomposes() const { return cast_vector<IfcRelAggregates>(file()->getInverse(data()->id(), IFC4X3_RC1_types[910], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociates> Ifc4x3_rc1::IfcObjectDefinition::HasAssociations() const { return cast_vector<IfcRelAssociates>(file()->getInverse(data()->id(), IFC4X3_RC1_types[919], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcObjectDefinition::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[711]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcObjectDefinition::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[711]); }
@@ -13038,7 +13038,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcObjectDefinition::Class() { return *((Ifc
 ::Ifc4x3_rc1::IfcObjectPlacement Ifc4x3_rc1::IfcObjectPlacement::PlacementRelTo() const { if(get_attribute_value(0).isNull()) { return ::Ifc4x3_rc1::IfcObjectPlacement{}; } return ((express::Base)(get_attribute_value(0))).as<::Ifc4x3_rc1::IfcObjectPlacement>(); }
 void Ifc4x3_rc1::IfcObjectPlacement::setPlacementRelTo(const ::Ifc4x3_rc1::IfcObjectPlacement& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
 
-std::vector<::Ifc4x3_rc1::IfcProduct> Ifc4x3_rc1::IfcObjectPlacement::PlacesObject() const { return cast_vector<IfcProduct>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[814], 5)); }
+std::vector<::Ifc4x3_rc1::IfcProduct> Ifc4x3_rc1::IfcObjectPlacement::PlacesObject() const { return cast_vector<IfcProduct>(file()->getInverse(data()->id(), IFC4X3_RC1_types[814], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcObjectPlacement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[714]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcObjectPlacement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[714]); }
@@ -13147,7 +13147,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcOpenShell::Class() { return *((IfcParse::
 std::optional< ::Ifc4x3_rc1::IfcOpeningElementTypeEnum::Value > Ifc4x3_rc1::IfcOpeningElement::PredefinedType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } return ::Ifc4x3_rc1::IfcOpeningElementTypeEnum::FromString(get_attribute_value(8)); }
 void Ifc4x3_rc1::IfcOpeningElement::setPredefinedType(const std::optional< ::Ifc4x3_rc1::IfcOpeningElementTypeEnum::Value >& v) { if (v) {set_attribute_value(8, EnumerationReference(&::Ifc4x3_rc1::IfcOpeningElementTypeEnum::Class(), (size_t) *v));} else {unset_attribute_value(8);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelFillsElement> Ifc4x3_rc1::IfcOpeningElement::HasFillings() const { return cast_vector<IfcRelFillsElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[947], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelFillsElement> Ifc4x3_rc1::IfcOpeningElement::HasFillings() const { return cast_vector<IfcRelFillsElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[947], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcOpeningElement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[724]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcOpeningElement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[724]); }
@@ -13174,9 +13174,9 @@ void Ifc4x3_rc1::IfcOrganization::setRoles(const std::optional< std::vector< ::I
 std::optional< std::vector< ::Ifc4x3_rc1::IfcAddress > > Ifc4x3_rc1::IfcOrganization::Addresses() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } std::vector<express::Base> es = get_attribute_value(4); return cast_vector<::Ifc4x3_rc1::IfcAddress>(es); }
 void Ifc4x3_rc1::IfcOrganization::setAddresses(const std::optional< std::vector< ::Ifc4x3_rc1::IfcAddress > >& v) { if (v) {set_attribute_value(4, cast_vector<express::Base>(*v));} else {unset_attribute_value(4);} }
 
-std::vector<::Ifc4x3_rc1::IfcOrganizationRelationship> Ifc4x3_rc1::IfcOrganization::IsRelatedBy() const { return cast_vector<IfcOrganizationRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[729], 3)); }
-std::vector<::Ifc4x3_rc1::IfcOrganizationRelationship> Ifc4x3_rc1::IfcOrganization::Relates() const { return cast_vector<IfcOrganizationRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[729], 2)); }
-std::vector<::Ifc4x3_rc1::IfcPersonAndOrganization> Ifc4x3_rc1::IfcOrganization::Engages() const { return cast_vector<IfcPersonAndOrganization>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[750], 1)); }
+std::vector<::Ifc4x3_rc1::IfcOrganizationRelationship> Ifc4x3_rc1::IfcOrganization::IsRelatedBy() const { return cast_vector<IfcOrganizationRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[729], 3)); }
+std::vector<::Ifc4x3_rc1::IfcOrganizationRelationship> Ifc4x3_rc1::IfcOrganization::Relates() const { return cast_vector<IfcOrganizationRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[729], 2)); }
+std::vector<::Ifc4x3_rc1::IfcPersonAndOrganization> Ifc4x3_rc1::IfcOrganization::Engages() const { return cast_vector<IfcPersonAndOrganization>(file()->getInverse(data()->id(), IFC4X3_RC1_types[750], 1)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcOrganization::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[728]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcOrganization::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[728]); }
@@ -13385,7 +13385,7 @@ void Ifc4x3_rc1::IfcPerson::setRoles(const std::optional< std::vector< ::Ifc4x3_
 std::optional< std::vector< ::Ifc4x3_rc1::IfcAddress > > Ifc4x3_rc1::IfcPerson::Addresses() const { if(get_attribute_value(7).isNull()) { return std::nullopt; } std::vector<express::Base> es = get_attribute_value(7); return cast_vector<::Ifc4x3_rc1::IfcAddress>(es); }
 void Ifc4x3_rc1::IfcPerson::setAddresses(const std::optional< std::vector< ::Ifc4x3_rc1::IfcAddress > >& v) { if (v) {set_attribute_value(7, cast_vector<express::Base>(*v));} else {unset_attribute_value(7);} }
 
-std::vector<::Ifc4x3_rc1::IfcPersonAndOrganization> Ifc4x3_rc1::IfcPerson::EngagedIn() const { return cast_vector<IfcPersonAndOrganization>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[750], 0)); }
+std::vector<::Ifc4x3_rc1::IfcPersonAndOrganization> Ifc4x3_rc1::IfcPerson::EngagedIn() const { return cast_vector<IfcPersonAndOrganization>(file()->getInverse(data()->id(), IFC4X3_RC1_types[750], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPerson::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[749]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPerson::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[749]); }
@@ -13428,8 +13428,8 @@ void Ifc4x3_rc1::IfcPhysicalQuantity::setName(const std::string& v) { set_attrib
 std::optional< std::string > Ifc4x3_rc1::IfcPhysicalQuantity::Description() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } std::string v = get_attribute_value(1); return v; }
 void Ifc4x3_rc1::IfcPhysicalQuantity::setDescription(const std::optional< std::string >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcPhysicalQuantity::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
-std::vector<::Ifc4x3_rc1::IfcPhysicalComplexQuantity> Ifc4x3_rc1::IfcPhysicalQuantity::PartOfComplex() const { return cast_vector<IfcPhysicalComplexQuantity>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[752], 2)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcPhysicalQuantity::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcPhysicalComplexQuantity> Ifc4x3_rc1::IfcPhysicalQuantity::PartOfComplex() const { return cast_vector<IfcPhysicalComplexQuantity>(file()->getInverse(data()->id(), IFC4X3_RC1_types[752], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPhysicalQuantity::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[754]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPhysicalQuantity::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[754]); }
@@ -13682,9 +13682,9 @@ const IfcParse::entity& Ifc4x3_rc1::IfcPolyline::Class() { return *((IfcParse::e
 
 // Function implementations for IfcPort
 
-std::vector<::Ifc4x3_rc1::IfcRelConnectsPortToElement> Ifc4x3_rc1::IfcPort::ContainedIn() const { return cast_vector<IfcRelConnectsPortToElement>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[932], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelConnectsPorts> Ifc4x3_rc1::IfcPort::ConnectedFrom() const { return cast_vector<IfcRelConnectsPorts>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[931], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelConnectsPorts> Ifc4x3_rc1::IfcPort::ConnectedTo() const { return cast_vector<IfcRelConnectsPorts>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[931], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsPortToElement> Ifc4x3_rc1::IfcPort::ContainedIn() const { return cast_vector<IfcRelConnectsPortToElement>(file()->getInverse(data()->id(), IFC4X3_RC1_types[932], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsPorts> Ifc4x3_rc1::IfcPort::ConnectedFrom() const { return cast_vector<IfcRelConnectsPorts>(file()->getInverse(data()->id(), IFC4X3_RC1_types[931], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsPorts> Ifc4x3_rc1::IfcPort::ConnectedTo() const { return cast_vector<IfcRelConnectsPorts>(file()->getInverse(data()->id(), IFC4X3_RC1_types[931], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPort::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[786]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPort::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[786]); }
@@ -13693,8 +13693,8 @@ const IfcParse::entity& Ifc4x3_rc1::IfcPort::Class() { return *((IfcParse::entit
 
 // Function implementations for IfcPositioningElement
 
-std::vector<::Ifc4x3_rc1::IfcRelContainedInSpatialStructure> Ifc4x3_rc1::IfcPositioningElement::ContainedInStructure() const { return cast_vector<IfcRelContainedInSpatialStructure>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[937], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelPositions> Ifc4x3_rc1::IfcPositioningElement::Positions() const { return cast_vector<IfcRelPositions>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[951], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelContainedInSpatialStructure> Ifc4x3_rc1::IfcPositioningElement::ContainedInStructure() const { return cast_vector<IfcRelContainedInSpatialStructure>(file()->getInverse(data()->id(), IFC4X3_RC1_types[937], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelPositions> Ifc4x3_rc1::IfcPositioningElement::Positions() const { return cast_vector<IfcRelPositions>(file()->getInverse(data()->id(), IFC4X3_RC1_types[951], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPositioningElement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[787]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPositioningElement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[787]); }
@@ -13859,9 +13859,9 @@ void Ifc4x3_rc1::IfcProcess::setIdentification(const std::optional< std::string 
 std::optional< std::string > Ifc4x3_rc1::IfcProcess::LongDescription() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } std::string v = get_attribute_value(6); return v; }
 void Ifc4x3_rc1::IfcProcess::setLongDescription(const std::optional< std::string >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelSequence> Ifc4x3_rc1::IfcProcess::IsPredecessorTo() const { return cast_vector<IfcRelSequence>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[954], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelSequence> Ifc4x3_rc1::IfcProcess::IsSuccessorFrom() const { return cast_vector<IfcRelSequence>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[954], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToProcess> Ifc4x3_rc1::IfcProcess::OperatesOn() const { return cast_vector<IfcRelAssignsToProcess>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[916], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelSequence> Ifc4x3_rc1::IfcProcess::IsPredecessorTo() const { return cast_vector<IfcRelSequence>(file()->getInverse(data()->id(), IFC4X3_RC1_types[954], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelSequence> Ifc4x3_rc1::IfcProcess::IsSuccessorFrom() const { return cast_vector<IfcRelSequence>(file()->getInverse(data()->id(), IFC4X3_RC1_types[954], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToProcess> Ifc4x3_rc1::IfcProcess::OperatesOn() const { return cast_vector<IfcRelAssignsToProcess>(file()->getInverse(data()->id(), IFC4X3_RC1_types[916], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcProcess::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[812]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcProcess::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[812]); }
@@ -13874,9 +13874,9 @@ void Ifc4x3_rc1::IfcProduct::setObjectPlacement(const ::Ifc4x3_rc1::IfcObjectPla
 ::Ifc4x3_rc1::IfcProductRepresentation Ifc4x3_rc1::IfcProduct::Representation() const { if(get_attribute_value(6).isNull()) { return ::Ifc4x3_rc1::IfcProductRepresentation{}; } return ((express::Base)(get_attribute_value(6))).as<::Ifc4x3_rc1::IfcProductRepresentation>(); }
 void Ifc4x3_rc1::IfcProduct::setRepresentation(const ::Ifc4x3_rc1::IfcProductRepresentation& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToProduct> Ifc4x3_rc1::IfcProduct::ReferencedBy() const { return cast_vector<IfcRelAssignsToProduct>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[917], 6)); }
-std::vector<::Ifc4x3_rc1::IfcRelPositions> Ifc4x3_rc1::IfcProduct::PositionedRelativeTo() const { return cast_vector<IfcRelPositions>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[951], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelReferencedInSpatialStructure> Ifc4x3_rc1::IfcProduct::ReferencedInStructures() const { return cast_vector<IfcRelReferencedInSpatialStructure>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[953], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToProduct> Ifc4x3_rc1::IfcProduct::ReferencedBy() const { return cast_vector<IfcRelAssignsToProduct>(file()->getInverse(data()->id(), IFC4X3_RC1_types[917], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelPositions> Ifc4x3_rc1::IfcProduct::PositionedRelativeTo() const { return cast_vector<IfcRelPositions>(file()->getInverse(data()->id(), IFC4X3_RC1_types[951], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelReferencedInSpatialStructure> Ifc4x3_rc1::IfcProduct::ReferencedInStructures() const { return cast_vector<IfcRelReferencedInSpatialStructure>(file()->getInverse(data()->id(), IFC4X3_RC1_types[953], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcProduct::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[814]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcProduct::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[814]); }
@@ -13885,8 +13885,8 @@ const IfcParse::entity& Ifc4x3_rc1::IfcProduct::Class() { return *((IfcParse::en
 
 // Function implementations for IfcProductDefinitionShape
 
-std::vector<::Ifc4x3_rc1::IfcProduct> Ifc4x3_rc1::IfcProductDefinitionShape::ShapeOfProduct() const { return cast_vector<IfcProduct>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[814], 6)); }
-std::vector<::Ifc4x3_rc1::IfcShapeAspect> Ifc4x3_rc1::IfcProductDefinitionShape::HasShapeAspects() const { return cast_vector<IfcShapeAspect>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1010], 4)); }
+std::vector<::Ifc4x3_rc1::IfcProduct> Ifc4x3_rc1::IfcProductDefinitionShape::ShapeOfProduct() const { return cast_vector<IfcProduct>(file()->getInverse(data()->id(), IFC4X3_RC1_types[814], 6)); }
+std::vector<::Ifc4x3_rc1::IfcShapeAspect> Ifc4x3_rc1::IfcProductDefinitionShape::HasShapeAspects() const { return cast_vector<IfcShapeAspect>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1010], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcProductDefinitionShape::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[815]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcProductDefinitionShape::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[815]); }
@@ -13913,8 +13913,8 @@ void Ifc4x3_rc1::IfcProfileDef::setProfileType(const ::Ifc4x3_rc1::IfcProfileTyp
 std::optional< std::string > Ifc4x3_rc1::IfcProfileDef::ProfileName() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } std::string v = get_attribute_value(1); return v; }
 void Ifc4x3_rc1::IfcProfileDef::setProfileName(const std::optional< std::string >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcProfileDef::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
-std::vector<::Ifc4x3_rc1::IfcProfileProperties> Ifc4x3_rc1::IfcProfileDef::HasProperties() const { return cast_vector<IfcProfileProperties>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[820], 3)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcProfileDef::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcProfileProperties> Ifc4x3_rc1::IfcProfileDef::HasProperties() const { return cast_vector<IfcProfileProperties>(file()->getInverse(data()->id(), IFC4X3_RC1_types[820], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcProfileDef::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[819]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcProfileDef::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[819]); }
@@ -13991,12 +13991,12 @@ void Ifc4x3_rc1::IfcProperty::setName(const std::string& v) { set_attribute_valu
 std::optional< std::string > Ifc4x3_rc1::IfcProperty::Description() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } std::string v = get_attribute_value(1); return v; }
 void Ifc4x3_rc1::IfcProperty::setDescription(const std::optional< std::string >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 
-std::vector<::Ifc4x3_rc1::IfcPropertySet> Ifc4x3_rc1::IfcProperty::PartOfPset() const { return cast_vector<IfcPropertySet>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[839], 4)); }
-std::vector<::Ifc4x3_rc1::IfcPropertyDependencyRelationship> Ifc4x3_rc1::IfcProperty::PropertyForDependance() const { return cast_vector<IfcPropertyDependencyRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[834], 2)); }
-std::vector<::Ifc4x3_rc1::IfcPropertyDependencyRelationship> Ifc4x3_rc1::IfcProperty::PropertyDependsOn() const { return cast_vector<IfcPropertyDependencyRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[834], 3)); }
-std::vector<::Ifc4x3_rc1::IfcComplexProperty> Ifc4x3_rc1::IfcProperty::PartOfComplex() const { return cast_vector<IfcComplexProperty>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[195], 3)); }
-std::vector<::Ifc4x3_rc1::IfcResourceConstraintRelationship> Ifc4x3_rc1::IfcProperty::HasConstraints() const { return cast_vector<IfcResourceConstraintRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[967], 3)); }
-std::vector<::Ifc4x3_rc1::IfcResourceApprovalRelationship> Ifc4x3_rc1::IfcProperty::HasApprovals() const { return cast_vector<IfcResourceApprovalRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[966], 2)); }
+std::vector<::Ifc4x3_rc1::IfcPropertySet> Ifc4x3_rc1::IfcProperty::PartOfPset() const { return cast_vector<IfcPropertySet>(file()->getInverse(data()->id(), IFC4X3_RC1_types[839], 4)); }
+std::vector<::Ifc4x3_rc1::IfcPropertyDependencyRelationship> Ifc4x3_rc1::IfcProperty::PropertyForDependance() const { return cast_vector<IfcPropertyDependencyRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[834], 2)); }
+std::vector<::Ifc4x3_rc1::IfcPropertyDependencyRelationship> Ifc4x3_rc1::IfcProperty::PropertyDependsOn() const { return cast_vector<IfcPropertyDependencyRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[834], 3)); }
+std::vector<::Ifc4x3_rc1::IfcComplexProperty> Ifc4x3_rc1::IfcProperty::PartOfComplex() const { return cast_vector<IfcComplexProperty>(file()->getInverse(data()->id(), IFC4X3_RC1_types[195], 3)); }
+std::vector<::Ifc4x3_rc1::IfcResourceConstraintRelationship> Ifc4x3_rc1::IfcProperty::HasConstraints() const { return cast_vector<IfcResourceConstraintRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[967], 3)); }
+std::vector<::Ifc4x3_rc1::IfcResourceApprovalRelationship> Ifc4x3_rc1::IfcProperty::HasApprovals() const { return cast_vector<IfcResourceApprovalRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[966], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcProperty::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[830]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcProperty::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[830]); }
@@ -14005,7 +14005,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcProperty::Class() { return *((IfcParse::e
 
 // Function implementations for IfcPropertyAbstraction
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcPropertyAbstraction::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcPropertyAbstraction::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPropertyAbstraction::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[831]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPropertyAbstraction::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[831]); }
@@ -14030,8 +14030,8 @@ const IfcParse::entity& Ifc4x3_rc1::IfcPropertyBoundedValue::Class() { return *(
 
 // Function implementations for IfcPropertyDefinition
 
-std::vector<::Ifc4x3_rc1::IfcRelDeclares> Ifc4x3_rc1::IfcPropertyDefinition::HasContext() const { return cast_vector<IfcRelDeclares>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[940], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelAssociates> Ifc4x3_rc1::IfcPropertyDefinition::HasAssociations() const { return cast_vector<IfcRelAssociates>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[919], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelDeclares> Ifc4x3_rc1::IfcPropertyDefinition::HasContext() const { return cast_vector<IfcRelDeclares>(file()->getInverse(data()->id(), IFC4X3_RC1_types[940], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssociates> Ifc4x3_rc1::IfcPropertyDefinition::HasAssociations() const { return cast_vector<IfcRelAssociates>(file()->getInverse(data()->id(), IFC4X3_RC1_types[919], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPropertyDefinition::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[833]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPropertyDefinition::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[833]); }
@@ -14114,9 +14114,9 @@ const IfcParse::entity& Ifc4x3_rc1::IfcPropertySet::Class() { return *((IfcParse
 
 // Function implementations for IfcPropertySetDefinition
 
-std::vector<::Ifc4x3_rc1::IfcTypeObject> Ifc4x3_rc1::IfcPropertySetDefinition::DefinesType() const { return cast_vector<IfcTypeObject>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1245], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByTemplate> Ifc4x3_rc1::IfcPropertySetDefinition::IsDefinedBy() const { return cast_vector<IfcRelDefinesByTemplate>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[945], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByProperties> Ifc4x3_rc1::IfcPropertySetDefinition::DefinesOccurrence() const { return cast_vector<IfcRelDefinesByProperties>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[944], 5)); }
+std::vector<::Ifc4x3_rc1::IfcTypeObject> Ifc4x3_rc1::IfcPropertySetDefinition::DefinesType() const { return cast_vector<IfcTypeObject>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1245], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByTemplate> Ifc4x3_rc1::IfcPropertySetDefinition::IsDefinedBy() const { return cast_vector<IfcRelDefinesByTemplate>(file()->getInverse(data()->id(), IFC4X3_RC1_types[945], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByProperties> Ifc4x3_rc1::IfcPropertySetDefinition::DefinesOccurrence() const { return cast_vector<IfcRelDefinesByProperties>(file()->getInverse(data()->id(), IFC4X3_RC1_types[944], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPropertySetDefinition::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[840]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPropertySetDefinition::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[840]); }
@@ -14131,7 +14131,7 @@ void Ifc4x3_rc1::IfcPropertySetTemplate::setApplicableEntity(const std::optional
 std::vector< ::Ifc4x3_rc1::IfcPropertyTemplate > Ifc4x3_rc1::IfcPropertySetTemplate::HasPropertyTemplates() const {  std::vector<express::Base> es = get_attribute_value(6); return cast_vector<::Ifc4x3_rc1::IfcPropertyTemplate>(es); }
 void Ifc4x3_rc1::IfcPropertySetTemplate::setHasPropertyTemplates(const std::vector< ::Ifc4x3_rc1::IfcPropertyTemplate >& v) { set_attribute_value(6, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(6); }
 
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByTemplate> Ifc4x3_rc1::IfcPropertySetTemplate::Defines() const { return cast_vector<IfcRelDefinesByTemplate>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[945], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByTemplate> Ifc4x3_rc1::IfcPropertySetTemplate::Defines() const { return cast_vector<IfcRelDefinesByTemplate>(file()->getInverse(data()->id(), IFC4X3_RC1_types[945], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPropertySetTemplate::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[843]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPropertySetTemplate::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[843]); }
@@ -14172,8 +14172,8 @@ const IfcParse::entity& Ifc4x3_rc1::IfcPropertyTableValue::Class() { return *((I
 
 // Function implementations for IfcPropertyTemplate
 
-std::vector<::Ifc4x3_rc1::IfcComplexPropertyTemplate> Ifc4x3_rc1::IfcPropertyTemplate::PartOfComplexTemplate() const { return cast_vector<IfcComplexPropertyTemplate>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[196], 6)); }
-std::vector<::Ifc4x3_rc1::IfcPropertySetTemplate> Ifc4x3_rc1::IfcPropertyTemplate::PartOfPsetTemplate() const { return cast_vector<IfcPropertySetTemplate>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[843], 6)); }
+std::vector<::Ifc4x3_rc1::IfcComplexPropertyTemplate> Ifc4x3_rc1::IfcPropertyTemplate::PartOfComplexTemplate() const { return cast_vector<IfcComplexPropertyTemplate>(file()->getInverse(data()->id(), IFC4X3_RC1_types[196], 6)); }
+std::vector<::Ifc4x3_rc1::IfcPropertySetTemplate> Ifc4x3_rc1::IfcPropertyTemplate::PartOfPsetTemplate() const { return cast_vector<IfcPropertySetTemplate>(file()->getInverse(data()->id(), IFC4X3_RC1_types[843], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcPropertyTemplate::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[847]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcPropertyTemplate::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[847]); }
@@ -15284,7 +15284,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcRelSpaceBoundary::Class() { return *((Ifc
 ::Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel::ParentBoundary() const { if(get_attribute_value(9).isNull()) { return ::Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel{}; } return ((express::Base)(get_attribute_value(9))).as<::Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel>(); }
 void Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel::setParentBoundary(const ::Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel& v) { set_attribute_value(9, v);if constexpr (false)unset_attribute_value(9); }
 
-std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel> Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel::InnerBoundaries() const { return cast_vector<IfcRelSpaceBoundary1stLevel>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[957], 9)); }
+std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel> Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel::InnerBoundaries() const { return cast_vector<IfcRelSpaceBoundary1stLevel>(file()->getInverse(data()->id(), IFC4X3_RC1_types[957], 9)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[957]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[957]); }
@@ -15295,7 +15295,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcRelSpaceBoundary1stLevel::Class() { retur
 ::Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel::CorrespondingBoundary() const { if(get_attribute_value(10).isNull()) { return ::Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel{}; } return ((express::Base)(get_attribute_value(10))).as<::Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel>(); }
 void Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel::setCorrespondingBoundary(const ::Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel& v) { set_attribute_value(10, v);if constexpr (false)unset_attribute_value(10); }
 
-std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel> Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel::Corresponds() const { return cast_vector<IfcRelSpaceBoundary2ndLevel>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[958], 10)); }
+std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel> Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel::Corresponds() const { return cast_vector<IfcRelSpaceBoundary2ndLevel>(file()->getInverse(data()->id(), IFC4X3_RC1_types[958], 10)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[958]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcRelSpaceBoundary2ndLevel::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[958]); }
@@ -15342,9 +15342,9 @@ void Ifc4x3_rc1::IfcRepresentation::setRepresentationType(const std::optional< s
 std::vector< ::Ifc4x3_rc1::IfcRepresentationItem > Ifc4x3_rc1::IfcRepresentation::Items() const {  std::vector<express::Base> es = get_attribute_value(3); return cast_vector<::Ifc4x3_rc1::IfcRepresentationItem>(es); }
 void Ifc4x3_rc1::IfcRepresentation::setItems(const std::vector< ::Ifc4x3_rc1::IfcRepresentationItem >& v) { set_attribute_value(3, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(3); }
 
-std::vector<::Ifc4x3_rc1::IfcRepresentationMap> Ifc4x3_rc1::IfcRepresentation::RepresentationMap() const { return cast_vector<IfcRepresentationMap>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[964], 1)); }
-std::vector<::Ifc4x3_rc1::IfcPresentationLayerAssignment> Ifc4x3_rc1::IfcRepresentation::LayerAssignments() const { return cast_vector<IfcPresentationLayerAssignment>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[803], 2)); }
-std::vector<::Ifc4x3_rc1::IfcProductRepresentation> Ifc4x3_rc1::IfcRepresentation::OfProductRepresentation() const { return cast_vector<IfcProductRepresentation>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[816], 2)); }
+std::vector<::Ifc4x3_rc1::IfcRepresentationMap> Ifc4x3_rc1::IfcRepresentation::RepresentationMap() const { return cast_vector<IfcRepresentationMap>(file()->getInverse(data()->id(), IFC4X3_RC1_types[964], 1)); }
+std::vector<::Ifc4x3_rc1::IfcPresentationLayerAssignment> Ifc4x3_rc1::IfcRepresentation::LayerAssignments() const { return cast_vector<IfcPresentationLayerAssignment>(file()->getInverse(data()->id(), IFC4X3_RC1_types[803], 2)); }
+std::vector<::Ifc4x3_rc1::IfcProductRepresentation> Ifc4x3_rc1::IfcRepresentation::OfProductRepresentation() const { return cast_vector<IfcProductRepresentation>(file()->getInverse(data()->id(), IFC4X3_RC1_types[816], 2)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcRepresentation::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[961]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcRepresentation::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[961]); }
@@ -15357,7 +15357,7 @@ void Ifc4x3_rc1::IfcRepresentationContext::setContextIdentifier(const std::optio
 std::optional< std::string > Ifc4x3_rc1::IfcRepresentationContext::ContextType() const { if(get_attribute_value(1).isNull()) { return std::nullopt; } std::string v = get_attribute_value(1); return v; }
 void Ifc4x3_rc1::IfcRepresentationContext::setContextType(const std::optional< std::string >& v) { if (v) {set_attribute_value(1, *v);} else {unset_attribute_value(1);} }
 
-std::vector<::Ifc4x3_rc1::IfcRepresentation> Ifc4x3_rc1::IfcRepresentationContext::RepresentationsInContext() const { return cast_vector<IfcRepresentation>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[961], 0)); }
+std::vector<::Ifc4x3_rc1::IfcRepresentation> Ifc4x3_rc1::IfcRepresentationContext::RepresentationsInContext() const { return cast_vector<IfcRepresentation>(file()->getInverse(data()->id(), IFC4X3_RC1_types[961], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcRepresentationContext::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[962]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcRepresentationContext::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[962]); }
@@ -15366,8 +15366,8 @@ const IfcParse::entity& Ifc4x3_rc1::IfcRepresentationContext::Class() { return *
 
 // Function implementations for IfcRepresentationItem
 
-std::vector<::Ifc4x3_rc1::IfcPresentationLayerAssignment> Ifc4x3_rc1::IfcRepresentationItem::LayerAssignment() const { return cast_vector<IfcPresentationLayerAssignment>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[803], 2)); }
-std::vector<::Ifc4x3_rc1::IfcStyledItem> Ifc4x3_rc1::IfcRepresentationItem::StyledByItem() const { return cast_vector<IfcStyledItem>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1122], 0)); }
+std::vector<::Ifc4x3_rc1::IfcPresentationLayerAssignment> Ifc4x3_rc1::IfcRepresentationItem::LayerAssignment() const { return cast_vector<IfcPresentationLayerAssignment>(file()->getInverse(data()->id(), IFC4X3_RC1_types[803], 2)); }
+std::vector<::Ifc4x3_rc1::IfcStyledItem> Ifc4x3_rc1::IfcRepresentationItem::StyledByItem() const { return cast_vector<IfcStyledItem>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1122], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcRepresentationItem::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[963]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcRepresentationItem::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[963]); }
@@ -15380,8 +15380,8 @@ void Ifc4x3_rc1::IfcRepresentationMap::setMappingOrigin(const ::Ifc4x3_rc1::IfcA
 ::Ifc4x3_rc1::IfcRepresentation Ifc4x3_rc1::IfcRepresentationMap::MappedRepresentation() const {  return ((express::Base)(get_attribute_value(1))).as<::Ifc4x3_rc1::IfcRepresentation>(); }
 void Ifc4x3_rc1::IfcRepresentationMap::setMappedRepresentation(const ::Ifc4x3_rc1::IfcRepresentation& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
 
-std::vector<::Ifc4x3_rc1::IfcShapeAspect> Ifc4x3_rc1::IfcRepresentationMap::HasShapeAspects() const { return cast_vector<IfcShapeAspect>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1010], 4)); }
-std::vector<::Ifc4x3_rc1::IfcMappedItem> Ifc4x3_rc1::IfcRepresentationMap::MapUsage() const { return cast_vector<IfcMappedItem>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[637], 0)); }
+std::vector<::Ifc4x3_rc1::IfcShapeAspect> Ifc4x3_rc1::IfcRepresentationMap::HasShapeAspects() const { return cast_vector<IfcShapeAspect>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1010], 4)); }
+std::vector<::Ifc4x3_rc1::IfcMappedItem> Ifc4x3_rc1::IfcRepresentationMap::MapUsage() const { return cast_vector<IfcMappedItem>(file()->getInverse(data()->id(), IFC4X3_RC1_types[637], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcRepresentationMap::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[964]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcRepresentationMap::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[964]); }
@@ -15394,7 +15394,7 @@ void Ifc4x3_rc1::IfcResource::setIdentification(const std::optional< std::string
 std::optional< std::string > Ifc4x3_rc1::IfcResource::LongDescription() const { if(get_attribute_value(6).isNull()) { return std::nullopt; } std::string v = get_attribute_value(6); return v; }
 void Ifc4x3_rc1::IfcResource::setLongDescription(const std::optional< std::string >& v) { if (v) {set_attribute_value(6, *v);} else {unset_attribute_value(6);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToResource> Ifc4x3_rc1::IfcResource::ResourceOf() const { return cast_vector<IfcRelAssignsToResource>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[918], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToResource> Ifc4x3_rc1::IfcResource::ResourceOf() const { return cast_vector<IfcRelAssignsToResource>(file()->getInverse(data()->id(), IFC4X3_RC1_types[918], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcResource::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[965]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcResource::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[965]); }
@@ -15769,7 +15769,7 @@ void Ifc4x3_rc1::IfcShapeAspect::setProductDefinitional(const boost::logic::trib
 ::Ifc4x3_rc1::IfcProductRepresentationSelect Ifc4x3_rc1::IfcShapeAspect::PartOfProductDefinitionShape() const { if(get_attribute_value(4).isNull()) { return ::Ifc4x3_rc1::IfcProductRepresentationSelect{}; } return ((express::Base)(get_attribute_value(4))).as<::Ifc4x3_rc1::IfcProductRepresentationSelect>(); }
 void Ifc4x3_rc1::IfcShapeAspect::setPartOfProductDefinitionShape(const ::Ifc4x3_rc1::IfcProductRepresentationSelect& v) { set_attribute_value(4, v);if constexpr (false)unset_attribute_value(4); }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcShapeAspect::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcShapeAspect::HasExternalReferences() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcShapeAspect::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1010]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcShapeAspect::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1010]); }
@@ -15778,7 +15778,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcShapeAspect::Class() { return *((IfcParse
 
 // Function implementations for IfcShapeModel
 
-std::vector<::Ifc4x3_rc1::IfcShapeAspect> Ifc4x3_rc1::IfcShapeModel::OfShapeAspect() const { return cast_vector<IfcShapeAspect>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1010], 0)); }
+std::vector<::Ifc4x3_rc1::IfcShapeAspect> Ifc4x3_rc1::IfcShapeModel::OfShapeAspect() const { return cast_vector<IfcShapeAspect>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1010], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcShapeModel::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1011]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcShapeModel::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1011]); }
@@ -15985,8 +15985,8 @@ void Ifc4x3_rc1::IfcSpace::setPredefinedType(const std::optional< ::Ifc4x3_rc1::
 std::optional< double > Ifc4x3_rc1::IfcSpace::ElevationWithFlooring() const { if(get_attribute_value(10).isNull()) { return std::nullopt; } double v = get_attribute_value(10); return v; }
 void Ifc4x3_rc1::IfcSpace::setElevationWithFlooring(const std::optional< double >& v) { if (v) {set_attribute_value(10, *v);} else {unset_attribute_value(10);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelCoversSpaces> Ifc4x3_rc1::IfcSpace::HasCoverings() const { return cast_vector<IfcRelCoversSpaces>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[939], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary> Ifc4x3_rc1::IfcSpace::BoundedBy() const { return cast_vector<IfcRelSpaceBoundary>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[956], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelCoversSpaces> Ifc4x3_rc1::IfcSpace::HasCoverings() const { return cast_vector<IfcRelCoversSpaces>(file()->getInverse(data()->id(), IFC4X3_RC1_types[939], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelSpaceBoundary> Ifc4x3_rc1::IfcSpace::BoundedBy() const { return cast_vector<IfcRelSpaceBoundary>(file()->getInverse(data()->id(), IFC4X3_RC1_types[956], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcSpace::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1048]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcSpace::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1048]); }
@@ -16029,9 +16029,9 @@ const IfcParse::entity& Ifc4x3_rc1::IfcSpaceType::Class() { return *((IfcParse::
 std::optional< std::string > Ifc4x3_rc1::IfcSpatialElement::LongName() const { if(get_attribute_value(7).isNull()) { return std::nullopt; } std::string v = get_attribute_value(7); return v; }
 void Ifc4x3_rc1::IfcSpatialElement::setLongName(const std::optional< std::string >& v) { if (v) {set_attribute_value(7, *v);} else {unset_attribute_value(7);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelContainedInSpatialStructure> Ifc4x3_rc1::IfcSpatialElement::ContainsElements() const { return cast_vector<IfcRelContainedInSpatialStructure>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[937], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelServicesBuildings> Ifc4x3_rc1::IfcSpatialElement::ServicedBySystems() const { return cast_vector<IfcRelServicesBuildings>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[955], 5)); }
-std::vector<::Ifc4x3_rc1::IfcRelReferencedInSpatialStructure> Ifc4x3_rc1::IfcSpatialElement::ReferencesElements() const { return cast_vector<IfcRelReferencedInSpatialStructure>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[953], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelContainedInSpatialStructure> Ifc4x3_rc1::IfcSpatialElement::ContainsElements() const { return cast_vector<IfcRelContainedInSpatialStructure>(file()->getInverse(data()->id(), IFC4X3_RC1_types[937], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelServicesBuildings> Ifc4x3_rc1::IfcSpatialElement::ServicedBySystems() const { return cast_vector<IfcRelServicesBuildings>(file()->getInverse(data()->id(), IFC4X3_RC1_types[955], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelReferencedInSpatialStructure> Ifc4x3_rc1::IfcSpatialElement::ReferencesElements() const { return cast_vector<IfcRelReferencedInSpatialStructure>(file()->getInverse(data()->id(), IFC4X3_RC1_types[953], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcSpatialElement::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1055]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcSpatialElement::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1055]); }
@@ -16192,7 +16192,7 @@ void Ifc4x3_rc1::IfcStructuralActivity::setAppliedLoad(const ::Ifc4x3_rc1::IfcSt
 ::Ifc4x3_rc1::IfcGlobalOrLocalEnum::Value Ifc4x3_rc1::IfcStructuralActivity::GlobalOrLocal() const {  return ::Ifc4x3_rc1::IfcGlobalOrLocalEnum::FromString(get_attribute_value(8)); }
 void Ifc4x3_rc1::IfcStructuralActivity::setGlobalOrLocal(const ::Ifc4x3_rc1::IfcGlobalOrLocalEnum::Value& v) { set_attribute_value(8, EnumerationReference(&::Ifc4x3_rc1::IfcGlobalOrLocalEnum::Class(), (size_t) v));if constexpr (false)unset_attribute_value(8); }
 
-std::vector<::Ifc4x3_rc1::IfcRelConnectsStructuralActivity> Ifc4x3_rc1::IfcStructuralActivity::AssignedToStructuralItem() const { return cast_vector<IfcRelConnectsStructuralActivity>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[933], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsStructuralActivity> Ifc4x3_rc1::IfcStructuralActivity::AssignedToStructuralItem() const { return cast_vector<IfcRelConnectsStructuralActivity>(file()->getInverse(data()->id(), IFC4X3_RC1_types[933], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcStructuralActivity::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1080]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcStructuralActivity::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1080]); }
@@ -16221,7 +16221,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcStructuralAnalysisModel::Class() { return
 ::Ifc4x3_rc1::IfcBoundaryCondition Ifc4x3_rc1::IfcStructuralConnection::AppliedCondition() const { if(get_attribute_value(7).isNull()) { return ::Ifc4x3_rc1::IfcBoundaryCondition{}; } return ((express::Base)(get_attribute_value(7))).as<::Ifc4x3_rc1::IfcBoundaryCondition>(); }
 void Ifc4x3_rc1::IfcStructuralConnection::setAppliedCondition(const ::Ifc4x3_rc1::IfcBoundaryCondition& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
 
-std::vector<::Ifc4x3_rc1::IfcRelConnectsStructuralMember> Ifc4x3_rc1::IfcStructuralConnection::ConnectsStructuralMembers() const { return cast_vector<IfcRelConnectsStructuralMember>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[934], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsStructuralMember> Ifc4x3_rc1::IfcStructuralConnection::ConnectsStructuralMembers() const { return cast_vector<IfcRelConnectsStructuralMember>(file()->getInverse(data()->id(), IFC4X3_RC1_types[934], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcStructuralConnection::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1083]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcStructuralConnection::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1083]); }
@@ -16292,7 +16292,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcStructuralCurveReaction::Class() { return
 
 // Function implementations for IfcStructuralItem
 
-std::vector<::Ifc4x3_rc1::IfcRelConnectsStructuralActivity> Ifc4x3_rc1::IfcStructuralItem::AssignedStructuralActivity() const { return cast_vector<IfcRelConnectsStructuralActivity>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[933], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsStructuralActivity> Ifc4x3_rc1::IfcStructuralItem::AssignedStructuralActivity() const { return cast_vector<IfcRelConnectsStructuralActivity>(file()->getInverse(data()->id(), IFC4X3_RC1_types[933], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcStructuralItem::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1092]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcStructuralItem::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1092]); }
@@ -16351,8 +16351,8 @@ void Ifc4x3_rc1::IfcStructuralLoadGroup::setCoefficient(const std::optional< dou
 std::optional< std::string > Ifc4x3_rc1::IfcStructuralLoadGroup::Purpose() const { if(get_attribute_value(9).isNull()) { return std::nullopt; } std::string v = get_attribute_value(9); return v; }
 void Ifc4x3_rc1::IfcStructuralLoadGroup::setPurpose(const std::optional< std::string >& v) { if (v) {set_attribute_value(9, *v);} else {unset_attribute_value(9);} }
 
-std::vector<::Ifc4x3_rc1::IfcStructuralResultGroup> Ifc4x3_rc1::IfcStructuralLoadGroup::SourceOfResultGroup() const { return cast_vector<IfcStructuralResultGroup>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1113], 6)); }
-std::vector<::Ifc4x3_rc1::IfcStructuralAnalysisModel> Ifc4x3_rc1::IfcStructuralLoadGroup::LoadGroupFor() const { return cast_vector<IfcStructuralAnalysisModel>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1082], 7)); }
+std::vector<::Ifc4x3_rc1::IfcStructuralResultGroup> Ifc4x3_rc1::IfcStructuralLoadGroup::SourceOfResultGroup() const { return cast_vector<IfcStructuralResultGroup>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1113], 6)); }
+std::vector<::Ifc4x3_rc1::IfcStructuralAnalysisModel> Ifc4x3_rc1::IfcStructuralLoadGroup::LoadGroupFor() const { return cast_vector<IfcStructuralAnalysisModel>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1082], 7)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcStructuralLoadGroup::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1097]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcStructuralLoadGroup::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1097]); }
@@ -16485,7 +16485,7 @@ const IfcParse::entity& Ifc4x3_rc1::IfcStructuralLoadTemperature::Class() { retu
 
 // Function implementations for IfcStructuralMember
 
-std::vector<::Ifc4x3_rc1::IfcRelConnectsStructuralMember> Ifc4x3_rc1::IfcStructuralMember::ConnectedBy() const { return cast_vector<IfcRelConnectsStructuralMember>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[934], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelConnectsStructuralMember> Ifc4x3_rc1::IfcStructuralMember::ConnectedBy() const { return cast_vector<IfcRelConnectsStructuralMember>(file()->getInverse(data()->id(), IFC4X3_RC1_types[934], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcStructuralMember::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1107]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcStructuralMember::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1107]); }
@@ -16542,7 +16542,7 @@ void Ifc4x3_rc1::IfcStructuralResultGroup::setResultForLoadGroup(const ::Ifc4x3_
 bool Ifc4x3_rc1::IfcStructuralResultGroup::IsLinear() const {  bool v = get_attribute_value(7); return v; }
 void Ifc4x3_rc1::IfcStructuralResultGroup::setIsLinear(const bool& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
 
-std::vector<::Ifc4x3_rc1::IfcStructuralAnalysisModel> Ifc4x3_rc1::IfcStructuralResultGroup::ResultGroupFor() const { return cast_vector<IfcStructuralAnalysisModel>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1082], 8)); }
+std::vector<::Ifc4x3_rc1::IfcStructuralAnalysisModel> Ifc4x3_rc1::IfcStructuralResultGroup::ResultGroupFor() const { return cast_vector<IfcStructuralAnalysisModel>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1082], 8)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcStructuralResultGroup::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1113]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcStructuralResultGroup::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1113]); }
@@ -16833,8 +16833,8 @@ void Ifc4x3_rc1::IfcSurfaceTexture::setTextureTransform(const ::Ifc4x3_rc1::IfcC
 std::optional< std::vector< std::string > /*[1:?]*/ > Ifc4x3_rc1::IfcSurfaceTexture::Parameter() const { if(get_attribute_value(4).isNull()) { return std::nullopt; } std::vector< std::string > /*[1:?]*/ v = get_attribute_value(4); return v; }
 void Ifc4x3_rc1::IfcSurfaceTexture::setParameter(const std::optional< std::vector< std::string > /*[1:?]*/ >& v) { if (v) {set_attribute_value(4, *v);} else {unset_attribute_value(4);} }
 
-std::vector<::Ifc4x3_rc1::IfcTextureCoordinate> Ifc4x3_rc1::IfcSurfaceTexture::IsMappedBy() const { return cast_vector<IfcTextureCoordinate>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1197], 0)); }
-std::vector<::Ifc4x3_rc1::IfcSurfaceStyleWithTextures> Ifc4x3_rc1::IfcSurfaceTexture::UsedInStyles() const { return cast_vector<IfcSurfaceStyleWithTextures>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[1145], 0)); }
+std::vector<::Ifc4x3_rc1::IfcTextureCoordinate> Ifc4x3_rc1::IfcSurfaceTexture::IsMappedBy() const { return cast_vector<IfcTextureCoordinate>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1197], 0)); }
+std::vector<::Ifc4x3_rc1::IfcSurfaceStyleWithTextures> Ifc4x3_rc1::IfcSurfaceTexture::UsedInStyles() const { return cast_vector<IfcSurfaceStyleWithTextures>(file()->getInverse(data()->id(), IFC4X3_RC1_types[1145], 0)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcSurfaceTexture::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1146]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcSurfaceTexture::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1146]); }
@@ -16915,8 +16915,8 @@ const IfcParse::entity& Ifc4x3_rc1::IfcSwitchingDeviceType::Class() { return *((
 
 // Function implementations for IfcSystem
 
-std::vector<::Ifc4x3_rc1::IfcRelServicesBuildings> Ifc4x3_rc1::IfcSystem::ServicesBuildings() const { return cast_vector<IfcRelServicesBuildings>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[955], 4)); }
-std::vector<::Ifc4x3_rc1::IfcRelReferencedInSpatialStructure> Ifc4x3_rc1::IfcSystem::ServicesFacilities() const { return cast_vector<IfcRelReferencedInSpatialStructure>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[953], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelServicesBuildings> Ifc4x3_rc1::IfcSystem::ServicesBuildings() const { return cast_vector<IfcRelServicesBuildings>(file()->getInverse(data()->id(), IFC4X3_RC1_types[955], 4)); }
+std::vector<::Ifc4x3_rc1::IfcRelReferencedInSpatialStructure> Ifc4x3_rc1::IfcSystem::ServicesFacilities() const { return cast_vector<IfcRelReferencedInSpatialStructure>(file()->getInverse(data()->id(), IFC4X3_RC1_types[953], 4)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcSystem::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1154]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcSystem::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1154]); }
@@ -17221,8 +17221,8 @@ const IfcParse::entity& Ifc4x3_rc1::IfcTendonType::Class() { return *((IfcParse:
 ::Ifc4x3_rc1::IfcCartesianPointList3D Ifc4x3_rc1::IfcTessellatedFaceSet::Coordinates() const {  return ((express::Base)(get_attribute_value(0))).as<::Ifc4x3_rc1::IfcCartesianPointList3D>(); }
 void Ifc4x3_rc1::IfcTessellatedFaceSet::setCoordinates(const ::Ifc4x3_rc1::IfcCartesianPointList3D& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
 
-std::vector<::Ifc4x3_rc1::IfcIndexedColourMap> Ifc4x3_rc1::IfcTessellatedFaceSet::HasColours() const { return cast_vector<IfcIndexedColourMap>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[550], 0)); }
-std::vector<::Ifc4x3_rc1::IfcIndexedTextureMap> Ifc4x3_rc1::IfcTessellatedFaceSet::HasTextures() const { return cast_vector<IfcIndexedTextureMap>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[554], 1)); }
+std::vector<::Ifc4x3_rc1::IfcIndexedColourMap> Ifc4x3_rc1::IfcTessellatedFaceSet::HasColours() const { return cast_vector<IfcIndexedColourMap>(file()->getInverse(data()->id(), IFC4X3_RC1_types[550], 0)); }
+std::vector<::Ifc4x3_rc1::IfcIndexedTextureMap> Ifc4x3_rc1::IfcTessellatedFaceSet::HasTextures() const { return cast_vector<IfcIndexedTextureMap>(file()->getInverse(data()->id(), IFC4X3_RC1_types[554], 1)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcTessellatedFaceSet::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1182]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcTessellatedFaceSet::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1182]); }
@@ -17415,7 +17415,7 @@ void Ifc4x3_rc1::IfcTimeSeries::setUserDefinedDataOrigin(const std::optional< st
 ::Ifc4x3_rc1::IfcUnit Ifc4x3_rc1::IfcTimeSeries::Unit() const { if(get_attribute_value(7).isNull()) { return ::Ifc4x3_rc1::IfcUnit{}; } return ((express::Base)(get_attribute_value(7))).as<::Ifc4x3_rc1::IfcUnit>(); }
 void Ifc4x3_rc1::IfcTimeSeries::setUnit(const ::Ifc4x3_rc1::IfcUnit& v) { set_attribute_value(7, v);if constexpr (false)unset_attribute_value(7); }
 
-std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcTimeSeries::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
+std::vector<::Ifc4x3_rc1::IfcExternalReferenceRelationship> Ifc4x3_rc1::IfcTimeSeries::HasExternalReference() const { return cast_vector<IfcExternalReferenceRelationship>(file()->getInverse(data()->id(), IFC4X3_RC1_types[436], 3)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcTimeSeries::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1212]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcTimeSeries::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1212]); }
@@ -17624,7 +17624,7 @@ void Ifc4x3_rc1::IfcTypeObject::setApplicableOccurrence(const std::optional< std
 std::optional< std::vector< ::Ifc4x3_rc1::IfcPropertySetDefinition > > Ifc4x3_rc1::IfcTypeObject::HasPropertySets() const { if(get_attribute_value(5).isNull()) { return std::nullopt; } std::vector<express::Base> es = get_attribute_value(5); return cast_vector<::Ifc4x3_rc1::IfcPropertySetDefinition>(es); }
 void Ifc4x3_rc1::IfcTypeObject::setHasPropertySets(const std::optional< std::vector< ::Ifc4x3_rc1::IfcPropertySetDefinition > >& v) { if (v) {set_attribute_value(5, cast_vector<express::Base>(*v));} else {unset_attribute_value(5);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelDefinesByType> Ifc4x3_rc1::IfcTypeObject::Types() const { return cast_vector<IfcRelDefinesByType>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[946], 5)); }
+std::vector<::Ifc4x3_rc1::IfcRelDefinesByType> Ifc4x3_rc1::IfcTypeObject::Types() const { return cast_vector<IfcRelDefinesByType>(file()->getInverse(data()->id(), IFC4X3_RC1_types[946], 5)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcTypeObject::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1245]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcTypeObject::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1245]); }
@@ -17639,7 +17639,7 @@ void Ifc4x3_rc1::IfcTypeProcess::setLongDescription(const std::optional< std::st
 std::optional< std::string > Ifc4x3_rc1::IfcTypeProcess::ProcessType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } std::string v = get_attribute_value(8); return v; }
 void Ifc4x3_rc1::IfcTypeProcess::setProcessType(const std::optional< std::string >& v) { if (v) {set_attribute_value(8, *v);} else {unset_attribute_value(8);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToProcess> Ifc4x3_rc1::IfcTypeProcess::OperatesOn() const { return cast_vector<IfcRelAssignsToProcess>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[916], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToProcess> Ifc4x3_rc1::IfcTypeProcess::OperatesOn() const { return cast_vector<IfcRelAssignsToProcess>(file()->getInverse(data()->id(), IFC4X3_RC1_types[916], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcTypeProcess::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1246]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcTypeProcess::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1246]); }
@@ -17652,7 +17652,7 @@ void Ifc4x3_rc1::IfcTypeProduct::setRepresentationMaps(const std::optional< std:
 std::optional< std::string > Ifc4x3_rc1::IfcTypeProduct::Tag() const { if(get_attribute_value(7).isNull()) { return std::nullopt; } std::string v = get_attribute_value(7); return v; }
 void Ifc4x3_rc1::IfcTypeProduct::setTag(const std::optional< std::string >& v) { if (v) {set_attribute_value(7, *v);} else {unset_attribute_value(7);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToProduct> Ifc4x3_rc1::IfcTypeProduct::ReferencedBy() const { return cast_vector<IfcRelAssignsToProduct>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[917], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToProduct> Ifc4x3_rc1::IfcTypeProduct::ReferencedBy() const { return cast_vector<IfcRelAssignsToProduct>(file()->getInverse(data()->id(), IFC4X3_RC1_types[917], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcTypeProduct::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1247]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcTypeProduct::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1247]); }
@@ -17667,7 +17667,7 @@ void Ifc4x3_rc1::IfcTypeResource::setLongDescription(const std::optional< std::s
 std::optional< std::string > Ifc4x3_rc1::IfcTypeResource::ResourceType() const { if(get_attribute_value(8).isNull()) { return std::nullopt; } std::string v = get_attribute_value(8); return v; }
 void Ifc4x3_rc1::IfcTypeResource::setResourceType(const std::optional< std::string >& v) { if (v) {set_attribute_value(8, *v);} else {unset_attribute_value(8);} }
 
-std::vector<::Ifc4x3_rc1::IfcRelAssignsToResource> Ifc4x3_rc1::IfcTypeResource::ResourceOf() const { return cast_vector<IfcRelAssignsToResource>(data()->file()->getInverse(data()->id(), IFC4X3_RC1_types[918], 6)); }
+std::vector<::Ifc4x3_rc1::IfcRelAssignsToResource> Ifc4x3_rc1::IfcTypeResource::ResourceOf() const { return cast_vector<IfcRelAssignsToResource>(file()->getInverse(data()->id(), IFC4X3_RC1_types[918], 6)); }
 
 // const IfcParse::entity& Ifc4x3_rc1::IfcTypeResource::declaration() const { return *((IfcParse::entity*)IFC4X3_RC1_types[1248]); }
 const IfcParse::entity& Ifc4x3_rc1::IfcTypeResource::Class() { return *((IfcParse::entity*)IFC4X3_RC1_types[1248]); }

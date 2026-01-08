@@ -345,8 +345,8 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
             jprop["ifcPropertyType"] = prop.declaration().name();
             if (auto val = get_value_from_prop(prop)) {
                 jprop["ifcValueType"] = val.concrete().declaration().name();
-                jprop["value"] = val.concrete().data()->get_attribute_value(0).apply_visitor(format_value_visitor{});
-                jprop["valueType"] = val.concrete().data()->get_attribute_value(0).apply_visitor(get_type_visitor{});
+                jprop["value"] = val.concrete().get_attribute_value(0).apply_visitor(format_value_visitor{});
+                jprop["valueType"] = val.concrete().get_attribute_value(0).apply_visitor(get_type_visitor{});
             }
             if (auto unit = get_unit_from_prop(prop)) {
                 jprop["unit"] = std::distance(units.begin(), std::find(units.begin(), units.end(), unit));
@@ -372,7 +372,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
             jprop["ifcPropertyType"] = qto.declaration().name();
             if (auto prop = qto.as<IfcSchema::IfcPhysicalSimpleQuantity>()) {
                 jprop["ifcValueType"] = prop.declaration().as_entity()->attributes()[0]->name();
-                jprop["value"] = prop.data()->get_attribute_value(3).apply_visitor(format_value_visitor{});
+                jprop["value"] = prop.get_attribute_value(3).apply_visitor(format_value_visitor{});
                 jprop["valueType"] = "number";
                 if (auto unit = prop.Unit()) {
                     jprop["unit"] = std::distance(units.begin(), std::find(units.begin(), units.end(), unit));
@@ -509,8 +509,8 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
                 json jconv;
                 auto val = convunit.ConversionFactor().ValueComponent();
                 jconv["valueComponent"] = {
-                    {"value", val.concrete().data()->get_attribute_value(0).apply_visitor(format_value_visitor{})},
-                    {"valueType", val.concrete().data()->get_attribute_value(0).apply_visitor(get_type_visitor{})}
+                    {"value", val.concrete().get_attribute_value(0).apply_visitor(format_value_visitor{})},
+                    {"valueType", val.concrete().get_attribute_value(0).apply_visitor(get_type_visitor{})}
                 };
                 jconv["unitComponent"] = std::distance(units.begin(), std::find(units.begin(), units.end(), convunit.ConversionFactor().UnitComponent()));
                 junit["conversionFactor"] = jconv;

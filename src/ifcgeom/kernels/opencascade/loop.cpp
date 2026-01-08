@@ -295,7 +295,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	bool force_close = false;
 	if (loop->instance && loop->instance.as<express::Entity>()) {
 		auto inst = loop->instance.as<express::Entity>();
-		auto file = loop->instance.as<express::Entity>().data()->file();
+		auto file = loop->instance.as<express::Entity>().file();
 		auto profile = file->getInverse(inst.id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
 		force_close = profile.size() > 0;
 	}
