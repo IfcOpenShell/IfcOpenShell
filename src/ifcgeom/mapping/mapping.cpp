@@ -452,22 +452,22 @@ namespace {
         std::vector<IfcSchema::IfcPresentationStyle> prs_styles;
 
 #ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
-        auto style_assignments = si->Styles();
-        for (auto kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+        auto style_assignments = si.Styles();
+        for (auto kt = style_assignments.begin(); kt != style_assignments.end(); ++kt) {
             // Using IfcPresentationStyleAssignment is deprecated, use the direct assignment of a subtype of IfcPresentationStyle instead.
-            auto style_k = (*kt)->as<IfcSchema::IfcPresentationStyle>();
+            auto style_k = (*kt).as<IfcSchema::IfcPresentationStyle>();
             if (style_k) {
                 prs_styles.push_back(style_k);
                 continue;
             }
 
-            auto style_assignment = (*kt)->as<IfcSchema::IfcPresentationStyleAssignment>();
+            auto style_assignment = (*kt).as<IfcSchema::IfcPresentationStyleAssignment>();
             if (!style_assignment) {
                 continue;
             }
 
             // Only in case of 2x3 or old style IfcPresentationStyleAssignment
-            auto styles = style_assignment->Styles();
+            auto styles = style_assignment.Styles();
 #elif defined(SCHEMA_HAS_IfcPresentationStyleAssignment)
         std::vector<IfcSchema::IfcPresentationStyleAssignment> style_assignments = si.Styles();
         for (auto& style_assignment : style_assignments) {

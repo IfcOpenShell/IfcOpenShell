@@ -21,7 +21,6 @@
 #include "svgfill.h"
 #include "progress.h"
 
-#include <boost/optional.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -35,7 +34,7 @@ int main(int argc, char** argv) {
 	bool valid_command_line = false;
 	bool random_color = false;
 	double eps = 1.e-5;
-	boost::optional<std::string> class_name;
+	std::optional<std::string> class_name;
 	
 	std::vector<std::string> flags;
 	std::vector<std::string> args;
