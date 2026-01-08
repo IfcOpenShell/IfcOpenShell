@@ -239,7 +239,7 @@ class SelectSimilarType(bpy.types.Operator):
         for related_object in objects:
             relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(related_object))
             if not relating_type:
-                related_object.select_set(False)
+                # Keep objects without a type selected (retain current selection)
                 continue
             relating_types.add(relating_type)
 
