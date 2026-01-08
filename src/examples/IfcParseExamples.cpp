@@ -117,10 +117,10 @@ template <typename Schema, typename T>
 void process_pset(element_properties& props, const T& inst) {
 	// Process an individual Property or Quantity set.
 	if (auto pset = inst.template as<typename Schema::IfcPropertySet>()) {
-		if (!pset->Name()) {
+		if (!pset.Name()) {
 			return;
 		}
-		auto ps = pset->HasProperties();
+		auto ps = pset.HasProperties();
 		for (auto& p : ps) {
 			if (auto singleval = p.template as<typename Schema::IfcPropertySingleValue>()) {
 				std::string propname, propvalue;
