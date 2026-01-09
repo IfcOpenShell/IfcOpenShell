@@ -451,25 +451,20 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Ifc.run("attribute.edit_attributes", product=port, attributes={"FlowDirection": next_direction})
         
+        connected_port = tool.System.get_connected_port(port)
+        if connected_port:
+            # Map flow direction to connected port's complementary direction
+            connected_direction_map = {
+                "SOURCE": "SINK",
+                "SINK": "SOURCE",
+                "SOURCEANDSINK": "SOURCEANDSINK",
+                "NOTDEFINED": "NOTDEFINED"
+            }
+            connected_direction = connected_direction_map.get(next_direction, "NOTDEFINED")
+            tool.Ifc.run("attribute.edit_attributes", product=connected_port, attributes={"FlowDirection": connected_direction})
+        
         PortData.is_loaded = False
         
-        return {"FINISHED"}
-
-
-class ShowPortFlowError(bpy.types.Operator):
-    bl_idname = "bim.show_port_flow_error"
-    bl_label = ""
-    bl_options = {"REGISTER"}
-    port_flow: bpy.props.StringProperty()
-    connected_flow: bpy.props.StringProperty()
-    
-    @classmethod
-    def description(cls, context, operator):
-        if operator.port_flow and operator.connected_flow:
-            return f"Semantic error: Incompatible flow directions ({operator.port_flow} connected to {operator.connected_flow})"
-        return "Semantic error: Incompatible flow directions"
-    
-    def execute(self, context):
         return {"FINISHED"}
 
 

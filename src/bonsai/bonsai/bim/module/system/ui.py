@@ -168,7 +168,7 @@ class BIM_PT_ports(Panel):
         row.label(text="Ports located on object and connected Port/Objects:")
         
         row = self.layout.row(align=True)
-        cols = [row.column(align=True) for i in range(10)]
+        cols = [row.column(align=True) for i in range(9)]
 
         for port_data in PortData.data["located_ports_data"]:
             flow_direction_icon = FLOW_DIRECTION_TO_ICON[port_data["FlowDirection"] or "NOTDEFINED"]
@@ -210,19 +210,6 @@ class BIM_PT_ports(Panel):
                 ifc_id = tool.Blender.get_ifc_definition_id(connected_obj)
                 cols[7].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
                 cols[8].label(text=port_data["connected_obj_name"])
-                
-                if connected_port:
-                    port_flow = port.FlowDirection or "NOTDEFINED"
-                    connected_flow = connected_port.FlowDirection or "NOTDEFINED"
-                    if (port_flow == "SOURCE" and connected_flow == "SOURCE") or \
-                       (port_flow == "SINK" and connected_flow == "SINK"):
-                        op = cols[9].operator("bim.show_port_flow_error", text="", icon="ERROR", emboss=False)
-                        op.port_flow = port_flow
-                        op.connected_flow = connected_flow
-                    else:
-                        cols[9].label(text="", icon="BLANK1")
-                else:
-                    cols[9].label(text="", icon="BLANK1")
             else:
                 cols[4].label(text="", icon="BLANK1")
                 cols[5].label(text="", icon="BLANK1")
@@ -230,7 +217,6 @@ class BIM_PT_ports(Panel):
                 cols[6].prop(props, "related_port_object", text="")
                 cols[7].label(text="", icon="BLANK1")
                 cols[8].label(text="Port is disconnected")
-                cols[9].label(text="", icon="BLANK1")
 
 
 class BIM_PT_port(Panel):
@@ -277,7 +263,7 @@ class BIM_PT_port(Panel):
         props = tool.System.get_system_props()
         
         row = layout.row(align=True)
-        cols = [row.column(align=True) for i in range(10)]
+        cols = [row.column(align=True) for i in range(9)]
         
         flow_direction_icon = FLOW_DIRECTION_TO_ICON[element.FlowDirection or "NOTDEFINED"]
         connected_port = tool.System.get_connected_port(element)
@@ -311,16 +297,6 @@ class BIM_PT_port(Panel):
             else:
                 cols[7].label(text="", icon="BLANK1")
                 cols[8].label(text="")
-            
-            port_flow = element.FlowDirection or "NOTDEFINED"
-            connected_flow = connected_port.FlowDirection or "NOTDEFINED"
-            if (port_flow == "SOURCE" and connected_flow == "SOURCE") or \
-               (port_flow == "SINK" and connected_flow == "SINK"):
-                op = cols[9].operator("bim.show_port_flow_error", text="", icon="ERROR", emboss=False)
-                op.port_flow = port_flow
-                op.connected_flow = connected_flow
-            else:
-                cols[9].label(text="", icon="BLANK1")
         else:
             cols[4].label(text="", icon="BLANK1")
             cols[5].label(text="", icon="BLANK1")
@@ -328,7 +304,6 @@ class BIM_PT_port(Panel):
             cols[6].prop(props, "related_port_object", text="")
             cols[7].label(text="", icon="BLANK1")
             cols[8].label(text="Port is disconnected")
-            cols[9].label(text="", icon="BLANK1")
 
 
 class BIM_PT_flow_controls(Panel):

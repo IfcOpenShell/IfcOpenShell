@@ -45,7 +45,6 @@ classes = (
     operator.RemoveZone,
     operator.SelectSystemProducts,
     operator.SetFlowDirection,
-    operator.ShowPortFlowError,
     operator.ShowPorts,
     operator.UnassignSystem,
     operator.UnloadZones,
