@@ -381,6 +381,7 @@ class Usecase:
     def append_type_product(self):
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
+            "IfcDistributionElementType": ["IsNestedBy"],
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem", "LayerAssignment"],
             "IfcRepresentation": ["LayerAssignments"],
@@ -397,6 +398,7 @@ class Usecase:
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
             "IfcElement": ["HasOpenings"],
+            "IfcDistributionElement": ["IsNestedBy"],
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": [
                 "StyledByItem",
@@ -488,7 +490,8 @@ class Usecase:
                 attribute_class = None
                 if "." in attribute:
                     attribute, attribute_class = attribute.split(".")
-                for inverse in getattr(element, attribute, []):
+                inverse_values = getattr(element, attribute, [])
+                for inverse in inverse_values:
                     if attribute_class and inverse.is_a(attribute_class):
                         self.add_inverse_element(inverse)
                     elif not attribute_class:
@@ -568,6 +571,8 @@ class Usecase:
         if element == self.settings["element"]:
             return False
         elif element.is_a("IfcRoot") and self.by_guid(element.GlobalId) is not None:
+            return False
+        elif element.is_a("IfcDistributionPort"):
             return False
         elif element.is_a(self.target_class):
             return True

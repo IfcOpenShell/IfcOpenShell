@@ -218,11 +218,22 @@ class System(bonsai.core.tool.System):
         ifc_importer.process_context_filter()
         ifc_importer.create_generic_elements(set(ports_to_create))
 
-        container = ifcopenshell.util.element.get_container(element)
-        if container:
-            collection = tool.Blender.get_object_bim_props(tool.Ifc.get_object(container)).collection
-            ifc_importer.collections[container.GlobalId] = collection
-        ifc_importer.place_objects_in_collections()
+        if element.is_a("IfcTypeProduct"):
+            target_collection = None
+            for collection in obj.users_collection:
+                target_collection = collection
+                break
+            
+            if target_collection:
+                for port_obj in ifc_importer.added_data.values():
+                    if isinstance(port_obj, bpy.types.Object):
+                        tool.Collector.link_collection_object_safe(target_collection, port_obj)
+        else:
+            container = ifcopenshell.util.element.get_container(element)
+            if container:
+                collection = tool.Blender.get_object_bim_props(tool.Ifc.get_object(container)).collection
+                ifc_importer.collections[container.GlobalId] = collection
+            ifc_importer.place_objects_in_collections()
 
         for port_obj in ifc_importer.added_data.values():
             assert isinstance(port_obj, bpy.types.Object)
