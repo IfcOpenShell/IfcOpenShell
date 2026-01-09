@@ -217,7 +217,7 @@ class HidePorts(bpy.types.Operator, tool.Ifc.Operator):
 
 class AddPort(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_port"
-    bl_description = "Add port at current cursor position"
+    bl_description = "Add USERDEFINED port at current cursor position"
     bl_label = "Add Port"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -249,12 +249,51 @@ class ConnectPort(bpy.types.Operator, tool.Ifc.Operator):
         core.connect_port(tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2))
 
 
+class AddRelatedPortConnection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_related_port_connection"
+    bl_label = "Connect Port"
+    bl_description = "Click to select a port to connect to"
+    bl_options = {"REGISTER", "UNDO"}
+
+    element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if self.element_id == 0:
+            self.report({'ERROR'}, "No port specified")
+            return {'CANCELLED'}
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+            if context.active_object:
+                target_element = tool.Ifc.get_entity(context.active_object)
+                if target_element and target_element.is_a("IfcDistributionPort"):
+                    source_element = tool.Ifc.get().by_id(self.element_id)
+                    core.connect_port(tool.Ifc, port1=source_element, port2=target_element)
+                    self.report({'INFO'}, "Ports connected")
+                    return {'FINISHED'}
+                else:
+                    self.report({'WARNING'}, "Selected object is not a port")
+            return {'RUNNING_MODAL'}
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            self.report({'INFO'}, "Cancelled")
+            return {'CANCELLED'}
+        return {'RUNNING_MODAL'}
+
+    def _execute(self, context):
+        return {'CANCELLED'}
+
+
 class DisconnectPort(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disconnect_port"
     bl_label = "Disconnect Ports"
     bl_options = {"REGISTER", "UNDO"}
 
     element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
 
     def _execute(self, context):
         if self.element_id != 0:
@@ -377,6 +416,61 @@ class SetFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
 
         self.report({"ERROR"}, "Selected elements are not connected to set the flow direction")
         return {"CANCELLED"}
+
+
+class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.cycle_flow_direction"
+    bl_label = "Cycle Flow Direction"
+    bl_options = {"REGISTER", "UNDO"}
+    port_id: bpy.props.IntProperty()
+
+    @classmethod
+    def description(cls, context, operator):
+        try:
+            port = tool.Ifc.get().by_id(operator.port_id)
+            if port and port.is_a("IfcDistributionPort"):
+                current_direction = port.FlowDirection or "NOTDEFINED"
+                return f"Current flow direction: {current_direction}. Click to cycle: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED"
+        except:
+            pass
+        return "Cycle through flow directions: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED → SOURCE..."
+
+    def _execute(self, context):
+        port = tool.Ifc.get().by_id(self.port_id)
+        if not port or not port.is_a("IfcDistributionPort"):
+            return {"CANCELLED"}
+
+        current_direction = port.FlowDirection or "NOTDEFINED"
+        flow_cycle = ["SOURCE", "SINK", "SOURCEANDSINK", "NOTDEFINED"]
+        
+        try:
+            current_index = flow_cycle.index(current_direction)
+            next_direction = flow_cycle[(current_index + 1) % len(flow_cycle)]
+        except ValueError:
+            next_direction = "SOURCE"
+
+        tool.Ifc.run("attribute.edit_attributes", product=port, attributes={"FlowDirection": next_direction})
+        
+        PortData.is_loaded = False
+        
+        return {"FINISHED"}
+
+
+class ShowPortFlowError(bpy.types.Operator):
+    bl_idname = "bim.show_port_flow_error"
+    bl_label = ""
+    bl_options = {"REGISTER"}
+    port_flow: bpy.props.StringProperty()
+    connected_flow: bpy.props.StringProperty()
+    
+    @classmethod
+    def description(cls, context, operator):
+        if operator.port_flow and operator.connected_flow:
+            return f"Semantic error: Incompatible flow directions ({operator.port_flow} connected to {operator.connected_flow})"
+        return "Semantic error: Incompatible flow directions"
+    
+    def execute(self, context):
+        return {"FINISHED"}
 
 
 class LoadZones(bpy.types.Operator):

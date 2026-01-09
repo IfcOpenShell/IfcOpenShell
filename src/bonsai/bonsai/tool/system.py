@@ -108,6 +108,32 @@ class System(bonsai.core.tool.System):
         return obj
 
     @classmethod
+    def create_port_at_cursor(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        element_obj = tool.Ifc.get_object(element)
+        
+        port = ifcopenshell.api.system.add_port(ifc_file, element=element)
+        port.FlowDirection = "NOTDEFINED"
+        port.PredefinedType = "USERDEFINED"
+        
+        systems = ifcopenshell.util.system.get_element_systems(element)
+        if systems:
+            system = systems[0]
+            if hasattr(system, "PredefinedType") and system.PredefinedType:
+                port.SystemType = system.PredefinedType
+            else:
+                port.SystemType = "USERDEFINED"
+        else:
+            port.SystemType = "USERDEFINED"
+        
+        matrix = element_obj.matrix_world.copy()
+        matrix.translation = bpy.context.scene.cursor.matrix.translation
+        
+        ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=port, matrix=matrix, is_si=True)
+        
+        return port
+
+    @classmethod
     def delete_element_objects(cls, elements: list[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)

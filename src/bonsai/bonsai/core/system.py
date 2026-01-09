@@ -123,9 +123,8 @@ def hide_ports(ifc: type[tool.Ifc], system: type[tool.System], element: ifcopens
 
 def add_port(ifc: type[tool.Ifc], system: type[tool.System], element: ifcopenshell.entity_instance) -> None:
     system.load_ports(element, system.get_ports(element))
-    obj = system.create_empty_at_cursor_with_element_orientation(element)
-    port = system.run_root_assign_class(obj=obj, ifc_class="IfcDistributionPort", should_add_representation=False)
-    ifc.run("system.assign_port", element=element, port=port)
+    port = system.create_port_at_cursor(element)
+    system.load_ports(element, [port])
 
 
 def remove_port(ifc: type[tool.Ifc], system: type[tool.System], port: ifcopenshell.entity_instance) -> None:

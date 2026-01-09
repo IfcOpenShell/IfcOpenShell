@@ -19,7 +19,8 @@
 import bpy
 import bonsai.bim.handler
 import bonsai.tool as tool
-from bonsai.bim.module.system.data import SystemData
+import bonsai.core.system as core
+from bonsai.bim.module.system.data import SystemData, PortData
 import bonsai.bim.module.system.decorator as decorator
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -92,6 +93,56 @@ def toggle_decorations(self: "BIMSystemProperties", context: bpy.types.Context) 
         decorator.SystemDecorator.uninstall()
 
 
+def is_port_available_for_connection(self: "BIMSystemProperties", obj: bpy.types.Object) -> bool:
+    element = tool.Ifc.get_entity(obj)
+    if not element or not element.is_a("IfcDistributionPort"):
+        return False
+    connected_port = tool.System.get_connected_port(element)
+    if connected_port is not None:
+        return False
+    
+    if bpy.context.active_object:
+        active_element = tool.Ifc.get_entity(bpy.context.active_object)
+        if active_element:
+            active_ports = tool.System.get_ports(active_element)
+            if element in active_ports:
+                return False
+    
+    return True
+
+
+def update_related_port_object(self: "BIMSystemProperties", context: bpy.types.Context) -> None:
+    if self.related_port_object is None:
+        return
+    if not context.active_object:
+        return
+    
+    source_element = tool.Ifc.get_entity(context.active_object)
+    target_element = tool.Ifc.get_entity(self.related_port_object)
+    
+    if not source_element or not target_element:
+        self.related_port_object = None
+        return
+    
+    if not target_element.is_a("IfcDistributionPort"):
+        self.related_port_object = None
+        return
+    
+    source_port = None
+    for port in tool.System.get_ports(source_element):
+        if not tool.System.get_connected_port(port):
+            source_port = port
+            break
+    
+    if not source_port:
+        self.related_port_object = None
+        return
+    
+    core.connect_port(tool.Ifc, port1=source_port, port2=target_element)
+    self.related_port_object = None
+    PortData.is_loaded = False
+
+
 class BIMSystemProperties(PropertyGroup):
     system_attributes: CollectionProperty(name="System Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -107,6 +158,12 @@ class BIMSystemProperties(PropertyGroup):
     should_draw_decorations: BoolProperty(
         name="Should Draw Decorations", description="Toggle system decorations", update=toggle_decorations
     )
+    related_port_object: PointerProperty(
+        type=bpy.types.Object,
+        name="Connect To Port",
+        update=update_related_port_object,
+        poll=is_port_available_for_connection,
+    )
 
     if TYPE_CHECKING:
         system_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -119,6 +176,7 @@ class BIMSystemProperties(PropertyGroup):
         edited_system_id: int
         system_class: str
         should_draw_decorations: bool
+        related_port_object: Union[bpy.types.Object, None]
 
     @property
     def active_system_ui_item(self) -> Union[System, None]:
