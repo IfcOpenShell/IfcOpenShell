@@ -121,11 +121,9 @@ def update_related_port_object(self: "BIMSystemProperties", context: bpy.types.C
     target_element = tool.Ifc.get_entity(self.related_port_object)
     
     if not source_element or not target_element:
-        self.related_port_object = None
         return
     
     if not target_element.is_a("IfcDistributionPort"):
-        self.related_port_object = None
         return
     
     source_port = None
@@ -135,11 +133,9 @@ def update_related_port_object(self: "BIMSystemProperties", context: bpy.types.C
             break
     
     if not source_port:
-        self.related_port_object = None
         return
     
     core.connect_port(tool.Ifc, port1=source_port, port2=target_element)
-    self.related_port_object = None
     PortData.is_loaded = False
 
 
@@ -161,8 +157,9 @@ class BIMSystemProperties(PropertyGroup):
     related_port_object: PointerProperty(
         type=bpy.types.Object,
         name="Connect To Port",
-        update=update_related_port_object,
+        description="Select a port to connect to. Use eyedropper to pick a port object",
         poll=is_port_available_for_connection,
+        update=update_related_port_object,
     )
 
     if TYPE_CHECKING:

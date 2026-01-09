@@ -169,6 +169,9 @@ class BIM_PT_ports(Panel):
         
         row = self.layout.row(align=True)
         cols = [row.column(align=True) for i in range(9)]
+        cols[3].scale_x = 1.0
+        cols[6].scale_x = 1.0
+        cols[8].scale_x = 1.33
 
         for port_data in PortData.data["located_ports_data"]:
             flow_direction_icon = FLOW_DIRECTION_TO_ICON[port_data["FlowDirection"] or "NOTDEFINED"]
@@ -178,7 +181,9 @@ class BIM_PT_ports(Panel):
                 op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
                 op.port_id = port_data["id"]
             else:
-                cols[0].label(text="", icon="BLANK1")
+                blank0 = cols[0].column(align=True)
+                blank0.scale_x = 0.1
+                blank0.label(text="", icon="BLANK1")
                 op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
                 op.port_id = port_data["id"]
             
@@ -196,26 +201,49 @@ class BIM_PT_ports(Panel):
                 port = tool.Ifc.get().by_id(port_data["id"])
                 connected_port = tool.System.get_connected_port(port)
                 if connected_port:
-                    connected_port_flow_dir = FLOW_DIRECTION_TO_ICON[connected_port.FlowDirection or "NOTDEFINED"]
-                    op = cols[4].operator("bim.cycle_flow_direction", text="", icon=connected_port_flow_dir, emboss=True)
-                    op.port_id = connected_port.id()
-                    cols[5].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = connected_port.id()
                     connected_port_obj = tool.Ifc.get_object(connected_port)
-                    cols[6].label(text=connected_port_obj.name if connected_port_obj else "Hidden Port")
+                    if connected_port_obj:
+                        connected_port_flow_dir = FLOW_DIRECTION_TO_ICON[connected_port.FlowDirection or "NOTDEFINED"]
+                        op = cols[4].operator("bim.cycle_flow_direction", text="", icon=connected_port_flow_dir, emboss=True)
+                        op.port_id = connected_port.id()
+                        cols[5].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = connected_port.id()
+                        cols[6].label(text=connected_port_obj.name)
+                    else:
+                        blank4 = cols[4].column(align=True)
+                        blank4.scale_x = 0.1
+                        blank4.label(text="", icon="BLANK1")
+                        blank5 = cols[5].column(align=True)
+                        blank5.scale_x = 0.1
+                        blank5.label(text="", icon="BLANK1")
+                        cols[6].label(text="Port is hidden")
                 else:
-                    cols[4].label(text="", icon="BLANK1")
-                    cols[5].label(text="", icon="BLANK1")
+                    blank4 = cols[4].column(align=True)
+                    blank4.scale_x = 0.1
+                    blank4.label(text="", icon="BLANK1")
+                    blank5 = cols[5].column(align=True)
+                    blank5.scale_x = 0.1
+                    blank5.label(text="", icon="BLANK1")
                     cols[6].label(text="")
                 
                 ifc_id = tool.Blender.get_ifc_definition_id(connected_obj)
                 cols[7].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
                 cols[8].label(text=port_data["connected_obj_name"])
             else:
-                cols[4].label(text="", icon="BLANK1")
-                cols[5].label(text="", icon="BLANK1")
-                cols[6].alignment = 'LEFT'
-                cols[6].prop(props, "related_port_object", text="")
-                cols[7].label(text="", icon="BLANK1")
+                blank4 = cols[4].column(align=True)
+                blank4.scale_x = 0.1
+                blank4.label(text="", icon="BLANK1")
+                blank5 = cols[5].column(align=True)
+                blank5.scale_x = 0.1
+                blank5.label(text="", icon="BLANK1")
+                
+                col6_row = cols[6].row(align=True)
+                col6_row.alignment = 'LEFT'
+                col6_row.prop(props, "related_port_object", text="", icon='OBJECT_DATA')
+                col6_row.scale_x = 0.35
+                
+                blank7 = cols[7].column(align=True)
+                blank7.scale_x = 0.1
+                blank7.label(text="", icon="BLANK1")
                 cols[8].label(text="Port is disconnected")
 
 

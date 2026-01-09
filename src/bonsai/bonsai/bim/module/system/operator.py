@@ -186,6 +186,7 @@ class ShowPorts(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_ports"
     bl_label = "Show Ports"
     bl_options = {"REGISTER", "UNDO"}
+    element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -198,7 +199,19 @@ class ShowPorts(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         # Ifc.Operator - as operator will sync object's position with IFC.
-        core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=tool.Ifc.get_entity(context.active_object))
+        if self.element_id != 0:
+            element = tool.Ifc.get().by_id(self.element_id)
+        else:
+            element = tool.Ifc.get_entity(context.active_object)
+        core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=element)
+        
+        for port in tool.System.get_ports(element):
+            connected_port = tool.System.get_connected_port(port)
+            if connected_port:
+                connected_port_obj = tool.Ifc.get_object(connected_port)
+                if not connected_port_obj:
+                    parent_element = tool.System.get_port_relating_element(connected_port)
+                    core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=parent_element)
 
 
 class HidePorts(bpy.types.Operator, tool.Ifc.Operator):
