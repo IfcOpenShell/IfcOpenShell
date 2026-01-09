@@ -137,6 +137,7 @@ def update_related_port_object(self: "BIMSystemProperties", context: bpy.types.C
     
     core.connect_port(tool.Ifc, port1=source_port, port2=target_element)
     PortData.is_loaded = False
+    self.related_port_object = None
 
 
 class BIMSystemProperties(PropertyGroup):
