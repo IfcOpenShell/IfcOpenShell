@@ -24,26 +24,33 @@ classes = (
     operator.AddInformation,
     operator.AssignDocument,
     operator.DisableDocumentEditingUI,
+    operator.DisableObjectDocumentEditingUI,
     operator.DisableEditingDocument,
     operator.EditDocument,
     operator.EnableEditingDocument,
-    operator.LoadDocument,
-    operator.LoadParentDocument,
+    operator.LoadObjectDocuments,
     operator.LoadProjectDocuments,
     operator.RemoveDocument,
     operator.SelectDocumentObjects,
+    operator.ToggleDocument,
     operator.UnassignDocument,
+    operator.OpenIFCDocument,
     prop.Document,
+    prop.DocumentObject,
     prop.BIMDocumentProperties,
     ui.BIM_PT_documents,
     ui.BIM_PT_object_documents,
     ui.BIM_UL_documents,
+    ui.BIM_UL_document_objects,
+    ui.BIM_MT_object_documents_context_menu,
 )
 
 
 def register():
     bpy.types.Scene.BIMDocumentProperties = bpy.props.PointerProperty(type=prop.BIMDocumentProperties)
+    bpy.types.VIEW3D_MT_object_context_menu.append(ui.add_object_documents_context_menu)
 
 
 def unregister():
     del bpy.types.Scene.BIMDocumentProperties
+    bpy.types.VIEW3D_MT_object_context_menu.remove(ui.add_object_documents_context_menu)

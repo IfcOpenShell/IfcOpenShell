@@ -22,6 +22,7 @@ import ifcopenshell.api
 import ifcopenshell.api.document
 import bonsai.core.tool
 import bonsai.tool as tool
+import json
 from test.bim.bootstrap import NewFile
 from bonsai.tool.document import Document as subject
 
@@ -29,24 +30,6 @@ from bonsai.tool.document import Document as subject
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), bonsai.core.tool.Document)
-
-
-class TestAddBreadcrumb(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        document = ifc.createIfcDocumentInformation()
-        subject.add_breadcrumb(document)
-        props = tool.Document.get_document_props()
-        assert props.breadcrumbs[0].name == str(document.id())
-
-
-class TestClearBreadcrumbs(NewFile):
-    def test_run(self):
-        props = tool.Document.get_document_props()
-        props.breadcrumbs.add()
-        subject.clear_breadcrumbs()
-        assert len(props.breadcrumbs) == 0
 
 
 class TestClearDocumentTree(NewFile):
@@ -103,15 +86,6 @@ class TestExportDocumentAttributes(NewFile):
         }
 
 
-class TestGetActiveBreadcrumb(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        document = ifc.createIfcDocumentInformation()
-        subject.add_breadcrumb(document)
-        assert subject.get_active_breadcrumb() == document
-
-
 class TestImportDocumentAttributes(NewFile):
     def test_importing_information(self):
         ifc = ifcopenshell.file()
@@ -166,51 +140,64 @@ class TestImportDocumentAttributes(NewFile):
         assert props.document_attributes["Description"].string_value == "Description"
 
 
-class TestImportProjectDocuments(NewFile):
+class TestImportProjectDocumentsExpanded(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
-        ifc.createIfcProject()
-        document = ifcopenshell.api.document.add_information(ifc)
-        subject.import_project_documents()
-        props = tool.Document.get_document_props()
-        assert len(props.documents) == 1
-        assert props.documents[0].ifc_definition_id == document.id()
-        assert props.documents[0].name == "Unnamed"
-        assert props.documents[0].identification == "X"
-        assert props.documents[0].is_information is True
-
-
-class TestImportReferences(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc().set(ifc)
-        ifc.createIfcProject()
+        project = ifc.createIfcProject()
         document = ifcopenshell.api.document.add_information(ifc)
         reference = ifcopenshell.api.document.add_reference(ifc, information=document)
-        subject.import_references(document)
+
         props = tool.Document.get_document_props()
-        assert len(props.documents) == 1
-        assert props.documents[0].ifc_definition_id == reference.id()
-        assert props.documents[0].name == "Unnamed"
-        assert props.documents[0].identification == "X"
-        assert props.documents[0].is_information is False
+        expanded_docs = [document.id()]  # Mark document as expanded
+        props.json_string = json.dumps(expanded_docs)
+
+        subject.import_project_documents()
+        props = tool.Document.get_document_props()
+
+        # Should have project root + document + reference = 3 total
+        assert len(props.documents) == 3
+
+        assert props.documents[0].ifc_definition_id == -project.id()
+        assert props.documents[0].document_type == "PROJECT"
+
+        doc_info = next((d for d in props.documents if d.ifc_definition_id == document.id()), None)
+        assert doc_info is not None
+        assert doc_info.document_type == "INFORMATION"
+
+        doc_ref = next((d for d in props.documents if d.ifc_definition_id == reference.id()), None)
+        assert doc_ref is not None
+        assert doc_ref.location == ""
+        assert doc_ref.identification == "X"
+        assert doc_ref.document_type == "REFERENCE"
 
 
-class TestImportSubdocuments(NewFile):
+class TestImportProjectDocumentsCollapsed(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
-        ifc.createIfcProject()
+        project = ifc.createIfcProject()
         document = ifcopenshell.api.document.add_information(ifc)
-        subdocument = ifcopenshell.api.document.add_information(ifc, parent=document)
-        subject.import_subdocuments(document)
+        reference = ifcopenshell.api.document.add_reference(ifc, information=document)
+
         props = tool.Document.get_document_props()
-        assert len(props.documents) == 1
-        assert props.documents[0].ifc_definition_id == subdocument.id()
-        assert props.documents[0].name == "Unnamed"
-        assert props.documents[0].identification == "X"
-        assert props.documents[0].is_information is True
+        props.json_string = json.dumps([])  # Empty expanded list
+
+        subject.import_project_documents()
+        props = tool.Document.get_document_props()
+
+        # Should have project root + document = 2 total (reference not imported because parent is collapsed)
+        assert len(props.documents) == 2
+
+        assert props.documents[0].ifc_definition_id == -project.id()
+        assert props.documents[0].document_type == "PROJECT"
+
+        doc_info = next((d for d in props.documents if d.ifc_definition_id == document.id()), None)
+        assert doc_info is not None
+        assert doc_info.document_type == "INFORMATION"
+
+        doc_ref = next((d for d in props.documents if d.ifc_definition_id == reference.id()), None)
+        assert doc_ref is None
 
 
 class TestIsDocumentInformation(NewFile):
@@ -220,15 +207,6 @@ class TestIsDocumentInformation(NewFile):
         reference = ifc.createIfcDocumentReference()
         assert subject.is_document_information(information) is True
         assert subject.is_document_information(reference) is False
-
-
-class TestRemoveLatestBreadcrumb(NewFile):
-    def test_run(self):
-        props = tool.Document.get_document_props()
-        props.breadcrumbs.add()
-        props.breadcrumbs.add()
-        subject.remove_latest_breadcrumb()
-        assert len(props.breadcrumbs) == 1
 
 
 class TestSetActiveDocument(NewFile):
