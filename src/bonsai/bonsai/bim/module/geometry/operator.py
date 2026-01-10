@@ -1491,6 +1491,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
         old_to_new = {}
         original_data: dict[int, dict[int, dict[str, Any]]] = {}
 
+        # Define all nested functions FIRST
         def delete_objects(element: ifcopenshell.entity_instance) -> None:
             """Remove IfcElementAssembly and it's parts."""
             parts = ifcopenshell.util.element.get_parts(element)
@@ -1542,7 +1543,10 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 if r.is_a("IfcRelAssignsToGroup")
                 if self.group_name in r.RelatingGroup.Name
             ).id()
-            original_data[group] = {}
+            
+            # Initialize if not exists
+            if group not in original_data:
+                original_data[group] = {}
 
             pset: dict[str, Any] = ifcopenshell.util.element.get_pset(element, self.pset_name)
             index: int = pset["Index"]
@@ -1559,8 +1563,13 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             if parts:
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
-                        # TODO: unused expression.
-                        original_data | get_original_data(part)
+                        # Recursively collect data from nested assemblies
+                        nested_data = get_original_data(part)
+                        # Merge nested data into original_data
+                        for nested_group_id, nested_group_data in nested_data.items():
+                            if nested_group_id not in original_data:
+                                original_data[nested_group_id] = {}
+                            original_data[nested_group_id].update(nested_group_data)
                     else:
                         try:
                             pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
@@ -1584,49 +1593,99 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             ):  # if element has parts it means it is the base of and aggregate or sub-aggregate
                 aggregate = element
 
-            group = next(
-                r.RelatingGroup
+            # Get the new group
+            new_group_entity = next(
+                (r.RelatingGroup
                 for r in getattr(aggregate, "HasAssignments", []) or []
                 if r.is_a("IfcRelAssignsToGroup")
-                if self.group_name in r.RelatingGroup.Name
-            ).id()
-            if not group:
+                if self.group_name in r.RelatingGroup.Name),
+                None
+            )
+            
+            if not new_group_entity:
                 return
 
             pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
+            if not pset:
+                return
+                
             index = pset["Index"]
 
+            # Find the matching old group by looking for the same aggregate name
+            matching_group_id = None
             if index == 0:
-                obj.name = pset["Name"] + "_" + str(original_data[group][index]["Aggregate_Index"])
+                # This is a root assembly - find by Name
+                aggregate_name = pset.get("Name")
+                for group_id, group_data in original_data.items():
+                    if 0 in group_data and group_data[0].get("Name") == aggregate_name:
+                        matching_group_id = group_id
+                        break
+            else:
+                # This is a part - find the group that has this index
+                for group_id, group_data in original_data.items():
+                    if index in group_data:
+                        matching_group_id = group_id
+                        break
+            
+            if matching_group_id is None:
+                return
+
+            if index == 0:
+                obj.name = pset["Name"] + "_" + str(original_data[matching_group_id][index]["Aggregate_Index"])
                 ifc_file = tool.Ifc.get()
                 ifcopenshell.api.pset.edit_pset(
                     ifc_file,
                     ifc_file.by_id(pset["id"]),
-                    properties={"Aggregate_Index": int(original_data[group][index]["Aggregate_Index"])},
+                    properties={"Aggregate_Index": int(original_data[matching_group_id][index]["Aggregate_Index"])},
                 )
-                bonsai.core.spatial.assign_container(
-                    tool.Ifc,
-                    tool.Collector,
-                    tool.Spatial,
-                    container=original_data[group][index]["Container"],
-                    element_obj=obj,
-                )
-                for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
-                    tool.Collector.assign(tool.Ifc.get_object(part))
-                assignments = original_data[group][index]["Assignment"]
+                
+                # Only assign container if element is not already aggregated under another element
+                # Aggregated elements should not be in the spatial structure
+                if not ifcopenshell.util.element.get_aggregate(element):
+                    bonsai.core.spatial.assign_container(
+                        tool.Ifc,
+                        tool.Collector,
+                        tool.Spatial,
+                        container=original_data[matching_group_id][index]["Container"],
+                        element_obj=obj,
+                    )
+                    for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
+                        tool.Collector.assign(tool.Ifc.get_object(part))
+                        
+                assignments = original_data[matching_group_id][index]["Assignment"]
                 if assignments:
                     assign_to_annotations(obj, assignments)
             else:
                 try:
-                    obj.name = original_data[group][index]["Name"]
+                    obj.name = original_data[matching_group_id][index]["Name"]
                 except:
                     pass
                 try:
-                    assignments = original_data[group][index]["Assignment"]
+                    assignments = original_data[matching_group_id][index]["Assignment"]
                 except:
                     assignments = []
                 if assignments:
                     assign_to_annotations(obj, assignments)
+
+        def get_original_matrix(
+            element: ifcopenshell.entity_instance, base_instance: ifcopenshell.entity_instance
+        ) -> tuple[Matrix, tuple[Vector, Quaternion, Vector]]:
+            selected_obj = tool.Ifc.get_object(base_instance)
+            selected_matrix = selected_obj.matrix_world
+            object_duplicate = tool.Ifc.get_object(element)
+            duplicate_matrix = object_duplicate.matrix_world.decompose()
+
+            return selected_matrix, duplicate_matrix
+
+        def set_new_matrix(
+            selected_matrix: Matrix, duplicate_matrix: tuple[Vector, Quaternion, Vector], old_to_new: dict
+        ) -> None:
+            for old, new in old_to_new.items():
+                new_obj = tool.Ifc.get_object(new[0])
+                new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
+                matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world
+                new_obj_matrix = new_base_matrix @ matrix_diff
+                new_obj.matrix_world = new_obj_matrix
 
         def get_element_assembly(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
             if element.is_a("IfcElementAssembly"):
@@ -1671,26 +1730,6 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             return list(set(linked_aggregate_groups)), selected_parents
 
-        def get_original_matrix(
-            element: ifcopenshell.entity_instance, base_instance: ifcopenshell.entity_instance
-        ) -> tuple[Matrix, tuple[Vector, Quaternion, Vector]]:
-            selected_obj = tool.Ifc.get_object(base_instance)
-            selected_matrix = selected_obj.matrix_world
-            object_duplicate = tool.Ifc.get_object(element)
-            duplicate_matrix = object_duplicate.matrix_world.decompose()
-
-            return selected_matrix, duplicate_matrix
-
-        def set_new_matrix(
-            selected_matrix: Matrix, duplicate_matrix: tuple[Vector, Quaternion, Vector], old_to_new: dict
-        ) -> None:
-            for old, new in old_to_new.items():
-                new_obj = tool.Ifc.get_object(new[0])
-                new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
-                matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world
-                new_obj_matrix = new_base_matrix @ matrix_diff
-                new_obj.matrix_world = new_obj_matrix
-
         active_element = tool.Ifc.get_entity(context.active_object)
         if not active_element:
             self.report({"INFO"}, "Object has no Ifc metadata.")
@@ -1727,6 +1766,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             base_pset = ifcopenshell.util.element.get_pset(base_instance, self.pset_name)
             base_obj = tool.Ifc.get_object(base_instance)
             base_obj.name = base_pset["Name"] + "_" + str(base_pset["Aggregate_Index"])
+            
             for element in instances_to_refresh:
                 if element.GlobalId == base_instance.GlobalId:
                     continue
@@ -1735,7 +1775,12 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
                 selected_matrix, duplicate_matrix = get_original_matrix(element, base_instance)
 
-                original_data = get_original_data(element)
+                # Merge data instead of overwriting
+                element_original_data = get_original_data(element)
+                for group_id, group_data in element_original_data.items():
+                    if group_id not in original_data:
+                        original_data[group_id] = {}
+                    original_data[group_id].update(group_data)
 
                 delete_objects(element)
 
@@ -1749,7 +1794,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 set_new_matrix(selected_matrix, duplicate_matrix, old_to_new)
 
                 for old, new in old_to_new.items():
-                    if element_aggregate and new[0].is_a("IfcElementAssembly"):
+                    if element_aggregate and new[0].is_a("IfcElementAssembly") and old == base_instance:
                         new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
 
                         if not new_aggregate:
