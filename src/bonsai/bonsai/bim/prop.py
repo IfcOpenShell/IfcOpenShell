@@ -791,12 +791,21 @@ class BIMFacet(PropertyGroup):
             ("!*=", "does not contain", ""),
         ],
     )
+    filter_mode: EnumProperty(
+        items=[
+            ("ADD", "Add", "Add results to the current selection"),
+            ("SUBTRACT", "Subtract", "Remove results from the current selection"),
+            ("FILTER", "Filter", "Filter the current selection"),
+        ],
+        default="ADD",
+    )
 
     if TYPE_CHECKING:
         pset: str
         value: str
         type: str
         comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
+        filter_mode: Literal["ADD", "SUBTRACT", "FILTER"]
 
 
 class BIMFilterGroup(PropertyGroup):
