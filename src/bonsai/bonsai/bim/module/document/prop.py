@@ -1,24 +1,7 @@
-# Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
-#
-# This file is part of Bonsai.
-#
-# Bonsai is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Bonsai is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
-
 import bpy
 import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.module.document.data import refresh
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -30,6 +13,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from bonsai.bim.module.document.data import DocumentData
 from typing import TYPE_CHECKING, Union
 
 
@@ -49,18 +33,50 @@ def update_document_identification(self: "Document", context: bpy.types.Context)
         tool.Document.set_external_reference_id(document, self.identification)
 
 
+def update_active_document_index(self, context):
+    refresh()
+    if document := self.active_document:
+        if document.ifc_definition_id:
+            DocumentData.load_document_objects_into_props(document.ifc_definition_id)
+
+
 class Document(PropertyGroup):
-    name: StringProperty(name="Name", update=update_document_name)
-    identification: StringProperty(name="Identification", update=update_document_identification)
-    is_information: BoolProperty(
-        name="Is Information",
-        description="Whether element is IfcDocumentInformation, otherwise it's IfcDocumentReference.",
+    name: StringProperty(name="Name")
+    identification: StringProperty(name="Identification")
+    description: StringProperty(name="Description")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    location: StringProperty(name="Location", default="")
+    tree_depth: IntProperty(name="Tree Depth", default=0)
+    has_children: BoolProperty(name="Has Children", default=False)
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
+    document_type: EnumProperty(
+        name="Document Type",
+        items=[
+            ("PROJECT", "Project", "Virtual project root node"),
+            ("INFORMATION", "Information", "IfcDocumentInformation"),
+            ("REFERENCE", "Reference", "IfcDocumentReference"),
+        ],
+        default="INFORMATION",
     )
+
+    if TYPE_CHECKING:
+        name: str
+        identification: str
+        description: str
+        ifc_definition_id: int
+        location: str
+        tree_depth: int
+        has_children: bool
+        is_expanded: bool
+        document_type: str
+
+
+class DocumentObject(PropertyGroup):
+    name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
     if TYPE_CHECKING:
-        identification: str
-        is_information: bool
+        name: str
         ifc_definition_id: int
 
 
@@ -68,17 +84,23 @@ class BIMDocumentProperties(PropertyGroup):
     document_attributes: CollectionProperty(name="Document Attributes", type=Attribute)
     active_document_id: IntProperty(name="Active Document Id")
     documents: CollectionProperty(name="Documents", type=Document)
-    breadcrumbs: CollectionProperty(name="Breadcrumbs", type=StrProperty)
-    active_document_index: IntProperty(name="Active Document Index")
+    active_document_index: IntProperty(name="Active Document Index", update=update_active_document_index)
     is_editing: BoolProperty(name="Is Editing", default=False)
+    is_object_editing: BoolProperty(name="Is Object Editing", default=False)
+    document_objects: CollectionProperty(name="Document Objects", type=DocumentObject)
+    active_document_object_index: IntProperty(name="Active Document Object Index")
+    json_string: StringProperty(name="JSON String", default="[]")
 
     if TYPE_CHECKING:
         document_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         active_document_id: int
         documents: bpy.types.bpy_prop_collection_idprop[Document]
-        breadcrumbs: bpy.types.bpy_prop_collection_idprop[StrProperty]
         active_document_index: int
         is_editing: bool
+        is_object_editing: bool
+        document_objects: bpy.types.bpy_prop_collection_idprop[DocumentObject]
+        active_document_object_index: int
+        json_string: str
 
     @property
     def active_document(self) -> Union[Document, None]:
