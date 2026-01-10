@@ -100,9 +100,7 @@ class entity_instance_mixin:
         INVALID, FORWARD, INVERSE, DERIVED = range(4)
         attr_cat = self.get_attribute_category(name)
         if attr_cat == INVALID:
-            raise AttributeError(
-                "entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name)
-            )
+            raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
         elif attr_cat == FORWARD:
             idx = self.get_argument_index(name)
             return self.get_argument(idx)
