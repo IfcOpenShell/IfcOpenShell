@@ -679,7 +679,7 @@ class BIM_PT_text(Panel):
 
             if len(literal_props.attributes) > 0 and i < len(props.literal_apply_settings):
                 row = box.row(align=True)
-                row.prop(literal_props.attributes[0], "string_value", text="Literal")
+                bonsai.bim.helper.draw_attribute(literal_props.attributes[0], row, enable_search=True)
                 
                 expand_icon = "DOWNARROW_HLT" if getattr(literal_props, "show_element_values", False) else "RIGHTARROW"
                 op = row.operator("bim.toggle_element_values_panel", icon=expand_icon, text="")
