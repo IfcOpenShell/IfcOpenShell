@@ -504,13 +504,30 @@ class file_mixin:
     to_delete: Union[set[ifcopenshell.entity_instance], None] = None
     """Entities for batch removal."""
 
+    registry = {}
+
+    def post_init(self, iden):
+        if state := self.registry.get(iden):
+            self.state = state
+        else:
+            self.state = self.registry[iden] = [[],[],None]
+
+    @property
+    def history(self):
+        return self.state[0]
+        
+    @property
+    def future(self):
+        return self.state[1]
     
+    @property
+    def transaction(self):
+        return self.state[2]
 
-    def post_init(self):
-        self.history = []
-        self.future = []
-        self.transaction: Optional[Transaction] = None
-
+    @transaction.setter
+    def transaction(self, v):
+        self.state[2] = v
+    
     def set_history_size(self, size: int) -> None:
         self.history_size = size
         while len(self.history) > self.history_size:
@@ -670,7 +687,7 @@ class file_mixin:
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         else:
-            return getattr(self, attr)
+            raise AttributeError
 
     def __getitem__(self, key: Union[numbers.Integral, str, bytes]) -> entity_instance:
         if isinstance(key, numbers.Integral):

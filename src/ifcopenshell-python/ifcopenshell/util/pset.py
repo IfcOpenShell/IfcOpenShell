@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
-from ifcopenshell.entity_instance import entity_instance
+from ifcopenshell import entity_instance
 from functools import lru_cache
 from typing import Optional, Literal, NamedTuple, Union
 

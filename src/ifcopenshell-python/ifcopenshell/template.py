@@ -20,7 +20,7 @@
 import time
 import uuid
 
-from .file import file
+from ifcopenshell import file
 from .guid import compress
 from .ifcopenshell_wrapper import version
 from typing import Optional

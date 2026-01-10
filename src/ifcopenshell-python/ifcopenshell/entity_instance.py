@@ -87,10 +87,6 @@ class entity_instance_mixin:
         print(wall.__class__) # <class 'ifcopenshell.entity_instance'>
     """
 
-    @property
-    def file(self):
-        raise NotImplementedError
-
     def __getattr__(self, name: str) -> Any:
         if name in ("this", "thisown") or name.startswith("_swig_"):
             return object.__getattr__(self, name)
@@ -299,15 +295,6 @@ class entity_instance_mixin:
     __rlt__ = functools.partialmethod(compare, op=operator.lt, reverse=True)
     __rge__ = functools.partialmethod(compare, op=operator.ge, reverse=True)
     __rgt__ = functools.partialmethod(compare, op=operator.gt, reverse=True)
-
-    def __hash__(self):
-        # Proper entity instances have a stable identity by means of the numeric
-        # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
-        # always have id=0, so we hash <type, value, file pointer>
-        if id_ := self.id():
-            return hash((id_, self.file_pointer()))
-        else:
-            return hash((self.is_a(), self[0], self.file_pointer()))
 
     def __dir__(self):
         return sorted(

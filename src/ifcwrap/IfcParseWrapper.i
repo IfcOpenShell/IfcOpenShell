@@ -255,8 +255,8 @@ private:
 
 	express::Base create(const std::string& entity_name) {
 		const IfcParse::declaration* decl = $self->schema()->declaration_by_name(entity_name);
-		if (!decl || !decl->as_entity()) {
-			throw IfcParse::IfcException("No such entity declaration: '" + entity_name + "' in schema '" + $self->schema()->name());
+		if (!decl || !(decl->as_entity() || decl->as_type_declaration())) {
+			throw IfcParse::IfcException("No such entity or type declaration: '" + entity_name + "' in schema '" + $self->schema()->name());
 		}
 		return $self->create(decl);
 	}
@@ -343,20 +343,21 @@ private:
 	%pythoncode %{
 		schema = property(schema_name)
 		header = property(header)
+		_registry = {}
 
-		old_init = __init__
+		_old_init = __init__
 		def __init__(self, schema=None, schema_version=None):
-			self.old_init(*filter(None, (schema, schema_version)))
-			self.post_init()
+			self._old_init(*filter(None, (schema, schema_version)))
+    
+		def __setattr__(self, k, v):
+			object.__setattr__(self, k, v)
+			if k == 'this':
+				# only now we know the identity of the object and we set our python-side attributes based on a python-side map
+				self.post_init(int(v))
 	%}
 }
 
 %extend express::Base {
-
-	%pythoncode %{
-		# Will be assigned when `ifcopenshell.entity_instance` is created.
-		file = None
-	%}
 
 	// 0 = not found
 	// 1 = regular forward attribute
@@ -477,6 +478,22 @@ private:
 
 	bool __eq__(const express::Base& other) const {
 		return $self->identity() == other.identity();
+	}
+
+	size_t __hash__() const {
+	    if (!self->declaration().as_entity()) {
+            return boost::hash<std::tuple<uint32_t, void*>>{}({self->identity(), self->file()});
+		} else {
+            return self->get_attribute_value(0).apply_visitor([&](const auto& val){
+                using U = std::decay_t<decltype(val)>;
+                if constexpr (std::is_same_v<U, Blank> || std::is_same_v<U, Derived> || std::is_same_v<U, boost::logic::tribool> || std::is_same_v<U, EnumerationReference> || std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t>) {
+					// @todo
+                    return boost::hash<std::tuple<size_t, size_t, void*>>{}({self->declaration().index_in_schema(), 0, self->file()});
+                } else {
+                    return boost::hash<std::tuple<size_t, decltype(val), void*>>{}({self->declaration().index_in_schema(), val, self->file()});
+                }
+			});			
+		}
 	}
 
 	std::string __repr__() const {
@@ -820,6 +837,14 @@ private:
 				throw IfcParse::IfcException("Attribute not set");
 		}
 	}
+
+	IfcParse::IfcFile* file_py() const {
+		return $self->file();
+	}
+
+	%pythoncode %{
+		file = property(file_py)
+	%}
 }
 
 %extend IfcParse::IfcSpfHeader {
