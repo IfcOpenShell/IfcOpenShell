@@ -93,7 +93,7 @@ class ColourByPropertyData:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return default
-        keys = [a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes()]
+        keys = [a.name() for a in element.declaration().as_entity().all_attributes()]
         psets = ifcopenshell.util.element.get_psets(element)
         for pset, properties in psets.items():
             if pset.endswith("Common"):
@@ -124,7 +124,7 @@ class SelectSimilarData:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
-        keys = [a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes()]
+        keys = [a.name() for a in element.declaration().as_entity().all_attributes()]
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         for pset, properties in psets.items():
             if pset.endswith("Common"):

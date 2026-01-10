@@ -339,7 +339,7 @@ try:
 
         def __getattr__(self, name: str) -> Any:
             INVALID, FORWARD, INVERSE = range(3)
-            attr_cat = self.wrapped_data.get_attribute_category(name)
+            attr_cat = self.get_attribute_category(name)
             if attr_cat == FORWARD:
                 if self.stream_wrapper.attribute_cache:
                     return self.stream_wrapper.attribute_cache[name]
@@ -388,7 +388,7 @@ try:
                 return self.stream_wrapper.inverse_attribute_cache[name]
 
             raise AttributeError(
-                "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), name)
+                "entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name)
             )
 
         def __eq__(self, other: stream_entity) -> bool:

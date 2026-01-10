@@ -903,8 +903,8 @@ def usedin(inst, ref_name):
         return []
     _, __, attr = ref_name.split('.')
     def filter():
-        for ref, attr_idx in inst.wrapped_data.file.get_inverse(inst, allow_duplicate=True, with_attribute_indices=True):
-            if ref.wrapped_data.get_attribute_names()[attr_idx].lower() == attr:
+        for ref, attr_idx in inst.file.get_inverse(inst, allow_duplicate=True, with_attribute_indices=True):
+            if ref.get_attribute_names()[attr_idx].lower() == attr:
                 yield ref
     return list(filter())
 

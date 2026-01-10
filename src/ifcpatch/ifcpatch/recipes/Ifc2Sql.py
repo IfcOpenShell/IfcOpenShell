@@ -204,7 +204,7 @@ class Patcher(ifcpatch.BasePatcher):
                 d.name() for d in self.schema.declarations() if isinstance(d, ifcopenshell.ifcopenshell_wrapper.entity)
             ]
         else:
-            ifc_classes = self.file.wrapped_data.types()
+            ifc_classes = self.file.types()
 
         for ifc_class in ifc_classes:
             declaration = self.schema.declaration_by_name(ifc_class)

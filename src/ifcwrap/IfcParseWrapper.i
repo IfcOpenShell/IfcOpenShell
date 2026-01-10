@@ -78,6 +78,8 @@
 // _add() because mixin defined add which adds transaction logic
 %rename("_add") addEntity;
 %rename("remove") removeEntity;
+%rename("_traverse") traverse;
+%rename("_traverse_breadth_first") traverse_breadth_first;
 
 class attribute_value_derived {};
 %{
@@ -533,8 +535,12 @@ private:
 		}
 	}
 
-	const char* const get_argument_type(unsigned int i) const {
+	const char* const attribute_type(unsigned int i) const {
 		return IfcUtil::ArgumentTypeToString(helper_fn_attribute_type($self, i));
+	}
+
+	const char* const attribute_type(const std::string& name) const {
+		return IfcUtil::ArgumentTypeToString(helper_fn_attribute_type($self, express_Base_get_argument_index($self, name)));
 	}
 
 	const std::string& attribute_name(unsigned int i) const {

@@ -359,7 +359,7 @@ class sqlite_entity(entity_instance):
         # print("GETATTR", self.sqlite_wrapper.id, self.sqlite_wrapper.ifc_class, name)
 
         INVALID, FORWARD, INVERSE = range(3)
-        attr_cat = self.wrapped_data.get_attribute_category(name)
+        attr_cat = self.get_attribute_category(name)
         if attr_cat == FORWARD:
             if self.sqlite_wrapper.attribute_cache:
                 # print(self.sqlite_wrapper.ifc_class)
@@ -431,7 +431,7 @@ class sqlite_entity(entity_instance):
             return self.sqlite_wrapper.inverse_attribute_cache[name]
 
         raise AttributeError(
-            "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), name)
+            "entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name)
         )
 
     def unserialise_value(self, value):

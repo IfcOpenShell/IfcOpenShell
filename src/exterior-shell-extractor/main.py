@@ -457,7 +457,7 @@ class context:
 
         for f in self.fs:
             if kwargs.keys() == {'include'}:
-                kwargs2 = {'include': [e for e in kwargs['include'] if e.wrapped_data.file == f]}
+                kwargs2 = {'include': [e for e in kwargs['include'] if e.file == f]}
             else:
                 kwargs2 = kwargs
             it = ifcopenshell.geom.iterator(s, f, geometry_library="cgal", **kwargs2)

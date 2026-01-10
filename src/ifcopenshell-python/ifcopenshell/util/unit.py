@@ -475,7 +475,7 @@ def get_property_unit(
     measure_class = None
 
     if prop.is_a("IfcPhysicalSimpleQuantity"):
-        entity = prop.wrapped_data.declaration().as_entity()
+        entity = prop.declaration().as_entity()
         measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
     elif prop.is_a("IfcPropertySingleValue"):
         measure_class = prop.NominalValue.is_a()
@@ -875,7 +875,7 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
     si_unit = get_unit_name(target_units)
 
     # Copy all elements from the original file to the patched file
-    file_patched = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+    file_patched = ifcopenshell.file.from_string(ifc_file.to_string())
 
     old_length = get_project_unit(file_patched, "LENGTHUNIT")
     if si_unit:

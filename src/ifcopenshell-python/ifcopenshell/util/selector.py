@@ -386,7 +386,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 if key in ("x", "y", "z"):
                     value = xyz["xyz".index(key)]
                 else:
-                    enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.wrapped_data.file, *xyz)
+                    enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.file, *xyz)
                     value = enh[("easting", "northing", "elevation").index(key)]
             else:
                 value = None
@@ -569,7 +569,7 @@ def set_element_value(
                 element: ifcopenshell.entity_instance, value: Union[str, None], *, is_type: bool
             ) -> None:
                 predefined_type = element.PredefinedType
-                declaration = element.wrapped_data.declaration()
+                declaration = element.declaration()
                 entity = declaration.as_entity()
                 enum_attr = next(attr for attr in entity.attributes() if attr.name() == "PredefinedType")
                 enum_items = ifcopenshell.util.attribute.get_enum_items(enum_attr)
@@ -639,9 +639,9 @@ def set_element_value(
                     except:
                         # Try to cast
                         data_type = ifcopenshell.util.attribute.get_primitive_type(
-                            element.wrapped_data.declaration()
+                            element.declaration()
                             .as_entity()
-                            .attribute_by_index(element.wrapped_data.get_argument_index(key))
+                            .attribute_by_index(element.get_argument_index(key))
                         )
                         if data_type == "string":
                             value = str(value)

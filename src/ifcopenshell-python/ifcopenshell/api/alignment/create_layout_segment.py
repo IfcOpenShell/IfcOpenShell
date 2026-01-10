@@ -78,7 +78,7 @@ def create_layout_segment(
 
         settings = ifcopenshell.geom.settings()
 
-        segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment.wrapped_data)
+        segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment)
         segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
         e = segment_evaluator.evaluate(segment_fn.end())
         end = np.array(e)

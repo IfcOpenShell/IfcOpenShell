@@ -223,7 +223,7 @@ struct offset_fn_evaluator : public fn_evaluator {
 
 
 function_item_evaluator::function_item_evaluator(const ifcopenshell::geometry::Settings& settings,taxonomy::function_item::const_ptr fn) {
-    auto kind = fn->kind();
+    auto kind = fn ? fn->kind() : taxonomy::kinds::NODE;
     if (kind == taxonomy::FUNCTOR_ITEM) {
         fn_evaluator_ = new functor_fn_evaluator(std::dynamic_pointer_cast<const taxonomy::functor_item>(fn),settings);
     } else if (kind == taxonomy::PIECEWISE_FUNCTION) {
@@ -308,6 +308,9 @@ taxonomy::item::ptr function_item_evaluator::evaluate(const std::vector<double>&
 }
 
 Eigen::Matrix4d function_item_evaluator::evaluate(double u) const {
+    if (fn_evaluator_ == nullptr) {
+        throw std::runtime_error("Function item not initialized");
+    }
     Eigen::Matrix4d m = fn_evaluator_->evaluate(u);
     if (!fn_evaluator_->settings_.get<ifcopenshell::geometry::settings::ComputeCurvature>().get()) {
         m.row(3) = Eigen::Vector4d(0, 0, 0, 1);

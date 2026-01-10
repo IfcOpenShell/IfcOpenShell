@@ -77,7 +77,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
             # because this becomes of placement of the zero length segment
             last_segment = layout.Segments[-1]
             settings = ifcopenshell.geom.settings()
-            fn = wrapper.map_shape(settings, last_segment.wrapped_data)
+            fn = wrapper.map_shape(settings, last_segment)
             eval = wrapper.function_item_evaluator(settings, fn)
             e = np.array(eval.evaluate(fn.end()))
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
@@ -135,7 +135,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                 settings = ifcopenshell.geom.settings()
                 mapped_segments = _map_alignment_horizontal_segment(file, last_segment)
                 geometry_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
-                fn = wrapper.map_shape(settings, geometry_segment.wrapped_data)
+                fn = wrapper.map_shape(settings, geometry_segment)
                 eval = wrapper.function_item_evaluator(settings, fn)
                 e = np.array(eval.evaluate(fn.end()))
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
@@ -177,7 +177,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                 settings = ifcopenshell.geom.settings()
                 mapped_segments = _map_alignment_vertical_segment(file, last_segment)
                 geometry_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
-                fn = wrapper.map_shape(settings, geometry_segment.wrapped_data)
+                fn = wrapper.map_shape(settings, geometry_segment)
                 eval = wrapper.function_item_evaluator(settings, fn)
                 e = np.array(eval.evaluate(fn.end()))
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)

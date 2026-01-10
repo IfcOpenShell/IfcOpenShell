@@ -56,7 +56,7 @@ def get_curve_segment_transition_code(
     settings = ifcopenshell.geom.settings()
     settings.set("COMPUTE_CURVATURE", True)
 
-    segment_fn = ifcopenshell_wrapper.map_shape(settings, segment.wrapped_data)
+    segment_fn = ifcopenshell_wrapper.map_shape(settings, segment)
     segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
     e = segment_evaluator.evaluate(segment_fn.end())
     end = np.array(e)
@@ -64,7 +64,7 @@ def get_curve_segment_transition_code(
     # must add the new segment to the container before mapping it, otherwise the segment doesn't
     # have enough context to know if it is for horizontal, vertical, cant
 
-    next_segment_fn = ifcopenshell_wrapper.map_shape(settings, next_segment.wrapped_data)
+    next_segment_fn = ifcopenshell_wrapper.map_shape(settings, next_segment)
     next_segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, next_segment_fn)
     s = next_segment_evaluator.evaluate(next_segment_fn.start())
     start = np.array(s)

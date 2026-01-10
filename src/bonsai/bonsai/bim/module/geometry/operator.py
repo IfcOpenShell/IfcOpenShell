@@ -785,7 +785,7 @@ def lock_error_message(name: str) -> str:
 
 
 def calc_delete_is_batch(ifc_file: ifcopenshell.file, context: bpy.types.Context) -> bool:
-    total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
+    total_elements = len(tool.Ifc.get().entity_names())
     total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
     # These numbers are a bit arbitrary, but basically batching is only
     # really necessary on large models and large geometry removals.

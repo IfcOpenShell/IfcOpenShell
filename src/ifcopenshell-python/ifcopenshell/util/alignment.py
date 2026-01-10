@@ -24,7 +24,7 @@ import ifcopenshell.util.unit
 def add_linear_placement_fallback_position(file: ifcopenshell.file) -> ifcopenshell.file:
     import ifcopenshell.api.alignment
 
-    patched_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())
+    patched_file = ifcopenshell.file.from_string(file.to_string())
 
     linear_placements = patched_file.by_type("IfcLinearPlacement")
     for lp in linear_placements:
@@ -36,7 +36,7 @@ def add_linear_placement_fallback_position(file: ifcopenshell.file) -> ifcopensh
 def create_alignment_geometry(file: ifcopenshell.file) -> ifcopenshell.file:
     import ifcopenshell.api.alignment
 
-    patched_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())
+    patched_file = ifcopenshell.file.from_string(file.to_string())
 
     alignments = patched_file.by_type("IfcAlignment")
     for alignment in alignments:
@@ -49,7 +49,7 @@ def append_zero_length_segments(file: ifcopenshell.file) -> ifcopenshell.file:
     """Appends zero length segments to all alignment layouts and layout geometry, if missing."""
     import ifcopenshell.api.alignment
 
-    patched_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())
+    patched_file = ifcopenshell.file.from_string(file.to_string())
 
     alignments = patched_file.by_type("IfcAlignment")
     for alignment in alignments:

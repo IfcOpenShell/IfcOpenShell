@@ -506,7 +506,9 @@ class file_mixin:
 
     registry = {}
 
-    def post_init(self, iden):
+    def post_init(self, iden = None):
+        if iden is None:
+            iden = int(self.this)
         if state := self.registry.get(iden):
             self.state = state
         else:
@@ -746,9 +748,9 @@ class file_mixin:
             max_levels = -1
 
         if breadth_first:
-            fn = self.traverse_breadth_first
+            fn = self._traverse_breadth_first
         else:
-            fn = self.traverse
+            fn = self._traverse
 
         return fn(inst, max_levels)
 

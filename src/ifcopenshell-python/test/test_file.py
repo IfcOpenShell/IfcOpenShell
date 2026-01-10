@@ -277,7 +277,7 @@ class TestFile(test.bootstrap.IFC4):
 
     def test_creating_ifc_data_from_a_string(self):
         element = self.file.createIfcWall()
-        g = ifcopenshell.file.from_string(self.file.wrapped_data.to_string())
+        g = ifcopenshell.file.from_string(self.file.to_string())
         assert g.by_id(1).is_a("IfcWall")
 
     def test_assigning_header(self):

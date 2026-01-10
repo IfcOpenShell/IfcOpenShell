@@ -62,7 +62,7 @@ class FacetDocGenerator:
 
         result = "pass" if expected is True else "fail"
 
-        ifc = inst.wrapped_data.file
+        ifc = inst.file
         if "GlobalId" not in name:
             regenerate_guids(ifc)
 
@@ -81,7 +81,7 @@ class FacetDocGenerator:
                 raise Exception("About to emit invalid example data:", issue)
 
         # ifc_text = "\n".join([f"{e} /* Testcase */" if e == inst else str(e) for e in f])
-        lines = ifc.wrapped_data.to_string().split("\n")[7:-3]
+        lines = ifc.to_string().split("\n")[7:-3]
         ifc_text = "\n".join([f"{l} /* Testcase */" if f"#{inst.id()}=" in l else l for l in lines])
         basename = f"{result}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
 
@@ -152,7 +152,7 @@ class IdsDocGenerator:
         for issue in l.statements:
             raise Exception("About to emit invalid example data:", issue)
 
-        lines = ifc.wrapped_data.to_string().split("\n")[7:-3]
+        lines = ifc.to_string().split("\n")[7:-3]
         ifc_text = ""
         for i, line in enumerate(lines):
             step_id = int(line[1 : line.index("=")])

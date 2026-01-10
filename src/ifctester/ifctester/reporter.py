@@ -811,7 +811,7 @@ class Bcf(Json):
                     if getattr(element, "ObjectPlacement", None):
                         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
                         if unit_scale is None:
-                            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(element.wrapped_data.file)
+                            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(element.file)
                         location = [(o * unit_scale) + 5.0 for o in placement[:, 3][:3]]
                         viewpoint = topic.add_viewpoint_from_point_and_guids(np.array(location), element.GlobalId)
                     if element.is_a("IfcElement"):

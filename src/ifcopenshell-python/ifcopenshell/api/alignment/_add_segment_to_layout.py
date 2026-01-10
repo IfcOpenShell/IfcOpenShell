@@ -97,7 +97,7 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
 
         # compute the end point matrix
         settings = ifcopenshell.geom.settings()
-        segment_fn = ifcopenshell_wrapper.map_shape(settings, mapped_segment.wrapped_data)
+        segment_fn = ifcopenshell_wrapper.map_shape(settings, mapped_segment)
         segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
         e = segment_evaluator.evaluate(segment_fn.end())
         end = np.array(e)
@@ -144,7 +144,7 @@ def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, seg
         end_referent.ObjectPlacement.RelativePlacement.Location.DistanceAlong.wrappedValue = start_dist_along
         settings = ifcopenshell.geom.settings()
         basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
-        curve_fn = ifcopenshell_wrapper.map_shape(settings, basis_curve.wrapped_data)
+        curve_fn = ifcopenshell_wrapper.map_shape(settings, basis_curve)
         curve_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, curve_fn)
         p = curve_evaluator.evaluate(start_dist_along * unit_scale)
         p = np.array(p)

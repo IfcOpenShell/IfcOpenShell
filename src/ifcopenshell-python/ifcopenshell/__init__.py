@@ -256,7 +256,7 @@ def create_entity(type: str, schema: str = "IFC4", *args: Any, **kwargs: Any) ->
         model.add(person) # #1=IfcPerson($,$,$,$,$,$,$,$)
     """
     e = entity_instance((schema, type))
-    attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+    attrs = list(enumerate(args)) + [(e.get_argument_index(name), arg) for name, arg in kwargs.items()]
     for idx, arg in attrs:
         e[idx] = arg
     return e

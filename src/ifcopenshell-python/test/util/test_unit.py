@@ -242,7 +242,7 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
         ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
         output = subject.convert_file_length_units(self.file, target_units="METER")
         # there was some renumbering bug in the rocksdb rewrite this statement is to test for that
-        assert max(i.id() for i in output) == len(output.wrapped_data.entity_names()) + 1
+        assert max(i.id() for i in output) == len(output.entity_names()) + 1
         assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
 
     def test_attribute_conversion(self):

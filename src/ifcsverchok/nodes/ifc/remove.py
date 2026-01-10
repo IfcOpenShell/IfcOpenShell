@@ -57,7 +57,7 @@ class SvIfcRemove(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
     def process(self):
         file: ifcopenshell.file
         file = self.inputs["file"].sv_get()[0][0]
-        self.new_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())
+        self.new_file = ifcopenshell.file.from_string(file.to_string())
         self.remove_entity(self.inputs["entity"].sv_get())
         self.outputs["file"].sv_set([[self.new_file]])
 

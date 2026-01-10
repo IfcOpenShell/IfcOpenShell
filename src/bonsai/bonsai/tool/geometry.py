@@ -1800,7 +1800,7 @@ class Geometry(bonsai.core.tool.Geometry):
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         allowed_attributes = [
             a.name()
-            for a in item.wrapped_data.declaration().as_entity().all_attributes()
+            for a in item.declaration().as_entity().all_attributes()
             if a.type_of_attribute()._is("IfcLengthMeasure")
         ]
 

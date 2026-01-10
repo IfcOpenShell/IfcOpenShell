@@ -453,7 +453,7 @@ class Usecase:
             # 3 IfcPresentationLayerAssignment.AssignedItems
             skip_not_reused_entities_attr_i = 2
 
-        element_identity = element.wrapped_data.identity()
+        element_identity = element.identity()
 
         # Check if inverse element was created before.
         # Still need to recreate it again - e.g. it could be some rel
@@ -489,7 +489,7 @@ class Usecase:
                     if self.is_another_asset(item):
                         continue
                     if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
-                        identity = item.wrapped_data.identity()
+                        identity = item.identity()
                         if (item := self.reuse_identities.get(identity)) is None:
                             continue
                     else:
@@ -603,7 +603,7 @@ class Usecase:
             return ifc_file.add(element)
 
         reuse_identities = self.reuse_identities
-        element_identity = element.wrapped_data.identity()
+        element_identity = element.identity()
         if added_element := reuse_identities.get(element_identity):
             return added_element
 
@@ -614,7 +614,7 @@ class Usecase:
             nonlocal attributes_
             if attributes_ is not None:
                 return attributes_
-            attributes_ = element.wrapped_data.declaration().as_entity().all_attributes()
+            attributes_ = element.declaration().as_entity().all_attributes()
             return attributes_
 
         def get_existing_element_(
@@ -622,7 +622,7 @@ class Usecase:
         ) -> Union[ifcopenshell.entity_instance, None]:
             # Check identity because `subelement` might not be the current `element`,
             # e.g. for IfcPersonAndOrganization.
-            element_identity = subelement.wrapped_data.identity()
+            element_identity = subelement.identity()
             if subelement_ := reuse_identities.get(element_identity):
                 return subelement_
 

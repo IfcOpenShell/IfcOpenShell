@@ -93,9 +93,9 @@ def test_rocks():
         assert f[139].RelatingPropertyDefinition.is_a("IfcPropertySetDefinitionSet")
         assert {x.id() for x in f[139].RelatingPropertyDefinition[0]} == {136, 138}
 
-        b = f.wrapped_data.key_value_store_query("i|139|5")[2:]
+        b = f.key_value_store_query("i|139|5")[2:]
         iden = struct.unpack("Q", b)[0]
-        b = f.wrapped_data.key_value_store_query(f"t|{iden}|0")[1:]
+        b = f.key_value_store_query(f"t|{iden}|0")[1:]
         assert set(struct.unpack("Q", b[i : i + 8])[0] for i in range(1, len(b), 9)) == {136, 138}
 
         del f
