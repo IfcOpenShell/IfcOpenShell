@@ -191,6 +191,24 @@ struct hash<express::Entity> {
 
 } // namespace std
 
+namespace boost {
+
+template <>
+struct hash<express::Base> {
+    std::size_t operator()(const express::Base& c) const noexcept {
+        return std::hash<uint32_t>{}(c.identity());
+    }
+};
+
+template <>
+struct hash<express::Entity> {
+    std::size_t operator()(const express::Entity& c) const noexcept {
+        return std::hash<uint32_t>{}(c.identity());
+    }
+};
+
+} // namespace boost
+
 template <typename T, typename U>
 std::vector<T> cast_vector(const std::vector<U>& vs) {
     std::vector<T> result;

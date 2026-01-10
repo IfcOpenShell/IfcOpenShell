@@ -251,7 +251,7 @@ void HdfSerializer::read_surface_style(const surface_style_serialization& s,
 			gss.specularity = s.specularity;
 		}
 		if (s.id != 0) {
-			gss.instance = f.instance_by_id(s.id)->as<IfcUtil::IfcBaseEntity>();
+			gss.instance = f.instance_by_id(s.id).as<express::Entity>();
 		}
 	}
 
@@ -290,7 +290,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	auto representation_group = element_group.openGroup(representation_id_str);
 	std::string geom_id = read_scalar_attribute<std::string>(representation_group, "geom_id");
 
-	auto inst = f.instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
+	auto inst = f.instance_by_id(id).as<express::Entity>();
 
 	boost::shared_ptr<IfcGeom::Representation::BRep> brep_geometry;
 	boost::shared_ptr<IfcGeom::Representation::Triangulation> triangulation_geometry;
@@ -550,8 +550,8 @@ void HdfSerializer::write_style(surface_style_serialization& data, const ifcopen
 	data.name = s.name.c_str();
 	// @todo
 	data.original_name = s.name.c_str();
-	auto instance = s.instance->as<IfcUtil::IfcBaseClass>();
-	data.id = instance ? instance->id() : 0;
+    auto& instance = s.instance;
+	data.id = instance ? instance.id() : 0;
 	if (s.diffuse) {
 		data.diffuse[0] = s.diffuse.ccomponents()(0);
 		data.diffuse[1] = s.diffuse.ccomponents()(1);

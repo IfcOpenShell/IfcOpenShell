@@ -52,6 +52,8 @@ namespace {
 
 class format_value_visitor : public boost::static_visitor<std::string> {
   public:
+    format_value_visitor() = default;
+
     template <typename T>
     json operator()(const T& t) const {
         if constexpr (std::is_same_v<std::decay_t<T>, Derived> || std::is_same_v<std::decay_t<T>, boost::dynamic_bitset<>> || std::is_same_v<std::decay_t<T>, express::Base> || std::is_same_v<std::decay_t<T>, std::vector<int>> || std::is_same_v<std::decay_t<T>, std::vector<double>> || std::is_same_v<std::decay_t<T>, std::vector<std::string>> || std::is_same_v<std::decay_t<T>, std::vector<boost::dynamic_bitset<>>> || std::is_same_v<std::decay_t<T>, std::vector<express::Base>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<express::Base>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<int>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>> || std::is_same_v<std::decay_t<T>, empty_aggregate_t> || std::is_same_v<std::decay_t<T>, empty_aggregate_of_aggregate_t> || std::is_same_v<std::decay_t<T>, Blank>) {
@@ -71,6 +73,8 @@ class format_value_visitor : public boost::static_visitor<std::string> {
 
 class get_type_visitor : public boost::static_visitor<std::string> {
   public:
+    get_type_visitor() = default;
+
     template <typename T>
     std::string operator()(const T& t) const {
         // @todo more types

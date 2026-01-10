@@ -1556,7 +1556,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		auto IfcRelDefinesByProperties = f.schema()->declaration_by_name("IfcRelDefinesByProperties");
 
 		for (auto& eq : element_quantities) {
-            auto rels = eq.data()->file()->getInverse(eq.id(), IfcRelDefinesByProperties, -1);
+            auto rels = eq.file()->getInverse(eq.id(), IfcRelDefinesByProperties, -1);
 			for (auto& rel : rels) {
 				relationships.push_back(rel);
 			}

@@ -412,9 +412,9 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	deferreds.push_back(deferred);
 }
 
-std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEntity* slab)
+std::string ColladaSerializer::differentiateSlabTypes(const express::Entity& slab)
 {
-	auto value = slab->get("PredefinedType");
+	auto value = slab.get("PredefinedType");
 
     if (value.isNull()) {
         return "_Unknown";
@@ -434,7 +434,7 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 	} else if (str_value == "NOTDEFINED") {
 		result = "_NotDefined";
 	} else {
-		auto otype = slab->get("ObjectType");
+		auto otype = slab.get("ObjectType");
 		if (otype.isNull()) {
 			result = "_Unknown";
 		} else {
@@ -448,7 +448,7 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 std::string ColladaSerializer::object_id(const IfcGeom::Element* o) /*override*/
 {
     if (settings_.get<ifcopenshell::geometry::settings::UseElementTypes>().get()) {
-        const std::string slabSuffix = (o->product() && o->product()->declaration().name() == "IfcSlab")
+        const std::string slabSuffix = (o->product() && o->product().declaration().name() == "IfcSlab")
             ? differentiateSlabTypes(o->product())
             : "";
         return o->type() + slabSuffix;
