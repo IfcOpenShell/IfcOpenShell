@@ -232,7 +232,9 @@ class Transaction:
             else:
                 assert_never(operation["action"])
 
+
 import struct
+
 
 def consume_buffer(val, inner):
     while val:
@@ -506,22 +508,22 @@ class file_mixin:
 
     registry = {}
 
-    def post_init(self, iden = None):
+    def post_init(self, iden=None):
         if iden is None:
             iden = int(self.this)
         if state := self.registry.get(iden):
             self.state = state
         else:
-            self.state = self.registry[iden] = [[],[],None]
+            self.state = self.registry[iden] = [[], [], None]
 
     @property
     def history(self):
         return self.state[0]
-        
+
     @property
     def future(self):
         return self.state[1]
-    
+
     @property
     def transaction(self):
         return self.state[2]
@@ -529,7 +531,7 @@ class file_mixin:
     @transaction.setter
     def transaction(self, v):
         self.state[2] = v
-    
+
     def set_history_size(self, size: int) -> None:
         self.history_size = size
         while len(self.history) > self.history_size:
@@ -699,7 +701,6 @@ class file_mixin:
         else:
             raise TypeError("Indexing into file requires either an integral number or compressed guid string")
 
-
     def add(self, inst: ifcopenshell.entity_instance, _id: int = None) -> ifcopenshell.entity_instance:
         """Adds an entity including any dependent entities to an IFC file.
         If the entity already exists, it is not re-added. Existence of entity is checked by it's `.identity()`.
@@ -710,7 +711,7 @@ class file_mixin:
 
         if self.transaction:
             max_id = self.getMaxId()
-        
+
         result = self._add(inst, -1 if _id is None else _id)
 
         if self.transaction:

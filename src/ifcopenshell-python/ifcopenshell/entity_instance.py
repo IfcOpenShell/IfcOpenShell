@@ -197,9 +197,7 @@ class entity_instance_mixin:
         except IndexError as e:
             # get_argument_index returns 0xFFFFFFFF if attribute is not found
             if index == 0xFFFFFFFF:
-                raise AttributeError(
-                    "entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), key)
-                )
+                raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), key))
             raise e
 
     def __getitem__(self, key: int) -> Any:
@@ -210,18 +208,17 @@ class entity_instance_mixin:
     def __setitem__(self, idx: int, value: T) -> T:
         if self.file and self.file.transaction:
             self.file.transaction.store_edit(self, idx, value)
-        
+
         self.set_attribute_value_py(idx, value)
 
         return value
-
 
     def __eq__(self, other: entity_instance_mixin) -> bool:
         if not isinstance(self, type(other)):
             return False
         else:
             raise NotImplementedError
-        
+
     def is_entity(self) -> bool:
         """Tests whether the instance is an entity type as opposed to a simple data type.
 

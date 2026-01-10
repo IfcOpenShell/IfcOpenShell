@@ -387,9 +387,7 @@ try:
                 self.stream_wrapper.inverse_attribute_cache[name] = tuple(results)
                 return self.stream_wrapper.inverse_attribute_cache[name]
 
-            raise AttributeError(
-                "entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name)
-            )
+            raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
 
         def __eq__(self, other: stream_entity) -> bool:
             if not isinstance(self, type(other)):

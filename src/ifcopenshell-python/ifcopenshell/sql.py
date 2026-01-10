@@ -430,9 +430,7 @@ class sqlite_entity(entity_instance):
             self.sqlite_wrapper.inverse_attribute_cache[name] = tuple(results)
             return self.sqlite_wrapper.inverse_attribute_cache[name]
 
-        raise AttributeError(
-            "entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name)
-        )
+        raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
 
     def unserialise_value(self, value):
         if isinstance(value, (tuple, list)):

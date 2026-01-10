@@ -639,9 +639,7 @@ def set_element_value(
                     except:
                         # Try to cast
                         data_type = ifcopenshell.util.attribute.get_primitive_type(
-                            element.declaration()
-                            .as_entity()
-                            .attribute_by_index(element.get_argument_index(key))
+                            element.declaration().as_entity().attribute_by_index(element.get_argument_index(key))
                         )
                         if data_type == "string":
                             value = str(value)
