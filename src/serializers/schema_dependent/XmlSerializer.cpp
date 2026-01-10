@@ -222,18 +222,18 @@ auto get_related(T t, F f, G g) {
     std::vector<V> acc;
     for (auto& u : li) {
 		try {
-            auto vs = (u.as<U>().*g)();
+            auto vs = (u.template as<U>().*g)();
             if constexpr (std::is_base_of_v<express::Base, decltype(vs)>) {
-                if (auto vv = vs.as<V>()) {
+                if (auto vv = vs.template as<V>()) {
 					acc.push_back(vv);
                 }
             } else if constexpr (std::is_base_of_v<express::Select, decltype(vs)>) {
-                if (auto vv = vs.concrete().as<V>()) {
+                if (auto vv = vs.concrete().template as<V>()) {
                     acc.push_back(vv);
                 }                
             } else {
                 for (auto& v : vs) {
-                    if (auto vv = v.as<V>()) {
+                    if (auto vv = v.template as<V>()) {
 						acc.push_back(vv);
                     }
                 }
