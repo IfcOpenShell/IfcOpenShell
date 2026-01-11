@@ -34,7 +34,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Optional
 
 
 def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -93,51 +93,24 @@ def toggle_decorations(self: "BIMSystemProperties", context: bpy.types.Context) 
         decorator.SystemDecorator.uninstall()
 
 
-def is_port_available_for_connection(self: "BIMSystemProperties", obj: bpy.types.Object) -> bool:
-    element = tool.Ifc.get_entity(obj)
-    if not element or not element.is_a("IfcDistributionPort"):
-        return False
-    connected_port = tool.System.get_connected_port(element)
-    if connected_port is not None:
-        return False
+def get_available_ports_for_connection(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    items = []
+    active_object_ports = set(tool.System.get_ports(tool.Ifc.get_entity(context.active_object)))
     
-    if bpy.context.active_object:
-        active_element = tool.Ifc.get_entity(bpy.context.active_object)
-        if active_element:
-            active_ports = tool.System.get_ports(active_element)
-            if element in active_ports:
-                return False
+    ifc_file = tool.Ifc.get()
+    for ifc_port in ifc_file.by_type("IfcDistributionPort"):
+        port = tool.Ifc.get_object(ifc_port)
+        if not port:
+            continue
+        
+        if tool.System.get_connected_port(ifc_port) is not None or ifc_port in active_object_ports:
+            continue
+        
+        port_object = tool.Ifc.get_object(tool.System.get_port_relating_element(ifc_port))
+        suggestion = f"{port_object.name} > {port.name}"
+        items.append((port.name, suggestion, ""))
     
-    return True
-
-
-def update_related_port_object(self: "BIMSystemProperties", context: bpy.types.Context) -> None:
-    if self.related_port_object is None:
-        return
-    if not context.active_object:
-        return
-    
-    source_element = tool.Ifc.get_entity(context.active_object)
-    target_element = tool.Ifc.get_entity(self.related_port_object)
-    
-    if not source_element or not target_element:
-        return
-    
-    if not target_element.is_a("IfcDistributionPort"):
-        return
-    
-    source_port = None
-    for port in tool.System.get_ports(source_element):
-        if not tool.System.get_connected_port(port):
-            source_port = port
-            break
-    
-    if not source_port:
-        return
-    
-    core.connect_port(tool.Ifc, port1=source_port, port2=target_element)
-    PortData.is_loaded = False
-    self.related_port_object = None
+    return items if items else [("NONE", "Ports are hidden or not available", "")]
 
 
 class BIMSystemProperties(PropertyGroup):
@@ -155,12 +128,10 @@ class BIMSystemProperties(PropertyGroup):
     should_draw_decorations: BoolProperty(
         name="Should Draw Decorations", description="Toggle system decorations", update=toggle_decorations
     )
-    related_port_object: PointerProperty(
-        type=bpy.types.Object,
+    related_port: EnumProperty(
         name="Connect To Port",
-        description="Select a port to connect to. Use eyedropper to pick a port object",
-        poll=is_port_available_for_connection,
-        update=update_related_port_object,
+        description="Select a port to connect to",
+        items=get_available_ports_for_connection,
     )
 
     if TYPE_CHECKING:
@@ -174,7 +145,7 @@ class BIMSystemProperties(PropertyGroup):
         edited_system_id: int
         system_class: str
         should_draw_decorations: bool
-        related_port_object: Union[bpy.types.Object, None]
+        related_port: str
 
     @property
     def active_system_ui_item(self) -> Union[System, None]:

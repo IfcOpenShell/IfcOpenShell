@@ -265,37 +265,31 @@ class ConnectPort(bpy.types.Operator, tool.Ifc.Operator):
 class AddRelatedPortConnection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_related_port_connection"
     bl_label = "Connect Port"
-    bl_description = "Click to select a port to connect to"
     bl_options = {"REGISTER", "UNDO"}
-
-    element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
-
+    
+    relating_port_id: bpy.props.IntProperty()
+    
     def invoke(self, context, event):
-        if self.element_id == 0:
-            self.report({'ERROR'}, "No port specified")
-            return {'CANCELLED'}
-        context.window_manager.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
-            if context.active_object:
-                target_element = tool.Ifc.get_entity(context.active_object)
-                if target_element and target_element.is_a("IfcDistributionPort"):
-                    source_element = tool.Ifc.get().by_id(self.element_id)
-                    core.connect_port(tool.Ifc, port1=source_element, port2=target_element)
-                    self.report({'INFO'}, "Ports connected")
-                    return {'FINISHED'}
-                else:
-                    self.report({'WARNING'}, "Selected object is not a port")
-            return {'RUNNING_MODAL'}
-        elif event.type in {'RIGHTMOUSE', 'ESC'}:
-            self.report({'INFO'}, "Cancelled")
-            return {'CANCELLED'}
-        return {'RUNNING_MODAL'}
-
+        return context.window_manager.invoke_props_dialog(self)
+    
+    def draw(self, context):
+        props = tool.System.get_system_props()
+        self.layout.prop(props, "related_port", text="Select Port")
+    
     def _execute(self, context):
-        return {'CANCELLED'}
+        props = tool.System.get_system_props()
+        
+        if not props.related_port or props.related_port == "NONE":
+            return {"CANCELLED"}
+        
+        port_obj = bpy.data.objects.get(props.related_port)
+        related_port = tool.Ifc.get_entity(port_obj)
+        relating_port = tool.Ifc.get().by_id(self.relating_port_id)
+        
+        core.connect_port(tool.Ifc, port1=relating_port, port2=related_port)
+        PortData.is_loaded = False
+        
+        return {"FINISHED"}
 
 
 class DisconnectPort(bpy.types.Operator, tool.Ifc.Operator):
@@ -454,19 +448,19 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         current_direction = port.FlowDirection or "NOTDEFINED"
-        flow_cycle = ["SOURCE", "SINK", "SOURCEANDSINK", "NOTDEFINED"]
         
-        try:
-            current_index = flow_cycle.index(current_direction)
-            next_direction = flow_cycle[(current_index + 1) % len(flow_cycle)]
-        except ValueError:
-            next_direction = "SOURCE"
+        flow_cycle_map = {
+            "SOURCE": "SINK",
+            "SINK": "SOURCEANDSINK",
+            "SOURCEANDSINK": "NOTDEFINED",
+            "NOTDEFINED": "SOURCE"
+        }
+        next_direction = flow_cycle_map.get(current_direction, "SOURCE")
 
         tool.Ifc.run("attribute.edit_attributes", product=port, attributes={"FlowDirection": next_direction})
         
         connected_port = tool.System.get_connected_port(port)
         if connected_port:
-            # Map flow direction to connected port's complementary direction
             connected_direction_map = {
                 "SOURCE": "SINK",
                 "SINK": "SOURCE",

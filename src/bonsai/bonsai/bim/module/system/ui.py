@@ -181,9 +181,8 @@ class BIM_PT_ports(Panel):
                 op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
                 op.port_id = port_data["id"]
             else:
-                blank0 = cols[0].column(align=True)
-                blank0.scale_x = 0.1
-                blank0.label(text="", icon="BLANK1")
+                op = cols[0].operator("bim.add_related_port_connection", text="", icon='PLUGIN')
+                op.relating_port_id = port_data["id"]
                 op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
                 op.port_id = port_data["id"]
             
@@ -236,15 +235,14 @@ class BIM_PT_ports(Panel):
                 blank5.scale_x = 0.1
                 blank5.label(text="", icon="BLANK1")
                 
-                col6_row = cols[6].row(align=True)
-                col6_row.alignment = 'LEFT'
-                col6_row.prop(props, "related_port_object", text="", icon='OBJECT_DATA')
-                col6_row.scale_x = 0.35
+                cols[6].label(text="Port is disconnected")
                 
                 blank7 = cols[7].column(align=True)
                 blank7.scale_x = 0.1
                 blank7.label(text="", icon="BLANK1")
-                cols[8].label(text="Port is disconnected")
+                blank8 = cols[8].column(align=True)
+                blank8.scale_x = 0.1
+                blank8.label(text="", icon="BLANK1")
 
 
 class BIM_PT_port(Panel):

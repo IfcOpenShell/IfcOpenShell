@@ -117,14 +117,8 @@ class System(bonsai.core.tool.System):
         port.PredefinedType = "USERDEFINED"
         
         systems = ifcopenshell.util.system.get_element_systems(element)
-        if systems:
-            system = systems[0]
-            if hasattr(system, "PredefinedType") and system.PredefinedType:
-                port.SystemType = system.PredefinedType
-            else:
-                port.SystemType = "USERDEFINED"
-        else:
-            port.SystemType = "USERDEFINED"
+        system = systems[0] if systems else None
+        port.SystemType = getattr(system, "PredefinedType", None) or "USERDEFINED"
         
         matrix = element_obj.matrix_world.copy()
         matrix.translation = bpy.context.scene.cursor.matrix.translation
