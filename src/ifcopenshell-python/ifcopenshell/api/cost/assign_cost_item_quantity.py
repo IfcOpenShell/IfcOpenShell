@@ -23,6 +23,7 @@ from typing import Any
 
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
+import ifcopenshell.util.element
 
 
 def assign_cost_item_quantity(
@@ -142,15 +143,18 @@ class Usecase:
                         variables_modified[v] = self.get_value_from_pset(product, v, separator)
                     else:
                         variables_modified[v] = self.get_value_from_qset(product, v)
+                    if variables_modified[v] == 0:
+                        print(f"WARNING: {product.Name} hasn't the variable {v.replace(separator, '.')}")
 
                 formula_modified = self.settings["formula"].replace(".", separator)
                 if any(v is None for v in variables_modified.values()):
                     for k, v in variables_modified.items():
                         if v == None:
                             print(f"Property {k.replace(separator, '.')} not found")
-                    raise ValueError("Formula contains variables that are not found in properties. Please check the output")
-
-                result = eval(formula_modified, {}, variables_modified)
+                    print("Formula contains variables that are not found in Psets or Qsets. Please check the output")
+                    result = 0
+                else:
+                    result = eval(formula_modified, {}, variables_modified)
 
                 new_quantity = None
                 for quantity in self.quantities:
@@ -231,26 +235,19 @@ class Usecase:
             v: str,
             separator: str,
     ) -> float:
-        for relationship in product.IsDefinedBy:
-            if relationship.is_a("IfcRelDefinesByProperties"):
-                pset = relationship.RelatingPropertyDefinition
-                if pset.Name == v.split(separator)[0]:
-                    for prop in pset.HasProperties:
-                        if prop.Name.lower() == v.split(separator)[1].lower():
-                            return prop[2].wrappedValue
+        pset_name = v.split(separator)[0]
+        pset = ifcopenshell.util.element.get_pset(product, pset_name)
+        pset_property_name = v.split(separator)[1]
+        return (pset or {}).get(pset_property_name,0)
 
     def get_value_from_qset(
             self,
             product:ifcopenshell.entity_instance,
             v: str,
     ) -> float:
-        for relationship in product.IsDefinedBy:
-            if relationship.is_a("IfcRelDefinesByProperties"):
-                qto = relationship.RelatingPropertyDefinition
-                if qto.is_a("IfcElementQuantity"):
-                    for prop in qto.Quantities:
-                        if prop.is_a("IfcPhysicalSimpleQuantity") and prop.Name.lower() == v.lower():
-                            return prop[3]
+        qtos = ifcopenshell.util.element.get_psets(product, qtos_only = True)
+        quantities = next(iter(qtos.values()), {})
+        return (quantities or {}).get(v,0)
 
 class VariableExtractor(ast.NodeVisitor):
     def __init__(self):

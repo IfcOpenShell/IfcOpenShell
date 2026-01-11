@@ -412,16 +412,13 @@ class Csv2Ifc:
                 results = ifcopenshell.util.selector.filter_elements(self.file, cost_item["Query"])
                 results = [r for r in results]
                 ifc_quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["Unit"])
-                try:
-                    quantity = ifcopenshell.api.cost.assign_cost_item_quantity(
-                        self.file,
-                        cost_item=cost_item["ifc"],
-                        products=results,
-                        formula=cost_item["Formula"],
-                        ifc_class=ifc_quantity_class,
+                quantity = ifcopenshell.api.cost.assign_cost_item_quantity(
+                    self.file,
+                    cost_item=cost_item["ifc"],
+                    products=results,
+                    formula=cost_item["Formula"],
+                    ifc_class=ifc_quantity_class,
                     )
-                except:
-                    quantity=0
 
         self.create_cost_items(cost_item["children"], cost_item["ifc"])
 
