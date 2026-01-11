@@ -39,6 +39,7 @@ See example files as a CSV file format reference:
 - Ex5 - SoR_with_description.csv (a simple SoR with description column)
 - Ex6 - BoQ with categories.csv (a simple BoQ with categories columns)
 - Ex7 - BoQ with Rates.csv (a simple BoQ that connect to an existing SoR. It needs an already loaded SoR.)
+- Ex8 - Boq with formula.csv (a simple BoQ with formula field used to calculate quantities when specified)
 - `sample_cost_schedule_house_FR.csv` / `.ods`
 - `schedule.csv`, `rates.csv` (schedule of rates example)
 
