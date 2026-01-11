@@ -326,10 +326,9 @@ class BIM_PT_port(Panel):
         else:
             cols[4].label(text="", icon="BLANK1")
             cols[5].label(text="", icon="BLANK1")
-            cols[6].alignment = 'LEFT'
-            cols[6].prop(props, "related_port_object", text="")
+            cols[6].label(text="Port is disconnected")
             cols[7].label(text="", icon="BLANK1")
-            cols[8].label(text="Port is disconnected")
+            cols[8].label(text="")
 
 
 class BIM_PT_flow_controls(Panel):
