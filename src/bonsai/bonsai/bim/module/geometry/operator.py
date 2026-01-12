@@ -1208,7 +1208,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         # Expand selection to include all parts of selected aggregates
         objects_to_duplicate = set(context.selected_objects) - objects_to_remove
         expanded_objects = set(objects_to_duplicate)
-        
+
         for obj in objects_to_duplicate:
             element = tool.Ifc.get_entity(obj)
             if element and element.is_a("IfcElementAssembly"):
@@ -1217,33 +1217,33 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     part_obj = tool.Ifc.get_object(part)
                     if part_obj:
                         expanded_objects.add(part_obj)
-        
+
         # Store parent aggregate relationships
         parent_aggregates = {}
-        
+
         for obj in expanded_objects:
             element = tool.Ifc.get_entity(obj)
             if element and element.is_a("IfcElementAssembly"):
                 parent_aggregate = ifcopenshell.util.element.get_aggregate(element)
                 if parent_aggregate:
                     parent_aggregates[element] = parent_aggregate
-        
+
         old_to_new, new_active_obj = tool.Geometry.duplicate_ifc_objects(
             expanded_objects,
             linked=linked,
             active_object=context.active_object,
         )
-        
+
         # Restore parent aggregate relationships, but only for parents that were NOT duplicated
         for old_elem, new_elems in old_to_new.items():
             if old_elem in parent_aggregates:
                 old_parent = parent_aggregates[old_elem]
-                
+
                 # Check if the parent was also duplicated
                 if old_parent in old_to_new:
                     # The duplication already created the correct nested relationship
                     continue
-                
+
                 # Parent was NOT duplicated, so we need to assign to the original parent
                 for new_elem in new_elems:
                     new_obj = tool.Ifc.get_object(new_elem)
@@ -1256,7 +1256,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                             relating_obj=parent_obj,
                             related_obj=new_obj,
                         )
-        
+
         # Select all duplicated objects and their parts
         all_objects_to_select = set()
         for old_elem, new_elems in old_to_new.items():
@@ -1264,7 +1264,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 new_obj = tool.Ifc.get_object(new_elem)
                 if new_obj:
                     all_objects_to_select.add(new_obj)
-                    
+
                     # If it's an aggregate, also select all its parts
                     if new_elem.is_a("IfcElementAssembly"):
                         parts = tool.Aggregate.get_parts_recursively(new_elem)
@@ -1272,17 +1272,17 @@ class OverrideDuplicateMove(bpy.types.Operator):
                             part_obj = tool.Ifc.get_object(part)
                             if part_obj:
                                 all_objects_to_select.add(part_obj)
-        
+
         # Deselect everything first
-        bpy.ops.object.select_all(action='DESELECT')
-        
+        bpy.ops.object.select_all(action="DESELECT")
+
         # Select all the duplicated objects
         for obj in all_objects_to_select:
             obj.select_set(True)
-        
+
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
-        
+
         return old_to_new
 
 
@@ -1614,7 +1614,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 if r.is_a("IfcRelAssignsToGroup")
                 if self.group_name in r.RelatingGroup.Name
             ).id()
-            
+
             # Initialize if not exists
             if group not in original_data:
                 original_data[group] = {}
@@ -1666,20 +1666,22 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             # Get the new group
             new_group_entity = next(
-                (r.RelatingGroup
-                for r in getattr(aggregate, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-                if self.group_name in r.RelatingGroup.Name),
-                None
+                (
+                    r.RelatingGroup
+                    for r in getattr(aggregate, "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if self.group_name in r.RelatingGroup.Name
+                ),
+                None,
             )
-            
+
             if not new_group_entity:
                 return
 
             pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
             if not pset:
                 return
-                
+
             index = pset["Index"]
 
             # Find the matching old group by looking for the same aggregate name
@@ -1697,7 +1699,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     if index in group_data:
                         matching_group_id = group_id
                         break
-            
+
             if matching_group_id is None:
                 return
 
@@ -1709,7 +1711,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     ifc_file.by_id(pset["id"]),
                     properties={"Aggregate_Index": int(original_data[matching_group_id][index]["Aggregate_Index"])},
                 )
-                
+
                 # Only assign container if element is not already aggregated under another element
                 # Aggregated elements should not be in the spatial structure
                 if not ifcopenshell.util.element.get_aggregate(element):
@@ -1722,7 +1724,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     )
                     for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
                         tool.Collector.assign(tool.Ifc.get_object(part))
-                        
+
                 assignments = original_data[matching_group_id][index]["Assignment"]
                 if assignments:
                     assign_to_annotations(obj, assignments)
@@ -1837,7 +1839,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             base_pset = ifcopenshell.util.element.get_pset(base_instance, self.pset_name)
             base_obj = tool.Ifc.get_object(base_instance)
             base_obj.name = base_pset["Name"] + "_" + str(base_pset["Aggregate_Index"])
-            
+
             for element in instances_to_refresh:
                 if element.GlobalId == base_instance.GlobalId:
                     continue

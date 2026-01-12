@@ -529,26 +529,34 @@ class Project(bonsai.core.tool.Project):
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             raise Exception("No IFC file loaded")
-        
+
         doc = tool.Ifc.run("document.add_information", parent=None)
-        
+
         if ifc_file.schema == "IFC2X3":
-            tool.Ifc.run("document.edit_information", information=doc, attributes={
-                "DocumentId": "BLEND_METADATA",
-                "Name": "Blend Metadata",
-                "Scope": "BLEND_METADATA",
-                "Description": "References to blend metadata file for this IFC project",
-                "Location": metadata_filename
-            })
+            tool.Ifc.run(
+                "document.edit_information",
+                information=doc,
+                attributes={
+                    "DocumentId": "BLEND_METADATA",
+                    "Name": "Blend Metadata",
+                    "Scope": "BLEND_METADATA",
+                    "Description": "References to blend metadata file for this IFC project",
+                    "Location": metadata_filename,
+                },
+            )
         else:
-            tool.Ifc.run("document.edit_information", information=doc, attributes={
-                "Identification": "BLEND_METADATA",
-                "Name": "Blend Metadata",
-                "Scope": "BLEND_METADATA",
-                "Description": "References to blend metadata file for this IFC project",
-                "Location": metadata_filename
-            })
-        
+            tool.Ifc.run(
+                "document.edit_information",
+                information=doc,
+                attributes={
+                    "Identification": "BLEND_METADATA",
+                    "Name": "Blend Metadata",
+                    "Scope": "BLEND_METADATA",
+                    "Description": "References to blend metadata file for this IFC project",
+                    "Location": metadata_filename,
+                },
+            )
+
         return doc
 
     @classmethod
@@ -556,14 +564,12 @@ class Project(bonsai.core.tool.Project):
         doc = cls.get_metadata_document_information()
         if not doc:
             return
-        
+
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             return
-        
-        tool.Ifc.run("document.edit_information", information=doc, attributes={
-            "Location": metadata_filename
-        })
+
+        tool.Ifc.run("document.edit_information", information=doc, attributes={"Location": metadata_filename})
 
     @classmethod
     def remove_metadata_document_information(cls) -> None:

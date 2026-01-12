@@ -433,26 +433,26 @@ class ObjectMaterialData:
         """Load BBIM_MaterialLayer pset data for display in UI."""
         if not cls.element:
             return None
-        
+
         pset_data = ifcopenshell.util.element.get_pset(cls.element, "BBIM_MaterialLayer")
         if not pset_data or not pset_data.get("UseCustomOffset", False):
             return None
-        
+
         # Keep offset in SI units - format_distance will handle conversion
         custom_offset_si = pset_data.get("CustomOffset", 0.0)
-        
+
         # Get the appropriate reference based on usage type
         usage_type = tool.Model.get_usage_type(cls.element)
         custom_reference = None
         reference_label = None
-        
+
         if usage_type == "LAYER2":
             custom_reference = pset_data.get("CustomWallReference", "")
             reference_label = "Wall Reference"
         elif usage_type == "LAYER3":
             custom_reference = pset_data.get("CustomSlabReference", "")
             reference_label = "Slab Reference"
-        
+
         return {
             "use_custom_offset": pset_data.get("UseCustomOffset", False),
             "custom_offset": custom_offset_si,  # Store in SI units

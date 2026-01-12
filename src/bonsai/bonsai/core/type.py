@@ -33,17 +33,16 @@ def assign_type(
     element: ifcopenshell.entity_instance,
     type: ifcopenshell.entity_instance,
 ) -> None:
-    
-    
+
     # Get the instance's current CardinalPoint before type assignment
     instance_cardinal_point = None
     instance_material = ifcopenshell.util.element.get_material(element)
     if instance_material and instance_material.is_a("IfcMaterialProfileSetUsage"):
         instance_cardinal_point = instance_material.CardinalPoint
-    
+
     ifc.run("type.assign_type", related_objects=[element], relating_type=type)
     obj = ifc.get_object(element)
-    
+
     if type_tool.has_material_usage(element):
         # Restore the instance's CardinalPoint to the new material usage
         if instance_cardinal_point is not None:
@@ -51,16 +50,17 @@ def assign_type(
             if new_instance_material and new_instance_material.is_a("IfcMaterialProfileSetUsage"):
                 if new_instance_material.CardinalPoint != instance_cardinal_point:
                     new_instance_material.CardinalPoint = instance_cardinal_point
-                    
+
                     # Force representation regeneration
                     from bonsai.bim.module.model.profile import DumbProfileRecalculator
+
                     DumbProfileRecalculator().recalculate([obj])
         # for now, representation regeneration handled by API listeners
     else:
         type_data = type_tool.get_object_data(ifc.get_object(type))
         if type_data:
             type_tool.change_object_data(obj, type_data, is_global=False)
-    
+
     type_tool.disable_editing(obj)
 
 
