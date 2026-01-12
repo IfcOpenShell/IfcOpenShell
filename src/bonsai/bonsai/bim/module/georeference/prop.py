@@ -215,7 +215,7 @@ class BIMGeoreferenceProperties(PropertyGroup):
         description="Affects the georeference decorator size",
         default=1,
         soft_min=0.1,
-        soft_max=50,
+        soft_max=100,
     )
     grid_north_angle: StringProperty(name="Grid North Angle", update=update_grid_north_angle)
     x_axis_abscissa: StringProperty(name="X Axis Abscissa", update=update_grid_north_vector)
