@@ -1185,8 +1185,7 @@ class BIM_PT_tab_project_info(Panel):
         return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
-        layout = self.layout
-        layout.label(text="This is the Project Info panel.")
+        pass
 
 
 class BIM_PT_tab_spatial(Panel):
