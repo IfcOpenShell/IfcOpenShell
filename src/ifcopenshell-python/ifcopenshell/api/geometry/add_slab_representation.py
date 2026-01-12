@@ -107,23 +107,20 @@ class Usecase:
                     for p in self.polyline
                 ]
             else:
-                points = [
-                    (self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1]))
-                    for p in self.polyline
-                ]
-        
+                points = [(self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1])) for p in self.polyline]
+
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
             curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points))
-        
+
         if self.x_angle:
             direction_ratios = (0.0, sin(self.x_angle), cos(self.x_angle))
         else:
             direction_ratios = (0.0, 0.0, 1.0)
 
         extrusion_direction = self.file.createIfcDirection(direction_ratios)
-        
+
         # Calculate depth based on extrusion angle
         extrusion_angle = abs(self.x_angle) if self.x_angle else 0
         if extrusion_angle > 1e-6:
@@ -132,7 +129,7 @@ class Usecase:
         else:
             perpendicular_depth = self.convert_si_to_unit(self.depth)
             perpendicular_offset = self.convert_si_to_unit(self.offset)
-            
+
         position = None
         if self.file.schema == "IFC2X3" or self.offset != 0:
             position_vector = (

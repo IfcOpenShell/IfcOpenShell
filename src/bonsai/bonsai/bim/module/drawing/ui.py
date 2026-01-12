@@ -476,7 +476,6 @@ class BIM_PT_sheets(Panel):
 
             op = row3.operator("bim.activate_drawing_from_sheet", icon="OUTLINER_OB_CAMERA", text="")
 
-
             if active_sheet.reference_type == "DRAWING":
                 drawingnamesvg = active_sheet.name
                 drawingname = drawingnamesvg.split(".svg")[0]
@@ -680,13 +679,13 @@ class BIM_PT_text(Panel):
             if len(literal_props.attributes) > 0 and i < len(props.literal_apply_settings):
                 row = box.row(align=True)
                 bonsai.bim.helper.draw_attribute(literal_props.attributes[0], row, enable_search=True)
-                
+
                 expand_icon = "DOWNARROW_HLT" if getattr(literal_props, "show_element_values", False) else "RIGHTARROW"
                 op = row.operator("bim.toggle_element_values_panel", icon=expand_icon, text="")
                 op.literal_prop_id = i
-                
+
                 row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
-                
+
                 element = tool.Ifc.get_entity(obj)
                 assigned_element = tool.Drawing.get_assigned_product(element) or element
                 resolved_value = tool.Drawing.replace_text_literal_variables(
@@ -711,8 +710,10 @@ class BIM_PT_text(Panel):
                 element_values_row.prop(literal_props, "product_used", text="", icon="EYEDROPPER")
 
                 current_product = get_current_product_for_element_values(obj, literal_props)
-                
-                product_name = current_product.name if (current_product and hasattr(current_product, "name")) else "Unknown"
+
+                product_name = (
+                    current_product.name if (current_product and hasattr(current_product, "name")) else "Unknown"
+                )
                 source_row = values_box.row()
                 source_row.label(text=f"Source: {product_name}", icon="OBJECT_DATA")
 
@@ -720,29 +721,29 @@ class BIM_PT_text(Panel):
                 if element:
                     add_row = values_box.row(align=True)
                     add_row.prop(literal_props, "category_for_adding", text="")
-                    
+
                     op = add_row.operator("bim.add_element_value_row", text="Add Element", icon="ADD")
                     op.literal_prop_id = i
 
                     if len(literal_props.element_value_rows) > 0:
                         for row_idx, value_row in enumerate(literal_props.element_value_rows):
                             row = values_box.row(align=True)
-                            
+
                             is_custom_string = value_row.category == "Custom String"
-                            
+
                             if is_custom_string:
                                 category_icon = get_category_icon(value_row.category)
                                 row.prop(value_row, "element_key", text="", icon=category_icon)
                             else:
                                 split = row.split(factor=0.25, align=True)
-                                
+
                                 sep_col = split.row(align=True)
                                 sep_col.prop(value_row, "separator", text="")
-                                
+
                                 key_col = split.row(align=True)
                                 category_icon = get_category_icon(value_row.category)
                                 key_col.prop(value_row, "element_key", text="", icon=category_icon)
-                                
+
                                 op = row.operator("bim.element_value_suggestions_popup", text="", icon="VIEWZOOM")
                                 op.literal_prop_id = i
                                 op.row_index = row_idx
@@ -758,7 +759,9 @@ class BIM_PT_text(Panel):
 
                         apply_row = values_box.row()
                         apply_row.scale_y = 1.2
-                        op = apply_row.operator("bim.apply_element_value_rows_to_literal", text="Apply to Literal", icon="CHECKMARK")
+                        op = apply_row.operator(
+                            "bim.apply_element_value_rows_to_literal", text="Apply to Literal", icon="CHECKMARK"
+                        )
                         op.literal_prop_id = i
                 else:
                     error_row = values_box.row()

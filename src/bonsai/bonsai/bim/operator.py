@@ -364,8 +364,6 @@ bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
         return {"FINISHED"}
 
 
-
-
 # TODO: Unused operator.
 # Is there a need for this or 'DIR_PATH' propety subtype does almost the same,
 # but also has alt+click?

@@ -170,7 +170,7 @@ class FilledOpeningGenerator:
                 reuse_mapped_representation = True
             else:
                 representation = ifcopenshell.util.representation.resolve_representation(representation)
-        
+
         if not reuse_mapped_representation:
             # Check for library template before generating from filling
             template_rep = self.get_opening_template_from_type(filling)
@@ -191,25 +191,25 @@ class FilledOpeningGenerator:
                 MappingSource=existing_mapping_source,
                 MappingTarget=tool.Ifc.get().create_entity(
                     "IfcCartesianTransformationOperator3D",
-                    Axis1=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(1., 0., 0.)),
-                    Axis2=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0., 1., 0.)),
-                    LocalOrigin=tool.Ifc.get().create_entity("IfcCartesianPoint", Coordinates=(0., 0., 0.)),
-                    Scale=1.,
-                    Axis3=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0., 0., 1.))
-                )
+                    Axis1=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0)),
+                    Axis2=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 1.0, 0.0)),
+                    LocalOrigin=tool.Ifc.get().create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+                    Scale=1.0,
+                    Axis3=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0)),
+                ),
             )
             mapped_representation = tool.Ifc.get().create_entity(
                 "IfcShapeRepresentation",
                 ContextOfItems=context,
                 RepresentationIdentifier="Body",
                 RepresentationType="MappedRepresentation",
-                Items=[new_mapped_item]
+                Items=[new_mapped_item],
             )
         else:
             mapped_representation = ifcopenshell.api.geometry.map_representation(
                 tool.Ifc.get(), representation=representation
             )
-        
+
         ifcopenshell.api.geometry.assign_representation(
             tool.Ifc.get(), product=opening, representation=mapped_representation
         )
@@ -333,25 +333,25 @@ class FilledOpeningGenerator:
                 MappingSource=existing_mapping_source,
                 MappingTarget=tool.Ifc.get().create_entity(
                     "IfcCartesianTransformationOperator3D",
-                    Axis1=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(1., 0., 0.)),
-                    Axis2=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0., 1., 0.)),
-                    LocalOrigin=tool.Ifc.get().create_entity("IfcCartesianPoint", Coordinates=(0., 0., 0.)),
-                    Scale=1.,
-                    Axis3=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0., 0., 1.))
-                )
+                    Axis1=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0)),
+                    Axis2=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 1.0, 0.0)),
+                    LocalOrigin=tool.Ifc.get().create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+                    Scale=1.0,
+                    Axis3=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0)),
+                ),
             )
             mapped_representation = tool.Ifc.get().create_entity(
                 "IfcShapeRepresentation",
                 ContextOfItems=context,
                 RepresentationIdentifier="Body",
                 RepresentationType="MappedRepresentation",
-                Items=[new_mapped_item]
+                Items=[new_mapped_item],
             )
         else:
             mapped_representation = ifcopenshell.api.geometry.map_representation(
                 tool.Ifc.get(), representation=representation_to_use
             )
-        
+
         ifcopenshell.api.geometry.assign_representation(
             tool.Ifc.get(), product=opening, representation=mapped_representation
         )

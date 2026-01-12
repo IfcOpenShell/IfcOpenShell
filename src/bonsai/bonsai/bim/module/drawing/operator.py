@@ -353,20 +353,20 @@ class CreateDrawing(bpy.types.Operator):
 
                         # Clear any local camera setup and force viewport to use scene camera
                         for area in context.screen.areas:
-                            if area.type == 'VIEW_3D':
+                            if area.type == "VIEW_3D":
                                 for space in area.spaces:
-                                    if space.type == 'VIEW_3D':
+                                    if space.type == "VIEW_3D":
                                         # Clear local camera to ensure we use scene.camera
                                         space.use_local_camera = False
                                         space.camera = context.scene.camera
-                                        space.region_3d.view_perspective = 'CAMERA'
+                                        space.region_3d.view_perspective = "CAMERA"
                                         print(f"Set viewport camera to: {context.scene.camera.name}")
                                         break
-                        
+
                         # Force complete scene update
                         context.view_layer.update()
                         context.evaluated_depsgraph_get()
-                        
+
                         underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
@@ -3078,9 +3078,9 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".svg"
-    
+
     files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
-    directory: bpy.props.StringProperty(subtype='DIR_PATH')
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
 
     def _execute(self, context):
         # Handle both single and multiple file selection
@@ -3355,14 +3355,14 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
                 for i, literal_backup in enumerate(literals_backup):
                     if i < len(props.literals):
                         literal_props = props.literals[i]
-                        
+
                         if assigned_product_obj:
                             literal_props.product_used = assigned_product_obj
                         elif "product_used" in literal_backup and literal_backup["product_used"]:
                             product_name = literal_backup["product_used"]
                             if product_name in bpy.data.objects:
                                 literal_props.product_used = bpy.data.objects[product_name]
-                        
+
                         literal_props.element_value_rows.clear()
                         if "element_value_rows" in literal_backup:
                             for row_data in literal_backup["element_value_rows"]:
@@ -4251,63 +4251,62 @@ class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Activate Drawing"
     bl_description = "Activate the drawing corresponding to the selected annotation"
     bl_options = {"REGISTER", "UNDO"}
-    
+
     @classmethod
     def poll(cls, context):
         # Check if an annotation object is selected
         if not context.selected_objects:
             cls.poll_message_set("No object selected")
             return False
-        
+
         active_obj = context.active_object
         if not active_obj:
             cls.poll_message_set("No active object")
             return False
-            
+
         element = tool.Ifc.get_entity(active_obj)
         if not element:
             cls.poll_message_set("Selected object is not an IFC element")
             return False
-            
+
         # Check if it's an IfcAnnotation with ObjectType = "SECTION" or "ELEVATION"
         if not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
             cls.poll_message_set("Selected object is not a drawing annotation")
             return False
-            
+
         return True
 
     def _execute(self, context):
         active_obj = context.active_object
         element = tool.Ifc.get_entity(active_obj)
-        
+
         if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
             self.report({"ERROR"}, "Selected object is not a drawing annotation")
             return {"CANCELLED"}
-        
+
         # Find the drawing/camera element that this annotation references
         drawing_element = self.find_drawing_from_annotation(element)
-        
+
         if not drawing_element:
             self.report({"ERROR"}, "Could not find drawing element for this annotation")
             return {"CANCELLED"}
-        
+
         # Use the existing ActivateDrawing operator with the drawing element's ID
         bpy.ops.bim.activate_drawing(drawing=drawing_element.id())
-        
+
         return {"FINISHED"}
-    
+
     def find_drawing_from_annotation(self, annotation_element):
         """Find the drawing/camera element that this annotation references."""
         ifc = tool.Ifc.get()
-        
+
         # Check IfcRelAssignsToProduct relationships
         for rel in ifc.get_inverse(annotation_element):
             if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct:
                 if rel.RelatingProduct.is_a("IfcAnnotation"):
                     # Found the drawing element!
                     return rel.RelatingProduct
-    
-        
+
         return None
 
 
@@ -5062,7 +5061,7 @@ class AddElementValueRow(bpy.types.Operator):
         new_row.category = literal_props.category_for_adding
         new_row.element_key = ""
         new_row.formatted_value = ""
-        
+
         if len(literal_props.element_value_rows) == 1:
             new_row.separator = ""
         else:
@@ -5106,10 +5105,10 @@ class ElementValueSuggestionsPopup(bpy.types.Operator):
     row_index: bpy.props.IntProperty()
     category: bpy.props.StringProperty()
     search_query: bpy.props.StringProperty(name="Search", description="Search for element values")
-    
+
     collection_keys: bpy.props.CollectionProperty(type=StrProperty)
     collection_descriptions: bpy.props.CollectionProperty(type=StrProperty)
-    
+
     selected_key: bpy.props.StringProperty()
 
     def invoke(self, context, event):
@@ -5157,13 +5156,13 @@ class ElementValueSuggestionsPopup(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        
+
         layout.prop_search(self, "selected_key", self, "collection_descriptions", text="Value")
 
     def execute(self, context):
         if not self.selected_key:
             return {"CANCELLED"}
-            
+
         obj = context.active_object
         if not obj:
             return {"CANCELLED"}
@@ -5177,7 +5176,7 @@ class ElementValueSuggestionsPopup(bpy.types.Operator):
             return {"CANCELLED"}
 
         value_row = literal_props.element_value_rows[self.row_index]
-        
+
         for idx, desc_item in enumerate(self.collection_descriptions):
             if desc_item.name == self.selected_key:
                 actual_key = self.collection_keys[idx].name
@@ -5260,10 +5259,7 @@ class FormatElementValueRow(bpy.types.Operator):
 
     custom_expression: bpy.props.StringProperty(
         name="Custom Expression",
-        description=(
-            "Custom expression using functions\n"
-            "Use {{value}} as placeholder for the current row's value."
-        ),
+        description=("Custom expression using functions\n" "Use {{value}} as placeholder for the current row's value."),
         default='concat({{value}}, " - additional text")',
     )
 
@@ -5288,51 +5284,51 @@ class FormatElementValueRow(bpy.types.Operator):
     def _load_formatting_from_row(self, row):
         """Parse the formatted_value to load existing formatting settings"""
         import re
-        
+
         formatted_value = row.formatted_value
-        
+
         if not formatted_value or formatted_value == f"{{{{{row.element_key}}}}}":
             self.formatting_type = "NONE"
             return
-        
+
         if formatted_value.startswith("``") and formatted_value.endswith("``"):
             expression = formatted_value[2:-2].strip()
         else:
             self.formatting_type = "NONE"
             return
-        
+
         if match := re.match(r"upper\(\{\{[^}]+\}\}\)", expression):
             self.formatting_type = "UPPER"
-        
+
         elif match := re.match(r"lower\(\{\{[^}]+\}\}\)", expression):
             self.formatting_type = "LOWER"
-        
+
         elif match := re.match(r"title\(\{\{[^}]+\}\}\)", expression):
             self.formatting_type = "TITLE"
-        
+
         elif match := re.match(r"int\(\{\{[^}]+\}\}\)", expression):
             self.formatting_type = "INT"
-        
+
         elif match := re.match(r"round\(\{\{[^}]+\}\},\s*([^)]+)\)", expression):
             self.formatting_type = "ROUND"
             self.round_precision = match.group(1).strip()
-        
+
         elif match := re.match(r"number\(\{\{[^}]+\}\},\s*([^,]+),\s*([^)]+)\)", expression):
             self.formatting_type = "NUMBER"
             self.decimal_separator = match.group(1).strip()
             self.thousands_separator = match.group(2).strip()
-        
+
         elif match := re.match(r"metric_length\(\{\{[^}]+\}\},\s*([^,]+),\s*([^)]+)\)", expression):
             self.formatting_type = "METRIC_LENGTH"
             self.metric_precision = match.group(1).strip()
             self.metric_decimals = int(match.group(2).strip())
-        
+
         elif match := re.match(r'imperial_length\(\{\{[^}]+\}\},\s*(\d+),\s*"([^"]+)",\s*"([^"]+)"\)', expression):
             self.formatting_type = "IMPERIAL_LENGTH"
             self.imperial_precision = int(match.group(1).strip())
             self.imperial_input_unit = match.group(2).strip()
             self.imperial_output_unit = match.group(3).strip()
-        
+
         else:
             self.formatting_type = "CUSTOM"
             self.custom_expression = expression
@@ -5450,9 +5446,9 @@ class ApplyElementValueRowsToLiteral(bpy.types.Operator):
                         default_format = f"{{{{{row.element_key}}}}}"
                         row.formatted_value = default_format
                         value_part = default_format
-                    
+
                     parts.append(row.separator + value_part)
-        
+
         concatenated_value = "".join(parts)
 
         for attr in literal_props.attributes:
@@ -5469,12 +5465,12 @@ class ApplyElementValueRowsToLiteral(bpy.types.Operator):
         This preserves formatting functions like upper(), round(), etc.
         """
         import re
-        
-        pattern = r'\{\{[^}]+\}\}'
-        
+
+        pattern = r"\{\{[^}]+\}\}"
+
         new_base_value = f"{{{{{new_element_key}}}}}"
         updated_value = re.sub(pattern, new_base_value, old_formatted_value)
-        
+
         return updated_value
 
 

@@ -399,7 +399,7 @@ class EditItemUI:
         assert obj
 
         mesh_props = tool.Geometry.get_mesh_props(obj.data)
-        
+
         # Get the parent element from representation_obj to check for layer set usage
         has_layer_set_usage = False
         props = tool.Geometry.get_geometry_props()
@@ -408,7 +408,7 @@ class EditItemUI:
             if parent_element:
                 material_usage = tool.Model.get_usage_type(parent_element)
                 has_layer_set_usage = material_usage == "LAYER3"
-        
+
         if AuthoringData.data["is_representation_item_swept_solid"]:
             # TODO: support EndSweptArea for IfcRevolvedAreaSolidTapered,
             # will need to add second attribute for this.
@@ -427,7 +427,7 @@ class EditItemUI:
                 continue
             row = cls.layout.row()
             draw_attribute(item_attribute, cls.layout)
-            
+
         if len(mesh_props.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")

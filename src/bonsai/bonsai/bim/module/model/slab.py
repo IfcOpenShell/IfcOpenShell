@@ -297,13 +297,13 @@ class DumbSlabPlaner:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
                 direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
-                
+
                 # Calculate the actual extrusion angle from vertical
                 extrusion_angle = 0
                 if direction_ratios.length > 0:
                     cos_angle = direction_ratios.normalized().dot(Vector((0, 0, 1)))
                     extrusion_angle = acos(min(max(cos_angle, -1), 1))
-                
+
                 # FIX: Only apply 1/cos factor when there's actual extrusion slope
                 if extrusion_angle > 1e-6:
                     perpendicular_depth = thickness * abs(1 / cos(extrusion_angle))
@@ -311,13 +311,13 @@ class DumbSlabPlaner:
                 else:
                     perpendicular_depth = thickness
                     perpendicular_offset = layer_offset / self.unit_scale
-                
+
                 # Check if direction sense needs to be applied
                 # This should only happen if explicitly requested, not automatically
                 if layer_params.get("apply_direction_sense", False):
                     # Store current direction before potential change
                     old_direction = direction_ratios.copy()
-                    
+
                     # Apply direction sense logic
                     existing_x_angle = extrusion_angle
                     if (abs(existing_x_angle) < (pi / 2) and direction_ratios.z > 0) or (
@@ -331,26 +331,26 @@ class DumbSlabPlaner:
                         offset_direction = direction_ratios.copy() * -1
                         if layer_params["direction_sense"] == "POSITIVE":
                             direction_ratios *= -1
-                    
+
                     # If direction changed, update extrusion with rotation compensation
                     if (direction_ratios.normalized() - old_direction.normalized()).length > 1e-6:
                         update_extrusion_direction(element, tuple(direction_ratios), obj)
                         # After updating direction, get the updated extrusion
                         extrusion = tool.Model.get_extrusion(representation)
-                
+
                 # Update depth
                 extrusion.Depth = perpendicular_depth
-                
+
                 # Update position
                 ifc_position = extrusion.Position
                 if direction_ratios.length > 0:
                     offset_vector = direction_ratios.normalized() * perpendicular_offset
                     position = offset_vector
-                    
+
                     material = ifcopenshell.util.element.get_material(element)
                     if material and material.is_a("IfcMaterialLayerSetUsage"):
                         material.OffsetFromReferenceLine = position.z
-                    
+
                     if ifc_position:
                         ifc_position.Location.Coordinates = position
                     else:
@@ -397,13 +397,12 @@ class DumbSlabPlaner:
             representation=representation,
         )
 
-
-    def update_extrusion_direction(element: ifcopenshell.entity_instance, 
-                               new_direction_ratios: tuple,
-                               obj: bpy.types.Object = None) -> None:
+    def update_extrusion_direction(
+        element: ifcopenshell.entity_instance, new_direction_ratios: tuple, obj: bpy.types.Object = None
+    ) -> None:
         """
         Update extrusion direction while preserving overall object orientation.
-        
+
         Args:
             element: The IFC element
             new_direction_ratios: New extrusion direction ratios (x,y,z)
@@ -413,66 +412,66 @@ class DumbSlabPlaner:
             obj = tool.Ifc.get_object(element)
             if not obj:
                 return
-        
+
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not representation:
             return
-        
+
         extrusion = tool.Model.get_extrusion(representation)
         if not extrusion:
             return
-        
+
         # Get current extrusion direction
         old_direction = Vector(extrusion.ExtrudedDirection.DirectionRatios)
         if old_direction.length == 0:
             old_direction = Vector((0, 0, 1))  # Default
-        
+
         new_direction = Vector(new_direction_ratios)
         if new_direction.length == 0:
             new_direction = Vector((0, 0, 1))  # Default
-        
+
         # Normalize both directions
         old_direction_normalized = old_direction.normalized()
         new_direction_normalized = new_direction.normalized()
-        
+
         # Store current object matrix
         old_matrix = obj.matrix_world.copy()
-        
+
         # Calculate the rotation needed to keep same orientation
         # When extrusion direction changes from A to B relative to local coordinates,
         # we need to rotate the object by the inverse of that change
-        
+
         # Calculate rotation from old to new direction
         rotation_axis = old_direction_normalized.cross(new_direction_normalized)
         if rotation_axis.length > 1e-6:
             rotation_axis.normalized()
             dot_product = old_direction_normalized.dot(new_direction_normalized)
             angle = acos(min(max(dot_product, -1), 1))
-            
+
             # Apply INVERSE rotation to object to compensate
             rotation_matrix = Matrix.Rotation(-angle, 4, rotation_axis)
-            
+
             # Update object rotation
             obj.matrix_world = old_matrix @ rotation_matrix
             bpy.context.view_layer.update()
-        
+
         # Update extrusion direction (keeping magnitude)
         if old_direction.length > 0:
             # Preserve the magnitude of the original direction vector
             magnitude = old_direction.length
             new_direction = new_direction_normalized * magnitude
-        
+
         extrusion.ExtrudedDirection.DirectionRatios = tuple(new_direction)
-        
+
         # Update depth based on new extrusion angle
         extrusion_angle = 0
         if new_direction.length > 0:
             cos_angle = new_direction_normalized.dot(Vector((0, 0, 1)))
             extrusion_angle = acos(min(max(cos_angle, -1), 1))
-        
+
         # Get current depth (perpendicular depth)
         current_perpendicular_depth = extrusion.Depth
-        
+
         # If we have material layer info, calculate actual thickness
         material = ifcopenshell.util.element.get_material(element)
         actual_thickness = current_perpendicular_depth
@@ -481,15 +480,15 @@ class DumbSlabPlaner:
             actual_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             actual_thickness *= unit_scale
-        
+
         # Convert to perpendicular depth if needed
         if extrusion_angle > 1e-6:
             new_perpendicular_depth = actual_thickness * abs(1 / cos(extrusion_angle))
         else:
             new_perpendicular_depth = actual_thickness
-        
+
         extrusion.Depth = new_perpendicular_depth
-        
+
         # Update position offset if needed
         if extrusion.Position:
             # Recalculate offset based on new direction
@@ -500,7 +499,7 @@ class DumbSlabPlaner:
                     perpendicular_offset = offset * abs(1 / cos(extrusion_angle))
                 else:
                     perpendicular_offset = offset
-                
+
                 offset_vector = new_direction_normalized * perpendicular_offset
                 extrusion.Position.Location.Coordinates = tuple(offset_vector)
 
@@ -778,7 +777,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         extrusion = tool.Model.get_extrusion(body)
         existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
         layer_params = tool.Model.get_material_layer_parameters(element)
-        
+
         usage_type = tool.Model.get_usage_type(element)
 
         if extrusion.Position:
@@ -798,7 +797,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
                 # Store original rotation for later restoration
                 original_rotation_x = obj.rotation_euler.x
                 obj["pre_edit_rotation_x"] = original_rotation_x
-                
+
                 # Reset rotation to zero - profile will be horizontal
                 current_z_rot = obj.rotation_euler.z
                 obj.rotation_euler.x = 0.0
@@ -819,12 +818,12 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             # For LAYER3: Use x_angle=0 and scale by cos(rotation) to get horizontal projection
             obj_x_rotation = original_rotation_x  # Use stored original rotation
             scale_factor = abs(cos(obj_x_rotation)) if abs(obj_x_rotation) > 1e-6 else 1.0
-            
+
             # Import with x_angle=0
             tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position, x_angle=0)
-            
+
             # Scale the Y coordinates by cos(rotation) to get horizontal projection
-            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode="OBJECT")
             for vert in obj.data.vertices:
                 vert.co.y *= scale_factor
         else:
@@ -835,7 +834,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_profile(context))
         if not bpy.app.background:
             tool.Blender.set_viewport_tool("bim.cad_tool")
-        
+
         return {"FINISHED"}
 
 
@@ -858,7 +857,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
         layer_params = tool.Model.get_material_layer_parameters(element)
         usage_type = tool.Model.get_usage_type(element)
-        
+
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
@@ -895,16 +894,17 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             # Scale Y coordinates back up before exporting
             obj_x_rotation = obj.rotation_euler.x
             scale_factor = abs(cos(obj_x_rotation)) if abs(obj_x_rotation) > 1e-6 else 1.0
-            
+
             # Un-scale the profile before exporting
             for vert in obj.data.vertices:
                 vert.co.y /= scale_factor  # Inverse of import scaling
-            
+
             profile = tool.Model.export_profile(obj, position=position, x_angle=0)
         else:
             profile = tool.Model.export_profile(obj, position=position, x_angle=existing_x_angle)
 
         if not profile:
+
             def msg(self, context):
                 self.layout.label(text="INVALID PROFILE")
 
@@ -952,7 +952,6 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.geometry.assign_representation(
                 tool.Ifc.get(), product=element, representation=new_footprint
             )
-
 
         footprint_context = ifcopenshell.util.representation.get_context(
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"

@@ -1,4 +1,3 @@
-
 import bonsai, json, bpy
 from pathlib import Path
 
@@ -11,14 +10,15 @@ settings_path = repo_root / ".vscode" / "settings.json"
 settings_path.parent.mkdir(parents=True, exist_ok=True)
 
 settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
-settings.update({
-    "bonsai.localRoot": repo_path.as_posix(),
-    "bonsai.remoteRoot": install_path.as_posix(), 
-    "bonsai.blenderPath": Path(bpy.app.binary_path).parent.as_posix(),
-})
+settings.update(
+    {
+        "bonsai.localRoot": repo_path.as_posix(),
+        "bonsai.remoteRoot": install_path.as_posix(),
+        "bonsai.blenderPath": Path(bpy.app.binary_path).parent.as_posix(),
+    }
+)
 json_data = json.dumps(settings, indent=2)
 
 settings_path.write_text(json_data)
 
 print("\n\nBonsai/VSCode development environment configured successfully!\n\n")
-

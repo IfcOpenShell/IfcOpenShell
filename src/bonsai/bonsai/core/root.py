@@ -63,20 +63,20 @@ def copy_class(
 
 def _has_material_styles(ifc: type[tool.Ifc], element: ifcopenshell.entity_instance) -> bool:
     """Check if element has styles defined through its material.
-    
+
     Returns True if any constituent material has a style representation,
     which means styles should NOT be applied directly to the geometry.
     """
     materials = ifcopenshell.util.element.get_materials(element)
-    
+
     if not materials:
         return False
-    
+
     # Check if any of the constituent materials have styles
     for material in materials:
-        if hasattr(material, 'HasRepresentation') and material.HasRepresentation:
+        if hasattr(material, "HasRepresentation") and material.HasRepresentation:
             return True
-    
+
     return False
 
 

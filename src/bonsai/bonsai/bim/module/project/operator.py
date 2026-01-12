@@ -1062,7 +1062,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             and not self.is_advanced
         ):
             filepath = self.get_filepath()
-            
+
             # First, load the IFC file temporarily to check for metadata document
             temp_ifc = None
             has_metadata_doc = False
@@ -1076,7 +1076,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
                 pass
             finally:
                 temp_ifc = None
-            
+
             if has_metadata_doc:
                 suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
                 if str(filepath).lower().endswith(".ifc"):
@@ -1137,10 +1137,10 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             props.is_loading = True
             props.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             props.use_relative_project_path = self.use_relative_path
-            
+
             metadata_doc = tool.Project.get_metadata_document_information()
             props.should_save_metadata_for_this_file = metadata_doc is not None
-            
+
             tool.Blender.register_toolbar()
             tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
@@ -1776,7 +1776,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
                 metadata_filename = os.path.basename(output_file)[:-4] + suffix
             else:
                 metadata_filename = os.path.basename(output_file) + suffix
-            
+
             if not tool.Project.get_metadata_document_information():
                 tool.Project.create_metadata_document_information(metadata_filename)
             else:
@@ -3164,6 +3164,7 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         tool.Blender.update_viewport()
 
         return {"FINISHED"}
+
 
 class LoadBlendMetadataAndIFC(bpy.types.Operator):
     bl_idname = "bim.load_blend_metadata_and_ifc"

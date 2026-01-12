@@ -382,17 +382,14 @@ class Blender(bonsai.core.tool.Blender):
                     assert isinstance(space, bpy.types.SpaceNodeEditor)
                     if space.tree_type == "ShaderNodeTree":
                         context_override = {"area": area, "space": space, "screen": screen}
-                        
+
                         # Add window if screen differs from current context
                         context = bpy.context
                         if context and context.screen != screen:
-                            window = next(
-                                (w for w in context.window_manager.windows if w.screen == screen), 
-                                None
-                            )
+                            window = next((w for w in context.window_manager.windows if w.screen == screen), None)
                             if window:
                                 context_override["window"] = window
-                        
+
                         return context_override
 
     @classmethod

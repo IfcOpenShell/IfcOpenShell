@@ -115,9 +115,13 @@ def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
                         if tokens[j].type == "inline":
                             for child in tokens[j].children or []:
                                 if child.type == "softbreak":
-                                    segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+                                    segments.append(
+                                        {"text": None, "url": None, "break": True, "bold": False, "italic": False}
+                                    )
                                 elif child.type == "html_inline" and child.content.strip().lower() == "<br>":
-                                    segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+                                    segments.append(
+                                        {"text": None, "url": None, "break": True, "bold": False, "italic": False}
+                                    )
                                 elif child.type == "strong_open":
                                     bold = True
                                 elif child.type == "strong_close":
@@ -133,11 +137,27 @@ def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
                                 elif child.type == "link_close" and link_opening:
                                     url = link_opening.attrGet("href")
                                     if url and link_text:
-                                        segments.append({"text": link_text, "url": url, "break": False, "bold": bold, "italic": italic})
+                                        segments.append(
+                                            {
+                                                "text": link_text,
+                                                "url": url,
+                                                "break": False,
+                                                "bold": bold,
+                                                "italic": italic,
+                                            }
+                                        )
                                     link_opening = None
                                     link_text = None
                                 elif child.type == "text" and not link_opening:
-                                    segments.append({"text": child.content, "url": None, "break": False, "bold": bold, "italic": italic})
+                                    segments.append(
+                                        {
+                                            "text": child.content,
+                                            "url": None,
+                                            "break": False,
+                                            "bold": bold,
+                                            "italic": italic,
+                                        }
+                                    )
                         j += 1
                     i = j
                 else:
@@ -168,7 +188,9 @@ def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
                     link_opening = None
                     link_text = None
                 elif child.type == "text" and not link_opening:
-                    segments.append({"text": child.content, "url": None, "break": False, "bold": bold, "italic": italic})
+                    segments.append(
+                        {"text": child.content, "url": None, "break": False, "bold": bold, "italic": italic}
+                    )
         i += 1
     segments = [seg for seg in segments if seg.get("text") is not None or seg.get("break", False)]
     if not segments:
@@ -260,7 +282,7 @@ class SvgWriter:
         paths = self.resource_paths["Stylesheet"]
         if not paths:
             return
-        path_list = [p.strip() for p in paths.split(',')]
+        path_list = [p.strip() for p in paths.split(",")]
         for path in path_list:
             if not os.path.exists(path):
                 print(f"WARNING. Couldn't find stylesheet for the drawing by the path: {path}")

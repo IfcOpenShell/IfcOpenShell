@@ -233,7 +233,7 @@ class BIM_PT_object_material(Panel):
         # Material Set Attributes Section
         row = self.layout.row(align=True)
         box = row.box()
-        
+
         bonsai.bim.helper.draw_attributes(self.props.material_set_attributes, box)
         bonsai.bim.helper.draw_attributes(self.props.material_set_usage_attributes, box)
 
@@ -246,7 +246,7 @@ class BIM_PT_object_material(Panel):
             "layer": "Material Layers",
             "profile": "Material Profiles",
             "constituent": "Material Constituents",
-            "list_item": "Material List Items"
+            "list_item": "Material List Items",
         }
         header_text = header_map.get(set_item_name, "Material Items")
         self.layout.label(text=header_text)
@@ -255,7 +255,7 @@ class BIM_PT_object_material(Panel):
 
         row = self.layout.row(align=True)
         box = row.box()
-        
+
         # Add Material Section (at the top of this box)
         if ObjectMaterialData.data["set_item_name"] == "profile" and not self.mprops.profiles:
             box_row = box.row(align=True)
@@ -268,7 +268,7 @@ class BIM_PT_object_material(Panel):
             prop_with_search(box_row, self.props, "material", icon="MATERIAL", text="")
             op = box_row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
-        
+
         active_object = bpy.context.active_object
         self.layerset_bounds(box, active_object, location="Top_Interior")
 
@@ -356,7 +356,7 @@ class BIM_PT_object_material(Panel):
         # Material Set Information Section
         row = self.layout.row(align=True)
         box = row.box()
-        
+
         if ObjectMaterialData.data["material_class"] != "IfcMaterialList":
             box_row = box.row(align=True)
             set_name = ObjectMaterialData.data["set"]["name"]
@@ -395,6 +395,7 @@ class BIM_PT_object_material(Panel):
                         if unit_system == "IMPERIAL":
                             precision = prefs.doc.imperial_precision
                         from bonsai.bim.module.drawing.helper import format_distance
+
                         formatted_offset = format_distance(
                             offset_value, precision=precision, suppress_zero_inches=True, in_unit_length=True
                         )
@@ -405,10 +406,10 @@ class BIM_PT_object_material(Panel):
         # BBIM_MaterialLayer Pset Section
         if pset_data := ObjectMaterialData.data.get("bbim_material_layer_pset"):
             self.layout.label(text="BBIM_MaterialLayer Pset")
-            
+
             row = self.layout.row(align=True)
             box = row.box()
-            
+
             # Custom Offset value - format using format_distance
             unit_system = bpy.context.scene.unit_settings.system
             prefs = tool.Blender.get_addon_preferences()
@@ -416,13 +417,14 @@ class BIM_PT_object_material(Panel):
             if unit_system == "IMPERIAL":
                 precision = prefs.doc.imperial_precision
             from bonsai.bim.module.drawing.helper import format_distance
+
             formatted_custom_offset = format_distance(
-                pset_data['custom_offset'], precision=precision, suppress_zero_inches=True, in_unit_length=True
+                pset_data["custom_offset"], precision=precision, suppress_zero_inches=True, in_unit_length=True
             )
             box_row = box.row(align=True)
             box_row.label(text="Custom Offset")
             box_row.label(text=formatted_custom_offset)
-            
+
             # Reference (if exists)
             if pset_data["custom_reference"]:
                 box_row = box.row(align=True)
@@ -436,12 +438,12 @@ class BIM_PT_object_material(Panel):
                 "layer": "Material Layers",
                 "profile": "Material Profiles",
                 "constituent": "Material Constituents",
-                "list_item": "Material List Items"
+                "list_item": "Material List Items",
             }
             header_text = header_map.get(set_item_name, "Material Items")
         else:
             header_text = "Materials"
-        
+
         self.layout.label(text=header_text)
         row = self.layout.row(align=True)
         box = row.box()
@@ -492,11 +494,11 @@ class BIM_PT_object_material(Panel):
         if layer_set_direction:
             row = self.layout.row(align=True)
             row.label(text="BBIM_MaterialLayer Pset")
-            
+
             # Add indentation with a row that has a separator
             row = self.layout.row(align=True)
             # row.separator(factor=2.0)  # Adjust factor for more/less indent
-            
+
             box = row.box()
             box_row = box.row(align=True)
             box_row.prop(self.props, "use_custom_offset", text="Use Custom Offset")
