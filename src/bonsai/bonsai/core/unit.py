@@ -66,8 +66,6 @@ def assign_scene_units(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> None:
             else:
                 timeunit = ifc.run("unit.add_conversion_based_unit", name=time_unit_name.lower())
             units += [massunit, timeunit]
-    print("Add mass and time units:", unit.add_mass_and_time_units())
-    print("Assigning units:", units)
     ifc.run("unit.assign_unit", units=units)
 
 
