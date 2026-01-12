@@ -1205,13 +1205,84 @@ class OverrideDuplicateMove(bpy.types.Operator):
         for obj in objects_to_remove:
             tool.Blender.deselect_object(obj)
 
+        # Expand selection to include all parts of selected aggregates
+        objects_to_duplicate = set(context.selected_objects) - objects_to_remove
+        expanded_objects = set(objects_to_duplicate)
+        
+        for obj in objects_to_duplicate:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcElementAssembly"):
+                parts = tool.Aggregate.get_parts_recursively(element)
+                for part in parts:
+                    part_obj = tool.Ifc.get_object(part)
+                    if part_obj:
+                        expanded_objects.add(part_obj)
+        
+        # Store parent aggregate relationships
+        parent_aggregates = {}
+        
+        for obj in expanded_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcElementAssembly"):
+                parent_aggregate = ifcopenshell.util.element.get_aggregate(element)
+                if parent_aggregate:
+                    parent_aggregates[element] = parent_aggregate
+        
         old_to_new, new_active_obj = tool.Geometry.duplicate_ifc_objects(
-            set(context.selected_objects) - objects_to_remove,
+            expanded_objects,
             linked=linked,
             active_object=context.active_object,
         )
+        
+        # Restore parent aggregate relationships, but only for parents that were NOT duplicated
+        for old_elem, new_elems in old_to_new.items():
+            if old_elem in parent_aggregates:
+                old_parent = parent_aggregates[old_elem]
+                
+                # Check if the parent was also duplicated
+                if old_parent in old_to_new:
+                    # The duplication already created the correct nested relationship
+                    continue
+                
+                # Parent was NOT duplicated, so we need to assign to the original parent
+                for new_elem in new_elems:
+                    new_obj = tool.Ifc.get_object(new_elem)
+                    parent_obj = tool.Ifc.get_object(old_parent)
+                    if new_obj and parent_obj:
+                        bonsai.core.aggregate.assign_object(
+                            tool.Ifc,
+                            tool.Aggregate,
+                            tool.Collector,
+                            relating_obj=parent_obj,
+                            related_obj=new_obj,
+                        )
+        
+        # Select all duplicated objects and their parts
+        all_objects_to_select = set()
+        for old_elem, new_elems in old_to_new.items():
+            for new_elem in new_elems:
+                new_obj = tool.Ifc.get_object(new_elem)
+                if new_obj:
+                    all_objects_to_select.add(new_obj)
+                    
+                    # If it's an aggregate, also select all its parts
+                    if new_elem.is_a("IfcElementAssembly"):
+                        parts = tool.Aggregate.get_parts_recursively(new_elem)
+                        for part in parts:
+                            part_obj = tool.Ifc.get_object(part)
+                            if part_obj:
+                                all_objects_to_select.add(part_obj)
+        
+        # Deselect everything first
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        # Select all the duplicated objects
+        for obj in all_objects_to_select:
+            obj.select_set(True)
+        
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
+        
         return old_to_new
 
 
