@@ -656,8 +656,8 @@ class BIMProperties(PropertyGroup):
         volume_unit: str
         mass_unit: str
         time_unit: str
-        tab_visibilities: bpy.types.bpy_prop_collection[BIMTabVisibility]
-        panel_properties: bpy.types.bpy_prop_collection[BIMPanelProperties]
+        tab_visibilities: bpy.types.bpy_prop_collection_idprop[BIMTabVisibility]
+        panel_properties: bpy.types.bpy_prop_collection_idprop[BIMPanelProperties]
 
 
 class IfcParameter(PropertyGroup):
