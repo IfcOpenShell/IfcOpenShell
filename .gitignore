@@ -22,6 +22,8 @@ venv
 
 # Visual Studio Code files
 .vscode
+!.vscode/launch.json
+!.vscode/tasks.json
 .vs
 
 # PyCharm files
