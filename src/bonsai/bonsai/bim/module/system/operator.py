@@ -259,7 +259,8 @@ class ConnectPort(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj1 = context.active_object
         obj2 = context.selected_objects[0] if context.selected_objects[1] == obj1 else context.selected_objects[1]
-        core.connect_port(tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2))
+        direction = tool.Ifc.get_entity(obj1).FlowDirection or "NOTDEFINED"
+        core.connect_port(tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2), direction=direction)
 
 
 class AddRelatedPortConnection(bpy.types.Operator, tool.Ifc.Operator):
@@ -286,7 +287,8 @@ class AddRelatedPortConnection(bpy.types.Operator, tool.Ifc.Operator):
         related_port = tool.Ifc.get_entity(port_obj)
         relating_port = tool.Ifc.get().by_id(self.relating_port_id)
         
-        core.connect_port(tool.Ifc, port1=relating_port, port2=related_port)
+        direction = relating_port.FlowDirection or "NOTDEFINED"
+        core.connect_port(tool.Ifc, port1=relating_port, port2=related_port, direction=direction)
         PortData.is_loaded = False
         
         return {"FINISHED"}
@@ -356,7 +358,8 @@ class MEPConnectElements(bpy.types.Operator, tool.Ifc.Operator):
                 ports_distance[(port1, port2)] = distance
 
         closest_ports = min(ports_distance, key=lambda x: ports_distance[x])
-        core.connect_port(tool.Ifc, *closest_ports)
+        direction = closest_ports[0].FlowDirection or "NOTDEFINED"
+        core.connect_port(tool.Ifc, *closest_ports, direction=direction)
         bpy.ops.bim.regenerate_distribution_element()
         return {"FINISHED"}
 

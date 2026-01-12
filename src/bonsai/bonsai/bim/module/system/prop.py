@@ -20,7 +20,7 @@ import bpy
 import bonsai.bim.handler
 import bonsai.tool as tool
 import bonsai.core.system as core
-from bonsai.bim.module.system.data import SystemData, PortData
+from bonsai.bim.module.system.data import SystemData
 import bonsai.bim.module.system.decorator as decorator
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -34,7 +34,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING, Union, Optional
+from typing import TYPE_CHECKING, Union
 
 
 def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

@@ -66,8 +66,6 @@ def disconnect_port(file: ifcopenshell.file, port: ifcopenshell.entity_instance)
     rels += port.ConnectedFrom or ()
 
     for rel in rels:
-        rel.RelatingPort.FlowDirection = None
-        rel.RelatedPort.FlowDirection = None
         history = rel.OwnerHistory
         file.remove(rel)
         if history:

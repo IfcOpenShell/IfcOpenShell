@@ -275,8 +275,6 @@ class BIM_PT_port(Panel):
             
         relating_object_name = PortData.data["port_relating_object_name"] if PortData.data["is_port"] else ""
         row.label(text=f"IfcDistributionPort located in: {relating_object_name}")
-        row.operator("bim.connect_port", icon="PLUGIN", text="")
-        row.operator("bim.disconnect_port", icon="UNLINKED", text="")
         row.operator("bim.remove_port", icon="X", text="")
 
         if not PortData.is_loaded:
@@ -290,6 +288,9 @@ class BIM_PT_port(Panel):
         
         row = layout.row(align=True)
         cols = [row.column(align=True) for i in range(9)]
+        cols[3].scale_x = 1.0
+        cols[6].scale_x = 1.0
+        cols[8].scale_x = 1.33
         
         flow_direction_icon = FLOW_DIRECTION_TO_ICON[element.FlowDirection or "NOTDEFINED"]
         connected_port = tool.System.get_connected_port(element)
@@ -299,7 +300,7 @@ class BIM_PT_port(Panel):
             op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
             op.port_id = element.id()
         else:
-            cols[0].label(text="", icon="BLANK1")
+            cols[0].operator("bim.connect_port", icon="PLUGIN", text="")
             op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
             op.port_id = element.id()
         
