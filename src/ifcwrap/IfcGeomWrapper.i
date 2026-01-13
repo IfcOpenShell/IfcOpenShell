@@ -1040,7 +1040,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %}
 
 %inline %{
-	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance, const express::Base& representation = express::Base(), const char* const geometry_library="opencascade") {
+	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance, const express::Base& representation, const char* const geometry_library="opencascade") {
 		const std::string& schema_name = instance.declaration().schema()->name();
 
 		#ifdef HAS_SCHEMA_2x3
@@ -1105,6 +1105,11 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		#endif
 
 		throw IfcParse::IfcException("No geometry support for " + schema_name);
+	}
+
+	// Manual definition of overload without representation argument
+	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance, const char* const geometry_library="opencascade") {
+		return create_shape(settings, instance, express::Base(), geometry_library);
 	}
 %}
 

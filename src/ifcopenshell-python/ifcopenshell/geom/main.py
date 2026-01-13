@@ -507,7 +507,7 @@ def create_shape(
     """
     return wrap_shape_creation(
         settings,
-        ifcopenshell_wrapper.create_shape(settings, inst, repr if repr is not None else None, geometry_library),
+        ifcopenshell_wrapper.create_shape(settings, inst, repr, geometry_library) if repr else ifcopenshell_wrapper.create_shape(settings, inst, geometry_library),
     )
 
 
