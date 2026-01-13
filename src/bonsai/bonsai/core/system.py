@@ -132,7 +132,12 @@ def remove_port(ifc: type[tool.Ifc], system: type[tool.System], port: ifcopenshe
     ifc.run("root.remove_product", product=port)
 
 
-def connect_port(ifc: type[tool.Ifc], port1: ifcopenshell.entity_instance, port2: ifcopenshell.entity_instance, direction: str = "NOTDEFINED") -> None:
+def connect_port(
+    ifc: type[tool.Ifc],
+    port1: ifcopenshell.entity_instance,
+    port2: ifcopenshell.entity_instance,
+    direction: str = "NOTDEFINED",
+) -> None:
     ifc.run("system.connect_port", port1=port1, port2=port2, direction=direction)
 
 

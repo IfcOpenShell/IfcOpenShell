@@ -100,6 +100,7 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def create_empty_at_cursor_with_element_orientation(cls, element: ifcopenshell.entity_instance) -> bpy.types.Object:
+        # Is this necessary anymore?
         element_obj = tool.Ifc.get_object(element)
         obj = bpy.data.objects.new("Port", None)
         obj.matrix_world = element_obj.matrix_world

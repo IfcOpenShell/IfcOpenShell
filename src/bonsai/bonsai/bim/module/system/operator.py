@@ -186,7 +186,6 @@ class ShowPorts(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_ports"
     bl_label = "Show Ports"
     bl_options = {"REGISTER", "UNDO"}
-    element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -199,12 +198,9 @@ class ShowPorts(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         # Ifc.Operator - as operator will sync object's position with IFC.
-        if self.element_id != 0:
-            element = tool.Ifc.get().by_id(self.element_id)
-        else:
-            element = tool.Ifc.get_entity(context.active_object)
+        element = tool.Ifc.get_entity(context.active_object)
         core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=element)
-        
+
         for port in tool.System.get_ports(element):
             connected_port = tool.System.get_connected_port(port)
             if connected_port:
@@ -260,37 +256,39 @@ class ConnectPort(bpy.types.Operator, tool.Ifc.Operator):
         obj1 = context.active_object
         obj2 = context.selected_objects[0] if context.selected_objects[1] == obj1 else context.selected_objects[1]
         direction = tool.Ifc.get_entity(obj1).FlowDirection or "NOTDEFINED"
-        core.connect_port(tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2), direction=direction)
+        core.connect_port(
+            tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2), direction=direction
+        )
 
 
 class AddRelatedPortConnection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_related_port_connection"
     bl_label = "Connect Port"
     bl_options = {"REGISTER", "UNDO"}
-    
+
     relating_port_id: bpy.props.IntProperty()
-    
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
-    
+
     def draw(self, context):
         props = tool.System.get_system_props()
         self.layout.prop(props, "related_port", text="Select Port")
-    
+
     def _execute(self, context):
         props = tool.System.get_system_props()
-        
+
         if not props.related_port or props.related_port == "NONE":
             return {"CANCELLED"}
-        
+
         port_obj = bpy.data.objects.get(props.related_port)
         related_port = tool.Ifc.get_entity(port_obj)
         relating_port = tool.Ifc.get().by_id(self.relating_port_id)
-        
+
         direction = relating_port.FlowDirection or "NOTDEFINED"
         core.connect_port(tool.Ifc, port1=relating_port, port2=related_port, direction=direction)
         PortData.is_loaded = False
-        
+
         return {"FINISHED"}
 
 
@@ -436,13 +434,10 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def description(cls, context, operator):
-        try:
-            port = tool.Ifc.get().by_id(operator.port_id)
-            if port and port.is_a("IfcDistributionPort"):
-                current_direction = port.FlowDirection or "NOTDEFINED"
-                return f"Current flow direction: {current_direction}. Click to cycle: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED"
-        except:
-            pass
+        port = tool.Ifc.get().by_id(operator.port_id)
+        if port and port.is_a("IfcDistributionPort"):
+            current_direction = port.FlowDirection or "NOTDEFINED"
+            return f"Current flow direction: {current_direction}. Click to cycle: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED"
         return "Cycle through flow directions: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED → SOURCE..."
 
     def _execute(self, context):
@@ -451,30 +446,32 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         current_direction = port.FlowDirection or "NOTDEFINED"
-        
+
         flow_cycle_map = {
             "SOURCE": "SINK",
             "SINK": "SOURCEANDSINK",
             "SOURCEANDSINK": "NOTDEFINED",
-            "NOTDEFINED": "SOURCE"
+            "NOTDEFINED": "SOURCE",
         }
         next_direction = flow_cycle_map.get(current_direction, "SOURCE")
 
         tool.Ifc.run("attribute.edit_attributes", product=port, attributes={"FlowDirection": next_direction})
-        
+
         connected_port = tool.System.get_connected_port(port)
         if connected_port:
             connected_direction_map = {
                 "SOURCE": "SINK",
                 "SINK": "SOURCE",
                 "SOURCEANDSINK": "SOURCEANDSINK",
-                "NOTDEFINED": "NOTDEFINED"
+                "NOTDEFINED": "NOTDEFINED",
             }
             connected_direction = connected_direction_map.get(next_direction, "NOTDEFINED")
-            tool.Ifc.run("attribute.edit_attributes", product=connected_port, attributes={"FlowDirection": connected_direction})
-        
+            tool.Ifc.run(
+                "attribute.edit_attributes", product=connected_port, attributes={"FlowDirection": connected_direction}
+            )
+
         PortData.is_loaded = False
-        
+
         return {"FINISHED"}
 
 

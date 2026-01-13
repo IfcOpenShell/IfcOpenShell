@@ -490,8 +490,7 @@ class Usecase:
                 attribute_class = None
                 if "." in attribute:
                     attribute, attribute_class = attribute.split(".")
-                inverse_values = getattr(element, attribute, [])
-                for inverse in inverse_values:
+                for inverse in getattr(element, attribute, []):
                     if attribute_class and inverse.is_a(attribute_class):
                         self.add_inverse_element(inverse)
                     elif not attribute_class:
