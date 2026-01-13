@@ -99,9 +99,7 @@ class entity_instance_mixin:
         """
         INVALID, FORWARD, INVERSE, DERIVED = range(4)
         attr_cat = self.get_attribute_category(name)
-        if attr_cat == INVALID:
-            raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
-        elif attr_cat == FORWARD:
+        if attr_cat == FORWARD:
             idx = self.get_argument_index(name)
             return self.get_argument(idx)
         elif attr_cat == INVERSE:
@@ -117,7 +115,7 @@ class entity_instance_mixin:
                     else:
                         vs = None
             return vs
-        elif attr_cat == DERIVED:
+        else:
             schema_name = self.is_a(True).split(".")[0]
             try:
                 rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
@@ -146,9 +144,10 @@ class entity_instance_mixin:
                     decl = decl.supertype()
 
             for sty in yield_supertypes():
-                fn = getattr(rules, f"calc_{sty}_{name}", None)
-                if fn:
+                if fn := getattr(rules, f"calc_{sty}_{name}", None):
                     return fn(self)
+                
+            raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
 
     @staticmethod
     def walk(f: Callable[[Any], bool], g: Callable[[Any], Any], value: Any) -> Any:
