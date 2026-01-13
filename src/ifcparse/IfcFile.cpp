@@ -782,9 +782,14 @@ express::Base IfcParse::impl::in_memory_file_storage::create(const IfcParse::dec
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
     }
-    auto ptr = byid_.insert({instance_name, std::make_shared<InstanceData>(file, decl, instance_name, decl->as_entity() ? in_memory_attribute_storage(decl->as_entity()->attribute_count()) : in_memory_attribute_storage(1))}).first;
-    express::Base inst(ptr->second);
-
+    auto data = std::make_shared<InstanceData>(file, decl, instance_name, decl->as_entity() ? in_memory_attribute_storage(decl->as_entity()->attribute_count()) : in_memory_attribute_storage(1));
+    if (instance_name) {
+        byid_.insert({instance_name, data});
+    } else {
+        tbyid_.insert({data->identity(), data});
+    }
+ 
+    express::Base inst(data);
     add_type_ref(inst);
 
     return inst;
