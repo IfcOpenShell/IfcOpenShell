@@ -575,10 +575,20 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                             rotation_axis.normalize()
                             dot_product = expected_new_world_direction.dot(current_world_direction)
                             angle = acos(min(max(dot_product, -1), 1))
-
-                            # Create and apply rotation matrix
+                            
+                            # Rotate around object's own origin
+                            # Decompose the matrix to get translation, rotation, scale
+                            translation, rotation, scale = obj.matrix_world.decompose()
+                            
+                            # Create rotation matrix and convert to quaternion
                             rotation_matrix = Matrix.Rotation(angle, 4, rotation_axis)
-                            obj.matrix_world = rotation_matrix @ obj.matrix_world
+                            rotation_quat = rotation_matrix.to_quaternion()
+                            
+                            # Apply rotation to existing rotation (quaternion multiplication)
+                            new_rotation = rotation_quat @ rotation
+                            
+                            # Reconstruct matrix_world with same translation, new rotation, same scale
+                            obj.matrix_world = Matrix.Translation(translation) @ new_rotation.to_matrix().to_4x4() @ Matrix.Scale(1, 4)
                             bpy.context.view_layer.update()
 
                 bonsai.core.geometry.switch_representation(
