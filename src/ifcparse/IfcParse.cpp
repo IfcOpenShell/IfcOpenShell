@@ -2022,6 +2022,7 @@ void IfcFile::removeEntity(const express::Base& entity) {
         batch_deletion_ids_.push_back(id);
     } else {
         process_deletion_(entity);
+        byid_.erase(entity.id());
     }
 }
 
@@ -2112,9 +2113,6 @@ void IfcFile::process_deletion_(const express::Base& entity) {
             ++it;
         }
     }
-
-    // This now frees the shared_ptr
-    byid_.erase(entity.id());
 }
 
 void IfcParse::impl::in_memory_file_storage::process_deletion_inverse(const express::Base& entity) {
@@ -2612,6 +2610,10 @@ void IfcParse::IfcFile::build_inverses_(const express::Base& inst) {
 void IfcParse::IfcFile::unbatch() {
     for (auto& id : batch_deletion_ids_) {
         process_deletion_(instance_by_id(id));
+    }
+    // keep in memory until all deletions are processed
+    for (auto& id : batch_deletion_ids_) {
+        byid_.erase(id);
     }
     batch_mode_ = false;
     batch_deletion_ids_.clear();
