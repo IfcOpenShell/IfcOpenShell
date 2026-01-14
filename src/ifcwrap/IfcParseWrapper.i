@@ -224,7 +224,7 @@ private:
 		throw IfcParse::IfcException("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
-	void write(const std::string& fn) {
+	void _write(const std::string& fn) {
 		std::ofstream f(IfcUtil::path::from_utf8(fn).c_str());
 		if (!f.good()) {
 			throw std::runtime_error("Failed to write to path: '" + fn + "', check folder and file permissions.");

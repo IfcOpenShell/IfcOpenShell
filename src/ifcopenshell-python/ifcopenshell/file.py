@@ -879,7 +879,7 @@ class file_mixin:
             raise NotImplementedError("Writing .ifcXML files is not supported")
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
-        self.write(str(path))
+        self._write(str(path))
 
         if zipped:
             unzipped_path = path.with_suffix(format)
