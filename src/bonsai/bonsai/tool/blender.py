@@ -161,11 +161,19 @@ class Blender(bonsai.core.tool.Blender):
                 screen.BIMAreaProperties.add()
 
     @classmethod
-    def is_tab(cls, context: bpy.types.Context, tab: str) -> bool:
+    def should_show_panel(cls, context: bpy.types.Context, tab: str, panel: str) -> bool:
         aprops = cls.get_area_props(context)
         if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
             return True
-        return aprops.tab == tab
+        if (is_bookmark_tab := aprops.tab == "BOOKMARK") or aprops.tab == tab:
+            bprops = tool.Blender.get_bim_props()
+            if not (panel_visibility := bprops.panel_properties.get(panel)):
+                return not is_bookmark_tab
+            if is_bookmark_tab:
+                if panel_visibility.is_bookmarked and panel_visibility.is_visible_in_bookmarks:
+                    return True
+            elif panel_visibility.is_visible_in_tab:
+                return True
 
     @classmethod
     def is_default_scene(cls) -> bool:
@@ -1461,7 +1469,10 @@ class Blender(bonsai.core.tool.Blender):
     def override_scene_panel(cls, original_panel: bpy.types.Panel) -> None:
         @classmethod
         def poll_check_blender_tab(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
+            aprops = tool.Blender.get_area_props(context)
+            if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
+                return True
+            return aprops.tab == "BLENDER"
 
         polls = bonsai.bim.original_scene_panels_polls
 

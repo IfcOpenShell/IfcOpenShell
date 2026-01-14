@@ -43,7 +43,6 @@ from bonsai.bim.helper import (
     get_tab_visibility,
     set_tab_visibility,
     get_panel_visibility,
-    is_panel_bookmarked,
     get_panel_config,
     get_all_tab_panels,
     initialize_tab_visibilities,
@@ -1147,9 +1146,7 @@ class BIM_PT_tab_new_project_wizard(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if not tool.Blender.is_tab(context, cls.bim_tab_name):
+        if not tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return False
         bim_props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
@@ -1173,16 +1170,13 @@ class BIM_PT_tab_project_info(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             bim_props = tool.Blender.get_bim_props()
             pprops = tool.Project.get_project_props()
             if pprops.is_loading:
                 return True
             elif tool.Ifc.get() or bim_props.ifc_file:
                 return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1198,11 +1192,8 @@ class BIM_PT_tab_spatial(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1218,11 +1209,8 @@ class BIM_PT_tab_project_setup(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1239,11 +1227,8 @@ class BIM_PT_tab_stakeholders(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1259,11 +1244,8 @@ class BIM_PT_tab_collaboration(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1280,11 +1262,8 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1308,11 +1287,8 @@ class BIM_PT_tab_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1328,11 +1304,8 @@ class BIM_PT_tab_status(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1348,11 +1321,8 @@ class BIM_PT_tab_qto(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1368,11 +1338,8 @@ class BIM_PT_tab_resources(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1388,11 +1355,8 @@ class BIM_PT_tab_cost(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1408,11 +1372,8 @@ class BIM_PT_tab_sequence(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1428,11 +1389,8 @@ class BIM_PT_tab_structural(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1448,11 +1406,8 @@ class BIM_PT_tab_services(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1468,11 +1423,8 @@ class BIM_PT_tab_lighting(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1488,11 +1440,8 @@ class BIM_PT_tab_zones(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1508,11 +1457,8 @@ class BIM_PT_tab_solar_analysis(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1528,11 +1474,8 @@ class BIM_PT_tab_quality_control(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1548,11 +1491,8 @@ class BIM_PT_tab_clash_detection(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1569,11 +1509,8 @@ class BIM_PT_tab_sandbox(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         row = self.layout.row()
@@ -1592,11 +1529,9 @@ class BIM_PT_tab_object_metadata(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
         props = tool.Project.get_project_props()
         if (
-            tool.Blender.is_tab(context, cls.bim_tab_name)
+            tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname)
             and tool.Ifc.get()
             and (obj := context.active_object)
             # Hide links empty handles.
@@ -1607,7 +1542,6 @@ class BIM_PT_tab_object_metadata(Panel):
             )
         ):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1624,16 +1558,13 @@ class BIM_PT_tab_placement(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
         if (
-            tool.Blender.is_tab(context, cls.bim_tab_name)
+            tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname)
             and tool.Ifc.get()
             and (obj := context.active_object)
             and tool.Ifc.get_entity(obj)
         ):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1650,11 +1581,8 @@ class BIM_PT_tab_representations(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1672,11 +1600,8 @@ class BIM_PT_tab_geometric_relationships(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1694,11 +1619,8 @@ class BIM_PT_tab_parametric_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1715,11 +1637,8 @@ class BIM_PT_tab_object_materials(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1736,11 +1655,8 @@ class BIM_PT_tab_materials(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1757,11 +1673,8 @@ class BIM_PT_tab_styles(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1778,11 +1691,8 @@ class BIM_PT_tab_profiles(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1799,11 +1709,8 @@ class BIM_PT_tab_sheets(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1820,11 +1727,8 @@ class BIM_PT_tab_drawings(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1841,11 +1745,8 @@ class BIM_PT_tab_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1862,11 +1763,8 @@ class BIM_PT_tab_references(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1884,11 +1782,8 @@ class BIM_PT_tab_misc(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name) and tool.Ifc.get():
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1905,11 +1800,8 @@ class BIM_PT_tab_handover(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
@@ -1926,11 +1818,8 @@ class BIM_PT_tab_operations(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not should_show_panel(cls.bl_idname, cls.bim_tab_name, context):
-            return False
-        if tool.Blender.is_tab(context, cls.bim_tab_name):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return True
-        return tool.Blender.is_tab(context, "BOOKMARK")
 
     def draw(self, context):
         pass
