@@ -417,6 +417,7 @@ class ShapeBuilder:
             0 1
 
         :param size: rectangle size, could be either 2d or 3d.
+            Use 0 for one of 3d dimensions to create 2d rectangle in 3d space.
         :param position: rectangle position.
             if `position` not specified zero-vector will be used
         :return: list of rectangle coords
@@ -442,9 +443,11 @@ class ShapeBuilder:
         """
         Generate a rectangle polyline.
 
-        :param size: rectangle size, could be either 2d or 3d.
+        :param size: rectangle.
         :param position: rectangle position.
-            if `position` not specified zero-vector will be used
+
+        See ``get_rectangle_coords`` for more information.
+
         :return: IfcIndexedPolyCurve
         """
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
