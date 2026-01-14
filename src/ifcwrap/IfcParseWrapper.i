@@ -238,12 +238,12 @@ private:
 		return s.str();
 	}
 
-	express::Base create(const std::string& entity_name) {
+	express::Base create(const std::string& entity_name, int id=-1) {
 		const IfcParse::declaration* decl = $self->schema()->declaration_by_name(entity_name);
 		if (!decl || !(decl->as_entity() || decl->as_type_declaration())) {
 			throw IfcParse::IfcException("No such entity or type declaration: '" + entity_name + "' in schema '" + $self->schema()->name());
 		}
-		return $self->create(decl);
+		return $self->create(decl, id);
 	}
 
 	std::vector<unsigned> entity_names() const {
