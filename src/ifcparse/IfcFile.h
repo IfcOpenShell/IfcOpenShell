@@ -92,6 +92,7 @@ private:
     FileReader* stream_;
     IfcSpfLexer* lexer_;
     IfcSpfHeader* header_;
+    IfcParse::IfcFile* owner_;
     boost::circular_buffer<Token> token_stream_;
     const IfcParse::schema_definition* schema_;
     IfcParse::impl::in_memory_file_storage storage_;
@@ -103,7 +104,6 @@ private:
     std::vector<unsigned> bypassed_instances_;
 
   public:
-    IfcParse::IfcFile* owner = nullptr;
 	bool coerce_attribute_count = true;
 
     operator bool() const {
@@ -145,13 +145,13 @@ private:
 
     void pushPage(const std::string& page);
 
-    InstanceStreamer();
+    InstanceStreamer(IfcParse::IfcFile* f = nullptr);
 
-    InstanceStreamer(const std::string& fn, bool mmap=false);
+    InstanceStreamer(const std::string& fn, bool mmap = false, IfcParse::IfcFile* f = nullptr);
 
-    InstanceStreamer(void* data, int length);
+    InstanceStreamer(void* data, int length, IfcParse::IfcFile* f = nullptr);
 
-    InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
+    InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer, IfcParse::IfcFile* f = nullptr);
 
     void bypassTypes(const std::set<std::string>& type_names);
 

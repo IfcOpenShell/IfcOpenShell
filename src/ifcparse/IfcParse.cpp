@@ -1264,6 +1264,7 @@ IfcFile::IfcFile(const std::string& path, filetype ty, bool readonly)
 IfcFile::IfcFile(std::istream& stream, int length)
     : schema_(nullptr)
     , max_id_(0)
+    , header_(new IfcParse::IfcSpfHeader(this))
 {
     FileReader s(FileReader::caller_fed_tag{});
 
@@ -1284,7 +1285,8 @@ IfcFile::IfcFile(std::istream& stream, int length)
 
 IfcFile::IfcFile(void* data, int length)
     : schema_(nullptr)
-    , max_id_(0)
+    , max_id_(0),
+    header_(new IfcParse::IfcSpfHeader(this))
 {
 	FileReader s(std::string((char*)data, length), FileReader::caller_fed_tag{});
     
@@ -1409,23 +1411,25 @@ void IfcParse::InstanceStreamer::pushPage(const std::string& page)
     }
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer()
+IfcParse::InstanceStreamer::InstanceStreamer(IfcParse::IfcFile* f)
     : stream_(new FileReader(FileReader::caller_fed_tag{}))
     , lexer_(new IfcSpfLexer(stream_))
     , token_stream_(3, Token{})
     , schema_(nullptr)
     , progress_(0)
+    , owner_(f)
 {
     init_locale();
     good_ = file_open_status::NO_HEADER;
+    storage_.file = f;
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer(const std::string& fn, bool mmap)
+IfcParse::InstanceStreamer::InstanceStreamer(const std::string& fn, bool mmap, IfcParse::IfcFile* f)
     : stream_(mmap ? new FileReader(fn, FileReader::mmap_tag{}) : new FileReader(fn))
     , lexer_(new IfcSpfLexer(stream_))
     , token_stream_(3, Token{})
     , schema_(nullptr)
-    , progress_(0)
+    , progress_(0), owner_(f)
 {
     init_locale();
 
@@ -1439,19 +1443,20 @@ IfcParse::InstanceStreamer::InstanceStreamer(const std::string& fn, bool mmap)
             } catch (const IfcParse::IfcException&) {
             }
         }
-        storage_.file = nullptr;
+        storage_.file = f;
         storage_.schema = schema_;
         storage_.tokens = lexer_;
         storage_.references_to_resolve = &references_to_resolve_;
     }
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer(void* data, int length)
+IfcParse::InstanceStreamer::InstanceStreamer(void* data, int length, IfcParse::IfcFile* f)
     : stream_(new FileReader(std::string((char*) data, length), FileReader::caller_fed_tag{}))
     , lexer_(new IfcSpfLexer(stream_))
     , token_stream_(3, Token{})
     , schema_(nullptr)
     , progress_(0)
+    , owner_(f)
 {
     init_locale();
 
@@ -1465,24 +1470,25 @@ IfcParse::InstanceStreamer::InstanceStreamer(void* data, int length)
             } catch (const IfcParse::IfcException&) {
             }
         }
-        storage_.file = nullptr;
+        storage_.file = f;
         storage_.schema = schema_;
         storage_.tokens = lexer_;
         storage_.references_to_resolve = &references_to_resolve_;
     }
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer)
+IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer, IfcParse::IfcFile* f)
     : stream_(nullptr)
     , lexer_(lexer)
     , header_(nullptr)
     , token_stream_(3, Token{})
     , schema_(schema)
     , progress_(0)
+    , owner_(f) 
 {
     init_locale();
 
-    storage_.file = nullptr;
+    storage_.file = f;
     storage_.schema = schema_;
     storage_.tokens = lexer_;
     storage_.references_to_resolve = &references_to_resolve_;
@@ -1533,8 +1539,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
 
     auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
 
-	InstanceStreamer streamer(schema, tokens);
-    streamer.owner = file;
+	InstanceStreamer streamer(schema, tokens, file);
     streamer.bypassTypes(typed_to_bypass);
 
     Logger::Status("Scanning file...");

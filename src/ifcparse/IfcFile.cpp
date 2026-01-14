@@ -727,7 +727,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<I
                 Logger::Status(ss.str(), false);
             }
 
-            auto data = ps.construct(owner, current_id, references_to_resolve_, entity_type, std::nullopt, -1, coerce_attribute_count);
+            auto data = ps.construct(owner_, current_id, references_to_resolve_, entity_type, std::nullopt, -1, coerce_attribute_count);
 
             return_value.emplace(
                 (size_t)current_id,
