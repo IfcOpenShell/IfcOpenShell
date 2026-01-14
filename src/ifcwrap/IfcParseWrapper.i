@@ -326,13 +326,17 @@ private:
 	}
 
 	%pythoncode %{
+		@staticmethod
+		def from_string(s: str) -> 'file':
+			return read(s)
+
 		schema = property(schema_name)
 		header = property(header)
 		_registry = {}
 
 		_old_init = __init__
 		def __init__(self, schema=None, schema_version=None):
-			self._old_init(*filter(None, (schema, schema_version)))
+			self._old_init(self._determine_schema_identifier(schema=schema, schema_version=schema_version))
     
 		def __setattr__(self, k, v):
 			object.__setattr__(self, k, v)

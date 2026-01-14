@@ -893,12 +893,22 @@ class file_mixin:
                 unzipped_path.unlink()
         return
 
-    @staticmethod
-    def from_string(s: str) -> file:
-        return file(ifcopenshell_wrapper.read(s))
-
     def to_string(self) -> str:
         return self.to_string()
+    
+    @staticmethod
+    def _determine_schema_identifier(
+        schema: Optional[ifcopenshell.util.schema.IFC_SCHEMA] = None,
+        schema_version: Optional[tuple[int, int, int, int]] = None,
+    ):
+        if schema_version:
+            prefixes = ("IFC", "X", "_ADD", "_TC")
+            schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+        elif schema:
+            schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
+        else:
+            schema = "IFC4"
+        return schema
 
     @property
     def storage(self) -> Optional[rocksdb_file_storage]:
