@@ -470,9 +470,13 @@ private:
 	}
 
 	size_t __hash__() const {
-	    if (!self->declaration().as_entity()) {
-            return boost::hash<std::tuple<uint32_t, void*>>{}({self->identity(), self->file()});
-		} else {
+		return boost::hash<std::tuple<uint32_t, void*>>{}({self->identity(), self->file()});
+	    // if (self->declaration().as_entity()) {
+		// }
+	}
+	
+	/*
+	else {
             return self->get_attribute_value(0).apply_visitor([&](const auto& val){
                 using U = std::decay_t<decltype(val)>;
                 if constexpr (std::is_same_v<U, Blank> || std::is_same_v<U, Derived> || std::is_same_v<U, boost::logic::tribool> || std::is_same_v<U, EnumerationReference> || std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t>) {
@@ -484,6 +488,7 @@ private:
 			});			
 		}
 	}
+	*/
 
 	std::string __repr__() const {
 	    std::ostringstream oss;
