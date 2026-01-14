@@ -16,23 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal
+
 import bpy
 import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.api.context
-import ifcopenshell.api.root
-import ifcopenshell.api.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from sverchok.data_structure import updateNode
 from sverchok.node_tree import SverchCustomTreeNode
 
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
-from ifcsverchok.nodes.ifc.add_pset import flatten_data
 
 
 class SvIfcSbExtrude(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcSbExtrude"
     bl_label = "IFC Extrude"
+
+    extrude_axis: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        default="Z",
+        items=[
+            ("X", "X", "Interpret curve as in XY plane and extrude along X+."),
+            ("Y", "Y", "Interpret curve as in XZ plane and extrude along Y+."),
+            ("Z", "Z", "Interpret curve as in XY plane and extrude along Z+."),
+        ],
+        name="Extrude Axis",
+        update=updateNode,
+    )
+
+    if TYPE_CHECKING:
+        extrude_axis: Literal["X", "Y", "Z"]
 
     def sv_init(self, context):
         helper.create_socket(
@@ -58,13 +70,17 @@ class SvIfcSbExtrude(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
             data_type="list[list[ifcopenshell.entity_instance]]",
         )
 
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "extrude_axis")
+
     def process(self):
         self.file = helper.get_file()
         curve: ifcopenshell.entity_instance = helper.get_socket_value(self.inputs, "Curve")
         magnitude: float = helper.get_socket_value(self.inputs, "Magnitude")
         position: tuple[float, float, float] = helper.get_socket_value(self.inputs, "Position")
         builder = ShapeBuilder(self.file)
-        extrude = builder.extrude(curve, magnitude=magnitude, position=position)
+        axis_kargs = builder.extrude_kwargs(self.extrude_axis)
+        extrude = builder.extrude(curve, magnitude=magnitude, position=position, **axis_kargs)
         helper.set_socket_value(self.outputs, "Extruded Profile", extrude)
 
 
