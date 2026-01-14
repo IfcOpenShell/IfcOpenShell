@@ -146,7 +146,7 @@ class entity_instance_mixin:
             for sty in yield_supertypes():
                 if fn := getattr(rules, f"calc_{sty}_{name}", None):
                     return fn(self)
-                
+
             raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
 
     @staticmethod

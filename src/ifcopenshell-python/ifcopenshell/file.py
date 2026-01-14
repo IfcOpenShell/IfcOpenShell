@@ -895,7 +895,7 @@ class file_mixin:
 
     def to_string(self) -> str:
         return self.to_string()
-    
+
     @staticmethod
     def _determine_schema_identifier(
         schema: Optional[ifcopenshell.util.schema.IFC_SCHEMA] = None,
