@@ -797,6 +797,9 @@ express::Base IfcParse::impl::in_memory_file_storage::create(const IfcParse::dec
 
 express::Base IfcParse::IfcFile::create(const IfcParse::declaration* decl, int id) {
     if (id != -1) {
+        if (decl->as_entity() == nullptr) {
+            throw IfcParse::IfcException("Assigning instance id during creation is only valid for entity declarations");
+        }
         bool id_already_exists = false;
         try {
             if (check_existance_before_adding) {
@@ -807,6 +810,9 @@ express::Base IfcParse::IfcFile::create(const IfcParse::declaration* decl, int i
         }
         if (id_already_exists) {
             throw IfcParse::IfcException("An instance with id " + boost::lexical_cast<std::string>(id) + " is already part of this file");
+        }
+        if ((unsigned)id > max_id_) {
+            max_id_ = (unsigned)id;
         }
     }
 

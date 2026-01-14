@@ -610,7 +610,7 @@ class file_mixin:
         """
         eid = kwargs.pop("id", -1)
 
-        e = self.create(type)
+        e = self.create(type, eid)
 
         # Create pairs of {attribute index, attribute value}.
         # Keyword arguments are mapped to their corresponding
