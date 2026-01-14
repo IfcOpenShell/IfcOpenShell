@@ -33,7 +33,7 @@ class TestRemoveCostItem(test.bootstrap.IFC4):
         item1 = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         item2 = ifcopenshell.api.cost.add_cost_item(self.file, cost_item=item1)
         ifcopenshell.api.cost.remove_cost_item(self.file, cost_item=item2)
-        assert self.file.by_type("IfcCostItem") == [item1]
+        assert self.file.by_type("IfcCostItem") == (item1,)
         assert self.file.by_type("IfcRelAssignsToControl")
         assert not self.file.by_type("IfcRelNests")
 
@@ -51,7 +51,7 @@ class TestRemoveCostItem(test.bootstrap.IFC4):
         item1 = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         item2 = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         ifcopenshell.api.cost.remove_cost_item(self.file, cost_item=item1)
-        assert self.file.by_type("IfcCostItem") == [item2]
+        assert self.file.by_type("IfcCostItem") == (item2,)
         rel = next(iter(self.file.by_type("IfcRelAssignsToControl")), None)
         assert rel
         assert rel.RelatedObjects == (item2,)
