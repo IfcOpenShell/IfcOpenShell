@@ -199,35 +199,18 @@ private:
 	}
 	*/
 
-	IfcFile(const std::string& schema = "IFC4") {
-		auto resolved_schema = schema;
-		if (resolved_schema == "IFC4X3") {
-            resolved_schema = "IFC4X3_ADD2";
-        }
-		return new IfcParse::IfcFile(IfcParse::schema_by_name(resolved_schema));
+	IfcFile(const std::string& schema) {
+		return new IfcParse::IfcFile(IfcParse::schema_by_name(schema));
 	}
 
-	IfcFile(const std::vector<int>& schema_version) {
-		static const char* prefixes[] = { "IFC", "X", "_ADD", "_TC" };
-
-        std::string resolved_schema;
-        for (size_t i = 0; i < schema_version.size() && i < 4; ++i) {
-            if (schema_version[i] != 0) {
-                resolved_schema += prefixes[i];
-                resolved_schema += std::to_string(schema_version[i]);
-            }
-        }
-		return new IfcParse::IfcFile(IfcParse::schema_by_name(resolved_schema));
-	}
-
-	std::vector<express::Base> get_inverse(const express::Base& e) {
+	std::vector<express::Base> _get_inverse(const express::Base& e) {
 		if (auto e_ = e.as<express::Entity>()) {
 			return cast_vector<express::Base>($self->getInverse(e_.id(), 0, -1));
 		}
 		throw IfcParse::IfcException("Only entities with ids are supported for get_inverse. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
-	std::vector<int> get_inverse_indices(const express::Base& e) {
+	std::vector<int> _get_inverse_indices(const express::Base& e) {
 		if (auto e_ = e.as<express::Entity>()) {
 			return $self->get_inverse_indices(e_.id());
 		}

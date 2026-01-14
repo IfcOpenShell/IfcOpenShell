@@ -806,11 +806,11 @@ class file_mixin:
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
 
-        inverses = self.get_inverse(inst)
+        inverses = self._get_inverse(inst)
 
         if allow_duplicate:
             if with_attribute_indices:
-                idxs = self.get_inverse_indices(inst)
+                idxs = self._get_inverse_indices(inst)
                 # TODO: include in typing.
                 return list(zip(inverses, idxs))
             else:

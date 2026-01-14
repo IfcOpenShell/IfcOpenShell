@@ -2489,22 +2489,24 @@ std::vector<express::Entity> IfcFile::getInverse(int instance_id, const IfcParse
 }
 
 size_t IfcFile::getTotalInverses(int instance_id) {
-    size_t n = 0;
+    std::set<uint32_t> counted_ids;
 
-    std::visit([&n, instance_id](const auto& x) {
+    std::visit([&counted_ids, instance_id](const auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
             auto lower = x.byref_excl_.lower_bound({ instance_id, -1, -1 });
             auto upper = x.byref_excl_.upper_bound({ instance_id, std::numeric_limits<short>::max(), std::numeric_limits<short>::max() });
             for (auto it = lower; it != upper; ++it) {
-                n += it->second.size();
+                for (auto& i : it->second) {
+                    counted_ids.insert(i);
+                }
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo
         }
     }, storage_);
 
-    return n;
+    return counted_ids.size();
 }
 
 void IfcFile::setDefaultHeaderValues() {
