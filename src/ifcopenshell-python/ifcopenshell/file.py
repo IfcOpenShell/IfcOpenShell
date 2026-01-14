@@ -528,6 +528,14 @@ class file_mixin:
     def transaction(self):
         return self.state[2]
 
+    @history.setter
+    def history(self, v):
+        self.state[0] = v
+
+    @future.setter
+    def future(self, v):
+        self.state[1] = v
+
     @transaction.setter
     def transaction(self, v):
         self.state[2] = v
