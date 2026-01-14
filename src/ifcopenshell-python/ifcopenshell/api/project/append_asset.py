@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import deque
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.geometry
@@ -302,7 +303,7 @@ class Usecase:
         self.whitelisted_inverse_attributes = {
             "IfcMaterial": ["HasExternalReferences", "HasProperties", "HasRepresentation"]
         }
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         element = self.add_element(self.settings["element"])
         if element.HasRepresentation:
             self.reuse_existing_contexts()
@@ -329,7 +330,7 @@ class Usecase:
             "IfcProductDefinitionShape": ["HasShapeAspects"],
             "IfcRepresentationMap": ["HasShapeAspects"],
         }
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
         return element
@@ -348,7 +349,7 @@ class Usecase:
             "IfcProductDefinitionShape": ["HasShapeAspects"],
             "IfcRepresentationMap": ["HasShapeAspects"],
         }
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
 
@@ -390,9 +391,9 @@ class Usecase:
         new = self.file_add(element)
         self.added_elements[element.id()] = new
         self.check_inverses(element)
-        subelement_queue = self.settings["library"].traverse(element, max_levels=1)[1:]
+        subelement_queue = deque(self.settings["library"].traverse(element, max_levels=1)[1:])
         while subelement_queue:
-            subelement = subelement_queue.pop(0)
+            subelement = subelement_queue.popleft()
             existing_element = self.get_existing_element(subelement)
             if existing_element:
                 self.added_elements[subelement.id()] = existing_element
