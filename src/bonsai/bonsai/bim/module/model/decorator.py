@@ -470,8 +470,8 @@ class PolylineDecorator:
         ui_style = context.preferences.ui_styles[0]
         widget_font_points = ui_style.widget.points
         ui_scale = context.preferences.view.ui_scale
-        platform_scale = 2 if sys.platform == 'darwin' else 1
-        
+        platform_scale = 2 if sys.platform == "darwin" else 1
+
         font_size = widget_font_points * ui_scale * platform_scale
         offset = widget_font_points * ui_scale * (1.5 * platform_scale)
         line_height = widget_font_points * ui_scale * (1.25 * platform_scale)
@@ -525,8 +525,8 @@ class PolylineDecorator:
         ui_style = context.preferences.ui_styles[0]
         widget_font_points = ui_style.widget.points
         ui_scale = context.preferences.view.ui_scale
-        platform_scale = 2 if sys.platform == 'darwin' else 1
-        
+        platform_scale = 2 if sys.platform == "darwin" else 1
+
         font_size = widget_font_points * ui_scale * platform_scale
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
@@ -1952,8 +1952,8 @@ class BoundingBoxDecorator:
         ui_style = context.preferences.ui_styles[0]
         widget_font_points = ui_style.widget.points
         ui_scale = context.preferences.view.ui_scale
-        platform_scale = 2 if sys.platform == 'darwin' else 1
-        
+        platform_scale = 2 if sys.platform == "darwin" else 1
+
         font_size = widget_font_points * ui_scale * platform_scale
         blf.size(font_id, font_size)
         blf.enable(font_id, blf.SHADOW)
