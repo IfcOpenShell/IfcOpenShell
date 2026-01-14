@@ -1,5 +1,5 @@
 # IfcSverchok - IFC Sverchok extension
-# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Martina Jakubowska <martina@jakubowska.dk>
 #
 # This file is part of IfcSverchok.
 #
@@ -17,26 +17,39 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.guid
 from sverchok.node_tree import SverchCustomTreeNode
 
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 
 
-class SvIfcGenerateGuid(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
-    bl_idname = "SvIfcGenerateGuid"
-    bl_label = "IFC Generate Guid"
+class SvIfcSbTest(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+    bl_idname = "SvIfcSbTest"
+    bl_label = "IFC Test"
 
     def sv_init(self, context):
-        self.outputs.new("SvStringsSocket", "guid")
+        helper.create_socket(
+            self.inputs,
+            "Input",
+        )
+        helper.create_socket(
+            self.outputs,
+            "Output",
+            description="Extruded Profile",
+        )
 
     def process(self):
-        self.outputs["guid"].sv_set([[ifcopenshell.guid.new()]])
+        print("test!")
+        self.sv_input_names = ["Input"]
+        super().process()
+
+    def process_ifc(self, input_value: float) -> None:
+        self.outputs["Output"].sv_set([[input_value]])
 
 
 def register():
-    bpy.utils.register_class(SvIfcGenerateGuid)
+    bpy.utils.register_class(SvIfcSbTest)
 
 
 def unregister():
-    bpy.utils.unregister_class(SvIfcGenerateGuid)
+    bpy.utils.unregister_class(SvIfcSbTest)

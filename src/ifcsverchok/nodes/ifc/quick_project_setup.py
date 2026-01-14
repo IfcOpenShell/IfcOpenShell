@@ -16,11 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from email.mime import application
-
 import bpy
-import ifcopenshell
 import sverchok.core.sockets
 from bpy.props import StringProperty
 from ifcopenshell import template
