@@ -102,10 +102,8 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
 
 
 def register():
-    # bpy.utils.register_class(SvIfcCreateShapeRefresh)
     bpy.utils.register_class(SvIfcCreateShape)
 
 
 def unregister():
     bpy.utils.unregister_class(SvIfcCreateShape)
-    # bpy.utils.unregister_class(SvIfcCreateShapeRefresh)
