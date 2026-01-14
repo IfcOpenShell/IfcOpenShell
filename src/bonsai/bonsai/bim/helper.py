@@ -813,16 +813,6 @@ def get_panel_tab_name(panel_class):
     return "PROJECT"  # Default fallback
 
 
-def should_show_panel(panel_id, panel_tab_name, context):
-    if tool.Blender.is_tab(context, "BOOKMARK"):
-        return is_panel_bookmarked(panel_id) and get_panel_visibility(panel_id, "BOOKMARK")
-
-    if tool.Blender.is_tab(context, panel_tab_name):
-        return get_tab_visibility(panel_tab_name) and get_panel_visibility(panel_id, panel_tab_name)
-
-    return False
-
-
 def get_tab_visibility(tab_name):
     bim_props = tool.Blender.get_bim_props()
     tab_vis = bim_props.tab_visibilities.get(tab_name)
@@ -848,13 +838,6 @@ def get_panel_visibility(panel_id, current_tab=None):
         else:
             return panel_config.is_visible_in_tab
     return True
-
-
-def is_panel_bookmarked(panel_id):
-    panel_config = get_panel_config(panel_id)
-    if panel_config:
-        return panel_config.is_bookmarked
-    return False
 
 
 def get_panel_config(panel_id, create_if_missing=False):

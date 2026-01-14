@@ -136,8 +136,6 @@ class BIM_PT_object_material(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Blender.is_tab(context, "GEOMETRY"):
-            return False
         if not (obj := context.active_object):
             return False
         ifc_id = tool.Blender.get_ifc_definition_id(obj)
