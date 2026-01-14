@@ -313,7 +313,7 @@ class ShapeBuilder:
         Generate an IfcIndexedPolyCurve based on the provided points.
 
         :param points: List of 2d or 3d points
-        :param closed: Whether polyline should be closed. Default is `False`
+        :param closed: Whether polyline should be closed.
         :param position_offset: offset to be applied to all points
         :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
             provide 3 points: `arc_start`, `arc_middle` and `arc_end` to `points` and add the `arc_middle`
@@ -416,8 +416,8 @@ class ShapeBuilder:
             3 2
             0 1
 
-        :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
-        :param position: rectangle position, default to `None`.
+        :param size: rectangle size, could be either 2d or 3d.
+        :param position: rectangle position.
             if `position` not specified zero-vector will be used
         :return: list of rectangle coords
         """
@@ -442,8 +442,8 @@ class ShapeBuilder:
         """
         Generate a rectangle polyline.
 
-        :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
-        :param position: rectangle position, default to `None`.
+        :param size: rectangle size, could be either 2d or 3d.
+        :param position: rectangle position.
             if `position` not specified zero-vector will be used
         :return: IfcIndexedPolyCurve
         """
@@ -785,7 +785,7 @@ class ShapeBuilder:
         """
         Create IfcAxis2Placement3D from numpy matrix.
 
-        :param matrix: 4x4 transformation matrix, defaults to `np.eye(4)`
+        :param matrix: 4x4 transformation matrix, defaults to ``np.eye(4)``
         :return: IfcAxis2Placement3D
         """
         if matrix is None:
@@ -966,8 +966,8 @@ class ShapeBuilder:
 
     def sphere(self, radius: float = 1.0, center: VectorType = (0.0, 0.0, 0.0)) -> ifcopenshell.entity_instance:
         """
-        :param radius: radius of the sphere, defaults to 1.0
-        :param center: sphere position, defaults to `(0.0, 0.0, 0.0)`
+        :param radius: radius of the sphere.
+        :param center: sphere position.
 
         :return: IfcSphere
         """
@@ -1070,7 +1070,7 @@ class ShapeBuilder:
 
         :param context: IfcGeometricRepresentationSubContext
         :param items: could be a list or single curve/IfcExtrudedAreaSolid
-        :param representation_type: Explicitly specified RepresentationType, defaults to `None`.
+        :param representation_type: Explicitly specified RepresentationType.
             If not provided it will be guessed from the items types
         :return: IfcShapeRepresentation
         """
@@ -1181,8 +1181,8 @@ class ShapeBuilder:
         :param fillets:          list of points from `coords` to base fillet on. Example: (1,)
         :param fillet_radius:    list of fillet radius for each of corresponding point form `fillets`.
             Example: (5.,) Note: `fillet_radius` could be just 1 float value if it's the same for all fillets.
-        :param closed:           boolean whether curve should be closed (whether last point connected to first one). Default: True
-        :param create_ifc_curve: create IfcIndexedPolyCurve or just return the data. Default: False
+        :param closed:           boolean whether curve should be closed (whether last point connected to first one).
+        :param create_ifc_curve: create IfcIndexedPolyCurve or just return the data.
 
         :return: (points, segments, ifc_curve) for the created simple curve
             if both points in e are equally far from pt, then v1 is returned.
@@ -1461,10 +1461,10 @@ class ShapeBuilder:
 
         :param points: list of points, assuming they form consecutive closed polyline.
         :param magnitude: extrusion magnitude
-        :param extrusion_vector: extrusion direction, by default it's extruding by Z+ axis
+        :param extrusion_vector: extrusion direction.
         :param offset: offset from the points
-        :param start_cap: if True, create start cap, by default it's True
-        :param end_cap: if True, create end cap, by default it's True
+        :param start_cap: if True, create start cap.
+        :param end_cap: if True, create end cap.
         :return: IfcPolygonalFaceSet
         """
 
