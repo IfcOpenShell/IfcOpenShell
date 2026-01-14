@@ -235,33 +235,6 @@ def open(
     return f
 
 
-def create_entity(type: str, schema: str = "IFC4", *args: Any, **kwargs: Any) -> entity_instance:
-    """Creates a new IFC entity that does not belong to an IFC file object
-
-    Note that it is more common to create entities within a existing file
-    object. See :meth:`ifcopenshell.file.create_entity`.
-
-    :param type: Case insensitive name of the IFC class
-    :param schema: The IFC schema identifier
-    :param args: The positional arguments of the IFC class
-    :param kwargs: The keyword arguments of the IFC class
-    :returns: An entity instance
-
-    Example:
-
-    .. code:: python
-
-        person = ifcopenshell.create_entity("IfcPerson") # #0=IfcPerson($,$,$,$,$,$,$,$)
-        model = ifcopenshell.file()
-        model.add(person) # #1=IfcPerson($,$,$,$,$,$,$,$)
-    """
-    e = entity_instance((schema, type))
-    attrs = list(enumerate(args)) + [(e.get_argument_index(name), arg) for name, arg in kwargs.items()]
-    for idx, arg in attrs:
-        e[idx] = arg
-    return e
-
-
 def register_schema(schema: ifcopenshell.express.schema_class.SchemaClass) -> None:
     """Registers a custom IFC schema
 
