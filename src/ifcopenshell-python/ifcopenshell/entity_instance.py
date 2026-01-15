@@ -223,9 +223,7 @@ class entity_instance_mixin:
 
         :return: True if the instance is an entity
         """
-        schema_name = self.is_a(True).split(".")[0]
-        decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
-        return isinstance(decl, ifcopenshell_wrapper.entity)
+        return isinstance(self.declaration, ifcopenshell_wrapper.entity)
 
     def compare(self, other, op, reverse=False):
         """Compares with another instance.

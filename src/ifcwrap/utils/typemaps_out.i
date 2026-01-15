@@ -6,6 +6,10 @@
 	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), declaration_type_to_swig($1), 0);
 }
 
+%typemap(out) const IfcParse::declaration& {
+	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), declaration_type_to_swig($1), 0);
+}
+
 %typemap(out) IfcParse::parameter_type* {
 	if ($1->as_named_type()) {
 		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_named_type()), SWIGTYPE_p_IfcParse__named_type, 0);

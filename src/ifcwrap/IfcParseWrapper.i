@@ -884,6 +884,7 @@ private:
 
 	%pythoncode %{
 		file = property(file_py)
+		declaration = property(declaration)
 	%}
 }
 
