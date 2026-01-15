@@ -16,36 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
-from copy import deepcopy
-from decimal import Context
-from email.policy import default
-from itertools import chain, cycle
-
-import bonsai.core.geometry as core
-import bonsai.tool as tool
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.util.representation
-from bonsai.bim.module.root.prop import get_contexts
 from bpy.props import (
     BoolProperty,
     EnumProperty,
-    IntProperty,
     PointerProperty,
     StringProperty,
 )
 from mathutils import Matrix
-from sverchok.core.socket_data import sv_get_socket
 from sverchok.data_structure import (
-    fixed_iter,
-    flat_iter,
-    flatten_data,
-    node_id,
     updateNode,
-    zip_long_repeat,
 )
 from sverchok.node_tree import SverchCustomTreeNode
 

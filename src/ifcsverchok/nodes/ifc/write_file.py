@@ -20,7 +20,6 @@ from os.path import abspath, splitext
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial

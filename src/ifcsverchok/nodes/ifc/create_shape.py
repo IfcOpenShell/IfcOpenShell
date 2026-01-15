@@ -20,9 +20,8 @@ import logging
 
 import bonsai.bim.import_ifc
 import bpy
-import ifcopenshell
 import ifcopenshell.geom
-from bpy.props import BoolProperty, PointerProperty, StringProperty
+from bpy.props import BoolProperty, StringProperty
 from sverchok.data_structure import flatten_data, updateNode
 from sverchok.node_tree import SverchCustomTreeNode
 

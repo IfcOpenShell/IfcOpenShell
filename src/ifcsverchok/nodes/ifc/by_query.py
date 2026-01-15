@@ -17,7 +17,6 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.selector
 from bpy.props import StringProperty
 from sverchok.data_structure import updateNode

@@ -19,7 +19,6 @@
 import bonsai.tool as tool
 import bpy
 import ifcopenshell
-import ifcopenshell.util.selector
 from bpy.props import StringProperty
 from sverchok.data_structure import updateNode
 from sverchok.node_tree import SverchCustomTreeNode

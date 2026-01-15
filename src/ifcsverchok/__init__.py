@@ -154,7 +154,6 @@ reload_event = False
 from os.path import splitext
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
