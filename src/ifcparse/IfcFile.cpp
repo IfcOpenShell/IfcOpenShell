@@ -336,7 +336,7 @@ std::shared_ptr<InstanceData> IfcParse::parse_context::construct(IfcParse::IfcFi
         }
     }
 
-    return std::make_shared<InstanceData>(owner, decl, name.value_or(0), std::move(storage));
+    return std::make_shared<InstanceData>(owner, decl, (decl && decl->as_entity()) ? name.value_or(0) : 0, std::move(storage));
 }
 
 /*
