@@ -1021,7 +1021,7 @@ class Loader(bonsai.core.tool.Loader):
         elif material.is_a("IfcMaterialLayerSetUsage"):
             usage = material
             layer_set = material.ForLayerSet
-            offset = usage.OffsetFromReferenceLine * cls.unit_scale
+            offset = usage.OffsetFromReferenceLine
             sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
         elif material.is_a("IfcMaterialLayerSet"):
             usage = None
@@ -1034,11 +1034,17 @@ class Loader(bonsai.core.tool.Loader):
         if len(layer_set.MaterialLayers) == 1:
             return mesh
 
+        # Get mesh bounds
+        if len(mesh.vertices) > 0:
+            z_coords = [v.co.z for v in mesh.vertices]
+            mesh_z_min = min(z_coords)
+            mesh_z_max = max(z_coords)
+        
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
         prev_co = None
-        advance_direction = None  # Will store direction to advance planes
+        advance_direction = None
 
         if not usage:
             sense_factor = 1
@@ -1046,9 +1052,7 @@ class Loader(bonsai.core.tool.Loader):
             co = Vector((0.0, 0.0, offset))
             advance_direction = no
         elif usage.LayerSetDirection == "AXIS2":
-            co = Vector((0.0, offset, 0.0))
-
-            # Get LOCAL extrusion direction
+            # Get local extrusion direction
             local_extrusion = Vector([0.0, 0.0, 1.0])
             if body := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW"):
                 for item in ifcopenshell.util.representation.resolve_representation(body).Items:
@@ -1060,17 +1064,58 @@ class Loader(bonsai.core.tool.Loader):
 
             # Thickness direction: perpendicular to extrusion and length
             thickness_dir = local_extrusion.cross(Vector([1.0, 0.0, 0.0])).normalized()
-
-            # Ensure it points in POSITIVE Y (through wall thickness, not backwards)
             if thickness_dir.y < 0:
                 thickness_dir = -thickness_dir
 
             no = thickness_dir
+            
+            # Find start point by projecting vertices onto thickness direction
+            if len(mesh.vertices) > 0:
+                projections = [Vector(v.co).dot(no) for v in mesh.vertices]
+                min_proj = min(projections)
+                max_proj = max(projections)
+                
+                centroid = sum((Vector(v.co) for v in mesh.vertices), Vector()) / len(mesh.vertices)
+                centroid_proj = centroid.dot(no)
+                
+                if sense_factor == 1:
+                    start_proj = min_proj
+                else:
+                    start_proj = max_proj
+                
+                offset_dist = start_proj - centroid_proj
+                co = centroid + no * offset_dist
+                
+                actual_mesh_height = max_proj - min_proj
+            else:
+                co = Vector((0.0, 0.0, 0.0))
+            
             advance_direction = thickness_dir
         elif usage.LayerSetDirection == "AXIS3":
-            co = Vector((0.0, 0.0, offset))
-            no = cls.get_extrusion_vector(element).normalized()
+            # AXIS3 layers go through slab thickness (local Z)
             no = Vector([0.0, 0.0, 1.0])
+            
+            # Find start point by projecting vertices onto Z direction
+            if len(mesh.vertices) > 0:
+                projections = [Vector(v.co).dot(no) for v in mesh.vertices]
+                min_proj = min(projections)
+                max_proj = max(projections)
+                
+                centroid = sum((Vector(v.co) for v in mesh.vertices), Vector()) / len(mesh.vertices)
+                centroid_proj = centroid.dot(no)
+                
+                if sense_factor == 1:
+                    start_proj = min_proj
+                else:
+                    start_proj = max_proj
+                
+                offset = start_proj - centroid_proj
+                co = centroid + no * offset
+                
+                actual_mesh_height = max_proj - min_proj
+            else:
+                co = Vector((0.0, 0.0, 0.0))
+            
             advance_direction = no
         elif usage.LayerSetDirection == "AXIS1":
             co = Vector((0.0, 0.0, offset))
@@ -1078,10 +1123,27 @@ class Loader(bonsai.core.tool.Loader):
             no = Vector([1.0, 0.0, 0.0])
             advance_direction = no
 
-        no *= sense_factor
-        advance_direction *= sense_factor
+        # Apply DirectionSense
+        if usage and usage.LayerSetDirection == "AXIS2":
+            if sense_factor == -1:
+                advance_direction = -advance_direction
+                test_normal = -no
+            else:
+                test_normal = no
+        elif usage and usage.LayerSetDirection == "AXIS1":
+            no = no * sense_factor
+            advance_direction = advance_direction * sense_factor
+            test_normal = no
+        elif usage and usage.LayerSetDirection == "AXIS3":
+            if sense_factor == -1:
+                advance_direction = -advance_direction
+                test_normal = -no
+            else:
+                test_normal = no
+        else:
+            test_normal = no
 
-        # Cache this
+        # Cache material styles
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
         has_layer_styles = False
@@ -1089,12 +1151,23 @@ class Loader(bonsai.core.tool.Loader):
             if style := tool.Ifc.get_entity(material):
                 styles[style] = i
 
+        layer_list = list(enumerate(layer_set.MaterialLayers))
+
+        # Calculate scale factor
+        total_layer_thickness = sum(layer.LayerThickness for _, layer in layer_list)
+
+        if 'actual_mesh_height' not in locals():
+            actual_mesh_height = mesh_z_max - mesh_z_min if len(mesh.vertices) > 0 else total_layer_thickness
+
+        thickness_scale = actual_mesh_height / total_layer_thickness if total_layer_thickness > 0 else 1.0
+
         last_i = len(layer_set.MaterialLayers) - 1
-        for i, layer in enumerate(layer_set.MaterialLayers):
-            if i != last_i:
+        
+        for idx, (original_i, layer) in enumerate(layer_list):
+            if idx != last_i:
                 prev_co = co.copy()
-                # Use advance_direction (not no) to move planes!
-                co += advance_direction * layer.LayerThickness * cls.unit_scale
+                advance_vector = advance_direction * layer.LayerThickness * thickness_scale
+                co += advance_vector
 
                 bisect_geom = bmesh.ops.bisect_plane(
                     bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
@@ -1107,18 +1180,18 @@ class Loader(bonsai.core.tool.Loader):
                 material_index = len(mesh.materials)
                 mesh.materials.append(tool.Ifc.get_object(style))
 
-            if i == last_i:
+            if idx == last_i:
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
                         center = face.calc_center_median()
-                        if (center - co).dot(no) >= 0:
+                        if (center - co).dot(test_normal) >= 0:
                             face.material_index = material_index
                             has_layer_styles = True
             else:
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
                         center = face.calc_center_median()
-                        if (center - co).dot(no) < 0 and (center - prev_co).dot(no) >= 0:
+                        if (center - co).dot(test_normal) < 0 and (center - prev_co).dot(test_normal) >= 0:
                             face.material_index = material_index
                             has_layer_styles = True
 
