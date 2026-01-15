@@ -111,7 +111,7 @@ class LateBoundSchemaInstantiator:
 
     def finalize(self, can_be_instantiated_set, override_schema_name=None):
         self.schema = w.schema_definition(
-            override_schema_name or self.schema_name, list(self.declarations.values()), None
+            override_schema_name or self.schema_name, list(self.declarations.values())
         )
 
     def disown(self):
