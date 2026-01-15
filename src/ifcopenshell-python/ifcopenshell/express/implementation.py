@@ -183,7 +183,7 @@ class Implementation(codegen.Base):
                 if arg["is_derived"]:
                     constructor_implementations.append(templates.constructor_stmt_derived % {"index": arg["index"] - 1})
                 else:
-                    is_optional_non_naked_ptr = arg["is_optional"] and not arg["non_optional_type"].endswith("*")
+                    is_optional_non_naked_ptr = arg["full_type"].startswith("std::optional")
                     arg_name = "v%(index)d_%(name)s" % arg
                     deref_name = ("*%s" % arg_name) if is_optional_non_naked_ptr else arg_name
 
@@ -318,7 +318,7 @@ class Implementation(codegen.Base):
                 else templates.simpletype_impl_is_without_supertype
             )
 
-            constructor = templates.constructor_single_initlist#  if superclass else templates.constructor
+            initializer = templates.initialize_single_initlist
 
             simpletype_impl_cast = (
                 templates.simpletype_impl_cast_templated
@@ -371,7 +371,7 @@ class Implementation(codegen.Base):
                             #     ("const std::weak_ptr<InstanceData>& e",),
                             #     "",
                             # ),
-                            # ("", "", constructor, "", ("%s v" % type_str,), ("set_attribute_value(0, v%s);" % ("->generalize()" if mapping.is_templated_list(type) else ""))) if mapping.simple_type_parent(class_name) is None else \
+                            ("", "", initializer, "", ("%s v" % type_str,), ("set_attribute_value(0, %s(v));" % ("cast_vector<express::Base>" if mapping.is_templated_list(type) else ""))) if mapping.simple_type_parent(class_name) is None else \
                             # ("v", "", constructor, "", ("%s v" % type_str,), ""),
                             ("", "", templates.cast_function, type_str, (), simpletype_impl_cast),
                         ),

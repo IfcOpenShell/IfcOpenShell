@@ -410,8 +410,18 @@ public:
 
     void build_inverses_(const express::Base&);
 
+    // @nb this does not support id assignment
+    template <typename T, typename... Ts>
+    T create(Ts&&... args) {
+        T t = create(&T::Class()).template as<T>();
+        if constexpr (sizeof...(Ts) > 0) {
+            t.initialize(std::forward<Ts>(args)...);
+        }
+        return t;
+    }
+
     template <typename T>
-    T create(int id=-1) {
+    T create(int id = -1) {
         return create(&T::Class(), id).template as<T>();
     }
 

@@ -17,11 +17,11 @@ extern declaration* HEADER_SECTION_SCHEMA_types[5];
 
 // Function implementations for schema_name
 const IfcParse::type_declaration& Header_section_schema::schema_name::Class() { return *((IfcParse::type_declaration*)HEADER_SECTION_SCHEMA_types[3]); }
-Header_section_schema::schema_name::operator std::string() const { return get_attribute_value(0); }
+void Header_section_schema::schema_name::initialize(std::string v) { set_attribute_value(0, (v)); }
 
 // Function implementations for time_stamp_text
 const IfcParse::type_declaration& Header_section_schema::time_stamp_text::Class() { return *((IfcParse::type_declaration*)HEADER_SECTION_SCHEMA_types[4]); }
-Header_section_schema::time_stamp_text::operator std::string() const { return get_attribute_value(0); }
+void Header_section_schema::time_stamp_text::initialize(std::string v) { set_attribute_value(0, (v)); }
 
 
 // Function implementations for file_description
@@ -31,10 +31,8 @@ std::string Header_section_schema::file_description::implementation_level() cons
 void Header_section_schema::file_description::setimplementation_level(const std::string& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
 
 
-// const IfcParse::entity& Header_section_schema::file_description::declaration() const { return *((IfcParse::entity*)HEADER_SECTION_SCHEMA_types[0]); }
 const IfcParse::entity& Header_section_schema::file_description::Class() { return *((IfcParse::entity*)HEADER_SECTION_SCHEMA_types[0]); }
-// Header_section_schema::file_description::file_description(const std::weak_ptr<InstanceData>& e) : express::Entity(e) { }
-// Header_section_schema::file_description::file_description(std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level) : express::Entity(const std::weak_ptr<InstanceData>&(in_memory_attribute_storage(2))) { set_attribute_value(0, (v1_description));set_attribute_value(1, (v2_implementation_level));; populate_derived(); }
+void Header_section_schema::file_description::initialize(std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level) { set_attribute_value(0, (v1_description));set_attribute_value(1, (v2_implementation_level)); }
 
 // Function implementations for file_name
 std::string Header_section_schema::file_name::name() const {  std::string v = get_attribute_value(0); return v; }
@@ -53,18 +51,14 @@ std::string Header_section_schema::file_name::authorization() const {  std::stri
 void Header_section_schema::file_name::setauthorization(const std::string& v) { set_attribute_value(6, v);if constexpr (false)unset_attribute_value(6); }
 
 
-// const IfcParse::entity& Header_section_schema::file_name::declaration() const { return *((IfcParse::entity*)HEADER_SECTION_SCHEMA_types[1]); }
 const IfcParse::entity& Header_section_schema::file_name::Class() { return *((IfcParse::entity*)HEADER_SECTION_SCHEMA_types[1]); }
-// Header_section_schema::file_name::file_name(const std::weak_ptr<InstanceData>& e) : express::Entity(e) { }
-// Header_section_schema::file_name::file_name(std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization) : express::Entity(const std::weak_ptr<InstanceData>&(in_memory_attribute_storage(7))) { set_attribute_value(0, (v1_name));set_attribute_value(1, (v2_time_stamp));set_attribute_value(2, (v3_author));set_attribute_value(3, (v4_organization));set_attribute_value(4, (v5_preprocessor_version));set_attribute_value(5, (v6_originating_system));set_attribute_value(6, (v7_authorization));; populate_derived(); }
+void Header_section_schema::file_name::initialize(std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization) { set_attribute_value(0, (v1_name));set_attribute_value(1, (v2_time_stamp));set_attribute_value(2, (v3_author));set_attribute_value(3, (v4_organization));set_attribute_value(4, (v5_preprocessor_version));set_attribute_value(5, (v6_originating_system));set_attribute_value(6, (v7_authorization)); }
 
 // Function implementations for file_schema
 std::vector< std::string > /*[1:?]*/ Header_section_schema::file_schema::schema_identifiers() const {  std::vector< std::string > /*[1:?]*/ v = get_attribute_value(0); return v; }
 void Header_section_schema::file_schema::setschema_identifiers(const std::vector< std::string > /*[1:?]*/& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
 
 
-// const IfcParse::entity& Header_section_schema::file_schema::declaration() const { return *((IfcParse::entity*)HEADER_SECTION_SCHEMA_types[2]); }
 const IfcParse::entity& Header_section_schema::file_schema::Class() { return *((IfcParse::entity*)HEADER_SECTION_SCHEMA_types[2]); }
-// Header_section_schema::file_schema::file_schema(const std::weak_ptr<InstanceData>& e) : express::Entity(e) { }
-// Header_section_schema::file_schema::file_schema(std::vector< std::string > /*[1:?]*/ v1_schema_identifiers) : express::Entity(const std::weak_ptr<InstanceData>&(in_memory_attribute_storage(1))) { set_attribute_value(0, (v1_schema_identifiers));; populate_derived(); }
+void Header_section_schema::file_schema::initialize(std::vector< std::string > /*[1:?]*/ v1_schema_identifiers) { set_attribute_value(0, (v1_schema_identifiers)); }
 

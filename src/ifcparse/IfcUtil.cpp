@@ -122,13 +122,14 @@ void IfcUtil::unescape_xml(std::string& str) {
     boost::replace_all(str, "&gt;", ">");
 }
 
-void express::Entity::populate_derived() {
-    for (auto it = declaration().as_entity()->derived().begin(); it != declaration().as_entity()->derived().end(); ++it) {
-        if (*it) {
-            set_attribute_value(
-                std::distance(declaration().as_entity()->derived().begin(), it),
-                Derived{}
-            );
+void InstanceData::populate_derived_() {
+    if (auto* ent = declaration_->as_entity()) {
+        for (auto it = ent->derived().begin(); it != ent->derived().end(); ++it) {
+            if (*it) {
+                set_attribute_value(
+                    std::distance(ent->derived().begin(), it),
+                    Derived{});
+            }
         }
     }
 }

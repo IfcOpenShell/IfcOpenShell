@@ -35,9 +35,8 @@ public:
     schema_name() {}
     explicit schema_name (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
 
-    // virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    // schema_name (std::string v);
+    void initialize(std::string v);
     operator std::string() const;
 };
 
@@ -46,9 +45,8 @@ public:
     time_stamp_text() {}
     explicit time_stamp_text (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
 
-    // virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    // time_stamp_text (std::string v);
+    void initialize(std::string v);
     operator std::string() const;
 };
 
@@ -63,9 +61,9 @@ public:
     void setdescription(const std::vector< std::string > /*[1:?]*/& v);
     std::string implementation_level() const;
     void setimplementation_level(const std::string& v);
-        // virtual const IfcParse::entity& declaration() const;
+    
     static const IfcParse::entity& Class();
-    // file_description (std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level);
+    void initialize(std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level);
 };
 
 class IFC_PARSE_API file_name : public express::Entity {
@@ -87,9 +85,9 @@ public:
     void setoriginating_system(const std::string& v);
     std::string authorization() const;
     void setauthorization(const std::string& v);
-        // virtual const IfcParse::entity& declaration() const;
+    
     static const IfcParse::entity& Class();
-    // file_name (std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization);
+    void initialize(std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization);
 };
 
 class IFC_PARSE_API file_schema : public express::Entity {
@@ -99,9 +97,9 @@ public:
 
     std::vector< std::string > /*[1:?]*/ schema_identifiers() const;
     void setschema_identifiers(const std::vector< std::string > /*[1:?]*/& v);
-        // virtual const IfcParse::entity& declaration() const;
+    
     static const IfcParse::entity& Class();
-    // file_schema (std::vector< std::string > /*[1:?]*/ v1_schema_identifiers);
+    void initialize(std::vector< std::string > /*[1:?]*/ v1_schema_identifiers);
 };
 
 };

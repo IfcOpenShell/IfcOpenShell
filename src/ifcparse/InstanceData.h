@@ -420,6 +420,8 @@ class IFC_PARSE_API InstanceData {
     template <typename T>
     T* get_storage_of_type() const;
 
+    void populate_derived_();
+
   public:
       // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but in_memory*, where nullptr means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
       in_memory_attribute_storage* storage_;
@@ -442,11 +444,15 @@ class IFC_PARSE_API InstanceData {
 
       InstanceData(IfcParse::IfcFile* file, const IfcParse::declaration* declaration, uint32_t id, in_memory_attribute_storage&& storage)
           : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(new in_memory_attribute_storage(std::move(storage)))
-      {}
+      {
+            populate_derived_();
+      }
 
       InstanceData(IfcParse::IfcFile* file, const IfcParse::declaration* declaration, uint32_t id, rocks_db_attribute_storage&&)
           : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(nullptr)
-      {}
+      {
+          populate_derived_();
+      }
 
       /*
       // now that there are referenced as shared_ptr there is no move constructor anymore

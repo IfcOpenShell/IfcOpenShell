@@ -116,9 +116,8 @@ public:
     %(name)s() {}
     explicit %(name)s (const std::weak_ptr<InstanceData>& data) : %(superclass)s(data) {}
 
-    // virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    // %(name)s (%(type)s v);
+    void initialize(%(type)s v);
     operator %(type)s() const;
 };
 """
@@ -134,7 +133,7 @@ simpletype_impl_explicit_constructor = "data_ = e;"
 simpletype_impl_constructor = (
     "data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
 )
-simpletype_impl_constructor_templated = "data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v->generalize());"
+simpletype_impl_constructor_templated = "data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, cast_vector<express::Base>(v));"
 simpletype_impl_cast = "return get_attribute_value(0);"
 simpletype_impl_cast_templated = "std::vector<express::Base> es = get_attribute_value(0); return cast_vector<%(underlying_type)s>(es);"
 
@@ -170,10 +169,9 @@ public:
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    // virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    // %(name)s (Value v);
-    // %(name)s (const std::string& v);
+    void initialize(Value v);
+    void initialize(const std::string& v);
     operator Value() const;
 };
 """
@@ -184,9 +182,9 @@ public:
     %(name)s() {}
     explicit %(name)s (const std::weak_ptr<InstanceData>& data) : %(superclass)s(data) {}
 
-%(attributes)s    %(inverse)s    // virtual const IfcParse::entity& declaration() const;
+%(attributes)s    %(inverse)s
     static const IfcParse::entity& Class();
-    // %(name)s (%(constructor_arguments)s);
+    void initialize(%(constructor_arguments)s);
 };
 """
 
@@ -228,10 +226,8 @@ const char* %(schema_name)s::%(name)s::ToString(Value v) {
 entity_implementation = """// Function implementations for %(name)s
 %(attributes)s
 %(inverse)s
-// const IfcParse::entity& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
-// %(schema_name)s::%(name)s::%(name)s(const std::weak_ptr<InstanceData>& e) : %(superclass)s { }
-// %(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass_num_attrs)s { %(constructor_implementation)s; populate_derived(); }
+void %(schema_name)s::%(name)s::initialize(%(constructor_arguments)s) { %(constructor_implementation)s }
 """
 
 # data_ = e; 
@@ -242,8 +238,8 @@ optional_attribute_description = "/// Whether the optional attribute %s is defin
 function = "%(return_type)s %(schema_name)s::%(class_name)s::%(name)s(%(arguments)s) { %(body)s }"
 const_function = "%(return_type)s %(schema_name)s::%(class_name)s::%(name)s(%(arguments)s) const { %(body)s }"
 constructor = "%(schema_name)s::%(class_name)s::%(class_name)s(%(arguments)s) { %(body)s }"
-constructor_single_initlist = (
-    "%(schema_name)s::%(class_name)s::%(class_name)s(%(arguments)s) : %(superclass)s(%(superclass_init)s) { %(body)s }"
+initialize_single_initlist = (
+    "void %(schema_name)s::%(class_name)s::initialize(%(arguments)s) { %(body)s }"
 )
 cast_function = "%(schema_name)s::%(class_name)s::operator %(return_type)s() const { %(body)s }"
 
@@ -293,13 +289,13 @@ constructor_stmt_enum = (
     "set_attribute_value(%(index)d, (EnumerationReference(&%(type)s::Class(),(size_t)%(name)s)));"
 )
 constructor_stmt_array = (
-    "set_attribute_value(%(index)d, (%(name)s)->generalize());"
+    "set_attribute_value(%(index)d, cast_vector<express::Base>(%(name)s));"
 )
 constructor_stmt_derived = (
     ""
 )
 constructor_stmt_instance = (
-    "set_attribute_value(%(index)d, %(name)s ? %(name)s->as<IfcUtil::IfcBaseClass>() : (IfcUtil::IfcBaseClass*) nullptr);"
+    "set_attribute_value(%(index)d, %(name)s);"
 )
 
 constructor_stmt_optional = " if (%(name)s) {%(stmt)s }"

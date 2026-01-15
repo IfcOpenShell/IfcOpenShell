@@ -144,10 +144,6 @@ class IFC_PARSE_API Entity : public Base {
     T get_value(const std::string& name, const T& default_value) const;
 
     std::vector<express::Entity> get_inverse(const std::string& name) const;
-
-    // unsigned set_id(const std::optional<unsigned>& i);
-
-    void populate_derived();
 };
 
 class IFC_PARSE_API Select : public Base {
