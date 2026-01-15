@@ -336,8 +336,8 @@ private:
 		_registry = {}
 
 		_old_init = __init__
-		def __init__(self, schema=None, schema_version=None):
-			self._old_init(self._determine_schema_identifier(schema=schema, schema_version=schema_version))
+		def __init__(self, schema=None, schema_identifier=None, schema_version=None):
+			self._old_init(schema_identifier if schema_identifier else self._determine_schema_identifier(schema=schema, schema_version=schema_version))
     
 		def __setattr__(self, k, v):
 			object.__setattr__(self, k, v)
