@@ -830,16 +830,6 @@ def set_tab_visibility(tab_name, visible):
         new_tab.is_visible = visible
 
 
-def get_panel_visibility(panel_id, current_tab=None):
-    panel_config = get_panel_config(panel_id)
-    if panel_config:
-        if current_tab == "BOOKMARK":
-            return panel_config.is_visible_in_bookmarks
-        else:
-            return panel_config.is_visible_in_tab
-    return True
-
-
 def get_panel_config(panel_id, create_if_missing=False):
     try:
         bim_props = tool.Blender.get_bim_props()
@@ -854,9 +844,6 @@ def get_panel_config(panel_id, create_if_missing=False):
         try:
             prop = bim_props.panel_properties.add()
             prop.name = panel_id
-            prop.is_visible_in_tab = True
-            prop.is_visible_in_bookmarks = True
-            prop.is_bookmarked = False
             return prop
         except AttributeError:
             pass
@@ -918,6 +905,3 @@ def initialize_panel_properties():
 
             prop = bim_props.panel_properties.add()
             prop.name = panel_id
-            prop.is_visible_in_tab = True
-            prop.is_visible_in_bookmarks = True
-            prop.is_bookmarked = False
