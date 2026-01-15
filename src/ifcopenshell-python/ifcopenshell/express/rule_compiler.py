@@ -844,9 +844,9 @@ if __name__ == "__main__":
         """
 def exists(v):
     if callable(v):
-        try: return v() is not None
+        try: return exists(v())
         except IndexError as e: return False
-    else: return v is not None
+    else: return v is not None and v is not INDETERMINATE
 """,
         "\n",
         file=output,
@@ -1019,9 +1019,11 @@ INDETERMINATE = indeterminate_type()
         for vi in v.values:
             print(f"{vi.lower()} = {k}.{vi}", "\n", file=output, sep="\n")
 
+    print(f"temp_file = ifcopenshell.file(schema_identifier={schema.name!r})", file=output)
+
     for k in schema.entities.keys():
         print(
-            f"def {k}(*args, **kwargs): return ifcopenshell.create_entity({k!r}, {schema.name!r}, *args, **kwargs)",
+            f"def {k}(*args, **kwargs): return temp_file.create_entity({k!r}, *args, **kwargs)",
             "\n",
             file=output,
             sep="\n",
