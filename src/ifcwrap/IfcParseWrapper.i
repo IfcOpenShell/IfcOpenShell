@@ -66,6 +66,7 @@
 %ignore IfcParse::IfcFile::type_iterator;
 
 %ignore express::Base::is;
+%ignore express::Base::operator==;
 
 %rename("by_id") instance_by_id;
 %rename("by_guid") instance_by_guid;
@@ -466,29 +467,61 @@ private:
 	}
 
 	bool __eq__(const express::Base& other) const {
-		return $self->identity() == other.identity();
+		// This logic is not perfect and is not fully consistent with __hash__
+		// Should there also be a distinction between entity instances and type declarations?
+		if ($self->identity() == other.identity()) {
+			return true;
+		} else if ($self->file() != other.file()) {
+			// PyGILState_STATE gil = PyGILState_Ensure();
+			// @todo get_info_2 is actually implemented in C++, so we try to call it directly
+			bool result = false;
+			PyObject *py_self  = SWIG_NewPointerObj(SWIG_as_voidptr($self),
+                                                SWIGTYPE_p_express__Base, 0);
+			PyObject *py_other = SWIG_NewPointerObj(SWIG_as_voidptr(&other),
+                                SWIGTYPE_p_express__Base, 0);
+			if (py_self && py_other) {
+				PyObject *args = PyTuple_New(0);
+
+				PyObject *kwargs = PyDict_New();
+				PyDict_SetItemString(kwargs, "recursive", Py_True);
+				PyDict_SetItemString(kwargs, "include_identifier", Py_False);
+
+				PyObject *m1 = PyObject_GetAttrString(py_self,  "get_info_2");
+				PyObject *m2 = PyObject_GetAttrString(py_other, "get_info_2");
+
+				PyObject *i1 = (m1 ? PyObject_Call(m1, args, kwargs) : nullptr);
+				PyObject *i2 = (m2 ? PyObject_Call(m2, args, kwargs) : nullptr);
+
+				if (i1 && i2) {
+					int eq = PyObject_RichCompareBool(i1, i2, Py_EQ);
+					result = (eq == 1);
+				} else {
+					// get_info_2 missing or threw; treat as not equal (and clear Python error).
+					PyErr_Clear();
+				}
+
+				Py_XDECREF(i1);
+				Py_XDECREF(i2);
+				Py_XDECREF(m1);
+				Py_XDECREF(m2);
+				Py_DECREF(kwargs);
+				Py_DECREF(args);
+			} else {
+				PyErr_Clear();
+			}
+
+			Py_XDECREF(py_self);
+			Py_XDECREF(py_other);
+			// PyGILState_Release(gil);
+			return result;
+		} else {
+			return false;
+		}
 	}
 
 	size_t __hash__() const {
-		return boost::hash<std::tuple<uint32_t, void*>>{}({self->identity(), self->file()});
-	    // if (self->declaration().as_entity()) {
-		// }
+		return std::hash<uint32_t>{}(self->identity());
 	}
-	
-	/*
-	else {
-            return self->get_attribute_value(0).apply_visitor([&](const auto& val){
-                using U = std::decay_t<decltype(val)>;
-                if constexpr (std::is_same_v<U, Blank> || std::is_same_v<U, Derived> || std::is_same_v<U, boost::logic::tribool> || std::is_same_v<U, EnumerationReference> || std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t>) {
-					// @todo
-                    return boost::hash<std::tuple<size_t, size_t, void*>>{}({self->declaration().index_in_schema(), 0, self->file()});
-                } else {
-                    return boost::hash<std::tuple<size_t, decltype(val), void*>>{}({self->declaration().index_in_schema(), val, self->file()});
-                }
-			});			
-		}
-	}
-	*/
 
 	std::string __repr__() const {
 	    std::ostringstream oss;
@@ -1104,16 +1137,14 @@ object = _old_object
 %}
 
 %{
-	PyObject* get_info_cpp(const express::Base& v, bool include_identifier);
+	PyObject* get_info_cpp(const express::Base& v, bool recursive, bool include_identifier);
 
 	// @todo refactor this to remove duplication with the typemap. 
 	// except this is calls the above function in case of instances.
-	PyObject* convert_cpp_attribute_to_python(const express::Base& instance, size_t attribute_index, bool include_identifier = true) {
-		return instance.get_attribute_value(attribute_index).apply_visitor([include_identifier](const auto& v){
+	PyObject* convert_cpp_attribute_to_python(const express::Base& instance, size_t attribute_index, bool recursive, bool include_identifier) {
+		return instance.get_attribute_value(attribute_index).apply_visitor([recursive, include_identifier](const auto& v){
 			using U = std::decay_t<decltype(v)>;
-            if constexpr (is_std_vector_v<U>) {
-				return pythonize_vector(v);
-            } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+            if constexpr (std::is_same_v<U, EnumerationReference>) {
                 return pythonize(std::string(v.value()));
 			} else if constexpr (std::is_same_v<U, Derived>) {
 				if (feature_use_attribute_value_derived) {
@@ -1123,10 +1154,44 @@ object = _old_object
 					return static_cast<PyObject*>(Py_None); 
 				}
 			} else if constexpr (std::is_same_v<U, express::Base>) {
-				return get_info_cpp(v, include_identifier);
+				if (recursive) {
+					return get_info_cpp(v, recursive, include_identifier);
+				} else {
+					return pythonize(v);
+				}
+            } else if constexpr (std::is_same_v<U, std::vector<express::Base>>) {
+				if (recursive) {
+					PyObject* t = PyTuple_New(v.size());
+                    for (size_t i = 0; i < v.size(); ++i) {
+                        PyObject* item = get_info_cpp(v[i], recursive, include_identifier);
+                        PyTuple_SET_ITEM(t, i, item);
+                    }
+                    return t;
+				} else {
+					return pythonize_vector(v);
+				}
+            } else if constexpr (std::is_same_v<U, std::vector<std::vector<express::Base>>>) {
+				if (recursive) {
+					PyObject* outer = PyTuple_New(v.size());
+                    for (size_t i = 0; i < v.size(); ++i) {
+                        const auto& inner_vec = v[i];
+                        PyObject* inner = PyTuple_New(inner_vec.size());
+                        for (size_t j = 0; j < inner_vec.size(); ++j) {
+                            PyObject* item = get_info_cpp(inner_vec[j], recursive, include_identifier);
+                            PyTuple_SET_ITEM(inner, j, item);
+                        }
+                        PyTuple_SET_ITEM(outer, i, inner);
+                    }
+                    return outer;
+				} else {
+					return pythonize_vector(v);
+				}
             } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
+            } else if constexpr (is_std_vector_v<U>) {
+				// only for non-entity-instance vectors
+				return pythonize_vector(v);
             } else {
 				return pythonize(v);
 			}
@@ -1134,7 +1199,7 @@ object = _old_object
 	}
 %}
 %inline %{
-	PyObject* get_info_cpp(const express::Base& v, bool include_identifier = true) {
+	PyObject* get_info_cpp(const express::Base& v, bool recursive, bool include_identifier) {
 		PyObject *d = PyDict_New();
 
 		if (v.declaration().as_entity()) {
@@ -1147,35 +1212,25 @@ object = _old_object
 				auto attr_type = *dit
 					? IfcUtil::Argument_DERIVED
 					: IfcUtil::from_parameter_type((*it)->type_of_attribute());
-				auto value_py = convert_cpp_attribute_to_python(v, std::distance(attrs.begin(), it), include_identifier);
+				auto value_py = convert_cpp_attribute_to_python(v, std::distance(attrs.begin(), it), recursive, include_identifier);
 				PyDict_SetItem(d, name_py, value_py);
 				Py_DECREF(name_py);
 				Py_DECREF(value_py);
 			}
 			if (include_identifier) {
-				const std::string& id_cpp = "id";
-				auto id_py = pythonize(id_cpp);
 				auto id_v_py = pythonize(v.id());
-				PyDict_SetItem(d, id_py, id_v_py);
-				Py_DECREF(id_py);
+				PyDict_SetItemString(d, "id", id_v_py);
 				Py_DECREF(id_v_py);
 			}
 		} else {
-			const std::string& name_cpp = "wrappedValue";
-			auto name_py = pythonize(name_cpp);
-			auto value_py = convert_cpp_attribute_to_python(v, 0, include_identifier);
-			PyDict_SetItem(d, name_py, value_py);
-			Py_DECREF(name_py);
+			auto value_py = convert_cpp_attribute_to_python(v, 0, recursive, include_identifier);
+			PyDict_SetItemString(d, "wrappedValue", value_py);
 			Py_DECREF(value_py);
 		}
 
-		// @todo type and id can be static?
-		const std::string& type_cpp = "type";
-		auto type_py = pythonize(type_cpp);
 		const std::string& type_v_cpp = v.declaration().name();
 		auto type_v_py = pythonize(type_v_cpp);
-		PyDict_SetItem(d, type_py, type_v_py);
-		Py_DECREF(type_py);
+		PyDict_SetItemString(d, "type", type_v_py);
 		Py_DECREF(type_v_py);
 
 		return d;

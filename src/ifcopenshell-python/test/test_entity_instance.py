@@ -67,3 +67,12 @@ class TestGetInfo2(test.bootstrap.IFC4):
             "Outer": {"CfsFaces": None, "type": "IfcClosedShell"},
             "type": "IfcFacetedBrep",
         }
+
+def test_equality():
+    f = ifcopenshell.file()
+    g = ifcopenshell.file()
+    f.createIfcCartesianPoint((0., 0.))
+    g.createIfcCartesianPoint((0., 0.))
+    assert f[1] == g[1]
+    g[1].Coordinates = (1., 0.)
+    assert f[1] != g[1]

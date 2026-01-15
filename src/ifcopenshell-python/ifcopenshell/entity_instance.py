@@ -394,7 +394,6 @@ class entity_instance_mixin:
             * ignore: `()` (empty tuple)
         """
 
-        assert recursive
         assert return_type is dict
         assert len(ignore) == 0
-        return ifcopenshell_wrapper.get_info_cpp(self, include_identifier)
+        return ifcopenshell_wrapper.get_info_cpp(self, recursive, include_identifier)
