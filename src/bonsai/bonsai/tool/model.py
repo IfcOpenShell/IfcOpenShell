@@ -2669,3 +2669,25 @@ class Model(bonsai.core.tool.Model):
                     material.OffsetFromReferenceLine = custom_offset
 
                 cls.recreate_wall(element, wall)
+
+    @classmethod
+    def run_ifcsverchok_graph_on_bonsai_file(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> None:
+        from ifcsverchok.ifcstore import SvIfcStore
+        from sverchok.core.update_system import UpdateTree
+
+        # We should be very careful and use bonsai file just for 1 graph update.
+        # To avoid producing duplicated data in non-ephemeral file.
+        SvIfcStore.use_bonsai_file = True
+        try:
+            # The ones below refresh asyncronously, so we're using different method to get results synchronously.
+            # - bpy.ops.node.sverchok_update_context(force_mode=True)
+            # - node_tree.force_update()
+            # TODO: Ideally we should find shape output node and update only it's furtherest children.
+            # Because user might have some nodes just floating around unused.
+            # ` update_tree = UpdateTree.get(node_tree); update_tree.add_outdated(nodes)` can be used for this.
+            UpdateTree.reset_tree(node_tree)
+            nodes_to_update = UpdateTree.main_update(node_tree)
+            # Consuming generator, which triggers the update.
+            list(nodes_to_update)
+        finally:
+            SvIfcStore.use_bonsai_file = False

@@ -18,6 +18,7 @@
 
 from typing import Any, Union
 
+import bonsai.tool as tool
 import bpy
 import ifcopenshell
 import ifcopenshell.api
@@ -49,6 +50,8 @@ class SvIfcStore:
     history = []
     future = []
     schema_identifiers = ["IFC4", "IFC2X3"]
+
+    use_bonsai_file = False
 
     @staticmethod
     def purge() -> None:
@@ -95,6 +98,8 @@ class SvIfcStore:
 
     @staticmethod
     def get_file() -> ifcopenshell.file:
+        if SvIfcStore.use_bonsai_file:
+            return tool.Ifc.get()
         if SvIfcStore.file is None:
             SvIfcStore.create_boilerplate()
         return SvIfcStore.file

@@ -297,11 +297,13 @@ class IFC_PT_write_file_panel(bpy.types.Panel):
     def draw(self, context):
         ng = context.space_data.node_tree
         layout = self.layout
+        assert layout
         row = layout.split(factor=0.2, align=True)
         row = layout.row()
         row2 = layout.row()
         row.operator("ifc.sverchok_update_current", text="IFC Re-run all nodes")
         row2.operator("ifc.write_file_panel")
+        layout.operator("bim.ifcsverchok_use_bonsai_file")
 
 
 CLASSES = [IFC_Sv_UpdateCurrent, IFC_Sv_write_file, IFC_PT_write_file_panel]
