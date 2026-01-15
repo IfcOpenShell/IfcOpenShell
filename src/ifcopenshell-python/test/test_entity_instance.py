@@ -76,3 +76,17 @@ def test_equality():
     assert f[1] == g[1]
     g[1].Coordinates = (1., 0.)
     assert f[1] != g[1]
+
+def test_setting_logical():
+    f = ifcopenshell.file()
+    inst = f.createIfcPresentationLayerWithStyle(LayerOn="UNKNOWN")
+    assert inst.LayerOn == "UNKNOWN"
+    assert '.U.' in str(inst)
+    with pytest.raises(Exception):
+        inst.LayerOn = "SOME_OTHER_STRING"
+    inst.LayerOn = False
+    assert inst.LayerOn is False
+    assert '.F.' in str(inst)
+    inst.LayerOn = True
+    assert inst.LayerOn is True
+    assert '.T.' in str(inst)

@@ -789,6 +789,14 @@ private:
 				boost::logic::tribool t(boost::logic::indeterminate);
 				if (PyBool_Check(value)) {
 					t = (value == Py_True);
+				} else if (PyUnicode_Check(value)) {
+					if (PyObject* ascii = PyUnicode_AsEncodedString(value, "UTF-8", "strict")) {
+						// value is kept as indeterminate
+						if (strcmp(PyBytes_AS_STRING(ascii), "UNKNOWN") != 0) {
+							throw IfcParse::IfcException("Attribute not set");
+						}
+						Py_DECREF(ascii);
+					}
 				} else {
 					long v = to_index_long(value);
 					if (v == 0) t = false;
