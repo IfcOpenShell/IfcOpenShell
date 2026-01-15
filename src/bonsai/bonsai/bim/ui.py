@@ -242,6 +242,39 @@ class BIM_UL_generic(bpy.types.UIList):
             layout.label(text="", translate=False)
 
 
+class BIM_UL_tab_visibilities(bpy.types.UIList):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: bpy.types.PropertyGroup,
+        item: bpy.types.PropertyGroup,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
+        row = layout.row()
+        row.prop(item, "name", text="", emboss=False)
+        row.prop(item, "is_visible", text="", icon="HIDE_OFF" if item.is_visible else "HIDE_ON", emboss=False)
+
+
+class BIM_UL_panel_visibilities(bpy.types.UIList):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: bpy.types.PropertyGroup,
+        item: bpy.types.PropertyGroup,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
+        row = layout.row()
+        row.prop(item, "label", text="", emboss=False)
+        row.prop(item, "is_visible", text="", icon="HIDE_OFF" if item.is_visible else "HIDE_ON", emboss=False)
+        row.prop(item, "is_bookmarked", text="", icon="SOLO_ON" if item.is_bookmarked else "SOLO_OFF", emboss=False)
+
+
 class GizmoPreferencesDoor(bpy.types.PropertyGroup):
     """Property group for door gizmo visibility settings."""
 
@@ -711,11 +744,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Custom suffix for the metadata blend file. Will be appended to the filename (without .ifc).",
         default=".ifc.metadata.blend",
     )
-    user_ui_customization: BoolProperty(
-        name="User UI Customization",
-        description="Enable user interface customization features (hide/show tabs and panels, bookmark panels) and save the session settings as part of the metadata blend file",
-        default=False,
-    )
 
     if TYPE_CHECKING:
         svg2pdf_command: str
@@ -757,7 +785,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         chain_filter_with_set_operations: bool
         default_filter_with_set_operations_for_globalid_and_class: bool
         save_metadata_blend_file: bool
-        user_ui_customization: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -965,9 +992,26 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             row = layout.row()
             row.separator()
             row.prop(self, "metadata_blend_file_suffix")
-            row = layout.row()
-            row.separator()
-            row.prop(self, "user_ui_customization")
+
+            bprops = tool.Blender.get_bim_props()
+            if tab_visibilities := bprops.tab_visibilities:
+                row = layout.row()
+                row.operator("bim.reset_ui_layout", icon="LOOP_BACK")
+                row = layout.row(align=True)
+                row.template_list(
+                    "BIM_UL_tab_visibilities", "", bprops, "tab_visibilities", bprops, "active_tab_visibility_index"
+                )
+                row.template_list(
+                    "BIM_UL_panel_visibilities",
+                    "",
+                    bprops,
+                    "panel_visibilities",
+                    bprops,
+                    "active_panel_visibility_index",
+                )
+            else:
+                row = layout.row()
+                row.operator("bim.manage_tab_visibility", icon="PREFERENCES")
 
 
 # Scene panel groups
@@ -983,47 +1027,30 @@ class BIM_PT_tabs(Panel):
     def draw(self, context):
         if not UIData.is_loaded:
             UIData.load()
-        is_ifc_project = bool(tool.Ifc.get())
         aprops = tool.Blender.get_area_props(context)
         addon_prefs = tool.Blender.get_addon_preferences()
 
-        split = self.layout.split(factor=0.9)
-        col_left = split.column(align=True)
-        row_left = col_left.row(align=True)
-        row_left.alignment = "CENTER"
+        row = self.layout.row()
+        row.alignment = "CENTER"
         for tab in UIData.data["tabs"]:
-            self.draw_tab_entry(row_left, tab[1], tab[0], tab[2], aprops.tab == tab[0])
-        row_left.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
+            self.draw_tab_entry(row, tab[1], tab[0], tab[2], aprops.tab == tab[0])
+        row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
-        row_left = col_left.row(align=True)
+        row = self.layout.row()
         # Yes, that's right.
-        row_left.alignment = "CENTER"
-        row_left.scale_y = 0.2
-
-        if not (addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization):
-            row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+        row.alignment = "CENTER"
+        row.scale_y = 0.2
 
         for tab in UIData.data["tabs"]:
             # Draw a little underscore below the active tab icon.
-            if aprops.tab == tab:
-                row_left.prop(aprops, "active_tab", text="", icon="BLANK1")
+            if aprops.tab == tab[0]:
+                row.prop(aprops, "active_tab", text="", icon="BLANK1")
             else:
-                row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
-        row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)  # space for Switch
-        col_right = split.column(align=True)
-        row_right = col_right.row(align=True)
-        row_right.alignment = "RIGHT"
+                row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+        row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)  # space for Switch
 
-        if addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization:
-            row_right.operator("bim.manage_tab_visibility", icon="PREFERENCES", text="")
-
-        row = self.layout.row(align=True)
+        row = self.layout.row()
         row.prop(aprops, "tab", text="")
-
-        if addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization:
-            for tab in UIData.data["tabs"]:
-                if aprops.tab == tab:
-                    row.operator("bim.manage_tab_panels", text="", icon="PREFERENCES").tab_name = tab
 
         if bonsai.REINSTALLED_BBIM_VERSION:
             box = self.layout.box()

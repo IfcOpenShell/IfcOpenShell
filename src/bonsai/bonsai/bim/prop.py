@@ -548,14 +548,17 @@ class BIMTabVisibility(PropertyGroup):
         is_visible: bool
 
 
-class BIMPanelProperties(PropertyGroup):
-    is_visible_in_tab: BoolProperty(name="Is Visible in Tab", default=True)
-    is_visible_in_bookmarks: BoolProperty(name="Is Visible in Bookmarks", default=True)
-    is_bookmarked: BoolProperty(name="Is Bookmarked", default=False)
+class BIMPanelVisibility(PropertyGroup):
+    name: StringProperty(name="Name")
+    label: StringProperty(name="Label")
+    tab_name: StringProperty(name="Tab Name")
+    is_visible: BoolProperty(name="Is Visible in Tab", default=True, update=update_is_visible)
+    is_bookmarked: BoolProperty(name="Is Bookmarked", default=False, update=update_is_visible)
 
     if TYPE_CHECKING:
-        is_visible_in_tab: bool
-        is_visible_in_bookmarks: bool
+        name: str
+        tab_name: str
+        is_visible: bool
         is_bookmarked: bool
 
 
@@ -632,7 +635,6 @@ class BIMProperties(PropertyGroup):
         name="Mass Unit",
         default="KILOGRAM",
     )
-
     time_unit: EnumProperty(
         items=[
             ("SECOND", "Second", "Seconds"),
@@ -644,7 +646,9 @@ class BIMProperties(PropertyGroup):
         default="HOUR",
     )
     tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
-    panel_properties: CollectionProperty(type=BIMPanelProperties, name="Panel Properties")
+    active_tab_visibility_index: IntProperty(name="Active Tab Visibility Index")
+    panel_visibilities: CollectionProperty(type=BIMPanelVisibility, name="Panel Properties")
+    active_panel_visibility_index: IntProperty(name="Active Panel Property Index")
 
     if TYPE_CHECKING:
         is_dirty: bool
@@ -661,7 +665,9 @@ class BIMProperties(PropertyGroup):
         mass_unit: str
         time_unit: str
         tab_visibilities: bpy.types.bpy_prop_collection_idprop[BIMTabVisibility]
-        panel_properties: bpy.types.bpy_prop_collection_idprop[BIMPanelProperties]
+        active_tab_visibility_index: int
+        panel_visibilities: bpy.types.bpy_prop_collection_idprop[BIMPanelVisibility]
+        active_panel_visibility_index: int
 
 
 class IfcParameter(PropertyGroup):

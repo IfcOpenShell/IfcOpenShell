@@ -167,12 +167,12 @@ class Blender(bonsai.core.tool.Blender):
             return True
         if (is_bookmark_tab := aprops.tab == "BOOKMARK") or aprops.tab == tab:
             bprops = tool.Blender.get_bim_props()
-            if not (panel_visibility := bprops.panel_properties.get(panel)):
+            if not (panel_visibility := bprops.panel_visibilities.get(panel)):
                 return not is_bookmark_tab
             if is_bookmark_tab:
-                if panel_visibility.is_bookmarked and panel_visibility.is_visible_in_bookmarks:
+                if panel_visibility.is_bookmarked:
                     return True
-            elif panel_visibility.is_visible_in_tab:
+            elif panel_visibility.is_visible:
                 return True
 
     @classmethod
