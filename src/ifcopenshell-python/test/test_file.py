@@ -186,11 +186,13 @@ class TestFile(test.bootstrap.IFC4):
     def test_getting_an_element_by_id(self):
         element = self.file.createIfcWall("id")
         assert self.file.by_id(1) == element
-        assert self.file.by_id("id") == element
+        with pytest.raises(TypeError):
+            self.file.by_id("id")
 
     def test_getting_an_element_by_guid(self):
         element = self.file.createIfcWall("id")
-        assert self.file.by_guid(1) == element
+        with pytest.raises(TypeError):
+            self.file.by_guid(1)
         assert self.file.by_guid("id") == element
 
     def test_adding_an_element(self):
@@ -202,23 +204,23 @@ class TestFile(test.bootstrap.IFC4):
     def test_getting_elements_by_type(self):
         wall = self.file.createIfcWall()
         slab = self.file.createIfcSlab()
-        assert self.file.by_type("IfcWall") == [wall]
+        assert self.file.by_type("IfcWall") == (wall,)
 
     def test_getting_elements_by_exact_type(self):
         wall = self.file.createIfcWall()
-        assert self.file.by_type("IfcElement") == [wall]
+        assert self.file.by_type("IfcElement") == (wall,)
         assert len(self.file.by_type("IfcElement", include_subtypes=False)) == 0
 
     def test_traversing_direct_attributes_of_an_element(self):
         owner = self.file.createIfcOwnerHistory()
         element = self.file.createIfcWall(OwnerHistory=owner)
-        assert self.file.traverse(element) == [element, owner]
+        assert self.file.traverse(element) == (element, owner)
 
     def test_traversing_direct_attributes_of_an_element_to_a_limited_level(self):
         app = self.file.createIfcApplication()
         owner = self.file.createIfcOwnerHistory(OwningApplication=app)
         element = self.file.createIfcWall(OwnerHistory=owner)
-        assert self.file.traverse(element, max_levels=1) == [element, owner]
+        assert self.file.traverse(element, max_levels=1) == (element, owner)
 
     def test_getting_inverse_references_of_an_element(self):
         owner = self.file.createIfcOwnerHistory()
@@ -228,7 +230,7 @@ class TestFile(test.bootstrap.IFC4):
     def test_getting_multiple_inverses_if_an_element_is_referenced_twice_by_the_same_element(self):
         user = self.file.createIfcPersonAndOrganization()
         owner = self.file.createIfcOwnerHistory(OwningUser=user, LastModifyingUser=user)
-        assert self.file.get_inverse(user, allow_duplicate=True) == [owner, owner]
+        assert self.file.get_inverse(user, allow_duplicate=True) == (owner, owner)
 
     def test_removing_an_element(self):
         element = self.file.createIfcWall(GlobalId="global_id")
@@ -286,3 +288,9 @@ class TestFile(test.bootstrap.IFC4):
         g = ifcopenshell.file(schema="IFC4")
         g.assign_header_from(f)
         assert g.header.file_name.name == "test"
+
+def test_schema_identifier():
+    f = ifcopenshell.file(schema='IFC4X3')
+    assert f.schema_identifier == 'IFC4X3_ADD2'
+    assert f.schema == 'IFC4X3'
+    assert f.schema_version == (4,3,2,0)

@@ -78,7 +78,7 @@
 %rename("file") IfcFile;
 // _add() because mixin defined add which adds transaction logic
 %rename("_add") addEntity;
-%rename("remove") removeEntity;
+%rename("_remove") removeEntity;
 %rename("_traverse") traverse;
 %rename("_traverse_breadth_first") traverse_breadth_first;
 
@@ -274,7 +274,7 @@ private:
 	}
 	*/
 
-	std::string schema_name() const {
+	std::string schema_identifier() const {
 		if ($self->schema() == 0) return "";
 		return $self->schema()->name();
 	}
@@ -331,7 +331,7 @@ private:
 		def from_string(s: str) -> 'file':
 			return read(s)
 
-		schema = property(schema_name)
+		schema_identifier = property(schema_identifier)
 		header = property(header)
 		_registry = {}
 

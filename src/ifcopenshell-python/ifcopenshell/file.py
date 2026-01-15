@@ -662,7 +662,7 @@ class file_mixin:
         """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
         prefixes = ("IFC", "X", "_ADD", "_TC")
         reg = "".join(f"(?P<{s}>{s}\\d+)?" for s in prefixes)
-        match = re.match(reg, self.schema)
+        match = re.match(reg, self.schema_identifier)
         version_tuple = tuple(
             map(
                 lambda pp: int(pp[1][len(pp[0]) :]) if pp[1] else None,
@@ -672,17 +672,12 @@ class file_mixin:
         return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
 
     @property
-    def schema_identifier(self) -> str:
-        """Full IFC schema version: IFC2X3_TC1, IFC4_ADD2, IFC4X3_ADD2, etc."""
-        return self.schema
-
-    @property
     def schema_version(self) -> tuple[int, int, int, int]:
         """Numeric representation of the full IFC schema version.
 
         E.g. IFC4X3_ADD2 is represented as (4, 3, 2, 0).
         """
-        schema = self.schema
+        schema = self.schema_identifier
         version = []
         for prefix in ("IFC", "X", "_ADD", "_TC"):
             number = re.search(prefix + r"(\d)", schema)
@@ -829,7 +824,7 @@ class file_mixin:
         """
         if self.transaction:
             self.transaction.store_delete(inst)
-        return self.remove(inst)
+        return self._remove(inst)
 
     def batch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
