@@ -99,7 +99,7 @@ class ObjectDocumentData:
             return ""
 
         uri = location
-        if not uri.startswith("file://"):
+        if "://" not in uri:
             if not os.path.isabs(uri):
                 uri = os.path.abspath(os.path.join(os.path.dirname(tool.Ifc.get_path()), uri))
             uri = "file://" + uri
