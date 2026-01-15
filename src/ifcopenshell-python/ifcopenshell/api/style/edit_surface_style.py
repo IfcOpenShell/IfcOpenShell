@@ -81,7 +81,7 @@ class Usecase:
         self.style = style
 
         attribute_types: dict[str, str] = {}
-        for attribute in style.declaration().as_entity().all_attributes():
+        for attribute in style.declaration.all_attributes():
             attribute_type = attribute.type_of_attribute()
             if attribute_type.as_aggregation_type() is None:
                 attribute_type = attribute_type.declared_type().name()

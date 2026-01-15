@@ -569,8 +569,8 @@ def set_element_value(
                 element: ifcopenshell.entity_instance, value: Union[str, None], *, is_type: bool
             ) -> None:
                 predefined_type = element.PredefinedType
-                declaration = element.declaration()
-                entity = declaration.as_entity()
+                declaration = element.declaration
+                entity = declaration
                 enum_attr = next(attr for attr in entity.attributes() if attr.name() == "PredefinedType")
                 enum_items = ifcopenshell.util.attribute.get_enum_items(enum_attr)
 
@@ -639,7 +639,7 @@ def set_element_value(
                     except:
                         # Try to cast
                         data_type = ifcopenshell.util.attribute.get_primitive_type(
-                            element.declaration().as_entity().attribute_by_index(element.get_argument_index(key))
+                            element.declaration.attribute_by_index(element.get_argument_index(key))
                         )
                         if data_type == "string":
                             value = str(value)

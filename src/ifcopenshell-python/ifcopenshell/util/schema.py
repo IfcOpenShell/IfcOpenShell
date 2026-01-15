@@ -70,7 +70,7 @@ def get_declaration(element: ifcopenshell.entity_instance):
         print(declaration.is_abstract()) # False
         print(declaration.supertype().name()) # IfcBuildingElement
     """
-    return element.declaration().as_entity()
+    return element.declaration
 
 
 def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.declaration, ifc_class: str) -> bool:
@@ -104,7 +104,7 @@ def get_supertypes(
     .. code:: python
 
         wall = model.createIfcWall()
-        results = ifcopenshell.util.schema.get_supertypes(wall.declaration().as_entity())
+        results = ifcopenshell.util.schema.get_supertypes(wall.declaration.as_entity())
         # [<entity IfcBuildingElement>, <entity IfcElement>, ..., <entity IfcRoot>]
     """
     results = []

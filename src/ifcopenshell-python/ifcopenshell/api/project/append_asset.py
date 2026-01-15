@@ -615,7 +615,7 @@ class Usecase:
             nonlocal attributes_
             if attributes_ is not None:
                 return attributes_
-            attributes_ = element.declaration().as_entity().all_attributes()
+            attributes_ = element.declaration.all_attributes()
             return attributes_
 
         def get_existing_element_(
