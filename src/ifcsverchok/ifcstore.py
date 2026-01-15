@@ -21,7 +21,6 @@ from typing import Any, Union
 import bonsai.tool as tool
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.util.representation
 from ifcopenshell import template

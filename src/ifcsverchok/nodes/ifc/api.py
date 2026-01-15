@@ -20,10 +20,9 @@ import logging
 from typing import Any, Union
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api
 import sverchok.core.sockets
-from bpy.props import EnumProperty, StringProperty
+from bpy.props import StringProperty
 from sverchok.data_structure import updateNode
 from sverchok.node_tree import SverchCustomTreeNode
 

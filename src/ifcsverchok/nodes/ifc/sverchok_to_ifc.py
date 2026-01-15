@@ -17,12 +17,10 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.util.representation
-from bpy.props import EnumProperty, FloatVectorProperty, IntProperty, StringProperty
+from bpy.props import EnumProperty, StringProperty
 from sverchok.data_structure import ensure_min_nesting, updateNode
 from sverchok.node_tree import SverchCustomTreeNode
 

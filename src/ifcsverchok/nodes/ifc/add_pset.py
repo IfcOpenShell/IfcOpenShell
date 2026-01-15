@@ -20,7 +20,6 @@ import json
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import sverchok.core.sockets
 from bpy.props import StringProperty
