@@ -183,7 +183,7 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
                 root = aggregate
                 current = aggregate
             return root
-        
+
         def get_all_parts_recursive(element):
             """Recursively get all parts of an aggregate"""
             parts = []
@@ -196,17 +196,17 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         objs: list[bpy.types.Object] = []
         processed_elements = set()  # Track elements we've already handled (by IFC ID)
         promoted_parts = 0  # Count how many parts were promoted to their root aggregate
-        
+
         for obj in tool.Blender.get_selected_objects():
             if not (element := tool.Ifc.get_entity(obj)):
                 continue
-            
+
             # Check if element is part of an aggregate (at any level)
             if root_aggregate := get_root_aggregate(element):
                 # Skip if we've already processed this root aggregate
                 if root_aggregate.id() in processed_elements:
                     continue
-                
+
                 # Get the root aggregate object and add it instead
                 if root_aggregate_obj := tool.Ifc.get_object(root_aggregate):
                     objs.append(root_aggregate_obj)
@@ -225,13 +225,13 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
 
         for element_obj in objs:
             element = tool.Ifc.get_entity(element_obj)
-            
+
             # Only assign container to the ROOT aggregate (this updates IFC relationships)
             if self.remove_from_other_containers:
                 for col in element_obj.users_collection[:]:
                     col.objects.unlink(element_obj)
             core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
-            
+
             # For parts, only move them in Blender collections (don't change IFC relationships)
             if container_collection:
                 all_parts = get_all_parts_recursive(element)
@@ -240,7 +240,7 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
                         # Always remove from ALL previous collections when moving to new container
                         for col in part_obj.users_collection[:]:
                             col.objects.unlink(part_obj)
-                        
+
                         # Link to new container collection (Blender-only, no IFC change)
                         if part_obj.name not in container_collection.objects:
                             container_collection.objects.link(part_obj)
