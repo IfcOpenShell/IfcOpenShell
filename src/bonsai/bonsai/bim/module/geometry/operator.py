@@ -1723,11 +1723,11 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                         container=container,
                         element_obj=obj,
                     )
-                    
+
                     # Get the container's collection for moving parts in the outliner
                     container_obj = tool.Ifc.get_object(container)
                     container_collection = container_obj.BIMObjectProperties.collection if container_obj else None
-                    
+
                     # Move all parts to the container's collection in the outliner
                     if container_collection:
                         for part in ifcopenshell.util.element.get_parts(element):
@@ -1736,11 +1736,11 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                                 # Remove from all previous collections
                                 for col in part_obj.users_collection[:]:
                                     col.objects.unlink(part_obj)
-                                
+
                                 # Link to container collection
                                 if part_obj.name not in container_collection.objects:
                                     container_collection.objects.link(part_obj)
-                                
+
                                 # Recursively handle nested parts
                                 for nested_part in ifcopenshell.util.element.get_parts(part):
                                     nested_part_obj = tool.Ifc.get_object(nested_part)
