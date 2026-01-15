@@ -60,6 +60,10 @@ def update_tab(self: "BIMAreaProperties", context: bpy.types.Context) -> None:
     self.previous_tab = self.tab
 
 
+def update_is_visible(self: "BIMTabVisibility", context: bpy.types.Context) -> None:
+    bonsai.bim.handler.refresh_ui_data()
+
+
 def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> None:
     tool.Blender.setup_tabs()
     screen = context.id_data
@@ -537,7 +541,7 @@ class BIMTabProperties(PropertyGroup):
 
 class BIMTabVisibility(PropertyGroup):
     name: StringProperty(name="Tab Name")
-    is_visible: BoolProperty(name="Is Visible", default=True)
+    is_visible: BoolProperty(name="Is Visible", default=True, update=update_is_visible)
 
     if TYPE_CHECKING:
         name: str

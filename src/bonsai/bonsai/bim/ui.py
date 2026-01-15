@@ -36,18 +36,6 @@ import bonsai.bim
 import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
 from bonsai.bim.prop import Attribute
-from bonsai.bim.helper import (
-    get_tab_names,
-    get_panel_tab_name,
-    should_show_panel,
-    get_tab_visibility,
-    set_tab_visibility,
-    get_panel_visibility,
-    get_panel_config,
-    get_all_tab_panels,
-    initialize_tab_visibilities,
-    initialize_panel_properties,
-)
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.module.model.prop import (
@@ -998,41 +986,13 @@ class BIM_PT_tabs(Panel):
         is_ifc_project = bool(tool.Ifc.get())
         aprops = tool.Blender.get_area_props(context)
         addon_prefs = tool.Blender.get_addon_preferences()
-        ifc_icon = f"{UIData.data['tabs_icon_color_mode']}_ifc"
 
         split = self.layout.split(factor=0.9)
         col_left = split.column(align=True)
         row_left = col_left.row(align=True)
         row_left.alignment = "CENTER"
-        if get_tab_visibility("PROJECT"):
-            row_left.operator(
-                "bim.set_tab",
-                text="",
-                emboss=aprops.tab == "PROJECT",
-                icon_value=bonsai.bim.icons[ifc_icon].icon_id,
-            ).tab = "PROJECT"
-        if get_tab_visibility("OBJECT"):
-            self.draw_tab_entry(row_left, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
-        if get_tab_visibility("GEOMETRY"):
-            self.draw_tab_entry(row_left, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
-        if get_tab_visibility("DRAWINGS"):
-            self.draw_tab_entry(row_left, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
-        if get_tab_visibility("SERVICES"):
-            self.draw_tab_entry(row_left, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
-        if get_tab_visibility("STRUCTURE"):
-            self.draw_tab_entry(row_left, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
-        if get_tab_visibility("SCHEDULING"):
-            self.draw_tab_entry(row_left, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
-        if get_tab_visibility("FM"):
-            self.draw_tab_entry(row_left, "PACKAGE", "FM", True, aprops.tab == "FM")
-        if get_tab_visibility("QUALITY"):
-            self.draw_tab_entry(row_left, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-        if (
-            addon_prefs.save_metadata_blend_file
-            and addon_prefs.user_ui_customization
-            and get_tab_visibility("BOOKMARK")
-        ):
-            self.draw_tab_entry(row_left, "SOLO_ON", "BOOKMARK", True, aprops.tab == "BOOKMARK")
+        for tab in UIData.data["tabs"]:
+            self.draw_tab_entry(row_left, tab[1], tab[0], tab[2], aprops.tab == tab[0])
         row_left.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
         row_left = col_left.row(align=True)
@@ -1043,13 +1003,12 @@ class BIM_PT_tabs(Panel):
         if not (addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization):
             row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
 
-        for tab in get_tab_names():
+        for tab in UIData.data["tabs"]:
             # Draw a little underscore below the active tab icon.
-            if get_tab_visibility(tab):
-                if aprops.tab == tab:
-                    row_left.prop(aprops, "active_tab", text="", icon="BLANK1")
-                else:
-                    row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+            if aprops.tab == tab:
+                row_left.prop(aprops, "active_tab", text="", icon="BLANK1")
+            else:
+                row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
         row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)  # space for Switch
         col_right = split.column(align=True)
         row_right = col_right.row(align=True)
@@ -1062,10 +1021,9 @@ class BIM_PT_tabs(Panel):
         row.prop(aprops, "tab", text="")
 
         if addon_prefs.save_metadata_blend_file and addon_prefs.user_ui_customization:
-            for tab in get_tab_names():
-                if get_tab_visibility(tab):
-                    if aprops.tab == tab:
-                        row.operator("bim.manage_tab_panels", text="", icon="PREFERENCES").tab_name = tab
+            for tab in UIData.data["tabs"]:
+                if aprops.tab == tab:
+                    row.operator("bim.manage_tab_panels", text="", icon="PREFERENCES").tab_name = tab
 
         if bonsai.REINSTALLED_BBIM_VERSION:
             box = self.layout.box()
@@ -1132,7 +1090,10 @@ class BIM_PT_tabs(Panel):
 
     def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=True):
         tab_entry = row.row(align=True)
-        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon).tab = tab_name
+        if isinstance(icon, int):
+            tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon_value=icon).tab = tab_name
+        else:
+            tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon).tab = tab_name
         tab_entry.enabled = enabled
 
 
@@ -1860,8 +1821,8 @@ class UIData:
     def load(cls):
         cls.data = {
             "version": cls.version(),
-            "tabs_icon_color_mode": cls.icon_color_mode("user_interface.wcol_regular.text"),
             "menu_icon_color_mode": cls.icon_color_mode("user_interface.wcol_menu.text"),
+            "tabs": cls.tabs(),
         }
         cls.is_loaded = True
 
@@ -1872,6 +1833,28 @@ class UIData:
     @classmethod
     def icon_color_mode(cls, color_path):
         return tool.Blender.detect_icon_color_mode(color_path)
+
+    @classmethod
+    def tabs(cls):
+        hidden_tabs = [t.name for t in tool.Blender.get_bim_props().tab_visibilities if not t.is_visible]
+        color_mode = cls.icon_color_mode("user_interface.wcol_regular.text")
+        is_ifc_project = bool(tool.Ifc.get())
+        return [
+            tab
+            for tab in [
+                ("PROJECT", bonsai.bim.icons[f"{color_mode}_ifc"].icon_id, True),
+                ("OBJECT", "FILE_3D", is_ifc_project),
+                ("GEOMETRY", "MATERIAL", is_ifc_project),
+                ("DRAWINGS", "DOCUMENTS", is_ifc_project),
+                ("SERVICES", "NETWORK_DRIVE", is_ifc_project),
+                ("STRUCTURE", "EDITMODE_HLT", is_ifc_project),
+                ("SCHEDULING", "NLA", is_ifc_project),
+                ("FM", "PACKAGE", True),
+                ("QUALITY", "COMMUNITY", True),
+                ("BOOKMARK", "SOLO_ON", is_ifc_project),
+            ]
+            if tab[0] not in hidden_tabs
+        ]
 
 
 def draw_statusbar(self, context):
