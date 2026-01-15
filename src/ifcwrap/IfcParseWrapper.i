@@ -468,10 +468,11 @@ private:
 
 	bool __eq__(const express::Base& other) const {
 		// This logic is not perfect and is not fully consistent with __hash__
-		// Should there also be a distinction between entity instances and type declarations?
 		if ($self->identity() == other.identity()) {
 			return true;
-		} else if ($self->file() != other.file()) {
+		} else if (&$self->declaration() != &other.declaration()) {
+			return false;
+		} else if (($self->file() != other.file()) || ($self->declaration().as_entity() == nullptr)) {
 			// PyGILState_STATE gil = PyGILState_Ensure();
 			// @todo get_info_2 is actually implemented in C++, so we try to call it directly
 			bool result = false;
