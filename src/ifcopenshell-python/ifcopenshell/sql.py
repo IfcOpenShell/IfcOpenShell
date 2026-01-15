@@ -80,6 +80,13 @@ class sqlite(file):
 
         if not Path(filepath).exists():
             raise FileNotFoundError(f"File doesn't exist: {filepath}")
+        
+        # See ifcopenshell.file.file_mixin.post_init()
+        # history, future and transaction are stored in a list so that they
+        # can easily be shared among file instances that are the same C++
+        # object but have different python identities. We just have to conform
+        # here to that storage assumption:
+        self.state = [[], [], None]
 
         self.history_size = 64
         self.history = []
@@ -111,6 +118,10 @@ class sqlite(file):
         self._schema = row[1]
         self.mvd_str = row[2]
         self.ifc_schema = ifcopenshell.schema_by_name(self.schema)
+        # For creating C++ instances so that some of the calls here work
+        self.shadow_file = ifcopenshell.file(schema_identifier=self.schema)
+        # But we only create them once per type because we basically only need access to 'semi-static' such as get_attribute_category()
+        self.instance_map = {}
 
         self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map")
         self.id_map: dict[int, str] = {}
@@ -172,6 +183,13 @@ class sqlite(file):
     def create_entity(self, type, *args, **kawrgs) -> NoReturn:
         """Not supported for sqlite database."""
         assert False, "Not supported for sqlite database."
+
+    def _create_entity(self, type):
+        if inst := self.instance_map.get(type):
+            return inst
+        else:
+            inst = self.instance_map[type] = self.shadow_file.create_entity(type)
+            return inst
 
     def by_id(self, id: int) -> Union[sqlite_entity, None]:
         entity = self.entity_cache.get(id, None)
@@ -326,23 +344,25 @@ class sqlite(file):
         return header
 
 
-class sqlite_entity(entity_instance):
+class sqlite_entity:
     sqlite_wrapper: sqlite_wrapper
 
     def __init__(self, id: int, ifc_class: str, file: sqlite = None):
         if not ifc_class:
             print(id, ifc_class, file)
             assert False
-        e = ifcopenshell_wrapper.new_IfcBaseClass(file.schema, ifc_class)
         s = sqlite_wrapper(id, ifc_class, file)
-        super(entity_instance, self).__setattr__("wrapped_data", e)
-        super(entity_instance, self).__setattr__("sqlite_wrapper", s)
+        object.__setattr__(self, "wrapped_data", file._create_entity(ifc_class))
+        object.__setattr__(self, "sqlite_wrapper", s)
 
     def id(self) -> int:
         return self.sqlite_wrapper.id
 
     def __del__(self) -> None:
         pass
+
+    def __bool__(self):
+        return True
 
     def __getitem__(self, key: int) -> Any:
         return self.__getattr__(list(self.sqlite_wrapper.attributes.keys())[key])
@@ -359,7 +379,7 @@ class sqlite_entity(entity_instance):
         # print("GETATTR", self.sqlite_wrapper.id, self.sqlite_wrapper.ifc_class, name)
 
         INVALID, FORWARD, INVERSE = range(3)
-        attr_cat = self.get_attribute_category(name)
+        attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
             if self.sqlite_wrapper.attribute_cache:
                 # print(self.sqlite_wrapper.ifc_class)
