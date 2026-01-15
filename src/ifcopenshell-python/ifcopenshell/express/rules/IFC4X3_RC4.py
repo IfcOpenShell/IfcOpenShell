@@ -3,11 +3,11 @@ import ifcopenshell
 def exists(v):
     if callable(v):
         try:
-            return v() is not None
+            return exists(v())
         except IndexError as e:
             return False
     else:
-        return v is not None
+        return v is not None and v is not INDETERMINATE
 
 def nvl(v, default):
     return v if v is not None else default
