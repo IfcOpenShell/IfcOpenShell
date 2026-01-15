@@ -184,7 +184,7 @@ class ClassPropertyContractV1(TypedDict):
     qudtCodes: NotRequired[list[str]]
 
 
-class PropertyContractV4(TypedDict):
+class PropertyContractV5(TypedDict):
     dictionaryUri: NotRequired[str]
     activationDateUtc: str
     code: str
@@ -710,16 +710,14 @@ class Client:
         params = {k: v for k, v in params.items() if v is not None}
         return self.get(endpoint, params)
 
-    def get_property(self, uri, include_classes=False, language_code="", version: int = 4) -> PropertyContractV4:
+    def get_property(self, uri, language_code="", version: int = 5) -> PropertyContractV5:
         """
-        Get Property Detail
-        this API replaces Property
+        Get Property details.
+        If you also need the list of classes using the property, then use api/Property/Classes
         """
-
         endpoint = f"Property/v{version}"
         params = {
             "uri": uri,
-            "includeClasses": include_classes,
             "LanguageCode": language_code,
         }
         return self.get(endpoint, params)
