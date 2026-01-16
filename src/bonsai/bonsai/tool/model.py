@@ -620,6 +620,71 @@ class Model(bonsai.core.tool.Model):
             if not openings[i].obj:
                 openings.remove(i)
 
+    @classmethod
+    def save_custom_offset_to_pset(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        """Save custom offset settings to BBIM_MaterialLayer pset."""
+        props = tool.Material.get_object_material_props(obj)
+
+        if not props.use_custom_offset:
+            # Remove pset if custom offset is disabled
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
+            if pset:
+                pset_entity = tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset_entity)
+            return
+
+        # Determine which reference to save based on usage type
+        usage_type = tool.Model.get_usage_type(element)
+        custom_wall_reference = None
+        custom_slab_reference = None
+
+        if usage_type == "LAYER2":
+            custom_wall_reference = props.custom_wall_reference
+        elif usage_type == "LAYER3":
+            custom_slab_reference = props.custom_slab_reference
+
+        # Get or create pset
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
+        if pset_data:
+            pset = tool.Ifc.get().by_id(pset_data["id"])
+        else:
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_MaterialLayer")
+
+        # Save properties (store in SI units)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        properties = {
+            "UseCustomOffset": props.use_custom_offset,
+            "CustomOffset": props.custom_offset / unit_scale,
+            "CustomWallReference": custom_wall_reference if custom_wall_reference else "",
+            "CustomSlabReference": custom_slab_reference if custom_slab_reference else "",
+        }
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=properties)
+
+    @classmethod
+    def load_custom_offset_from_pset(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        """Load custom offset settings from BBIM_MaterialLayer pset."""
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
+        if not pset:
+            return
+
+        props = tool.Material.get_object_material_props(obj)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        # Load properties
+        props.use_custom_offset = pset.get("UseCustomOffset", False)
+        props.custom_offset = pset.get("CustomOffset", 0.0) * unit_scale  # Convert from SI
+
+        # Load the appropriate reference based on usage type
+        usage_type = tool.Model.get_usage_type(element)
+        if usage_type == "LAYER2":
+            custom_wall_ref = pset.get("CustomWallReference", "")
+            if custom_wall_ref:
+                props.custom_wall_reference = custom_wall_ref
+        elif usage_type == "LAYER3":
+            custom_slab_ref = pset.get("CustomSlabReference", "")
+            if custom_slab_ref:
+                props.custom_slab_reference = custom_slab_ref
+
     class MaterialLayerParameters(TypedDict):
         """Float values are in project units."""
 
@@ -652,13 +717,35 @@ class Model(bonsai.core.tool.Model):
         )
 
     @classmethod
-    def get_material_layer_custom_offset(cls, element: ifcopenshell.entity_instance, obj) -> MaterialLayerParameters:
+    def get_material_layer_custom_offset(
+        cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object
+    ) -> Optional[float]:
+        """Get custom offset value, reading from pset if props are not set."""
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_params = tool.Model.get_material_layer_parameters(element)
         layer_offset = layer_params["offset"]
         thickness = layer_params["thickness"] / unit_scale
         props = tool.Material.get_object_material_props(obj)
-        if props.use_custom_offset:
+
+        # Try to load from pset if not already in props
+        if not props.use_custom_offset:
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
+            if pset and pset.get("UseCustomOffset", False):
+                # Load from pset
+                custom_offset = pset.get("CustomOffset", 0.0)
+                usage_type = tool.Model.get_usage_type(element)
+
+                if usage_type == "LAYER2":
+                    custom_offset_reference = pset.get("CustomWallReference", "CENTER")
+                elif usage_type == "LAYER3":
+                    custom_offset_reference = pset.get("CustomSlabReference", "MIDDLE")
+                else:
+                    return None
+            else:
+                return None
+        else:
+            # Use current props
+            custom_offset = props.custom_offset / unit_scale
             if tool.Model.get_usage_type(element) == "LAYER2":
                 custom_offset_reference = props.custom_wall_reference
             elif tool.Model.get_usage_type(element) == "LAYER3":
@@ -666,24 +753,22 @@ class Model(bonsai.core.tool.Model):
             else:
                 return None
 
-            custom_offset = props.custom_offset
-            direction_sense = layer_params["direction_sense"]
-            if direction_sense == "POSITIVE" and custom_offset_reference in {"INTERIOR", "TOP"}:
-                layer_offset = custom_offset - thickness * unit_scale
-            if direction_sense == "POSITIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
-                layer_offset = custom_offset - (thickness / 2) * unit_scale
-            if (direction_sense == "POSITIVE" and custom_offset_reference in {"EXTERIOR", "BOTTOM"}) or (
-                direction_sense == "NEGATIVE" and custom_offset_reference in {"EXTERIOR", "TOP"}
-            ):
-                layer_offset = custom_offset
-            if direction_sense == "NEGATIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
-                layer_offset = custom_offset + (thickness / 2) * unit_scale
-            if direction_sense == "NEGATIVE" and custom_offset_reference in {"INTERIOR", "BOTTOM"}:
-                layer_offset = custom_offset + thickness * unit_scale
+        direction_sense = layer_params["direction_sense"]
 
-            return layer_offset / unit_scale
+        if direction_sense == "POSITIVE" and custom_offset_reference in {"INTERIOR", "TOP"}:
+            layer_offset = custom_offset - thickness * unit_scale
+        if direction_sense == "POSITIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
+            layer_offset = custom_offset - (thickness / 2) * unit_scale
+        if (direction_sense == "POSITIVE" and custom_offset_reference in {"EXTERIOR", "BOTTOM"}) or (
+            direction_sense == "NEGATIVE" and custom_offset_reference in {"EXTERIOR", "TOP"}
+        ):
+            layer_offset = custom_offset
+        if direction_sense == "NEGATIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
+            layer_offset = custom_offset + (thickness / 2) * unit_scale
+        if direction_sense == "NEGATIVE" and custom_offset_reference in {"INTERIOR", "BOTTOM"}:
+            layer_offset = custom_offset + thickness * unit_scale
 
-        return None
+        return layer_offset / unit_scale
 
     @classmethod
     def get_booleans(

@@ -1,0 +1,53 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Configure bonsai/vscode development environment",
+            "type": "shell",
+            "command": "${input:blenderPath}",
+            "args": [
+                "--background",
+                "--python", "${workspaceFolder}/src/bonsai/scripts/dev_environment_vscode_config.py"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Launch blender with debugpy",
+            "type": "shell",
+            "command": "blender",
+            "options": {
+                "cwd": "${config:bonsai.blenderPath}"
+            },
+            "args": [
+                "--python-expr",
+                "import debugpy; debugpy.listen(5678)"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Install debugpy in Blender",
+            "type": "shell",
+            "command": "blender",
+            "options": {
+                "cwd": "${config:bonsai.blenderPath}"
+            },
+            "args": [
+                "--background",
+                "--python-expr",
+                "import os, sys, subprocess; path=os.path.abspath(sys.executable); subprocess.call([path, '-m', 'ensurepip']); subprocess.call([path, '-m', 'pip', 'install', '--upgrade', 'debugpy'])"
+            ],
+            "problemMatcher": []
+        }
+         
+    ],
+    "inputs": [
+        {
+            "id": "blenderPath",
+            "type": "promptString",
+            "description": "Enter the path to the blender executable",
+            "default": "blender"
+        }
+    ]
+}

@@ -212,7 +212,7 @@ class FormatTransformer(lark.Transformer):
         """Handle variable substitution like {{z}} or {{Pset_Wall.FireRating}}"""
         if self.element is None:
             return "0"  # Default value if no element context
-        
+
         query_path = args[0]
         try:
             value = get_element_value(self.element, query_path)
@@ -399,11 +399,11 @@ class GetElementTransformer(lark.Transformer):
 
 def format(query: str, element: Optional[ifcopenshell.entity_instance] = None) -> str:
     """Format a query string with optional element context for variable substitution.
-    
+
     :param query: Format query string (can include {{variable}} placeholders)
     :param element: Optional IFC element for variable substitution
     :return: Formatted string
-    
+
     Example:
         format("{{z}} / 2", element)  # Substitutes element's z value
         format("imperial_length({{z}} / 2, 4)", element)  # Uses z in calculation

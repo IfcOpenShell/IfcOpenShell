@@ -104,7 +104,7 @@ jobs:
           # Ensure Bonsai and ifcsverchok enable/disable works before uploading to extensions repo.
 
           # Download Blender.
-          wget -q -O blender.tar.xz https://download.blender.org/release/Blender4.5/blender-4.5.0-linux-x64.tar.xz
+          wget -q -O blender.tar.xz https://download.blender.org/release/Blender5.0/blender-5.0.1-linux-x64.tar.xz
           tar -xf blender.tar.xz
 
           # Setup Blender.

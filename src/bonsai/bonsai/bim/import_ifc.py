@@ -1295,6 +1295,7 @@ class IfcImporter:
                 if element.is_a("IfcSpace"):
                     obj.hide_set(True)
 
+
 class IfcImportSettings:
     """
     Initialize only using `IfcImportSettings.factory()`.

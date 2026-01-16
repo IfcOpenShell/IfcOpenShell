@@ -714,7 +714,9 @@ class ElementValueRow(PropertyGroup):
     )
 
     element_key: StringProperty(
-        name="Element Key", description="The element value key (e.g., 'id', 'Name', 'Pset_WallCommon.Reference')", default=""
+        name="Element Key",
+        description="The element value key (e.g., 'id', 'Name', 'Pset_WallCommon.Reference')",
+        default="",
     )
 
     formatted_value: StringProperty(
@@ -756,33 +758,33 @@ def get_category_items_with_counts(self, context):
         ("Coordinates", "Coordinates", "Coordinate information", "EMPTY_ARROWS"),
         ("Custom String", "Custom String", "Add custom text (no element key)", "SMALL_CAPS"),
     ]
-    
+
     obj = context.active_object
-    
+
     if obj and tool.Ifc.get_entity(obj):
         try:
             element = tool.Ifc.get_entity(obj)
             text_element = element
-            
-            if hasattr(self, 'product_used'):
+
+            if hasattr(self, "product_used"):
                 if self.product_used:
                     element = tool.Ifc.get_entity(self.product_used)
                 else:
                     assigned = tool.Drawing.get_assigned_product(text_element)
                     if assigned:
                         element = assigned
-            
+
             available_keys = ElementValuesData.get_available_element_value_keys(element)
             items = []
             for i, (identifier, base_name, description, icon) in enumerate(category_metadata):
                 count = len(available_keys.get(identifier, []))
                 display_name = f"{base_name} ({count})" if count > 0 else base_name
                 items.append((identifier, display_name, description, icon, i))
-            
+
             return items
         except Exception as e:
             pass
-    
+
     return [(id, name, desc, icon, i) for i, (id, name, desc, icon) in enumerate(category_metadata)]
 
 
@@ -843,16 +845,16 @@ class LiteralProps(PropertyGroup):
     )
 
     element_value_rows: CollectionProperty(
-        name="Element Value Rows", 
+        name="Element Value Rows",
         type=ElementValueRow,
-        description="Collection of element value rows for building the literal value"
+        description="Collection of element value rows for building the literal value",
     )
 
     category_for_adding: EnumProperty(
         name="Category for Adding",
         items=get_category_items_with_counts,
         default=0,
-        description="Category to use when adding a new element value row"
+        description="Category to use when adding a new element value row",
     )
 
     if TYPE_CHECKING:

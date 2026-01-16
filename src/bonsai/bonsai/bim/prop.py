@@ -60,6 +60,10 @@ def update_tab(self: "BIMAreaProperties", context: bpy.types.Context) -> None:
     self.previous_tab = self.tab
 
 
+def update_is_visible(self: "BIMTabVisibility", context: bpy.types.Context) -> None:
+    bonsai.bim.handler.refresh_ui_data()
+
+
 def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> None:
     tool.Blender.setup_tabs()
     screen = context.id_data
@@ -537,21 +541,24 @@ class BIMTabProperties(PropertyGroup):
 
 class BIMTabVisibility(PropertyGroup):
     name: StringProperty(name="Tab Name")
-    is_visible: BoolProperty(name="Is Visible", default=True)
+    is_visible: BoolProperty(name="Is Visible", default=True, update=update_is_visible)
 
     if TYPE_CHECKING:
         name: str
         is_visible: bool
 
 
-class BIMPanelProperties(PropertyGroup):
-    is_visible_in_tab: BoolProperty(name="Is Visible in Tab", default=True)
-    is_visible_in_bookmarks: BoolProperty(name="Is Visible in Bookmarks", default=True)
-    is_bookmarked: BoolProperty(name="Is Bookmarked", default=False)
+class BIMPanelVisibility(PropertyGroup):
+    name: StringProperty(name="Name")
+    label: StringProperty(name="Label")
+    tab_name: StringProperty(name="Tab Name")
+    is_visible: BoolProperty(name="Is Visible in Tab", default=True, update=update_is_visible)
+    is_bookmarked: BoolProperty(name="Is Bookmarked", default=False, update=update_is_visible)
 
     if TYPE_CHECKING:
-        is_visible_in_tab: bool
-        is_visible_in_bookmarks: bool
+        name: str
+        tab_name: str
+        is_visible: bool
         is_bookmarked: bool
 
 
@@ -628,7 +635,6 @@ class BIMProperties(PropertyGroup):
         name="Mass Unit",
         default="KILOGRAM",
     )
-
     time_unit: EnumProperty(
         items=[
             ("SECOND", "Second", "Seconds"),
@@ -638,9 +644,11 @@ class BIMProperties(PropertyGroup):
         ],
         name="Time Unit",
         default="HOUR",
-    )    
+    )
     tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
-    panel_properties: CollectionProperty(type=BIMPanelProperties, name="Panel Properties")
+    active_tab_visibility_index: IntProperty(name="Active Tab Visibility Index")
+    panel_visibilities: CollectionProperty(type=BIMPanelVisibility, name="Panel Properties")
+    active_panel_visibility_index: IntProperty(name="Active Panel Property Index")
 
     if TYPE_CHECKING:
         is_dirty: bool
@@ -656,8 +664,10 @@ class BIMProperties(PropertyGroup):
         volume_unit: str
         mass_unit: str
         time_unit: str
-        tab_visibilities: bpy.types.bpy_prop_collection[BIMTabVisibility]
-        panel_properties: bpy.types.bpy_prop_collection[BIMPanelProperties]
+        tab_visibilities: bpy.types.bpy_prop_collection_idprop[BIMTabVisibility]
+        active_tab_visibility_index: int
+        panel_visibilities: bpy.types.bpy_prop_collection_idprop[BIMPanelVisibility]
+        active_panel_visibility_index: int
 
 
 class IfcParameter(PropertyGroup):
@@ -791,12 +801,21 @@ class BIMFacet(PropertyGroup):
             ("!*=", "does not contain", ""),
         ],
     )
+    filter_mode: EnumProperty(
+        items=[
+            ("ADD", "Add", "Add results to the current selection"),
+            ("SUBTRACT", "Subtract", "Remove results from the current selection"),
+            ("FILTER", "Filter", "Filter the current selection"),
+        ],
+        default="ADD",
+    )
 
     if TYPE_CHECKING:
         pset: str
         value: str
         type: str
         comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
+        filter_mode: Literal["ADD", "SUBTRACT", "FILTER"]
 
 
 class BIMFilterGroup(PropertyGroup):

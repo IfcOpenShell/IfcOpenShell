@@ -161,11 +161,19 @@ class Blender(bonsai.core.tool.Blender):
                 screen.BIMAreaProperties.add()
 
     @classmethod
-    def is_tab(cls, context: bpy.types.Context, tab: str) -> bool:
+    def should_show_panel(cls, context: bpy.types.Context, tab: str, panel: str) -> bool:
         aprops = cls.get_area_props(context)
         if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
             return True
-        return aprops.tab == tab
+        if (is_bookmark_tab := aprops.tab == "BOOKMARK") or aprops.tab == tab:
+            bprops = tool.Blender.get_bim_props()
+            if not (panel_visibility := bprops.panel_visibilities.get(panel)):
+                return not is_bookmark_tab
+            if is_bookmark_tab:
+                if panel_visibility.is_bookmarked:
+                    return True
+            elif panel_visibility.is_visible:
+                return True
 
     @classmethod
     def is_default_scene(cls) -> bool:
@@ -382,17 +390,14 @@ class Blender(bonsai.core.tool.Blender):
                     assert isinstance(space, bpy.types.SpaceNodeEditor)
                     if space.tree_type == "ShaderNodeTree":
                         context_override = {"area": area, "space": space, "screen": screen}
-                        
+
                         # Add window if screen differs from current context
                         context = bpy.context
                         if context and context.screen != screen:
-                            window = next(
-                                (w for w in context.window_manager.windows if w.screen == screen), 
-                                None
-                            )
+                            window = next((w for w in context.window_manager.windows if w.screen == screen), None)
                             if window:
                                 context_override["window"] = window
-                        
+
                         return context_override
 
     @classmethod
@@ -742,7 +747,11 @@ class Blender(bonsai.core.tool.Blender):
         # Yes, accessing items through annotations is a bit hacky
         # but it's the only way to get the dynamic enum items
         # besides providing them to get_enum_safe explicitly.
-        prop_keywords = props.__annotations__[prop_name].keywords
+        try:
+            annotations = props.__annotations__
+        except AttributeError:
+            annotations = type(props).__annotations__
+        prop_keywords = annotations[prop_name].keywords
         items = prop_keywords.get("items")
         if items is None:
             return None
@@ -1460,7 +1469,10 @@ class Blender(bonsai.core.tool.Blender):
     def override_scene_panel(cls, original_panel: bpy.types.Panel) -> None:
         @classmethod
         def poll_check_blender_tab(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
+            aprops = tool.Blender.get_area_props(context)
+            if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
+                return True
+            return aprops.tab == "BLENDER"
 
         polls = bonsai.bim.original_scene_panels_polls
 
