@@ -18,7 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.api.geometry
-import ifcopenshell.util.element
 
 
 def map_type_representations(

@@ -21,7 +21,6 @@ import pytest
 import ifcopenshell.api.nest
 import ifcopenshell.api.root
 import ifcopenshell.util.element
-import ifcopenshell.util.placement
 import test.bootstrap
 
 

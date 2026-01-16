@@ -28,7 +28,7 @@ from mathutils import Matrix, Vector
 
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import VectorType, ifc_safe_vector_type
+from ifcopenshell.util.shape_builder import ifc_safe_vector_type
 
 if TYPE_CHECKING:
     import bonsai.tool as tool

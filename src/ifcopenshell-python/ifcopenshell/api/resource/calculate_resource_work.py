@@ -18,8 +18,6 @@
 
 import ifcopenshell.api.resource
 import ifcopenshell.util.constraint
-import ifcopenshell.util.date
-import ifcopenshell.util.element
 import ifcopenshell.util.resource
 
 

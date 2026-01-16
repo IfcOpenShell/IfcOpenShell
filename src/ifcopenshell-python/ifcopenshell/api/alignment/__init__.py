@@ -125,4 +125,5 @@ __all__ = [
     "name_segments",
     "register_referent_name_callback",
     "update_fallback_position",
+    "get_mapped_segments",
 ]

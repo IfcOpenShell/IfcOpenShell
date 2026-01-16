@@ -20,7 +20,6 @@ import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.root
-import ifcopenshell.util.placement
 import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 

@@ -24,7 +24,7 @@ import operator
 import random
 import warnings
 from collections.abc import Iterable
-from typing import Any, NamedTuple, Union
+from typing import NamedTuple, Union
 
 import OCC
 from typing_extensions import assert_never

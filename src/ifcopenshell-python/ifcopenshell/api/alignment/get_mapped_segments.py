@@ -18,7 +18,6 @@
 
 from collections.abc import Sequence
 
-import ifcopenshell
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
 

@@ -26,13 +26,11 @@ import ifcopenshell.api.group
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
-import ifcopenshell.api.sequence
 import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.pset
 import ifcopenshell.util.selector as subject
 import test.bootstrap
 

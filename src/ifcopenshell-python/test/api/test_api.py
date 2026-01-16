@@ -17,13 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime
-from typing import Union
 
-import ifcopenshell.api
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
 import ifcopenshell.api.root
-import ifcopenshell.api.sequence
 import ifcopenshell.util.element
 import test.bootstrap
 

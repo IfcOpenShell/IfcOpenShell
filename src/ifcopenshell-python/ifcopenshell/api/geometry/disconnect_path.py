@@ -19,7 +19,6 @@
 from typing import Optional
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.util.element
 
 
