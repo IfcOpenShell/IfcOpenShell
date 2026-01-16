@@ -17,7 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import sys
 from collections.abc import Iterable
 from decimal import Decimal
 from types import EllipsisType
@@ -32,7 +31,6 @@ import ifcopenshell.util
 import ifcopenshell.util.attribute
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
-import ifcopenshell.util.fm
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.pset

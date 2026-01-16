@@ -19,7 +19,6 @@
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
-import ifcopenshell.util.placement
 import test.bootstrap
 
 

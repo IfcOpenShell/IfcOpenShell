@@ -19,7 +19,6 @@
 import tempfile
 from pathlib import Path
 
-import ifcpatch
 from ifcpatch.recipes import Ifc2Sql
 
 import ifcopenshell

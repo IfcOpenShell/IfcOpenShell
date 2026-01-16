@@ -18,7 +18,6 @@
 
 import functools
 import multiprocessing
-import operator
 import os
 import sys
 import time
@@ -26,11 +25,10 @@ import time
 import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
-    from OCC.Core import AIS
+    from OCC.Core import AIS  # noqa: F401
 
     USE_OCCT_HANDLE = False
 except ImportError:
-    from OCC import AIS
 
     USE_OCCT_HANDLE = True
 
@@ -56,7 +54,6 @@ from .code_editor_pane import code_edit
 try:
     from OCC.Display.pyqt5Display import qtViewer3d
 except BaseException:
-    import OCC.Display
 
     try:
         import OCC.Display.backend

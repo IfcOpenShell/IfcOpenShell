@@ -2,7 +2,6 @@ import os
 
 import pytest
 
-import ifcopenshell
 from ifcopenshell.geom.stats import StatsCollector
 
 

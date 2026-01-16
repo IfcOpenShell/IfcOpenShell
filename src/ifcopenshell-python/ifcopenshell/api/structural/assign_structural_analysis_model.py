@@ -20,8 +20,6 @@ from typing import Union
 
 import ifcopenshell
 import ifcopenshell.api.group
-import ifcopenshell.api.owner
-import ifcopenshell.guid
 
 
 def assign_structural_analysis_model(

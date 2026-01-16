@@ -17,7 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 """Run this test from src/ifcopenshell-python folder: pytest --durations=0 ifcopenshell/util/test_pset.py"""
-from ifcopenshell import util
 from ifcopenshell.util import pset
 from ifcopenshell.util.pset import ApplicableEntity
 

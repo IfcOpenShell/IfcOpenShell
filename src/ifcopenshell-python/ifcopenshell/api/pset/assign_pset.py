@@ -21,7 +21,6 @@ from typing import Union
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
-import ifcopenshell.util.element
 
 
 def assign_pset(

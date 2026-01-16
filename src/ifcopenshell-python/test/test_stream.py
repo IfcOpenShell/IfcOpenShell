@@ -18,10 +18,8 @@
 
 from pathlib import Path
 
-import pytest
 
 import ifcopenshell
-import test.bootstrap
 
 TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
 

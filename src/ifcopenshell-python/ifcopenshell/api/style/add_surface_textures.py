@@ -20,7 +20,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 
 import ifcopenshell
-import ifcopenshell.api
 
 if TYPE_CHECKING:
     import bpy

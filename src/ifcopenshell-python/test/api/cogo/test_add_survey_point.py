@@ -19,7 +19,6 @@
 import pytest
 
 import ifcopenshell.api.aggregate
-import ifcopenshell.api.alignment
 import ifcopenshell.api.cogo
 import ifcopenshell.api.context
 

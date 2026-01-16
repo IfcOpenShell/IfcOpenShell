@@ -22,9 +22,7 @@ from typing import Any, Union
 import numpy as np
 import pytest
 
-import ifcopenshell.api
 import ifcopenshell.geom
-import ifcopenshell.util
 import ifcopenshell.util.shape
 import test.bootstrap
 from ifcopenshell.util.shape_builder import (

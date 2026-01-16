@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-import collections
 import collections.abc
 from collections.abc import Sequence
 from itertools import chain
@@ -29,7 +28,6 @@ import numpy as np
 import numpy.typing as npt
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation

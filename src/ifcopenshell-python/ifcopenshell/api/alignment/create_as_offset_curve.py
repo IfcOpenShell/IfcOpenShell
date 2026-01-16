@@ -20,9 +20,6 @@ from collections.abc import Sequence
 
 import ifcopenshell
 import ifcopenshell.api.aggregate
-import ifcopenshell.api.alignment
-import ifcopenshell.api.nest
-import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._create_offset_curve_representation import (
     _create_offset_curve_representation,

@@ -23,9 +23,7 @@ import ifcopenshell.api.control
 import ifcopenshell.api.owner
 import ifcopenshell.api.sequence
 import ifcopenshell.guid
-import ifcopenshell.util.element
 import ifcopenshell.util.sequence
-import ifcopenshell.util.system
 
 
 def create_baseline(

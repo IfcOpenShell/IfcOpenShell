@@ -19,7 +19,6 @@
 import numpy as np
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.alignment
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
