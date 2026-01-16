@@ -225,7 +225,7 @@ class DumbSlabPlaner:
         for inverse in tool.Ifc.get().get_inverse(layer_set):
             if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS3":
                 continue
-            
+
             if tool.Ifc.get().schema == "IFC2X3":
                 for rel in tool.Ifc.get().get_inverse(inverse):
                     if not rel.is_a("IfcRelAssociatesMaterial"):
@@ -277,10 +277,12 @@ class DumbSlabPlaner:
             return
         self.change_thickness(element, total_thickness)
 
-    def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float, preserve_offset: bool = False) -> None:
+    def change_thickness(
+        self, element: ifcopenshell.entity_instance, thickness: float, preserve_offset: bool = False
+    ) -> None:
         if tool.Model.get_usage_type(element) != "LAYER3":
             return
-            
+
         layer_params = tool.Model.get_material_layer_parameters(element)
         ifc_file = tool.Ifc.get()
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
@@ -299,7 +301,7 @@ class DumbSlabPlaner:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
                 direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
-                
+
                 # Calculate the actual extrusion angle from vertical
                 extrusion_angle = 0
                 if direction_ratios.length > 0:
