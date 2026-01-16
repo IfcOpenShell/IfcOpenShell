@@ -324,6 +324,10 @@ powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%U
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+REM patch to force build using VS2022, in case VS2026 is installed, which currently fails to build mpir
+git apply "%~dp0patches\mpir_build.patch" --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 cd msvc
 cd vs%VS_VER:~2,2%
 call .\msbuild.bat gc LIB %VS_PLATFORM% %DEBUG_OR_RELEASE%

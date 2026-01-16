@@ -1,0 +1,14 @@
+diff --git a/msvc/vs22/msbuild.bat b/msvc/vs22/msbuild.bat
+index f119c3e9..35e46217 100644
+--- a/msvc/vs22/msbuild.bat
++++ b/msvc/vs22/msbuild.bat
+@@ -14,7 +14,8 @@ set vs_version=2019
+ 
+ set vsw_exe="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+ 
+-for /f "usebackq tokens=*" %%i in (`"!vsw_exe!" -latest -products * -requires Microsoft.Component.MSBuild -property installationPath`) do (
++rem limit to VS2022, as VS2026 does not build currently
++for /f "usebackq tokens=*" %%i in (`"!vsw_exe! -version [17,18)" -sort -products * -requires Microsoft.Component.MSBuild -property installationPath`) do (
+   set InstallDir=%%i
+ )
+ 
