@@ -19,6 +19,7 @@
 from __future__ import annotations
 import bpy
 import bonsai.bim
+from bonsai.bim import module
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
 from bonsai.bim.helper import prop_with_search
@@ -668,18 +669,30 @@ class BIM_PT_external_parametric_geometry(bpy.types.Panel):
 
         row.operator("bim.apply_external_parametric_geometry", icon="CHECKMARK", text="")
         row.prop(props, "is_editing", icon="CANCEL", text="")
-        row = layout.row(align=True)
-        row.prop_search(props, "geo_nodes", bpy.data, "node_groups")
-        if props.geo_nodes:
-            assert (modifier := tool.Model.get_epg_modifier(obj))
-            inputs = tool.Model.get_parametric_geometry_inputs(modifier)
-            # NOTE: users won't be able to see inputs descriptions.
-            # If we add group node inputs as modifiers inputs, descriptions will be visible.
-            # But then we need to ensure inputs are up to date
-            # (e.g. probably just by adding a refresh button).
-            for input in inputs:
-                row = layout.row(align=True)
-                row.prop(input, "default_value", text=input.name)
+        layout.prop(props, "geometry_source")
+        if props.geometry_source == "GEONODES":
+            row = layout.row(align=True)
+            row.prop_search(props, "geo_nodes", bpy.data, "node_groups")
+            if props.geo_nodes:
+                assert (modifier := tool.Model.get_epg_modifier(obj))
+                inputs = tool.Model.get_parametric_geometry_inputs(modifier)
+                # NOTE: users won't be able to see inputs descriptions.
+                # If we add group node inputs as modifiers inputs, descriptions will be visible.
+                # But then we need to ensure inputs are up to date
+                # (e.g. probably just by adding a refresh button).
+                for input in inputs:
+                    row = layout.row(align=True)
+                    row.prop(input, "default_value", text=input.name)
+        elif props.geometry_source == "IFCSVERCHOK":
+            row = layout.row(align=True)
+            row.prop(props, "sverchok_nodes")
+            if props.sverchok_nodes:
+                # TODO: Updating mesh in `draw` is not ideal,
+                # should find a way to update only on graph changes.
+                res = tool.Model.update_mesh_from_sverchok(obj, props.sverchok_nodes)
+                if res is not None:
+                    print(res)
+                    layout.label(text=f"Error Updating from Graph, See System Console", icon="ERROR")
 
 
 def draw_door_properties(layout: bpy.types.UILayout, props: module_prop.BIMDoorProperties) -> None:
