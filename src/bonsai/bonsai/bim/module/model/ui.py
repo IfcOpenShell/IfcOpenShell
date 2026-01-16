@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim
 import bonsai.tool as tool
@@ -38,6 +39,9 @@ if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
     import _bl_ui_utils.layout as bl_ui_utils_layout
 else:
     import bl_ui_utils.layout as bl_ui_utils_layout
+
+if TYPE_CHECKING:
+    import bonsai.bim.module.model.prop as module_prop
 
 
 class BIM_MT_type_manager_menu(bpy.types.Menu):
@@ -678,7 +682,7 @@ class BIM_PT_external_parametric_geometry(bpy.types.Panel):
                 row.prop(input, "default_value", text=input.name)
 
 
-def draw_door_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_door_properties(layout: bpy.types.UILayout, props: module_prop.BIMDoorProperties) -> None:
     """Draw door properties UI (shared between properties panel and preferences)."""
     # General properties
     general_props = props.get_general_kwargs()
@@ -698,7 +702,7 @@ def draw_door_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGr
         layout.prop(props, prop)
 
 
-def draw_window_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_window_properties(layout: bpy.types.UILayout, props: module_prop.BIMWindowProperties) -> None:
     """Draw window properties UI (shared between properties panel and preferences)."""
     number_of_panels, panels_data = props.window_types_panels[props.window_type]
 
@@ -734,7 +738,7 @@ def draw_window_properties(layout: bpy.types.UILayout, props: bpy.types.Property
             cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
 
 
-def draw_railing_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_railing_properties(layout: bpy.types.UILayout, props: module_prop.BIMRailingProperties) -> None:
     """Draw railing properties UI (shared between properties panel and preferences)."""
     general_props = props.get_general_kwargs()
     for prop in general_props:
@@ -746,7 +750,7 @@ def draw_railing_properties(layout: bpy.types.UILayout, props: bpy.types.Propert
         layout.prop(props, prop)
 
 
-def draw_roof_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_roof_properties(layout: bpy.types.UILayout, props: module_prop.BIMRoofProperties) -> None:
     """Draw roof properties UI (shared between properties panel and preferences)."""
     # General properties
     general_props = props.get_general_kwargs()
@@ -754,7 +758,7 @@ def draw_roof_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGr
         layout.prop(props, prop)
 
 
-def draw_stair_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_stair_properties(layout: bpy.types.UILayout, props: module_prop.BIMStairProperties) -> None:
     """Draw stair properties UI (shared between properties panel and preferences)."""
     for prop_name in props.get_props_kwargs():
         # Skip custom_tread_lock as it's handled with custom_first_last_tread_run
