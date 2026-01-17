@@ -1786,7 +1786,8 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_csv_props(cls) -> CsvProperties:
-        return bpy.context.scene.CsvProperties
+        assert (scene := bpy.context.scene)
+        return scene.CsvProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_ifc_props(cls) -> IfcProperties:

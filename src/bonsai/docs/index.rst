@@ -63,9 +63,7 @@ and data-rich OpenBIM with Blender :)
       guides/troubleshooting
       guides/alignment
       guides/development/index
-      guides/coordination/spreadsheet_export
       tutorials/index      
-
    .. toctree::
       :hidden:
       :caption: Reference

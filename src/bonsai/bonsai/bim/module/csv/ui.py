@@ -156,7 +156,6 @@ class BIM_PT_ifccsv(Panel):
         if not preferences.chain_filter_with_set_operations:
             row.operator("bim.add_output_filter_group", icon="ADD", text="Add Output Filter Group")
         else:
-            # In chain mode, use edit_filter_query icon
             op = row.operator("bim.edit_filter_query", text="", icon="FILTER")
             row = box.row(align=True)
             add_op = row.operator("bim.add_output_filter", text="Add Output Filter", icon="ADD")
@@ -164,11 +163,9 @@ class BIM_PT_ifccsv(Panel):
 
 
         if preferences.chain_filter_with_set_operations:
-            # Display filters in chain mode (group 0 only)
             if len(props.output_filter_groups) > 0 and len(props.output_filter_groups[0].filters) > 0:
                 for i, filter in enumerate(props.output_filter_groups[0].filters):
                     row = box.row(align=True)
-                    # Add filter mode toggle for filters after the first one
                     if i > 0:
                         mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
                         op = row.operator(
@@ -198,7 +195,6 @@ class BIM_PT_ifccsv(Panel):
                 if len(group.filters) > 0:
                     for i, filter in enumerate(group.filters):
                         row = group_box.row(align=True)
-                        # Add filter mode toggle for chain_filter_with_set_operations
                         if preferences.chain_filter_with_set_operations and i > 0:
                             mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
                             op = row.operator(

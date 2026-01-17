@@ -23,7 +23,6 @@ import json
 import ifccsv
 import logging
 import tempfile
-import pandas as pd
 import ifcopenshell
 import ifcopenshell.util.selector
 import bonsai.tool as tool
@@ -33,7 +32,8 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bonsai.bim.handler import refresh_ui_data
 from typing import TYPE_CHECKING
 from collections import Counter
-from datetime import datetime
+from fractions import Fraction
+
 import pandas as pd
 import subprocess
 import time
@@ -357,11 +357,31 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
 
     def execute(self, context):
         props = tool.Blender.get_csv_props()
+        propsIfc = tool.Blender.get_ifc_props()
+        
         if props:
             props.progress = 0.01
             props.import_phase = "Starting export..."
         
-        self._step = 0
+        self.ifccsv = ifccsv
+        self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
+        
+        if props.should_load_from_memory:
+            ifc_file_path = bpy.context.scene.BIMProperties.ifc_file
+            for node in propsIfc.ifc_files:
+                node.is_selected = False
+            for node in propsIfc.ifc_files:
+                if tool.Ifc.resolve_uri(node.file_path) == ifc_file_path:
+                    node.is_selected = True
+                    break
+            if not any(node.is_selected for node in propsIfc.ifc_files):
+                new_file = propsIfc.ifc_files.add()
+                new_file.file_path = ifc_file_path
+                new_file.is_selected = True
+        
+        self._selected_files = [node for node in propsIfc.ifc_files if node.is_selected]
+        self._total_files = len(self._selected_files)
+        
         self._file_index = 0
         self._file_substep = 0
         self._current_ifc_file = None
@@ -372,14 +392,8 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
         self._current_element_count = 0
         self._current_elements_processed = 0
         self._dataframes = []
-        self._combined_df = None
-        self._final_df = None
         self._timer_interval = 0.05
-        self._total_rows_to_process = 0
-        self._rows_processed = 0
-        self._total_files = 0
         self._total_rows_extracted = 0
-        self._selected_files = []
         self._timer = context.window_manager.event_timer_add(self._timer_interval, window=context.window)
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -407,37 +421,9 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                         area.tag_redraw()
 
         props = tool.Blender.get_csv_props()
-        propsIfc = tool.Blender.get_ifc_props()
+        start_time = time.perf_counter()
         
-        if self._step == 0:
-            import ifccsv
-            self.ifccsv = ifccsv
-            self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
-            if props.should_load_from_memory:
-                ifc_file_path = bpy.context.scene.BIMProperties.ifc_file
-                for node in propsIfc.ifc_files:
-                    node.is_selected = False
-                for node in propsIfc.ifc_files:
-                    if tool.Ifc.resolve_uri(node.file_path) == ifc_file_path:
-                        node.is_selected = True
-                        break
-                if not any(node.is_selected for node in propsIfc.ifc_files):
-                    new_file = propsIfc.ifc_files.add()
-                    new_file.file_path = ifc_file_path
-                    new_file.is_selected = True
-            
-            self._selected_files = [node for node in propsIfc.ifc_files if node.is_selected]
-            self._total_files = len(self._selected_files)
-            self._total_rows_extracted = 0
-            props.import_phase = f"Initializing export for {self._total_files} file(s)..."
-            props.progress = 0.05
-            self._step = 1
-            return {'PASS_THROUGH'}
-        
-        if self._step == 1:
-            start_time = time.perf_counter()
-            
-            while self._file_index < self._total_files:
+        while self._file_index < self._total_files:
                 node = self._selected_files[self._file_index]
                 file_name = os.path.basename(node.file_path)
                 
@@ -559,7 +545,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                         
                         self._dataframes.append(self._current_df)
                         self._total_rows_extracted += len(self._current_df)
-                        self._rows_processed += len(self._current_df)
                         
                         current_file_rows = len(self._current_df)
                         file_num = self._file_index + 1
@@ -578,60 +563,43 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                     
                     if (time.perf_counter() - start_time) >= getattr(self, '_timer_interval', 0.05):
                         return {'PASS_THROUGH'}
-            
-            self._step = 2
         
-        if self._step == 2:
-            if not self._dataframes:
-                props.progress = 0.0
-                props.import_phase = ""
-                wm.event_timer_remove(self._timer)
-                self.report({"ERROR"}, "No data was generated for selected files.")
-                return {"CANCELLED"}
-            
-            self._combined_df = pd.concat(self._dataframes, ignore_index=True)
-            self._combined_df.columns = self.get_unique_column_names(self._combined_df)
-            total_rows = len(self._combined_df)
-            self._total_rows_to_process = total_rows
-            self._step = 3
+        wm = getattr(context, 'window_manager', None)
         
-        if self._step == 3:
-            preferences = tool.Blender.get_addon_preferences()
-            rows_before = len(self._combined_df)
-            self._final_df = self.apply_filters(self._combined_df, props, preferences)
-            rows_after = len(self._final_df)
-            self._step = 4
-        
-        if self._step == 4:
-            try:
-                total_rows = len(self._final_df)
-                format_type = props.format.upper()
-                self.format_and_write_output(self._final_df, props)
-                props.progress = 1.0
-                props.import_phase = ""
-            except Exception as e:
-                props.progress = 0.0
-                props.import_phase = ""
-                wm.event_timer_remove(self._timer)
-                self.report({"ERROR"}, f"Failed to write output: {str(e)}")
-                return {'CANCELLED'}
-            self._step = 5
-            # Continue to Step 5 for cleanup
-        
-        # Step 5: Cleanup
-        if self._step == 5:
+        if not self._dataframes:
             props.progress = 0.0
             props.import_phase = ""
-            wm.event_timer_remove(self._timer)
-            return {'FINISHED'}
+            if wm:
+                wm.event_timer_remove(self._timer)
+            self.report({"ERROR"}, "No data was generated for selected files.")
+            return {"CANCELLED"}
         
-        return {'PASS_THROUGH'}
+        combined_df = pd.concat(self._dataframes, ignore_index=True)
+        combined_df.columns = self.get_unique_column_names(combined_df)
+        
+        preferences = tool.Blender.get_addon_preferences()
+        final_df = self.apply_filters(combined_df, props, preferences)
+        
+        try:
+            self.format_and_write_output(final_df, props)
+            props.progress = 1.0
+            props.import_phase = ""
+        except Exception as e:
+            props.progress = 0.0
+            props.import_phase = ""
+            if wm:
+                wm.event_timer_remove(self._timer)
+            self.report({"ERROR"}, f"Failed to write output: {str(e)}")
+            return {'CANCELLED'}
+        
+        props.progress = 0.0
+        props.import_phase = ""
+        if wm:
+            wm.event_timer_remove(self._timer)
+        return {'FINISHED'}
     
     def apply_filters(self, combined_df, props, preferences):
-        """Apply output filters to the combined dataframe."""
-        import re
         if preferences.chain_filter_with_set_operations:
-            # Chain mode: Apply filters sequentially with set operations
             result_df = None
             if len(props.output_filter_groups) > 0:
                 for filter_idx, filter in enumerate(props.output_filter_groups[0].filters):
@@ -643,7 +611,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                         continue
                     if comparison_operator == "regex":
                         try:
-                            import re
                             pattern = re.compile(comparison_value)
                             if column_name == "__ALL__":
                                 mask = df.astype(str).apply(lambda x: x.str.contains(pattern, na=False)).any(axis=1)
@@ -665,10 +632,8 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                         try:
                             column = df[col_match]
                             value = comparison_value
-                            # Find the CsvAttribute for this column
                             attr = next((a for a in props.csv_attributes if a.header == column_name), None)
                             data_type = getattr(attr, 'data_type', 'string') if attr else 'string'
-                            from fractions import Fraction
                             def parse_imperial(val):
                                 """
                                 Parse an imperial measurement string and return meters.
@@ -687,19 +652,15 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                                 feet = 0.0
                                 inches = 0.0
 
-                                # Decimal feet only (e.g. 8.5)
                                 if re.fullmatch(r"\d+(\.\d+)?", s):
                                     feet = float(s)
                                 else:
-                                    # Extract feet (single quote NOT followed by another single quote)
                                     feet_match = re.search(r"(\d+(?:\.\d+)?)\s*'(?!')", s)
                                     if feet_match:
                                         feet = float(feet_match.group(1))
 
-                                    # Remove feet part for inch parsing (only single quote, not double)
                                     s_no_feet = re.sub(r"\d+(?:\.\d+)?\s*'(?!')", "", s)
 
-                                    # Extract inches (whole + fraction)
                                     inch_match = re.search(
                                         r"(\d+)?\s*(\d+/\d+)?\s*(?:\"|''|$)",
                                         s_no_feet
@@ -714,13 +675,11 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                                         if frac:
                                             inches += float(Fraction(frac))
 
-                                # Convert to meters
                                 total_inches = feet * 12.0 + inches
                                 meters = total_inches * 0.0254
                                 return meters
                             try:
                                 if data_type == 'imperial_string':
-                                    # Always convert both column and value to meters for comparison
                                     column_converted = column.apply(parse_imperial)
                                     val_m = parse_imperial(value)
                                     column = column_converted
@@ -740,14 +699,11 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                                 elif data_type == 'bool':
                                     column = column.astype(bool)
                                     value = bool(value)
-                                # else: treat as string
                             except (ValueError, TypeError) as e:
                                 self.report({"WARNING"}, f"Could not interpret value '{value}' as {data_type}. Error: {str(e)}")
                             if comparison_operator == "=":
-                                # For float and imperial types, allow for a tolerance of 1e-3 and handle NaN
                                 if data_type == "imperial_string":
                                     try:
-                                        # column and value are already in meters
                                         mask = column.notna() & pd.notna(value) & (abs(column - value) < 1e-3)
                                     except Exception:
                                         mask = column == value
@@ -780,25 +736,19 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                         except Exception as e:
                             self.report({"ERROR"}, f"Comparison filter error: {str(e)}")
                     
-                    # Apply set operation based on filter_mode
                     if filter_idx == 0:
-                        # First filter: initialize result
                         result_df = df
                     else:
                         filter_mode = filter.filter_mode
                         if filter_mode == "ADD":
-                            # Union: combine both sets
                             result_df = pd.concat([result_df, df]).drop_duplicates().reset_index(drop=True)
                         elif filter_mode == "SUBTRACT":
-                            # Difference: remove rows in df from result_df (anti-join)
                             result_df = result_df.merge(df, indicator=True, how='left').query('_merge == "left_only"').drop('_merge', axis=1).reset_index(drop=True)
                         elif filter_mode == "FILTER":
-                            # Intersection: only elements in both sets
                             result_df = pd.merge(result_df, df, how='inner').reset_index(drop=True)
             
             return result_df if result_df is not None else combined_df
         else:
-            # Traditional group mode: Apply filters per group and union results
             group_results = []
             for group_idx, group in enumerate(props.output_filter_groups):
                 df = combined_df.copy()
@@ -810,7 +760,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                         continue
                     if comparison_operator == "regex":
                         try:
-                            import re
                             pattern = re.compile(comparison_value)
                             if column_name == "__ALL__":
                                 mask = df.astype(str).apply(lambda x: x.str.contains(pattern, na=False)).any(axis=1)
@@ -832,10 +781,8 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                         try:
                             column = df[col_match]
                             value = comparison_value
-                            # Find the CsvAttribute for this column
                             attr = next((a for a in props.csv_attributes if a.header == column_name), None)
                             data_type = getattr(attr, 'data_type', 'string') if attr else 'string'
-                            from fractions import Fraction
                             def parse_imperial(val):
                                 """
                                 Parse an imperial measurement string and return meters.
@@ -854,19 +801,15 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                                 feet = 0.0
                                 inches = 0.0
 
-                                # Decimal feet only (e.g. 8.5)
                                 if re.fullmatch(r"\d+(\.\d+)?", s):
                                     feet = float(s)
                                 else:
-                                    # Extract feet (single quote NOT followed by another single quote)
                                     feet_match = re.search(r"(\d+(?:\.\d+)?)\s*'(?!')", s)
                                     if feet_match:
                                         feet = float(feet_match.group(1))
 
-                                    # Remove feet part for inch parsing (only single quote, not double)
                                     s_no_feet = re.sub(r"\d+(?:\.\d+)?\s*'(?!')", "", s)
 
-                                    # Extract inches (whole + fraction)
                                     inch_match = re.search(
                                         r"(\d+)?\s*(\d+/\d+)?\s*(?:\"|''|$)",
                                         s_no_feet
@@ -881,13 +824,11 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                                         if frac:
                                             inches += float(Fraction(frac))
 
-                                # Convert to meters
                                 total_inches = feet * 12.0 + inches
                                 meters = total_inches * 0.0254
                                 return meters
                             try:
                                 if data_type == 'imperial_string':
-                                    # Always convert both column and value to meters for comparison
                                     column_converted = column.apply(parse_imperial)
                                     val_m = parse_imperial(value)
                                     column = column_converted
@@ -907,14 +848,11 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                                 elif data_type == 'bool':
                                     column = column.astype(bool)
                                     value = bool(value)
-                                # else: treat as string
                             except (ValueError, TypeError) as e:
                                 self.report({"WARNING"}, f"Could not interpret value '{value}' as {data_type}. Error: {str(e)}")
                             if comparison_operator == "=":
-                                # For float and imperial types, allow for a tolerance of 1e-3 and handle NaN
                                 if data_type == "imperial_string":
                                     try:
-                                        # column and value are already in meters
                                         mask = column.notna() & pd.notna(value) & (abs(column - value) < 1e-3)
                                     except Exception:
                                         mask = column == value
@@ -954,9 +892,7 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                 return combined_df
     
     def format_and_write_output(self, final_df, props):
-        """Format imperial columns and write output to file or web."""
         def value_to_imperial_string(value, unit_name):
-            # Convert value to meters based on unit_name
             if unit_name == 'METER':
                 meters = float(value)
             elif unit_name == 'FOOT':
@@ -970,7 +906,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             elif unit_name == 'INCH':
                 inches = meters / 0.0254
                 return f"{inches:.2f} in"
-            # Default to FOOT
             total_inches = meters / 0.0254
             feet = int(total_inches // 12)
             inches = int(total_inches % 12)
@@ -987,8 +922,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             else:
                 return f"{feet}' {inches}\""
 
-        # Find all columns that are marked as imperial
-        # Get project unit_name
         scene = getattr(bpy.context, 'scene', None)
         unit_name = 'FOOT'
         if scene and hasattr(scene, 'BIMProperties'):
@@ -1144,7 +1077,6 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                     wm.event_timer_remove(self._timer)
                 return {'CANCELLED'}
             
-            # Validate required columns exist
             if self._df is not None:
                 missing_columns = []
                 if "FileName" not in self._df.columns:
