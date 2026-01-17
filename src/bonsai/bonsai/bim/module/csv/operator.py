@@ -127,8 +127,9 @@ class ImportCsvAttributes(bpy.types.Operator, ImportHelper):
         props.csv_attributes.clear()
         for attribute in data["attributes"]:
             new = props.csv_attributes.add()
-            for prop in ["name", "header", "sort", "group", "summary", "formatting"]:
-                setattr(new, prop, attribute[prop])
+            for prop in ["name", "header", "sort", "group", "summary", "formatting", "data_type"]:
+                if prop in attribute:
+                    setattr(new, prop, attribute[prop])
 
         props.output_filter_groups.clear()
         for group_data in data.get("output_filter_groups", []):
@@ -188,6 +189,7 @@ class ExportCsvAttributes(bpy.types.Operator, ExportHelper):
                     "group": a.group,
                     "summary": a.summary,
                     "formatting": a.formatting,
+                    "data_type": getattr(a, "data_type", "string"),
                 }
                 for a in props.csv_attributes
             ],
@@ -256,6 +258,9 @@ class AddOutputFilter(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.CsvProperties
+        # Create group if it doesn't exist (for chain_filter_with_set_operations mode)
+        while len(props.output_filter_groups) <= self.group_index:
+            props.output_filter_groups.add()
         group = props.output_filter_groups[self.group_index]
         group.filters.add()
         group.active_output_filter = len(group.filters) - 1
@@ -276,6 +281,30 @@ class RemoveOutputFilter(bpy.types.Operator):
         group.filters.remove(self.filter_index)
         if group.active_output_filter >= len(group.filters):
             group.active_output_filter = len(group.filters) - 1
+        return {"FINISHED"}
+
+
+class ToggleOutputFilterInclusion(bpy.types.Operator):
+    bl_idname = "bim.toggle_output_filter_inclusion"
+    bl_label = "Toggle Output Filter Mode"
+    bl_description = "Cycle between Add (+), Subtract (-), and Filter modes for this output filter"
+    bl_options = {"REGISTER", "UNDO"}
+
+    group_index: bpy.props.IntProperty()
+    filter_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.CsvProperties
+        group = props.output_filter_groups[self.group_index]
+        output_filter = group.filters[self.filter_index]
+
+        if output_filter.filter_mode == "ADD":
+            output_filter.filter_mode = "SUBTRACT"
+        elif output_filter.filter_mode == "SUBTRACT":
+            output_filter.filter_mode = "FILTER"
+        else:
+            output_filter.filter_mode = "ADD"
+
         return {"FINISHED"}
 
 
@@ -317,13 +346,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             suggested_name = "_".join(selected_basenames) + self.filename_ext
             self.filepath = os.path.join(os.path.dirname(bpy.data.filepath), suggested_name)
         return ExportHelper.invoke(self, context, event)
-
-    def get_unique_column_names(self, dataframe: pd.DataFrame) -> list[str]:
-        count = Counter()
-        return [
-            f"{col}.{i:03d}" if duped and not count.update([col]) and (i := count[col]) else col
-            for col, duped in zip(dataframe.columns, dataframe.columns.duplicated())
-        ]
 
     def get_unique_column_names(self, dataframe: pd.DataFrame) -> list[str]:
         count = Counter()
@@ -421,115 +443,383 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             return {"CANCELLED"}
         combined_df = pd.concat(dataframes, ignore_index=True)
         combined_df.columns = self.get_unique_column_names(combined_df)
-        group_results = []
-        for group_idx, group in enumerate(props.output_filter_groups):
-            df = combined_df.copy()
-            for filter_idx, filter in enumerate(group.filters):
-                column_name = filter.column
-                comparison_operator = filter.comparison
-                comparison_value = filter.value
-                if not comparison_value:
-                    continue
-                if comparison_operator == "regex":
-                    try:
-                        import re
-                        pattern = re.compile(comparison_value)
-                        if column_name == "__ALL__":
-                            mask = df.astype(str).apply(lambda x: x.str.contains(pattern, na=False)).any(axis=1)
-                            df = df[mask]
-                        else:
-                            mask = df[column_name].astype(str).str.contains(pattern, na=False)
-                            df = df[mask]
-                    except Exception as e:
-                        self.report({"ERROR"}, f"Invalid regular expression pattern: {str(e)}")
+        
+        preferences = tool.Blender.get_addon_preferences()
+        
+        if preferences.chain_filter_with_set_operations:
+            # Chain mode: Apply filters sequentially with set operations
+            result_df = None
+            if len(props.output_filter_groups) > 0:
+                for filter_idx, filter in enumerate(props.output_filter_groups[0].filters):
+                    df = combined_df.copy()
+                    column_name = filter.column
+                    comparison_operator = filter.comparison
+                    comparison_value = filter.value
+                    if not comparison_value:
                         continue
-                else:
-                    if not column_name:
-                        self.report({"WARNING"}, "Column must be specified for non-regex comparisons")
-                        continue
-                    col_match = next((col for col in df.columns if col.lower() == column_name.lower()), None)
-                    if not col_match:
-                        self.report({"WARNING"}, f"Column '{column_name}' not found in dataframe.")
-                        continue
-                    try:
-                        column = df[col_match]
-                        value = comparison_value
-                        def parse_imperial(val):
-                            match = re.match(r"(?:(\d+)'(?:\s*-\s*)?)?(\d+)?(?:\s*(\d+)?/(\d+)?\")?", str(val))
-                            if not match:
-                                return None
-                            feet = int(match.group(1)) if match.group(1) else 0
-                            inches = int(match.group(2)) if match.group(2) else 0
-                            if match.group(3) and match.group(4):
-                                inches += float(match.group(3)) / float(match.group(4))
-                            meters = feet * 0.3048 + inches * 0.0254
-                            return meters
+                    if comparison_operator == "regex":
                         try:
-                            is_imperial_column = False
-                            if column.dtype == object:
-                                column_converted = column.apply(lambda x: parse_imperial(x) if isinstance(x, str) and (re.match(r"\d+'", x) or '"' in x) else x)
-                                numeric_column = pd.to_numeric(column_converted, errors='coerce')
-                                is_imperial_column = any(column_converted.notnull())
+                            import re
+                            pattern = re.compile(comparison_value)
+                            if column_name == "__ALL__":
+                                mask = df.astype(str).apply(lambda x: x.str.contains(pattern, na=False)).any(axis=1)
+                                df = df[mask]
                             else:
-                                numeric_column = pd.to_numeric(column)
-                            val_m = None
-                            if isinstance(value, str) and (re.match(r"\d+'", value) or '"' in value):
-                                val_m = parse_imperial(value)
-                            elif is_imperial_column:
-                                try:
-                                    scene = getattr(bpy.context, 'scene', None)
-                                    unit_name = 'FOOT'
-                                    if scene and hasattr(scene, 'BIMProperties'):
-                                        unit_name = getattr(scene.BIMProperties, 'length_unit', 'FOOT').upper()
-                                    val_float = float(value)
-                                    if unit_name == 'FOOT':
-                                        val_m = val_float * 0.3048
-                                    elif unit_name == 'INCH':
-                                        val_m = val_float * 0.0254
-                                    elif unit_name == 'METER':
-                                        val_m = val_float
-                                    else:
-                                        val_m = val_float * 0.3048  # fallback to feet
-                                except Exception as e:
-                                    self.report({"WARNING"}, f"Failed to convert filter value '{value}' using project units ('{unit_name}'). Please check the value format (e.g., 10' 6\" or 8) and project unit settings. Error: {str(e)}")
-                            if val_m is not None:
-                                numeric_value = val_m
-                            else:
-                                try:
-                                    numeric_value = float(value)
-                                except Exception as e:
-                                    numeric_value = value
-                            column = numeric_column
-                            value = numeric_value
-                        except (ValueError, TypeError) as e:
-                            self.report({"WARNING"}, f"Could not interpret value '{value}' as imperial unit.Should be somthing like 10' - 6\" or 8\" ")
-                        if comparison_operator == "=":
-                            mask = column == value
-                        elif comparison_operator == "!=":
-                            mask = column != value
-                        elif comparison_operator == ">":
-                            mask = column > value
-                        elif comparison_operator == ">=":
-                            mask = column >= value
-                        elif comparison_operator == "<":
-                            mask = column < value
-                        elif comparison_operator == "*=":
-                            mask = column.astype(str).str.contains(str(value), na=False)
-                        elif comparison_operator == "!*=":
-                            mask = ~column.astype(str).str.contains(str(value), na=False)
-                        else:
-                            self.report({"WARNING"}, f"Unknown operator '{comparison_operator}'.")
+                                mask = df[column_name].astype(str).str.contains(pattern, na=False)
+                                df = df[mask]
+                        except Exception as e:
+                            self.report({"ERROR"}, f"Invalid regular expression pattern: {str(e)}")
                             continue
-                        filtered_rows = df[mask]
-                        df = filtered_rows
-                    except Exception as e:
-                        self.report({"ERROR"}, f"Comparison filter error: {str(e)}")
-            group_results.append(df)
+                    else:
+                        if not column_name:
+                            self.report({"WARNING"}, "Column must be specified for non-regex comparisons")
+                            continue
+                        col_match = next((col for col in df.columns if col.lower() == column_name.lower()), None)
+                        if not col_match:
+                            self.report({"WARNING"}, f"Column '{column_name}' not found in dataframe.")
+                            continue
+                        try:
+                            column = df[col_match]
+                            value = comparison_value
+                            # Find the CsvAttribute for this column
+                            attr = next((a for a in props.csv_attributes if a.header == column_name), None)
+                            data_type = getattr(attr, 'data_type', 'string') if attr else 'string'
+                            from fractions import Fraction
+                            def parse_imperial(val):
+                                """
+                                Parse an imperial measurement string and return meters.
+                                Supported formats:
+                                - 9' 2"
+                                - 29' 2''
+                                - 8' 10 3/16"
+                                - 8.5 (decimal feet)
+                                - 10 3/16" (inches only)
+                                """
+                                if val is None or (isinstance(val, str) and not val.strip()):
+                                    return None
 
-        if group_results:
-            final_df = pd.concat(group_results).drop_duplicates().reset_index(drop=True)
+                                s = str(val).strip()
+
+                                feet = 0.0
+                                inches = 0.0
+
+                                # Decimal feet only (e.g. 8.5)
+                                if re.fullmatch(r"\d+(\.\d+)?", s):
+                                    feet = float(s)
+                                else:
+                                    # Extract feet (single quote NOT followed by another single quote)
+                                    feet_match = re.search(r"(\d+(?:\.\d+)?)\s*'(?!')", s)
+                                    if feet_match:
+                                        feet = float(feet_match.group(1))
+
+                                    # Remove feet part for inch parsing (only single quote, not double)
+                                    s_no_feet = re.sub(r"\d+(?:\.\d+)?\s*'(?!')", "", s)
+
+                                    # Extract inches (whole + fraction)
+                                    inch_match = re.search(
+                                        r"(\d+)?\s*(\d+/\d+)?\s*(?:\"|''|$)",
+                                        s_no_feet
+                                    )
+
+                                    if inch_match:
+                                        whole = inch_match.group(1)
+                                        frac = inch_match.group(2)
+
+                                        if whole:
+                                            inches += float(whole)
+                                        if frac:
+                                            inches += float(Fraction(frac))
+
+                                # Convert to meters
+                                total_inches = feet * 12.0 + inches
+                                meters = total_inches * 0.0254
+                                return meters
+                            try:
+                                if data_type == 'imperial_string':
+                                    # Always convert both column and value to meters for comparison
+                                    column_converted = column.apply(parse_imperial)
+                                    val_m = parse_imperial(value)
+                                    column = column_converted
+                                    value = val_m
+                                elif data_type == 'float':
+                                    column = pd.to_numeric(column, errors='coerce')
+                                    try:
+                                        value = float(value)
+                                    except Exception:
+                                        pass
+                                elif data_type == 'int':
+                                    column = pd.to_numeric(column, errors='coerce').astype('Int64')
+                                    try:
+                                        value = int(value)
+                                    except Exception:
+                                        pass
+                                elif data_type == 'bool':
+                                    column = column.astype(bool)
+                                    value = bool(value)
+                                # else: treat as string
+                            except (ValueError, TypeError) as e:
+                                self.report({"WARNING"}, f"Could not interpret value '{value}' as {data_type}. Error: {str(e)}")
+                            if comparison_operator == "=":
+                                # For float and imperial types, allow for a tolerance of 1e-3 and handle NaN
+                                if data_type == "imperial_string":
+                                    try:
+                                        # column and value are already in meters
+                                        mask = column.notna() & pd.notna(value) & (abs(column - value) < 1e-3)
+                                    except Exception:
+                                        mask = column == value
+                                elif data_type == "float":
+                                    try:
+                                        col_float = pd.to_numeric(column, errors='coerce')
+                                        val_float = float(value)
+                                        mask = col_float.notna() & (abs(col_float - val_float) < 1e-3)
+                                    except Exception:
+                                        mask = column == value
+                                else:
+                                    mask = column == value
+                            elif comparison_operator == "!=":
+                                mask = column != value
+                            elif comparison_operator == ">":
+                                mask = column > value
+                            elif comparison_operator == ">=":
+                                mask = column >= value
+                            elif comparison_operator == "<":
+                                mask = column < value
+                            elif comparison_operator == "*=":
+                                mask = column.astype(str).str.contains(str(value), na=False)
+                            elif comparison_operator == "!*=":
+                                mask = ~column.astype(str).str.contains(str(value), na=False)
+                            else:
+                                self.report({"WARNING"}, f"Unknown operator '{comparison_operator}'.")
+                                continue
+                            filtered_rows = df[mask]
+                            df = filtered_rows
+                        except Exception as e:
+                            self.report({"ERROR"}, f"Comparison filter error: {str(e)}")
+                    
+                    # Apply set operation based on filter_mode
+                    if filter_idx == 0:
+                        # First filter: initialize result
+                        result_df = df
+                    else:
+                        filter_mode = filter.filter_mode
+                        if filter_mode == "ADD":
+                            # Union: combine both sets
+                            result_df = pd.concat([result_df, df]).drop_duplicates().reset_index(drop=True)
+                        elif filter_mode == "SUBTRACT":
+                            # Difference: remove rows in df from result_df (anti-join)
+                            result_df = result_df.merge(df, indicator=True, how='left').query('_merge == "left_only"').drop('_merge', axis=1).reset_index(drop=True)
+                        elif filter_mode == "FILTER":
+                            # Intersection: only elements in both sets
+                            result_df = pd.merge(result_df, df, how='inner').reset_index(drop=True)
+            
+            final_df = result_df if result_df is not None else combined_df
         else:
-            final_df = combined_df
+            # Traditional group mode: Apply filters per group and union results
+            group_results = []
+            for group_idx, group in enumerate(props.output_filter_groups):
+                df = combined_df.copy()
+                for filter_idx, filter in enumerate(group.filters):
+                    column_name = filter.column
+                    comparison_operator = filter.comparison
+                    comparison_value = filter.value
+                    if not comparison_value:
+                        continue
+                    if comparison_operator == "regex":
+                        try:
+                            import re
+                            pattern = re.compile(comparison_value)
+                            if column_name == "__ALL__":
+                                mask = df.astype(str).apply(lambda x: x.str.contains(pattern, na=False)).any(axis=1)
+                                df = df[mask]
+                            else:
+                                mask = df[column_name].astype(str).str.contains(pattern, na=False)
+                                df = df[mask]
+                        except Exception as e:
+                            self.report({"ERROR"}, f"Invalid regular expression pattern: {str(e)}")
+                            continue
+                    else:
+                        if not column_name:
+                            self.report({"WARNING"}, "Column must be specified for non-regex comparisons")
+                            continue
+                        col_match = next((col for col in df.columns if col.lower() == column_name.lower()), None)
+                        if not col_match:
+                            self.report({"WARNING"}, f"Column '{column_name}' not found in dataframe.")
+                            continue
+                        try:
+                            column = df[col_match]
+                            value = comparison_value
+                            # Find the CsvAttribute for this column
+                            attr = next((a for a in props.csv_attributes if a.header == column_name), None)
+                            data_type = getattr(attr, 'data_type', 'string') if attr else 'string'
+                            from fractions import Fraction
+                            def parse_imperial(val):
+                                """
+                                Parse an imperial measurement string and return meters.
+                                Supported formats:
+                                - 9' 2"
+                                - 29' 2''
+                                - 8' 10 3/16"
+                                - 8.5 (decimal feet)
+                                - 10 3/16" (inches only)
+                                """
+                                if val is None or (isinstance(val, str) and not val.strip()):
+                                    return None
+
+                                s = str(val).strip()
+
+                                feet = 0.0
+                                inches = 0.0
+
+                                # Decimal feet only (e.g. 8.5)
+                                if re.fullmatch(r"\d+(\.\d+)?", s):
+                                    feet = float(s)
+                                else:
+                                    # Extract feet (single quote NOT followed by another single quote)
+                                    feet_match = re.search(r"(\d+(?:\.\d+)?)\s*'(?!')", s)
+                                    if feet_match:
+                                        feet = float(feet_match.group(1))
+
+                                    # Remove feet part for inch parsing (only single quote, not double)
+                                    s_no_feet = re.sub(r"\d+(?:\.\d+)?\s*'(?!')", "", s)
+
+                                    # Extract inches (whole + fraction)
+                                    inch_match = re.search(
+                                        r"(\d+)?\s*(\d+/\d+)?\s*(?:\"|''|$)",
+                                        s_no_feet
+                                    )
+
+                                    if inch_match:
+                                        whole = inch_match.group(1)
+                                        frac = inch_match.group(2)
+
+                                        if whole:
+                                            inches += float(whole)
+                                        if frac:
+                                            inches += float(Fraction(frac))
+
+                                # Convert to meters
+                                total_inches = feet * 12.0 + inches
+                                meters = total_inches * 0.0254
+                                return meters
+                            try:
+                                if data_type == 'imperial_string':
+                                    # Always convert both column and value to meters for comparison
+                                    column_converted = column.apply(parse_imperial)
+                                    val_m = parse_imperial(value)
+                                    column = column_converted
+                                    value = val_m
+                                elif data_type == 'float':
+                                    column = pd.to_numeric(column, errors='coerce')
+                                    try:
+                                        value = float(value)
+                                    except Exception:
+                                        pass
+                                elif data_type == 'int':
+                                    column = pd.to_numeric(column, errors='coerce').astype('Int64')
+                                    try:
+                                        value = int(value)
+                                    except Exception:
+                                        pass
+                                elif data_type == 'bool':
+                                    column = column.astype(bool)
+                                    value = bool(value)
+                                # else: treat as string
+                            except (ValueError, TypeError) as e:
+                                self.report({"WARNING"}, f"Could not interpret value '{value}' as {data_type}. Error: {str(e)}")
+                            if comparison_operator == "=":
+                                # For float and imperial types, allow for a tolerance of 1e-3 and handle NaN
+                                if data_type == "imperial_string":
+                                    try:
+                                        # column and value are already in meters
+                                        mask = column.notna() & pd.notna(value) & (abs(column - value) < 1e-3)
+                                    except Exception:
+                                        mask = column == value
+                                elif data_type == "float":
+                                    try:
+                                        col_float = pd.to_numeric(column, errors='coerce')
+                                        val_float = float(value)
+                                        mask = col_float.notna() & (abs(col_float - val_float) < 1e-3)
+                                    except Exception:
+                                        mask = column == value
+                                else:
+                                    mask = column == value
+                            elif comparison_operator == "!=":
+                                mask = column != value
+                            elif comparison_operator == ">":
+                                mask = column > value
+                            elif comparison_operator == ">=":
+                                mask = column >= value
+                            elif comparison_operator == "<":
+                                mask = column < value
+                            elif comparison_operator == "*=":
+                                mask = column.astype(str).str.contains(str(value), na=False)
+                            elif comparison_operator == "!*=":
+                                mask = ~column.astype(str).str.contains(str(value), na=False)
+                            else:
+                                self.report({"WARNING"}, f"Unknown operator '{comparison_operator}'.")
+                                continue
+                            filtered_rows = df[mask]
+                            df = filtered_rows
+                        except Exception as e:
+                            self.report({"ERROR"}, f"Comparison filter error: {str(e)}")
+                group_results.append(df)
+
+            if group_results:
+                final_df = pd.concat(group_results).drop_duplicates().reset_index(drop=True)
+            else:
+                final_df = combined_df
+
+        # Format imperial columns as strings in imperial notation
+
+        def value_to_imperial_string(value, unit_name):
+            # Convert value to meters based on unit_name
+            if unit_name == 'METER':
+                meters = float(value)
+            elif unit_name == 'FOOT':
+                meters = float(value) * 0.3048
+            elif unit_name == 'INCH':
+                meters = float(value) * 0.0254
+            else:
+                meters = float(value)
+            if unit_name == 'METER':
+                return f"{meters:.3f} m"
+            elif unit_name == 'INCH':
+                inches = meters / 0.0254
+                return f"{inches:.2f} in"
+            # Default to FOOT
+            total_inches = meters / 0.0254
+            feet = int(total_inches // 12)
+            inches = int(total_inches % 12)
+            frac = total_inches - (feet * 12 + inches)
+            sixteenths = round(frac * 16)
+            if sixteenths == 16:
+                inches += 1
+                sixteenths = 0
+            if inches == 12:
+                feet += 1
+                inches = 0
+            if sixteenths > 0:
+                return f"{feet}' {inches} {sixteenths}/16\""
+            else:
+                return f"{feet}' {inches}\""
+
+        # Find all columns that are marked as imperial
+        # Get project unit_name
+        scene = getattr(bpy.context, 'scene', None)
+        unit_name = 'FOOT'
+        if scene and hasattr(scene, 'BIMProperties'):
+            unit_name = getattr(scene.BIMProperties, 'length_unit', 'FOOT').upper()
+
+        for attr in props.csv_attributes:
+            if getattr(attr, 'data_type', None) == 'imperial_string':
+                col = attr.header
+                if col in final_df.columns:
+                    def _format_val(val):
+                        try:
+                            return value_to_imperial_string(val, unit_name)
+                        except Exception:
+                            return val
+                    final_df[col] = final_df[col].apply(_format_val)
 
         if props.format == "web":
             if not tool.Web.get_web_props().is_connected:

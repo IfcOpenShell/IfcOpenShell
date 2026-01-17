@@ -127,6 +127,7 @@ class BIM_PT_ifccsv(Panel):
             row = layout.row(align=True)
             row.prop(attribute, "name", text="")
             row.prop(attribute, "header", text="")
+            row.prop(attribute, "data_type", text="Type")
             if props.should_show_sort:
                 row.prop(attribute, "sort", text="")
             if props.should_show_group:
@@ -150,20 +151,64 @@ class BIM_PT_ifccsv(Panel):
 
         box = layout.box()
         row = box.row(align=True)
-        row.operator("bim.add_output_filter_group", icon="ADD", text="Add Output Filter Group")
+        
+        preferences = tool.Blender.get_addon_preferences()
+        if not preferences.chain_filter_with_set_operations:
+            row.operator("bim.add_output_filter_group", icon="ADD", text="Add Output Filter Group")
+        else:
+            # In chain mode, use edit_filter_query icon
+            op = row.operator("bim.edit_filter_query", text="", icon="FILTER")
+            row = box.row(align=True)
+            add_op = row.operator("bim.add_output_filter", text="Add Output Filter", icon="ADD")
+            add_op.group_index = 0
 
-        if len(props.output_filter_groups) > 0:
+
+        if preferences.chain_filter_with_set_operations:
+            # Display filters in chain mode (group 0 only)
+            if len(props.output_filter_groups) > 0 and len(props.output_filter_groups[0].filters) > 0:
+                for i, filter in enumerate(props.output_filter_groups[0].filters):
+                    row = box.row(align=True)
+                    # Add filter mode toggle for filters after the first one
+                    if i > 0:
+                        mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                        op = row.operator(
+                            "bim.toggle_output_filter_inclusion",
+                            icon=mode_icons.get(filter.filter_mode, "ADD"),
+                            text="",
+                            depress=filter.filter_mode != "ADD",
+                        )
+                        op.group_index = 0
+                        op.filter_index = i
+                    row.prop(filter, "column", text="")
+                    row.prop(filter, "comparison", text="")
+                    row.prop(filter, "value", text="")
+                    op = row.operator("bim.remove_output_filter", icon="X", text="")
+                    op.group_index = 0
+                    op.filter_index = i
+        elif len(props.output_filter_groups) > 0:
             for group_idx, group in enumerate(props.output_filter_groups):
                 group_box = box.box()
                 group_row = group_box.row(align=True)
                 group_row.label(text="")
                 add = group_row.operator("bim.add_output_filter", text="Add Output Filter")
                 add.group_index = group_idx
-                remove = group_row.operator("bim.remove_output_filter_group", icon="X", text="")
-                remove.group_index = group_idx
+                if not preferences.chain_filter_with_set_operations:
+                    remove = group_row.operator("bim.remove_output_filter_group", icon="X", text="")
+                    remove.group_index = group_idx
                 if len(group.filters) > 0:
                     for i, filter in enumerate(group.filters):
                         row = group_box.row(align=True)
+                        # Add filter mode toggle for chain_filter_with_set_operations
+                        if preferences.chain_filter_with_set_operations and i > 0:
+                            mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                            op = row.operator(
+                                "bim.toggle_output_filter_inclusion",
+                                icon=mode_icons.get(filter.filter_mode, "ADD"),
+                                text="",
+                                depress=filter.filter_mode != "ADD",
+                            )
+                            op.group_index = group_idx
+                            op.filter_index = i
                         row.prop(filter, "column", text="")
                         row.prop(filter, "comparison", text="")
                         row.prop(filter, "value", text="")

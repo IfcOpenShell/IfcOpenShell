@@ -26,6 +26,7 @@ classes = (
     operator.RemoveOutputFilterGroup,
     operator.AddOutputFilter,
     operator.RemoveOutputFilter,
+    operator.ToggleOutputFilterInclusion,
     operator.ExportIfcCsv,
     operator.ImportCsvAttributes,
     operator.ImportIfcCsv,

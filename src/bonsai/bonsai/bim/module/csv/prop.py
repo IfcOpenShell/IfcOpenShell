@@ -33,6 +33,18 @@ from typing import TYPE_CHECKING, Literal
 
 
 class CsvAttribute(PropertyGroup):
+    data_type: EnumProperty(
+        name="Data Type",
+        description="Type of the attribute for filtering and export",
+        items=[
+            ("string", "String", "Text/String value"),
+            ("float", "Float", "Floating point number"),
+            ("int", "Integer", "Integer number"),
+            ("bool", "Boolean", "True/False value"),
+            ("imperial_string", "Imperial String", "Imperial length as string (e.g. 10' 6\" or 8\")"),
+        ],
+        default="string",
+    )
     name: StringProperty(name="Query", default="class")
     header: StringProperty(name="Header Value", default="IFC Class")
     sort: EnumProperty(items=[("NONE", "None", ""), ("ASC", "Ascending", ""), ("DESC", "Descending", "")])
@@ -89,8 +101,8 @@ class CsvOutputFilter(PropertyGroup):
     comparison: EnumProperty(
         items=[
             ("regex", "regex", "Apply regex pattern"),
-            ("=", "equal", "Equal to"),
-            ("!=", "not equal", "Not equal to"),
+            ("=", "approx equal", "Equal to (with tolerance of 1mm for floats and imperial lengths)"),
+            ("!=", "approx not equal", "Not equal to (with tolerance of 1mm for floats and imperial lengths)"),
             (">", "greater", "Greater than"),
             (">=", "greater or equal", "Greater than or equal to"),
             ("<", "less", "Less than"),
@@ -102,6 +114,15 @@ class CsvOutputFilter(PropertyGroup):
         default="=",
     )
     value: StringProperty(name="Value")
+    filter_mode: EnumProperty(
+        items=[
+            ("ADD", "Add", "Add elements matching this filter (union)"),
+            ("SUBTRACT", "Subtract", "Remove elements matching this filter (difference)"),
+            ("FILTER", "Filter", "Keep only elements matching this filter (intersection)"),
+        ],
+        name="Filter Mode",
+        default="ADD",
+    )
 
 
 class CsvOutputFilterGroup(bpy.types.PropertyGroup):
