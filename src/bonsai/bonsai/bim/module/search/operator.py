@@ -765,10 +765,7 @@ class Search(Operator):
         preferences = tool.Blender.get_addon_preferences()
 
         # Migrate old ! prefix filters to new filter_mode system when preferences are enabled
-        if (
-            preferences.chain_filter_with_set_operations
-            or preferences.default_filter_with_set_operations_for_globalid_and_class
-        ):
+        if preferences.chain_filter_with_set_operations:
             for filter_group in props.filter_groups:
                 for ifc_filter in filter_group.filters:
                     if ifc_filter.type not in ["entity", "instance"]:
