@@ -540,7 +540,7 @@ def get_generic_product_preview_data(context, relating_type):
     mouse_point = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
     snap_obj = bpy.data.objects.get(snap_prop.snap_object)
     snap_element = tool.Ifc.get_entity(snap_obj)
-    rot_mat = Quaternion()
+    rot_mat = Matrix()
     if relating_type.is_a() in ["IfcDoorType", "IfcWindowType"] and snap_element and snap_element.is_a("IfcWall"):
         layers = tool.Model.get_material_layer_parameters(snap_element)
         axes = tool.Model.get_wall_axis(snap_obj, layers=layers)
@@ -550,10 +550,10 @@ def get_generic_product_preview_data(context, relating_type):
         point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
         if (point_on_base_axis - mouse_point).length_squared <= (point_on_side_axis - mouse_point).length_squared:
             # mouse is snapped to the base axis, the preview looks exactly like the placed door / window
-            rot_mat = snap_obj.matrix_world.to_quaternion()
+            rot_mat = snap_obj.matrix_world
         else:
             # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
-            rot_mat = snap_obj.matrix_world.to_quaternion() @ Quaternion(Vector((0, 0, 1)), radians(180))
+            rot_mat = (snap_obj.matrix_world.to_quaternion() @ Quaternion(Vector((0, 0, 1)), radians(180))).to_matrix().to_4x4()
 
         mouse_point.z = snap_obj.matrix_world.translation.z
 
@@ -586,9 +586,11 @@ def get_generic_product_preview_data(context, relating_type):
 
     if obj_type.data:
         data = ItemDecorator.get_obj_data(obj_type)
-        data["verts"] = [tuple(obj_type.matrix_world.inverted() @ Vector(v)) for v in data["verts"]]
-        data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
-
+        obj_type_matrix_i = obj_type.matrix_world.inverted()
+        translate_mouse = Matrix.Translation(mouse_point)
+        translate_rl  = Matrix.Translation((0.0, 0.0, rl))
+        combined_m  = translate_mouse @ rot_mat @ translate_rl @ obj_type_matrix_i
+        data["verts"] = [tuple(combined_m @ Vector(v)) for v in data["verts"]]
         return data
 
 
