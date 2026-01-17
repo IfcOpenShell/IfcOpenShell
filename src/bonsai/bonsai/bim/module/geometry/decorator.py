@@ -74,9 +74,28 @@ class ItemDecorator:
         special_verts = []
         special_edges = []
 
-        if len(obj.data.loop_triangles) > 0:
-            verts = [tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]
-            tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
+        if (total_triangles := len(obj.data.loop_triangles)) > 0:
+            # TODO: this is a far too small threshold.
+            # This is just a stopgap optimisation until other slowdowns are solved.
+            if total_triangles > 500:
+                vert_map = {}
+                i = 0
+                verts = []
+                tris = []
+                for tri in obj.data.loop_triangles[:500]:
+                    new_tri = []
+                    for vert in tri.vertices:
+                        if vert in vert_map:
+                            new_tri.append(vert_map[vert])
+                        else:
+                            vert_map[vert] = i
+                            new_tri.append(i)
+                            i += 1
+                            verts.append(tuple(obj.matrix_world @ obj.data.vertices[vert].co))
+                    tris.append(new_tri)
+            else:
+                verts = [tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]
+                tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
 
         i = len(verts)
         matrix_world = obj.matrix_world
