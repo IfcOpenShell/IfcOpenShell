@@ -1039,7 +1039,7 @@ class Loader(bonsai.core.tool.Loader):
             z_coords = [v.co.z for v in mesh.vertices]
             mesh_z_min = min(z_coords)
             mesh_z_max = max(z_coords)
-        
+
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
@@ -1068,54 +1068,54 @@ class Loader(bonsai.core.tool.Loader):
                 thickness_dir = -thickness_dir
 
             no = thickness_dir
-            
+
             # Find start point by projecting vertices onto thickness direction
             if len(mesh.vertices) > 0:
                 projections = [Vector(v.co).dot(no) for v in mesh.vertices]
                 min_proj = min(projections)
                 max_proj = max(projections)
-                
+
                 centroid = sum((Vector(v.co) for v in mesh.vertices), Vector()) / len(mesh.vertices)
                 centroid_proj = centroid.dot(no)
-                
+
                 if sense_factor == 1:
                     start_proj = min_proj
                 else:
                     start_proj = max_proj
-                
+
                 offset_dist = start_proj - centroid_proj
                 co = centroid + no * offset_dist
-                
+
                 actual_mesh_height = max_proj - min_proj
             else:
                 co = Vector((0.0, 0.0, 0.0))
-            
+
             advance_direction = thickness_dir
         elif usage.LayerSetDirection == "AXIS3":
             # AXIS3 layers go through slab thickness (local Z)
             no = Vector([0.0, 0.0, 1.0])
-            
+
             # Find start point by projecting vertices onto Z direction
             if len(mesh.vertices) > 0:
                 projections = [Vector(v.co).dot(no) for v in mesh.vertices]
                 min_proj = min(projections)
                 max_proj = max(projections)
-                
+
                 centroid = sum((Vector(v.co) for v in mesh.vertices), Vector()) / len(mesh.vertices)
                 centroid_proj = centroid.dot(no)
-                
+
                 if sense_factor == 1:
                     start_proj = min_proj
                 else:
                     start_proj = max_proj
-                
+
                 offset = start_proj - centroid_proj
                 co = centroid + no * offset
-                
+
                 actual_mesh_height = max_proj - min_proj
             else:
                 co = Vector((0.0, 0.0, 0.0))
-            
+
             advance_direction = no
         elif usage.LayerSetDirection == "AXIS1":
             co = Vector((0.0, 0.0, offset))
@@ -1156,13 +1156,13 @@ class Loader(bonsai.core.tool.Loader):
         # Calculate scale factor
         total_layer_thickness = sum(layer.LayerThickness for _, layer in layer_list)
 
-        if 'actual_mesh_height' not in locals():
+        if "actual_mesh_height" not in locals():
             actual_mesh_height = mesh_z_max - mesh_z_min if len(mesh.vertices) > 0 else total_layer_thickness
 
         thickness_scale = actual_mesh_height / total_layer_thickness if total_layer_thickness > 0 else 1.0
 
         last_i = len(layer_set.MaterialLayers) - 1
-        
+
         for idx, (original_i, layer) in enumerate(layer_list):
             if idx != last_i:
                 prev_co = co.copy()

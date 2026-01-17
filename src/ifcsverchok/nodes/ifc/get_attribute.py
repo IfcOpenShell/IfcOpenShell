@@ -17,8 +17,6 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
-import ifcopenshell.util.element
 from bpy.props import StringProperty
 from sverchok.data_structure import flatten_data, updateNode
 from sverchok.node_tree import SverchCustomTreeNode

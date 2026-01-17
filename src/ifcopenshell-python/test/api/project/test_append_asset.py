@@ -37,7 +37,6 @@ import ifcopenshell.api.unit
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.unit
 import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 

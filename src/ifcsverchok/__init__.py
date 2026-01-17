@@ -81,7 +81,7 @@ ensure_addons_are_enabled("bonsai", "sverchok")
 from sverchok.ui.nodeview_space_menu import add_node_menu
 
 
-def nodes_index():
+def nodes_index() -> list[tuple[str, list[tuple[str, str]]]]:
     return [
         (
             "IFC",
@@ -111,15 +111,25 @@ def nodes_index():
                 ("ifc.create_project", "SvIfcCreateProject"),
                 ("ifc.quick_project_setup", "SvIfcQuickProjectSetup"),
             ],
-        )
+        ),
+        (
+            "IFC Shape Builder",
+            [
+                ("ifc.shape_builder.rectangle", "SvIfcSbRectangle"),
+                ("ifc.shape_builder.extrude", "SvIfcSbExtrude"),
+                ("ifc.shape_builder.representation", "SvIfcSbRepresentation"),
+                ("ifc.shape_builder.test", "SvIfcSbTest"),
+                ("ifc.shape_builder.shape_output", "SvSbShapeOutput"),
+            ],
+        ),
     ]
 
 
 def make_node_categories() -> list[dict[str, list[str]]]:
-    node_categories = [{}]
+    node_categories: list[dict[str, list[str]]] = []
     for category, nodes in nodes_index():
         nodes = [node_name for idname, node_name in nodes]
-        node_categories[0][category] = nodes
+        node_categories.append({category: nodes})
     return node_categories
 
 
@@ -144,7 +154,6 @@ reload_event = False
 from os.path import splitext
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
@@ -156,11 +165,11 @@ from ifcsverchok.ifcstore import SvIfcStore
 class IFC_Sv_UpdateCurrent(bpy.types.Operator):
     """Update current Sverchok node tree.
 
-    Will reset transient IFC file.
-    """
+    Will reset transient IFC file"""
 
     bl_idname = "ifc.sverchok_update_current"
     bl_label = "Update Current Node Tree"
+    # bl_description = "Update current Sverchok node tree, resetting transient IFC file."
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     node_group: bpy.props.StringProperty(default="")
@@ -287,11 +296,13 @@ class IFC_PT_write_file_panel(bpy.types.Panel):
     def draw(self, context):
         ng = context.space_data.node_tree
         layout = self.layout
+        assert layout
         row = layout.split(factor=0.2, align=True)
         row = layout.row()
         row2 = layout.row()
         row.operator("ifc.sverchok_update_current", text="IFC Re-run all nodes")
         row2.operator("ifc.write_file_panel")
+        layout.operator("bim.ifcsverchok_use_bonsai_file")
 
 
 CLASSES = [IFC_Sv_UpdateCurrent, IFC_Sv_write_file, IFC_PT_write_file_panel]

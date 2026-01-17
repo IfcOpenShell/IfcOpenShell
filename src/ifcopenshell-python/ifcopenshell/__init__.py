@@ -102,6 +102,7 @@ __all__ = [
     "file",
     "guid",
     "ifcopenshell_wrapper",
+    "rocksdb_lazy_instance",
     "sqlite",
     "sqlite_entity",
     "stream",

@@ -21,7 +21,6 @@ from collections.abc import Sequence
 
 import ifcopenshell
 from ifcopenshell import entity_instance
-from ifcopenshell.api.alignment import get_axis_subcontext
 
 
 def _get_axis(file: ifcopenshell.file, Ds: float, rail_head_distance: float) -> entity_instance:

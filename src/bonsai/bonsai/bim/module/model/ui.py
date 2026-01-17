@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim
+from bonsai.bim import module
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
 from bonsai.bim.helper import prop_with_search
@@ -38,6 +40,9 @@ if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
     import _bl_ui_utils.layout as bl_ui_utils_layout
 else:
     import bl_ui_utils.layout as bl_ui_utils_layout
+
+if TYPE_CHECKING:
+    import bonsai.bim.module.model.prop as module_prop
 
 
 class BIM_MT_type_manager_menu(bpy.types.Menu):
@@ -664,21 +669,33 @@ class BIM_PT_external_parametric_geometry(bpy.types.Panel):
 
         row.operator("bim.apply_external_parametric_geometry", icon="CHECKMARK", text="")
         row.prop(props, "is_editing", icon="CANCEL", text="")
-        row = layout.row(align=True)
-        row.prop_search(props, "geo_nodes", bpy.data, "node_groups")
-        if props.geo_nodes:
-            assert (modifier := tool.Model.get_epg_modifier(obj))
-            inputs = tool.Model.get_parametric_geometry_inputs(modifier)
-            # NOTE: users won't be able to see inputs descriptions.
-            # If we add group node inputs as modifiers inputs, descriptions will be visible.
-            # But then we need to ensure inputs are up to date
-            # (e.g. probably just by adding a refresh button).
-            for input in inputs:
-                row = layout.row(align=True)
-                row.prop(input, "default_value", text=input.name)
+        layout.prop(props, "geometry_source")
+        if props.geometry_source == "GEONODES":
+            row = layout.row(align=True)
+            row.prop_search(props, "geo_nodes", bpy.data, "node_groups")
+            if props.geo_nodes:
+                assert (modifier := tool.Model.get_epg_modifier(obj))
+                inputs = tool.Model.get_parametric_geometry_inputs(modifier)
+                # NOTE: users won't be able to see inputs descriptions.
+                # If we add group node inputs as modifiers inputs, descriptions will be visible.
+                # But then we need to ensure inputs are up to date
+                # (e.g. probably just by adding a refresh button).
+                for input in inputs:
+                    row = layout.row(align=True)
+                    row.prop(input, "default_value", text=input.name)
+        elif props.geometry_source == "IFCSVERCHOK":
+            row = layout.row(align=True)
+            row.prop(props, "sverchok_nodes")
+            if props.sverchok_nodes:
+                # TODO: Updating mesh in `draw` is not ideal,
+                # should find a way to update only on graph changes.
+                res = tool.Model.update_mesh_from_sverchok(obj, props.sverchok_nodes)
+                if res is not None:
+                    print(res)
+                    layout.label(text=f"Error Updating from Graph, See System Console", icon="ERROR")
 
 
-def draw_door_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_door_properties(layout: bpy.types.UILayout, props: module_prop.BIMDoorProperties) -> None:
     """Draw door properties UI (shared between properties panel and preferences)."""
     # General properties
     general_props = props.get_general_kwargs()
@@ -698,7 +715,7 @@ def draw_door_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGr
         layout.prop(props, prop)
 
 
-def draw_window_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_window_properties(layout: bpy.types.UILayout, props: module_prop.BIMWindowProperties) -> None:
     """Draw window properties UI (shared between properties panel and preferences)."""
     number_of_panels, panels_data = props.window_types_panels[props.window_type]
 
@@ -734,7 +751,7 @@ def draw_window_properties(layout: bpy.types.UILayout, props: bpy.types.Property
             cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
 
 
-def draw_railing_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_railing_properties(layout: bpy.types.UILayout, props: module_prop.BIMRailingProperties) -> None:
     """Draw railing properties UI (shared between properties panel and preferences)."""
     general_props = props.get_general_kwargs()
     for prop in general_props:
@@ -746,7 +763,7 @@ def draw_railing_properties(layout: bpy.types.UILayout, props: bpy.types.Propert
         layout.prop(props, prop)
 
 
-def draw_roof_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_roof_properties(layout: bpy.types.UILayout, props: module_prop.BIMRoofProperties) -> None:
     """Draw roof properties UI (shared between properties panel and preferences)."""
     # General properties
     general_props = props.get_general_kwargs()
@@ -754,7 +771,7 @@ def draw_roof_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGr
         layout.prop(props, prop)
 
 
-def draw_stair_properties(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+def draw_stair_properties(layout: bpy.types.UILayout, props: module_prop.BIMStairProperties) -> None:
     """Draw stair properties UI (shared between properties panel and preferences)."""
     for prop_name in props.get_props_kwargs():
         # Skip custom_tread_lock as it's handled with custom_first_last_tread_run

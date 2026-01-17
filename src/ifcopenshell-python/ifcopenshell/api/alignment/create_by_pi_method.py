@@ -19,9 +19,7 @@
 from collections.abc import Sequence
 
 import ifcopenshell
-import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
-import ifcopenshell.api.nest
 from ifcopenshell import entity_instance
 
 

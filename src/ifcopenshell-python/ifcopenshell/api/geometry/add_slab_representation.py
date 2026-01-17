@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from math import cos, sin
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import ifcopenshell.util.element
 import ifcopenshell.util.unit

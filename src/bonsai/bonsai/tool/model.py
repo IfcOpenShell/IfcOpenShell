@@ -54,6 +54,8 @@ T = TypeVar("T")
 V_ = tool.Blender.V_
 
 if TYPE_CHECKING:
+    import sverchok.node_tree
+    import ifcsverchok.nodes.ifc.shape_builder.shape_output
     from bonsai.bim.module.model.prop import (
         BIMModelProperties,
         BIMDoorProperties,
@@ -2540,12 +2542,24 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def clean_up_parametric_geometry(cls, obj: bpy.types.Object) -> None:
+        # Geo nodes are using modifier.
         modifier = tool.Model.get_epg_modifier(obj)
-        assert modifier
-        node_tree = modifier.node_group
-        assert node_tree
-        bpy.data.node_groups.remove(node_tree)
-        obj.modifiers.clear()
+        if modifier is not None:
+            node_tree = modifier.node_group
+            assert node_tree
+            bpy.data.node_groups.remove(node_tree)
+            obj.modifiers.clear()
+
+        # Sverchok are changing the mesh data to preview changes.
+        # TODO: probably should use modifiers with nodes and temp mesh instead.
+        active_representation = tool.Geometry.get_active_representation(obj)
+        assert active_representation is not None
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=active_representation,
+        )
 
     @classmethod
     def get_parametric_geometry_inputs(cls, modifier: bpy.types.NodesModifier) -> list[bpy.types.NodeSocket]:
@@ -2556,6 +2570,51 @@ class Model(bonsai.core.tool.Model):
         assert isinstance(group_node, bpy.types.GeometryNodeGroup)
 
         return [s for s in group_node.inputs if s.type != "GEOMETRY"]
+
+    @classmethod
+    def get_ifcsverchok_shape_output(
+        cls, node_tree: sverchok.node_tree.SverchCustomTree
+    ) -> ifcsverchok.nodes.ifc.shape_builder.shape_output.SvSbShapeOutput:
+        from ifcsverchok.nodes.ifc.shape_builder.shape_output import SvSbShapeOutput
+
+        return next(n for n in node_tree.nodes if isinstance(n, SvSbShapeOutput))
+
+    @classmethod
+    def update_mesh_from_sverchok(
+        cls, obj: bpy.types.Object, node_tree: sverchok.node_tree.SverchCustomTree
+    ) -> str | None:
+        """
+        :return: ``None`` if successful, otherwise error message.
+        """
+        import ifcsverchok.helper as helper
+
+        output_node = cls.get_ifcsverchok_shape_output(node_tree)
+        verts = helper.get_socket_value(output_node.outputs, "Vers", value_type="CONTAINER")
+        edges = helper.get_socket_value(output_node.outputs, "Edgs", value_type="CONTAINER")
+        faces = helper.get_socket_value(output_node.outputs, "Pols", value_type="CONTAINER")
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        mesh.clear_geometry()
+
+        # `shade_flat=False`, because `from_pydata` is using method that doesn't support changing shading
+        # during `Panel.draw` execution. We shade flat later ourselves.
+        mesh.from_pydata(verts, edges, faces, shade_flat=False)
+
+        def _name_convention_attribute_ensure(attributes, name, domain, data_type):
+            try:
+                attribute = attributes[name]
+            except KeyError:
+                return attributes.new(name, data_type, domain)
+            if attribute.domain == domain and attribute.data_type == data_type:
+                return attribute
+            attributes.remove(attribute)
+            return attributes.new(name, data_type, domain)
+
+        sharp_faces = _name_convention_attribute_ensure(mesh.attributes, "sharp_face", "FACE", "BOOLEAN")
+        assert isinstance(sharp_faces, bpy.types.BoolAttribute)
+        data = sharp_faces.data
+        ones = np.ones(len(data), dtype=bool)
+        data.foreach_set("value", ones)
 
     @classmethod
     def align_objects(
@@ -2669,3 +2728,25 @@ class Model(bonsai.core.tool.Model):
                     material.OffsetFromReferenceLine = custom_offset
 
                 cls.recreate_wall(element, wall)
+
+    @classmethod
+    def run_ifcsverchok_graph_on_bonsai_file(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> None:
+        from ifcsverchok.ifcstore import SvIfcStore
+        from sverchok.core.update_system import UpdateTree
+
+        # We should be very careful and use bonsai file just for 1 graph update.
+        # To avoid producing duplicated data in non-ephemeral file.
+        SvIfcStore.use_bonsai_file = True
+        try:
+            # The ones below refresh asyncronously, so we're using different method to get results synchronously.
+            # - bpy.ops.node.sverchok_update_context(force_mode=True)
+            # - node_tree.force_update()
+            # TODO: Ideally we should find shape output node and update only it's furtherest children.
+            # Because user might have some nodes just floating around unused.
+            # ` update_tree = UpdateTree.get(node_tree); update_tree.add_outdated(nodes)` can be used for this.
+            UpdateTree.reset_tree(node_tree)
+            nodes_to_update = UpdateTree.main_update(node_tree)
+            # Consuming generator, which triggers the update.
+            list(nodes_to_update)
+        finally:
+            SvIfcStore.use_bonsai_file = False

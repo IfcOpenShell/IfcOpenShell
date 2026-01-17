@@ -18,8 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.api.group
-import ifcopenshell.api.owner
-import ifcopenshell.util.element
 
 
 def unassign_structural_analysis_model(

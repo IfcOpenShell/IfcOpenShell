@@ -21,7 +21,6 @@ from collections.abc import Sequence
 
 import ifcopenshell
 import ifcopenshell.api.alignment
-import ifcopenshell.util
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 

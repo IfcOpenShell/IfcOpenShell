@@ -17,7 +17,6 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
 import ifcopenshell.guid
 from sverchok.node_tree import SverchCustomTreeNode
 

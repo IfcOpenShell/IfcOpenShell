@@ -42,15 +42,12 @@ classes = (
     ui.BIM_PT_object_documents,
     ui.BIM_UL_documents,
     ui.BIM_UL_document_objects,
-    ui.BIM_MT_object_documents_context_menu,
 )
 
 
 def register():
     bpy.types.Scene.BIMDocumentProperties = bpy.props.PointerProperty(type=prop.BIMDocumentProperties)
-    bpy.types.VIEW3D_MT_object_context_menu.append(ui.add_object_documents_context_menu)
 
 
 def unregister():
     del bpy.types.Scene.BIMDocumentProperties
-    bpy.types.VIEW3D_MT_object_context_menu.remove(ui.add_object_documents_context_menu)
