@@ -95,7 +95,7 @@ class BIM_PT_ifccsv(Panel):
             row = layout.row()
             row.prop(props, "should_preserve_existing")
             row = layout.row()
-            row.prop(props, "include_global_id")
+            row.prop(props, "include_filename_and_global_id")
             row = layout.row()
             row.prop(props, "null_value")
             row = layout.row()

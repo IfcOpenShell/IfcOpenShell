@@ -137,7 +137,7 @@ class CsvProperties(PropertyGroup):
     csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
     should_generate_svg: BoolProperty(default=False, name="Generate SVG")
     should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
-    include_global_id: BoolProperty(default=True, name="Include FileName and GlobalId")
+    include_filename_and_global_id: BoolProperty(default=True, name="Include FileName and GlobalId")
     null_value: StringProperty(default="N/A", name="Null Value")
     empty_value: StringProperty(default="-", name="Empty String Value")
     true_value: StringProperty(default="YES", name="True Value")
@@ -188,7 +188,7 @@ class CsvProperties(PropertyGroup):
         csv_attributes: bpy.types.bpy_prop_collection_idprop[CsvAttribute]
         should_generate_svg: bool
         should_preserve_existing: bool
-        include_global_id: bool
+        include_filename_and_global_id: bool
         null_value: str
         empty_value: str
         true_value: str

@@ -112,7 +112,7 @@ class ImportCsvAttributes(bpy.types.Operator, ImportHelper):
         for prop in [
             "should_generate_svg",
             "should_preserve_existing",
-            "include_global_id",
+            "include_filename_and_global_id",
             "null_value",
             "empty_value",
             "true_value",
@@ -142,12 +142,13 @@ class ImportCsvAttributes(bpy.types.Operator, ImportHelper):
                 f.comparison = filter_data.get("comparison", "=")
                 f.value = filter_data.get("value", "")
 
-        ifc_props = tool.Blender.get_ifc_props()
-        ifc_props.ifc_files.clear()
-        for file_data in data.get("ifc_files", []):
-            node = ifc_props.ifc_files.add()
-            node.file_path = file_data.get("file_path", "")
-            node.is_selected = file_data.get("is_selected", False)
+        if "ifc_files" in data and data["ifc_files"]:
+            ifc_props = tool.Blender.get_ifc_props()
+            ifc_props.ifc_files.clear()
+            for file_data in data.get("ifc_files", []):
+                node = ifc_props.ifc_files.add()
+                node.file_path = file_data.get("file_path", "")
+                node.is_selected = file_data.get("is_selected", False)
 
         return {"FINISHED"}
 
@@ -167,7 +168,7 @@ class ExportCsvAttributes(bpy.types.Operator, ExportHelper):
         for prop in [
             "should_generate_svg",
             "should_preserve_existing",
-            "include_global_id",
+            "include_filename_and_global_id",
             "null_value",
             "empty_value",
             "true_value",
@@ -355,97 +356,280 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
         ]
 
     def execute(self, context):
-        import ifccsv
-        import re
+        props = tool.Blender.get_csv_props()
+        if props:
+            props.progress = 0.01
+            props.import_phase = "Starting export..."
+        
+        self._step = 0
+        self._file_index = 0
+        self._file_substep = 0
+        self._current_ifc_file = None
+        self._current_results = None
+        self._current_df = None
+        self._current_ifc_csv = None
+        self._current_export_generator = None
+        self._current_element_count = 0
+        self._current_elements_processed = 0
+        self._dataframes = []
+        self._combined_df = None
+        self._final_df = None
+        self._timer_interval = 0.05
+        self._total_rows_to_process = 0
+        self._rows_processed = 0
+        self._total_files = 0
+        self._total_rows_extracted = 0
+        self._selected_files = []
+        self._timer = context.window_manager.event_timer_add(self._timer_interval, window=context.window)
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        if event.type == 'ESC':
+            csv_props = tool.Blender.get_csv_props()
+            if csv_props:
+                csv_props.progress = 0.0
+                csv_props.import_phase = ""
+            wm = getattr(context, 'window_manager', None)
+            if wm:
+                wm.event_timer_remove(self._timer)
+            self.report({'INFO'}, 'Export cancelled.')
+            return {'CANCELLED'}
+        
+        if event.type != 'TIMER':
+            return {'PASS_THROUGH'}
+        
+        wm = getattr(context, 'window_manager', None)
+        if wm:
+            for window in wm.windows:
+                for area in window.screen.areas:
+                    if area.type == 'PROPERTIES':
+                        area.tag_redraw()
 
         props = tool.Blender.get_csv_props()
         propsIfc = tool.Blender.get_ifc_props()
-        self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
-        if props.should_load_from_memory:
-            ifc_file_path = bpy.context.scene.BIMProperties.ifc_file
-            for node in propsIfc.ifc_files:
-                node.is_selected = False
-            for node in propsIfc.ifc_files:
-                if tool.Ifc.resolve_uri(node.file_path) == ifc_file_path:
-                    node.is_selected = True
-                    break
-            if not any(node.is_selected for node in propsIfc.ifc_files):
-                # Add the selected file to the list
-                new_file = propsIfc.ifc_files.add()
-                new_file.file_path = ifc_file_path
-                new_file.is_selected = True
-
-        dataframes = []
-        for idx, node in enumerate(propsIfc.ifc_files):
-            if not node.is_selected:
-                continue
-            props.csv_ifc_file = tool.Ifc.resolve_uri(node.file_path)
-            try:
-                ifc_file = ifcopenshell.open(props.csv_ifc_file)
-            except Exception as e:
-                self.report({"INFO"}, f"An error occurred while opening {props.csv_ifc_file}: {e}")
-                continue
-
-            results = ifcopenshell.util.selector.filter_elements(
-                ifc_file, tool.Search.export_filter_query(props.filter_groups)
-            )
-
-            ifc_csv = ifccsv.IfcCsv()
-            attributes = [a.name for a in props.csv_attributes]
-            headers = [a.header for a in props.csv_attributes]
-
-            sort = []
-            groups = []
-            summaries = []
-            formatting = []
-            for attribute in props.csv_attributes:
-                if attribute.sort != "NONE":
-                    sort.append({"name": attribute.name, "order": attribute.sort})
-                if attribute.group != "NONE":
-                    groups.append(
-                        {"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value}
+        
+        if self._step == 0:
+            import ifccsv
+            self.ifccsv = ifccsv
+            self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
+            if props.should_load_from_memory:
+                ifc_file_path = bpy.context.scene.BIMProperties.ifc_file
+                for node in propsIfc.ifc_files:
+                    node.is_selected = False
+                for node in propsIfc.ifc_files:
+                    if tool.Ifc.resolve_uri(node.file_path) == ifc_file_path:
+                        node.is_selected = True
+                        break
+                if not any(node.is_selected for node in propsIfc.ifc_files):
+                    new_file = propsIfc.ifc_files.add()
+                    new_file.file_path = ifc_file_path
+                    new_file.is_selected = True
+            
+            self._selected_files = [node for node in propsIfc.ifc_files if node.is_selected]
+            self._total_files = len(self._selected_files)
+            self._total_rows_extracted = 0
+            props.import_phase = f"Initializing export for {self._total_files} file(s)..."
+            props.progress = 0.05
+            self._step = 1
+            return {'PASS_THROUGH'}
+        
+        if self._step == 1:
+            start_time = time.perf_counter()
+            
+            while self._file_index < self._total_files:
+                node = self._selected_files[self._file_index]
+                file_name = os.path.basename(node.file_path)
+                
+                if self._file_substep == 0:
+                    props.csv_ifc_file = tool.Ifc.resolve_uri(node.file_path)
+                    file_num = self._file_index + 1
+                    props.import_phase = f"Processing ({file_name}) opening... {file_num}/{self._total_files}"
+                    props.progress = (self._file_index / self._total_files) if self._total_files > 0 else 0.0
+                    
+                    try:
+                        self._current_ifc_file = ifcopenshell.open(props.csv_ifc_file)
+                    except Exception as e:
+                        self.report({"INFO"}, f"An error occurred while opening {props.csv_ifc_file}: {e}")
+                        self._file_index += 1
+                        self._file_substep = 0
+                        if (time.perf_counter() - start_time) >= getattr(self, '_timer_interval', 0.05):
+                            return {'PASS_THROUGH'}
+                        continue
+                    
+                    self._file_substep = 1
+                    if (time.perf_counter() - start_time) >= getattr(self, '_timer_interval', 0.05):
+                        return {'PASS_THROUGH'}
+                
+                if self._file_substep == 1:
+                    file_num = self._file_index + 1
+                    props.import_phase = f"Processing ({file_name}) filtering... {file_num}/{self._total_files}"
+                    
+                    self._current_results = ifcopenshell.util.selector.filter_elements(
+                        self._current_ifc_file, tool.Search.export_filter_query(props.filter_groups)
                     )
-                if attribute.summary != "NONE":
-                    summaries.append({"name": attribute.name, "type": attribute.summary})
-
-                if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
-                    formatting.append({"name": attribute.name, "format": attribute.formatting})
-
-            sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
-
-            df = ifc_csv.export(
-                    ifc_file,
-                    results,
-                    attributes,
-                    headers=headers,
-                    output="",
-                    format="pd",
-                    should_preserve_existing=props.should_preserve_existing,
-                    delimiter=sep,
-                    include_global_id=props.include_global_id,
-                    null=props.null_value,
-                    empty=props.empty_value,
-                    bool_true=props.true_value,
-                    bool_false=props.false_value,
-                    concat=props.concat_value,
-                    sort=sort,
-                    groups=groups,
-                    summaries=summaries,
-                    formatting=formatting,
-                )
-            if df is not None:
-                if "FileName" in df.columns:
-                    df["FileName"] = os.path.basename(node.file_path)
-                dataframes.append(df)
-
-        if not dataframes:
-            self.report({"ERROR"}, "No data was generated for selected files.")
-            return {"CANCELLED"}
-        combined_df = pd.concat(dataframes, ignore_index=True)
-        combined_df.columns = self.get_unique_column_names(combined_df)
+                    
+                    self._file_substep = 2
+                    if (time.perf_counter() - start_time) >= getattr(self, '_timer_interval', 0.05):
+                        return {'PASS_THROUGH'}
+                
+                if self._file_substep == 2:
+                    if self._current_export_generator is None:
+                        file_num = self._file_index + 1
+                        props.import_phase = f"Processing ({file_name}) extracting... {file_num}/{self._total_files}"
+                        
+                        self._current_ifc_csv = self.ifccsv.IfcCsv()
+                        attributes = [a.name for a in props.csv_attributes]
+                        headers = [a.header for a in props.csv_attributes]
+                        sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
+                        
+                        self._current_element_count = len(self._current_results)
+                        self._current_elements_processed = 0
+                        
+                        self._current_export_generator = self._current_ifc_csv.Export(
+                            self._current_ifc_file,
+                            self._current_results,
+                            attributes,
+                            headers=headers,
+                            output="",
+                            include_global_id=props.include_filename_and_global_id,
+                            delimiter=sep,
+                            null=props.null_value,
+                            empty=props.empty_value,
+                            bool_true=props.true_value,
+                            bool_false=props.false_value,
+                            concat=props.concat_value,
+                        )
+                    
+                    start_substep_time = time.perf_counter()
+                    while True:
+                        try:
+                            element = next(self._current_export_generator)
+                            self._current_elements_processed += 1
+                            
+                            file_num = self._file_index + 1
+                            file_start_progress = (self._file_index / self._total_files) if self._total_files > 0 else 0.0
+                            file_progress_range = (1.0 / self._total_files) if self._total_files > 0 else 1.0
+                            element_progress = (self._current_elements_processed / self._current_element_count) if self._current_element_count > 0 else 0.0
+                            props.progress = file_start_progress + (element_progress * file_progress_range)
+                            props.import_phase = f"Processing ({file_name}) {self._current_elements_processed}/{self._current_element_count} {file_num}/{self._total_files}"
+                        except StopIteration:
+                            self._file_substep = 3
+                            break
+                        
+                        if (time.perf_counter() - start_substep_time) >= getattr(self, '_timer_interval', 0.05):
+                            return {'PASS_THROUGH'}
+                    
+                    if (time.perf_counter() - start_time) >= getattr(self, '_timer_interval', 0.05):
+                        return {'PASS_THROUGH'}
+                
+                if self._file_substep == 3:
+                    attributes = [a.name for a in props.csv_attributes]
+                    
+                    sort = []
+                    groups = []
+                    summaries = []
+                    formatting = []
+                    for attribute in props.csv_attributes:
+                        if attribute.sort != "NONE":
+                            sort.append({"name": attribute.name, "order": attribute.sort})
+                        if attribute.group != "NONE":
+                            groups.append(
+                                {"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value}
+                            )
+                        if attribute.summary != "NONE":
+                            summaries.append({"name": attribute.name, "type": attribute.summary})
+                        if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
+                            formatting.append({"name": attribute.name, "format": attribute.formatting})
+                    
+                    self._current_ifc_csv.group_results(groups, attributes)
+                    self._current_ifc_csv.summarise_results(summaries, attributes)
+                    self._current_ifc_csv.sort_results(sort, attributes, props.include_filename_and_global_id)
+                    self._current_ifc_csv.format_results(formatting, attributes, props.null_value)
+                    
+                    self._current_df = self._current_ifc_csv.export_pd()
+                    
+                    if self._current_df is not None:
+                        if props.include_filename_and_global_id:
+                            file_name = os.path.basename(node.file_path)
+                            if "FileName" in self._current_df.columns:
+                                self._current_df["FileName"] = file_name
+                            else:
+                                self._current_df.insert(0, "FileName", file_name)
+                        
+                        self._dataframes.append(self._current_df)
+                        self._total_rows_extracted += len(self._current_df)
+                        self._rows_processed += len(self._current_df)
+                        
+                        current_file_rows = len(self._current_df)
+                        file_num = self._file_index + 1
+                        props.progress = ((self._file_index + 1) / self._total_files) if self._total_files > 0 else 1.0
+                        props.import_phase = f"Processing ({file_name}) {current_file_rows} rows {file_num}/{self._total_files}"
+                    
+                    self._current_ifc_file = None
+                    self._current_results = None
+                    self._current_df = None
+                    self._current_ifc_csv = None
+                    self._current_export_generator = None
+                    self._current_element_count = 0
+                    self._current_elements_processed = 0
+                    self._file_index += 1
+                    self._file_substep = 0
+                    
+                    if (time.perf_counter() - start_time) >= getattr(self, '_timer_interval', 0.05):
+                        return {'PASS_THROUGH'}
+            
+            self._step = 2
         
-        preferences = tool.Blender.get_addon_preferences()
+        if self._step == 2:
+            if not self._dataframes:
+                props.progress = 0.0
+                props.import_phase = ""
+                wm.event_timer_remove(self._timer)
+                self.report({"ERROR"}, "No data was generated for selected files.")
+                return {"CANCELLED"}
+            
+            self._combined_df = pd.concat(self._dataframes, ignore_index=True)
+            self._combined_df.columns = self.get_unique_column_names(self._combined_df)
+            total_rows = len(self._combined_df)
+            self._total_rows_to_process = total_rows
+            self._step = 3
         
+        if self._step == 3:
+            preferences = tool.Blender.get_addon_preferences()
+            rows_before = len(self._combined_df)
+            self._final_df = self.apply_filters(self._combined_df, props, preferences)
+            rows_after = len(self._final_df)
+            self._step = 4
+        
+        if self._step == 4:
+            try:
+                total_rows = len(self._final_df)
+                format_type = props.format.upper()
+                self.format_and_write_output(self._final_df, props)
+                props.progress = 1.0
+                props.import_phase = ""
+            except Exception as e:
+                props.progress = 0.0
+                props.import_phase = ""
+                wm.event_timer_remove(self._timer)
+                self.report({"ERROR"}, f"Failed to write output: {str(e)}")
+                return {'CANCELLED'}
+            self._step = 5
+            # Continue to Step 5 for cleanup
+        
+        # Step 5: Cleanup
+        if self._step == 5:
+            props.progress = 0.0
+            props.import_phase = ""
+            wm.event_timer_remove(self._timer)
+            return {'FINISHED'}
+        
+        return {'PASS_THROUGH'}
+    
+    def apply_filters(self, combined_df, props, preferences):
+        """Apply output filters to the combined dataframe."""
+        import re
         if preferences.chain_filter_with_set_operations:
             # Chain mode: Apply filters sequentially with set operations
             result_df = None
@@ -612,7 +796,7 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                             # Intersection: only elements in both sets
                             result_df = pd.merge(result_df, df, how='inner').reset_index(drop=True)
             
-            final_df = result_df if result_df is not None else combined_df
+            return result_df if result_df is not None else combined_df
         else:
             # Traditional group mode: Apply filters per group and union results
             group_results = []
@@ -765,12 +949,12 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                 group_results.append(df)
 
             if group_results:
-                final_df = pd.concat(group_results).drop_duplicates().reset_index(drop=True)
+                return pd.concat(group_results).drop_duplicates().reset_index(drop=True)
             else:
-                final_df = combined_df
-
-        # Format imperial columns as strings in imperial notation
-
+                return combined_df
+    
+    def format_and_write_output(self, final_df, props):
+        """Format imperial columns and write output to file or web."""
         def value_to_imperial_string(value, unit_name):
             # Convert value to meters based on unit_name
             if unit_name == 'METER':
@@ -954,12 +1138,29 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 self._df = pd.read_excel(self.filepath, engine="odf")
             else:
                 self.report({'ERROR'}, f"Unsupported file format: {self.filepath}")
-                self.report({'ERROR'}, f"No '{col}' column found in import file.")
                 csv_props.progress = 0.0
                 wm = getattr(context, 'window_manager', None)
                 if wm:
                     wm.event_timer_remove(self._timer)
                 return {'CANCELLED'}
+            
+            # Validate required columns exist
+            if self._df is not None:
+                missing_columns = []
+                if "FileName" not in self._df.columns:
+                    missing_columns.append("FileName")
+                if "GlobalId" not in self._df.columns:
+                    missing_columns.append("GlobalId")
+                
+                if missing_columns:
+                    self.report({'ERROR'}, f"Missing required columns: {', '.join(missing_columns)}. Import file must have FileName and GlobalId as the first two columns.")
+                    csv_props.progress = 0.0
+                    csv_props.import_phase = ""
+                    wm = getattr(context, 'window_manager', None)
+                    if wm:
+                        wm.event_timer_remove(self._timer)
+                    return {'CANCELLED'}
+            
             header_to_name = {a.header: a.name for a in csv_props.csv_attributes}
             if self._df is not None:
                 import_headers = [col for col in self._df.columns if col not in ["FileName", "GlobalId"] and col in header_to_name]

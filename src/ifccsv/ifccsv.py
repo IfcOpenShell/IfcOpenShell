@@ -75,6 +75,73 @@ class IfcCsv:
         self.results = []
         self.dataframe = None
 
+    def Export(
+        self,
+        ifc_file: ifcopenshell.file,
+        elements: Iterable[ifcopenshell.entity_instance],
+        attributes: Union[list[str], None],
+        headers: Optional[list[str]] = None,
+        output=None,
+        include_global_id: bool = True,
+        delimiter: str = ",",
+        null: str = "-",
+        empty: str = "",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+        concat: str = ", ",
+    ):
+        """
+        Generator version: yields after each element for incremental export.
+        """
+        self.ifc_file = ifc_file
+        self.results = []
+        self.headers = []
+
+        attributes = list(attributes) if attributes else []
+        headers = list(headers) if headers else None
+
+        if not headers:
+            headers = [None] * len(attributes)
+
+        if include_global_id:
+            if "GlobalId" not in attributes:
+                attributes.insert(0, "GlobalId")
+                headers.insert(0, "GlobalId")
+            if "FileName" not in attributes:
+                attributes.insert(0, "FileName")
+                headers.insert(0, "FileName")
+
+        for element in elements:
+            result = []
+
+            for attribute in attributes:
+                if attribute == "FileName":
+                    base_name = os.path.basename(output) if output else ""
+                    value = re.sub(r"_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.\w+$", "", base_name)
+                else:
+                    value = ifcopenshell.util.selector.get_element_value(element, attribute)
+                    if value is None:
+                        value = null
+                    elif value == "":
+                        value = empty
+                    elif value is True:
+                        value = bool_true
+                    elif value is False:
+                        value = bool_false
+                    elif isinstance(value, (list, tuple)) and concat is not None:
+                        value = concat.join(map(str, value))
+                result.append(value)
+            self.results.append(result)
+            yield element
+
+        # Set headers after processing all elements
+        self.headers = []
+        for i, attribute in enumerate(attributes):
+            if headers[i]:
+                self.headers.append(headers[i])
+            else:
+                self.headers.append(attribute)
+
     def export(
         self,
         ifc_file: ifcopenshell.file,
