@@ -16,10 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bpy.types import Panel
 from bonsai.bim.module.search.data import SearchData
+
+
+class BIM_UL_ifc_files(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type in {"DEFAULT", "COMPACT"}:
+            row = layout.row(align=True)
+            row.prop(item, "file_path", text="")
+            row.prop(item, "is_selected", text="")
+            op = row.operator("bim.open_ifc_file", icon="HIDE_OFF", text="")
+            op.file_path = item.file_path
+            row.operator("bim.remove_ifc_file", icon="X", text="").index = index
+        elif self.layout_type in {"GRID"}:
+            layout.label(text=item.file_path)
 
 
 class BIM_PT_ifccsv(Panel):
@@ -35,6 +49,7 @@ class BIM_PT_ifccsv(Panel):
         assert self.layout
         layout = self.layout
         props = tool.Blender.get_csv_props()
+        ifcprops = tool.Blender.get_ifc_props()
 
         if tool.Ifc.get():
             row = layout.row(align=True)
@@ -50,8 +65,17 @@ class BIM_PT_ifccsv(Panel):
 
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = layout.row(align=True)
-            row.prop(props, "csv_ifc_file")
-            row.operator("bim.select_csv_ifc_file", icon="FILE_FOLDER", text="")
+            row.operator("bim.add_ifc_files", icon="FILE_FOLDER", text="Add IFC Files")
+            row.operator("bim.add_linked_files", icon="LINKED", text="Add Linked Files")
+
+            layout.template_list(
+                "BIM_UL_ifc_files",
+                "",
+                ifcprops,
+                "ifc_files",
+                ifcprops,
+                "active_ifc_file_index",
+            )
 
         if props.should_show_settings:
             layout.use_property_split = True
@@ -124,9 +148,47 @@ class BIM_PT_ifccsv(Panel):
                     op.new_index = index + 1
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
+        box = layout.box()
+        row = box.row(align=True)
+        row.operator("bim.add_output_filter_group", icon="ADD", text="Add Output Filter Group")
+
+        if len(props.output_filter_groups) > 0:
+            for group_idx, group in enumerate(props.output_filter_groups):
+                group_box = box.box()
+                group_row = group_box.row(align=True)
+                group_row.label(text="")
+                add = group_row.operator("bim.add_output_filter", text="Add Output Filter")
+                add.group_index = group_idx
+                remove = group_row.operator("bim.remove_output_filter_group", icon="X", text="")
+                remove.group_index = group_idx
+                if len(group.filters) > 0:
+                    for i, filter in enumerate(group.filters):
+                        row = group_box.row(align=True)
+                        row.prop(filter, "column", text="")
+                        row.prop(filter, "comparison", text="")
+                        row.prop(filter, "value", text="")
+                        op = row.operator("bim.remove_output_filter", icon="X", text="")
+                        op.group_index = group_idx
+                        op.filter_index = i
+                else:
+                    group_box.label(text="No filters in this group")
+        else:
+            box.label(text="No filter groups added")
+
         row = layout.row(align=True)
         if props.format == "web":
             row.operator("bim.export_ifccsv", icon="EXPORT", text="Open Web UI")
         else:
             row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         row.operator("bim.import_ifccsv", icon="IMPORT")
+
+        csv_props = tool.Blender.get_csv_props()
+        if csv_props and 0.0 < csv_props.progress < 1.0:
+            progress_row = layout.row()
+            phase_text = csv_props.import_phase or "Importing..."
+            progress_row.progress(
+                factor=csv_props.progress,
+                type="BAR",
+                text=phase_text
+            )
+            progress_row.scale_x = 2
