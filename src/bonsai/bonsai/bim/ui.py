@@ -724,13 +724,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     )
 
     chain_filter_with_set_operations: BoolProperty(
-        name="NEW filter mode: Enable chained filters with set operations",
+        name="NEW Filter mode: Enable chained filters with set operations",
         description="Enable chaining search filters with set operations: ADD (union: combine sets), SUBTRACT (difference: remove from set), FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values",
-        default=False,
-    )
-    default_filter_with_set_operations_for_globalid_and_class: BoolProperty(
-        name="DEFAULT filter mode: Enable set operations for GlobalId/Class",
-        description="Enable ADD/SUBTRACT/FILTER toggle buttons on entity (Class) and instance (GlobalId) filters for the DEFAULT filter mode",
         default=False,
     )
 
@@ -783,7 +778,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         container_hide_show_isolate: bool
         mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
-        default_filter_with_set_operations_for_globalid_and_class: bool
         save_metadata_blend_file: bool
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -979,14 +973,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
         layout.prop(self, "mass_time_units_in_wizard")
-        layout.label(text="Filtering modes:")
-        box = layout.box()
-        row = box.row(align=True)
+        row = layout.row(align=True)
         row.prop(self, "chain_filter_with_set_operations")
         row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/3270"
-        row = box.row(align=True)
-        row.prop(self, "default_filter_with_set_operations_for_globalid_and_class")
-        row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/comment/27030"
         layout.prop(self, "save_metadata_blend_file")
         if self.save_metadata_blend_file:
             row = layout.row()
