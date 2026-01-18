@@ -240,6 +240,8 @@ def import_attribute(
         attribute_type = attribute.type_of_attribute()
         is_logical = str(attribute_type) == "<type IfcLogical: <logical>>"
         enum_value = data[new.name]
+        if new.name == "IsVentilated" and enum_value is None:
+            enum_value = False
         if is_logical:
             new.special_type = "LOGICAL"
             enum_items = ("TRUE", "FALSE", "UNKNOWN")
@@ -254,6 +256,9 @@ def import_attribute(
 
         if enum_value is not None:
             new.enum_value = enum_value
+        
+        if new.name == "IsVentilated" and data[new.name] is None:
+            new.is_null = True
     elif data_type == "list[string]":
         value: Union[list[str], None] = data[attribute.name()]
         if value:
