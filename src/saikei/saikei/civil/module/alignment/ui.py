@@ -29,6 +29,7 @@ def get_ifc_file():
     """Get the current IFC file from Bonsai"""
     try:
         import bonsai.tool as tool
+
         return tool.Ifc.get()
     except (ImportError, AttributeError):
         return None
@@ -123,26 +124,6 @@ class SAIKEI_UL_alignment_pis(UIList):
         elif self.layout_type == "GRID":
             layout.alignment = "CENTER"
             layout.label(text="", icon="DECORATE")
-
-
-class SAIKEI_UL_alignment_segments(UIList):
-    """UIList for displaying alignment segments"""
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if self.layout_type in {"DEFAULT", "COMPACT"}:
-            row = layout.row(align=True)
-            # Icon based on segment type
-            if item.segment_type == "LINE":
-                row.label(text="", icon="IPO_LINEAR")
-            elif item.segment_type == "CIRCULARARC":
-                row.label(text="", icon="IPO_BEZIER")
-            else:
-                row.label(text="", icon="CURVE_PATH")
-            row.label(text=item.name)
-            row.label(text=f"{item.length:.2f}m")
-        elif self.layout_type == "GRID":
-            layout.alignment = "CENTER"
-            layout.label(text="", icon="CURVE_PATH")
 
 
 # =============================================================================
@@ -346,90 +327,6 @@ class SAIKEI_PT_pi_editor(Panel):
 
 
 # =============================================================================
-# Layout Sub-Panel
-# =============================================================================
-
-
-class SAIKEI_PT_alignment_layout(Panel):
-    """Sub-panel for alignment layout operations"""
-
-    bl_label = "Layout"
-    bl_idname = "SAIKEI_PT_alignment_layout"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Saikei Civil"
-    bl_parent_id = "SAIKEI_PT_horizontal_alignment"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return is_ifc4x3()
-
-    def draw(self, context):
-        layout = self.layout
-
-        col = layout.column(align=True)
-        col.operator("saikei.add_vertical_layout", icon="GRAPH")
-        col.operator("saikei.add_layout_segment", icon="PLUS")
-
-        layout.separator()
-
-        col = layout.column(align=True)
-        col.label(text="PI Method Layout:")
-        col.operator("saikei.layout_horizontal_by_pi", icon="CURVE_PATH")
-        col.operator("saikei.layout_vertical_by_pi", icon="GRAPH")
-
-        layout.separator()
-
-        col = layout.column(align=True)
-        col.label(text="Alternative Methods:")
-        col.operator("saikei.create_alignment_polyline", icon="IPO_LINEAR")
-        col.operator("saikei.create_alignment_offset", icon="MOD_OFFSET")
-
-
-# =============================================================================
-# Properties Sub-Panel
-# =============================================================================
-
-
-class SAIKEI_PT_alignment_properties(Panel):
-    """Sub-panel for alignment properties display"""
-
-    bl_label = "Properties"
-    bl_idname = "SAIKEI_PT_alignment_properties"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Saikei Civil"
-    bl_parent_id = "SAIKEI_PT_horizontal_alignment"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return is_ifc4x3()
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.scene.SaikeiAlignmentProperties
-
-        # Segment list
-        if props.segments:
-            layout.template_list(
-                "SAIKEI_UL_alignment_segments",
-                "",
-                props,
-                "segments",
-                props,
-                "active_segment_index",
-                rows=4,
-            )
-        else:
-            layout.label(text="No segments", icon="INFO")
-
-        # Refresh button
-        layout.operator("saikei.refresh_alignment_data", icon="FILE_REFRESH")
-
-
-# =============================================================================
 # Stationing Sub-Panel
 # =============================================================================
 
@@ -465,37 +362,3 @@ class SAIKEI_PT_alignment_stationing(Panel):
         col = layout.column(align=True)
         col.operator("saikei.add_stationing_referent", icon="EMPTY_AXIS")
         col.operator("saikei.name_segments", icon="FONT_DATA")
-
-
-# =============================================================================
-# Utilities Sub-Panel
-# =============================================================================
-
-
-class SAIKEI_PT_alignment_utilities(Panel):
-    """Sub-panel for utility operations"""
-
-    bl_label = "Utilities"
-    bl_idname = "SAIKEI_PT_alignment_utilities"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Saikei Civil"
-    bl_parent_id = "SAIKEI_PT_horizontal_alignment"
-    bl_options = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, context):
-        return is_ifc4x3()
-
-    def draw(self, context):
-        layout = self.layout
-
-        col = layout.column(align=True)
-        col.operator("saikei.create_representation", icon="MESH_DATA")
-        col.operator("saikei.create_segment_representations", icon="OUTLINER_OB_CURVE")
-
-        layout.separator()
-
-        col = layout.column(align=True)
-        col.operator("saikei.update_fallback_position", icon="ORIENTATION_CURSOR")
-        col.operator("saikei.validate_segments", icon="CHECKMARK")

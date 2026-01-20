@@ -48,6 +48,7 @@ def _on_radius_update(self, context):
     avoiding circular imports since prop.py is imported before operator.py.
     """
     from . import operator as ops
+
     ops.on_radius_changed(self, context)
 
 

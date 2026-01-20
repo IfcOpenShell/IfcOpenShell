@@ -34,10 +34,91 @@ Usage:
 
 from .alignment import Alignment
 
-# Re-export Bonsai's tools that we use directly
-try:
-    from bonsai.tool import Ifc, Collector
-except ImportError:
-    # Fallback for when Bonsai is not available
-    Ifc = None
-    Collector = None
+# Lazy import wrappers for Bonsai's tools
+# We use lazy imports to avoid circular import issues with Bonsai's tool module
+_bonsai_ifc = None
+_bonsai_collector = None
+
+
+class _LazyIfc:
+    """Lazy wrapper for bonsai.tool.Ifc to avoid circular imports."""
+
+    @staticmethod
+    def _get_real():
+        global _bonsai_ifc
+        if _bonsai_ifc is None:
+            try:
+                from bonsai.tool import Ifc as _Ifc
+
+                _bonsai_ifc = _Ifc
+            except ImportError:
+                _bonsai_ifc = None
+        return _bonsai_ifc
+
+    def __getattr__(self, name):
+        real = self._get_real()
+        if real is None:
+            raise ImportError("Bonsai is not available")
+        return getattr(real, name)
+
+    @classmethod
+    def get(cls):
+        real = cls._get_real()
+        if real is None:
+            return None
+        return real.get()
+
+    @classmethod
+    def get_object(cls, element):
+        real = cls._get_real()
+        if real is None:
+            return None
+        return real.get_object(element)
+
+    @classmethod
+    def link(cls, element, obj):
+        real = cls._get_real()
+        if real is None:
+            return None
+        return real.link(element, obj)
+
+    @classmethod
+    def unlink(cls, obj=None, element=None):
+        real = cls._get_real()
+        if real is None:
+            return None
+        return real.unlink(obj=obj, element=element)
+
+
+class _LazyCollector:
+    """Lazy wrapper for bonsai.tool.Collector to avoid circular imports."""
+
+    @staticmethod
+    def _get_real():
+        global _bonsai_collector
+        if _bonsai_collector is None:
+            try:
+                from bonsai.tool import Collector as _Collector
+
+                _bonsai_collector = _Collector
+            except ImportError:
+                _bonsai_collector = None
+        return _bonsai_collector
+
+    def __getattr__(self, name):
+        real = self._get_real()
+        if real is None:
+            raise ImportError("Bonsai is not available")
+        return getattr(real, name)
+
+    @classmethod
+    def assign(cls, obj):
+        real = cls._get_real()
+        if real is None:
+            return None
+        return real.assign(obj)
+
+
+# Export lazy wrappers as if they were the real tools
+Ifc = _LazyIfc()
+Collector = _LazyCollector()

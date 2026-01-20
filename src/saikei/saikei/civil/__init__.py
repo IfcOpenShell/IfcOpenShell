@@ -56,9 +56,7 @@ def register():
         bpy.utils.register_class(cls)
 
     # Register global properties
-    bpy.types.Scene.SaikeiCivilProperties = bpy.props.PointerProperty(
-        type=prop.SaikeiCivilProperties
-    )
+    bpy.types.Scene.SaikeiCivilProperties = bpy.props.PointerProperty(type=prop.SaikeiCivilProperties)
 
     # Register each module
     for mod in modules.values():

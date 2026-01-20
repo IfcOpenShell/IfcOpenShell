@@ -27,6 +27,7 @@ def get_ifc_file():
     """Get the current IFC file from Bonsai"""
     try:
         import bonsai.tool as tool
+
         return tool.Ifc.get()
     except (ImportError, AttributeError):
         return None

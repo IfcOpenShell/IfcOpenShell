@@ -22,7 +22,26 @@ This module provides horizontal alignment tools using ifcopenshell.api.alignment
 """
 
 import bpy
+from bpy.app.handlers import persistent
 from . import ui, prop, operator
+
+
+@persistent
+def on_undo_redo(scene):
+    """Handler called after undo/redo to sync PI Editor with IFC.
+
+    When Blender undoes, both Blender properties and IFC state may change.
+    This handler syncs the PI Editor to reflect the current IFC state:
+    - If the active alignment still exists, extracts PI data from IFC segments
+    - If the alignment was deleted/invalidated, clears the PI Editor
+    - Rebuilds display_rows to match the synced state
+    """
+    if not hasattr(scene, "SaikeiAlignmentProperties"):
+        return
+    props = scene.SaikeiAlignmentProperties
+    # Sync PI Editor from IFC to ensure consistency after undo/redo
+    operator.sync_pis_from_ifc(props)
+
 
 # All classes that need to be registered with Blender
 classes = (
@@ -33,7 +52,6 @@ classes = (
     prop.SaikeiAlignmentProperties,
     # UILists
     ui.SAIKEI_UL_alignment_pis,
-    ui.SAIKEI_UL_alignment_segments,
     # Operators - PI Management
     operator.SAIKEI_OT_add_pi,
     operator.SAIKEI_OT_remove_pi,
@@ -64,20 +82,23 @@ classes = (
     ui.SAIKEI_PT_horizontal_alignment,
     ui.SAIKEI_PT_alignment_creation,
     ui.SAIKEI_PT_pi_editor,
-    ui.SAIKEI_PT_alignment_layout,
-    ui.SAIKEI_PT_alignment_properties,
     ui.SAIKEI_PT_alignment_stationing,
-    ui.SAIKEI_PT_alignment_utilities,
 )
 
 
 def register():
-    """Register alignment module properties"""
-    bpy.types.Scene.SaikeiAlignmentProperties = bpy.props.PointerProperty(
-        type=prop.SaikeiAlignmentProperties
-    )
+    """Register alignment module properties and handlers"""
+    bpy.types.Scene.SaikeiAlignmentProperties = bpy.props.PointerProperty(type=prop.SaikeiAlignmentProperties)
+    # Register undo/redo handlers to keep display_rows in sync
+    bpy.app.handlers.undo_post.append(on_undo_redo)
+    bpy.app.handlers.redo_post.append(on_undo_redo)
 
 
 def unregister():
-    """Unregister alignment module properties"""
+    """Unregister alignment module properties and handlers"""
+    # Unregister handlers
+    if on_undo_redo in bpy.app.handlers.undo_post:
+        bpy.app.handlers.undo_post.remove(on_undo_redo)
+    if on_undo_redo in bpy.app.handlers.redo_post:
+        bpy.app.handlers.redo_post.remove(on_undo_redo)
     del bpy.types.Scene.SaikeiAlignmentProperties

@@ -45,6 +45,7 @@ class PIPoint:
     This mirrors the Blender PropertyGroup but without bpy dependencies,
     allowing for testing and core logic operations.
     """
+
     x: float
     y: float
     pi_type: str = "TANGENT"  # ENDPOINT, TANGENT, or CURVE
@@ -57,6 +58,7 @@ class PIPoint:
 @dataclass
 class PIGeometryResult:
     """Result of PI geometry calculation."""
+
     stations: List[float]
     lengths: List[float]
     directions: List[float]
@@ -68,10 +70,7 @@ class PIGeometryResult:
 # =============================================================================
 
 
-def calculate_pi_geometry(
-    pis: List[Tuple[float, float]],
-    start_station: float = 0.0
-) -> PIGeometryResult:
+def calculate_pi_geometry(pis: List[Tuple[float, float]], start_station: float = 0.0) -> PIGeometryResult:
     """Calculate lengths, stations, and directions for a list of PI points.
 
     This is a pure Python function with no Blender dependencies.
@@ -88,7 +87,7 @@ def calculate_pi_geometry(
             stations=[start_station] if pis else [],
             lengths=[0.0] if pis else [],
             directions=[0.0] if pis else [],
-            total_length=0.0
+            total_length=0.0,
         )
 
     stations = []
@@ -114,18 +113,10 @@ def calculate_pi_geometry(
 
     total_length = cumulative_length - start_station
 
-    return PIGeometryResult(
-        stations=stations,
-        lengths=lengths,
-        directions=directions,
-        total_length=total_length
-    )
+    return PIGeometryResult(stations=stations, lengths=lengths, directions=directions, total_length=total_length)
 
 
-def calculate_deflection_angle(
-    incoming_direction: float,
-    outgoing_direction: float
-) -> float:
+def calculate_deflection_angle(incoming_direction: float, outgoing_direction: float) -> float:
     """Calculate the deflection angle between two tangent directions.
 
     Args:
@@ -177,11 +168,7 @@ def calculate_arc_length(radius: float, deflection_angle: float) -> float:
 
 
 def calculate_bc_ec_points(
-    pi_x: float,
-    pi_y: float,
-    incoming_direction: float,
-    outgoing_direction: float,
-    tangent_length: float
+    pi_x: float, pi_y: float, incoming_direction: float, outgoing_direction: float, tangent_length: float
 ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
     """Calculate Begin Curve (BC) and End Curve (EC) points.
 

@@ -27,6 +27,8 @@ Architecture (following Bonsai pattern):
 - tool/ contains Blender implementations
 """
 
+import math
+
 import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, FloatProperty, IntProperty
@@ -52,11 +54,327 @@ def poll_ifc4x3(cls, context):
     return True
 
 
+def get_alignment_by_id(ifc, alignment_id):
+    """Safely get an alignment by ID, returning None if not found.
+
+    This handles the case where the IFC entity no longer exists
+    (e.g., after undo or external modification).
+    """
+    if alignment_id == 0:
+        return None
+    try:
+        entity = ifc.by_id(alignment_id)
+        # Verify it's actually an alignment
+        if entity and entity.is_a("IfcAlignment"):
+            return entity
+        return None
+    except RuntimeError:
+        # Entity not found in IFC file
+        return None
+
+
+def clear_invalid_alignment_reference(props):
+    """Clear active alignment reference if it's invalid."""
+    props.active_alignment_id = 0
+    props.active_alignment_name = ""
+
+
+def sync_pis_from_ifc(props):
+    """Sync PI Editor data from IFC alignment.
+
+    This is called on undo/redo to ensure the PI Editor reflects the current
+    IFC state. It extracts PI data from the alignment's horizontal segments.
+
+    If no active alignment exists or it's invalid, clears the PI Editor.
+
+    Returns:
+        bool: True if sync was successful, False if alignment was cleared.
+    """
+    ifc = tool.Alignment.get_ifc_file()
+    if ifc is None:
+        # No IFC file - clear everything
+        props.pis.clear()
+        props.active_pi_index = 0
+        clear_invalid_alignment_reference(props)
+        rebuild_display_rows(props)
+        return False
+
+    if props.active_alignment_id == 0:
+        # No active alignment - just rebuild display
+        rebuild_display_rows(props)
+        return True
+
+    alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+    if alignment is None:
+        # Alignment no longer exists - clear everything
+        props.pis.clear()
+        props.active_pi_index = 0
+        clear_invalid_alignment_reference(props)
+        rebuild_display_rows(props)
+        return False
+
+    # Alignment exists - extract PI data from IFC segments
+    h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    if not h_layout:
+        # No horizontal layout - rebuild display with current props
+        rebuild_display_rows(props)
+        return True
+
+    segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
+    if not segments:
+        # No segments - rebuild display with current props
+        rebuild_display_rows(props)
+        return True
+
+    # Extract PIs from segment data
+    # This reconstructs approximate PIs from the IFC segment geometry
+    extracted_pis = _extract_pis_from_segments(segments)
+
+    if not extracted_pis:
+        # Couldn't extract - keep current props.pis
+        rebuild_display_rows(props)
+        return True
+
+    # Update props.pis with extracted data
+    props.pis.clear()
+    for pi_data in extracted_pis:
+        pi = props.pis.add()
+        pi.x = pi_data["x"]
+        pi.y = pi_data["y"]
+        pi.pi_type = pi_data["pi_type"]
+        pi.radius = pi_data.get("radius", 0.0)
+
+    props.active_pi_index = 0
+
+    # Recalculate geometry and rebuild display
+    recalculate_pi_geometry(props)
+    return True
+
+
+def _extract_pis_from_segments(segments):
+    """Extract PI data from IFC alignment segments.
+
+    This reconstructs PI coordinates and types from the horizontal segment
+    design parameters. It handles:
+    - LINE segments (tangent lines)
+    - CIRCULARARC segments (horizontal curves)
+
+    Args:
+        segments: List of IfcAlignmentSegment entities
+
+    Returns:
+        List of dicts with keys: x, y, pi_type, radius (optional)
+    """
+    pis = []
+
+    # Filter out zero-length terminal segments
+    real_segments = []
+    for seg in segments:
+        if hasattr(seg, "DesignParameters") and seg.DesignParameters:
+            dp = seg.DesignParameters
+            if dp.SegmentLength > 0.0001:
+                real_segments.append(seg)
+
+    if not real_segments:
+        return []
+
+    # Track which segments are curves and their indices
+    curve_indices = set()
+    for i, seg in enumerate(real_segments):
+        dp = seg.DesignParameters
+        if dp.PredefinedType == "CIRCULARARC":
+            curve_indices.add(i)
+
+    # First PI: start of first segment
+    first_dp = real_segments[0].DesignParameters
+    start_coords = first_dp.StartPoint.Coordinates
+    pis.append(
+        {
+            "x": float(start_coords[0]),
+            "y": float(start_coords[1]),
+            "pi_type": "ENDPOINT",
+            "radius": 0.0,
+        }
+    )
+
+    # Process interior points
+    i = 0
+    while i < len(real_segments):
+        dp = real_segments[i].DesignParameters
+
+        if dp.PredefinedType == "CIRCULARARC":
+            # This is a curve - calculate PI from curve geometry
+            # PI is at the intersection of incoming and outgoing tangents
+            pi_data = _calculate_pi_from_curve(real_segments, i)
+            if pi_data:
+                pis.append(pi_data)
+            i += 1
+        elif dp.PredefinedType == "LINE":
+            # Check if next segment is also a LINE (sharp angle, no curve)
+            if i < len(real_segments) - 1:
+                next_dp = real_segments[i + 1].DesignParameters
+                if next_dp.PredefinedType == "LINE":
+                    # End of this LINE is a PI with no curve
+                    end_coords = _calculate_segment_endpoint(dp)
+                    pis.append(
+                        {
+                            "x": float(end_coords[0]),
+                            "y": float(end_coords[1]),
+                            "pi_type": "TANGENT",
+                            "radius": 0.0,
+                        }
+                    )
+            i += 1
+        else:
+            # Other segment type - skip for now
+            i += 1
+
+    # Last PI: end of last segment
+    last_dp = real_segments[-1].DesignParameters
+    end_coords = _calculate_segment_endpoint(last_dp)
+    # Only add if it's different from the last PI we added
+    if pis:
+        last_pi = pis[-1]
+        dist = math.sqrt((end_coords[0] - last_pi["x"]) ** 2 + (end_coords[1] - last_pi["y"]) ** 2)
+        if dist > 0.001:  # More than 1mm apart
+            pis.append(
+                {
+                    "x": float(end_coords[0]),
+                    "y": float(end_coords[1]),
+                    "pi_type": "ENDPOINT",
+                    "radius": 0.0,
+                }
+            )
+
+    return pis
+
+
+def _calculate_segment_endpoint(design_params):
+    """Calculate the endpoint of a horizontal segment.
+
+    Args:
+        design_params: IfcAlignmentHorizontalSegment
+
+    Returns:
+        Tuple (x, y) of endpoint coordinates
+    """
+    start = design_params.StartPoint.Coordinates
+    start_x = float(start[0])
+    start_y = float(start[1])
+
+    # StartDirection is in radians (counter-clockwise from east)
+    direction = float(design_params.StartDirection)
+    length = float(design_params.SegmentLength)
+
+    if design_params.PredefinedType == "LINE":
+        # Simple line endpoint
+        end_x = start_x + length * math.cos(direction)
+        end_y = start_y + length * math.sin(direction)
+        return (end_x, end_y)
+
+    elif design_params.PredefinedType == "CIRCULARARC":
+        # Arc endpoint calculation
+        radius = abs(float(design_params.StartRadiusOfCurvature or design_params.EndRadiusOfCurvature or 0))
+        if radius == 0:
+            # Fallback to line calculation
+            end_x = start_x + length * math.cos(direction)
+            end_y = start_y + length * math.sin(direction)
+            return (end_x, end_y)
+
+        # Determine curve direction (clockwise or counter-clockwise)
+        start_radius = design_params.StartRadiusOfCurvature
+        is_clockwise = start_radius is not None and start_radius < 0
+
+        # Arc length to angle: theta = L / R
+        theta = length / radius
+
+        if is_clockwise:
+            # Center is to the right of start direction
+            center_dir = direction - math.pi / 2
+            end_dir = direction - theta
+        else:
+            # Center is to the left of start direction
+            center_dir = direction + math.pi / 2
+            end_dir = direction + theta
+
+        # Calculate center
+        center_x = start_x + radius * math.cos(center_dir)
+        center_y = start_y + radius * math.sin(center_dir)
+
+        # Calculate endpoint
+        if is_clockwise:
+            end_x = center_x + radius * math.cos(end_dir + math.pi / 2)
+            end_y = center_y + radius * math.sin(end_dir + math.pi / 2)
+        else:
+            end_x = center_x + radius * math.cos(end_dir - math.pi / 2)
+            end_y = center_y + radius * math.sin(end_dir - math.pi / 2)
+
+        return (end_x, end_y)
+
+    else:
+        # Unknown type - linear approximation
+        end_x = start_x + length * math.cos(direction)
+        end_y = start_y + length * math.sin(direction)
+        return (end_x, end_y)
+
+
+def _calculate_pi_from_curve(segments, curve_index):
+    """Calculate the PI point from a curve segment.
+
+    The PI is at the intersection of the incoming and outgoing tangents.
+    For a circular arc: PI = PC + T * incoming_tangent = PT + T * (-outgoing_tangent)
+    where T = R * tan(delta/2).
+
+    Args:
+        segments: List of all segments
+        curve_index: Index of the curve segment
+
+    Returns:
+        Dict with PI data, or None if can't calculate
+    """
+    curve_seg = segments[curve_index]
+    curve_dp = curve_seg.DesignParameters
+
+    if curve_dp.PredefinedType != "CIRCULARARC":
+        return None
+
+    # Get curve parameters
+    pc_coords = curve_dp.StartPoint.Coordinates
+    pc_x = float(pc_coords[0])
+    pc_y = float(pc_coords[1])
+
+    start_dir = float(curve_dp.StartDirection)  # Incoming tangent direction
+    arc_length = float(curve_dp.SegmentLength)
+
+    radius = abs(float(curve_dp.StartRadiusOfCurvature or curve_dp.EndRadiusOfCurvature or 0))
+    if radius == 0:
+        return None
+
+    # Determine if clockwise
+    start_radius = curve_dp.StartRadiusOfCurvature
+    is_clockwise = start_radius is not None and start_radius < 0
+
+    # Calculate deflection angle from arc length: delta = L / R
+    delta = arc_length / radius
+
+    # Calculate tangent length: T = R * tan(delta/2)
+    tangent_length = radius * math.tan(delta / 2)
+
+    # PI = PC + T * incoming_tangent_unit_vector
+    pi_x = pc_x + tangent_length * math.cos(start_dir)
+    pi_y = pc_y + tangent_length * math.sin(start_dir)
+
+    return {
+        "x": pi_x,
+        "y": pi_y,
+        "pi_type": "CURVE",
+        "radius": radius,
+    }
+
+
 # =============================================================================
 # Curve Geometry Helper Functions
 # =============================================================================
-
-import math
 
 
 def compute_deflection_angle(prev_pi, curr_pi, next_pi):
@@ -246,7 +564,7 @@ def rebuild_display_rows(props):
 
     while i < len(pis):
         pi = pis[i]
-        is_interior = (i > 0 and i < len(pis) - 1)
+        is_interior = i > 0 and i < len(pis) - 1
         has_curve = is_interior and pi.radius > 0
 
         if has_curve:
@@ -402,9 +720,7 @@ class SAIKEI_OT_remove_pi(Operator):
 
             # Reset display row index to first row if needed
             if len(props.display_rows) > 0:
-                props.active_display_row_index = min(
-                    props.active_display_row_index, len(props.display_rows) - 1
-                )
+                props.active_display_row_index = min(props.active_display_row_index, len(props.display_rows) - 1)
             else:
                 props.active_display_row_index = 0
 
@@ -520,7 +836,12 @@ class SAIKEI_OT_recalculate_pis(Operator):
         # We recreate the entire alignment because modifying segments in place
         # can leave the IFC layout in an inconsistent state
         if props.active_alignment_id != 0:
-            alignment = ifc.by_id(props.active_alignment_id)
+            alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+            if alignment is None:
+                # Alignment no longer exists (e.g., after undo) - clear reference
+                clear_invalid_alignment_reference(props)
+                self.report({"WARNING"}, "Active alignment no longer exists. Reference cleared.")
+                return {"FINISHED"}
             if alignment:
                 # Save the alignment name
                 alignment_name = alignment.Name or props.new_alignment_name
@@ -536,7 +857,8 @@ class SAIKEI_OT_recalculate_pis(Operator):
                 radii = [pi.radius for pi in props.pis[1:-1]]
 
                 # Create a fresh alignment with the same name
-                new_alignment = ifcopenshell.api.alignment.create_by_pi_method(
+                # Use safe wrapper to validate/cleanup before creating
+                new_alignment = tool.Alignment.safe_create_alignment_by_pi_method(
                     ifc,
                     name=alignment_name,
                     hpoints=hpoints,
@@ -590,7 +912,7 @@ class SAIKEI_OT_clear_pis(Operator):
         # If there's an active alignment, remove it entirely (Blender + IFC)
         # This ensures we don't leave the IFC in an inconsistent state
         if props.active_alignment_id != 0:
-            alignment = ifc.by_id(props.active_alignment_id)
+            alignment = get_alignment_by_id(ifc, props.active_alignment_id)
             if alignment:
                 # Remove all Blender objects for this alignment
                 removed_objects = tool.Alignment.remove_alignment_hierarchy(alignment)
@@ -685,7 +1007,7 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
 
         # Check if there's an active alignment we should add to instead of creating new
         if props.active_alignment_id != 0:
-            existing_alignment = ifc.by_id(props.active_alignment_id)
+            existing_alignment = get_alignment_by_id(ifc, props.active_alignment_id)
             if existing_alignment:
                 h_layout = ifcopenshell.api.alignment.get_horizontal_layout(existing_alignment)
                 if h_layout:
@@ -700,9 +1022,8 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
 
                     if not has_real_segments:
                         # Use existing alignment - add segments to it
-                        ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method(
-                            ifc, h_layout, hpoints, radii
-                        )
+                        # Use safe wrapper to validate layout has parent alignment
+                        tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, hpoints, radii)
 
                         # Create/update Blender objects for the segments
                         alignment_obj = tool.Ifc.get_object(existing_alignment)
@@ -714,11 +1035,14 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
                         if h_layout_obj:
                             tool.Alignment.create_objects_for_layout_segments(h_layout, h_layout_obj)
 
-                        self.report({"INFO"}, f"Added {len(hpoints)} PIs to existing alignment '{existing_alignment.Name}'")
+                        self.report(
+                            {"INFO"}, f"Added {len(hpoints)} PIs to existing alignment '{existing_alignment.Name}'"
+                        )
                         return {"FINISHED"}
 
         # No suitable existing alignment - create a new one
-        alignment = ifcopenshell.api.alignment.create_by_pi_method(
+        # Use safe wrapper to validate/cleanup before creating
+        alignment = tool.Alignment.safe_create_alignment_by_pi_method(
             ifc,
             name=props.new_alignment_name,
             hpoints=hpoints,
@@ -841,7 +1165,11 @@ class SAIKEI_OT_create_alignment_offset(Operator):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        base_alignment = ifc.by_id(props.active_alignment_id)
+        base_alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if base_alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Base alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
 
         alignment = ifcopenshell.api.alignment.create_as_offset_curve(
             ifc,
@@ -884,7 +1212,12 @@ class SAIKEI_OT_add_vertical_layout(Operator):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
+
         vertical = ifcopenshell.api.alignment.add_vertical_layout(ifc, alignment)
 
         self.report({"INFO"}, "Added vertical layout")
@@ -940,7 +1273,12 @@ class SAIKEI_OT_layout_horizontal_by_pi(Operator):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
+
         h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
         if not h_layout:
@@ -951,9 +1289,8 @@ class SAIKEI_OT_layout_horizontal_by_pi(Operator):
         radii = [pi.radius for pi in props.pis[1:-1]]
 
         # Create the IFC segments
-        ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method(
-            ifc, h_layout, pis, radii
-        )
+        # Use safe wrapper to validate layout has parent alignment
+        tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, pis, radii)
 
         # Find or create Blender object for the horizontal layout
         # Use Bonsai's Ifc tool (re-exported via saikei.tool)
@@ -1011,8 +1348,14 @@ class SAIKEI_OT_add_stationing_referent(Operator):
 
     station: FloatProperty(
         name="Station",
-        description="Station value for the referent",
-        default=0.0,
+        description="Station value for the referent (e.g., 10000 for 100+00)",
+        default=10000.0,
+    )
+
+    name: StringProperty(
+        name="Name",
+        description="Name for the referent (leave blank to auto-generate)",
+        default="",
     )
 
     @classmethod
@@ -1026,20 +1369,63 @@ class SAIKEI_OT_add_stationing_referent(Operator):
         return True
 
     def invoke(self, context, event):
+        # Default station to start_station from props
+        props = context.scene.SaikeiAlignmentProperties
+        self.station = props.start_station
         return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "station")
+        layout.prop(self, "name")
+        # Show station notation preview
+        station_str = format_station(self.station)
+        layout.label(text=f"Station notation: {station_str}")
 
     def execute(self, context):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
+
+        # Compute distance_along from station and start_station
+        # distance_along = station - start_station
+        distance_along = self.station - props.start_station
+
+        # Auto-generate name if not provided
+        name = self.name if self.name else format_station(self.station)
+
+        # Use the alignment itself as the positioned product
+        # (The referent marks a point on the alignment)
+        positioned_product = alignment
 
         ifcopenshell.api.alignment.add_stationing_referent(
-            ifc, alignment, self.station
+            ifc,
+            alignment=alignment,
+            distance_along=distance_along,
+            station=self.station,
+            name=name,
+            positioned_product=positioned_product,
         )
 
-        self.report({"INFO"}, f"Added referent at station {self.station}")
+        self.report({"INFO"}, f"Added referent '{name}' at station {self.station}")
         return {"FINISHED"}
+
+
+def format_station(station_value):
+    """Format a station value in standard notation (e.g., 10000 -> '100+00')"""
+    # Station notation: divide by 100 for the main part, remainder for the offset
+    # e.g., 10000 -> 100+00, 10050 -> 100+50, 10123.45 -> 101+23.45
+    main = int(station_value // 100)
+    offset = station_value % 100
+    if offset == int(offset):
+        return f"{main}+{int(offset):02d}"
+    else:
+        return f"{main}+{offset:05.2f}"
 
 
 class SAIKEI_OT_name_segments(Operator):
@@ -1064,7 +1450,11 @@ class SAIKEI_OT_name_segments(Operator):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
 
         ifcopenshell.api.alignment.name_segments(ifc, alignment)
 
@@ -1099,7 +1489,11 @@ class SAIKEI_OT_create_representation(Operator):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
 
         ifcopenshell.api.alignment.create_representation(ifc, alignment)
 
@@ -1129,7 +1523,11 @@ class SAIKEI_OT_create_segment_representations(Operator):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
 
         ifcopenshell.api.alignment.create_segment_representations(ifc, alignment)
 
@@ -1159,7 +1557,11 @@ class SAIKEI_OT_update_fallback_position(Operator):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
 
         ifcopenshell.api.alignment.update_fallback_position(ifc, alignment)
 
@@ -1189,7 +1591,12 @@ class SAIKEI_OT_validate_segments(Operator):
         ifc = tool.Alignment.get_ifc_file()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            clear_invalid_alignment_reference(props)
+            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
+            return {"CANCELLED"}
+
         h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
         if h_layout:
@@ -1226,7 +1633,13 @@ class SAIKEI_OT_refresh_alignment_data(Operator):
         if props.active_alignment_id == 0:
             return {"FINISHED"}
 
-        alignment = ifc.by_id(props.active_alignment_id)
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            # Alignment no longer exists - clear reference and return
+            clear_invalid_alignment_reference(props)
+            self.report({"WARNING"}, "Alignment no longer exists. Reference cleared.")
+            return {"FINISHED"}
+
         h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
         if h_layout:
