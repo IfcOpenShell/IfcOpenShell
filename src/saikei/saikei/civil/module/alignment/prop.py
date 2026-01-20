@@ -41,6 +41,16 @@ def get_pi_type_items(self, context):
     ]
 
 
+def _on_radius_update(self, context):
+    """Callback when radius property changes.
+
+    This dynamically imports the operator module to call on_radius_changed,
+    avoiding circular imports since prop.py is imported before operator.py.
+    """
+    from . import operator as ops
+    ops.on_radius_changed(self, context)
+
+
 class AlignmentPI(PropertyGroup):
     """Property group for a single PI (Point of Intersection)
 
@@ -86,6 +96,7 @@ class AlignmentPI(PropertyGroup):
         min=0.0,
         precision=3,
         unit="LENGTH",
+        update=_on_radius_update,
     )
 
     # Computed/display values (updated by recalculate operator)
@@ -170,6 +181,7 @@ class AlignmentDisplayRow(PropertyGroup):
     # Segment properties (only for SEGMENT rows)
     length: FloatProperty(name="Length", default=0.0, precision=2, unit="LENGTH")
     radius: FloatProperty(name="Radius", default=0.0, precision=2, unit="LENGTH")
+    arc_length: FloatProperty(name="Arc Length", default=0.0, precision=2, unit="LENGTH")
 
 
 class SaikeiAlignmentProperties(PropertyGroup):

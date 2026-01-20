@@ -52,6 +52,156 @@ def poll_ifc4x3(cls, context):
     return True
 
 
+# =============================================================================
+# Curve Geometry Helper Functions
+# =============================================================================
+
+import math
+
+
+def compute_deflection_angle(prev_pi, curr_pi, next_pi):
+    """Compute the deflection angle at a PI point.
+
+    Args:
+        prev_pi: Previous PI (with x, y attributes)
+        curr_pi: Current PI (with x, y attributes)
+        next_pi: Next PI (with x, y attributes)
+
+    Returns:
+        Deflection angle in radians (signed: positive=left, negative=right)
+    """
+    # Incoming tangent direction
+    dx1 = curr_pi.x - prev_pi.x
+    dy1 = curr_pi.y - prev_pi.y
+    angle1 = math.atan2(dy1, dx1)
+
+    # Outgoing tangent direction
+    dx2 = next_pi.x - curr_pi.x
+    dy2 = next_pi.y - curr_pi.y
+    angle2 = math.atan2(dy2, dx2)
+
+    # Deflection angle
+    deflection = angle2 - angle1
+
+    # Normalize to [-pi, pi]
+    while deflection > math.pi:
+        deflection -= 2 * math.pi
+    while deflection < -math.pi:
+        deflection += 2 * math.pi
+
+    return deflection
+
+
+def compute_arc_length_for_pi(props, pi_index):
+    """Compute arc length for a curve at the given PI.
+
+    Arc length L = R * |delta| where delta is the deflection angle.
+
+    Args:
+        props: SaikeiAlignmentProperties
+        pi_index: Index of the PI with the curve
+
+    Returns:
+        Arc length in same units as radius (meters)
+    """
+    pis = props.pis
+    if pi_index <= 0 or pi_index >= len(pis) - 1:
+        return 0.0
+
+    prev_pi = pis[pi_index - 1]
+    curr_pi = pis[pi_index]
+    next_pi = pis[pi_index + 1]
+
+    if curr_pi.radius <= 0:
+        return 0.0
+
+    deflection = compute_deflection_angle(prev_pi, curr_pi, next_pi)
+    return curr_pi.radius * abs(deflection)
+
+
+def compute_tangent_length_at_pi(props, pi_index):
+    """Compute the tangent length T at a PI with a curve.
+
+    Tangent length T = R * tan(|delta|/2)
+
+    Args:
+        props: SaikeiAlignmentProperties
+        pi_index: Index of the PI with the curve
+
+    Returns:
+        Tangent length (distance from PI to PC or PT)
+    """
+    pis = props.pis
+    if pi_index <= 0 or pi_index >= len(pis) - 1:
+        return 0.0
+
+    prev_pi = pis[pi_index - 1]
+    curr_pi = pis[pi_index]
+    next_pi = pis[pi_index + 1]
+
+    if curr_pi.radius <= 0:
+        return 0.0
+
+    deflection = compute_deflection_angle(prev_pi, curr_pi, next_pi)
+    return curr_pi.radius * math.tan(abs(deflection) / 2)
+
+
+def compute_segment_length(props, start_pi_index, account_for_curves=True):
+    """Compute the length of a tangent segment between two PIs.
+
+    If curves exist at the start or end PI, the segment is shortened
+    to PC (Point of Curvature) or PT (Point of Tangency).
+
+    Args:
+        props: SaikeiAlignmentProperties
+        start_pi_index: Index of the starting PI
+        account_for_curves: If True, subtract tangent lengths for adjacent curves
+
+    Returns:
+        Segment length in meters
+    """
+    pis = props.pis
+    if start_pi_index < 0 or start_pi_index >= len(pis) - 1:
+        return 0.0
+
+    start_pi = pis[start_pi_index]
+    end_pi = pis[start_pi_index + 1]
+
+    # Full length between PIs
+    dx = end_pi.x - start_pi.x
+    dy = end_pi.y - start_pi.y
+    full_length = math.sqrt(dx * dx + dy * dy)
+
+    if not account_for_curves:
+        return full_length
+
+    # Subtract tangent length if start PI has a curve (segment starts at PT)
+    if start_pi_index > 0 and start_pi.radius > 0:
+        full_length -= compute_tangent_length_at_pi(props, start_pi_index)
+
+    # Subtract tangent length if end PI has a curve (segment ends at PC)
+    if start_pi_index + 1 < len(pis) - 1 and end_pi.radius > 0:
+        full_length -= compute_tangent_length_at_pi(props, start_pi_index + 1)
+
+    return max(0.0, full_length)
+
+
+def on_radius_changed(pi, context):
+    """Callback when PI radius is changed. Triggers geometry recalculation.
+
+    This is called from the AlignmentPI.radius property's update callback.
+    When a radius is entered on a Mid point, this triggers:
+    1. Recalculation of PI geometry (lengths, stations)
+    2. Rebuild of display_rows (Mid point becomes Curve segment)
+    3. If an active alignment exists, regeneration of IFC entities
+    """
+    props = context.scene.SaikeiAlignmentProperties
+    recalculate_pi_geometry(props)
+
+    # If there's an active alignment, trigger IFC regeneration
+    # This is handled by recalculate_pi_geometry when active_alignment_id is set
+
+
 def recalculate_pi_geometry(props):
     """Recalculate lengths and stations for all PIs using core logic."""
     pis = props.pis
@@ -75,12 +225,15 @@ def recalculate_pi_geometry(props):
 def rebuild_display_rows(props):
     """Rebuild the display_rows collection from the pis collection.
 
-    Creates an interleaved view of points and segments:
-        Point 1 (End)
-          Segment 1 (Tan)
-        Point 2 (Tan)
-          Segment 2 (Tan)
-        ...
+    Creates an interleaved view of points and segments in Civil 3D style:
+        End point (POB)
+          Tangent segment 1
+        Mid point (or Curve segment if radius > 0)
+          Tangent segment 2
+        End point (POE)
+
+    When a Mid point has a curve (radius > 0), it becomes a Curve segment row
+    instead of a point row, showing PI coordinates + arc length + radius.
     """
     props.display_rows.clear()
 
@@ -89,40 +242,57 @@ def rebuild_display_rows(props):
         return
 
     segment_num = 0
+    i = 0
 
-    for i, pi in enumerate(pis):
-        # Add point row
-        point_row = props.display_rows.add()
-        point_row.row_type = "POINT"
-        point_row.pi_index = i
+    while i < len(pis):
+        pi = pis[i]
+        is_interior = (i > 0 and i < len(pis) - 1)
+        has_curve = is_interior and pi.radius > 0
 
-        # Determine display type for point
-        # Points show "End" for endpoints (POB/POE) or "Mid" for interior points
-        if pi.pi_type == "ENDPOINT":
-            point_row.display_type = "End"
+        if has_curve:
+            # Interior PI with curve: becomes a CURVE SEGMENT row
+            # This replaces what would have been a Mid point row
+            segment_num += 1
+            curve_row = props.display_rows.add()
+            curve_row.row_type = "SEGMENT"
+            curve_row.segment_number = segment_num
+            curve_row.pi_index = i
+            curve_row.display_type = "Curve"
+            curve_row.x = pi.x  # Show PI coordinates on curve row
+            curve_row.y = pi.y
+            curve_row.radius = pi.radius
+            curve_row.arc_length = compute_arc_length_for_pi(props, i)
         else:
-            # Interior points (TANGENT or CURVE) display as "Mid"
-            point_row.display_type = "Mid"
+            # Regular point row (End or Mid without curve)
+            point_row = props.display_rows.add()
+            point_row.row_type = "POINT"
+            point_row.pi_index = i
 
-        point_row.x = pi.x
-        point_row.y = pi.y
+            if pi.pi_type == "ENDPOINT":
+                point_row.display_type = "End"
+            else:
+                point_row.display_type = "Mid"
 
-        # Add segment row after this point (except for the last point)
+            point_row.x = pi.x
+            point_row.y = pi.y
+
+        # Add tangent segment row after this point/curve (except after last PI)
         if i < len(pis) - 1:
+            # Check if next PI also has a curve (affects segment length calculation)
+            next_pi = pis[i + 1]
+            next_has_curve = (i + 1 < len(pis) - 1) and next_pi.radius > 0
+
             segment_num += 1
             seg_row = props.display_rows.add()
             seg_row.row_type = "SEGMENT"
             seg_row.segment_number = segment_num
             seg_row.pi_index = i
-
-            # Segment type is "Tan" (tangent/line) unless next PI has a curve
-            # For now, all segments between PIs are tangent lines
             seg_row.display_type = "Tan"
-            seg_row.length = pi.length_to_next
 
-            # If this PI has a curve, the segment includes arc length
-            if pi.pi_type == "CURVE" and pi.radius > 0:
-                seg_row.radius = pi.radius
+            # Compute segment length accounting for curves at either end
+            seg_row.length = compute_segment_length(props, i, account_for_curves=True)
+
+        i += 1
 
 
 # =============================================================================

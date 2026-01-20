@@ -46,14 +46,21 @@ def is_ifc4x3():
 
 
 class SAIKEI_UL_alignment_pis(UIList):
-    """UIList for displaying interleaved points and segments (Civil 3D style)"""
+    """UIList for displaying interleaved points and segments (Civil 3D style)
+
+    Row types:
+    - POINT rows: End (endpoint), Mid (interior PI without curve)
+    - SEGMENT rows: Tan (tangent line), Curve (circular arc)
+
+    When a Mid point has radius > 0, it becomes a Curve segment row.
+    """
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {"DEFAULT", "COMPACT"}:
             row = layout.row(align=True)
 
             if item.row_type == "POINT":
-                # Point row: No., Type, X, Y, -, -
+                # Point row: No., Type, X, Y, Length, Radius
                 row.label(text="")  # No segment number for points
 
                 # Type with point/dot icon
@@ -70,28 +77,47 @@ class SAIKEI_UL_alignment_pis(UIList):
                     row.label(text=f"{item.x:.2f}")
                     row.label(text=f"{item.y:.2f}")
 
-                # No length or radius for point rows
-                row.label(text="")
-                row.label(text="")
-
-            else:
-                # Segment row: No., Type, -, -, Length, Radius
-                row.label(text=f"{item.segment_number}")
-
-                # Segment type
-                row.label(text=item.display_type, icon="IPO_LINEAR")
-
-                # No X, Y for segment rows
-                row.label(text="")
+                # Length column - empty for point rows
                 row.label(text="")
 
-                # Length
-                row.label(text=f"{item.length:.2f}")
-
-                # Radius (only if > 0)
-                if item.radius > 0:
-                    row.label(text=f"{item.radius:.2f}")
+                # Radius column - editable for Mid points (where curves can be added)
+                if item.display_type == "Mid" and pi:
+                    row.prop(pi, "radius", text="")
                 else:
+                    row.label(text="")
+
+            elif item.row_type == "SEGMENT":
+                if item.display_type == "Curve":
+                    # Curve segment row: No., Type (arc icon), X, Y, Arc Length, Radius
+                    row.label(text=f"{item.segment_number}")
+                    row.label(text="Curve", icon="SPHERECURVE")
+
+                    # Show PI coordinates on curve row
+                    row.label(text=f"{item.x:.2f}")
+                    row.label(text=f"{item.y:.2f}")
+
+                    # Arc length
+                    row.label(text=f"{item.arc_length:.2f}")
+
+                    # Radius - editable so user can modify or delete curve (set to 0)
+                    pi = data.pis[item.pi_index] if item.pi_index < len(data.pis) else None
+                    if pi:
+                        row.prop(pi, "radius", text="")
+                    else:
+                        row.label(text=f"{item.radius:.2f}")
+                else:
+                    # Tangent segment row: No., Type (line icon), -, -, Length, -
+                    row.label(text=f"{item.segment_number}")
+                    row.label(text="Tan", icon="IPO_LINEAR")
+
+                    # No X, Y for tangent segments
+                    row.label(text="")
+                    row.label(text="")
+
+                    # Length
+                    row.label(text=f"{item.length:.2f}")
+
+                    # No radius for tangent segments
                     row.label(text="-")
 
         elif self.layout_type == "GRID":
@@ -256,7 +282,7 @@ class SAIKEI_PT_pi_editor(Panel):
         col.separator()
         col.operator("saikei.pick_pi_from_viewport", icon="EYEDROPPER", text="")
 
-        # Active item details - show PI details if a point row is selected
+        # Active item details - show details based on selected row
         if props.display_rows and 0 <= props.active_display_row_index < len(props.display_rows):
             active_row = props.display_rows[props.active_display_row_index]
 
@@ -273,7 +299,8 @@ class SAIKEI_PT_pi_editor(Panel):
                 row.prop(pi, "x", text="X")
                 row.prop(pi, "y", text="Y")
 
-                if pi.pi_type == "CURVE":
+                # Show radius for interior points (can add curve)
+                if pi.pi_type != "ENDPOINT":
                     row = box.row()
                     row.prop(pi, "radius", text="Radius")
 
@@ -283,16 +310,33 @@ class SAIKEI_PT_pi_editor(Panel):
                 row.label(text=f"Length: {pi.length_to_next:.2f}")
 
             elif active_row.row_type == "SEGMENT":
-                box = layout.box()
-                box.label(text=f"Segment {active_row.segment_number} Details:", icon="IPO_LINEAR")
+                if active_row.display_type == "Curve":
+                    # Curve segment - show curve details with editable radius
+                    pi = props.pis[active_row.pi_index] if active_row.pi_index < len(props.pis) else None
 
-                row = box.row()
-                row.label(text=f"Type: {active_row.display_type}")
-                row.label(text=f"Length: {active_row.length:.2f}")
+                    box = layout.box()
+                    box.label(text=f"Curve {active_row.segment_number} Details:", icon="SPHERECURVE")
 
-                if active_row.radius > 0:
                     row = box.row()
-                    row.label(text=f"Radius: {active_row.radius:.2f}")
+                    row.label(text=f"PI Location: ({active_row.x:.2f}, {active_row.y:.2f})")
+
+                    row = box.row()
+                    row.label(text=f"Arc Length: {active_row.arc_length:.2f}")
+
+                    # Editable radius
+                    if pi:
+                        row = box.row()
+                        row.prop(pi, "radius", text="Radius")
+                    else:
+                        row = box.row()
+                        row.label(text=f"Radius: {active_row.radius:.2f}")
+                else:
+                    # Tangent segment
+                    box = layout.box()
+                    box.label(text=f"Tangent {active_row.segment_number} Details:", icon="IPO_LINEAR")
+
+                    row = box.row()
+                    row.label(text=f"Length: {active_row.length:.2f}")
 
         # Bottom actions
         layout.separator()
