@@ -111,7 +111,7 @@ class Nest(bonsai.core.tool.Nest):
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
                     not_editing_obj.previous_display_type = obj.original.display_type
-                    obj.original.display_type = "WIRE"
+                    tool.Blender.Display.set_wireframe(obj.original)
                 else:
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
@@ -125,7 +125,7 @@ class Nest(bonsai.core.tool.Nest):
         props = context.scene.BIMNestProperties
         for obj_prop in props.not_editing_objects:
             obj = obj_prop.obj
-            obj.original.display_type = obj_prop.previous_display_type
+            tool.Blender.Display.set_display(obj.original, obj_prop.previous_display_type)
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue

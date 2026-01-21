@@ -1079,6 +1079,64 @@ class Blender(bonsai.core.tool.Blender):
             return False
         return True
 
+    class Display:
+        """Utilities for managing object display properties in the 3D viewport."""
+
+        @classmethod
+        def _set_display_type(
+            cls, obj: bpy.types.Object, display_type: str, hide_render: Optional[bool] = None
+        ) -> None:
+            """Internal helper to set display type and render visibility for a single object.
+
+            :param obj: Object to modify
+            :param display_type: Display type to set (e.g., 'WIRE', 'TEXTURED', 'SOLID', 'BOUNDS')
+            :param hide_render: Render visibility state. If None, render visibility is not modified.
+            """
+            obj.display_type = display_type
+            if hide_render is not None:
+                obj.hide_render = hide_render
+
+        @classmethod
+        def set_display(
+            cls,
+            obj: Union[bpy.types.Object, Iterable[bpy.types.Object]],
+            display_type: str,
+            hide_render: Optional[bool] = None,
+        ) -> None:
+            """Set object(s) to a specific display type with optional render visibility.
+
+            :param obj: Single object or iterable of objects to modify
+            :param display_type: Display type to set (e.g., 'WIRE', 'TEXTURED', 'SOLID', 'BOUNDS')
+            :param hide_render: Render visibility state. If None, render visibility is not modified.
+            """
+            if isinstance(obj, bpy.types.Object):
+                cls._set_display_type(obj, display_type, hide_render)
+            else:
+                for o in obj:
+                    cls._set_display_type(o, display_type, hide_render)
+
+        @classmethod
+        def set_wireframe(
+            cls, obj: Union[bpy.types.Object, Iterable[bpy.types.Object]], hide_render: Optional[bool] = None
+        ) -> None:
+            """Set object(s) to wireframe display and optional render visibility.
+
+            :param obj: Single object or iterable of objects to set to wireframe display
+            :param hide_render: Render visibility state. If None, render visibility is not modified.
+            """
+            cls.set_display(obj, "WIRE", hide_render)
+
+        @classmethod
+        def set_textured(
+            cls, obj: Union[bpy.types.Object, Iterable[bpy.types.Object]], hide_render: Optional[bool] = None
+        ) -> None:
+            """Set object(s) to textured display and optional render visibility.
+
+            :param obj: Single object or iterable of objects to set to textured display
+            :param hide_render: Render visibility state. If None, render visibility is not modified.
+            """
+            cls.set_display(obj, "TEXTURED", hide_render)
+
     class Modifier:
         @classmethod
         def try_applying_edit_mode(cls, obj: bpy.types.Object, element: entity_instance) -> bool:
