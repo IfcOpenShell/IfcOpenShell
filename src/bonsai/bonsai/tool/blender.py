@@ -1353,6 +1353,7 @@ class Blender(bonsai.core.tool.Blender):
         import bonsai.bim.module.spatial.workspace as ws_spatial
         import bonsai.bim.module.structural.workspace as ws_structural
         import bonsai.bim.module.covering.workspace as ws_covering
+        import bonsai.bim.module.numbering.workspace as ws_numbering
 
         if bpy.app.background:
             return
@@ -1373,8 +1374,12 @@ class Blender(bonsai.core.tool.Blender):
                 ws_structural.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=False
             )
             bpy.utils.register_tool(
-                ws_covering.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False
+                ws_numbering.NumberingTool, after={"bim.structural_tool"}, separator=False, group=False
             )
+            bpy.utils.register_tool(
+                ws_covering.CoveringTool, after={"bim.numbering_tool"}, separator=False, group=False
+            )
+
         except:
             pass
 
@@ -1385,6 +1390,7 @@ class Blender(bonsai.core.tool.Blender):
         import bonsai.bim.module.spatial.workspace as ws_spatial
         import bonsai.bim.module.structural.workspace as ws_structural
         import bonsai.bim.module.covering.workspace as ws_covering
+        import bonsai.bim.module.numbering.workspace as ws_numbering
 
         if bpy.app.background:
             return
@@ -1402,6 +1408,7 @@ class Blender(bonsai.core.tool.Blender):
             bpy.utils.unregister_tool(ws_drawing.AnnotationTool)
             bpy.utils.unregister_tool(ws_spatial.SpatialTool)
             bpy.utils.unregister_tool(ws_structural.StructuralTool)
+            bpy.utils.unregister_tool(ws_numbering.NumberingTool)
             bpy.utils.unregister_tool(ws_covering.CoveringTool)
         except:
             pass
