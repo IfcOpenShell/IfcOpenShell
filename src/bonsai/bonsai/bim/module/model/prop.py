@@ -1697,17 +1697,6 @@ class ProductPreviewItem(PropertyGroup):
         value_2d: tuple[float, float]
 
 
-class BIMProductPreviewProperties(PropertyGroup):
-    verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
-    edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
-    tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
-
-    if TYPE_CHECKING:
-        verts: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-        edges: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-        tris: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-
-
 def update_is_editing(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:
     if self.is_editing:
         return

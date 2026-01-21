@@ -140,7 +140,6 @@ classes = (
     prop.BIMRailingProperties,
     prop.BIMRoofProperties,
     prop.BIMPolylineProperties,
-    prop.BIMProductPreviewProperties,
     prop.BIMExternalParametricGeometryProperties,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
@@ -263,7 +262,6 @@ def register():
 
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
-    bpy.types.Scene.BIMProductPreviewProperties = bpy.props.PointerProperty(type=prop.BIMProductPreviewProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
@@ -288,7 +286,6 @@ def unregister():
 
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Scene.BIMPolylineProperties
-    del bpy.types.Scene.BIMProductPreviewProperties
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMStairProperties
     del bpy.types.Object.BIMSverchokProperties
