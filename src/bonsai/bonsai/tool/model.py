@@ -67,6 +67,7 @@ if TYPE_CHECKING:
         BIMExternalParametricGeometryProperties,
         BIMPolylineProperties,
     )
+    from sverchok.core.node_group import SvGroupTreeNode
 
 
 class Model(bonsai.core.tool.Model):
@@ -2566,12 +2567,20 @@ class Model(bonsai.core.tool.Model):
         return [s for s in group_node.inputs if s.type != "GEOMETRY"]
 
     @classmethod
+    def get_ifcsverchok_group_node(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> SvGroupTreeNode:
+        from sverchok.core.node_group import SvGroupTreeNode
+
+        return next(n for n in node_tree.nodes if isinstance(n, SvGroupTreeNode) and n.label == "BBIM_EPG")
+
+    @classmethod
     def get_ifcsverchok_shape_output(
         cls, node_tree: sverchok.node_tree.SverchCustomTree
     ) -> ifcsverchok.nodes.ifc.shape_builder.shape_output.SvSbShapeOutput:
         from ifcsverchok.nodes.ifc.shape_builder.shape_output import SvSbShapeOutput
 
-        return next(n for n in node_tree.nodes if isinstance(n, SvSbShapeOutput))
+        group_node = cls.get_ifcsverchok_group_node(node_tree)
+        subtree = group_node.node_tree
+        return next(n for n in subtree.nodes if isinstance(n, SvSbShapeOutput))
 
     @classmethod
     def update_mesh_from_sverchok(
