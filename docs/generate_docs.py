@@ -1,10 +1,10 @@
 # This program requires doxygen, sphinx, breathe and exhale.
 
+import multiprocessing
 import os
-import sys
 import shutil
 import subprocess
-import multiprocessing
+import sys
 
 # some extra check to see if we can find sphinx in pypy bin dir
 sphinx_build = os.path.join(os.path.dirname(sys.executable), 'sphinx-build')

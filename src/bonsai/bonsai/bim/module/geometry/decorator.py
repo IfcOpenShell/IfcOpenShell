@@ -74,7 +74,7 @@ class ItemDecorator:
         special_verts = []
         special_edges = []
 
-        if len(obj.data.loop_triangles) > 0:
+        if (total_triangles := len(obj.data.loop_triangles)) > 0:
             verts = [tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]
             tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
 

@@ -16,27 +16,27 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.geom
-import ifcopenshell.util
-import ifcopenshell.util.shape
-import pytest
-import test.bootstrap
-import ifcopenshell.api
-import numpy as np
-from ifcopenshell.util.shape_builder import (
-    ShapeBuilder,
-    is_x,
-    np_rotation_matrix,
-    np_to_3d,
-    np_angle,
-    V,
-    np_angle_signed,
-    np_normal,
-    np_intersect_line_line,
-    np_matrix_to_euler,
-)
 from math import degrees, radians
 from typing import Any, Union
+
+import numpy as np
+import pytest
+
+import ifcopenshell.geom
+import ifcopenshell.util.shape
+import test.bootstrap
+from ifcopenshell.util.shape_builder import (
+    ShapeBuilder,
+    V,
+    is_x,
+    np_angle,
+    np_angle_signed,
+    np_intersect_line_line,
+    np_matrix_to_euler,
+    np_normal,
+    np_rotation_matrix,
+    np_to_3d,
+)
 
 
 class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):

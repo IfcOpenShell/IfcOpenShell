@@ -738,7 +738,7 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
         while n := getattr(n, "parent", 0):
             parents.append(n)
 
-        custom_funcs = "is_entity", "usedin", "express_len", "express_getitem", "typeof"
+        custom_funcs = "is_entity", "usedin", "express_len", "express_getitem", "typeof", "express_getattr"
         function_defs = [p.name for p in parents if isinstance(p, ast.FunctionDef)]
         if any(fn in function_defs for fn in custom_funcs):
             return node
@@ -755,7 +755,7 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
         # Replace the Attribute node with a call to the built-in `getattr` function
         return ast.copy_location(
             ast.Call(
-                func=ast.Name(id="getattr", ctx=ast.Load()),
+                func=ast.Name(id="express_getattr", ctx=ast.Load()),
                 args=[
                     new_value,
                     ast.Str(s=node.attr),
@@ -772,7 +772,7 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
         while n := getattr(n, "parent", 0):
             parents.append(n)
 
-        custom_funcs = "is_entity", "usedin", "express_len", "express_getitem", "typeof"
+        custom_funcs = "is_entity", "usedin", "express_len", "express_getitem", "typeof", "express_getattr"
         function_defs = [p.name for p in parents if isinstance(p, ast.FunctionDef)]
         if any(fn in function_defs for fn in custom_funcs):
             return node
@@ -935,6 +935,14 @@ def express_getitem(aggr, idx, default):
         aggr = aggr[0]
     try: return aggr[idx]
     except IndexError as e: return None
+
+
+def express_getattr(aggr, name, default):
+    v = getattr(aggr, name, default)
+    if v is None:
+        return default
+    else:
+        return v
 
 
 EXPRESS_ONE_BASED_INDEXING = 1

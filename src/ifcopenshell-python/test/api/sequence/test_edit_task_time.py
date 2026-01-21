@@ -17,11 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import test.bootstrap
-import ifcopenshell.api.root
-import ifcopenshell.api.control
-import ifcopenshell.api.sequence
 
+import ifcopenshell.api.control
+import ifcopenshell.api.root
+import ifcopenshell.api.sequence
+import test.bootstrap
 
 # NOTE: IfcTaskTime was introduced in IFC4
 

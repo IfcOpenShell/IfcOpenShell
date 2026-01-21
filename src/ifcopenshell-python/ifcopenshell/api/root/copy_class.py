@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import ifcopenshell
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.system
-import ifcopenshell.api.geometry
-import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-from typing import Any
 
 
 def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:

@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.util.placement
 from ifcopenshell import entity_instance
-import numpy as np
 
 
 def update_fallback_position(file: ifcopenshell.file, lp: entity_instance):

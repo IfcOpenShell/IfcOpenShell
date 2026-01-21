@@ -1,12 +1,10 @@
 import collections
 
 import numpy as np
-import ifcopenshell
-import ifcopenshell.geom
-
 import pytest
 
-from test.bootstrap import file
+import ifcopenshell
+import ifcopenshell.geom
 
 
 @pytest.mark.parametrize("file", ["geom/polygonal-face-tessellation.ifc"], indirect=True)

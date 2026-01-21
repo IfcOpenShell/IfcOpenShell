@@ -4,9 +4,8 @@ import uuid
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import pytest
-
 import bcf.v3.model as mdl
+import pytest
 from bcf.v3.bcfxml import BcfXml
 from bcf.v3.topic import TopicHandler
 from bcf.v3.visinfo import (

@@ -17,9 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+from typing import Union
+
 import ifcopenshell
 import ifcopenshell.api.owner.settings
-from typing import Union
 
 
 def create_owner_history(file: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:

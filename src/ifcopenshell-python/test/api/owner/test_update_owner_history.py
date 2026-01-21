@@ -17,9 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
-import test.bootstrap
+
 import ifcopenshell.api.owner
 import ifcopenshell.api.owner.settings
+import test.bootstrap
 
 
 class TestUpdateOwnerHistory(test.bootstrap.IFC4):

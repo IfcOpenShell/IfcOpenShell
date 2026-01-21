@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import cos, sin
+from typing import Any, Optional, Union
+
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from math import sin, cos, pi
-from typing import Optional, Union, Any
 from ifcopenshell.util.data import Clipping
 
 
@@ -84,7 +85,6 @@ class Usecase:
     def create_item(self) -> ifcopenshell.entity_instance:
         length = self.convert_si_to_unit(self.settings["length"])
         thickness = self.convert_si_to_unit(self.settings["thickness"])
-        thickness *= 1 / cos(self.settings["x_angle"])
         if self.settings["direction_sense"] == "NEGATIVE":
             thickness *= -1
         points = (
@@ -112,7 +112,7 @@ class Usecase:
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),
             extrusion_direction,
-            self.convert_si_to_unit(self.settings["height"]) * abs(1 / cos(self.settings["x_angle"])),
+            self.convert_si_to_unit(self.settings["height"]),
         )
         if self.settings["booleans"]:
             extrusion = self.apply_booleans(extrusion)

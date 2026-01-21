@@ -16,16 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import multiprocessing
+from logging import Logger
+from typing import Union
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.geom
+import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
-import ifcopenshell.util.representation
-import multiprocessing
-from logging import Logger
-from typing import Union
 
 
 class Patcher:

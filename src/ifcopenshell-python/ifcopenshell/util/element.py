@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import namedtuple
+from collections.abc import Callable, Generator, Sequence
+from typing import Any, Literal, Optional, Union, overload
+
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Any, Callable, Optional, Union, Literal, overload
-from collections.abc import Generator, Sequence
-from collections import namedtuple
-
 
 MATERIAL_TYPE = Literal[
     "IfcMaterial",

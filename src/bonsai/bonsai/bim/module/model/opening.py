@@ -133,6 +133,7 @@ class FilledOpeningGenerator:
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
+        # CREATE THE OPENING FIRST
         opening = ifcopenshell.api.root.create_entity(
             tool.Ifc.get(),
             ifc_class="IfcOpeningElement",
@@ -146,28 +147,34 @@ class FilledOpeningGenerator:
             is_si=True,
         )
 
+        # NOW HANDLE REPRESENTATION
+        # Variables to track if we should reuse a mapped representation
+        reuse_mapped_representation = False
+        existing_mapping_source = None
+        representation = None
+
         if existing_opening_occurrence:
             representation = ifcopenshell.util.representation.get_representation(
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
             assert representation
-            
-            # Check if mapped representation - preserve it
-            if (representation.RepresentationType == 'MappedRepresentation' and 
-                len(representation.Items) == 1 and 
-                representation.Items[0].is_a("IfcMappedItem")):
-                source_rep = representation.Items[0].MappingSource.MappedRepresentation
-                representation = ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(),
-                    source_rep,
-                    exclude=["IfcGeometricRepresentationContext"]
-                )
+
+            # Check if mapped representation - PRESERVE the mapping structure
+            if (
+                representation.RepresentationType == "MappedRepresentation"
+                and len(representation.Items) == 1
+                and representation.Items[0].is_a("IfcMappedItem")
+            ):
+                # Store the existing RepresentationMap to reuse it
+                existing_mapping_source = representation.Items[0].MappingSource
+                reuse_mapped_representation = True
             else:
                 representation = ifcopenshell.util.representation.resolve_representation(representation)
-        else:
+
+        if not reuse_mapped_representation:
             # Check for library template before generating from filling
             template_rep = self.get_opening_template_from_type(filling)
-            
+
             if template_rep:
                 representation = template_rep
             else:
@@ -175,9 +182,34 @@ class FilledOpeningGenerator:
                     filling, filling_obj, opening_thickness_si=opening_thickness_si
                 )
 
-        mapped_representation = ifcopenshell.api.geometry.map_representation(
-            tool.Ifc.get(), representation=representation
-        )
+        # Create mapped representation
+        if reuse_mapped_representation:
+            # Reuse the existing RepresentationMap - don't create a new one!
+            context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+            new_mapped_item = tool.Ifc.get().create_entity(
+                "IfcMappedItem",
+                MappingSource=existing_mapping_source,
+                MappingTarget=tool.Ifc.get().create_entity(
+                    "IfcCartesianTransformationOperator3D",
+                    Axis1=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0)),
+                    Axis2=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 1.0, 0.0)),
+                    LocalOrigin=tool.Ifc.get().create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+                    Scale=1.0,
+                    Axis3=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0)),
+                ),
+            )
+            mapped_representation = tool.Ifc.get().create_entity(
+                "IfcShapeRepresentation",
+                ContextOfItems=context,
+                RepresentationIdentifier="Body",
+                RepresentationType="MappedRepresentation",
+                Items=[new_mapped_item],
+            )
+        else:
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                tool.Ifc.get(), representation=representation
+            )
+
         ifcopenshell.api.geometry.assign_representation(
             tool.Ifc.get(), product=opening, representation=mapped_representation
         )
@@ -222,69 +254,68 @@ class FilledOpeningGenerator:
         voided_element = opening.VoidsElements[0].RelatingBuildingElement
 
         opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
-        
+
         # ALWAYS preserve the existing opening representation (Tessellation, SweptSolid, etc.)
         preserved_representation = None
         if opening_rep:
-            if (opening_rep.RepresentationType == 'MappedRepresentation' and 
-                len(opening_rep.Items) == 1 and 
-                opening_rep.Items[0].is_a("IfcMappedItem")):
+            if (
+                opening_rep.RepresentationType == "MappedRepresentation"
+                and len(opening_rep.Items) == 1
+                and opening_rep.Items[0].is_a("IfcMappedItem")
+            ):
                 # For mapped representations, copy the underlying representation
                 preserved_representation = ifcopenshell.util.element.copy_deep(
                     tool.Ifc.get(),
                     opening_rep.Items[0].MappingSource.MappedRepresentation,
-                    exclude=["IfcGeometricRepresentationContext"]
+                    exclude=["IfcGeometricRepresentationContext"],
                 )
             else:
                 # For direct representations (non-mapped), copy them too
                 preserved_representation = ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(),
-                    opening_rep,
-                    exclude=["IfcGeometricRepresentationContext"]
+                    tool.Ifc.get(), opening_rep, exclude=["IfcGeometricRepresentationContext"]
                 )
-        
+
         ifcopenshell.api.geometry.unassign_representation(tool.Ifc.get(), product=opening, representation=opening_rep)
         ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=opening_rep)
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
-        
+
         # Priority order for choosing representation:
-        # 1. Existing occurrence with Tessellation (best quality)
+        # 1. Existing occurrence with MappedRepresentation (preserve mapping!)
         # 2. Library template with Tessellation
         # 3. Preserved representation from old opening (maintain user's work)
         # 4. Generate from filling (last resort)
-        
+
         representation_to_use = None
-        
+        reuse_mapped_representation = False
+        existing_mapping_source = None
+
         if existing_opening_occurrence:
             representation = ifcopenshell.util.representation.get_representation(
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
-            
-            if (representation and 
-                representation.RepresentationType == 'MappedRepresentation' and 
-                len(representation.Items) == 1 and 
-                representation.Items[0].is_a("IfcMappedItem")):
-                source_rep = representation.Items[0].MappingSource.MappedRepresentation
-                # Prefer Tessellation from existing occurrence over preserved representation
-                if source_rep.RepresentationType == 'Tessellation':
-                    representation_to_use = ifcopenshell.util.element.copy_deep(
-                        tool.Ifc.get(),
-                        source_rep,
-                        exclude=["IfcGeometricRepresentationContext"]
-                    )
+
+            if (
+                representation
+                and representation.RepresentationType == "MappedRepresentation"
+                and len(representation.Items) == 1
+                and representation.Items[0].is_a("IfcMappedItem")
+            ):
+                # PRESERVE the mapped structure - reuse the same RepresentationMap
+                existing_mapping_source = representation.Items[0].MappingSource
+                reuse_mapped_representation = True
             else:
                 representation_to_use = ifcopenshell.util.representation.resolve_representation(representation)
-        
-        if not representation_to_use:
+
+        if not representation_to_use and not reuse_mapped_representation:
             template_rep = self.get_opening_template_from_type(filling)
-            if template_rep and template_rep.RepresentationType == 'Tessellation':
+            if template_rep and template_rep.RepresentationType == "Tessellation":
                 representation_to_use = template_rep
-        
-        if not representation_to_use and preserved_representation:
+
+        if not representation_to_use and not reuse_mapped_representation and preserved_representation:
             representation_to_use = preserved_representation
-        
-        if not representation_to_use:
+
+        if not representation_to_use and not reuse_mapped_representation:
             opening_obj = tool.Ifc.get_object(opening)
             if opening_obj:
                 tool.Ifc.unlink(element=opening)
@@ -293,13 +324,38 @@ class FilledOpeningGenerator:
             filling_obj = tool.Ifc.get_object(filling)
             representation_to_use = self.generate_opening_from_filling(filling, filling_obj)
 
-        mapped_representation = ifcopenshell.api.geometry.map_representation(
-            tool.Ifc.get(), representation=representation_to_use
-        )
+        # Create the mapped representation
+        if reuse_mapped_representation:
+            # Reuse existing RepresentationMap - don't create a new one!
+            context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+            new_mapped_item = tool.Ifc.get().create_entity(
+                "IfcMappedItem",
+                MappingSource=existing_mapping_source,
+                MappingTarget=tool.Ifc.get().create_entity(
+                    "IfcCartesianTransformationOperator3D",
+                    Axis1=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0)),
+                    Axis2=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 1.0, 0.0)),
+                    LocalOrigin=tool.Ifc.get().create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+                    Scale=1.0,
+                    Axis3=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0)),
+                ),
+            )
+            mapped_representation = tool.Ifc.get().create_entity(
+                "IfcShapeRepresentation",
+                ContextOfItems=context,
+                RepresentationIdentifier="Body",
+                RepresentationType="MappedRepresentation",
+                Items=[new_mapped_item],
+            )
+        else:
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                tool.Ifc.get(), representation=representation_to_use
+            )
+
         ifcopenshell.api.geometry.assign_representation(
             tool.Ifc.get(), product=opening, representation=mapped_representation
         )
-        
+
         # update voided object representation...
         voided_elements = ifcopenshell.util.element.get_parts(voided_element) or [voided_element]
         for voided_element in voided_elements:
@@ -314,31 +370,31 @@ class FilledOpeningGenerator:
                 representation=representation,
             )
 
-    def get_opening_template_from_type(self, filling: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    def get_opening_template_from_type(
+        self, filling: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
         Check if the filling's type has a stored opening template from library import.
         """
         element_type = ifcopenshell.util.element.get_type(filling)
-        
+
         if not element_type:
             return None
-        
+
         desc = element_type.Description
-        
+
         if not desc or "||BonsaiOpeningTemplate:" not in desc:
             return None
-        
+
         # Extract template ID
         marker = desc.split("||BonsaiOpeningTemplate:")[-1]
         template_id = int(marker.split("||")[0])
-        
+
         try:
             template_rep = tool.Ifc.get().by_id(template_id)
             # Make a copy so we don't reuse the same representation instance
             copied = ifcopenshell.util.element.copy_deep(
-                tool.Ifc.get(),
-                template_rep,
-                exclude=["IfcGeometricRepresentationContext"]
+                tool.Ifc.get(), template_rep, exclude=["IfcGeometricRepresentationContext"]
             )
             return copied
         except:

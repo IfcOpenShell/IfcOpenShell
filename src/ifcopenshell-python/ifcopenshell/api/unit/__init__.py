@@ -26,9 +26,9 @@ equipment.
 from .. import wrap_usecases
 from .add_context_dependent_unit import add_context_dependent_unit
 from .add_conversion_based_unit import add_conversion_based_unit
+from .add_derived_unit import add_derived_unit
 from .add_monetary_unit import add_monetary_unit
 from .add_si_unit import add_si_unit
-from .add_derived_unit import add_derived_unit
 from .assign_unit import assign_unit
 from .edit_derived_unit import edit_derived_unit
 from .edit_monetary_unit import edit_monetary_unit

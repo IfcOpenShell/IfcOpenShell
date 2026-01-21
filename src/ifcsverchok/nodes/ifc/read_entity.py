@@ -18,11 +18,12 @@
 
 import bpy
 import ifcopenshell
+from bpy.props import StringProperty
+from sverchok.data_structure import flatten_data, updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
-from bpy.props import StringProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, ensure_min_nesting, flatten_data
 
 
 class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

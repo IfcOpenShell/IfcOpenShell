@@ -16,18 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import re
 import glob
 import json
-import typing
+import os
+import re
 import shutil
 import subprocess
-
+import typing
 from dataclasses import dataclass, field
 
 import pytest
-import ifcopenshell
+
 import ifcopenshell.guid
 import ifcopenshell.template
 

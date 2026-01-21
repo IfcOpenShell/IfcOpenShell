@@ -17,8 +17,8 @@
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-from behave import step
 
+from behave import step
 from bimtester import util
 from bimtester.ifc import IfcStore
 from bimtester.lang import _

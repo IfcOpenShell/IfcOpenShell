@@ -18,26 +18,21 @@ foreach(file ${IFCPARSE_CPP_FILES_ALL})
 endforeach()
 
 foreach(schema ${SCHEMA_VERSIONS})
-    list(APPEND IFCPARSE_H_FILES
-        Ifc${schema}.h
-        Ifc${schema}-definitions.h
-    )
-    list(APPEND IFCPARSE_CPP_FILES
-        Ifc${schema}.cpp
-        Ifc${schema}-schema.cpp
-    )
+    list(APPEND IFCPARSE_H_FILES Ifc${schema}.h Ifc${schema}-definitions.h)
+    list(APPEND IFCPARSE_CPP_FILES Ifc${schema}.cpp Ifc${schema}-schema.cpp)
 endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
 target_compile_definitions(IfcParse PUBLIC ${SCHEMA_DEFINITIONS})
-set_target_properties(IfcParse
+set_target_properties(
+    IfcParse
     PROPERTIES
-    COMPILE_FLAGS -DIFC_PARSE_EXPORTS
-    VERSION "${PROJECT_VERSION}"
-    SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
-    PUBLIC_HEADER "${IFCPARSE_H_FILES}"
+        COMPILE_FLAGS -DIFC_PARSE_EXPORTS
+        VERSION "${PROJECT_VERSION}"
+        SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+        PUBLIC_HEADER "${IFCPARSE_H_FILES}"
 )
 
 if(IFCXML_SUPPORT)
@@ -56,7 +51,8 @@ endif()
 
 target_link_libraries(IfcParse ${ROCKSDB_LIBRARIES})
 
-install(TARGETS IfcParse
+install(
+    TARGETS IfcParse
     EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ifcparse"
     INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"

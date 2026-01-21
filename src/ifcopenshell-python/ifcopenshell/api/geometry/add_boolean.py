@@ -17,8 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import ifcopenshell.util.element
+
 from typing import Literal
+
+import ifcopenshell.util.element
 
 
 def add_boolean(

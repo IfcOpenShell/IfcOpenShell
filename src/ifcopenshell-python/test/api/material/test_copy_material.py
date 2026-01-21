@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
+import ifcopenshell.api.context
+import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
-import ifcopenshell.api.context
-import ifcopenshell.api.material
 import ifcopenshell.util.element
+import test.bootstrap
 
 
 class TestCopyMaterial(test.bootstrap.IFC4):

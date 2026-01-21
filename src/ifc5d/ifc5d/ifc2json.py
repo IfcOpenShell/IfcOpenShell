@@ -1,10 +1,10 @@
-import ifcopenshell
-import ifcopenshell.util.unit
 from typing import Any
+
+import ifcopenshell
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
+import ifcopenshell.util.unit
 from ifcopenshell.util.classification import get_references
-
 
 CostItem = dict[str, Any]
 

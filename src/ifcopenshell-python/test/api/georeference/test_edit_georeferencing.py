@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api.root
 import ifcopenshell.api.context
 import ifcopenshell.api.georeference
+import ifcopenshell.api.root
 import ifcopenshell.util.element
+import test.bootstrap
 
 
 class TestEditGeoreferencing(test.bootstrap.IFC4):

@@ -16,11 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
-import ifcopenshell.util.placement
+import test.bootstrap
 
 
 class TestUnassignContainer(test.bootstrap.IFC4):

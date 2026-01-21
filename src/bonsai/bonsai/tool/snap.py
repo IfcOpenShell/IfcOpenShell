@@ -553,7 +553,11 @@ class Snap(bonsai.core.tool.Snap):
         def filter_snapping_points_by_type(snapping_points):
             options = ["Plane", "Axis"]
             props = tool.Snap.get_snap_props()
-            for prop in props.__annotations__.keys():
+            try:
+                annotations = props.__annotations__
+            except AttributeError:
+                annotations = type(props).__annotations__
+            for prop in annotations.keys():
                 if getattr(props, prop):
                     options.append(props.rna_type.properties[prop].name)
 
@@ -563,7 +567,11 @@ class Snap(bonsai.core.tool.Snap):
         def filter_snapping_points_by_group(detected_snaps):
             options = ["Wireframe", "Axis", "Plane"]
             props = tool.Snap.get_snap_groups()
-            for prop in props.__annotations__.keys():
+            try:
+                annotations = props.__annotations__
+            except AttributeError:
+                annotations = type(props).__annotations__
+            for prop in annotations.keys():
                 if getattr(props, prop):
                     options.append(props.rna_type.properties[prop].name)
             filtered_groups = [group for group in detected_snaps if group["group"] in options]

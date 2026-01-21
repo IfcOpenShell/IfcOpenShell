@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+from logging import Logger
+from typing import Any
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.type
 import ifcopenshell.util.element
-from logging import Logger
-from typing import Any
 
 
 class Patcher:

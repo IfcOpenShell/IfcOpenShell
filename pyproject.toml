@@ -1,3 +1,13 @@
+[project]
+name = "IfcOpenShell"
+version = "0.0.0"
+dependencies = [
+    "black==25.12",
+    "ruff==0.14.13",
+    "poethepoet",
+    "gersemi==0.25.1",
+]
+
 [tool.black]
 line-length = 120
 include = '''
@@ -47,6 +57,7 @@ select = [
     "UP",          # pyupgrade
     "RUF015",      # next() > list_comprehension[0]
     "RUF022",      # sort __all__
+    "I",           # import sorting
 ]
 ignore = [
     "FA100", # Conflicts with Blender using annotations for props definitions.
@@ -70,3 +81,5 @@ ruff.sequence = ["ruff-main", "ruff-old"]
 black = "black ."
 
 format.sequence = ["black", "ruff-main", "ruff-old"]
+
+cmake-format = "gersemi cmake src --in-place"

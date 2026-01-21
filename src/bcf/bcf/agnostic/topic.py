@@ -1,13 +1,14 @@
 import tempfile
+from pathlib import Path
+from typing import Optional, Union
+
+import bcf.agnostic.model as mdl
 import bcf.v2.bcfxml
 import bcf.v2.model
 import bcf.v2.topic
 import bcf.v3.bcfxml
 import bcf.v3.model
 import bcf.v3.topic
-import bcf.agnostic.model as mdl
-from pathlib import Path
-from typing import Union, Optional
 from typing_extensions import assert_never
 
 TopicHandler = Union[bcf.v2.topic.TopicHandler, bcf.v3.topic.TopicHandler]

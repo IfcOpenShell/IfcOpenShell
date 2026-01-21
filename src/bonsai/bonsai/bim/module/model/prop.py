@@ -33,6 +33,9 @@ from typing import TYPE_CHECKING, Literal, get_args, Union, Any, Optional
 from collections.abc import Callable
 from mathutils import Vector
 
+if TYPE_CHECKING:
+    import sverchok.node_tree
+
 
 def get_ifc_class(self: "BIMModelProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not AuthoringData.is_loaded:
@@ -1694,27 +1697,20 @@ class ProductPreviewItem(PropertyGroup):
         value_2d: tuple[float, float]
 
 
-class BIMProductPreviewProperties(PropertyGroup):
-    verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
-    edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
-    tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
-
-    if TYPE_CHECKING:
-        verts: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-        edges: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-        tris: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-
-
 def update_is_editing(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:
     if self.is_editing:
         return
 
+    assert isinstance(self.id_data, bpy.types.Object)
     tool.Model.clean_up_parametric_geometry(self.id_data)
-    del self["is_editing"]
-    del self["geo_nodes"]
+    self.property_unset("is_editing")
+    self.property_unset("geo_nodes")
+    self.property_unset("sverchok_nodes")
 
 
 def update_geo_nodes(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:
+    assert isinstance(self.id_data, bpy.types.Object)
+
     if self.geo_nodes:
         tool.Model.setup_parametric_geometry(self.id_data)
         return
@@ -1725,14 +1721,25 @@ def update_geo_nodes(self: "BIMExternalParametricGeometryProperties", context: b
     del self["geo_nodes"]
 
 
+def poll_sverchok_nodes(self: "BIMExternalParametricGeometryProperties", node_tree: bpy.types.NodeTree) -> bool:
+    return node_tree.bl_idname == "SverchCustomTreeType"
+
+
 class BIMExternalParametricGeometryProperties(bpy.types.PropertyGroup):
-    is_editing: bpy.props.BoolProperty(
+    is_editing: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Is Editing Paramteric Geometry",
         description="Toggle editing parametric geometry.",
         default=False,
         update=update_is_editing,
     )
-    geo_nodes: bpy.props.PointerProperty(
+    geometry_source: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Geometry Source",
+        items=[
+            ("GEONODES", "Geometry Nodes", ""),
+            ("IFCSVERCHOK", "IFC Sverchok", ""),
+        ],
+    )
+    geo_nodes: bpy.props.PointerProperty(  # pyright: ignore[reportRedeclaration]
         name="Geometry Nodes",
         description="Geometry nodes tree to use as a source for representation.",
         type=bpy.types.GeometryNodeTree,
@@ -1740,6 +1747,15 @@ class BIMExternalParametricGeometryProperties(bpy.types.PropertyGroup):
         poll=lambda self, node_tree: not node_tree.name.startswith("BBIM_EPG"),
     )
 
+    sverchok_nodes: bpy.props.PointerProperty(  # pyright: ignore[reportRedeclaration]
+        name="Sverchok Nodes",
+        description="Sverchok node tree to use as a source for representation.",
+        type=bpy.types.NodeTree,
+        poll=poll_sverchok_nodes,
+    )
+
     if TYPE_CHECKING:
         is_editing: bool
+        geometry_source: Literal["GEONODES", "IFCSVERCHOK"]
         geo_nodes: Union[bpy.types.GeometryNodeTree, None]
+        sverchok_nodes: Union[sverchok.node_tree.SverchCustomTree, None]

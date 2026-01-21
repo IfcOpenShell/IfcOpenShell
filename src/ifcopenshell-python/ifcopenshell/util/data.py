@@ -17,10 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import numpy as np
-import ifcopenshell
-from typing import Any, Union
+
 from dataclasses import dataclass
+from typing import Any, Union
+
+import numpy as np
+
+import ifcopenshell
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 

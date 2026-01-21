@@ -42,6 +42,38 @@ class Search(bonsai.core.tool.Search):
     def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]
 
+    @classmethod
+    def get_group_data(cls, group: ifcopenshell.entity_instance) -> dict:
+        return json.loads(group.Description)
+
+    @classmethod
+    def import_filter_structure(
+        cls, filter_structure: list, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+    ) -> None:
+        filter_groups.clear()
+
+        for group_data in filter_structure:
+            if not isinstance(group_data, list):
+                continue
+
+            filter_group = filter_groups.add()
+
+            for filter_data in group_data:
+                if not isinstance(filter_data, dict):
+                    continue
+
+                ifc_filter = filter_group.filters.add()
+                ifc_filter.type = filter_data.get("type", "")
+                ifc_filter.name = filter_data.get("name", "")
+                ifc_filter.value = filter_data.get("value", "")
+                ifc_filter.pset = filter_data.get("pset", "")
+                ifc_filter.comparison = filter_data.get("comparison", "=")
+                filter_mode = filter_data.get("filter_mode", "ADD")
+                if filter_mode in ["ADD", "SUBTRACT", "FILTER"]:
+                    ifc_filter.filter_mode = filter_mode
+                else:
+                    ifc_filter.filter_mode = "ADD"
+
     FilterModule = Union[Literal["search", "csv", "diff", "drawing_include", "drawing_exclude"], str]
 
     @classmethod
@@ -80,52 +112,237 @@ class Search(bonsai.core.tool.Search):
             for ifc_filter in filter_group.filters:
                 if not ifc_filter.value:
                     continue
-                if ifc_filter.type == "instance":
-                    if "bpy.data.texts" in ifc_filter.value:
-                        data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
-                        filter_group_query.append(bpy.data.texts[data_name].as_string())
-                    else:
-                        filter_group_query.append(ifc_filter.value)
-                elif ifc_filter.type == "entity":
-                    filter_group_query.append(ifc_filter.value)
-                elif ifc_filter.type == "attribute":
-                    if not ifc_filter.name:
-                        continue
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"{ifc_filter.name}{comparison}{value}")
-                elif ifc_filter.type == "type":
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"type{comparison}{value}")
-                elif ifc_filter.type == "material":
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"material{comparison}{value}")
-                elif ifc_filter.type == "property":
-                    if not ifc_filter.pset or not ifc_filter.name:
-                        continue
-                    pset = cls.wrap_value(ifc_filter, ifc_filter.pset)
-                    name = cls.wrap_value(ifc_filter, ifc_filter.name)
-                    comparison = ifc_filter.comparison
-                    value = cls.wrap_value(ifc_filter, ifc_filter.value)
-                    filter_group_query.append(f"{pset}.{name} {comparison} {value}")
-                elif ifc_filter.type == "classification":
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"classification{comparison}{value}")
-                elif ifc_filter.type == "location":
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"location{comparison}{value}")
-                elif ifc_filter.type == "group":
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"group{comparison}{value}")
-                elif ifc_filter.type == "parent":
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"parent{comparison}{value}")
-                elif ifc_filter.type == "query":
-                    keys = cls.wrap_value(ifc_filter, ifc_filter.name)
-                    comparison = ifc_filter.comparison or "="
-                    value = cls.wrap_value(ifc_filter, ifc_filter.value)
-                    filter_group_query.append(f"query:{keys}{comparison}{value}")
-            query.append(", ".join(filter_group_query))
+
+                query_part = cls._export_single_filter(ifc_filter)
+                if query_part:
+                    filter_group_query.append(query_part)
+
+            if filter_group_query:
+                query.append(", ".join(filter_group_query))
         return " + ".join(query)
+
+    @classmethod
+    def _export_single_filter(cls, ifc_filter: BIMFacet) -> str:
+        preferences = tool.Blender.get_addon_preferences()
+
+        if ifc_filter.type == "instance":
+            if "bpy.data.texts" in ifc_filter.value:
+                data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
+                value = bpy.data.texts[data_name].as_string()
+            else:
+                value = ifc_filter.value
+
+            if preferences.chain_filter_with_set_operations:
+                value = value.lstrip("!")
+                if ifc_filter.filter_mode == "SUBTRACT":
+                    value = f"!{value}"
+            return value
+
+        elif ifc_filter.type == "entity":
+            value = ifc_filter.value
+
+            if preferences.chain_filter_with_set_operations:
+                value = value.lstrip("!")
+                if ifc_filter.filter_mode == "SUBTRACT":
+                    value = f"!{value}"
+            return value
+        elif ifc_filter.type == "attribute":
+            if not ifc_filter.name:
+                return ""
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"{ifc_filter.name}{comparison}{value}"
+        elif ifc_filter.type == "type":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"type{comparison}{value}"
+        elif ifc_filter.type == "material":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"material{comparison}{value}"
+        elif ifc_filter.type == "property":
+            if not ifc_filter.pset or not ifc_filter.name:
+                return ""
+            pset = cls.wrap_value(ifc_filter, ifc_filter.pset)
+            name = cls.wrap_value(ifc_filter, ifc_filter.name)
+            comparison = ifc_filter.comparison
+            value = cls.wrap_value(ifc_filter, ifc_filter.value)
+            return f"{pset}.{name} {comparison} {value}"
+        elif ifc_filter.type == "classification":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"classification{comparison}{value}"
+        elif ifc_filter.type == "location":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"location{comparison}{value}"
+        elif ifc_filter.type == "group":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"group{comparison}{value}"
+        elif ifc_filter.type == "parent":
+            comparison, value = cls.get_comparison_and_value(ifc_filter)
+            return f"parent{comparison}{value}"
+        elif ifc_filter.type == "query":
+            keys = cls.wrap_value(ifc_filter, ifc_filter.name)
+            comparison = ifc_filter.comparison or "="
+            value = cls.wrap_value(ifc_filter, ifc_filter.value)
+            return f"query:{keys}{comparison}{value}"
+        return ""
+
+    @classmethod
+    def execute_filter_groups(cls, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]) -> set:
+        """
+        Execute filter groups with simplified chaining support.
+        Within a single group chain, all filters chain sequentially with ADD/SUBTRACT/FILTER modes.
+        Groups are combined with union (same as original " + " behavior).
+        """
+        preferences = tool.Blender.get_addon_preferences()
+
+        all_group_results = []
+
+        for group_idx, filter_group in enumerate(filter_groups):
+            group_results = set()
+
+            for filter_index, ifc_filter in enumerate(filter_group.filters):
+                if not ifc_filter.value:
+                    continue
+
+                query = cls._export_single_filter(ifc_filter)
+                if not query:
+                    continue
+
+                if filter_index == 0:
+                    mode = "ADD"
+                else:
+                    if preferences.chain_filter_with_set_operations:
+                        mode = ifc_filter.filter_mode
+                    else:
+                        mode = "FILTER" if group_results else "ADD"
+
+                if mode == "ADD":
+                    results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+                    group_results.update(results)
+
+                elif mode == "SUBTRACT":
+                    if group_results:
+                        query_without_prefix = query[1:] if query.startswith("!") else query
+                        elements_to_remove = ifcopenshell.util.selector.filter_elements(
+                            tool.Ifc.get(), query_without_prefix, elements=group_results
+                        )
+                        group_results -= elements_to_remove
+                    else:
+                        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+                        group_results.update(results)
+
+                elif mode == "FILTER":
+                    if group_results:
+                        results = ifcopenshell.util.selector.filter_elements(
+                            tool.Ifc.get(), query, elements=group_results
+                        )
+                        group_results = results
+                    else:
+                        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+                        group_results.update(results)
+
+            if group_results:
+                all_group_results.append(group_results)
+
+        final_results = set()
+        for group_results in all_group_results:
+            final_results.update(group_results)
+
+        return final_results
+
+    @classmethod
+    def execute_filter_groups_from_json(
+        cls, data: dict, ifc_file: ifcopenshell.file
+    ) -> set[ifcopenshell.entity_instance]:
+        """Execute filter groups from JSON data with filter_structure
+
+        This is used by drawing include/exclude to properly handle ADD/SUBTRACT/FILTER modes
+        without needing to instantiate Blender property groups.
+        """
+        filter_structure = data.get("filter_structure", [])
+
+        all_group_results = []
+        for group_data in filter_structure:
+            group_results = set()
+
+            for filter_data in group_data:
+                filter_mode = filter_data.get("filter_mode", "ADD")
+                filter_type = filter_data.get("type", "")
+                value = filter_data.get("value", "")
+
+                if not filter_type or not value:
+                    continue
+
+                query_part = None
+                if filter_type == "entity":
+                    query_part = value
+                elif filter_type == "attribute":
+                    name = filter_data.get("name", "")
+                    if not name:
+                        continue
+                    comparison = filter_data.get("comparison", "=")
+                    query_part = f"{name}{comparison}{cls._wrap_json_value(value)}"
+                elif filter_type == "property":
+                    pset = filter_data.get("pset", "")
+                    name = filter_data.get("name", "")
+                    if not pset or not name:
+                        continue
+                    comparison = filter_data.get("comparison", " = ")
+                    wrapped_pset = cls._wrap_json_value(pset)
+                    wrapped_name = cls._wrap_json_value(name)
+                    wrapped_value = cls._wrap_json_value(value)
+                    query_part = f"{wrapped_pset}.{wrapped_name} {comparison} {wrapped_value}"
+                elif filter_type == "type":
+                    query_part = f"type={cls._wrap_json_value(value)}"
+                elif filter_type == "material":
+                    query_part = f"material={cls._wrap_json_value(value)}"
+                elif filter_type == "classification":
+                    query_part = f"classification={cls._wrap_json_value(value)}"
+                elif filter_type == "location":
+                    query_part = f"location={cls._wrap_json_value(value)}"
+                elif filter_type == "group":
+                    query_part = f"group={cls._wrap_json_value(value)}"
+                elif filter_type == "parent":
+                    query_part = f"parent={cls._wrap_json_value(value)}"
+                elif filter_type == "query":
+                    name = filter_data.get("name", "")
+                    if not name:
+                        continue
+                    keys = cls._wrap_json_value(name)
+                    comparison = filter_data.get("comparison", "=")
+                    wrapped_value = cls._wrap_json_value(value)
+                    query_part = f"query:{keys}{comparison}{wrapped_value}"
+                elif filter_type == "instance":
+                    query_part = value
+
+                if not query_part:
+                    continue
+
+                if filter_mode == "FILTER" and group_results:
+                    results = ifcopenshell.util.selector.filter_elements(ifc_file, query_part, elements=group_results)
+                    group_results = results
+                elif filter_mode == "SUBTRACT":
+                    results = ifcopenshell.util.selector.filter_elements(ifc_file, query_part)
+                    group_results -= results
+                else:  # ADD
+                    results = ifcopenshell.util.selector.filter_elements(ifc_file, query_part)
+                    group_results.update(results)
+
+            if group_results:
+                all_group_results.append(group_results)
+
+        final_results = set()
+        for group_results in all_group_results:
+            final_results.update(group_results)
+
+        return final_results
+
+    @classmethod
+    def _wrap_json_value(cls, value: str) -> str:
+        """Wrap value for use in query string"""
+        if value.startswith("/") and value.endswith("/"):
+            return value
+        elif value in ("NULL", "TRUE", "FALSE"):
+            return value
+        return '"' + value.replace('"', '\\"') + '"'
 
     @classmethod
     def get_comparison_and_value(
@@ -349,7 +566,8 @@ class ImportFilterQueryTransformer(lark.Transformer):
     def facet_list(self, args):
         new = self.filter_groups.add()
         global_ids = []
-        for arg in args:
+        is_first_group = len(self.filter_groups) == 1
+        for filter_index, arg in enumerate(args):
             if arg["type"] == "instance" and global_ids:
                 if "bpy.data.texts" in new2.value:
                     data_name = new2.value.split("bpy.data.texts")[1][2:-2]
@@ -374,21 +592,26 @@ class ImportFilterQueryTransformer(lark.Transformer):
                 new2.pset = arg["pset"]
             if "comparison" in arg:
                 new2.comparison = arg["comparison"] or "="
+            if "filter_mode" in arg:
+                new2.filter_mode = arg["filter_mode"]
+            elif not is_first_group and filter_index == 0 and arg["type"] in ("entity", "instance"):
+                if arg.get("filter_mode", "ADD") != "SUBTRACT":
+                    new2.filter_mode = "FILTER"
 
     def facet(self, args):
         return args[0]
 
     def instance(self, args):
         if args[0].data == "not":
-            return {"type": "instance", "value": "!" + args[1].children[0].value}
+            return {"type": "instance", "value": args[1].children[0].value, "filter_mode": "SUBTRACT"}
         else:
-            return {"type": "instance", "value": args[0].children[0].value}
+            return {"type": "instance", "value": args[0].children[0].value, "filter_mode": "ADD"}
 
     def entity(self, args):
         if args[0].data == "not":
-            return {"type": "entity", "value": "!" + args[1].children[0].value}
+            return {"type": "entity", "value": args[1].children[0].value, "filter_mode": "SUBTRACT"}
         else:
-            return {"type": "entity", "value": args[0].children[0].value}
+            return {"type": "entity", "value": args[0].children[0].value, "filter_mode": "ADD"}
 
     def attribute(self, args):
         name, comparison, value = args

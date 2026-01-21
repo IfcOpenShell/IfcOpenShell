@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: activate
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: recursive
 
@@ -73,7 +73,7 @@ jobs:
         make package
       working-directory: build
     - name: Upload 
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         # Artifact name
         name: ifcos-artifacts
@@ -86,12 +86,12 @@ jobs:
     name: Docker Build, Tag, Push
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
     
     - name: Download 
-      uses: actions/download-artifact@v6.0.0
+      uses: actions/download-artifact@v7.0.0
       with:
         # Artifact name
         name: ifcos-artifacts

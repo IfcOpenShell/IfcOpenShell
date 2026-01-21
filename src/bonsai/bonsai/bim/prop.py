@@ -60,6 +60,10 @@ def update_tab(self: "BIMAreaProperties", context: bpy.types.Context) -> None:
     self.previous_tab = self.tab
 
 
+def update_is_visible(self: "BIMTabVisibility", context: bpy.types.Context) -> None:
+    bonsai.bim.handler.refresh_ui_data()
+
+
 def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> None:
     tool.Blender.setup_tabs()
     screen = context.id_data
@@ -92,7 +96,12 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
 
     # Support weird buildingSMART dictionary mappings which behave like enums
     items: list[tuple[str, str, str]] = []
-    data = json.loads(prop.enum_items)
+    if not prop.enum_items:
+        return items
+    try:
+        data = json.loads(prop.enum_items)
+    except Exception:
+        return items
 
     if isinstance(data, dict):
         for k, v in data.items():
@@ -493,8 +502,9 @@ def get_tab(
             ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
             ("FM", "Facility Management", "", "PACKAGE", 7),
             ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
+            ("BOOKMARK", "Bookmark", "", "SOLO_ON", 9),
             None,
-            ("BLENDER", "Blender Properties", "", "BLENDER", 9),
+            ("BLENDER", "Blender Properties", "", "BLENDER", 10),
         ]
     return get_tab.enum_items
 
@@ -527,6 +537,29 @@ class BIMTabProperties(PropertyGroup):
         tab: str
         active_tab: bool
         inactive_tab: bool
+
+
+class BIMTabVisibility(PropertyGroup):
+    name: StringProperty(name="Tab Name")
+    is_visible: BoolProperty(name="Is Visible", default=True, update=update_is_visible)
+
+    if TYPE_CHECKING:
+        name: str
+        is_visible: bool
+
+
+class BIMPanelVisibility(PropertyGroup):
+    name: StringProperty(name="Name")
+    label: StringProperty(name="Label")
+    tab_name: StringProperty(name="Tab Name")
+    is_visible: BoolProperty(name="Is Visible in Tab", default=True, update=update_is_visible)
+    is_bookmarked: BoolProperty(name="Is Bookmarked", default=False, update=update_is_visible)
+
+    if TYPE_CHECKING:
+        name: str
+        tab_name: str
+        is_visible: bool
+        is_bookmarked: bool
 
 
 class BIMProperties(PropertyGroup):
@@ -602,7 +635,6 @@ class BIMProperties(PropertyGroup):
         name="Mass Unit",
         default="KILOGRAM",
     )
-
     time_unit: EnumProperty(
         items=[
             ("SECOND", "Second", "Seconds"),
@@ -613,6 +645,11 @@ class BIMProperties(PropertyGroup):
         name="Time Unit",
         default="HOUR",
     )
+    tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
+    active_tab_visibility_index: IntProperty(name="Active Tab Visibility Index")
+    panel_visibilities: CollectionProperty(type=BIMPanelVisibility, name="Panel Properties")
+    active_panel_visibility_index: IntProperty(name="Active Panel Property Index")
+
     if TYPE_CHECKING:
         is_dirty: bool
         schema_dir: str
@@ -627,6 +664,10 @@ class BIMProperties(PropertyGroup):
         volume_unit: str
         mass_unit: str
         time_unit: str
+        tab_visibilities: bpy.types.bpy_prop_collection_idprop[BIMTabVisibility]
+        active_tab_visibility_index: int
+        panel_visibilities: bpy.types.bpy_prop_collection_idprop[BIMPanelVisibility]
+        active_panel_visibility_index: int
 
 
 class IfcParameter(PropertyGroup):
@@ -760,12 +801,21 @@ class BIMFacet(PropertyGroup):
             ("!*=", "does not contain", ""),
         ],
     )
+    filter_mode: EnumProperty(
+        items=[
+            ("ADD", "Add", "Add results to the current selection"),
+            ("SUBTRACT", "Subtract", "Remove results from the current selection"),
+            ("FILTER", "Filter", "Filter the current selection"),
+        ],
+        default="ADD",
+    )
 
     if TYPE_CHECKING:
         pset: str
         value: str
         type: str
         comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
+        filter_mode: Literal["ADD", "SUBTRACT", "FILTER"]
 
 
 class BIMFilterGroup(PropertyGroup):

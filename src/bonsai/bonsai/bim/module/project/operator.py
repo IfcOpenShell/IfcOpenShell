@@ -715,11 +715,8 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             if element.is_a("IfcSurfaceStyle") and not tool.Ifc.get_object_by_identifier(element.id()):
                 ifc_importer.create_style(element)
 
-
     def store_opening_template_from_library(
-        self,
-        element: ifcopenshell.entity_instance,
-        library_file: ifcopenshell.file
+        self, element: ifcopenshell.entity_instance, library_file: ifcopenshell.file
     ) -> None:
         """
         Find an opening representation in the library and copy it to the current file
@@ -729,36 +726,36 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             library_element = library_file.by_guid(element.GlobalId)
         except:
             return
-        
+
         # Find occurrences with openings in the library
         library_occurrences = ifcopenshell.util.element.get_types(library_element)
-        
+
         for occurrence in library_occurrences:
             if not getattr(occurrence, "FillsVoids", None):
                 continue
-            
+
             library_opening = occurrence.FillsVoids[0].RelatingOpeningElement
             library_opening_rep = ifcopenshell.util.representation.get_representation(
                 library_opening, "Model", "Body", "MODEL_VIEW"
             )
-            
+
             if not library_opening_rep:
                 continue
-                
+
             # Check if mapped representation
-            if (library_opening_rep.RepresentationType == 'MappedRepresentation' and 
-                len(library_opening_rep.Items) == 1 and 
-                library_opening_rep.Items[0].is_a("IfcMappedItem")):
-                
+            if (
+                library_opening_rep.RepresentationType == "MappedRepresentation"
+                and len(library_opening_rep.Items) == 1
+                and library_opening_rep.Items[0].is_a("IfcMappedItem")
+            ):
+
                 mapped_rep = library_opening_rep.Items[0].MappingSource.MappedRepresentation
-                
+
                 # Store ALL representation types (Tessellation, SweptSolid, etc.)
                 template_rep = ifcopenshell.util.element.copy_deep(
-                    self.file,
-                    mapped_rep,
-                    exclude=["IfcGeometricRepresentationContext"]
+                    self.file, mapped_rep, exclude=["IfcGeometricRepresentationContext"]
                 )
-                
+
                 # Store reference in type's Description
                 current_desc = element.Description or ""
                 element.Description = f"{current_desc}||BonsaiOpeningTemplate:{template_rep.id()}"
@@ -1059,6 +1056,41 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return tooltip
 
     def execute(self, context):
+        if (
+            tool.Blender.get_addon_preferences().save_metadata_blend_file
+            and self.should_start_fresh_session
+            and not self.is_advanced
+        ):
+            filepath = self.get_filepath()
+
+            # First, load the IFC file temporarily to check for metadata document
+            temp_ifc = None
+            has_metadata_doc = False
+            try:
+                temp_ifc = ifcopenshell.open(str(filepath))
+                for doc in temp_ifc.by_type("IfcDocumentInformation"):
+                    if getattr(doc, "Scope", None) == "BLEND_METADATA":
+                        has_metadata_doc = True
+                        break
+            except:
+                pass
+            finally:
+                temp_ifc = None
+
+            if has_metadata_doc:
+                suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+                if str(filepath).lower().endswith(".ifc"):
+                    metadata_path = Path(str(filepath)[:-4] + suffix)
+                else:
+                    metadata_path = Path(str(filepath) + suffix)
+                if metadata_path.exists() and metadata_path.is_file():
+                    try:
+                        bpy.ops.bim.load_blend_metadata_and_ifc(filepath=filepath)
+                        self.report({"INFO"}, f"Loaded metadata file: {metadata_path.name}")
+                        return {"FINISHED"}
+                    except Exception as e:
+                        self.report({"WARNING"}, f"Failed to load metadata file, using regular load: {e}")
+
         @persistent
         def load_handler(*args):
             bpy.app.handlers.load_post.remove(load_handler)
@@ -1105,6 +1137,10 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             props.is_loading = True
             props.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             props.use_relative_project_path = self.use_relative_path
+
+            metadata_doc = tool.Project.get_metadata_document_information()
+            props.should_save_metadata_for_this_file = metadata_doc is not None
+
             tool.Blender.register_toolbar()
             tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
@@ -1733,6 +1769,22 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         settings.json_version = self.json_version
         settings.json_compact = self.json_compact
 
+        pprops = tool.Project.get_project_props()
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file and pprops.should_save_metadata_for_this_file:
+            suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+            if output_file.lower().endswith(".ifc"):
+                metadata_filename = os.path.basename(output_file)[:-4] + suffix
+            else:
+                metadata_filename = os.path.basename(output_file) + suffix
+
+            if not tool.Project.get_metadata_document_information():
+                tool.Project.create_metadata_document_information(metadata_filename)
+            else:
+                tool.Project.update_metadata_document_information(metadata_filename)
+        else:
+            if not pprops.should_save_metadata_for_this_file:
+                tool.Project.remove_metadata_document_information()
+
         ifc_exporter = export_ifc.IfcExporter(settings)
         print("Starting export")
         settings.logger.info("Starting export")
@@ -1747,15 +1799,33 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         bim_props = tool.Blender.get_bim_props()
         if bim_props.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
             tool.Ifc.set_path(output_file)
-        save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
-        if save_blend_file:
-            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         bim_props.is_dirty = False
+
+        pprops = tool.Project.get_project_props()
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file and pprops.should_save_metadata_for_this_file:
+            try:
+                bpy.ops.bim.save_blend_metadata_file()
+                suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+                if output_file.lower().endswith(".ifc"):
+                    blendmetadata_path = output_file[:-4] + suffix
+                else:
+                    blendmetadata_path = output_file + suffix
+                self.report(
+                    {"INFO"},
+                    f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}',
+                )
+            except Exception as e:
+                self.report({"ERROR"}, f"Failed to save blend metadata file: {e}")
+        else:
+            save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
+            if save_blend_file:
+                bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+            self.report(
+                {"INFO"},
+                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+            )
+
         bonsai.bim.handler.refresh_ui_data()
-        self.report(
-            {"INFO"},
-            f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
-        )
 
     @classmethod
     def description(cls, context, properties):
@@ -3093,4 +3163,44 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.uninstall()
         tool.Blender.update_viewport()
 
+        return {"FINISHED"}
+
+
+class LoadBlendMetadataAndIFC(bpy.types.Operator):
+    bl_idname = "bim.load_blend_metadata_and_ifc"
+    bl_label = "Load Blend Metadata and IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(name="IFC File Path", default="")
+
+    def execute(self, context):
+        ifc_file = self.filepath
+        if not ifc_file:
+            props = tool.Blender.get_bim_props()
+            ifc_file = getattr(props, "ifc_file", None)
+
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file path set.")
+            return {"CANCELLED"}
+
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            metadata_path = ifc_file[:-4] + suffix
+        else:
+            metadata_path = ifc_file + suffix
+
+        # Define a handler to load the IFC project after the blend file is loaded and context is restored
+        @persistent
+        def load_handler(*args):
+            bpy.app.handlers.load_post.remove(load_handler)
+            # After loading metadata, clear blend warning (no geometry loaded yet)
+            props = tool.Blender.get_bim_props()
+            props.has_blend_warning = False
+            # Load the IFC file into the current session (preserve layout)
+            bpy.ops.bim.load_project(filepath=ifc_file, should_start_fresh_session=False)
+            # Disable editing styles
+            bpy.ops.bim.disable_editing_styles()
+            self.report({"INFO"}, f"Loaded metadata and IFC: {metadata_path}, {ifc_file}")
+
+        bpy.app.handlers.load_post.append(load_handler)
+        bpy.ops.wm.open_mainfile(filepath=metadata_path)
         return {"FINISHED"}

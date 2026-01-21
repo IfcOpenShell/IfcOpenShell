@@ -17,16 +17,20 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import sys
+from collections.abc import Iterable
+from decimal import Decimal
+from types import EllipsisType
+from typing import Any, Optional, Union
+
 import lark
 import numpy as np
-import ifcopenshell.api.pset
+
 import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import ifcopenshell.util
 import ifcopenshell.util.attribute
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
-import ifcopenshell.util.fm
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.pset
@@ -34,15 +38,6 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
-from decimal import Decimal
-from typing import Optional, Any, Union
-from collections.abc import Iterable
-
-if sys.version_info >= (3, 10):
-    from types import EllipsisType
-else:
-    EllipsisType = type(...)
-
 
 filter_elements_grammar = lark.Lark(
     """start: filter_group
@@ -139,21 +134,32 @@ get_element_grammar = lark.Lark(
 )
 
 format_grammar = lark.Lark(
-    """start: function
+    """start: expression
 
-    function: round | number | int | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
+    ?expression: add_sub
+    ?add_sub: mul_div
+        | add_sub "+" mul_div   -> add
+        | add_sub "-" mul_div   -> subtract
+    ?mul_div: function
+        | mul_div "*" function  -> multiply
+        | mul_div "/" function  -> divide
+    
+    function: round | number | int | format_length | lower | upper | title | concat | substr | variable | ESCAPED_STRING | NUMBER | "(" expression ")"
 
-    round: "round(" function "," NUMBER ")"
-    number: "number(" function ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
-    int: "int(" function ")"
+    variable: "{{" query_path "}}"
+    query_path: /[^}]+/
+
+    round: "round(" expression "," NUMBER ")"
+    number: "number(" expression ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
+    int: "int(" expression ")"
     format_length: metric_length | imperial_length
-    metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
-    imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING ["," boolean]] ")"
-    lower: "lower(" function ")"
-    upper: "upper(" function ")"
-    title: "title(" function ")"
-    concat: "concat(" function ("," function)* ")"
-    substr: "substr(" function "," SIGNED_INT ["," SIGNED_INT] ")"
+    metric_length: "metric_length(" expression "," NUMBER "," NUMBER ")"
+    imperial_length: "imperial_length(" expression "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING ["," boolean]] ")"
+    lower: "lower(" expression ")"
+    upper: "upper(" expression ")"
+    title: "title(" expression ")"
+    concat: "concat(" expression ("," expression)* ")"
+    substr: "substr(" expression "," SIGNED_INT ["," SIGNED_INT] ")"
     boolean: TRUE | FALSE
 
     TRUE: "true" | "True" | "TRUE"
@@ -189,8 +195,82 @@ format_grammar = lark.Lark(
 
 
 class FormatTransformer(lark.Transformer):
+    def __init__(self, element=None):
+        """Initialize transformer with optional element for variable substitution"""
+        super().__init__()
+        self.element = element
+
     def start(self, args):
         return args[0]
+
+    def expression(self, args):
+        return args[0]
+
+    def variable(self, args):
+        """Handle variable substitution like {{z}} or {{Pset_Wall.FireRating}}"""
+        if self.element is None:
+            return "0"  # Default value if no element context
+
+        query_path = args[0]
+        try:
+            value = get_element_value(self.element, query_path)
+            if value is None:
+                return "0"
+            # Convert to string for further processing
+            return str(value)
+        except:
+            return "0"  # Return default on error
+
+    def query_path(self, args):
+        """Extract the query path from variable"""
+        return str(args[0]).strip()
+
+    def add(self, args):
+        """Handle addition operation"""
+        left, right = args
+        try:
+            left_val = float(left) if left != "None" and left is not None else 0.0
+            right_val = float(right) if right != "None" and right is not None else 0.0
+            result = left_val + right_val
+            # Return integer if result has no decimal part
+            if result % 1 == 0:
+                return str(int(result))
+            return str(result)
+        except (ValueError, TypeError):
+            # If can't convert to numbers, concatenate as strings
+            return str(left) + str(right)
+
+    def subtract(self, args):
+        """Handle subtraction operation"""
+        left, right = args
+        left_val = float(left) if left != "None" and left is not None else 0.0
+        right_val = float(right) if right != "None" and right is not None else 0.0
+        result = left_val - right_val
+        if result % 1 == 0:
+            return str(int(result))
+        return str(result)
+
+    def multiply(self, args):
+        """Handle multiplication operation"""
+        left, right = args
+        left_val = float(left) if left != "None" and left is not None else 0.0
+        right_val = float(right) if right != "None" and right is not None else 0.0
+        result = left_val * right_val
+        if result % 1 == 0:
+            return str(int(result))
+        return str(result)
+
+    def divide(self, args):
+        """Handle division operation"""
+        left, right = args
+        left_val = float(left) if left != "None" and left is not None else 0.0
+        right_val = float(right) if right != "None" and right is not None else 1.0
+        if right_val == 0:
+            return "inf"  # or raise an error, or return "0"
+        result = left_val / right_val
+        if result % 1 == 0:
+            return str(int(result))
+        return str(result)
 
     def function(self, args):
         return args[0]
@@ -211,7 +291,7 @@ class FormatTransformer(lark.Transformer):
         return str(args[0]).title()
 
     def concat(self, args):
-        return "".join(args)
+        return "".join(str(arg) for arg in args)
 
     def substr(self, args):
         if len(args) == 3:
@@ -241,13 +321,14 @@ class FormatTransformer(lark.Transformer):
         return str(result)
 
     def number(self, args):
-        if isinstance(args[0], str):
-            args[0] = float(args[0]) if "." in args[0] else int(args[0])
+        arg_val = args[0]
+        if isinstance(arg_val, str):
+            arg_val = float(arg_val) if "." in arg_val else int(arg_val)
         if len(args) >= 3 and args[2]:
-            return "{:,}".format(args[0]).replace(".", "*").replace(",", args[2]).replace("*", args[1])
+            return "{:,}".format(arg_val).replace(".", "*").replace(",", args[2]).replace("*", args[1])
         elif len(args) >= 2 and args[1]:
-            return "{}".format(args[0]).replace(".", args[1])
-        return "{:,}".format(args[0])
+            return "{}".format(arg_val).replace(".", args[1])
+        return "{:,}".format(arg_val)
 
     def format_length(self, args):
         return args[0]
@@ -287,7 +368,8 @@ class FormatTransformer(lark.Transformer):
         )
 
     def int(self, args: list[str]) -> str:
-        return str(int(float(args[0])))
+        value = 0.0 if args[0] == "None" else args[0] or 0.0
+        return str(int(float(value)))
 
 
 class GetElementTransformer(lark.Transformer):
@@ -313,8 +395,18 @@ class GetElementTransformer(lark.Transformer):
         return args[1:-1].replace("\\", "")
 
 
-def format(query: str) -> str:
-    return FormatTransformer().transform(format_grammar.parse(query))
+def format(query: str, element: Optional[ifcopenshell.entity_instance] = None) -> str:
+    """Format a query string with optional element context for variable substitution.
+
+    :param query: Format query string (can include {{variable}} placeholders)
+    :param element: Optional IFC element for variable substitution
+    :return: Formatted string
+
+    Example:
+        format("{{z}} / 2", element)  # Substitutes element's z value
+        format("imperial_length({{z}} / 2, 4)", element)  # Uses z in calculation
+    """
+    return FormatTransformer(element).transform(format_grammar.parse(query))
 
 
 def get_element_value(element: ifcopenshell.entity_instance, query: str) -> Any:

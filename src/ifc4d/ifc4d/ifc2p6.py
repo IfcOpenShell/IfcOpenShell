@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
-import uuid
 import datetime
+import uuid
+import xml.etree.ElementTree as ET
+
 import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
-import xml.etree.ElementTree as ET
+
 from .common import ScheduleIfcGenerator
 
 

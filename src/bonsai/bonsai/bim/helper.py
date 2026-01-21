@@ -428,7 +428,11 @@ def get_enum_items(
     else:
         annotations_data = data
 
-    prop = annotations_data.__annotations__[prop_name]
+    try:
+        annotations = annotations_data.__annotations__
+    except AttributeError:
+        annotations = type(annotations_data).__annotations__
+    prop = annotations[prop_name]
     items = prop.keywords.get("items")
     if items is None:
         return
@@ -498,6 +502,8 @@ def draw_filter(
         if data.data["saved_searches"]:
             row.operator("bim.load_search", text="", icon="IMPORT").module = module
         row.operator("bim.save_search", text="", icon="EXPORT").module = module
+        if data.data["saved_searches"]:
+            row.operator("bim.remove_search", text="", icon="REMOVE").module = module
         if module != "search":
             if module == "drawing_include":
                 row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "INCLUDE"
@@ -505,62 +511,272 @@ def draw_filter(
                 row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "EXCLUDE"
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
     row = layout.row(align=True)
-    row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
-    row.operator("bim.edit_filter_query", text="", icon="FILTER").module = module
+    preferences = tool.Blender.get_addon_preferences()
+    if not preferences.chain_filter_with_set_operations:
+        row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
+    else:
+        row.prop(sprops, "facet", text="")
+        op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+        op.type = sprops.facet
+        op.index = 0
+        op.module = module
+    op = row.operator("bim.edit_filter_query", text="", icon="FILTER")
+    if "module" in op.bl_rna.properties:
+        op.module = module
 
     for i, filter_group in enumerate(filter_groups):
         box = layout.box()
 
-        row = box.row(align=True)
-        row.prop(sprops, "facet", text="")
-        op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
-        op.type = sprops.facet
-        op.index = i
-        op.module = module
-        op = row.operator("bim.remove_filter_group", text="", icon="X")
-        op.index = i
-        op.module = module
+        preferences = tool.Blender.get_addon_preferences()
+        if not preferences.chain_filter_with_set_operations:
+            row = box.row(align=True)
+            row.prop(sprops, "facet", text="")
+            op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+            op.type = sprops.facet
+            op.index = i
+            op.module = module
+            op = row.operator("bim.remove_filter_group", text="", icon="X")
+            op.index = i
+            op.module = module
 
         for j, ifc_filter in enumerate(filter_group.filters):
             if ifc_filter.type == "entity":
                 row = box.row(align=True)
+                preferences = tool.Blender.get_addon_preferences()
+                show_mode_toggle = preferences.chain_filter_with_set_operations and j > 0
+                if show_mode_toggle:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="FILE_3D")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "attribute":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "name", text="", icon="COPY_ID")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+                op.suggestion_type = "attribute_name"
                 row.prop(ifc_filter, "value", text="")
+                if ifc_filter.name:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "attribute_value"
             elif ifc_filter.type == "type":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="FILE_VOLUME")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "material":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="MATERIAL")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "property":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+                op.suggestion_type = "pset"
                 row.prop(ifc_filter, "name", text="")
+                if ifc_filter.pset:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "property_name"
                 row.prop(ifc_filter, "comparison", text="")
                 row.prop(ifc_filter, "value", text="")
+                if ifc_filter.pset and ifc_filter.name:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "property_value"
             elif ifc_filter.type == "classification":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="OUTLINER")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "location":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="PACKAGE")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "group":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="OUTLINER_COLLECTION")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "parent":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="FILE_PARENT")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
             elif ifc_filter.type == "query":
                 row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")
                 row.prop(ifc_filter, "comparison", text="")
                 row.prop(ifc_filter, "value", text="")
             elif ifc_filter.type == "instance":
                 row = box.row(align=True)
+                preferences = tool.Blender.get_addon_preferences()
+                show_mode_toggle = preferences.chain_filter_with_set_operations and j > 0
+                if show_mode_toggle:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
                 row.prop(ifc_filter, "value", text="", icon="GRIP")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
                 op = row.operator("bim.select_filter_elements", text="", icon="EYEDROPPER")
                 op.group_index = i
                 op.index = j

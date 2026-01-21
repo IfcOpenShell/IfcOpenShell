@@ -17,15 +17,15 @@
 # along with bSDD.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import uuid
+import http.server
 import time
 import urllib.parse
-import requests
+import uuid
 import webbrowser
-import http.server
-from typing import TypedDict, Literal, Optional, TYPE_CHECKING, Any
-from typing_extensions import NotRequired
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
 
+import requests
+from typing_extensions import NotRequired
 
 if TYPE_CHECKING:
     import ifcopenshell
@@ -256,7 +256,7 @@ class ClassPropertyValueItemContractV1(TypedDict):
     sortNumber: NotRequired[int]
 
 
-class PropertyContractV4(TypedDict):
+class PropertyContractV5(TypedDict):
     dictionaryUri: NotRequired[str]
     activationDateUtc: str
     code: str
@@ -832,16 +832,14 @@ class Client:
         }
         return self.get(endpoint, params)
 
-    def get_property(self, uri, include_classes=False, language_code="", version: int = 4) -> PropertyContractV4:
+    def get_property(self, uri, language_code="", version: int = 5) -> PropertyContractV5:
         """
-        Get Property Detail
-        this API replaces Property
+        Get Property details.
+        If you also need the list of classes using the property, then use api/Property/Classes
         """
-
         endpoint = f"Property/v{version}"
         params = {
             "uri": uri,
-            "includeClasses": include_classes,
             "LanguageCode": language_code,
         }
         return self.get(endpoint, params)

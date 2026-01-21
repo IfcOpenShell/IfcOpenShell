@@ -16,19 +16,26 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
+
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.alignment
 import ifcopenshell.geom
-import ifcopenshell.util.unit
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-import numpy as np
+import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
-
-from ifcopenshell.api.alignment._update_curve_segment_transition_code import _update_curve_segment_transition_code
-from ifcopenshell.api.alignment._map_alignment_horizontal_segment import _map_alignment_horizontal_segment
-from ifcopenshell.api.alignment._map_alignment_vertical_segment import _map_alignment_vertical_segment
-from ifcopenshell.api.alignment._map_alignment_cant_segment import _map_alignment_cant_segment
+from ifcopenshell.api.alignment._map_alignment_cant_segment import (
+    _map_alignment_cant_segment,
+)
+from ifcopenshell.api.alignment._map_alignment_horizontal_segment import (
+    _map_alignment_horizontal_segment,
+)
+from ifcopenshell.api.alignment._map_alignment_vertical_segment import (
+    _map_alignment_vertical_segment,
+)
+from ifcopenshell.api.alignment._update_curve_segment_transition_code import (
+    _update_curve_segment_transition_code,
+)
 
 
 def _add_curve_segment_to_composite_curve(

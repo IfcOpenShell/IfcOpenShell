@@ -16,20 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api.alignment
-import math
 
 import numpy as np
 
 import ifcopenshell
 import ifcopenshell.geom
-import ifcopenshell.guid
-import ifcopenshell.template
-from ifcopenshell import entity_instance
-from ifcopenshell import ifcopenshell_wrapper
-import ifcopenshell.util
-import ifcopenshell.util.alignment
+from ifcopenshell import entity_instance, ifcopenshell_wrapper
 
 
 def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np.ndarray:

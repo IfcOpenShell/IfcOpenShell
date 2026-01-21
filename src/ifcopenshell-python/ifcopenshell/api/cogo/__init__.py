@@ -22,8 +22,8 @@ Coordinate Geometry (cogo) functions primarily for survey points and control mon
 
 from .add_survey_point import add_survey_point
 from .assign_survey_point import assign_survey_point
-from .edit_survey_point import edit_survey_point
 from .bearing2dd import bearing2dd
+from .edit_survey_point import edit_survey_point
 
 __all__ = [
     "add_survey_point",

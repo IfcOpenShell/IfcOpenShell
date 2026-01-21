@@ -17,28 +17,30 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
+
 import datetime
-import ifcopenshell
-from xmlschema.validators.exceptions import XMLSchemaValidationError
-from xmlschema import XMLSchema
-from xmlschema import etree_tostring
+import os
+from typing import Any, Optional, Union
 from xml.etree import ElementTree as ET
+
+import ifcopenshell
+from xmlschema import XMLSchema, etree_tostring
+from xmlschema.validators.exceptions import XMLSchemaValidationError
+
 from .facet import (
-    Facet,
-    Entity,
     Attribute,
+    Cardinality,
     Classification,
-    Property,
-    PartOf,
+    Entity,
+    Facet,
+    FacetFailure,
     Material,
+    PartOf,
+    Property,
     Restriction,
     get_pset,
     get_psets,
-    Cardinality,
-    FacetFailure,
 )
-from typing import Optional, Union, Any
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
@@ -298,23 +300,15 @@ class Specification:
             if not is_applicable:
                 continue
             self.applicable_entities.append(element)
-            for facet in self.requirements:
-                result = facet(element)
-                is_pass = bool(result)
-                if self.maxOccurs != 0:  # This is a required or optional specification
-                    if is_pass:
+            if self.maxOccurs != 0:  # Requirements are skipped for prohibited applicability
+                for facet in self.requirements:
+                    result = facet(element)
+                    if bool(result):
                         self.passed_entities.add(element)
                         facet.passed_entities.add(element)
                     else:
                         self.failed_entities.add(element)
                         facet.failures.append(FacetFailure(element=element, reason=str(result)))
-                else:  # This is a prohibited specification
-                    if is_pass:
-                        self.failed_entities.add(element)
-                        facet.failures.append(FacetFailure(element=element, reason=str(result)))
-                    else:
-                        self.passed_entities.add(element)
-                        facet.passed_entities.add(element)
 
         self.status = True
         for facet in self.requirements:

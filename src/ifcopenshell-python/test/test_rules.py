@@ -1,12 +1,12 @@
+import glob
 import os
 import sys
-import glob
 
 import pytest
 import tabulate
 
-import ifcopenshell.validate
 import ifcopenshell.express.rule_executor
+import ifcopenshell.validate
 
 
 @pytest.mark.parametrize(

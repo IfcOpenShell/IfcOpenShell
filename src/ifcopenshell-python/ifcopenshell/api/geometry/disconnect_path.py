@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.element
 from typing import Optional
+
+import ifcopenshell
+import ifcopenshell.util.element
 
 
 def disconnect_path(

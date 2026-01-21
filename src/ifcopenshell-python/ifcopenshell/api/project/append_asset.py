@@ -16,20 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Callable
+from functools import partial
+from typing import Any, Literal, Optional, Union, get_args
+
 import ifcopenshell
-import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.api.geometry
-import ifcopenshell.api.type
-import ifcopenshell.api.project
 import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.owner.settings
+import ifcopenshell.api.project
+import ifcopenshell.api.type
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-from typing import Optional, Any, Union, Literal, get_args, Callable
-from functools import partial
-
 
 APPENDABLE_ASSET = Literal[
     "IfcTypeProduct",
@@ -242,6 +243,59 @@ class Usecase:
         except RuntimeError:
             return None
 
+    def material_sets_are_equal(self, set1: ifcopenshell.entity_instance, set2: ifcopenshell.entity_instance) -> bool:
+        """Check if two material sets are structurally equivalent."""
+        if set1.is_a() != set2.is_a():
+            return False
+
+        ifc_class = set1.is_a()
+
+        if ifc_class == "IfcMaterialLayerSet":
+            layers1 = set1.MaterialLayers or []
+            layers2 = set2.MaterialLayers or []
+            if len(layers1) != len(layers2):
+                return False
+            for l1, l2 in zip(layers1, layers2):
+                if (l1.Material is None) != (l2.Material is None):
+                    return False
+                if l1.Material and l1.Material.Name != l2.Material.Name:
+                    return False
+                if l1.LayerThickness != l2.LayerThickness:
+                    return False
+
+        elif ifc_class == "IfcMaterialConstituentSet":
+            constituents1 = set1.MaterialConstituents or []
+            constituents2 = set2.MaterialConstituents or []
+            if len(constituents1) != len(constituents2):
+                return False
+            for c1, c2 in zip(constituents1, constituents2):
+                if (c1.Material is None) != (c2.Material is None):
+                    return False
+                if c1.Material and c1.Material.Name != c2.Material.Name:
+                    return False
+                if c1.Name != c2.Name:
+                    return False
+
+        elif ifc_class == "IfcMaterialProfileSet":
+            profiles1 = set1.MaterialProfiles or []
+            profiles2 = set2.MaterialProfiles or []
+            if len(profiles1) != len(profiles2):
+                return False
+            for p1, p2 in zip(profiles1, profiles2):
+                if (p1.Material is None) != (p2.Material is None):
+                    return False
+                if p1.Material and p1.Material.Name != p2.Material.Name:
+                    return False
+                if (p1.Profile is None) != (p2.Profile is None):
+                    return False
+                if p1.Profile:
+                    profile_name1 = getattr(p1.Profile, "ProfileName", None)
+                    profile_name2 = getattr(p2.Profile, "ProfileName", None)
+                    if profile_name1 != profile_name2:
+                        return False
+
+        return True
+
     def get_existing_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         """Get existing element for a library element.
 
@@ -263,13 +317,17 @@ class Usecase:
             name = element.Name
             return next((e for e in self.file.by_type("IfcMaterial") if e.Name == name), None)
 
-        elif element in MATERIAL_SETS:
+        elif element.is_a() in MATERIAL_SETS:
             ifc_class = element.is_a()
             name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
             material_set_name = getattr(element, name_attr)
             if material_set_name is None:
                 return
-            return next((e for e in self.file.by_type(ifc_class) if getattr(e, name_attr) == material_set_name), None)
+            for candidate in self.file.by_type(ifc_class):
+                if getattr(candidate, name_attr) == material_set_name:
+                    if self.material_sets_are_equal(element, candidate):
+                        return candidate
+            return None
 
         elif element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
@@ -664,12 +722,11 @@ class Usecase:
             name_attr = "LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name"
             material_set_name = getattr(element, name_attr)
             if material_set_name is not None:
-                existing_material_set = next(
-                    (e for e in ifc_file.by_type(ifc_class) if getattr(e, name_attr) == material_set_name), None
-                )
-                if existing_material_set is not None:
-                    reuse_identities[element_identity] = existing_material_set
-                    return existing_material_set
+                for candidate in ifc_file.by_type(ifc_class):
+                    if getattr(candidate, name_attr) == material_set_name:
+                        if self.material_sets_are_equal(element, candidate):
+                            reuse_identities[element_identity] = candidate
+                            return candidate
 
         elif element.is_a("IfcPresentationStyle"):
             style_name = element.Name

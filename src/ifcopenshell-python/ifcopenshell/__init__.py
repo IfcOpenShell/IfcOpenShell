@@ -54,13 +54,14 @@ Example:
         print(wall.Name)
 """
 from __future__ import annotations
+
 import os
 import sys
-import zipfile
 import tempfile
-from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING, Any, overload, Literal
+import zipfile
 from collections.abc import Generator, Sequence
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, overload
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -88,12 +89,10 @@ except Exception:
 
 # `_file`, `_stream` is used only for annotations inside this file,
 # see https://github.com/microsoft/pyright/discussions/9065.
-from .file import file as _file
-from .file import file
-
-from .file import rocksdb_lazy_instance
 from . import guid
 from .entity_instance import entity_instance, register_schema_attributes
+from .file import file, rocksdb_lazy_instance
+from .file import file as _file
 from .sql import sqlite, sqlite_entity
 
 # explicitly specify available imported symbols
@@ -103,6 +102,7 @@ __all__ = [
     "file",
     "guid",
     "ifcopenshell_wrapper",
+    "rocksdb_lazy_instance",
     "sqlite",
     "sqlite_entity",
     "stream",
@@ -110,8 +110,8 @@ __all__ = [
 ]
 
 try:
-    from .stream import stream as _stream, stream_entity
-    from .stream import stream
+    from .stream import stream, stream_entity
+    from .stream import stream as _stream
 except:
     pass
 

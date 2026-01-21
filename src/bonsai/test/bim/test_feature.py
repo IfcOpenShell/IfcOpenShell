@@ -96,7 +96,11 @@ class PanelSpy:
 
     def __getattr__(self, attr: str) -> PanelSpy | Any:
         self.spied_attr = attr
-        if annotation := self.blender_panel.__annotations__.get(attr, None):
+        try:
+            annotations = self.blender_panel.__annotations__
+        except AttributeError:
+            annotations = type(self.blender_panel).__annotations__
+        if annotation := annotations.get(attr, None):
             return annotation.keywords.get("default", None)  # An operator property
         if attr == "layout":
             return self
@@ -136,7 +140,11 @@ class PanelSpy:
             prop_type = props.bl_rna.properties[name].type
             enum_items = []
             if prop_type == "ENUM":
-                prop_keywords = props.__annotations__[name].keywords
+                try:
+                    annotations = props.__annotations__
+                except AttributeError:
+                    annotations = type(props).__annotations__
+                prop_keywords = annotations[name].keywords
                 items = prop_keywords.get("items")
                 if items is not None:
                     if isinstance(items, (list, tuple)):
@@ -329,7 +337,7 @@ def an_untestable_scenario():
 def an_empty_blender_session():
     IfcStore.purge()
     if not PYTEST_BLENDER_NO_BACKGROUND:
-        bpy.ops.wm.read_homefile(app_template="")
+        bpy.ops.wm.read_homefile(app_template="", use_factory_startup=True)
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)

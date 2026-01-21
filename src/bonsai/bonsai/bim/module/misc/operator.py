@@ -348,3 +348,24 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
                 )
             )
         return matrix
+
+
+class IfcSverchokUseBonsaiFile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.ifcsverchok_use_bonsai_file"
+    bl_label = "Use Bonsai IFC File"
+    bl_description = "Apply current IfcSverchok tree to the active Bonsai file."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        import sverchok.node_tree
+
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            self.report({"ERROR"}, "No active IFC file.")
+            return {"CANCELLED"}
+
+        space_data = context.space_data
+        assert isinstance(space_data, bpy.types.SpaceNodeEditor)
+        node_tree = space_data.node_tree
+        assert isinstance(node_tree, sverchok.node_tree.SverchCustomTree)
+        tool.Model.run_ifcsverchok_graph_on_bonsai_file(node_tree)

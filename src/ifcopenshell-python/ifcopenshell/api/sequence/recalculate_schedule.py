@@ -17,7 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+
 import networkx as nx
+
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence

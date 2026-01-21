@@ -17,10 +17,11 @@
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-import ifcopenshell
-import ifcopenshell.guid
 import os
 from datetime import datetime
+
+import ifcopenshell
+import ifcopenshell.guid
 
 
 class CA2IFC:

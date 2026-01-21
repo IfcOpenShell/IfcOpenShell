@@ -1,21 +1,16 @@
 import os
-
 from typing import Optional
-
-from fastapi import APIRouter, Request, Form
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBasicCredentials, HTTPBasic
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-
-from models.request import *
-
-from repository.foundation import foundation_db
-from security.secure import authenticate_user, get_current_active_user
-
 from uuid import uuid4
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.templating import Jinja2Templates
+from models.request import *
+from repository.foundation import foundation_db
+from security.secure import authenticate_user, get_current_active_user, get_secrets
+
 from api.logging import LoggingRoute
-from security.secure import get_secrets
 
 secrets = get_secrets()
 

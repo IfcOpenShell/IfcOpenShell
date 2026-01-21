@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
+from collections.abc import Sequence
+
 import ifcopenshell
 from ifcopenshell import entity_instance
-from ifcopenshell.api.alignment import get_axis_subcontext
-from collections.abc import Sequence
-import math
 
 
 def _get_axis(file: ifcopenshell.file, Ds: float, rail_head_distance: float) -> entity_instance:

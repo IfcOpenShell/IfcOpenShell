@@ -17,23 +17,35 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.selector
-import ifcsverchok.helper
-from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty
-from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
+import ifcsverchok.helper as helper
+from ifcsverchok.ifcstore import SvIfcStore
 
 
-class SvIfcByQuery(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
+class SvIfcByQuery(bpy.types.Node, SverchCustomTreeNode, helper.SvIfcCore):
     bl_idname = "SvIfcByQuery"
     bl_label = "IFC By Query"
     query: StringProperty(name="Query", update=updateNode)
 
-    def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "query").prop_name = "query"
-        self.outputs.new("SvStringsSocket", "Entity")
+    def sv_init(self, context) -> None:
+        helper.create_socket(
+            self.inputs,
+            "query",
+            description="IFC Query string.",
+            data_type="list[list[str]]",
+            prop_name="query",
+        )
+        helper.create_socket(
+            self.outputs,
+            "Entity",
+            description="IFC Entities found by the query.",
+            data_type="set[ifcopenshell.entity_instance]",
+            prop_name="Entity",
+        )
 
     def process(self):
         if not self.inputs["query"].sv_get()[0][0]:
@@ -43,8 +55,8 @@ class SvIfcByQuery(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
         super().process()
 
     def process_ifc(self, query: str) -> None:
-        selector = ifcopenshell.util.selector.Selector()
-        self.outputs["Entity"].sv_set([selector.parse(self.file, query)])
+        elements = ifcopenshell.util.selector.filter_elements(self.file, query)
+        self.outputs["Entity"].sv_set(elements)
 
 
 def register():

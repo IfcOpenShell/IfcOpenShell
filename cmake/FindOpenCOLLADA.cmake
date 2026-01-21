@@ -1,4 +1,3 @@
-
 #
 # Input variables:
 # - `OPENCOLLADA_INCLUDE_DIR`
@@ -41,23 +40,37 @@ if(NOT OpenCOLLADA_DIR)
 
     if("${OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
         message(STATUS "No OpenCOLLADA library directory specified")
-        find_library(OPENCOLLADA_FRAMEWORK_LIB NAMES OpenCOLLADAFramework
-            PATHS /usr/lib64/opencollada /usr/lib/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
+        find_library(
+            OPENCOLLADA_FRAMEWORK_LIB
+            NAMES OpenCOLLADAFramework
+            PATHS /usr/lib64/opencollada /usr/lib/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib
+        )
         get_filename_component(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_FRAMEWORK_LIB} PATH)
     endif()
 
-    find_library(OpenCOLLADAFramework NAMES OpenCOLLADAFramework OpenCOLLADAFrameworkd PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
+    find_library(
+        OpenCOLLADAFramework
+        NAMES OpenCOLLADAFramework OpenCOLLADAFrameworkd
+        PATHS ${OPENCOLLADA_LIBRARY_DIR}
+        NO_DEFAULT_PATH
+    )
 
     if(OpenCOLLADAFramework)
         message(STATUS "OpenCOLLADA library files found")
     else()
-        message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA libraries. "
-            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
+        message(
+            FATAL_ERROR
+            "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA libraries. "
+            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed."
+        )
     endif()
 
     set(OPENCOLLADA_LIBRARY_DIR "${OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
 
-    set(OPENCOLLADA_INCLUDE_DIRS "${OPENCOLLADA_INCLUDE_DIR}/COLLADABaseUtils" "${OPENCOLLADA_INCLUDE_DIR}/COLLADAStreamWriter")
+    set(OPENCOLLADA_INCLUDE_DIRS
+        "${OPENCOLLADA_INCLUDE_DIR}/COLLADABaseUtils"
+        "${OPENCOLLADA_INCLUDE_DIR}/COLLADAStreamWriter"
+    )
 
     find_file(COLLADASWStreamWriter_h "COLLADASWStreamWriter.h" ${OPENCOLLADA_INCLUDE_DIRS})
 
@@ -66,8 +79,15 @@ if(NOT OpenCOLLADA_DIR)
         set(OPENCOLLADA_FOUND TRUE)
 
         set(OPENCOLLADA_LIBRARY_NAMES
-            GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
-            OpenCOLLADAStreamWriter UTF buffer ftoa
+            GeneratedSaxParser
+            MathMLSolver
+            OpenCOLLADABaseUtils
+            OpenCOLLADAFramework
+            OpenCOLLADASaxFrameworkLoader
+            OpenCOLLADAStreamWriter
+            UTF
+            buffer
+            ftoa
         )
 
         # Use the found OpenCOLLADAFramework as a template for all other OpenCOLLADA libraries
@@ -100,16 +120,22 @@ if(NOT OpenCOLLADA_DIR)
                 list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
             endif()
         else()
-            message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find PCRE. "
-                "Disable COLLADA_SUPPORT or fix PCRE_LIBRARY_DIR path to proceed.")
+            message(
+                FATAL_ERROR
+                "COLLADA_SUPPORT enabled, but unable to find PCRE. "
+                "Disable COLLADA_SUPPORT or fix PCRE_LIBRARY_DIR path to proceed."
+            )
         endif()
 
         if(MSVC)
             add_debug_variants(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" d)
         endif()
     else()
-        message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA headers. "
-            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
+        message(
+            FATAL_ERROR
+            "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA headers. "
+            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed."
+        )
     endif()
 endif(NOT OpenCOLLADA_DIR)
 

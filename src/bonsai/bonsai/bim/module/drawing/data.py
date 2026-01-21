@@ -22,6 +22,7 @@ import json
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+import ifcopenshell.util.selector
 import bonsai.tool as tool
 from pathlib import Path
 from typing import Any, Union
@@ -335,19 +336,17 @@ class DecoratorData:
 
     @classmethod
     def get_text_data(cls, obj: bpy.types.Object) -> dict[str, Any]:
-        """used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"\n
+        """used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"
         returns font size in mm for current ifc text object"""
         element = tool.Ifc.get_entity(obj)
         assert element
 
         # getting font size
         pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
-        # use `regular` as default
 
         # get font size
         classes = pset_data.get("Classes", None) or "regular"
         classes_split = classes.split()
-        # prioritize smaller font sizes just like in svg
         font_size_type = next(
             (font_size_type for font_size_type in FONT_SIZES if font_size_type in classes_split), "regular"
         )
@@ -361,15 +360,20 @@ class DecoratorData:
         literals = tool.Drawing.get_text_literal(obj, return_list=True)
         assert isinstance(literals, list)
         literals_data: list[dict[str, Any]] = []
-        product = tool.Drawing.get_assigned_product(element) or element
+
+        product = cls.get_product_for_element_values(obj, element)
+
         for literal in literals:
             literal_value = literal.Literal
+            try:
+                eval_value = cls.evaluate_formatting_expressions(literal_value, product)
+                current_value = tool.Drawing.replace_text_literal_variables(eval_value, product)
+            except Exception:
+                current_value = literal_value
             literal_data = {
                 "Literal": literal_value,
                 "BoxAlignment": literal.BoxAlignment,
-                "CurrentValue": tool.Drawing.replace_text_literal_variables(
-                    literal_value, product, reverse_list, list_separator
-                ),
+                "CurrentValue": current_value,
             }
             literals_data.append(literal_data)
 
@@ -381,6 +385,419 @@ class DecoratorData:
             "Reverse_List": reverse_list,
             "List_Separator": list_separator,
         }
+
+    @classmethod
+    def get_product_for_element_values(cls, text_obj: bpy.types.Object, element: ifcopenshell.entity_instance):
+        """Get the product to use for element values - either ProductUsed or assigned product"""
+        props = tool.Drawing.get_text_props(text_obj)
+        if props.literals:
+            for literal_props in props.literals:
+                if hasattr(literal_props, "product_used") and literal_props.product_used:
+                    return tool.Ifc.get_entity(literal_props.product_used)
+
+        assigned_product = tool.Drawing.get_assigned_product(element)
+        if assigned_product:
+            return assigned_product
+
+        return element
+
+    @classmethod
+    def evaluate_formatting_expressions(cls, text: str, element=None) -> str:
+        """Evaluate formatting expressions wrapped in backticks using ifcopenshell.util.selector.format, always passing element context"""
+        import re
+
+        def evaluate_expression(match):
+            try:
+                expression = match.group(1)
+                result = ifcopenshell.util.selector.format(expression, element)
+                return str(result)
+            except Exception as e:
+                return match.group(0)
+
+        return re.sub(r"``([^`]+)``", evaluate_expression, text)
+
+    @classmethod
+    def get_element_value_by_key(cls, element: ifcopenshell.entity_instance, key: str):
+        """Get element value by its key using IfcOpenShell selector syntax"""
+        try:
+            # Basic keys
+            if key == "id":
+                return element.id()
+            elif key == "class":
+                return element.is_a()
+            elif key == "predefined_type":
+                return ifcopenshell.util.element.get_predefined_type(element)
+
+            # Direct attributes
+            elif hasattr(element, key):
+                return getattr(element, key)
+
+            # Material keys
+            elif key.startswith("material"):
+                return cls._get_material_value(element, key)
+
+            # Type keys
+            elif key.startswith("type."):
+                if hasattr(element, "IsTypedBy") and element.IsTypedBy:
+                    element_type = element.IsTypedBy[0].RelatingType
+                    attr_name = key.split(".", 1)[1]
+                    if hasattr(element_type, attr_name):
+                        return getattr(element_type, attr_name)
+
+            elif key == "types.count":
+                if hasattr(element, "IsTypedBy") and element.IsTypedBy:
+                    element_type = element.IsTypedBy[0].RelatingType
+                    occurrence_count = 0
+                    if hasattr(element_type, "Types"):
+                        for rel in element_type.Types:
+                            if hasattr(rel, "RelatedObjects"):
+                                occurrence_count += len(rel.RelatedObjects)
+                    return occurrence_count
+
+            elif key == "occurrences.count":
+                if element.is_a("IfcTypeProduct"):
+                    occurrence_count = 0
+                    if hasattr(element, "Types"):
+                        for rel in element.Types:
+                            if hasattr(rel, "RelatedObjects"):
+                                occurrence_count += len(rel.RelatedObjects)
+                    return occurrence_count
+
+            # Spatial keys
+            elif key.startswith("container."):
+                container = ifcopenshell.util.element.get_container(element)
+                if container:
+                    attr_name = key.split(".", 1)[1]
+                    if hasattr(container, attr_name):
+                        return getattr(container, attr_name)
+
+            elif key.startswith("space."):
+                container = ifcopenshell.util.element.get_container(element)
+                current = container
+                while current:
+                    if current.is_a("IfcSpace"):
+                        attr_name = key.split(".", 1)[1]
+                        if hasattr(current, attr_name):
+                            return getattr(current, attr_name)
+                        break
+                    current = ifcopenshell.util.element.get_aggregate(current)
+
+            elif key.startswith("storey."):
+                container = ifcopenshell.util.element.get_container(element)
+                current = container
+                while current:
+                    if current.is_a("IfcBuildingStorey"):
+                        attr_name = key.split(".", 1)[1]
+                        if hasattr(current, attr_name):
+                            return getattr(current, attr_name)
+                        break
+                    current = ifcopenshell.util.element.get_aggregate(current)
+
+            elif key.startswith("building."):
+                container = ifcopenshell.util.element.get_container(element)
+                current = container
+                while current:
+                    if current.is_a("IfcBuilding"):
+                        attr_name = key.split(".", 1)[1]
+                        if hasattr(current, attr_name):
+                            return getattr(current, attr_name)
+                        break
+                    current = ifcopenshell.util.element.get_aggregate(current)
+
+            elif key.startswith("site."):
+                container = ifcopenshell.util.element.get_container(element)
+                current = container
+                while current:
+                    if current.is_a("IfcSite"):
+                        attr_name = key.split(".", 1)[1]
+                        if hasattr(current, attr_name):
+                            return getattr(current, attr_name)
+                        break
+                    current = ifcopenshell.util.element.get_aggregate(current)
+
+            # Parent keys
+            elif key.startswith("parent."):
+                parent = ifcopenshell.util.element.get_aggregate(element)
+                if parent:
+                    attr_name = key.split(".", 1)[1]
+                    if hasattr(parent, attr_name):
+                        return getattr(parent, attr_name)
+
+            # Group, system, zone keys
+            elif key.startswith(("group.", "system.", "zone.")):
+                prefix = key.split(".")[0]
+                attr_name = key.split(".", 1)[1]
+
+                if hasattr(element, "HasAssignments"):
+                    for assignment in element.HasAssignments:
+                        if assignment.is_a("IfcRelAssignsToGroup"):
+                            group = assignment.RelatingGroup
+                            if (
+                                prefix == "group"
+                                and group.is_a("IfcGroup")
+                                and not group.is_a("IfcSystem")
+                                and not group.is_a("IfcZone")
+                            ):
+                                if hasattr(group, attr_name):
+                                    return getattr(group, attr_name)
+                            elif prefix == "system" and group.is_a("IfcSystem"):
+                                if hasattr(group, attr_name):
+                                    return getattr(group, attr_name)
+                            elif prefix == "zone" and group.is_a("IfcZone"):
+                                if hasattr(group, attr_name):
+                                    return getattr(group, attr_name)
+
+            elif key in ("groups.count", "systems.count", "zones.count"):
+                prefix = key.split(".")[0]
+                count = 0
+
+                if hasattr(element, "HasAssignments"):
+                    for assignment in element.HasAssignments:
+                        if assignment.is_a("IfcRelAssignsToGroup"):
+                            group = assignment.RelatingGroup
+                            if (
+                                prefix == "groups"
+                                and group.is_a("IfcGroup")
+                                and not group.is_a("IfcSystem")
+                                and not group.is_a("IfcZone")
+                            ):
+                                count += 1
+                            elif prefix == "systems" and group.is_a("IfcSystem"):
+                                count += 1
+                            elif prefix == "zones" and group.is_a("IfcZone"):
+                                count += 1
+
+                return count
+
+            # Classification keys
+            elif key.startswith("classification."):
+                import re
+
+                match = re.match(r"classification\.(\d+)\.(\w+)", key)
+                if match:
+                    idx = int(match.group(1))
+                    attr_name = match.group(2)
+                    classifications = ifcopenshell.util.classification.get_references(element)
+                    if classifications and 0 <= idx < len(classifications):
+                        classification = classifications[idx]
+                        if hasattr(classification, attr_name):
+                            return getattr(classification, attr_name)
+
+            elif key == "classification.count":
+                classifications = ifcopenshell.util.classification.get_references(element)
+                return len(classifications) if classifications else 0
+
+            # Profile keys
+            elif key.startswith("profiles."):
+                import re
+
+                if key == "profiles.count":
+                    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+                    if material and material.is_a("IfcMaterialProfileSet") and hasattr(material, "MaterialProfiles"):
+                        return len(material.MaterialProfiles)
+                    return 0
+
+                match = re.match(r"profiles\.(\d+)\.(\w+)", key)
+                if match:
+                    idx = int(match.group(1))
+                    attr_name = match.group(2)
+                    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+                    if material and material.is_a("IfcMaterialProfileSet") and hasattr(material, "MaterialProfiles"):
+                        if 0 <= idx < len(material.MaterialProfiles):
+                            profile_item = material.MaterialProfiles[idx]
+                            if hasattr(profile_item, "Profile") and profile_item.Profile:
+                                profile = profile_item.Profile
+                                if hasattr(profile, attr_name):
+                                    return getattr(profile, attr_name)
+                return None
+
+            elif key.startswith("profile."):
+                attr_name = key.split(".", 1)[1]
+                if hasattr(element, "Representation") and element.Representation:
+                    for representation in element.Representation.Representations:
+                        if hasattr(representation, "Items"):
+                            for item in representation.Items:
+                                if item.is_a("IfcExtrudedAreaSolid") and hasattr(item, "SweptArea"):
+                                    profile = item.SweptArea
+                                    if hasattr(profile, attr_name):
+                                        return getattr(profile, attr_name)
+                return None
+
+            # Style keys
+            elif key.startswith("styles."):
+                import re
+
+                if key == "styles.count":
+                    try:
+                        styles = ifcopenshell.util.element.get_styles(element)
+                        return len(styles) if styles else 0
+                    except:
+                        return 0
+
+                match = re.match(r"styles\.(\d+)\.(\w+)", key)
+                if match:
+                    idx = int(match.group(1))
+                    attr_name = match.group(2)
+                    try:
+                        styles = ifcopenshell.util.element.get_styles(element)
+                        if styles and 0 <= idx < len(styles):
+                            style = styles[idx]
+                            if attr_name == "Color" and style.is_a("IfcSurfaceStyle"):
+                                # Extract color from surface style
+                                if hasattr(style, "Styles"):
+                                    for surface_style_elem in style.Styles:
+                                        if surface_style_elem.is_a("IfcSurfaceStyleRendering"):
+                                            if hasattr(surface_style_elem, "SurfaceColour"):
+                                                color = surface_style_elem.SurfaceColour
+                                                return f"RGB({color.Red:.2f}, {color.Green:.2f}, {color.Blue:.2f})"
+                            elif hasattr(style, attr_name):
+                                return getattr(style, attr_name)
+                    except:
+                        pass
+                return None
+
+            # Coordinate keys
+            elif key in ("x", "y", "z"):
+                if hasattr(element, "ObjectPlacement") and element.ObjectPlacement:
+                    matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+                    if matrix is not None:
+                        if key == "x":
+                            return matrix[0][3]
+                        elif key == "y":
+                            return matrix[1][3]
+                        elif key == "z":
+                            return matrix[2][3]
+                return None
+
+            elif key in ("easting", "northing", "elevation"):
+                if hasattr(element, "ObjectPlacement") and element.ObjectPlacement:
+                    try:
+                        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+                        if matrix is not None:
+                            ifc_file = element.wrapped_data.file
+                            project = ifc_file.by_type("IfcProject")[0] if ifc_file.by_type("IfcProject") else None
+
+                            if project:
+                                for context in project.RepresentationContexts or []:
+                                    if context.is_a("IfcGeometricRepresentationContext") and hasattr(
+                                        context, "HasCoordinateOperation"
+                                    ):
+                                        for coord_op in context.HasCoordinateOperation:
+                                            if coord_op.is_a("IfcMapConversion"):
+                                                if key == "easting":
+                                                    return matrix[0][3] + coord_op.Eastings
+                                                elif key == "northing":
+                                                    return matrix[1][3] + coord_op.Northings
+                                                elif key == "elevation":
+                                                    return matrix[2][3] + coord_op.OrthogonalHeight
+                    except:
+                        pass
+                return None
+
+            # Property sets / Quantity sets (must be checked last to avoid conflicts)
+            elif "." in key:
+                parts = key.split(".", 1)
+                if len(parts) == 2:
+                    pset_name, prop_name = parts
+                    psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+                    qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
+                    all_psets = {**psets, **qsets}
+
+                    if pset_name in all_psets and prop_name in all_psets[pset_name]:
+                        return all_psets[pset_name][prop_name]
+
+                    # Check for regex patterns (e.g., /Pset_.*Common/)
+                    import re
+
+                    if pset_name.startswith("/") and pset_name.endswith("/"):
+                        pattern = pset_name[1:-1]
+                        try:
+                            regex = re.compile(pattern)
+                            for actual_pset_name in all_psets.keys():
+                                if regex.match(actual_pset_name):
+                                    if prop_name in all_psets[actual_pset_name]:
+                                        return all_psets[actual_pset_name][prop_name]
+                                    elif prop_name.startswith("/") and prop_name.endswith("/"):
+                                        prop_pattern = prop_name[1:-1]
+                                        prop_regex = re.compile(prop_pattern)
+                                        for actual_prop_name, prop_value in all_psets[actual_pset_name].items():
+                                            if prop_regex.match(actual_prop_name):
+                                                return prop_value
+                        except re.error:
+                            pass
+
+        except Exception as e:
+            print(f"Error getting value for key '{key}': {e}")
+
+        return None
+
+    @classmethod
+    def _get_material_value(cls, element: ifcopenshell.entity_instance, key: str):
+        """Extract material values using correct selector syntax"""
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if not material:
+            return None
+
+        if key == "materials.count":
+            if material.is_a("IfcMaterialLayerSetUsage") and material.ForLayerSet:
+                layer_set = material.ForLayerSet
+                if hasattr(layer_set, "MaterialLayers"):
+                    return len(layer_set.MaterialLayers)
+            elif material.is_a("IfcMaterialLayerSet") and hasattr(material, "MaterialLayers"):
+                return len(material.MaterialLayers)
+            elif material.is_a("IfcMaterialProfileSet") and hasattr(material, "MaterialProfiles"):
+                return len(material.MaterialProfiles)
+            elif material.is_a("IfcMaterialConstituentSet") and hasattr(material, "MaterialConstituents"):
+                return len(material.MaterialConstituents)
+            elif material.is_a("IfcMaterial"):
+                return 1
+            return 0
+
+        if key == "material.Name":
+            return getattr(material, "Name", None)
+
+        elif key.startswith("material.item."):
+            import re
+
+            match = re.match(r"material\.item\.(\d+)\.(\w+)", key)
+            if match:
+                item_idx = int(match.group(1))
+                prop_name = match.group(2)
+
+                items = cls._get_material_items(material)
+                if items and 0 <= item_idx < len(items):
+                    item = items[item_idx]
+                    if prop_name == "Name" and hasattr(item, "Material") and item.Material:
+                        return getattr(item.Material, "Name", None)
+                    elif prop_name == "LayerThickness" and hasattr(item, "LayerThickness"):
+                        return getattr(item, "LayerThickness", None)
+                    elif hasattr(item, prop_name):
+                        return getattr(item, prop_name, None)
+
+            match = re.match(r"material\.item\.Material\.Name\.(\d+)", key)
+            if match:
+                item_idx = int(match.group(1))
+                items = cls._get_material_items(material)
+                if items and 0 <= item_idx < len(items):
+                    item = items[item_idx]
+                    if hasattr(item, "Material") and item.Material:
+                        return getattr(item.Material, "Name", None)
+
+        return None
+
+    @classmethod
+    def _get_material_items(cls, material):
+        """Get material items (layers, profiles, or constituents) from material"""
+        if material.is_a("IfcMaterialLayerSetUsage") and hasattr(material, "ForLayerSet") and material.ForLayerSet:
+            if hasattr(material.ForLayerSet, "MaterialLayers"):
+                return material.ForLayerSet.MaterialLayers
+        elif material.is_a("IfcMaterialLayerSet") and hasattr(material, "MaterialLayers"):
+            return material.MaterialLayers
+        elif material.is_a("IfcMaterialProfileSet") and hasattr(material, "MaterialProfiles"):
+            return material.MaterialProfiles
+        elif material.is_a("IfcMaterialConstituentSet") and hasattr(material, "MaterialConstituents"):
+            return material.MaterialConstituents
+        return None
 
     @classmethod
     def get_dimension_data(cls, obj: bpy.types.Object) -> dict[str, Any]:
@@ -514,3 +931,390 @@ class AnnotationData:
                 )
 
         return sorted(relating_types, key=lambda x: x["name"])
+
+
+class ElementValuesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+
+    @classmethod
+    def get_flattened_keys(cls, available_keys: dict[str, list[tuple[str, str]]]) -> list[tuple[str, str]]:
+        """Flatten all keys from all categories into a single list for numbering"""
+        all_keys_flat = []
+        for cat_name, cat_keys in available_keys.items():
+            for cat_key, cat_desc in cat_keys:
+                all_keys_flat.append((cat_key, cat_desc))
+        return all_keys_flat
+
+    @classmethod
+    def get_available_element_value_keys(
+        cls, element: ifcopenshell.entity_instance
+    ) -> dict[str, list[tuple[str, str]]]:
+        """Get all available selector syntax keys for the element"""
+        keys = {}
+
+        keys["Basic"] = cls._get_basic_keys(element)
+
+        keys["Attributes"] = cls._get_attribute_keys(element)
+
+        keys["Property Sets"] = cls._get_pset_keys(element)
+        keys["Quantity Sets"] = cls._get_qset_keys(element)
+
+        keys["Type"] = cls._get_type_keys(element)
+        keys["Spatial"] = cls._get_spatial_keys(element)
+        keys["Parent"] = cls._get_parent_keys(element)
+        keys["Groups"] = cls._get_group_keys(element)
+        keys["Systems"] = cls._get_system_keys(element)
+        keys["Zones"] = cls._get_zone_keys(element)
+
+        keys["Material"] = cls._get_material_keys(element)
+        keys["Styles"] = cls._get_style_keys(element)
+
+        keys["Classification"] = cls._get_classification_keys(element)
+
+        keys["Profiles"] = cls._get_profile_keys(element)
+
+        keys["Coordinates"] = cls._get_coordinate_keys()
+
+        return keys
+
+    @classmethod
+    def _get_basic_keys(cls, element):
+        keys = []
+        keys.append(("id", f"IFC ID: {element.id()}"))
+        keys.append(("class", f"IFC Class: {element.is_a()}"))
+
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type and predefined_type != "NOTDEFINED":
+            keys.append(("predefined_type", f"Predefined Type: {predefined_type}"))
+
+        return keys
+
+    @classmethod
+    def _get_attribute_keys(cls, element):
+        keys = []
+        excluded_attrs = {"id", "type", "GlobalId", "OwnerHistory", "ObjectPlacement", "Representation"}
+
+        for attr_name in element.get_info().keys():
+            if attr_name not in excluded_attrs:
+                attr_value = getattr(element, attr_name, None)
+                if attr_value is not None:
+                    keys.append((attr_name, f"{attr_name}: {attr_value}"))
+
+        return keys
+
+    @classmethod
+    def _get_pset_keys(cls, element):
+        keys = []
+        psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
+        if psets:
+            for pset_name, props in psets.items():
+                for prop_name, prop_value in props.items():
+                    if isinstance(prop_value, (str, int, float, bool)):
+                        keys.append((f"{pset_name}.{prop_name}", f"{pset_name}.{prop_name}: {prop_value}"))
+        return keys
+
+    @classmethod
+    def _get_qset_keys(cls, element):
+        keys = []
+        qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
+        if qsets:
+            for qset_name, quantities in qsets.items():
+                for qty_name, qty_value in quantities.items():
+                    if isinstance(qty_value, (str, int, float)):
+                        keys.append((f"{qset_name}.{qty_name}", f"{qset_name}.{qty_name}: {qty_value}"))
+        return keys
+
+    @classmethod
+    def _get_material_keys(cls, element):
+        keys = []
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if not material:
+            return keys
+
+        if hasattr(material, "Name") and material.Name:
+            keys.append(("material.Name", f"Material: {material.Name}"))
+
+        material_count = 0
+        if material.is_a("IfcMaterialLayerSetUsage") and material.ForLayerSet:
+            layer_set = material.ForLayerSet
+            if hasattr(layer_set, "MaterialLayers"):
+                material_count = len(layer_set.MaterialLayers)
+                for i, layer in enumerate(layer_set.MaterialLayers):
+                    if layer.Material and layer.Material.Name:
+                        keys.append(
+                            (f"material.item.Material.Name.{i}", f"Layer {i+1} Material Name: {layer.Material.Name}")
+                        )
+                    if hasattr(layer, "LayerThickness") and layer.LayerThickness:
+                        keys.append(
+                            (f"material.item.{i}.LayerThickness", f"Layer {i+1} Thickness: {layer.LayerThickness}")
+                        )
+
+        elif material.is_a("IfcMaterialLayerSet") and hasattr(material, "MaterialLayers"):
+            material_count = len(material.MaterialLayers)
+            for i, layer in enumerate(material.MaterialLayers):
+                if layer.Material and layer.Material.Name:
+                    keys.append(
+                        (f"material.item.Material.Name.{i}", f"Layer {i+1} Material Name: {layer.Material.Name}")
+                    )
+                if hasattr(layer, "LayerThickness") and layer.LayerThickness:
+                    keys.append((f"material.item.{i}.LayerThickness", f"Layer {i+1} Thickness: {layer.LayerThickness}"))
+
+        elif material.is_a("IfcMaterialProfileSet") and hasattr(material, "MaterialProfiles"):
+            material_count = len(material.MaterialProfiles)
+            for i, profile in enumerate(material.MaterialProfiles):
+                if profile.Material and profile.Material.Name:
+                    keys.append(
+                        (f"material.item.Material.Name.{i}", f"Profile {i+1} Material Name: {profile.Material.Name}")
+                    )
+
+        elif material.is_a("IfcMaterialConstituentSet") and hasattr(material, "MaterialConstituents"):
+            material_count = len(material.MaterialConstituents)
+            for i, constituent in enumerate(material.MaterialConstituents):
+                if constituent.Material and constituent.Material.Name:
+                    keys.append(
+                        (
+                            f"material.item.Material.Name.{i}",
+                            f"Constituent {i+1} Material Name: {constituent.Material.Name}",
+                        )
+                    )
+
+        elif material.is_a("IfcMaterial"):
+            material_count = 1
+
+        if material_count > 0:
+            keys.append(("materials.count", f"Material Count: {material_count}"))
+
+        return keys
+
+    @classmethod
+    def _get_style_keys(cls, element):
+        """Get presentation styles from the element"""
+        keys = []
+
+        styles = ifcopenshell.util.element.get_styles(element)
+        if styles:
+            keys.append(("styles.count", f"Style Count: {len(styles)}"))
+            for i, style in enumerate(styles):
+                if hasattr(style, "Name") and style.Name:
+                    keys.append((f"styles.{i}.Name", f"Style {i+1} Name: {style.Name}"))
+                if style.is_a("IfcSurfaceStyle") and hasattr(style, "Styles"):
+                    for surface_style_elem in style.Styles:
+                        if surface_style_elem.is_a("IfcSurfaceStyleRendering"):
+                            if hasattr(surface_style_elem, "SurfaceColour"):
+                                color = surface_style_elem.SurfaceColour
+                                if hasattr(color, "Red") and hasattr(color, "Green") and hasattr(color, "Blue"):
+                                    rgb = f"RGB({color.Red:.2f}, {color.Green:.2f}, {color.Blue:.2f})"
+                                    keys.append((f"styles.{i}.Color", f"Style {i+1} Color: {rgb}"))
+
+        return keys
+
+    @classmethod
+    def _get_type_keys(cls, element):
+        keys = []
+
+        if hasattr(element, "IsTypedBy") and element.IsTypedBy:
+            element_type = element.IsTypedBy[0].RelatingType
+            if hasattr(element_type, "Name") and element_type.Name:
+                keys.append(("type.Name", f"Type Name: {element_type.Name}"))
+
+        if element.is_a("IfcTypeProduct"):
+            occurrence_count = 0
+            if hasattr(element, "Types"):
+                for rel in element.Types:
+                    if hasattr(rel, "RelatedObjects"):
+                        occurrence_count += len(rel.RelatedObjects)
+            keys.append(("occurrences.count", f"Occurrence Count: {occurrence_count}"))
+
+        elif hasattr(element, "IsTypedBy") and element.IsTypedBy:
+            element_type = element.IsTypedBy[0].RelatingType
+            occurrence_count = 0
+            if hasattr(element_type, "Types"):
+                for rel in element_type.Types:
+                    if hasattr(rel, "RelatedObjects"):
+                        occurrence_count += len(rel.RelatedObjects)
+            keys.append(("types.count", f"Type Occurrence Count: {occurrence_count}"))
+
+        return keys
+
+    @classmethod
+    def _get_spatial_keys(cls, element):
+        keys = []
+
+        container = ifcopenshell.util.element.get_container(element)
+        if container and hasattr(container, "Name") and container.Name:
+            keys.append(("container.Name", f"Container: {container.Name}"))
+
+        space = None
+        current = container
+        while current:
+            if current.is_a("IfcSpace"):
+                space = current
+                break
+            current = ifcopenshell.util.element.get_aggregate(current)
+        if space and hasattr(space, "Name") and space.Name:
+            keys.append(("space.Name", f"Space: {space.Name}"))
+
+        storey = None
+        current = container
+        while current:
+            if current.is_a("IfcBuildingStorey"):
+                storey = current
+                break
+            current = ifcopenshell.util.element.get_aggregate(current)
+        if storey and hasattr(storey, "Name") and storey.Name:
+            keys.append(("storey.Name", f"Storey: {storey.Name}"))
+
+        building = None
+        current = container
+        while current:
+            if current.is_a("IfcBuilding"):
+                building = current
+                break
+            current = ifcopenshell.util.element.get_aggregate(current)
+        if building and hasattr(building, "Name") and building.Name:
+            keys.append(("building.Name", f"Building: {building.Name}"))
+
+        site = None
+        current = container
+        while current:
+            if current.is_a("IfcSite"):
+                site = current
+                break
+            current = ifcopenshell.util.element.get_aggregate(current)
+        if site and hasattr(site, "Name") and site.Name:
+            keys.append(("site.Name", f"Site: {site.Name}"))
+
+        return keys
+
+    @classmethod
+    def _get_parent_keys(cls, element):
+        keys = []
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        if parent and hasattr(parent, "Name") and parent.Name:
+            keys.append((f"parent.name", f"Parent: {parent.Name}"))
+        return keys
+
+    @classmethod
+    def _get_group_keys(cls, element):
+        keys = []
+        groups = []
+        if hasattr(element, "HasAssignments"):
+            for assignment in element.HasAssignments:
+                if assignment.is_a("IfcRelAssignsToGroup"):
+                    group = assignment.RelatingGroup
+                    if group.is_a("IfcGroup") and not group.is_a("IfcSystem") and not group.is_a("IfcZone"):
+                        groups.append(group)
+                        if group.Name:
+                            keys.append((f"group.Name", f"Group: {group.Name}"))
+
+        if groups:
+            keys.append(("groups.count", f"Group Count: {len(groups)}"))
+
+        return keys
+
+    @classmethod
+    def _get_system_keys(cls, element):
+        keys = []
+        systems = []
+        if hasattr(element, "HasAssignments"):
+            for assignment in element.HasAssignments:
+                if assignment.is_a("IfcRelAssignsToGroup"):
+                    group = assignment.RelatingGroup
+                    if group.is_a("IfcSystem"):
+                        systems.append(group)
+                        if group.Name:
+                            keys.append((f"system.Name", f"System: {group.Name}"))
+
+        if systems:
+            keys.append(("systems.count", f"System Count: {len(systems)}"))
+
+        return keys
+
+    @classmethod
+    def _get_zone_keys(cls, element):
+        keys = []
+        zones = []
+        if hasattr(element, "HasAssignments"):
+            for assignment in element.HasAssignments:
+                if assignment.is_a("IfcRelAssignsToGroup"):
+                    group = assignment.RelatingGroup
+                    if group.is_a("IfcZone"):
+                        zones.append(group)
+                        if group.Name:
+                            keys.append((f"zone.Name", f"Zone: {group.Name}"))
+
+        if zones:
+            keys.append(("zones.count", f"Zone Count: {len(zones)}"))
+
+        return keys
+
+    @classmethod
+    def _get_classification_keys(cls, element):
+        keys = []
+        classifications = ifcopenshell.util.classification.get_references(element)
+        if classifications:
+            for i, classification in enumerate(classifications):
+                if hasattr(classification, "Name") and classification.Name:
+                    keys.append((f"classification.{i}.Name", f"Classification {i+1}: {classification.Name}"))
+                if hasattr(classification, "Identification") and classification.Identification:
+                    keys.append(
+                        (
+                            f"classification.{i}.Identification",
+                            f"Classification {i+1} ID: {classification.Identification}",
+                        )
+                    )
+
+            keys.append(("classification.count", f"Classification Count: {len(classifications)}"))
+
+        return keys
+
+    @classmethod
+    def _get_coordinate_keys(cls):
+        return [
+            ("x", "X Coordinate"),
+            ("y", "Y Coordinate"),
+            ("z", "Z Coordinate"),
+            ("easting", "Easting"),
+            ("northing", "Northing"),
+            ("elevation", "Elevation"),
+        ]
+
+    @classmethod
+    def _get_profile_keys(cls, element):
+        """Get profile definitions from the element"""
+        keys = []
+
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if material:
+            profiles = []
+            if material.is_a("IfcMaterialProfileSet") and hasattr(material, "MaterialProfiles"):
+                for profile in material.MaterialProfiles:
+                    if hasattr(profile, "Profile") and profile.Profile:
+                        profiles.append(profile.Profile)
+
+            if profiles:
+                keys.append(("profiles.count", f"Profile Count: {len(profiles)}"))
+                for i, profile in enumerate(profiles):
+                    if hasattr(profile, "ProfileName") and profile.ProfileName:
+                        keys.append((f"profiles.{i}.ProfileName", f"Profile {i+1} Name: {profile.ProfileName}"))
+                    if hasattr(profile, "ProfileType") and profile.ProfileType:
+                        keys.append((f"profiles.{i}.ProfileType", f"Profile {i+1} Type: {profile.ProfileType}"))
+
+        if hasattr(element, "Representation") and element.Representation:
+            for representation in element.Representation.Representations:
+                if hasattr(representation, "Items"):
+                    for item in representation.Items:
+                        if item.is_a("IfcExtrudedAreaSolid") and hasattr(item, "SweptArea"):
+                            profile = item.SweptArea
+                            if hasattr(profile, "ProfileName") and profile.ProfileName:
+                                keys.append(("profile.ProfileName", f"Swept Profile Name: {profile.ProfileName}"))
+                            if hasattr(profile, "ProfileType") and profile.ProfileType:
+                                keys.append(("profile.ProfileType", f"Swept Profile Type: {profile.ProfileType}"))
+                            break
+
+        return keys

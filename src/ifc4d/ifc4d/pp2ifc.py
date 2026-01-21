@@ -5,16 +5,17 @@ import sys
 print("In module products sys.path[0], __package__ ==", sys.path[0], __package__)
 sys.path.append(sys.path[0])
 
-import sqlite3
 import datetime
-from datetime import timedelta
-import ifcopenshell.util.date
-from .wpattern import AstaCalendarWorkPattern
-from .common import ScheduleIfcGenerator, Calendar, WBSEntry, Activity
+import sqlite3
 import time
 from collections import defaultdict
+from datetime import timedelta
 from typing import Any
 
+import ifcopenshell.util.date
+
+from .common import Activity, Calendar, ScheduleIfcGenerator, WBSEntry
+from .wpattern import AstaCalendarWorkPattern
 
 list_of_tables = [
     "BAR",

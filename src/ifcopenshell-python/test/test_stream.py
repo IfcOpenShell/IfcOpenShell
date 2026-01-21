@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-import test.bootstrap
-import ifcopenshell
 from pathlib import Path
+
+
+import ifcopenshell
 
 TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
 

@@ -124,27 +124,28 @@ class BIM_PT_type_attributes(Panel):
     def draw(self, context):
         if not TypeData.is_loaded:
             TypeData.load()
-        
+
         assert (layout := self.layout)
         assert (obj := context.active_object)
-        
+
         if not TypeData.data.get("relating_type"):
             layout.label(text="No Relating Type", icon="INFO")
             return
-        
+
         props = tool.Type.get_object_type_props(obj)
-        
+
         if props.is_editing_type_attributes:
             row = layout.row(align=True)
             row.operator("bim.edit_type_attributes", icon="CHECKMARK", text="Save Attributes")
             row.operator("bim.disable_editing_type_attributes", icon="CANCEL", text="")
-            
+
             import bonsai.bim.helper
+
             bonsai.bim.helper.draw_attributes(props.type_attributes, layout)
         else:
             row = layout.row()
             row.operator("bim.enable_editing_type_attributes", icon="GREASEPENCIL", text="Edit")
-            
+
             for attribute in TypeData.data["relating_type_attributes"]:
                 row = layout.row(align=True)
                 row.label(text=attribute["name"])

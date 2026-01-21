@@ -1,4 +1,5 @@
 import itertools
+
 import ifcopenshell
 
 defaults = {"Girth": 1.0, "WallThickness": 0.11}

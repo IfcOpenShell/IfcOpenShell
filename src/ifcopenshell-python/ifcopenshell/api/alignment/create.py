@@ -21,11 +21,11 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 import ifcopenshell.util.alignment
-
 from ifcopenshell import entity_instance
-
-from ifcopenshell.api.alignment._create_geometric_representation import _create_geometric_representation
 from ifcopenshell.api.alignment._add_zero_length_segment import _add_zero_length_segment
+from ifcopenshell.api.alignment._create_geometric_representation import (
+    _create_geometric_representation,
+)
 
 
 def create(

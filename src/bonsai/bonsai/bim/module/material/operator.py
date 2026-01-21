@@ -509,6 +509,10 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
             bonsai.bim.helper.import_attributes(material[0], props.material_set_attributes)
         else:
             bonsai.bim.helper.import_attributes(material, props.material_set_attributes)
+
+        # Load custom offset from BBIM_MaterialLayer pset
+        tool.Model.load_custom_offset_from_pset(element, obj)
+
         return {"FINISHED"}
 
     def import_attributes_callback(
@@ -622,12 +626,16 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
                         layer_sets_to_regenerate.add(obj_material_usage.ForLayerSet)
 
+                        # Save custom offset to BBIM_MaterialLayer pset
+                        tool.Model.save_custom_offset_to_pset(obj_element, obj)
+
                 for layer_set in layer_sets_to_regenerate:
                     wall.DumbWallPlaner().regenerate_from_layer_set(layer_set)
                     slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
 
             if material_set_usage.is_a("IfcMaterialProfileSetUsage"):
-                attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
+                if "CardinalPoint" in attributes:
+                    attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
                 ifcopenshell.api.material.edit_profile_usage(
                     self.file,
                     usage=material_set_usage,

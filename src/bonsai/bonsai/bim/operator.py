@@ -236,6 +236,125 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
 
+class SaveBlendMetadataFile(bpy.types.Operator):
+    bl_idname = "bim.save_blend_metadata_file"
+    bl_label = "Save Blend Metadata File"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        """
+        Save the current blend file as a metadata-only file (no geometry), preserving settings, window arrangement, geometry nodes, etc.
+        """
+        props = tool.Blender.get_bim_props()
+        ifc_file = getattr(props, "ifc_file", None)
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file path set.")
+            return {"CANCELLED"}
+
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            blendmetadata_path = ifc_file[:-4] + suffix
+        else:
+            blendmetadata_path = ifc_file + suffix
+
+        ifc_dir = os.path.dirname(ifc_file)
+        temp_path = os.path.join(ifc_dir, "__temp_blendmetadata.blend")
+        bpy.ops.wm.save_as_mainfile(filepath=temp_path, copy=True)
+
+        cleanup_script = f"""
+import bpy
+
+# Ensure all styles are loaded before attempting to remove them
+try:
+    bpy.ops.bim.load_styles()
+except Exception:
+    pass
+
+# 1. Collect all IfcStyle material names
+ifcstyle_material_names = []
+try:
+    styles_props = getattr(bpy.context.scene, "BIMStylesProperties", None)
+    if styles_props is None and bpy.data.scenes:
+        styles_props = getattr(bpy.data.scenes[0], "BIMStylesProperties", None)
+    if styles_props:
+        for style in list(styles_props.styles):
+            material = getattr(style, "blender_material", None)
+            if material and material.name:
+                ifcstyle_material_names.append(material.name)
+except Exception:
+    pass
+
+# 2. Purge IfcStore
+try:
+    from bonsai.bim.ifc import IfcStore
+except ImportError:
+    IfcStore = None
+
+if IfcStore:
+    try:
+        IfcStore.purge()
+    except Exception:
+        pass
+
+# 3. Remove all collections named IfcProject*
+for collection in list(bpy.data.collections):
+    if collection.name.startswith('IfcProject'):
+        try:
+            bpy.data.collections.remove(collection, do_unlink=True)
+        except Exception:
+            pass
+
+# 4. Purge orphaned data blocks after removing IfcProject collections
+try:
+    bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+except Exception:
+    pass
+
+# 5. Remove all materials corresponding to the IfcStyles we collected
+materials_removed = 0
+try:
+    for mat_name in ifcstyle_material_names:
+        if mat_name in bpy.data.materials:
+            try:
+                bpy.data.materials.remove(bpy.data.materials[mat_name], do_unlink=True)
+                materials_removed += 1
+            except Exception:
+                pass
+except Exception:
+    pass
+
+bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
+"""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as script_file:
+            script_file.write(cleanup_script)
+            script_path = script_file.name
+
+        blender_exe = bpy.app.binary_path
+        import subprocess
+
+        result = subprocess.run(
+            [blender_exe, temp_path, "--background", "--python", script_path], capture_output=True, text=True
+        )
+
+        # Print the output from the background process (includes debug info)
+        if result.stdout:
+            print("\n=== Background Blender Output ===")
+            print(result.stdout)
+        if result.stderr:
+            print("\n=== Background Blender Errors ===")
+            print(result.stderr)
+
+        try:
+            os.remove(temp_path)
+            os.remove(script_path)
+        except Exception:
+            pass
+
+        return {"FINISHED"}
+
+
 # TODO: Unused operator.
 # Is there a need for this or 'DIR_PATH' propety subtype does almost the same,
 # but also has alt+click?
@@ -1604,4 +1723,49 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
         if attr.is_optional and not col:
             attr.is_null = True
 
+        return {"FINISHED"}
+
+
+class BIM_OT_manage_tab_visibility(bpy.types.Operator):
+    """Manage Tab Visibility"""
+
+    bl_idname = "bim.manage_tab_visibility"
+    bl_label = "Manage Tab Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        from bonsai.bim.prop import get_tab
+
+        bprops = tool.Blender.get_bim_props()
+        bprops.tab_visibilities.clear()
+        bprops.panel_visibilities.clear()
+        tabs = [item[0] for item in get_tab(None, None) if item and item[0] != "BLENDER"]
+        for tab in tabs:
+            new = bprops.tab_visibilities.add()
+            new.name = tab
+
+        for attr_name in dir(bpy.types):
+            if attr_name.startswith("BIM_PT_tab_"):
+                panel_class = getattr(bpy.types, attr_name)
+                if not hasattr(panel_class, "bl_idname"):
+                    assert False, panel_class
+                new = bprops.panel_visibilities.add()
+                new.name = panel_class.bl_idname
+                new.label = panel_class.bl_label
+                new.tab_name = panel_class.bim_tab_name
+        return {"FINISHED"}
+
+
+class BIM_OT_reset_ui_layout(bpy.types.Operator):
+    """Reset UI Layout to Default"""
+
+    bl_idname = "bim.reset_ui_layout"
+    bl_label = "Reset UI Layout"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bprops = tool.Blender.get_bim_props()
+        bprops.tab_visibilities.clear()
+        bprops.panel_visibilities.clear()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}

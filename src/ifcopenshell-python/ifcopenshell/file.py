@@ -17,24 +17,26 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import functools
+import numbers
 import os
 import re
-import numbers
 import time
-import zipfile
-import functools
-import ifcopenshell
-import weakref
 import types
-from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict
+import weakref
+import zipfile
 from collections.abc import Callable, Generator
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union, overload
+
 from typing_extensions import assert_never
+
+import ifcopenshell
+from ifcopenshell.util.mvd_info import LARK_AVAILABLE, MvdInfo
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
-
-from ifcopenshell.util.mvd_info import MvdInfo, LARK_AVAILABLE
 
 if TYPE_CHECKING:
     import ifcopenshell.util.schema

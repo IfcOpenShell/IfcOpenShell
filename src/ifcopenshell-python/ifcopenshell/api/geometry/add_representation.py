@@ -16,16 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
-import bpy.types
+
 import math
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
 import bmesh
-import ifcopenshell.util.shape_builder
-import ifcopenshell.util.unit
+import bpy.types
 import numpy as np
 import numpy.typing as npt
-from mathutils import Vector, Matrix
-from typing import Union, Optional, Literal, Any, TYPE_CHECKING
-from ifcopenshell.util.shape_builder import ifc_safe_vector_type, VectorType
+from mathutils import Matrix, Vector
+
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
+from ifcopenshell.util.shape_builder import ifc_safe_vector_type
 
 if TYPE_CHECKING:
     import bonsai.tool as tool

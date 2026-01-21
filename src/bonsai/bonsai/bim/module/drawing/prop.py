@@ -30,7 +30,7 @@ import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.decoration as decoration
 from mathutils import Matrix
 from bonsai.bim.prop import BIMFilterGroup
-from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
+from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData, ElementValuesData
 from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
 from pathlib import Path
 from bonsai.bim.prop import Attribute, StrProperty
@@ -687,6 +687,107 @@ BOX_ALIGNMENT_POSITIONS = [
 ]
 
 
+class ElementValueRow(PropertyGroup):
+    """Represents a single element value row with category, key, and formatted value"""
+
+    category: EnumProperty(
+        name="Category",
+        items=[
+            ("Basic", "Basic", "Basic element information"),
+            ("Attributes", "Attributes", "IFC Attributes"),
+            ("Property Sets", "Property Sets", "Property Sets"),
+            ("Quantity Sets", "Quantity Sets", "Quantity Sets"),
+            ("Type", "Type", "Type information"),
+            ("Spatial", "Spatial", "Spatial relationships"),
+            ("Parent", "Parent", "Parent relationships"),
+            ("Classification", "Classification", "Classifications"),
+            ("Groups", "Groups", "Group assignments"),
+            ("Systems", "Systems", "System assignments"),
+            ("Zones", "Zones", "Zone assignments"),
+            ("Material", "Material", "Material information"),
+            ("Styles", "Styles", "Style information"),
+            ("Profiles", "Profiles", "Profile information"),
+            ("Coordinates", "Coordinates", "Coordinate information"),
+            ("Custom String", "Custom String", "Custom text (no element key)"),
+        ],
+        default="Basic",
+    )
+
+    element_key: StringProperty(
+        name="Element Key",
+        description="The element value key (e.g., 'id', 'Name', 'Pset_WallCommon.Reference')",
+        default="",
+    )
+
+    formatted_value: StringProperty(
+        name="Formatted Value",
+        description="The formatted value string with selector syntax (e.g., '{{id}}' or '``upper({{Name}})``')",
+        default="",
+    )
+
+    separator: StringProperty(
+        name="Separator",
+        description="Text to insert before this value when concatenating (e.g., ' - ', ', ', '\\n')",
+        default=" - ",
+    )
+
+    if TYPE_CHECKING:
+        category: str
+        element_key: str
+        formatted_value: str
+        separator: str
+
+
+def get_category_items_with_counts(self, context):
+    """Generate category items with counts dynamically"""
+    category_metadata = [
+        ("Basic", "Basic", "Basic element information", "OBJECT_DATA"),
+        ("Attributes", "Attributes", "IFC Attributes", "PROPERTIES"),
+        ("Property Sets", "Property Sets", "Property Sets", "ALIGN_JUSTIFY"),
+        ("Quantity Sets", "Quantity Sets", "Quantity Sets", "SNAP_VOLUME"),
+        ("Type", "Type", "Type information", "FILE_VOLUME"),
+        ("Spatial", "Spatial", "Spatial relationships", "HOME"),
+        ("Parent", "Parent", "Parent relationships", "FILE_PARENT"),
+        ("Classification", "Classification", "Classifications", "BOOKMARKS"),
+        ("Groups", "Groups", "Group assignments", "OUTLINER_COLLECTION"),
+        ("Systems", "Systems", "System assignments", "SYSTEM"),
+        ("Zones", "Zones", "Zone assignments", "MESH_CIRCLE"),
+        ("Material", "Material", "Material information", "MATERIAL"),
+        ("Styles", "Styles", "Style information", "COLOR"),
+        ("Profiles", "Profiles", "Profile information", "OUTLINER_DATA_CURVES"),
+        ("Coordinates", "Coordinates", "Coordinate information", "EMPTY_ARROWS"),
+        ("Custom String", "Custom String", "Add custom text (no element key)", "SMALL_CAPS"),
+    ]
+
+    obj = context.active_object
+
+    if obj and tool.Ifc.get_entity(obj):
+        try:
+            element = tool.Ifc.get_entity(obj)
+            text_element = element
+
+            if hasattr(self, "product_used"):
+                if self.product_used:
+                    element = tool.Ifc.get_entity(self.product_used)
+                else:
+                    assigned = tool.Drawing.get_assigned_product(text_element)
+                    if assigned:
+                        element = assigned
+
+            available_keys = ElementValuesData.get_available_element_value_keys(element)
+            items = []
+            for i, (identifier, base_name, description, icon) in enumerate(category_metadata):
+                count = len(available_keys.get(identifier, []))
+                display_name = f"{base_name} ({count})" if count > 0 else base_name
+                items.append((identifier, display_name, description, icon, i))
+
+            return items
+        except Exception as e:
+            pass
+
+    return [(id, name, desc, icon, i) for i, (id, name, desc, icon) in enumerate(category_metadata)]
+
+
 class LiteralProps(PropertyGroup):
     def set_box_alignment(self, new_value):
         markers = new_value.count(True)
@@ -725,11 +826,57 @@ class LiteralProps(PropertyGroup):
         }
         return text_data
 
+    show_element_values: bpy.props.BoolProperty(
+        name="Show Element Values", description="Show/hide the element values panel", default=False
+    )
+
+    expanded_category: bpy.props.StringProperty(
+        name="Expanded Category", description="Currently expanded category in the element values panel", default=""
+    )
+
+    element_values_filter: bpy.props.StringProperty(
+        name="Element Values Filter", description="Search filter for element values", default=""
+    )
+
+    product_used: PointerProperty(
+        name="Product Used",
+        type=bpy.types.Object,
+        description="Object to use for fetching element values. If empty, uses assigned product",
+    )
+
+    element_value_rows: CollectionProperty(
+        name="Element Value Rows",
+        type=ElementValueRow,
+        description="Collection of element value rows for building the literal value",
+    )
+
+    category_for_adding: EnumProperty(
+        name="Category for Adding",
+        items=get_category_items_with_counts,
+        default=0,
+        description="Category to use when adding a new element value row",
+    )
+
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         value: str
         box_alignment: tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool]
         ifc_definition_id: int
+        element_value_rows: bpy.types.bpy_prop_collection_idprop[ElementValueRow]
+        category_for_adding: str
+
+
+class LiteralApplySettings(PropertyGroup):
+    literal_index: IntProperty(name="Literal Index")
+    apply_text_to_all: BoolProperty(name="Apply Text to All", default=False)
+    apply_path_to_all: BoolProperty(name="Apply Path to All", default=False)
+    apply_box_alignment_to_all: BoolProperty(name="Apply Box Alignment to All", default=False)
+
+    if TYPE_CHECKING:
+        literal_index: int
+        apply_text_to_all: bool
+        apply_path_to_all: bool
+        apply_box_alignment_to_all: bool
 
 
 class BIMTextProperties(PropertyGroup):
@@ -763,6 +910,24 @@ class BIMTextProperties(PropertyGroup):
         description="Non-default symbol to use for this text.",
     )
 
+    apply_font_size_to_all: BoolProperty(
+        name="Apply Font Size to All", description="Apply font size changes to all selected text objects", default=False
+    )
+    apply_newline_to_all: BoolProperty(
+        name="Apply Newline to All", description="Apply newline changes to all selected text objects", default=False
+    )
+
+    literal_apply_settings: CollectionProperty(name="Literal Apply Settings", type=LiteralApplySettings)
+
+    def ensure_literal_apply_settings(self, literal_count: int):
+        """Ensure we have apply settings for all literals"""
+        while len(self.literal_apply_settings) > literal_count:
+            self.literal_apply_settings.remove(len(self.literal_apply_settings) - 1)
+
+        while len(self.literal_apply_settings) < literal_count:
+            setting = self.literal_apply_settings.add()
+            setting.literal_index = len(self.literal_apply_settings) - 1
+
     if TYPE_CHECKING:
         is_editing: bool
         literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
@@ -772,6 +937,8 @@ class BIMTextProperties(PropertyGroup):
         list_separator: str
         symbol: Union[str, Literal["NO SYMBOL", "CUSTOM SYMBOL"]]
         custom_symbol: str
+        apply_font_size_to_all: bool
+        apply_newline_to_all: bool
 
     def get_symbol(self) -> Union[str, None]:
         if self.symbol == "NO SYMBOL":

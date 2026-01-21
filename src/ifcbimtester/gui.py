@@ -21,5 +21,4 @@
 
 from bimtester.guiwidget import run
 
-
 run()

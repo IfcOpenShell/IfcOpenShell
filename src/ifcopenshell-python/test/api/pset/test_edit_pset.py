@@ -17,12 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import operator
-import test.bootstrap
+from typing import Union
+
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Union
+import test.bootstrap
 
 
 def get_properties(material: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:

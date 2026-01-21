@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-import test.bootstrap
-import ifcopenshell.util.file as subject
 import tempfile
 import zipfile
 from pathlib import Path
 
+
+import ifcopenshell.util.file as subject
+import test.bootstrap
 
 HEADER_EXTRACTOR_TEST_FILE_STR = """
 ISO-10303-21;

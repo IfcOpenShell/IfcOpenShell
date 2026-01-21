@@ -22,6 +22,7 @@ from . import ui, prop, operator
 classes = (
     operator.DrawSystemArrows,
     operator.GetConnectedSystemElements,
+    operator.IfcSverchokUseBonsaiFile,
     operator.ResizeToStorey,
     operator.SetOverrideColour,
     operator.SnapSpacesTogether,

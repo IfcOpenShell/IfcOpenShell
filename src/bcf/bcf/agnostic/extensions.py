@@ -1,7 +1,8 @@
+from dataclasses import fields
+from typing import NamedTuple, Union
+
 import bcf.v2.model.extensions
 import bcf.v3.model.extensions
-from typing import NamedTuple, Union
-from dataclasses import fields
 
 
 class AttributeData(NamedTuple):

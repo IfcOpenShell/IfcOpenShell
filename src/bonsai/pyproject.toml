@@ -38,3 +38,8 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
+
+[tool.ruff.lint]
+ignore = [
+    "I", # import sorting - ignore it temporarily, still need to do some tests
+]

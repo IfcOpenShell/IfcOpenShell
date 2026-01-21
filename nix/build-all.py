@@ -99,35 +99,36 @@ Used environment variables:
 
 """
 
-import logging
-import os
-import re
-import sys
 import glob
-import subprocess as sp
-import shutil
-import tarfile
+import logging
 import multiprocessing
+import os
 import platform
-import threading
-import sysconfig
-from datetime import datetime
+import re
+import shutil
 
 # @todo temporary for expired mpfr.org certificate on 2023-04-08
 import ssl
+import subprocess as sp
+import sys
+import sysconfig
+import tarfile
+import threading
+from datetime import datetime
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import time
-from urllib.request import urlretrieve
 from collections.abc import Generator, Sequence
 from pathlib import Path
+from urllib.request import urlretrieve
 
 try:
-    from typing import Union, Literal
+    from typing import Literal, Union
 except:
     # python 3.6 compatibility for rocky 8
     from typing import Union
+
     from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
@@ -139,7 +140,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
+PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
 JSON_VERSION = "3.11.3"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
@@ -348,14 +349,13 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "boost": (),
     "libxml2": (),
     "python": (),
-    "occ": ("freetype",),
+    "occ": (),
     "pcre": (),
     "pcre2": (),
     "json": (),
     "hdf5": (),
     "cgal": (),
     "eigen": (),
-    "freetype": (),
     "rocksdb": ("zstd",),
     "zstd": (),
     # 'usd': ('boost', 'oneTBB')
@@ -950,17 +950,6 @@ if "swig" in targets:
         revision=f"v{SWIG_VERSION}",
     )
 
-if "freetype" in targets:
-    build_dependency(
-        name=f"freetype",
-        mode="cmake",
-        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/freetype"],
-        download_url="https://github.com/freetype/freetype",
-        download_name="freetype2",
-        download_tool=download_tool_git,
-        revision="VER-2-14-0",
-    )
-
 if USE_OCCT and "occ" in targets:
     patches = []
     if OCCT_VERSION < "7.4":
@@ -995,7 +984,6 @@ if USE_OCCT and "occ" in targets:
             f"-DUSE_FREETYPE=OFF",
             f"-DUSE_OPENGL=OFF",
             f"-DUSE_GLES2=OFF",
-            f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],

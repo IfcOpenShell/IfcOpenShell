@@ -40,7 +40,471 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from bonsai.bim.prop import StrProperty
 from typing import TYPE_CHECKING, Literal, get_args, assert_never
+
+
+def draw_text_editor_header(self, context):
+    if context.space_data.text and context.space_data.text.name.startswith("FilterQuery_"):
+        layout = self.layout
+        layout.separator()
+        op = layout.operator("bim.apply_filter_from_text", text="Apply Filter Configuration", icon="CHECKMARK")
+
+
+def update_filter_search_value(self: "FilterValueSuggestions", context: bpy.types.Context) -> None:
+    filter_groups = tool.Search.get_filter_groups(self.module)
+    ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
+
+    value = self.search_value
+
+    if " < " in value:
+        value = value.split(" < ")[-1]
+
+    if ifc_filter.type == "entity":
+        if " (superclass)" in value:
+            value = value.replace(" (superclass)", "")
+        if " > " in value:
+            value = value.split(" > ")[-1]
+
+    elif ifc_filter.type == "instance":
+        if ": " in value:
+            value = value.split(": ")[-1]
+        elif " (" in value:
+            hierarchy_class = value.split(" (")
+            element_class = hierarchy_class[-1].rstrip(")")
+            element_name = hierarchy_class[0] if len(hierarchy_class) > 1 else None
+
+            ifc_file = tool.Ifc.get()
+            if ifc_file:
+                for element_id in IfcStore.id_map.keys():
+                    try:
+                        element = ifc_file.by_id(element_id)
+                        if element.is_a() == element_class:
+                            if element_name is None or (hasattr(element, "Name") and element.Name == element_name):
+                                value = element.GlobalId
+                                break
+                    except:
+                        continue
+
+    elif ifc_filter.type == "parent":
+        if " (" in value:
+            value = value.split(" (")[0]
+
+    if ifc_filter.type == "property":
+        if self.suggestion_type == "pset":
+            ifc_filter.pset = value
+        elif self.suggestion_type == "property_name":
+            ifc_filter.name = value
+        else:
+            ifc_filter.value = value
+    elif ifc_filter.type == "attribute":
+        if self.suggestion_type == "attribute_name":
+            ifc_filter.name = value
+        else:
+            ifc_filter.value = value
+    else:
+        ifc_filter.value = value
+
+    if self.first_launch:
+        self.first_launch = False
+    else:
+        context.window.screen = context.window.screen
+
+
+class FilterValueSuggestions(Operator):
+    bl_idname = "bim.filter_value_suggestions"
+    bl_label = "Filter Value Suggestions"
+    bl_description = "Get suggestions for filter values from the current IFC file"
+    bl_options = {"REGISTER", "UNDO"}
+
+    group_index: IntProperty()
+    filter_index: IntProperty()
+    module: StringProperty(default="search")
+    filter_type: StringProperty()
+    suggestion_type: StringProperty(default="value")
+
+    first_launch: BoolProperty(default=True, options={"SKIP_SAVE"})
+    search_value: StringProperty(
+        name="Search",
+        description="Search for filter values",
+        update=update_filter_search_value,
+        default="",
+        options={"SKIP_SAVE"},
+    )
+    collection_values: CollectionProperty(type=StrProperty, options={"SKIP_SAVE"})
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file loaded")
+            return {"CANCELLED"}
+
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
+
+        string_suggestions = self.get_suggestions(ifc_file, ifc_filter)
+        if not string_suggestions:
+            self.report({"INFO"}, f"No suggestions available")
+            return {"CANCELLED"}
+
+        self.collection_values.clear()
+        for suggestion in natsorted(string_suggestions):
+            self.collection_values.add().name = suggestion
+
+        return context.window_manager.invoke_props_dialog(self, width=800)
+
+    def draw(self, context):
+        layout = self.layout
+
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
+
+        label_map = {
+            "entity": "Select Class",
+            "type": "Select Type",
+            "material": "Select Material",
+            "location": "Select Location",
+            "group": "Select Group",
+            "classification": "Select Classification",
+            "parent": "Select Parent",
+            "instance": "Select GlobalId",
+        }
+
+        if ifc_filter.type == "attribute":
+            if self.suggestion_type == "attribute_value":
+                label = f"Select Value for {ifc_filter.name}"
+            else:
+                label = "Select Attribute Name"
+        elif ifc_filter.type == "property":
+            if self.suggestion_type == "property_value":
+                label = f"Select Value for {ifc_filter.pset}.{ifc_filter.name}"
+            elif self.suggestion_type == "property_name":
+                label = f"Select Property from {ifc_filter.pset}"
+            else:
+                label = "Select Property Set"
+        else:
+            label = label_map.get(ifc_filter.type, "Select Value")
+
+        row = layout.row()
+        row.label(text=label)
+        row = layout.row()
+        row.prop_search(
+            self,
+            "search_value",
+            self,
+            "collection_values",
+            text="",
+            results_are_suggestions=True,
+        )
+
+    def get_suggestions(self, ifc_file, ifc_filter):
+        suggestions = set()
+
+        if ifc_filter.type == "entity":
+            suggestions = self.get_entity_suggestions(ifc_file)
+        elif ifc_filter.type == "type":
+            suggestions = self.get_type_suggestions(ifc_file)
+        elif ifc_filter.type == "material":
+            suggestions = self.get_material_suggestions(ifc_file)
+        elif ifc_filter.type == "location":
+            suggestions = self.get_location_suggestions(ifc_file)
+        elif ifc_filter.type == "group":
+            suggestions = self.get_group_suggestions(ifc_file)
+        elif ifc_filter.type == "classification":
+            suggestions = self.get_classification_suggestions(ifc_file)
+        elif ifc_filter.type == "parent":
+            suggestions = self.get_parent_suggestions(ifc_file)
+        elif ifc_filter.type == "instance":
+            suggestions = self.get_instance_suggestions(ifc_file)
+        elif ifc_filter.type == "attribute":
+            if self.suggestion_type == "attribute_name":
+                suggestions = self.get_attribute_names(ifc_file)
+            else:
+                suggestions = self.get_attribute_values(ifc_file, ifc_filter.name)
+        elif ifc_filter.type == "property":
+            if self.suggestion_type == "pset":
+                suggestions = self.get_property_sets(ifc_file)
+            elif self.suggestion_type == "property_name":
+                suggestions = self.get_property_names(ifc_file, ifc_filter.pset)
+            else:
+                suggestions = self.get_property_values(ifc_file, ifc_filter.pset, ifc_filter.name)
+
+        return suggestions
+
+    def build_hierarchy_path(self, element):
+        path = []
+        current = element
+
+        while current:
+            if hasattr(current, "Name") and current.Name:
+                path.insert(0, current.Name)
+
+            parent = None
+
+            if hasattr(current, "Decomposes") and current.Decomposes:
+                for rel in current.Decomposes:
+                    if hasattr(rel, "RelatingObject"):
+                        parent = rel.RelatingObject
+                        break
+
+            if not parent and hasattr(current, "ContainedInStructure") and current.ContainedInStructure:
+                for rel in current.ContainedInStructure:
+                    if hasattr(rel, "RelatingStructure"):
+                        parent = rel.RelatingStructure
+                        break
+
+            current = parent
+
+        return path
+
+    def get_entity_suggestions(self, ifc_file):
+        all_classes = set()
+        schema = tool.Ifc.schema()
+
+        for element_id in IfcStore.id_map.keys():
+            try:
+                element = ifc_file.by_id(element_id)
+                class_name = element.is_a()
+
+                try:
+                    entity = schema.declaration_by_name(class_name).as_entity()
+                    current = entity
+
+                    chain_names = [class_name]
+                    while current.supertype():
+                        supertype = current.supertype()
+                        chain_names.insert(0, supertype.name())
+                        current = supertype
+
+                    if len(chain_names) > 1:
+                        all_classes.add(" > ".join(chain_names))
+                        for i in range(len(chain_names) - 1):
+                            superclass_chain = " > ".join(chain_names[: i + 1])
+                            all_classes.add(f"{superclass_chain} (superclass)")
+                    else:
+                        all_classes.add(class_name)
+                except:
+                    all_classes.add(class_name)
+            except:
+                continue
+
+        return all_classes
+
+    def get_type_suggestions(self, ifc_file):
+        suggestions = set()
+        for element_type in ifc_file.by_type("IfcTypeObject"):
+            if element_type.Name:
+                hierarchy_path = self.build_hierarchy_path(element_type)
+                if len(hierarchy_path) > 1:
+                    suggestions.add(" < ".join(hierarchy_path))
+                else:
+                    suggestions.add(element_type.Name)
+        return suggestions
+
+    def get_material_suggestions(self, ifc_file):
+        suggestions = set()
+        for material in ifc_file.by_type("IfcMaterial"):
+            if material.Name:
+                suggestions.add(material.Name)
+        return suggestions
+
+    def get_location_suggestions(self, ifc_file):
+        suggestions = set()
+        for spatial in ifc_file.by_type("IfcSpatialStructureElement"):
+            if spatial.Name:
+                hierarchy_path = self.build_hierarchy_path(spatial)
+                if len(hierarchy_path) > 1:
+                    suggestions.add(" < ".join(hierarchy_path))
+                else:
+                    suggestions.add(spatial.Name)
+        return suggestions
+
+    def get_group_suggestions(self, ifc_file):
+        suggestions = set()
+        for group in ifc_file.by_type("IfcGroup"):
+            if group.Name:
+                hierarchy_path = self.build_hierarchy_path(group)
+                if len(hierarchy_path) > 1:
+                    suggestions.add(" < ".join(hierarchy_path))
+                else:
+                    suggestions.add(group.Name)
+        return suggestions
+
+    def get_classification_suggestions(self, ifc_file):
+        suggestions = set()
+        for ref in ifc_file.by_type("IfcClassificationReference"):
+            if ref.Identification:
+                suggestions.add(ref.Identification)
+        return suggestions
+
+    def get_parent_suggestions(self, ifc_file):
+        suggestions = set()
+        for element_id in IfcStore.id_map.keys():
+            try:
+                element = ifc_file.by_id(element_id)
+                has_children = False
+
+                if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
+                    has_children = True
+                elif hasattr(element, "ContainsElements") and element.ContainsElements:
+                    has_children = True
+                elif hasattr(element, "HasOpenings") and element.HasOpenings:
+                    has_children = True
+
+                if has_children:
+                    hierarchy_path = self.build_hierarchy_path(element)
+                    element_class = element.is_a()
+
+                    if len(hierarchy_path) > 0:
+                        hierarchy_str = " < ".join(hierarchy_path)
+                        suggestions.add(f"{hierarchy_str} ({element_class})")
+                    else:
+                        element_name = element.Name if hasattr(element, "Name") and element.Name else element_class
+                        suggestions.add(f"{element_name} ({element_class})")
+            except:
+                continue
+
+        return suggestions
+
+    def get_instance_suggestions(self, ifc_file):
+        suggestions = set()
+        element_data = []
+
+        for element_id in IfcStore.id_map.keys():
+            try:
+                element = ifc_file.by_id(element_id)
+                if hasattr(element, "GlobalId") and element.GlobalId:
+                    hierarchy_path = self.build_hierarchy_path(element)
+                    element_class = element.is_a()
+
+                    if len(hierarchy_path) > 0:
+                        hierarchy_str = " < ".join(hierarchy_path)
+                        display_str = f"{hierarchy_str} ({element_class})"
+                    else:
+                        display_str = f"({element_class})"
+
+                    element_data.append((display_str, element.GlobalId))
+            except:
+                continue
+
+        display_counts = {}
+        for display_str, global_id in element_data:
+            display_counts[display_str] = display_counts.get(display_str, 0) + 1
+
+        for display_str, global_id in element_data:
+            if display_counts[display_str] > 1:
+                suggestions.add(f"{display_str}: {global_id}")
+            else:
+                suggestions.add(display_str)
+
+        return suggestions
+
+    def get_property_sets(self, ifc_file):
+        psets = set()
+        for element_id in IfcStore.id_map.keys():
+            try:
+                element = ifc_file.by_id(element_id)
+                for definition in getattr(element, "IsDefinedBy", []):
+                    if definition.is_a("IfcRelDefinesByProperties"):
+                        pset = definition.RelatingPropertyDefinition
+                        if pset.is_a("IfcPropertySet") and pset.Name:
+                            psets.add(pset.Name)
+            except:
+                continue
+        return psets
+
+    def get_property_names(self, ifc_file, pset_name):
+        property_names = set()
+        for element_id in IfcStore.id_map.keys():
+            try:
+                element = ifc_file.by_id(element_id)
+                for definition in getattr(element, "IsDefinedBy", []):
+                    if definition.is_a("IfcRelDefinesByProperties"):
+                        pset = definition.RelatingPropertyDefinition
+                        if pset.is_a("IfcPropertySet") and pset.Name == pset_name:
+                            if pset.HasProperties:
+                                for prop in pset.HasProperties:
+                                    if hasattr(prop, "Name") and prop.Name:
+                                        property_names.add(prop.Name)
+            except:
+                continue
+        return property_names
+
+    def get_property_values(self, ifc_file, pset_name, property_name):
+        property_values = set()
+        for element_id in IfcStore.id_map.keys():
+            try:
+                element = ifc_file.by_id(element_id)
+                for definition in getattr(element, "IsDefinedBy", []):
+                    if definition.is_a("IfcRelDefinesByProperties"):
+                        pset = definition.RelatingPropertyDefinition
+                        if pset.is_a("IfcPropertySet") and pset.Name == pset_name:
+                            if pset.HasProperties:
+                                for prop in pset.HasProperties:
+                                    if hasattr(prop, "Name") and prop.Name == property_name:
+                                        if prop.is_a("IfcPropertyEnumeratedValue"):
+                                            if hasattr(prop, "EnumerationReference") and prop.EnumerationReference:
+                                                enum_reference = prop.EnumerationReference
+                                                if hasattr(enum_reference, "EnumerationValues"):
+                                                    for enum_value in enum_reference.EnumerationValues:
+                                                        property_values.add(str(enum_value.wrappedValue))
+                                            if hasattr(prop, "EnumerationValues") and prop.EnumerationValues:
+                                                for enum_value in prop.EnumerationValues:
+                                                    property_values.add(str(enum_value.wrappedValue))
+                                        elif hasattr(prop, "NominalValue") and prop.NominalValue:
+                                            property_values.add(str(prop.NominalValue.wrappedValue))
+            except:
+                continue
+        return property_values
+
+    def get_attribute_names(self, ifc_file):
+        attribute_names = set()
+        schema = tool.Ifc.schema()
+
+        ifc_classes = set()
+        for element_id in IfcStore.id_map.keys():
+            try:
+                element = ifc_file.by_id(element_id)
+                ifc_classes.add(element.is_a())
+            except:
+                continue
+
+        for ifc_class in ifc_classes:
+            try:
+                entity = schema.declaration_by_name(ifc_class).as_entity()
+                attributes = entity.all_attributes()
+                for attr in attributes:
+                    attribute_names.add(attr.name())
+            except:
+                continue
+
+        return attribute_names
+
+    def get_attribute_values(self, ifc_file, attribute_name):
+        attribute_values = set()
+
+        for element_id in IfcStore.id_map.keys():
+            try:
+                element = ifc_file.by_id(element_id)
+
+                if element.is_a("IfcRelationship") or element.is_a("IfcTypeObject"):
+                    continue
+
+                if hasattr(element, attribute_name):
+                    value = getattr(element, attribute_name, None)
+
+                    if value is not None and value != "":
+                        if not hasattr(value, "is_a") and not isinstance(value, (tuple, list)):
+                            str_value = str(value)
+                            if not str_value.startswith("#") and not str_value.startswith("("):
+                                attribute_values.add(str_value)
+            except:
+                continue
+
+        return attribute_values
 
 
 class AddFilterGroup(Operator):
@@ -96,8 +560,35 @@ class AddFilter(Operator):
 
     def execute(self, context):
         filter_groups = tool.Search.get_filter_groups(self.module)
+        if self.index >= len(filter_groups):
+            filter_groups.add()
         new = filter_groups[self.index].filters.add()
         new.type = self.type
+        return {"FINISHED"}
+
+
+class ToggleFilterInclusion(Operator):
+    bl_idname = "bim.toggle_filter_inclusion"
+    bl_label = "Toggle Filter Mode"
+    bl_description = "Cycle between Add (+), Subtract (-), and Filter modes for this filter"
+    bl_options = {"REGISTER", "UNDO"}
+
+    group_index: IntProperty()
+    filter_index: IntProperty()
+    module: StringProperty()
+
+    def execute(self, context):
+        filter_groups = tool.Search.get_filter_groups(self.module)
+        filter_group = filter_groups[self.group_index]
+        ifc_filter = filter_group.filters[self.filter_index]
+
+        if ifc_filter.filter_mode == "ADD":
+            ifc_filter.filter_mode = "SUBTRACT"
+        elif ifc_filter.filter_mode == "SUBTRACT":
+            ifc_filter.filter_mode = "FILTER"
+        else:
+            ifc_filter.filter_mode = "ADD"
+
         return {"FINISHED"}
 
 
@@ -120,6 +611,47 @@ class SelectFilterElements(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ApplyFilterFromText(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.apply_filter_from_text"
+    bl_label = "Apply Filter Configuration"
+    bl_description = "Apply the JSON filter configuration from the current text block"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if context.area and context.area.type == "TEXT_EDITOR":
+            space = context.space_data
+            if space.text and space.text.name.startswith("FilterQuery_"):
+                return True
+        return False
+
+    def execute(self, context):
+        space = context.space_data
+        text = space.text
+
+        if not text or not text.name.startswith("FilterQuery_"):
+            self.report({"ERROR"}, "No valid filter configuration text block")
+            return {"CANCELLED"}
+
+        module = text.name.replace("FilterQuery_", "")
+
+        try:
+            json_data = json.loads(text.as_string())
+            filter_structure = json_data.get("filter_structure", [])
+            filter_groups = tool.Search.get_filter_groups(module)
+            tool.Search.import_filter_structure(filter_structure, filter_groups)
+            self.report({"INFO"}, "Filter configuration applied successfully")
+
+            if len(context.window_manager.windows) > 1:
+                bpy.ops.wm.window_close()
+
+        except Exception as e:
+            self.report({"ERROR"}, f"Invalid JSON: {str(e)}")
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+
 class EditFilterQuery(Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_filter_query"
     bl_label = "Edit Filter Query"
@@ -127,29 +659,82 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     query: StringProperty(name="Query")
     old_query: StringProperty(name="Old Query")
-    module: StringProperty()
+    module: StringProperty(default="search")
 
     def _execute(self, context):
-        if self.query == self.old_query:
-            return
+        module = getattr(self, "module", "search")
 
-        filter_groups = tool.Search.get_filter_groups(self.module)
-        try:
-            tool.Search.import_filter_query(self.query, filter_groups)
-        except:
-            return
+        if not tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
+            if self.query == self.old_query:
+                return
+
+            filter_groups = tool.Search.get_filter_groups(module)
+            try:
+                tool.Search.import_filter_query(self.query, filter_groups)
+            except:
+                return
 
     def draw(self, context):
-        row = self.layout.row()
-        row.prop(self, "query", text="")
+
+        if not tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
+            row = self.layout.row()
+            row.prop(self, "query", text="")
 
     def invoke(self, context, event):
-        filter_groups = tool.Search.get_filter_groups(self.module)
+        module = getattr(self, "module", "search")
+        filter_groups = tool.Search.get_filter_groups(module)
 
-        self.query = tool.Search.export_filter_query(filter_groups)
-        self.old_query = self.query
+        if tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
+            filter_structure = []
+            for filter_group in filter_groups:
+                group_data = []
+                for ifc_filter in filter_group.filters:
+                    filter_data = {
+                        "type": ifc_filter.type,
+                        "name": ifc_filter.name,
+                        "value": ifc_filter.value,
+                        "pset": ifc_filter.pset,
+                        "comparison": ifc_filter.comparison,
+                        "filter_mode": ifc_filter.filter_mode,
+                    }
+                    group_data.append(filter_data)
+                filter_structure.append(group_data)
 
-        return context.window_manager.invoke_props_dialog(self)
+            query = tool.Search.export_filter_query(filter_groups)
+            json_data = {"type": "BBIM_Search", "query": query, "filter_structure": filter_structure}
+
+            text_block_name = f"FilterQuery_{module}"
+            text = bpy.data.texts.get(text_block_name)
+            if not text:
+                text = bpy.data.texts.new(text_block_name)
+
+            text.clear()
+            text.write(json.dumps(json_data, indent=2))
+
+            bpy.ops.wm.window_new()
+            new_window = context.window_manager.windows[-1]
+
+            new_area = new_window.screen.areas[0]
+            new_area.type = "TEXT_EDITOR"
+
+            text_space = None
+            for space in new_area.spaces:
+                if space.type == "TEXT_EDITOR":
+                    text_space = space
+                    break
+
+            if text_space:
+                text_space.text = text
+
+            self.report(
+                {"INFO"}, "Compact text editor opened. Edit JSON and click 'Apply Filter Configuration' in header"
+            )
+            return {"FINISHED"}
+
+        else:
+            self.query = tool.Search.export_filter_query(filter_groups)
+            self.old_query = self.query
+            return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 class Search(Operator):
@@ -174,9 +759,23 @@ class Search(Operator):
         else:
             assert_never(self.property_group)
 
-        results = ifcopenshell.util.selector.filter_elements(
-            tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
-        )
+        preferences = tool.Blender.get_addon_preferences()
+
+        # Migrate old ! prefix filters to new filter_mode system when preferences are enabled
+        if preferences.chain_filter_with_set_operations:
+            for filter_group in props.filter_groups:
+                for ifc_filter in filter_group.filters:
+                    if ifc_filter.type not in ["entity", "instance"]:
+                        continue
+                    if ifc_filter.value.startswith("!"):
+                        ifc_filter.value = ifc_filter.value[1:]
+                        ifc_filter.filter_mode = "SUBTRACT"
+
+            results = tool.Search.execute_filter_groups(props.filter_groups)
+        else:
+            results = ifcopenshell.util.selector.filter_elements(
+                tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
+            )
 
         objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
         for obj in objs:
@@ -242,13 +841,28 @@ class SaveSearch(Operator, tool.Ifc.Operator):
 
         try:
             query = tool.Search.export_filter_query(filter_groups)
-            results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+            results = tool.Search.execute_filter_groups(filter_groups)
+
+            filter_structure = []
+            for filter_group in filter_groups:
+                group_data = []
+                for ifc_filter in filter_group.filters:
+                    filter_data = {
+                        "type": ifc_filter.type,
+                        "name": ifc_filter.name,
+                        "value": ifc_filter.value,
+                        "pset": ifc_filter.pset,
+                        "comparison": ifc_filter.comparison,
+                        "filter_mode": ifc_filter.filter_mode,
+                    }
+                    group_data.append(filter_data)
+                filter_structure.append(group_data)
         except:
             print(traceback.format_exc())
             self.report({"ERROR"}, "Error occurred trying save search.")
             return
 
-        description = json.dumps({"type": "BBIM_Search", "query": query})
+        description = json.dumps({"type": "BBIM_Search", "query": query, "filter_structure": filter_structure})
         ifc_file = tool.Ifc.get()
         group = next(
             (
@@ -289,7 +903,12 @@ class LoadSearch(Operator, tool.Ifc.Operator):
         filter_groups = tool.Search.get_filter_groups(self.module)
         props = tool.Search.get_search_props()
         group = tool.Ifc.get().by_id(int(props.saved_searches))
-        tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
+
+        group_data = tool.Search.get_group_data(group)
+        if group_data and "filter_structure" in group_data:
+            tool.Search.import_filter_structure(group_data["filter_structure"], filter_groups)
+        else:
+            tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
 
     def draw(self, context):
         assert self.layout
@@ -299,6 +918,41 @@ class LoadSearch(Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         tool.Search.patch_search_ifcgroups()
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class RemoveSearch(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_search"
+    bl_label = "Remove Search"
+    bl_description = "Remove a saved search filter"
+    bl_options = {"REGISTER", "UNDO"}
+    module: StringProperty()
+
+    def _execute(self, context):
+        props = tool.Search.get_search_props()
+        group_id = props.saved_searches
+        if not group_id:
+            self.report({"ERROR"}, "No search selected for removal")
+            return
+
+        group = tool.Ifc.get().by_id(int(group_id))
+        group_name = group.Name or "Unnamed"
+        ifcopenshell.api.group.remove_group(tool.Ifc.get(), group=group)
+        tool.Search.patch_search_ifcgroups()
+        self.report({"INFO"}, f"Removed saved search: {group_name}")
+
+    def draw(self, context):
+        self.layout.label(text="Select search to remove:", icon="ERROR")
+        row = self.layout.row()
+        props = tool.Search.get_search_props()
+        row.prop(props, "saved_searches", text="")
+
+    def invoke(self, context, event):
+        tool.Search.patch_search_ifcgroups()
+        from bonsai.bim.module.search.data import SearchData
+
+        if not SearchData.is_loaded:
+            SearchData.load()
         return context.window_manager.invoke_props_dialog(self)
 
 

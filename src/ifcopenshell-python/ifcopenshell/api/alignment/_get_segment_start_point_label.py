@@ -16,10 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-from ifcopenshell import entity_instance
-from collections.abc import Sequence
 
+from ifcopenshell import entity_instance
 
 _horizontal_callback = None
 _vertical_callback = None

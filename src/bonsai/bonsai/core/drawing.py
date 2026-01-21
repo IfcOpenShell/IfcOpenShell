@@ -397,6 +397,12 @@ def update_drawing_name(
 ) -> None:
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
+
+    # Update the camera object name
+    camera = ifc.get_object(drawing)
+    if camera and camera.name != name:
+        camera.name = name
+
     group = drawing_tool.get_drawing_group(drawing)
     if drawing_tool.get_name(group) != name:
         ifc.run("attribute.edit_attributes", product=group, attributes={"Name": name})
@@ -487,12 +493,29 @@ def sync_references(
     potential_reference_elements = drawing_tool.get_potential_reference_elements(drawing)
 
     for element in potential_reference_elements:
+        # Skip spatial elements - their IFC placement is the source of truth
+        if element.is_a("IfcSpatialElement"):
+            continue
+
+        # Skip grids - their IFC placement is the source of truth
+        if element.is_a("IfcGrid") or element.is_a("IfcGridAxis"):
+            continue
+
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
             drawing_tool.sync_object_placement(obj)
 
     for element in drawing_tool.get_group_elements(group):
         if not drawing_tool.is_auto_annotation(element):
             continue
+
+        # Skip spatial elements - should never sync their placement
+        if element.is_a("IfcSpatialElement"):
+            continue
+
+        # Skip grids
+        if element.is_a("IfcGrid") or element.is_a("IfcGridAxis"):
+            continue
+
         if (obj := ifc.get_object(element)) and ifc.is_moved(obj):
             drawing_tool.sync_object_placement(obj)
         if not (reference_element := drawing_tool.get_assigned_product(element)):

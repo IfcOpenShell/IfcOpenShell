@@ -1,5 +1,6 @@
 import itertools
 import time
+
 import ifcopenshell
 
 for pty, ety in itertools.product(("GRILLE", "USERDEFINED"), (None, "Something")):

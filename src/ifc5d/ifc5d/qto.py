@@ -18,24 +18,25 @@
 
 import functools
 import itertools
+import json
+import multiprocessing
 import os
 import types
-import json
+from collections import defaultdict
+from collections.abc import Iterable
+from typing import Any, Literal, NamedTuple, Union, get_args
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
-import ifcopenshell.util.representation
 import ifcopenshell.util.type
-import multiprocessing
-from collections import defaultdict
-from typing import Any, Literal, get_args, Union, NamedTuple
-from collections.abc import Iterable
+import ifcopenshell.util.unit
 
 
 class Function(NamedTuple):
@@ -545,8 +546,8 @@ class Blender(QtoCalculator):
 
     @classmethod
     def calculate(cls, ifc_file, elements, qtos, results):
-        import bonsai.tool as tool
         import bonsai.bim.module.qto.calculator as calculator
+        import bonsai.tool as tool
 
         unit_converter = SI2ProjectUnitConverter(ifc_file)
         formula_functions: dict[str, types.FunctionType] = {}

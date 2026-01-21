@@ -16,11 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Literal, TypeVar, Union
+
 import bpy
 import ifcopenshell
 import sverchok.core.sockets
-from sverchok.data_structure import zip_long_repeat
-from typing import Any, Union, TypeVar
+from sverchok.data_structure import flatten_data, zip_long_repeat
+
+from ifcsverchok.ifcstore import SvIfcStore
 
 T_socket = TypeVar("T_socket", bound=sverchok.core.sockets.SvSocketCommon)
 
@@ -66,6 +69,34 @@ def get_selected_nodes() -> list[bpy.types.Node]:
     return [n for n in node_tree.nodes if n.select]
 
 
+def get_socket_value(
+    sockets: Union[bpy.types.NodeInputs, bpy.types.NodeOutputs],
+    name: str,
+    *,
+    value_type: Literal["SINGLE_VALUE", "CONTAINER", "FLATTEN"] = "SINGLE_VALUE",
+) -> Any:
+    value = sockets[name].sv_get()
+    if value_type == "FLATTEN":
+        return flatten_data(value)
+    value = value[0]
+    if value_type == "SINGLE_VALUE":
+        return value[0]
+    return value
+
+
+def set_socket_value(
+    sockets: bpy.types.NodeOutputs,
+    name: str,
+    value: Any,
+    *,
+    value_type: Literal["SINGLE_VALUE", "FINAL_VALUE"] = "SINGLE_VALUE",
+) -> None:
+    if value_type == "SINGLE_VALUE":
+        sockets[name].sv_set([[value]])
+        return
+    sockets[name].sv_set(value)
+
+
 def create_socket(
     inputs_or_outputs: Union[bpy.types.NodeInputs, bpy.types.NodeOutputs],
     name: str,
@@ -86,3 +117,7 @@ def create_socket(
     if prop_name:
         socket.prop_name = prop_name
     return socket
+
+
+def get_file() -> ifcopenshell.file:
+    return SvIfcStore.get_file()

@@ -16,13 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
+
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.geometry
 from ifcopenshell import entity_instance
-
-import math
-from collections.abc import Sequence
 
 
 def _create_offset_curve_representation(

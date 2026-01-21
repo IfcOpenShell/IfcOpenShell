@@ -17,9 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bmesh
 
-import ifcopenshell
 import bonsai.tool as tool
 
 
@@ -32,9 +30,23 @@ class ApplyExternalParametricGeometry(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         assert obj
-        assert (active_representation := tool.Geometry.get_active_representation(obj))
-        ifc_context = active_representation.ContextOfItems
-        tool.Model.add_representation(obj, ifc_context)
         props = tool.Model.get_epg_props(obj)
+
+        # TODO: consider nodes being empty.
+        if props.geometry_source == "GEONODES":
+            assert (active_representation := tool.Geometry.get_active_representation(obj))
+            ifc_context = active_representation.ContextOfItems
+
+            tool.Model.add_representation(obj, ifc_context)
+        elif props.geometry_source == "IFCSVERCHOK":
+            import ifcsverchok.helper as helper
+
+            nodes = props.sverchok_nodes
+            assert nodes is not None
+            tool.Model.run_ifcsverchok_graph_on_bonsai_file(nodes)
+            output_node = tool.Model.get_ifcsverchok_shape_output(nodes)
+            representation = helper.get_socket_value(output_node.inputs, "Representation")
+            tool.Model.replace_object_ifc_representation(representation.ContextOfItems, obj, representation)
+
         props.is_editing = False
         return {"FINISHED"}

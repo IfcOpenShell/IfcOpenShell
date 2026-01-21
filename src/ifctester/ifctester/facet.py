@@ -17,15 +17,17 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import re
+
 import builtins
-import ifcopenshell.util.unit
-import ifcopenshell.util.element
-import ifcopenshell.util.classification
+import re
 from functools import lru_cache
-from xmlschema.validators import identities
-from typing import Union, Optional, Any, Literal, TYPE_CHECKING, TypedDict
 from logging import Logger
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
+
+import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
+from xmlschema.validators import identities
 
 if TYPE_CHECKING:
     from .ids import Specification

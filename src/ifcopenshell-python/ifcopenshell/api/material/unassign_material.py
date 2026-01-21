@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
-from typing import Any
 
 
 def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entity_instance]) -> None:

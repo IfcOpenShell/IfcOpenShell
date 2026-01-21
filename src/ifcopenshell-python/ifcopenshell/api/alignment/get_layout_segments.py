@@ -16,12 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.util
-from ifcopenshell import entity_instance
 from collections.abc import Sequence
 
-import ifcopenshell.util.element
+from ifcopenshell import entity_instance
 
 
 def get_layout_segments(layout: entity_instance) -> Sequence[entity_instance]:

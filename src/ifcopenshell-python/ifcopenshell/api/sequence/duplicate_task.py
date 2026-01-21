@@ -17,10 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.guid
 import ifcopenshell.api.nest
 import ifcopenshell.api.owner
 import ifcopenshell.api.sequence
+import ifcopenshell.guid
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 

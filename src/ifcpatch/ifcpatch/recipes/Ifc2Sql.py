@@ -17,16 +17,18 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import itertools
+import json
+import logging
+import multiprocessing
 import os
 import re
-import json
-import time
 import tempfile
+import time
 import typing
-import itertools
-import logging
-import numpy as np
-import multiprocessing
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union
+
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
@@ -37,15 +39,16 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-import ifcpatch
-from pathlib import Path
-from typing import Any, TYPE_CHECKING, Literal, Union
+import numpy as np
 from typing_extensions import assert_never
+
+import ifcpatch
 
 SQLTypes = typing.Literal["SQLite", "MySQL"]
 
 if TYPE_CHECKING:
     import sqlite3
+
     import mysql.connector
     import mysql.connector.abstracts
 else:

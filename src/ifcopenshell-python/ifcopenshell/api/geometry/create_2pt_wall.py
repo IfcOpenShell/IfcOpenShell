@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
+
 import numpy as np
+
 import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
-from typing import Any
 
 
 def create_2pt_wall(

@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.util
-import ifcopenshell.util.unit
-import pytest
 import math
+
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
+import ifcopenshell.util
+import ifcopenshell.util.unit
 
 
 def test_create_as_offset_curve():

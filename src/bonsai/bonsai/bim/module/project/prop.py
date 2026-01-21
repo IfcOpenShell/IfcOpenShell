@@ -411,6 +411,11 @@ class BIMProjectProperties(PropertyGroup):
     )
 
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
+    should_save_metadata_for_this_file: BoolProperty(
+        name="Save Session Data for This File",
+        description="Enable saving session data (window layout, settings) to a metadata blend file for this specific IFC file",
+        default=False,
+    )
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
@@ -504,6 +509,7 @@ class BIMProjectProperties(PropertyGroup):
         parent_library: str
 
         use_relative_project_path: bool
+        should_save_metadata_for_this_file: bool
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
         clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]

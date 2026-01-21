@@ -928,23 +928,24 @@ class TestAddReferenceImage(NewFile):
         uv_node = material_nodes["Texture Coordinate"]
         assert len(uv_node.outputs["Generated"].links[:]) == 1
 
+
 class TestAddReference(NewFile):
     def test_add_single_reference(self):
         """Test adding a single reference file (backward compatibility)"""
         bpy.ops.bim.create_project()
         ifc_path = Path("test/files/temp/test.ifc").absolute()
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
-        
+
         # Create a temporary SVG file
         svg_path = Path("test/files/temp/reference.svg").absolute()
         svg_path.parent.mkdir(parents=True, exist_ok=True)
         with open(svg_path, "w") as f:
             f.write('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
-        
+
         try:
             # Add single reference
             bpy.ops.bim.add_reference(filepath=str(svg_path))
-            
+
             # Verify reference was added
             ifc = tool.Ifc.get()
             references = [doc for doc in ifc.by_type("IfcDocumentInformation") if doc.Scope == "REFERENCE"]
@@ -954,24 +955,24 @@ class TestAddReference(NewFile):
             # Cleanup
             if svg_path.exists():
                 svg_path.unlink()
-    
+
     def test_add_multiple_references(self):
         """Test adding multiple reference files at once"""
         bpy.ops.bim.create_project()
         ifc_path = Path("test/files/temp/test.ifc").absolute()
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
-        
+
         # Create temporary SVG files
         temp_dir = Path("test/files/temp").absolute()
         temp_dir.mkdir(parents=True, exist_ok=True)
-        
+
         svg_files = []
         for i in range(3):
             svg_path = temp_dir / f"reference_{i}.svg"
             with open(svg_path, "w") as f:
                 f.write('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
             svg_files.append(svg_path)
-        
+
         try:
             # Test by directly calling core.add_document multiple times
             # (simulating what the operator does with multiple files)
@@ -979,12 +980,13 @@ class TestAddReference(NewFile):
             for svg_file in svg_files:
                 uri = tool.Ifc.get_uri(str(svg_file), use_relative_path=True)
                 from bonsai.bim import core
+
                 core.drawing.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=uri)
-            
+
             # Verify all references were added
             references = [doc for doc in ifc.by_type("IfcDocumentInformation") if doc.Scope == "REFERENCE"]
             assert len(references) == 3
-            
+
             reference_names = {ref.Name for ref in references}
             expected_names = {f"reference_{i}" for i in range(3)}
             assert reference_names == expected_names
