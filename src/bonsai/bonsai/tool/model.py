@@ -66,7 +66,6 @@ if TYPE_CHECKING:
         BIMRailingProperties,
         BIMExternalParametricGeometryProperties,
         BIMPolylineProperties,
-        BIMProductPreviewProperties,
     )
 
 
@@ -107,11 +106,6 @@ class Model(bonsai.core.tool.Model):
     def get_polyline_props(cls) -> BIMPolylineProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMPolylineProperties  # pyright: ignore[reportAttributeAccessIssue]
-
-    @classmethod
-    def get_product_preview_props(cls) -> BIMProductPreviewProperties:
-        assert (scene := bpy.context.scene)
-        return scene.BIMProductPreviewProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -2750,3 +2744,20 @@ class Model(bonsai.core.tool.Model):
             list(nodes_to_update)
         finally:
             SvIfcStore.use_bonsai_file = False
+
+    @classmethod
+    def create_bmesh_from_vertices(cls, vertices, is_closed=False):
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in vertices]
+        if is_closed:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+            new_edges.append(
+                bm.edges.new((new_verts[-1], new_verts[0]))
+            )  # Add an edge between the last an first point to make it closed.
+        else:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        return bm
