@@ -691,7 +691,6 @@ class BIM_PT_external_parametric_geometry(bpy.types.Panel):
                 # should find a way to update only on graph changes.
                 res = tool.Model.update_mesh_from_sverchok(obj, props.sverchok_nodes)
                 if res is not None:
-                    print(res)
                     layout.label(text=f"Error Updating from Graph, See System Console", icon="ERROR")
 
                 layout.label(text="Parameters:")
