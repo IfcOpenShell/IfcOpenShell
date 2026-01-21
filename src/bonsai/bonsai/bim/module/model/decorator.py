@@ -35,7 +35,7 @@ from gpu_extras.presets import draw_circle_2d
 from typing import Union
 from bonsai.bim.module.drawing.helper import format_distance
 from itertools import chain
-from typing import Union, Any
+from typing import Union, Any, Literal
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 
