@@ -1,8 +1,8 @@
-<script>
+<script lang="ts">
 	import { Toaster as Sonner } from "svelte-sonner";
 	import { mode } from "mode-watcher";
 
-	let { ...restProps } = $props();
+	let { ...restProps } : Record<string, unknown> = $props();
 </script>
 
 <Sonner

@@ -6,11 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "check": "tsc -p tsconfig.json --noEmit && svelte-check && biome lint .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
     "preview": "vite preview",
     "deploy": "npm run build && npx wrangler pages deploy dist"
   },
   "devDependencies": {
     "@internationalized/date": "^3.8.1",
+    "@biomejs/biome": "^1.9.4",
     "@lucide/svelte": "^0.515.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tailwindcss/vite": "^4.0.0",
@@ -19,10 +23,12 @@
     "mode-watcher": "^1.1.0",
     "sass-embedded": "^1.89.0",
     "svelte": "^5.28.1",
+    "svelte-check": "^4.0.0",
     "svelte-sonner": "^1.0.5",
     "tailwind-merge": "^3.3.0",
     "tailwind-variants": "^1.0.0",
     "tailwindcss": "^4.0.0",
+    "typescript": "^5.8.3",
     "tw-animate-css": "^1.3.2",
     "vite": "^6.4.1"
   },

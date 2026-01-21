@@ -1,9 +1,34 @@
-<script>
+<script lang="ts">
     import Svelecte from 'svelecte';
-    import { getEntityClasses, getMaterialCategories, getClassificationSystems, getDataTypes, getPredefinedTypes, getEntityAttributes, getApplicablePsets } from '$src/modules/api/api.svelte.js';
-    import * as IDS from '$src/modules/api/ids.svelte.js';
+    import { getEntityClasses, getMaterialCategories, getClassificationSystems, getDataTypes, getPredefinedTypes, getEntityAttributes, getApplicablePsets } from '$src/modules/api/api.svelte';
+    import * as IDS from '$src/modules/api/ids.svelte';
+    import type { DocumentState, Facet, FacetValue, IdsDocument, Restriction, RestrictionValue, Specification } from '$src/types/ids';
     
-    let { facet = $bindable(), fieldName, label, placeholder, autocomplete = null, isSpecialProp = false } = $props();
+    type AutocompleteType =
+        | 'entityName'
+        | 'material'
+        | 'classificationSystem'
+        | 'predefinedType'
+        | 'attributeName'
+        | 'propertySet'
+        | 'dataType'
+        | null;
+
+    let {
+        facet = $bindable<Facet>({}),
+        fieldName,
+        label,
+        placeholder,
+        autocomplete = null,
+        isSpecialProp = false
+    }: {
+        facet: Facet;
+        fieldName: string;
+        label: string;
+        placeholder: string;
+        autocomplete?: AutocompleteType;
+        isSpecialProp?: boolean;
+    } = $props();
     
     const isEntityNameField = autocomplete === 'entityName';
     const isMaterialField = autocomplete === 'material';
@@ -12,22 +37,30 @@
     const isAttributeNameField = autocomplete === 'attributeName';
     const isPropertySetField = autocomplete === 'propertySet';
     const isDataTypeField = autocomplete === 'dataType';
+
+    const baseId = `restriction-${fieldName}-${Math.random().toString(36).slice(2, 8)}`;
     
     // Predefined Types autocompletions
-    let predefinedTypeOptions = $state([]);
+    let predefinedTypeOptions: string[] = $state([]);
     
     // Attribute Names autocompletions
-    let attributeNameOptions = $state([]);
+    let attributeNameOptions: string[] = $state([]);
     
     // Property Sets autocompletions
-    let propertySetOptions = $state([]);
+    let propertySetOptions: string[] = $state([]);
     
     // Get the active specification's IFC schemas
     const getIfcVersions = () => {
-        const activeDocument = IDS.Module.activeDocument ? IDS.Module.documents[IDS.Module.activeDocument] : null;
-        const documentState = IDS.Module.activeDocument ? IDS.Module.states[IDS.Module.activeDocument] : null;
-        const activeSpecification = activeDocument && documentState?.activeSpecification !== null && activeDocument.specifications?.specification ? 
-            activeDocument.specifications.specification[documentState.activeSpecification] : null;
+        const activeDocument = IDS.Module.activeDocument
+            ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument)
+            : null;
+        const documentState = IDS.Module.activeDocument
+            ? (IDS.Module.states[IDS.Module.activeDocument] as DocumentState)
+            : null;
+        const activeSpecification =
+            activeDocument && documentState && documentState.activeSpecification !== null && activeDocument.specifications?.specification
+                ? (activeDocument.specifications.specification[documentState.activeSpecification] as Specification)
+                : null;
         
         const versions = activeSpecification?.["@ifcVersion"] || ['IFC4'];
         // TODO: Fix: Filter out IFC4X3 because it's buggy
@@ -36,7 +69,7 @@
     
     // Get the entity name from facet
     const getEntityName = () => {
-        const nameField = facet?.name;
+        const nameField = (facet as Record<string, unknown>)?.name as FacetValue | undefined;
         if (!nameField) return '';
         if (nameField.simpleValue) return nameField.simpleValue;
         return '';
@@ -44,18 +77,24 @@
     
     // Get all entity names from Entity facets in Applicability
     const getApplicabilityEntityNames = () => {
-        const activeDocument = IDS.Module.activeDocument ? IDS.Module.documents[IDS.Module.activeDocument] : null;
-        const documentState = IDS.Module.activeDocument ? IDS.Module.states[IDS.Module.activeDocument] : null;
-        const activeSpecification = activeDocument && documentState?.activeSpecification !== null && activeDocument.specifications?.specification ? 
-            activeDocument.specifications.specification[documentState.activeSpecification] : null;
+        const activeDocument = IDS.Module.activeDocument
+            ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument)
+            : null;
+        const documentState = IDS.Module.activeDocument
+            ? (IDS.Module.states[IDS.Module.activeDocument] as DocumentState)
+            : null;
+        const activeSpecification =
+            activeDocument && documentState && documentState.activeSpecification !== null && activeDocument.specifications?.specification
+                ? (activeDocument.specifications.specification[documentState.activeSpecification] as Specification)
+                : null;
         
         if (!activeSpecification?.applicability?.entity) return [];
         
-        const entityFacets = activeSpecification.applicability.entity;
-        const entityNames = [];
+        const entityFacets = activeSpecification.applicability.entity as Facet[];
+        const entityNames: string[] = [];
         
         entityFacets.forEach(entityFacet => {
-            const nameField = entityFacet.name;
+            const nameField = (entityFacet as Record<string, unknown>).name as FacetValue | undefined;
             if (!nameField) return;
             
             if (nameField.simpleValue) {
@@ -74,19 +113,25 @@
     
     // Get entity facets with their predefined types
     const getApplicabilityEntityFacets = () => {
-        const activeDocument = IDS.Module.activeDocument ? IDS.Module.documents[IDS.Module.activeDocument] : null;
-        const documentState = IDS.Module.activeDocument ? IDS.Module.states[IDS.Module.activeDocument] : null;
-        const activeSpecification = activeDocument && documentState?.activeSpecification !== null && activeDocument.specifications?.specification ? 
-            activeDocument.specifications.specification[documentState.activeSpecification] : null;
+        const activeDocument = IDS.Module.activeDocument
+            ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument)
+            : null;
+        const documentState = IDS.Module.activeDocument
+            ? (IDS.Module.states[IDS.Module.activeDocument] as DocumentState)
+            : null;
+        const activeSpecification =
+            activeDocument && documentState && documentState.activeSpecification !== null && activeDocument.specifications?.specification
+                ? (activeDocument.specifications.specification[documentState.activeSpecification] as Specification)
+                : null;
         
         if (!activeSpecification?.applicability?.entity) return [];
         
-        return activeSpecification.applicability.entity.map(entityFacet => {
-            const nameField = entityFacet.name;
-            const predefinedTypeField = entityFacet.predefinedType;
+        return (activeSpecification.applicability.entity as Facet[]).map(entityFacet => {
+            const nameField = (entityFacet as Record<string, unknown>).name as FacetValue | undefined;
+            const predefinedTypeField = (entityFacet as Record<string, unknown>).predefinedType as FacetValue | undefined;
             
             // Extract entity name
-            let entityNames = [];
+            let entityNames: string[] = [];
             if (nameField?.simpleValue) {
                 entityNames = [nameField.simpleValue];
             } else if (nameField?.restriction?.enumeration) {
@@ -99,9 +144,12 @@
             let predefinedType = '';
             if (predefinedTypeField?.simpleValue) {
                 predefinedType = predefinedTypeField.simpleValue;
-            } else if (predefinedTypeField?.restriction?.enumeration?.length > 0) {
-                // For enumeration predefined types, use the first one or empty string
-                predefinedType = predefinedTypeField.restriction.enumeration[0]['@value'] || '';
+            } else {
+                const enumValues = predefinedTypeField?.restriction?.enumeration;
+                if (enumValues && enumValues.length > 0) {
+                    // For enumeration predefined types, use the first one or empty string
+                    predefinedType = enumValues[0]['@value'] || '';
+                }
             }
             
             return { entityNames, predefinedType };
@@ -109,7 +157,8 @@
     };
     
     // Contextual autocompletions
-    $effect(async () => {
+    $effect(() => {
+        void (async () => {
 
         // Predefined Types
         if (isPredefinedTypeField) {
@@ -122,10 +171,10 @@
                     const typePromises = ifcVersions.map(schema => 
                         getPredefinedTypes(schema, entityName.toUpperCase())
                     );
-                    const typeSets = await Promise.all(typePromises);
+                    const typeSets = await Promise.all(typePromises) as string[][];
                     
                     // Deduplicate predefined types across all schemas
-                    const allTypes = new Set();
+                    const allTypes = new Set<string>();
                     typeSets.forEach(types => {
                         if (types && Array.isArray(types)) {
                             types.forEach(type => allTypes.add(type));
@@ -150,19 +199,19 @@
             if (entityNames.length > 0 && ifcVersions.length > 0) {
                 try {
                     // Fetch attributes for all entity names across all selected schemas
-                    const attributePromises = [];
+                    const attributePromises: Array<Promise<{ name: string }[]>> = [];
                     entityNames.forEach(entityName => {
                         ifcVersions.forEach(schema => {
                             attributePromises.push(
-                                getEntityAttributes(schema, entityName.toUpperCase())
+                                getEntityAttributes(schema, entityName.toUpperCase()) as Promise<{ name: string }[]>
                             );
                         });
                     });
                     
-                    const attributeSets = await Promise.all(attributePromises);
+                    const attributeSets = await Promise.all(attributePromises) as { name: string }[][];
                     
                     // Deduplicate attribute names across all entities and schemas
-                    const allAttributes = new Set();
+                    const allAttributes = new Set<string>();
                     attributeSets.forEach(attributes => {
                         if (attributes && Array.isArray(attributes)) {
                             attributes.forEach(attr => {
@@ -191,21 +240,21 @@
             if (entityFacets.length > 0 && ifcVersions.length > 0) {
                 try {
                     // Fetch applicable property sets for all entity facets across all selected schemas
-                    const psetPromises = [];
+                    const psetPromises: Array<Promise<string[]>> = [];
                     entityFacets.forEach(facet => {
                         facet.entityNames.forEach(entityName => {
                             ifcVersions.forEach(schema => {
                                 psetPromises.push(
-                                    getApplicablePsets(schema, entityName.toUpperCase(), facet.predefinedType)
+                                    getApplicablePsets(schema, entityName.toUpperCase(), facet.predefinedType) as Promise<string[]>
                                 );
                             });
                         });
                     });
                     
-                    const psetSets = await Promise.all(psetPromises);
+                    const psetSets = await Promise.all(psetPromises) as string[][];
                     
                     // Deduplicate property set names
-                    const allPsets = new Set();
+                    const allPsets = new Set<string>();
                     psetSets.forEach(psets => {
                         if (psets && Array.isArray(psets)) {
                             psets.forEach(pset => allPsets.add(pset));
@@ -221,10 +270,11 @@
                 propertySetOptions = [];
             }
         }
+        })();
     });
     
     // Get autocomplete options based on field type
-    const getAutocompleteOptions = () => {
+    const getAutocompleteOptions = (): string[] => {
         if (isEntityNameField) return getEntityClasses();
         if (isMaterialField) return getMaterialCategories();
         if (isClassificationSystemField) return Object.keys(getClassificationSystems());
@@ -236,11 +286,11 @@
     };
     
     const getRestrictionType = () => {
-        const fieldValue = facet[fieldName];
+        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
         if (!fieldValue) return 'Simple';
         if (fieldValue.simpleValue !== undefined) return 'Simple';
         if (fieldValue['restriction']) {
-            const restriction = fieldValue['restriction'];
+            const restriction = fieldValue['restriction'] as Restriction;
             if (restriction['enumeration']) return 'Enumeration';
             if (restriction['pattern']) return 'Pattern';
             if (restriction['minInclusive'] || restriction['maxInclusive'] || 
@@ -251,39 +301,40 @@
         return 'Simple';
     };
     
-    const getSimpleValue = () => {
-        const fieldValue = facet[fieldName];
+    const getSimpleValue = (): string => {
+        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | string | undefined;
 
         // For special properties (eg. @dataType), we return the value directly
-        if (isSpecialProp) return fieldValue || null;
+        if (typeof fieldValue === 'string') return fieldValue;
+        if (isSpecialProp) return '';
 
-        if (!fieldValue) return null;
+        if (!fieldValue) return '';
         if (fieldValue.simpleValue !== undefined) return fieldValue.simpleValue;
-        return null;
+        return '';
     };
 
     const getEnumerationValues = () => {
-        const fieldValue = facet[fieldName];
+        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
         if (!fieldValue?.['restriction']) return [''];
-        const restriction = fieldValue['restriction'];
-        const enumValues = restriction['enumeration'];
+        const restriction = fieldValue['restriction'] as Restriction;
+        const enumValues = restriction['enumeration'] as RestrictionValue[] | undefined;
         if (!enumValues) return [''];
         return enumValues.map(item => item['@value'] || '');
     };
 
     const getPatternValue = () => {
-        const fieldValue = facet[fieldName];
+        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
         if (!fieldValue?.['restriction']) return '';
-        const restriction = fieldValue['restriction'];
-        const pattern = restriction['pattern'];
+        const restriction = fieldValue['restriction'] as Restriction;
+        const pattern = restriction['pattern'] as RestrictionValue[] | undefined;
         if (!pattern || !pattern.length) return '';
         return pattern[0]['@value'] || '';
     };
 
     const getRangeValues = () => {
-        const fieldValue = facet[fieldName];
+        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
         if (!fieldValue?.['restriction']) return { min: '', max: '', minType: 'Inclusive', maxType: 'Inclusive' };
-        const restriction = fieldValue['restriction'];
+        const restriction = fieldValue['restriction'] as Restriction;
         
         let min = '', max = '', minType = 'Inclusive', maxType = 'Inclusive';
         
@@ -307,18 +358,18 @@
     };
 
     const getLengthValue = () => {
-        const fieldValue = facet[fieldName];
+        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
         if (!fieldValue?.['restriction']) return '';
-        const restriction = fieldValue['restriction'];
-        const length = restriction['length'];
+        const restriction = fieldValue['restriction'] as Restriction;
+        const length = restriction['length'] as RestrictionValue[] | undefined;
         if (!length || !length.length) return '';
         return length[0]['@value'] || '';
     };
 
     const getLengthRangeValues = () => {
-        const fieldValue = facet[fieldName];
+        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
         if (!fieldValue?.['restriction']) return { min: '', max: '' };
-        const restriction = fieldValue['restriction'];
+        const restriction = fieldValue['restriction'] as Restriction;
         
         let min = '', max = '';
         
@@ -332,20 +383,18 @@
         return { min, max };
     };
 
-    const setSimpleValue = (value) => {
+    const setSimpleValue = (value: string) => {
         // For special properties (eg. @dataType), we set the value directly
         if (isSpecialProp) {
-            facet[fieldName] = value;
+            (facet as Record<string, unknown>)[fieldName] = value;
             return;
         }
-        if (!facet[fieldName]) facet[fieldName] = {};
-        facet[fieldName] = { simpleValue: value };
+        (facet as Record<string, unknown>)[fieldName] = { simpleValue: value };
     };
 
-    const setEnumerationValues = (values) => {
-        if (!facet[fieldName]) facet[fieldName] = {};
+    const setEnumerationValues = (values: string[]) => {
         const enumItems = values.filter(v => v && typeof v === 'string' && v.trim() !== '').map(v => ({ '@value': v }));
-        facet[fieldName] = {
+        (facet as Record<string, unknown>)[fieldName] = {
             'restriction': {
                 '@base': 'xs:string',
                 'enumeration': enumItems
@@ -353,9 +402,8 @@
         };
     };
 
-    const setPatternValue = (value) => {
-        if (!facet[fieldName]) facet[fieldName] = {};
-        facet[fieldName] = {
+    const setPatternValue = (value: string) => {
+        (facet as Record<string, unknown>)[fieldName] = {
             'restriction': {
                 '@base': 'xs:string',
                 'pattern': [{ '@value': value }]
@@ -363,25 +411,23 @@
         };
     };
 
-    const setRangeValues = (min, max, minType, maxType) => {
-        if (!facet[fieldName]) facet[fieldName] = {};
-        const restriction = { '@base': 'xs:string' };
+    const setRangeValues = (min: string, max: string, minType: string, maxType: string) => {
+        const restriction: Restriction = { '@base': 'xs:string' };
         
         if (min !== '') {
             const minKey = minType === 'Inclusive' ? 'minInclusive' : 'minExclusive';
-            restriction[minKey] = [{ '@value': min }];
+            (restriction as Record<string, RestrictionValue[]>)[minKey] = [{ '@value': min }];
         }
         if (max !== '') {
             const maxKey = maxType === 'Inclusive' ? 'maxInclusive' : 'maxExclusive';
-            restriction[maxKey] = [{ '@value': max }];
+            (restriction as Record<string, RestrictionValue[]>)[maxKey] = [{ '@value': max }];
         }
         
-        facet[fieldName] = { 'restriction': restriction };
+        (facet as Record<string, unknown>)[fieldName] = { 'restriction': restriction };
     };
 
-    const setLengthValue = (value) => {
-        if (!facet[fieldName]) facet[fieldName] = {};
-        facet[fieldName] = {
+    const setLengthValue = (value: string) => {
+        (facet as Record<string, unknown>)[fieldName] = {
             'restriction': {
                 '@base': 'xs:string',
                 'length': [{ '@value': value }]
@@ -389,20 +435,19 @@
         };
     };
 
-    const setLengthRangeValues = (min, max) => {
-        if (!facet[fieldName]) facet[fieldName] = {};
-        const restriction = { '@base': 'xs:string' };
+    const setLengthRangeValues = (min: string, max: string) => {
+        const restriction: Restriction = { '@base': 'xs:string' };
         
         if (min !== '') restriction['minLength'] = [{ '@value': min }];
         if (max !== '') restriction['maxLength'] = [{ '@value': max }];
         
-        facet[fieldName] = { 'restriction': restriction };
+        (facet as Record<string, unknown>)[fieldName] = { 'restriction': restriction };
     };
 
     let restrictionType = $derived(getRestrictionType());
     let enumerationValues = $derived(getEnumerationValues());
 
-    const handleTypeChange = (newType) => {
+    const handleTypeChange = (newType: string) => {
         restrictionType = newType;
         
         switch (newType) {
@@ -435,23 +480,27 @@
         enumerationValues = [...enumerationValues, ''];
     };
 
-    const removeEnumerationValue = (index) => {
+    const removeEnumerationValue = (index: number) => {
         enumerationValues = enumerationValues.filter((_, i) => i !== index);
         setEnumerationValues(enumerationValues);
     };
 
-    const updateEnumerationValue = (index, value) => {
+    const updateEnumerationValue = (index: number, value: string) => {
         enumerationValues[index] = value;
         setEnumerationValues(enumerationValues);
     };
 </script>
 
 <div class="form-group">
-    <label>{label}</label>
-    <div class="restriction-controls">
+    <span class="form-label" id={`${baseId}-label`}>{label}</span>
+    <div class="restriction-controls" role="group" aria-labelledby={`${baseId}-label`}>
         {#if !isSpecialProp}
             <div class="restriction-type-selector">
-                <select class="form-input" bind:value={restrictionType} onchange={(e) => handleTypeChange(e.target.value)}>
+                <select
+                    class="form-input"
+                    bind:value={restrictionType}
+                    onchange={(e) => handleTypeChange((e.target as HTMLSelectElement).value)}
+                >
                     <option value="Simple">Simple</option>
                     <option value="Enumeration">Enumeration</option>
                     <option value="Pattern">Pattern</option>
@@ -477,7 +526,7 @@
                         placeholder={placeholder}
                     />
                 {:else}
-                    <input class="form-input" type="text" bind:value={() => getSimpleValue(), (v) => setSimpleValue(v)} {placeholder}>
+                    <input class="form-input" type="text" bind:value={() => getSimpleValue(), (v) => setSimpleValue(v)} {placeholder} aria-label={label}>
                 {/if}
             
             {:else if restrictionType === 'Enumeration'}
@@ -497,7 +546,14 @@
                                     placeholder={placeholder} 
                                 />
                             {:else}
-                                <input class="form-input" type="text" value={value} oninput={(e) => updateEnumerationValue(index, e.target.value)} {placeholder}>
+                                <input
+                                    class="form-input"
+                                    type="text"
+                                    value={value}
+                                    oninput={(e) => updateEnumerationValue(index, (e.target as HTMLInputElement).value)}
+                                    {placeholder}
+                                    aria-label={`${label} option ${index + 1}`}
+                                >
                             {/if}
                             <button class="btn-delete" onclick={() => removeEnumerationValue(index)} type="button" aria-label="Remove enumeration value">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -515,22 +571,42 @@
                 </div>
             
             {:else if restrictionType === 'Pattern'}
-                <input class="form-input" type="text" bind:value={() => getPatternValue(), (v) => setPatternValue(v)} placeholder="Enter regex pattern (e.g., DT[0-9]{2})">
+                <input class="form-input" type="text" bind:value={() => getPatternValue(), (v) => setPatternValue(v)} placeholder="Enter regex pattern (e.g., DT[0-9]{2})" aria-label={`${label} pattern`}>
             
             {:else if restrictionType === 'Range'}
                 <div class="range-controls">
                     <div class="range-group">
-                        <label>Min</label>
-                        <input class="form-input" type="text" bind:value={() => getRangeValues().min, (v) => { const range = getRangeValues(); setRangeValues(v, range.max, range.minType, range.maxType); }} placeholder="0">
-                        <select class="form-input" bind:value={() => getRangeValues().minType, (v) => { const range = getRangeValues(); setRangeValues(range.min, range.max, v, range.maxType); }}>
+                        <label for={`${baseId}-range-min`}>Min</label>
+                        <input
+                            class="form-input"
+                            type="text"
+                            id={`${baseId}-range-min`}
+                            bind:value={() => getRangeValues().min, (v) => { const range = getRangeValues(); setRangeValues(v, range.max, range.minType, range.maxType); }}
+                            placeholder="0"
+                        >
+                        <select
+                            class="form-input"
+                            aria-label="Min bound type"
+                            bind:value={() => getRangeValues().minType, (v) => { const range = getRangeValues(); setRangeValues(range.min, range.max, v, range.maxType); }}
+                        >
                             <option value="Inclusive">Inclusive</option>
                             <option value="Exclusive">Exclusive</option>
                         </select>
                     </div>
                     <div class="range-group">
-                        <label>Max</label>
-                        <input class="form-input" type="text" bind:value={() => getRangeValues().max, (v) => { const range = getRangeValues(); setRangeValues(range.min, v, range.minType, range.maxType); }} placeholder="0">
-                        <select class="form-input" bind:value={() => getRangeValues().maxType, (v) => { const range = getRangeValues(); setRangeValues(range.min, range.max, range.minType, v); }}>
+                        <label for={`${baseId}-range-max`}>Max</label>
+                        <input
+                            class="form-input"
+                            type="text"
+                            id={`${baseId}-range-max`}
+                            bind:value={() => getRangeValues().max, (v) => { const range = getRangeValues(); setRangeValues(range.min, v, range.minType, range.maxType); }}
+                            placeholder="0"
+                        >
+                        <select
+                            class="form-input"
+                            aria-label="Max bound type"
+                            bind:value={() => getRangeValues().maxType, (v) => { const range = getRangeValues(); setRangeValues(range.min, range.max, range.minType, v); }}
+                        >
                             <option value="Inclusive">Inclusive</option>
                             <option value="Exclusive">Exclusive</option>
                         </select>
@@ -538,17 +614,17 @@
                 </div>
             
             {:else if restrictionType === 'Length'}
-                <input class="form-input" type="number" bind:value={() => getLengthValue(), (v) => setLengthValue(v)} placeholder="Enter exact length">
+                <input class="form-input" type="number" bind:value={() => getLengthValue(), (v) => setLengthValue(v)} placeholder="Enter exact length" aria-label={`${label} length`}>
             
             {:else if restrictionType === 'Length Range'}
                 <div class="length-range-controls">
                     <div class="length-group">
-                        <label>Min Length</label>
-                        <input class="form-input" type="number" bind:value={() => getLengthRangeValues().min, (v) => { const range = getLengthRangeValues(); setLengthRangeValues(v, range.max); }} placeholder="0">
+                        <label for={`${baseId}-length-min`}>Min Length</label>
+                        <input class="form-input" id={`${baseId}-length-min`} type="number" bind:value={() => getLengthRangeValues().min, (v) => { const range = getLengthRangeValues(); setLengthRangeValues(v, range.max); }} placeholder="0">
                     </div>
                     <div class="length-group">
-                        <label>Max Length</label>
-                        <input class="form-input" type="number" bind:value={() => getLengthRangeValues().max, (v) => { const range = getLengthRangeValues(); setLengthRangeValues(range.min, v); }} placeholder="0">
+                        <label for={`${baseId}-length-max`}>Max Length</label>
+                        <input class="form-input" id={`${baseId}-length-max`} type="number" bind:value={() => getLengthRangeValues().max, (v) => { const range = getLengthRangeValues(); setLengthRangeValues(range.min, v); }} placeholder="0">
                     </div>
                 </div>
             {/if}

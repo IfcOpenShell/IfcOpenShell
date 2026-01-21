@@ -1,11 +1,19 @@
-<script>
-	import { cn } from "$lib/utils.js";
+<script lang="ts">
+	import { cn } from "$lib/utils";
+	import type { Snippet } from "svelte";
+
+	type Props = {
+		ref?: HTMLElement | null;
+		class?: string;
+		children?: Snippet;
+	} & Record<string, unknown>;
+
 	let {
 		ref = $bindable(null),
 		class: className,
 		children,
 		...restProps
-	} = $props();
+	} : Props = $props();
 </script>
 
 <div

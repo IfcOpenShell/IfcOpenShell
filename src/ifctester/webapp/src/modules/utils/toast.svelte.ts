@@ -4,7 +4,7 @@ import { toast } from "svelte-sonner";
  * Show an error toast notification
  * @param {string} message - The error message to display
  */
-export function error(message) {
+export function error(message: string): void {
     toast.error(message);
 }
 
@@ -12,7 +12,7 @@ export function error(message) {
  * Show a success toast notification
  * @param {string} message - The success message to display
  */
-export function success(message) {
+export function success(message: string): void {
     toast.success(message);
 }
 
@@ -20,7 +20,7 @@ export function success(message) {
  * Show an info toast notification
  * @param {string} message - The info message to display
  */
-export function info(message) {
+export function info(message: string): void {
     toast.info(message);
 }
 
@@ -28,7 +28,7 @@ export function info(message) {
  * Show a warning toast notification
  * @param {string} message - The warning message to display
  */
-export function warning(message) {
+export function warning(message: string): void {
     toast.warning(message);
 }
 
@@ -37,7 +37,7 @@ export function warning(message) {
  * @param {string} message - The loading message to display
  * @returns {string} - Toast ID for dismissing later
  */
-export function loading(message) {
+export function loading(message: string): string | number {
     return toast.loading(message);
 }
 
@@ -45,7 +45,7 @@ export function loading(message) {
  * Dismiss a specific toast
  * @param {string} toastId - The toast ID to dismiss
  */
-export function dismiss(toastId) {
+export function dismiss(toastId: string | number): void {
     toast.dismiss(toastId);
 }
 
@@ -57,7 +57,13 @@ export function dismiss(toastId) {
  * @param {string} messages.success - Success message
  * @param {string} messages.error - Error message
  */
-export function promise(promiseToTrack, messages) {
+type PromiseToastMessages = {
+    loading: string;
+    success: string;
+    error: string;
+};
+
+export function promise<T>(promiseToTrack: Promise<T>, messages: PromiseToastMessages) {
     return toast.promise(promiseToTrack, {
         loading: messages.loading,
         success: messages.success,
