@@ -694,6 +694,15 @@ class BIM_PT_external_parametric_geometry(bpy.types.Panel):
                     print(res)
                     layout.label(text=f"Error Updating from Graph, See System Console", icon="ERROR")
 
+                layout.label(text="Parameters:")
+                box = layout.box()
+
+                group_node = tool.Model.get_ifcsverchok_group_node(props.sverchok_nodes)
+                node_tree = group_node.node_tree
+
+                for socket, interface_socket in zip(group_node.inputs, node_tree.sockets("INPUT")):
+                    socket.draw_group_property(box, socket.name, interface_socket)
+
 
 def draw_door_properties(layout: bpy.types.UILayout, props: module_prop.BIMDoorProperties) -> None:
     """Draw door properties UI (shared between properties panel and preferences)."""
