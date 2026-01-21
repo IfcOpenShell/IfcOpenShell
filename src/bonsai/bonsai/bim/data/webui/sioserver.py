@@ -15,6 +15,8 @@ import pystache
 import json
 import base64
 import xml.etree.ElementTree as ET
+import platformdirs
+from pathlib import Path
 
 sio_port = 8080  # default port
 
@@ -233,10 +235,17 @@ async def demo(request):
     return web.Response(text=html_content, content_type="text/html")
 
 
-async def on_startup(app):
-    pid_file = "running_pid.json"
+def get_pid_file_path():
+    """Get the path to the PID file in the user's cache directory."""
+    cache_dir = Path(platformdirs.user_cache_dir("bonsai"))
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / "running_pid.json"
 
-    if os.path.exists(pid_file):
+
+async def on_startup(app):
+    pid_file = get_pid_file_path()
+
+    if pid_file.exists():
         with open(pid_file, "r") as f:
             pids = json.load(f)
     else:
