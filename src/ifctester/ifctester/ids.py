@@ -300,23 +300,15 @@ class Specification:
             if not is_applicable:
                 continue
             self.applicable_entities.append(element)
-            for facet in self.requirements:
-                result = facet(element)
-                is_pass = bool(result)
-                if self.maxOccurs != 0:  # This is a required or optional specification
-                    if is_pass:
+            if self.maxOccurs != 0:  # Requirements are skipped for prohibited applicability
+                for facet in self.requirements:
+                    result = facet(element)
+                    if bool(result):
                         self.passed_entities.add(element)
                         facet.passed_entities.add(element)
                     else:
                         self.failed_entities.add(element)
                         facet.failures.append(FacetFailure(element=element, reason=str(result)))
-                else:  # This is a prohibited specification
-                    if is_pass:
-                        self.failed_entities.add(element)
-                        facet.failures.append(FacetFailure(element=element, reason=str(result)))
-                    else:
-                        self.passed_entities.add(element)
-                        facet.passed_entities.add(element)
 
         self.status = True
         for facet in self.requirements:

@@ -1287,7 +1287,6 @@ class IfcImporter:
                     )
 
 
-
 class IfcImportSettings:
     """
     Initialize only using `IfcImportSettings.factory()`.
