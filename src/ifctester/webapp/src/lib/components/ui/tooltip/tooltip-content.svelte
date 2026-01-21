@@ -1,6 +1,18 @@
-<script>
+<script lang="ts">
 	import { Tooltip as TooltipPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import { cn } from "$lib/utils";
+	import type { Snippet } from "svelte";
+
+	type Side = "top" | "bottom" | "left" | "right";
+
+	type Props = {
+		ref?: HTMLElement | null;
+		class?: string;
+		sideOffset?: number;
+		side?: Side;
+		children?: Snippet;
+		arrowClasses?: string;
+	} & Record<string, unknown>;
 
 	let {
 		ref = $bindable(null),
@@ -10,7 +22,7 @@
 		children,
 		arrowClasses,
 		...restProps
-	} = $props();
+	} : Props = $props();
 </script>
 
 <TooltipPrimitive.Portal>

@@ -1,20 +1,40 @@
-<script>
+<script lang="ts">
     import RestrictionEditor from './RestrictionEditor.svelte';
-    import {stringifyFacet} from "$src/modules/api/ids.svelte.js";
+    import {stringifyFacet} from "$src/modules/api/ids.svelte";
+    import type { Facet, Specification } from "$src/types/ids";
     
     /**
      * Applicability facets wont have: "@uri", "@instructions", "@cardinality"
      * @ in name --> simple string value
      * else --> can be simpleValue, Restriction or list of Restrictions
     */
-    let { facet = $bindable(), facetType, activeTab, removeFacet, index, specification } = $props();
+    type FacetType = "entity" | "attribute" | "classification" | "partOf" | "property" | "material";
 
-    const getSpecialProp = (prop) => {
-        return facet[prop] ?? "";
+    let {
+        facet = $bindable<Facet>({}),
+        facetType,
+        activeTab,
+        removeFacet,
+        index,
+        specification
+    }: {
+        facet: Facet;
+        facetType: FacetType;
+        activeTab: "applicability" | "requirements";
+        removeFacet: (facetType: FacetType, facetIndex: number) => void | Promise<void>;
+        index: number;
+        specification: Specification;
+    } = $props();
+
+    const getSpecialProp = (prop: string) => {
+        const value = (facet as Record<string, unknown>)[prop];
+        return typeof value === "string" ? value : "";
     };
-    const setSpecialProp = (prop, value) => {
-        facet[prop] = value;
+    const setSpecialProp = (prop: string, value: string) => {
+        (facet as Record<string, unknown>)[prop] = value;
     };
+
+    const baseId = `facet-${facetType}-${index}`;
 </script>
 
 <div class="restriction-item">
@@ -48,8 +68,8 @@
             <RestrictionEditor bind:facet={facet} fieldName="name" label="Entity Name" placeholder="e.g., IfcSpace" autocomplete="entityName" />
             <RestrictionEditor bind:facet={facet} fieldName="predefinedType" label="Predefined Type" placeholder="e.g., SOLIDWALL" autocomplete="predefinedType" />
             <div class="form-group">
-                <label>Relation</label>
-                <select class="form-input" bind:value={() => getSpecialProp("@relation"), (v) => setSpecialProp("@relation", v)}>
+                <label for={`${baseId}-relation`}>Relation</label>
+                <select class="form-input" id={`${baseId}-relation`} bind:value={() => getSpecialProp("@relation"), (v) => setSpecialProp("@relation", v)}>
                     <option value="">Select relation...</option>
                     <option value="IFCRELAGGREGATES">IFCRELAGGREGATES</option>
                     <option value="IFCRELASSIGNSTOGROUP">IFCRELASSIGNSTOGROUP</option>
@@ -62,8 +82,8 @@
         {#if activeTab === 'requirements'}
             {#if facetType !== 'entity'}
                 <div class="form-group">
-                    <label>Cardinality</label>
-                    <select class="form-input" bind:value={() => getSpecialProp("@cardinality"), (v) => setSpecialProp("@cardinality", v)}>
+                    <label for={`${baseId}-cardinality`}>Cardinality</label>
+                    <select class="form-input" id={`${baseId}-cardinality`} bind:value={() => getSpecialProp("@cardinality"), (v) => setSpecialProp("@cardinality", v)}>
                         <option value="required">Required</option>
                         <option value="optional">Optional</option>
                         <option value="prohibited">Prohibited</option>
@@ -71,8 +91,8 @@
                 </div>
             {/if}
             <div class="form-group full-width">
-                <label>Instructions</label>
-                <textarea class="form-input" bind:value={() => getSpecialProp("@instructions"), (v) => setSpecialProp("@instructions", v)} placeholder="Optional instructions for IFC authors" rows="2"></textarea>
+                <label for={`${baseId}-instructions`}>Instructions</label>
+                <textarea class="form-input" id={`${baseId}-instructions`} bind:value={() => getSpecialProp("@instructions"), (v) => setSpecialProp("@instructions", v)} placeholder="Optional instructions for IFC authors" rows="2"></textarea>
             </div>
         {/if}
     </div>

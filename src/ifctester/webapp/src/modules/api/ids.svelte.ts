@@ -1,10 +1,18 @@
 import wasm from "$src/modules/wasm";
-import { clearIdsAuditReports } from "./api.svelte.js";
+import { clearIdsAuditReports } from "./api.svelte";
 import hyperid from "hyperid";
 import {tick} from "svelte";
+import type { DocumentState, Facet, FacetValue, IdsDocument, IdsCardinality, Restriction, Specification } from "$src/types/ids";
 
-export let Module = $state({
-    documents: [],
+type ModuleState = {
+    documents: Record<string, IdsDocument>;
+    activeDocument: string | null;
+    status: "loading" | "ready" | "error";
+    states: Record<string, DocumentState>;
+};
+
+export const Module: ModuleState = $state({
+    documents: {},
     activeDocument: null,
     status: "loading",
     states: {}
@@ -17,14 +25,15 @@ wasm.init().then(() => {
     Module.status = "error";
 });
 
-const id = hyperid()
+const id: () => string = hyperid();
 
-export function setDocumentState(docId, updates) {
+export function setDocumentState(docId: string, updates: Partial<DocumentState>) {
     if (!Module.states[docId]) {
         Module.states[docId] = {
             activeTab: 'info',
             viewMode: 'editor',
-            activeSpecification: null
+            activeSpecification: null,
+            auditReport: null
         };
     }
     Object.assign(Module.states[docId], updates);
@@ -32,7 +41,7 @@ export function setDocumentState(docId, updates) {
 
 export async function createDocument() {
     const docId = id();
-    const doc = await wasm.createIDS();
+    const doc = await wasm.createIDS() as IdsDocument;
 
     Module.documents[docId] = doc;
 
@@ -43,14 +52,14 @@ export async function createDocument() {
     Module.activeDocument = docId;
 }
 
-export async function deleteDocument(id) {
+export async function deleteDocument(id: string) {
     // Clear any audit reports generated using this IDS document
     clearIdsAuditReports(id);
     
     delete Module.documents[id];
     delete Module.states[id];
 
-    if (Module.activeDocument == id) {
+    if (Module.activeDocument === id) {
         // If there are other documents, set the first one as active
         if (Object.keys(Module.documents).length > 0) {
             Module.activeDocument = Object.keys(Module.documents)[0];
@@ -62,19 +71,19 @@ export async function deleteDocument(id) {
 
 // Normalize (remove xs: prefix) from JSON dict returned from Python
 // We need this because the backend exports with xs: prefix, yet expects a dict without prefixes.
-function normalizeIdsDict(obj) {
+function normalizeIdsDict(obj: unknown): unknown {
     if (typeof obj !== 'object' || obj === null) return obj;
     
     if (Array.isArray(obj)) {
         return obj.map(normalizeIdsDict);
     }
     
-    const result = {};
+    const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
         if (key === 'xs:restriction' && Array.isArray(value) && value.length > 0) {
             // Convert xs:restriction array to restriction object
-            const restriction = value[0];
-            const newRestriction = {};
+            const restriction = value[0] as Record<string, unknown>;
+            const newRestriction: Record<string, unknown> = {};
             
             for (const [restrictionKey, restrictionValue] of Object.entries(restriction)) {
                 if (restrictionKey.startsWith('xs:')) {
@@ -86,7 +95,7 @@ function normalizeIdsDict(obj) {
                 }
             }
             
-            result['restriction'] = newRestriction;
+            result.restriction = newRestriction;
         } else {
             result[key] = normalizeIdsDict(value);
         }
@@ -96,13 +105,16 @@ function normalizeIdsDict(obj) {
 }
 
 export async function openDocument() {
-    return new Promise((resolve, reject) => {
-        const fileInput = document.createElement('input');
+    return new Promise<void>((resolve, reject) => {
+        const fileInput = document.createElement('input') as HTMLInputElement & {
+            oncancel?: ((this: HTMLInputElement, ev: Event) => void) | null;
+        };
         fileInput.type = 'file';
         fileInput.accept = '.ids,.xml';
         
         fileInput.onchange = async (event) => {
-            const file = event.target.files[0];
+            const target = event.target as HTMLInputElement | null;
+            const file = target?.files?.[0];
             if (!file) {
                 reject(new Error('No file selected'));
                 return;
@@ -112,8 +124,8 @@ export async function openDocument() {
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     try {
-                        const fileContent = e.target.result;
-                        const doc = normalizeIdsDict(await wasm.openIDS(fileContent, false));
+                        const fileContent = (e.target as FileReader).result;
+                        const doc = normalizeIdsDict(await wasm.openIDS(String(fileContent), false)) as IdsDocument;
                         const docId = id();
 
                         // Add document to list and set as active
@@ -145,16 +157,16 @@ export async function openDocument() {
     });
 }
 
-export async function exportActiveDocument() {
+export async function exportActiveDocument(): Promise<string | null> {
     if (!Module.activeDocument) return null;
 
     const doc = $state.snapshot(Module.documents[Module.activeDocument]);
-    const xmlString = await wasm.exportIDS(doc);
+    const xmlString = await wasm.exportIDS(doc as Record<string, unknown>) as string;
 
     return xmlString;
 }
 
-export async function exportDocument(docId) {
+export async function exportDocument(docId: string) {
     const doc = $state.snapshot(Module.documents[docId]);
 
     // Validate
@@ -162,37 +174,38 @@ export async function exportDocument(docId) {
         throw new Error("Please create at least one specification before exporting the document.");
     }
 
-    const xmlString = await wasm.exportIDS(doc);
+    const xmlString = await wasm.exportIDS(doc as Record<string, unknown>) as string;
     
     // Create and download file
     const blob = new Blob([xmlString], { type: 'application/xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${Module.documents[docId].info.title.replace(/[^a-zA-Z0-9]/g, '_')}.ids`;
+    const title = Module.documents[docId].info.title || "untitled";
+    a.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.ids`;
     a.click();
     URL.revokeObjectURL(url);
 }
 
-export async function createSpecification(docId) {
-    const spec = await wasm.createSpecification();
+export async function createSpecification(docId: string) {
+    const spec = await wasm.createSpecification() as Specification;
 
     // Add specification to document
     Module.documents[docId].specifications.specification.push(spec);
 
     // Set as active specification
-    if (Module.activeDocument == docId) {
+    if (Module.activeDocument === docId) {
         const state = Module.states[docId];
         state.activeSpecification = Module.documents[docId].specifications.specification.length - 1;
     }
 }
 
-export async function deleteSpecification(docId, specId) {
+export async function deleteSpecification(docId: string, specId: number) {
     Module.documents[docId].specifications.specification.splice(specId, 1);
 
-    if (Module.activeDocument == docId) {
+    if (Module.activeDocument === docId) {
         const state = Module.states[docId];
-        if (state.activeSpecification == specId) {
+        if (state.activeSpecification === specId) {
             // We need to wait for the next tick here because of Svelte's internal shenanigans
             await tick();
             setDocumentState(docId, { activeSpecification: null });
@@ -209,37 +222,56 @@ export async function deleteSpecification(docId, specId) {
  * clause: "applicability", "requirements"
  * facet: "entity", "attribute", "classification", "partOf", "property", "material"
 */
-export async function createFacet(docId, specId, clause, facet) {
-    let facetObj;
-    if (facet == "entity") {
-        facetObj = await wasm.createEntityFacet(clause, {});
-    } else if (facet == "attribute") {
-        facetObj = await wasm.createAttributeFacet(clause, {});
-    } else if (facet == "classification") {
-        facetObj = await wasm.createClassificationFacet(clause, {});
-    } else if (facet == "partOf") {
-        facetObj = await wasm.createPartOfFacet(clause, {});
-    } else if (facet == "property") {
-        facetObj = await wasm.createPropertyFacet(clause, {});
-    } else if (facet == "material") {
-        facetObj = await wasm.createMaterialFacet(clause, {});
+export async function createFacet(
+    docId: string,
+    specId: number,
+    clause: "applicability" | "requirements",
+    facet: "entity" | "attribute" | "classification" | "partOf" | "property" | "material"
+) {
+    let facetObj: Facet | undefined;
+    if (facet === "entity") {
+        facetObj = await wasm.createEntityFacet(clause, {}) as Facet;
+    } else if (facet === "attribute") {
+        facetObj = await wasm.createAttributeFacet(clause, {}) as Facet;
+    } else if (facet === "classification") {
+        facetObj = await wasm.createClassificationFacet(clause, {}) as Facet;
+    } else if (facet === "partOf") {
+        facetObj = await wasm.createPartOfFacet(clause, {}) as Facet;
+    } else if (facet === "property") {
+        facetObj = await wasm.createPropertyFacet(clause, {}) as Facet;
+    } else if (facet === "material") {
+        facetObj = await wasm.createMaterialFacet(clause, {}) as Facet;
     }
 
-    if (!(facet in Module.documents[docId].specifications.specification[specId][clause])) {
-        Module.documents[docId].specifications.specification[specId][clause][facet] = [];
+    if (!facetObj) return;
+
+    const spec = Module.documents[docId].specifications.specification[specId];
+    const clauseKey = clause as "applicability" | "requirements";
+    if (!spec[clauseKey]) spec[clauseKey] = {};
+    if (!(facet in (spec[clauseKey] as Record<string, unknown>))) {
+        (spec[clauseKey] as Record<string, unknown>)[facet] = [];
     }
 
-    Module.documents[docId].specifications.specification[specId][clause][facet].push(facetObj);
+    ((spec[clauseKey] as Record<string, unknown>)[facet] as Facet[]).push(facetObj);
 }
 
-export async function deleteFacet(docId, specId, clause, facet, facetId) {
-    delete Module.documents[docId].specifications.specification[specId][clause][facet][facetId];
+export async function deleteFacet(
+    docId: string,
+    specId: number,
+    clause: "applicability" | "requirements",
+    facet: "entity" | "attribute" | "classification" | "partOf" | "property" | "material",
+    facetId: number
+) {
+    const spec = Module.documents[docId].specifications.specification[specId];
+    const list = (spec[clause] as Record<string, unknown> | undefined)?.[facet] as Facet[] | undefined;
+    if (!list) return;
+    delete list[facetId];
 }
 
-export function getSpecUsage(spec) {
+export function getSpecUsage(spec?: Specification | null): IdsCardinality {
     if (!spec?.applicability) return 'required';
-    const minOccurs = spec.applicability["@minOccurs"];
-    const maxOccurs = spec.applicability["@maxOccurs"];
+    const minOccurs = spec.applicability["@minOccurs"] as number | undefined;
+    const maxOccurs = spec.applicability["@maxOccurs"] as number | "unbounded" | undefined;
     
     if (minOccurs === 1 && maxOccurs === "unbounded") return 'required';
     if (minOccurs === 0 && maxOccurs === "unbounded") return 'optional';
@@ -248,85 +280,90 @@ export function getSpecUsage(spec) {
 };
 
 // Converts facet to human-readable description
-export function stringifyFacet(clauseType, facet, facetType, spec) {
+export function stringifyFacet(
+    clauseType: "applicability" | "requirements",
+    facet: Facet,
+    facetType: string,
+    spec?: Specification | null
+) {
     if (!facet) return "";
 
     const usage = getSpecUsage(spec);
-    const descriptions = [];
+    const descriptions: string[] = [];
     
     // Entity facet
     if (facetType === "entity") {
         if (clauseType === "applicability") {
-            descriptions.push(`All data where IFC class ${stringifyValue(facet.name)}`);
+            descriptions.push(`All data where IFC class ${stringifyValue(facet.name as FacetValue)}`);
         } else {
-            descriptions.push(`Shall be data where IFC class ${stringifyValue(facet.name)}`);
+            descriptions.push(`Shall be data where IFC class ${stringifyValue(facet.name as FacetValue)}`);
         }
 
         if (facet.predefinedType) {
-            descriptions.push(`and type ${stringifyValue(facet.predefinedType)}`);
+            descriptions.push(`and type ${stringifyValue(facet.predefinedType as FacetValue)}`);
         }
     }
 
     // Attribute facet
     else if (facetType === "attribute") {
         if (clauseType === "applicability") {
-            descriptions.push(`All data where attribute ${stringifyValue(facet.name)}`);
+            descriptions.push(`All data where attribute ${stringifyValue(facet.name as FacetValue)}`);
         } else {
-            descriptions.push(`Shall be data where attribute ${stringifyValue(facet.name)}`);
+            descriptions.push(`Shall be data where attribute ${stringifyValue(facet.name as FacetValue)}`);
         }
-        descriptions.push(`and value ${stringifyValue(facet.value)}`);
+        descriptions.push(`and value ${stringifyValue(facet.value as FacetValue)}`);
     }
 
     // Property facet
     else if (facetType === "property") {
         if (clauseType === "applicability") {
-            descriptions.push(`Elements where property ${stringifyValue(facet.baseName)}`);
+            descriptions.push(`Elements where property ${stringifyValue(facet.baseName as FacetValue)}`);
         } else {
-            descriptions.push(`Shall be elements where property ${stringifyValue(facet.baseName)}`);
+            descriptions.push(`Shall be elements where property ${stringifyValue(facet.baseName as FacetValue)}`);
         }
         if (facet.value) {
-            descriptions.push(`and value ${stringifyValue(facet.value)}`);
+            descriptions.push(`and value ${stringifyValue(facet.value as FacetValue)}`);
         }
-        descriptions.push(`and dataset ${stringifyValue(facet.propertySet)}`);
+        descriptions.push(`and dataset ${stringifyValue(facet.propertySet as FacetValue)}`);
     }
 
     // Classification facet
     else if (facetType === "classification") {
         if (clauseType === "applicability") {
-            descriptions.push(`All data where classification system ${stringifyValue(facet.system)}`);
+            descriptions.push(`All data where classification system ${stringifyValue(facet.system as FacetValue)}`);
         } else {
-            descriptions.push(`Shall be data where classification system ${stringifyValue(facet.system)}`);
+            descriptions.push(`Shall be data where classification system ${stringifyValue(facet.system as FacetValue)}`);
         }
         if (facet.value) {
-            descriptions.push(`and classification ${stringifyValue(facet.value)}`);
+            descriptions.push(`and classification ${stringifyValue(facet.value as FacetValue)}`);
         }
     }
 
     // Material facet
     else if (facetType === "material") {
         if (clauseType === "applicability") {
-            descriptions.push(`All data where material ${stringifyValue(facet.value)}`);
+            descriptions.push(`All data where material ${stringifyValue(facet.value as FacetValue)}`);
         } else {
-            descriptions.push(`Shall be data where material ${stringifyValue(facet.value)}`);
+            descriptions.push(`Shall be data where material ${stringifyValue(facet.value as FacetValue)}`);
         }
     }
 
     // PartOf facet
     else if (facetType === "partOf") {
         if (clauseType === "applicability") {
-            descriptions.push(`An element with an **${facet['@relation']}** relationship`);
+            descriptions.push(`An element with an **${String(facet['@relation'] ?? "")}** relationship`);
 
             if (facet.name) {
-                descriptions.push(`with an entity where IFC class ${stringifyValue(facet.name)}`);
+                descriptions.push(`with an entity where IFC class ${stringifyValue(facet.name as FacetValue)}`);
             }
         } else {
-            descriptions.push(`An element shall have an **${facet['@relation']}** relationship`);
+            descriptions.push(`An element shall have an **${String(facet['@relation'] ?? "")}** relationship`);
 
             if (facet.name) {
-                descriptions.push(`with an entity where IFC class ${stringifyValue(facet.name)}`);
+                descriptions.push(`with an entity where IFC class ${stringifyValue(facet.name as FacetValue)}`);
             }
             if (facet.predefinedType) {
-                descriptions.push(`and predefined type ${stringifyValue(facet.predefinedType)}`);
+                descriptions.push(`and predefined type ${stringifyValue(facet.predefinedType as FacetValue)}`);
             }
         }
     }
@@ -336,20 +373,22 @@ export function stringifyFacet(clauseType, facet, facetType, spec) {
     // Post-process for prohibited and optional requirements
     let isProhibited = false;
 
-    if (usage == "prohibited") isProhibited = !isProhibited;
-    if (clauseType == "requirements" && "@cardinality" in facet && facet["@cardinality"] == "prohibited") isProhibited = !isProhibited;
+    if (usage === "prohibited") isProhibited = !isProhibited;
+    if (clauseType === "requirements" && "@cardinality" in facet && facet["@cardinality"] === "prohibited") {
+        isProhibited = !isProhibited;
+    }
     
     if (isProhibited)
         combined = combined.replace("Shall", "Shall not").replace("shall", "shall not");
 
-    if (clauseType == "requirements" && "@cardinality" in facet && facet["@cardinality"] == "optional")
+    if (clauseType === "requirements" && "@cardinality" in facet && facet["@cardinality"] === "optional")
         combined = combined.replace("Shall", "May").replace("shall", "may");
     
     return renderFacetString(combined);
 }
 
 // Converts value objects to human-readable strings
-function stringifyValue(value) {
+function stringifyValue(value?: FacetValue) {
     if (!value) return "is provided";
     if (value.simpleValue) return `is **${value.simpleValue}**`;
     if (value.restriction) return stringifyRestriction(value.restriction);
@@ -357,7 +396,7 @@ function stringifyValue(value) {
 }
 
 // Converts restriction objects to human-readable strings
-function stringifyRestriction(restriction) {
+function stringifyRestriction(restriction: Restriction) {
     if (!restriction) return "";
     
     // Handle enumeration
@@ -394,7 +433,7 @@ function stringifyRestriction(restriction) {
         if (restriction.maxExclusive && restriction.maxExclusive.length > 0) {
             parts.push(`**< ${restriction.maxExclusive[0]['@value'] || ''}**`);
         }
-        return parts.length > 0 ? "is in range " + parts.join(", ") : "has range restriction";
+        return parts.length > 0 ? `is in range ${parts.join(", ")}` : "has range restriction";
     }
     
     // Handle length range restrictions
@@ -406,18 +445,18 @@ function stringifyRestriction(restriction) {
         if (restriction.maxLength && restriction.maxLength.length > 0) {
             parts.push(`**max length ${restriction.maxLength[0]['@value'] || ''}**`);
         }
-        return parts.length > 0 ? "has " + parts.join(", ") : "has length range restriction";
+        return parts.length > 0 ? `has ${parts.join(", ")}` : "has length range restriction";
     }
     
     return "has complex restriction";
 }
 
-function renderFacetString(text) {
+function renderFacetString(text: string): string {
     // Convert **text** to <strong>text</strong>
-    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    const withStrong = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     
     // Convert `text` to <code>text</code>
-    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    const withCode = withStrong.replace(/`([^`]+)`/g, '<code>$1</code>');
     
-    return text;
+    return withCode;
 }

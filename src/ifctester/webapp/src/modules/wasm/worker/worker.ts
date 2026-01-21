@@ -4,13 +4,14 @@
 
 import { MessageType } from '../index';
 import config from '../../../config.json';
-import * as IDS from './ids.js';
+import * as IDS from './ids';
 import * as API from './api';
+import type { ApiCallPayload, WorkerRequest } from "$src/types/wasm";
 
-let pyodide = null;
+let pyodide: any = null;
 let ready = false;
 
-self.addEventListener('message', async (event) => {
+self.addEventListener('message', async (event: MessageEvent<WorkerRequest>) => {
     console.log("[worker] Received message:", event.data);
     const { type, payload, id } = event.data;
 
@@ -25,27 +26,33 @@ self.addEventListener('message', async (event) => {
                 });
                 break;
 
-            case MessageType.API_CALL:
+            case MessageType.API_CALL: {
                 if (!ready) {
                     throw new Error('[worker] Pyodide not initialized');
                 }
-                const result = await handleApiCall(payload);
+                if (!payload) {
+                    throw new Error('[worker] Missing payload for API call');
+                }
+                const result = await handleApiCall(payload as ApiCallPayload);
                 self.postMessage({
                     type: MessageType.API_RESPONSE,
                     payload: result,
                     id
                 });
                 break;
+            }
 
             default:
                 throw new Error(`[worker] Unknown message type: ${type}`);
         }
     } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const stack = error instanceof Error ? error.stack : undefined;
         self.postMessage({
             type: MessageType.ERROR,
             payload: {
-                message: error.message,
-                stack: error.stack
+                message,
+                stack
             },
             id
         });
@@ -93,17 +100,17 @@ async function cleanupEnvironment() {
     console.log("[worker] Closed environment");
 }
 
-async function handleApiCall({ method, args = [] }) {
+async function handleApiCall({ method, args = [] }: ApiCallPayload) {
     if (method === 'internal.cleanup') {
         await cleanupEnvironment();
         return true;
     }
 
     if (method in API.API) {
-        return await API.API[method](...args);
-    } else if (method in IDS.API) {
-        return await IDS.API[method](...args);
-    } else {
-        throw new Error(`[worker] Unknown API method: ${method}`);
+        return await (API.API as Record<string, (...params: unknown[]) => unknown>)[method](...args);
     }
+    if (method in IDS.API) {
+        return await (IDS.API as Record<string, (...params: unknown[]) => unknown>)[method](...args);
+    }
+    throw new Error(`[worker] Unknown API method: ${method}`);
 }

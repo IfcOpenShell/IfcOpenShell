@@ -1,12 +1,37 @@
 import { io } from 'socket.io-client';
-import { IFCModels } from './api.svelte.js';
-import * as IDS from './ids.svelte.js';
-import { error, success } from '../utils/toast.svelte.js';
+import type { Socket } from 'socket.io-client';
+import { IFCModels } from './api.svelte';
+import * as IDS from './ids.svelte';
+import { error, success } from '../utils/toast.svelte';
 import hyperid from 'hyperid';
-import { onMount } from 'svelte';
+import type { AuditReport, AuditReportData } from "$src/types/report";
 
 // Bonsai connection state
-export let Bonsai = $state({
+type BonsaiState = {
+    enabled: boolean;
+    port: string | null;
+    socket: Socket | null;
+    connected: boolean;
+    auditing: boolean;
+};
+
+type PendingAudit = {
+    resolve: (value: string | null) => void;
+    reject: (reason?: unknown) => void;
+};
+
+type AuditResultPayload = {
+    id?: string;
+    json_report?: string;
+    html_report?: string;
+};
+
+type AuditErrorPayload = {
+    id?: string;
+    error?: string;
+};
+
+export const Bonsai: BonsaiState = $state({
     enabled: false,
     port: null,
     socket: null,
@@ -14,8 +39,8 @@ export let Bonsai = $state({
     auditing: false
 });
 
-const id = hyperid();
-const pendingAudits = new Map();
+const id: () => string = hyperid();
+const pendingAudits = new Map<string, PendingAudit>();
 
 // Check for Bonsai server port in URL parameters
 const urlParams = new URLSearchParams(window.location.search);
@@ -29,8 +54,11 @@ if (serverPort) {
 /**
  * Connect to Bonsai server
  */
-export const connect = () => new Promise((resolve, reject) => {
-    if (!Bonsai.port) return;
+export const connect = () => new Promise<void>((resolve, reject) => {
+    if (!Bonsai.port) {
+        resolve();
+        return;
+    }
     
     try {
         Bonsai.socket = io(`ws://127.0.0.1:${Bonsai.port}/ifctester`, {
@@ -49,7 +77,7 @@ export const connect = () => new Promise((resolve, reject) => {
             Bonsai.connected = false;
         });
         
-        Bonsai.socket.on('connect_error', (err) => {
+        Bonsai.socket.on('connect_error', (err: Error) => {
             Bonsai.connected = false;
             error(`Failed to connect to Bonsai: ${err.message}`);
             reject(err);
@@ -59,7 +87,8 @@ export const connect = () => new Promise((resolve, reject) => {
         Bonsai.socket.on('error', handleAuditError);
         
     } catch (err) {
-        error(`Failed to connect to Bonsai: ${err.message}`);
+        const message = err instanceof Error ? err.message : String(err);
+        error(`Failed to connect to Bonsai: ${message}`);
         reject(err);
     }
 });
@@ -93,14 +122,21 @@ export const runAudit = async () => {
         
         // Convert IDS document to XML string
         const idsXml = await IDS.exportActiveDocument();
+        if (!idsXml) {
+            throw new Error('Failed to export IDS document');
+        }
         
         const requestId = id();
+        const socket = Bonsai.socket;
+        if (!socket) {
+            throw new Error('Bonsai socket not connected');
+        }
         
-        return new Promise((resolve, reject) => {
+        return new Promise<string | null>((resolve, reject) => {
             // Store request with resolve/reject functions
             pendingAudits.set(requestId, { resolve, reject });
             
-            Bonsai.socket.emit('audit_ids', {
+            socket.emit('audit_ids', {
                 id: requestId,
                 ids: idsXml
             });
@@ -108,7 +144,8 @@ export const runAudit = async () => {
         
     } catch (err) {
         Bonsai.auditing = false;
-        error(`Failed to run Bonsai audit: ${err.message}`);
+        const message = err instanceof Error ? err.message : String(err);
+        error(`Failed to run Bonsai audit: ${message}`);
         return null;
     }
 };
@@ -117,7 +154,7 @@ export const runAudit = async () => {
  * Handles audit results from Bonsai server
  * @param {Object} data - Audit result data
  */
-const handleAuditResult = (data) => {
+const handleAuditResult = (data: AuditResultPayload) => {
     if (!data.id || !data.json_report) return;
     
     const pendingAudit = pendingAudits.get(data.id);
@@ -130,13 +167,14 @@ const handleAuditResult = (data) => {
     const { resolve } = pendingAudit;
     
     try {
-        const reportData = JSON.parse(data.json_report);
+        const reportData = JSON.parse(data.json_report) as AuditReportData;
         
-        const auditReport = {
+        const auditReport: AuditReport = {
             id: data.id,
+            modelId: `bonsai:${data.id}`,
             date: new Date().toISOString(),
             modelName: 'Bonsai IFC Model',
-            document: IDS.Module.activeDocument,
+            document: IDS.Module.activeDocument ?? "",
             data: reportData,
             htmlReport: data.html_report
         };
@@ -152,7 +190,8 @@ const handleAuditResult = (data) => {
         
     } catch (err) {
         Bonsai.auditing = false;
-        error(`Failed to process audit result: ${err.message}`);
+        const message = err instanceof Error ? err.message : String(err);
+        error(`Failed to process audit result: ${message}`);
         resolve(null);
     }
 };
@@ -161,7 +200,7 @@ const handleAuditResult = (data) => {
  * Handles audit errors from Bonsai server
  * @param {Object} data - Error data
  */
-const handleAuditError = (data) => {
+const handleAuditError = (data: AuditErrorPayload) => {
     if (!data.id) return;
     
     const pendingAudit = pendingAudits.get(data.id);
@@ -174,7 +213,6 @@ const handleAuditError = (data) => {
     const { resolve } = pendingAudit;
     
     Bonsai.auditing = false;
-    error(`Audit failed (Bonsai): ${data.error}`);
+    error(`Audit failed (Bonsai): ${data.error ?? "Unknown error"}`);
     resolve(null);
 };
-
