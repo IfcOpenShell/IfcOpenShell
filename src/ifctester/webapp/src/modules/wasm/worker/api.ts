@@ -1,12 +1,13 @@
 import config from '../../../config.json';
 import hyperid from 'hyperid';
+import type { AuditReportData } from "$src/types/report";
 
-let pyodide = null;
-let id = hyperid();
+let pyodide: any = null;
+const id = hyperid();
 
-let LoadedIFC = new Map();
+const LoadedIFC = new Map<string, unknown>();
 
-export async function init(pdide) {
+export async function init(pdide: any) {
     pyodide = pdide;
 
     // Load Python API bindings
@@ -18,7 +19,7 @@ export async function init(pdide) {
     `);
 }
 
-export async function getPredefinedTypes(schema, entity) {
+export async function getPredefinedTypes(schema: string, entity: string) {
     const result = await pyodide.runPythonAsync(`
         from api import get_predefined_types_for_entity
         predef_types = get_predefined_types_for_entity("${schema}", "${entity}")
@@ -27,7 +28,7 @@ export async function getPredefinedTypes(schema, entity) {
     return result.toJs({ dict_converter: Object.fromEntries });
 }
 
-export async function getAllEntityClasses(schema) {
+export async function getAllEntityClasses(schema: string) {
     const result = await pyodide.runPythonAsync(`
         from api import get_all_entity_classes
         entities = get_all_entity_classes("${schema}")
@@ -36,7 +37,7 @@ export async function getAllEntityClasses(schema) {
     return result.toJs({ dict_converter: Object.fromEntries });
 }
 
-export async function getAllDataTypes(schema) {
+export async function getAllDataTypes(schema: string) {
     const result = await pyodide.runPythonAsync(`
         from api import get_all_data_types
         data_types = get_all_data_types("${schema}")
@@ -45,7 +46,7 @@ export async function getAllDataTypes(schema) {
     return result.toJs({ dict_converter: Object.fromEntries });
 }
 
-export async function getEntityAttributes(schema, entity) {
+export async function getEntityAttributes(schema: string, entity: string) {
     const result = await pyodide.runPythonAsync(`
         from api import get_entity_attributes
         attrs = get_entity_attributes("${schema}", "${entity}")
@@ -54,7 +55,7 @@ export async function getEntityAttributes(schema, entity) {
     return result.toJs({ dict_converter: Object.fromEntries });
 }
 
-export async function getApplicablePsets(schema, entity, predefinedType = '') {
+export async function getApplicablePsets(schema: string, entity: string, predefinedType = '') {
     const result = await pyodide.runPythonAsync(`
         from api import get_applicable_psets
         psets = get_applicable_psets("${schema}", "${entity}", "${predefinedType}")
@@ -81,7 +82,7 @@ export async function getStandardClassificationSystems() {
     return result.toJs({ dict_converter: Object.fromEntries });
 }
 
-export async function loadIfc(ifcData) {
+export async function loadIfc(ifcData: number[] | Uint8Array | ArrayBuffer) {
     const ifc_id = id();
     const path = `/tmp/${encodeURIComponent(ifc_id)}.ifc`;
 
@@ -97,14 +98,14 @@ export async function loadIfc(ifcData) {
     return ifc_id;
 }
 
-export async function unloadIfc(ifcId) {
+export async function unloadIfc(ifcId: string) {
     const path = `/tmp/${encodeURIComponent(ifcId)}.ifc`;
 
     pyodide.FS.unlink(path);
     LoadedIFC.delete(ifcId);
 }
 
-export async function auditIfc(ifcId, idsData) {
+export async function auditIfc(ifcId: string, idsData: number[] | Uint8Array | ArrayBuffer) {
     const reporter = pyodide.pyimport("ifctester.reporter");
     const api = pyodide.pyimport("api");
 
@@ -116,16 +117,16 @@ export async function auditIfc(ifcId, idsData) {
     specs.validate(ifc);
 
     // Create report in both HTML and JSON formats
-    let jsonReporter = reporter.Json(specs);
+    const jsonReporter = reporter.Json(specs);
     jsonReporter.report();
     const jsonReport = jsonReporter.to_string();
 
-    let htmlReporter = reporter.Html(specs);
+    const htmlReporter = reporter.Html(specs);
     htmlReporter.report();
     const htmlReport = htmlReporter.to_string();
 
     return {
-        json: JSON.parse(jsonReport),
+        json: JSON.parse(jsonReport) as AuditReportData,
         html: htmlReport
     };
 }

@@ -1,6 +1,5 @@
-<script>
-    import { onMount } from "svelte";
-    import { Module } from "$src/modules/api/ids.svelte.js";
+<script lang="ts">
+    import { Module } from "$src/modules/api/ids.svelte";
 </script>
 
 <div class="app-ribbon">

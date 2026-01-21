@@ -1,18 +1,26 @@
-<script>
-    import * as IDS from "$src/modules/api/ids.svelte.js";
-    import { getAuditReportById, downloadAuditReport } from "$src/modules/api/api.svelte.js";
-    import { error, success } from "$src/modules/utils/toast.svelte.js";
+<script lang="ts">
+    import * as IDS from "$src/modules/api/ids.svelte";
+    import { getAuditReportById, downloadAuditReport } from "$src/modules/api/api.svelte";
+    import { error, success } from "$src/modules/utils/toast.svelte";
     import * as Tooltip from "$src/lib/components/ui/tooltip";
+    import type { AuditReport, AuditReportData } from "$src/types/report";
+    import type { DocumentState, IdsDocument } from "$src/types/ids";
 
-    let activeDocument = $derived(IDS.Module.activeDocument ? IDS.Module.documents[IDS.Module.activeDocument] : null);
-    let documentState = $derived(IDS.Module.activeDocument ? IDS.Module.states[IDS.Module.activeDocument] : null);
-    let auditReport = $derived(documentState?.auditReport ? getAuditReportById(documentState.auditReport) : null);
-    let expandedSpecs = $state(new Set());
-    let expandedRequirements = $state(new Set());
+    let activeDocument = $derived(
+        IDS.Module.activeDocument ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument) : null
+    );
+    let documentState = $derived(
+        IDS.Module.activeDocument ? (IDS.Module.states[IDS.Module.activeDocument] as DocumentState) : null
+    );
+    let auditReport = $derived(
+        documentState?.auditReport ? (getAuditReportById(documentState.auditReport) as AuditReport | undefined) : null
+    );
+    let expandedSpecs = $state(new Set<number>());
+    let expandedRequirements = $state(new Set<string>());
     let allExpanded = $state(false);
 
     // Open Editor mode and jump to a specific specification
-    function editSpecification(index) {
+    function editSpecification(index: number) {
         if (IDS.Module.activeDocument) {
             IDS.setDocumentState(IDS.Module.activeDocument, { 
                 viewMode: 'editor',
@@ -23,13 +31,13 @@
         }
     }
 
-    function toggleSpecification(index) {
+    function toggleSpecification(index: number) {
         if (expandedSpecs.has(index)) {
             expandedSpecs.delete(index);
         } else {
             expandedSpecs.add(index);
         }
-        expandedSpecs = new Set(expandedSpecs);
+        expandedSpecs = new Set<number>(expandedSpecs);
     }
 
     function toggleAllSpecifications() {
@@ -37,7 +45,7 @@
         
         if (allExpanded) {
             // Collapse all
-            expandedSpecs = new Set();
+            expandedSpecs = new Set<number>();
             allExpanded = false;
         } else {
             // Expand all
@@ -47,7 +55,7 @@
         }
     }
 
-    function getSpecificationStatus(specIndex, auditData) {
+    function getSpecificationStatus(specIndex: number, auditData: AuditReportData) {
         const spec = auditData.specifications[specIndex];
         if (!spec) return null;
         
@@ -59,20 +67,20 @@
         return spec.status;
     }
 
-    function getSpecificationStats(specIndex, auditData) {
+    function getSpecificationStats(specIndex: number, auditData: AuditReportData) {
         const spec = auditData.specifications[specIndex];
         if (!spec) return null;
         return {
-            requirements: `${spec.total_requirements || 0}`,
-            requirementsPassed: `${spec.total_requirements_pass || 0}`,
-            checksTotal: `${spec.total_checks || 0}`,
-            checksPassed: `${spec.total_checks_pass || 0}`,
-            applicableTotal: `${spec.total_applicable || 0}`,
-            applicablePassed: `${spec.total_applicable_pass || 0}`
+            requirements: spec.total_requirements || 0,
+            requirementsPassed: spec.total_requirements_pass || 0,
+            checksTotal: spec.total_checks || 0,
+            checksPassed: spec.total_checks_pass || 0,
+            applicableTotal: spec.total_applicable || 0,
+            applicablePassed: spec.total_applicable_pass || 0
         };
     }
 
-    function getSpecificationReason(specIndex, auditData) {
+    function getSpecificationReason(specIndex: number, auditData: AuditReportData) {
         const spec = auditData.specifications[specIndex];
         if (!spec) return null;
         
@@ -101,29 +109,37 @@
             await downloadAuditReport(auditReport.id);
             success('Audit report downloaded successfully');
         } catch (err) {
-            error(`Failed to download report: ${err.message}`);
+            const message = err instanceof Error ? err.message : String(err);
+            error(`Failed to download report: ${message}`);
         }
     }
 
-    function getRequirementStatus(specIndex, reqIndex, auditData) {
+    function getRequirementStatus(specIndex: number, reqIndex: number, auditData: AuditReportData) {
         const spec = auditData.specifications[specIndex];
         if (!spec || !spec.requirements || !spec.requirements[reqIndex]) return null;
         return spec.requirements[reqIndex];
     }
 
-    function toggleRequirementDetails(specIndex, reqIndex) {
+    function toggleRequirementDetails(specIndex: number, reqIndex: number) {
         const key = `${specIndex}-${reqIndex}`;
         if (expandedRequirements.has(key)) {
             expandedRequirements.delete(key);
         } else {
             expandedRequirements.add(key);
         }
-        expandedRequirements = new Set(expandedRequirements);
+        expandedRequirements = new Set<string>(expandedRequirements);
     }
 
-    function isRequirementDetailsExpanded(specIndex, reqIndex) {
+    function isRequirementDetailsExpanded(specIndex: number, reqIndex: number) {
         return expandedRequirements.has(`${specIndex}-${reqIndex}`);
     }
+
+    const handleActivation = (event: KeyboardEvent, action: () => void) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            action();
+        }
+    };
 </script>
 
 <div class="ids-viewer">
@@ -212,7 +228,14 @@
             </div>
             {#each activeDocument.specifications.specification as spec, index}
                 <div class="specification-card {auditReport ? 'with-audit' : ''} {auditReport && getSpecificationStatus(index, auditReport.data) !== null ? (getSpecificationStatus(index, auditReport.data) === 'skipped' ? 'spec-skipped' : (getSpecificationStatus(index, auditReport.data) ? 'spec-pass' : 'spec-fail')) : ''}">
-                    <div class="spec-card-header" onclick={() => toggleSpecification(index)}>
+                    <div
+                        class="spec-card-header"
+                        role="button"
+                        tabindex="0"
+                        aria-expanded={expandedSpecs.has(index)}
+                        onclick={() => toggleSpecification(index)}
+                        onkeydown={(event) => handleActivation(event, () => toggleSpecification(index))}
+                    >
                         <div class="spec-title-section">
                             <div class="spec-title-row">
                                 <h2>{spec["@name"] || `Specification ${index + 1}`}</h2>
@@ -324,7 +347,7 @@
                                                                 {/if}
                                                             {/if}
                                                         </button>
-                                                        {#if isRequirementDetailsExpanded(index, facetIndex)}
+                                                        {#if reqAuditData && isRequirementDetailsExpanded(index, facetIndex)}
                                                             <div class="facet-expansion">
                                                                 <div class="entity-tables">
                                                                     {#if reqAuditData.passed_entities && reqAuditData.passed_entities.length > 0}

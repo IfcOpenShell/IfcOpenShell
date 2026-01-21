@@ -1,12 +1,17 @@
-<script>
+<script lang="ts">
 	import { Dialog as DialogPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import { cn } from "$lib/utils";
+
+	type Props = {
+		ref?: HTMLElement | null;
+		class?: string;
+	} & Record<string, unknown>;
 
 	let {
 		ref = $bindable(null),
 		class: className,
 		...restProps
-	} = $props();
+	} : Props = $props();
 </script>
 
 <DialogPrimitive.Title

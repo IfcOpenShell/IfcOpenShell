@@ -1,14 +1,22 @@
-<script>
+<script lang="ts">
 	import { Menubar as MenubarPrimitive } from "bits-ui";
 	import CircleIcon from "@lucide/svelte/icons/circle";
-	import { cn } from "$lib/utils.js";
+	import { cn } from "$lib/utils";
+	import type { Snippet } from "svelte";
+
+	type Props = {
+		ref?: HTMLElement | null;
+		class?: string;
+		value: string;
+		children?: Snippet<[ { checked: boolean } ]>;
+	} & Record<string, unknown>;
 
 	let {
 		ref = $bindable(null),
 		class: className,
 		children: childrenProp,
 		...restProps
-	} = $props();
+	} : Props = $props();
 </script>
 
 <MenubarPrimitive.RadioItem
