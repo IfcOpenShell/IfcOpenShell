@@ -521,6 +521,9 @@ class PolylineDecorator:
         color = self.addon_prefs.decorations_colour
 
         blf.color(self.font_id, *color)
+
+        screen_coords = {}
+
         for i in range(len(self.polyline_points)):
             if i < 1 and self.measure_type == "POLY_AREA":
                 continue
@@ -528,40 +531,32 @@ class PolylineDecorator:
                 continue
             dim_text_pos = (Vector(self.polyline_points[i].position) + Vector(self.polyline_points[i - 1].position)) / 2
             dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
-
-            formatted_value = self.polyline_points[i].dim
-
-            blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
-            text = "d: " + formatted_value
-            text_length = blf.dimensions(self.font_id, text)
-            self.draw_text_background(context, dim_text_coords, text_length)
-            blf.draw(self.font_id, text)
+            if dim_text_coords:
+                formatted_value = self.polyline_points[i].dim
+                text = "d: " + formatted_value
+                screen_coords[f"distance_{i}"] = (Vector(dim_text_coords), text)
 
             if i == 1:
                 continue
             angle_text_pos = Vector(self.polyline_points[i - 1].position)
             angle_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, angle_text_pos)
-            blf.position(self.font_id, angle_text_coords[0], angle_text_coords[1], 0)
-            text = "a: " + self.polyline_points[i].angle
-            text_length = blf.dimensions(self.font_id, text)
-            self.draw_text_background(context, angle_text_coords, text_length)
-            blf.draw(self.font_id, text)
+            if angle_text_coords:
+                text = "a: " + self.polyline_points[i].angle
+                screen_coords[f"angle_{i}"] = (Vector(angle_text_coords), text)
 
         if self.measure_type == "SINGLE":
             axis_line, axis_line_center = self.calculate_measurement_x_y_and_z(context)
             for i, dim_text_pos in enumerate(axis_line_center):
                 dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
-                pos = blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
-                value = round((axis_line[i][1] - axis_line[i][0]).length, 4)
-                direction = axis_line[i][1] - axis_line[i][0]
-                if (i == 0 and direction.x < 0) or (i == 1 and direction.y < 0) or (i == 2 and direction.z < 0):
-                    value = -value
-                prefix = "xyz"[i]
-                formatted_value = tool.Polyline.format_input_ui_units(value)
-                text = f"{prefix}: {formatted_value}"
-                text_length = blf.dimensions(self.font_id, text)
-                self.draw_text_background(context, dim_text_coords, text_length)
-                blf.draw(self.font_id, text)
+                if dim_text_coords:
+                    value = round((axis_line[i][1] - axis_line[i][0]).length, 4)
+                    direction = axis_line[i][1] - axis_line[i][0]
+                    if (i == 0 and direction.x < 0) or (i == 1 and direction.y < 0) or (i == 2 and direction.z < 0):
+                        value = -value
+                    prefix = "xyz"[i]
+                    formatted_value = tool.Polyline.format_input_ui_units(value)
+                    text = f"{prefix}: {formatted_value}"
+                    screen_coords[f"xyz_{i}"] = (Vector(dim_text_coords), text)
 
         # Area and Length text
         polyline_verts = [Vector((p.x, p.y, p.z)) for p in self.polyline_points]
@@ -569,34 +564,106 @@ class PolylineDecorator:
         # Area
         if self.measure_type == "POLY_AREA" and self.polyline_data.area:
             if len(polyline_verts) < 3:
+                blf.disable(self.font_id, blf.SHADOW)
                 return
-            center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
+            center = sum(polyline_verts, Vector()) / len(polyline_verts)
             if polyline_verts[0] == polyline_verts[-1]:
-                center = sum(polyline_verts[:-1], Vector()) / len(
-                    polyline_verts[:-1]
-                )  # Doesn't use the last point if is a closed polyline
+                center = sum(polyline_verts[:-1], Vector()) / len(polyline_verts[:-1])
             area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
-            value = self.polyline_data.area
-            text = f"area: {value}"
-            text_length = blf.dimensions(self.font_id, text)
-            area_text_coords[0] -= text_length[0] / 2  # Center text horizontally
-            blf.position(self.font_id, area_text_coords[0], area_text_coords[1], 0)
-            self.draw_text_background(context, area_text_coords, text_length)
-            blf.draw(self.font_id, text)
+            if area_text_coords:
+                value = self.polyline_data.area
+                text = f"area: {value}"
+                text_length = blf.dimensions(self.font_id, text)
+                area_text_coords = list(area_text_coords)
+                area_text_coords[0] -= text_length[0] / 2
+                screen_coords["area"] = (Vector(area_text_coords), text)
 
         # Length
         if self.measure_type in {"POLYLINE", "POLY_AREA"}:
             if len(polyline_verts) < 3:
+                blf.disable(self.font_id, blf.SHADOW)
                 return
             total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
-            blf.position(self.font_id, total_length_text_coords[0], total_length_text_coords[1], 0)
-            value = self.polyline_data.total_length
-            text = f"length: {value}"
+            if total_length_text_coords:
+                value = self.polyline_data.total_length
+                text = f"length: {value}"
+                screen_coords["length"] = (Vector(total_length_text_coords), text)
+
+        self.adjust_overlapping_labels(screen_coords)
+
+        for label_key, (screen_co, text) in screen_coords.items():
+            blf.position(self.font_id, screen_co.x, screen_co.y, 0)
+            blf.color(self.font_id, 1, 1, 1, 1)
             text_length = blf.dimensions(self.font_id, text)
-            self.draw_text_background(context, total_length_text_coords, text_length)
+            self.draw_text_background(context, screen_co, text_length)
             blf.draw(self.font_id, text)
 
         blf.disable(self.font_id, blf.SHADOW)
+
+    def adjust_overlapping_labels(self, screen_coords):
+        font_id = self.font_id
+        text_dimensions = {}
+
+        for label_key, (screen_co, text) in screen_coords.items():
+            text_dimensions[label_key] = blf.dimensions(font_id, text)
+
+        if text_dimensions:
+            first_height = next(iter(text_dimensions.values()))[1]
+            min_spacing = max(2, first_height * 0.3)
+        else:
+            min_spacing = 2
+
+        label_keys = list(screen_coords.keys())
+        for pass_num in range(3):  # 3 passes to try to optimize complex overlaps
+            for i in range(len(label_keys)):
+                for j in range(i + 1, len(label_keys)):
+                    key1, key2 = label_keys[i], label_keys[j]
+                    co1, _ = screen_coords[key1]
+                    co2, _ = screen_coords[key2]
+                    dim1 = text_dimensions[key1]
+                    dim2 = text_dimensions[key2]
+
+                    bounds1 = {
+                        "left": co1.x - min_spacing,
+                        "right": co1.x + dim1[0] + min_spacing,
+                        "top": co1.y + dim1[1] + min_spacing,
+                        "bottom": co1.y - min_spacing,
+                    }
+                    bounds2 = {
+                        "left": co2.x - min_spacing,
+                        "right": co2.x + dim2[0] + min_spacing,
+                        "top": co2.y + dim2[1] + min_spacing,
+                        "bottom": co2.y - min_spacing,
+                    }
+
+                    if (
+                        bounds1["left"] < bounds2["right"]
+                        and bounds1["right"] > bounds2["left"]
+                        and bounds1["bottom"] < bounds2["top"]
+                        and bounds1["top"] > bounds2["bottom"]
+                    ):
+                        x_overlap = min(bounds1["right"], bounds2["right"]) - max(bounds1["left"], bounds2["left"])
+                        y_overlap = min(bounds1["top"], bounds2["top"]) - max(bounds1["bottom"], bounds2["bottom"])
+
+                        separation_multiplier = 1.25
+
+                        # Move labels in the direction requiring less movement
+                        if x_overlap < y_overlap:
+                            separation_distance = (x_overlap / 2 + min_spacing) * separation_multiplier
+                            if co1.x < co2.x:
+                                co1.x -= separation_distance
+                                co2.x += separation_distance
+                            else:
+                                co1.x += separation_distance
+                                co2.x -= separation_distance
+                        else:
+                            separation_distance = (y_overlap / 2 + min_spacing) * separation_multiplier
+                            if co1.y < co2.y:
+                                co1.y -= separation_distance
+                                co2.y += separation_distance
+                            else:
+                                co1.y += separation_distance
+                                co2.y -= separation_distance
 
     def draw_measurements_poly(self, context):
         self.shader_config(context)
