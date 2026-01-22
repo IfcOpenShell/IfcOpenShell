@@ -21,11 +21,13 @@ from . import ui, prop, operator, decorator
 
 classes = (
     operator.AddPort,
+    operator.AddRelatedPortConnection,
     operator.AddSystem,
     operator.AddZone,
     operator.AssignSystem,
     operator.AssignUnassignFlowControl,
     operator.ConnectPort,
+    operator.CycleFlowDirection,
     operator.DisableEditingSystem,
     operator.DisableEditingZone,
     operator.DisableSystemEditingUI,

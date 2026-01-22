@@ -1082,6 +1082,7 @@ class Surveyor:
 @interface
 class System:
     def create_empty_at_cursor_with_element_orientation(cls, element): pass
+    def create_port_at_cursor(cls, system): pass
     def delete_element_objects(cls, elements): pass
     def disable_editing_system(cls): pass
     def disable_system_editing_ui(cls): pass

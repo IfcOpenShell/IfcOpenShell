@@ -198,7 +198,16 @@ class ShowPorts(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         # Ifc.Operator - as operator will sync object's position with IFC.
-        core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=tool.Ifc.get_entity(context.active_object))
+        element = tool.Ifc.get_entity(context.active_object)
+        core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=element)
+
+        for port in tool.System.get_ports(element):
+            connected_port = tool.System.get_connected_port(port)
+            if connected_port:
+                connected_port_obj = tool.Ifc.get_object(connected_port)
+                if not connected_port_obj:
+                    parent_element = tool.System.get_port_relating_element(connected_port)
+                    core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=parent_element)
 
 
 class HidePorts(bpy.types.Operator, tool.Ifc.Operator):
@@ -217,7 +226,7 @@ class HidePorts(bpy.types.Operator, tool.Ifc.Operator):
 
 class AddPort(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_port"
-    bl_description = "Add port at current cursor position"
+    bl_description = "Add USERDEFINED port at current cursor position"
     bl_label = "Add Port"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -246,7 +255,41 @@ class ConnectPort(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj1 = context.active_object
         obj2 = context.selected_objects[0] if context.selected_objects[1] == obj1 else context.selected_objects[1]
-        core.connect_port(tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2))
+        direction = tool.Ifc.get_entity(obj1).FlowDirection or "NOTDEFINED"
+        core.connect_port(
+            tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2), direction=direction
+        )
+
+
+class AddRelatedPortConnection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_related_port_connection"
+    bl_label = "Connect Port"
+    bl_options = {"REGISTER", "UNDO"}
+
+    relating_port_id: bpy.props.IntProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        props = tool.System.get_system_props()
+        self.layout.prop(props, "related_port", text="Select Port")
+
+    def _execute(self, context):
+        props = tool.System.get_system_props()
+
+        if not props.related_port or props.related_port == "NONE":
+            return {"CANCELLED"}
+
+        port_obj = bpy.data.objects.get(props.related_port)
+        related_port = tool.Ifc.get_entity(port_obj)
+        relating_port = tool.Ifc.get().by_id(self.relating_port_id)
+
+        direction = relating_port.FlowDirection or "NOTDEFINED"
+        core.connect_port(tool.Ifc, port1=relating_port, port2=related_port, direction=direction)
+        PortData.is_loaded = False
+
+        return {"FINISHED"}
 
 
 class DisconnectPort(bpy.types.Operator, tool.Ifc.Operator):
@@ -255,6 +298,9 @@ class DisconnectPort(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
 
     def _execute(self, context):
         if self.element_id != 0:
@@ -310,7 +356,8 @@ class MEPConnectElements(bpy.types.Operator, tool.Ifc.Operator):
                 ports_distance[(port1, port2)] = distance
 
         closest_ports = min(ports_distance, key=lambda x: ports_distance[x])
-        core.connect_port(tool.Ifc, *closest_ports)
+        direction = closest_ports[0].FlowDirection or "NOTDEFINED"
+        core.connect_port(tool.Ifc, *closest_ports, direction=direction)
         bpy.ops.bim.regenerate_distribution_element()
         return {"FINISHED"}
 
@@ -377,6 +424,55 @@ class SetFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
 
         self.report({"ERROR"}, "Selected elements are not connected to set the flow direction")
         return {"CANCELLED"}
+
+
+class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.cycle_flow_direction"
+    bl_label = "Cycle Flow Direction"
+    bl_options = {"REGISTER", "UNDO"}
+    port_id: bpy.props.IntProperty()
+
+    @classmethod
+    def description(cls, context, operator):
+        port = tool.Ifc.get().by_id(operator.port_id)
+        if port and port.is_a("IfcDistributionPort"):
+            current_direction = port.FlowDirection or "NOTDEFINED"
+            return f"Current flow direction: {current_direction}. Click to cycle: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED"
+        return "Cycle through flow directions: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED → SOURCE..."
+
+    def _execute(self, context):
+        port = tool.Ifc.get().by_id(self.port_id)
+        if not port or not port.is_a("IfcDistributionPort"):
+            return {"CANCELLED"}
+
+        current_direction = port.FlowDirection or "NOTDEFINED"
+
+        flow_cycle_map = {
+            "SOURCE": "SINK",
+            "SINK": "SOURCEANDSINK",
+            "SOURCEANDSINK": "NOTDEFINED",
+            "NOTDEFINED": "SOURCE",
+        }
+        next_direction = flow_cycle_map.get(current_direction, "SOURCE")
+
+        tool.Ifc.run("attribute.edit_attributes", product=port, attributes={"FlowDirection": next_direction})
+
+        connected_port = tool.System.get_connected_port(port)
+        if connected_port:
+            connected_direction_map = {
+                "SOURCE": "SINK",
+                "SINK": "SOURCE",
+                "SOURCEANDSINK": "SOURCEANDSINK",
+                "NOTDEFINED": "NOTDEFINED",
+            }
+            connected_direction = connected_direction_map.get(next_direction, "NOTDEFINED")
+            tool.Ifc.run(
+                "attribute.edit_attributes", product=connected_port, attributes={"FlowDirection": connected_direction}
+            )
+
+        PortData.is_loaded = False
+
+        return {"FINISHED"}
 
 
 class LoadZones(bpy.types.Operator):
