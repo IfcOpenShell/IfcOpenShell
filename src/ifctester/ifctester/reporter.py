@@ -85,6 +85,7 @@ class ResultsSpecification(TypedDict):
     total_applicable: int
     total_applicable_pass: int
     total_applicable_fail: int
+    applicable_entities: list[ResultsEntity]
     percent_applicable_pass: ResultsPercent
     total_checks: int
     total_checks_pass: int
@@ -383,6 +384,7 @@ class Json(Reporter):
             total_applicable=total_applicable,
             total_applicable_pass=total_applicable_pass,
             total_applicable_fail=total_applicable - total_applicable_pass,
+            applicable_entities=self.report_applicable_entities(specification),
             percent_applicable_pass=percent_applicable_pass,
             total_checks=total_checks,
             total_checks_pass=total_checks_pass,
@@ -392,6 +394,24 @@ class Json(Reporter):
             applicability=applicability,
             requirements=requirements,
         )
+
+    def report_applicable_entities(self, specification: Specification) -> list[ResultsEntity]:
+        return [
+            ResultsEntity(
+                {
+                    "element": e,
+                    "element_type": ifcopenshell.util.element.get_type(e),
+                    "class": e.is_a(),
+                    "predefined_type": ifcopenshell.util.element.get_predefined_type(e),
+                    "name": getattr(e, "Name", None),
+                    "description": getattr(e, "Description", None),
+                    "id": e.id(),
+                    "global_id": getattr(e, "GlobalId", None),
+                    "tag": getattr(e, "Tag", None),
+                }
+            )
+            for e in specification.applicable_entities
+        ]
 
     def report_passed_entities(self, requirement: Facet) -> list[ResultsEntity]:
         return [
@@ -459,6 +479,10 @@ class Html(Json):
             spec["is_prohibited"] = spec["cardinality"] == "prohibited"
             spec["cardinality"] = spec["cardinality"].capitalize()
             spec["has_requirements"] = bool(spec["requirements"])
+            total_applicable_entities = len(spec["applicable_entities"])
+            spec["applicable_entities"] = self.limit_entities(spec["applicable_entities"])
+            spec["has_omitted_applicable"] = total_applicable_entities > self.entity_limit
+            spec["total_omitted_applicable"] = total_applicable_entities - self.entity_limit
             for requirement in spec["requirements"]:
                 total_passed_entities = len(requirement["passed_entities"])
                 total_failed_entities = len(requirement["failed_entities"])

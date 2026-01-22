@@ -152,7 +152,6 @@
             <p>
                 <strong>Requirements</strong>
             </p>
-            {{/has_requirements}}
             <ol>
                 {{#requirements}}
                 <li class="{{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}}">
@@ -252,6 +251,45 @@
                 </li>
                 {{/requirements}}
             </ol>
+            {{/has_requirements}}
+            {{#is_prohibited}}
+            {{#total_applicable}}
+            <table class="fail">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>PredefinedType</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>GlobalId</th>
+                        <th>Tag</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#applicable_entities}}
+                    <tr>
+                        <td>{{class}}</td>
+                        <td>{{predefined_type}}</td>
+                        <td>{{name}}</td>
+                        <td>{{description}}</td>
+                        <td>{{global_id}}</td>
+                        <td>{{tag}}</td>
+                    </tr>
+                    {{#extra_of_type}}
+                    <tr>
+                        <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
+                    </tr>
+                    {{/extra_of_type}}
+                    {{/applicable_entities}}
+                    {{#has_omitted_applicable}}
+                    <tr>
+                        <td colspan="7"> ... {{total_omitted_applicable}} more failing elements not shown out of {{total_applicable}} total ...</td>
+                    </tr>
+                    {{/has_omitted_applicable}}
+                </tbody>
+            </table>
+            {{/total_applicable}}
+            {{/is_prohibited}}
         </div>
     </section>
     {{/specifications}}
