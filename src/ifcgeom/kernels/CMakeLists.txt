@@ -14,7 +14,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
         PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" PUBLIC_HEADER "${IFCGEOM_H_FILES}"
     )
     list(APPEND kernel_libraries ${KERNEL_TARGET})
-    target_link_libraries(${KERNEL_TARGET} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
+    target_link_libraries(${KERNEL_TARGET} ${${KERNEL_UPPER}_LIBRARIES} IfcGeom Eigen3::Eigen)
     install(
         TARGETS ${KERNEL_TARGET}
         EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
