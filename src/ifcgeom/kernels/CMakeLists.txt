@@ -8,7 +8,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
 
-    add_library(${KERNEL_TARGET} OBJECT ${IFCGEOM_FILES})
+    add_library(${KERNEL_TARGET} ${IFCGEOM_FILES})
     set_target_properties(
         ${KERNEL_TARGET}
         PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS" PUBLIC_HEADER "${IFCGEOM_H_FILES}"
@@ -27,7 +27,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
         set_property(TARGET ${KERNEL_TARGET} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
 
         set(KERNEL_TARGET_SIMPLE "${KERNEL_TARGET}_simple")
-        add_library(${KERNEL_TARGET_SIMPLE} OBJECT ${IFCGEOM_FILES})
+        add_library(${KERNEL_TARGET_SIMPLE} ${IFCGEOM_FILES})
         set_target_properties(
             ${KERNEL_TARGET_SIMPLE}
             PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS"
