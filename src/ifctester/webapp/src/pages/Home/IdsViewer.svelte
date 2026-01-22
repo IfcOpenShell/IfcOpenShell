@@ -4,7 +4,7 @@
     import { error, success } from "$src/modules/utils/toast.svelte";
     import * as Tooltip from "$src/lib/components/ui/tooltip";
     import type { AuditReport, AuditReportData } from "$src/types/report";
-    import type { DocumentState, IdsDocument } from "$src/types/ids";
+    import type { DocumentState, Facet, IdsDocument, Specification } from "$src/types/ids";
 
     let activeDocument = $derived(
         IDS.Module.activeDocument ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument) : null
@@ -116,6 +116,29 @@
         return spec.requirements[reqIndex];
     }
 
+    type RequirementGroup = {
+        facetType: string;
+        items: { facet: Facet; reqIndex: number }[];
+    };
+
+    function getRequirementGroups(spec: Specification | undefined | null): RequirementGroup[] {
+        if (!spec?.requirements) return [];
+
+        const groups: RequirementGroup[] = [];
+        let reqIndex = 0;
+
+        for (const [facetType, facets] of Object.entries(spec.requirements)) {
+            if (!Array.isArray(facets) || facets.length === 0) continue;
+            const items = facets.map((facet) => ({
+                facet,
+                reqIndex: reqIndex++
+            }));
+            groups.push({ facetType, items });
+        }
+
+        return groups;
+    }
+
     function toggleRequirementDetails(specIndex: number, reqIndex: number) {
         const key = `${specIndex}-${reqIndex}`;
         if (expandedRequirements.has(key)) {
@@ -223,6 +246,7 @@
                 </button>
             </div>
             {#each activeDocument.specifications.specification as spec, index}
+                {@const requirementGroups = getRequirementGroups(spec)}
                 <div class="specification-card {auditReport ? 'with-audit' : ''} {auditReport && getSpecificationStatus(index, auditReport.data) !== null ? (getSpecificationStatus(index, auditReport.data) === 'skipped' ? 'spec-skipped' : (getSpecificationStatus(index, auditReport.data) ? 'spec-pass' : 'spec-fail')) : ''}">
                     <div
                         class="spec-card-header"
@@ -420,26 +444,25 @@
                             </div>
 
                             <!-- Requirements Section -->
-                            {#if Array.isArray(spec.requirements) && spec.requirements.length > 0}
+                            {#if requirementGroups.length > 0}
                             <div class="facet-section">
                                 <h3>Requirements</h3>
                                 
                                 <div class="facets-list">
-                                    {#each Object.entries(spec.requirements || {}) as [facetType, facets]}
-                                        {#if Array.isArray(facets) && facets.length > 0}
-                                            <div class="facet-group">
-                                                {#each facets as facet, facetIndex}
-                                                    {@const reqAuditData = auditReport ? getRequirementStatus(index, facetIndex, auditReport.data) : null}
-                                                    {@const specStatus = auditReport ? getSpecificationStatus(index, auditReport.data) : null}
-                                                    <div class="facet-item {auditReport && reqAuditData && specStatus !== 'skipped' ? (reqAuditData.status ? 'audit-pass' : 'audit-fail') : ''}">
-                                                        <button class="facet-header" onclick={() => {if (auditReport && reqAuditData && specStatus !== 'skipped') toggleRequirementDetails(index, facetIndex)}}>
+                                    {#each requirementGroups as group}
+                                        <div class="facet-group">
+                                            {#each group.items as item}
+                                                {@const reqAuditData = auditReport ? getRequirementStatus(index, item.reqIndex, auditReport.data) : null}
+                                                {@const specStatus = auditReport ? getSpecificationStatus(index, auditReport.data) : null}
+                                                <div class="facet-item {auditReport && reqAuditData && specStatus !== 'skipped' ? (reqAuditData.status ? 'audit-pass' : 'audit-fail') : ''}">
+                                                    <button class="facet-header" onclick={() => {if (auditReport && reqAuditData && specStatus !== 'skipped') toggleRequirementDetails(index, item.reqIndex)}}>
                                                             <span class="facet-bullet">•</span>
-                                                            <span class="facet-text">{@html IDS.stringifyFacet("requirements", facet, facetType, spec)}</span>
+                                                            <span class="facet-text">{@html IDS.stringifyFacet("requirements", item.facet, group.facetType, spec)}</span>
                                                             {#if auditReport && reqAuditData && specStatus !== 'skipped'}
                                                                 {#if reqAuditData.total_applicable > 0}
                                                                     <div class="audit-details-toggle">
                                                                         {reqAuditData.status ? 'PASS' : 'FAIL'} ({reqAuditData.total_pass}/{reqAuditData.total_applicable})
-                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class:rotated={isRequirementDetailsExpanded(index, facetIndex)}>
+                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class:rotated={isRequirementDetailsExpanded(index, item.reqIndex)}>
                                                                             <polyline points="6,9 12,15 18,9"></polyline>
                                                                         </svg>
                                                                     </div>
@@ -450,7 +473,7 @@
                                                                 {/if}
                                                             {/if}
                                                         </button>
-                                                        {#if reqAuditData && isRequirementDetailsExpanded(index, facetIndex)}
+                                                        {#if reqAuditData && isRequirementDetailsExpanded(index, item.reqIndex)}
                                                             <div class="facet-expansion">
                                                                 <div class="entity-tables">
                                                                     {#if reqAuditData.passed_entities && reqAuditData.passed_entities.length > 0}
@@ -619,7 +642,6 @@
                                                     </div>
                                                 {/each}
                                             </div>
-                                        {/if}
                                     {/each}
                                 </div>
                             </div>

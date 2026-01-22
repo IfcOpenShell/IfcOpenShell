@@ -265,7 +265,7 @@ export async function deleteFacet(
     const spec = Module.documents[docId].specifications.specification[specId];
     const list = (spec[clause] as Record<string, unknown> | undefined)?.[facet] as Facet[] | undefined;
     if (!list) return;
-    delete list[facetId];
+    list.splice(facetId, 1);
 }
 
 export function getSpecUsage(spec?: Specification | null): IdsCardinality {
