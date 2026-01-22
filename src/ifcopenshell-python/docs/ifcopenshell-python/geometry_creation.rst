@@ -340,8 +340,12 @@ In IFC, meshes may be stored as **Faceted BReps**, **Tessellations**, or
 
     # These vertices and faces represent a 2m square 1m high pyramid in SI units.
     # Note how they are nested lists. Each nested list represents a "mesh". There may be multiple meshes.
-    vertices = [[(0.,0.,0.), (0.,2.,0.), (2.,2.,0.), (2.,0.,0.), (1.,1.,1.)]]
-    faces = [[(0,1,2,3), (0,4,1), (1,4,2), (2,4,3), (3,4,0)]]
+    vertices = [
+        [(0.,0.,0.), (0.,2.,0.), (2.,2.,0.), (2.,0.,0.), (1.,1.,1.)]
+        ]
+    faces = [
+        [(0,1,2,3), (0,4,1), (1,4,2), (2,4,3)]
+        ]
     representation = ifcopenshell.api.geometry.add_mesh_representation(model, context=body, vertices=vertices, faces=faces)
 
 .. image:: images/mesh-representation.png
