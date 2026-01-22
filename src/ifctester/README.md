@@ -8,10 +8,10 @@ The IfcTester web app is written in Svelte 5, and uses Pyodide to run IfcOpenShe
 make webapp-dev
 ```
 
-The above command loads the latest `ifctester` wheel from PyPi repository. If you want to build and use a local ifctester wheel instead:
+The web app uses a bundled `ifctester-*.whl` from `webapp/public/worker/bin` by default (offline). If you want to build and use a local ifctester wheel instead:
 ```
 make ifctester-wheel  # Build and copy the wheel to the correct location
-make webapp-dev IFCTESTER_INSTALL_SOURCE=wheel
+make webapp-dev IFCTESTER_WHEEL_URL=/worker/bin/<wheel-name>.whl
 ```
 
 ### Production build
@@ -22,7 +22,7 @@ make webapp-build
 Or, build and use a local ifctester wheel:
 ```
 make ifctester-wheel
-make webapp-build IFCTESTER_INSTALL_SOURCE=wheel
+make webapp-build IFCTESTER_WHEEL_URL=/worker/bin/<wheel-name>.whl
 ```
 
 Notes:

@@ -1,7 +1,5 @@
 import configJson from "./config.json";
 
-export type IfcTesterInstallSource = "wheel" | "pypi";
-
 export const CONFIG = configJson as {
     wasm: {
         wheel_url: string;
@@ -10,8 +8,8 @@ export const CONFIG = configJson as {
     };
 };
 
-export const IFCTESTER_INSTALL_SOURCE: IfcTesterInstallSource =
-    (import.meta.env.VITE_IFCTESTER_INSTALL_SOURCE as IfcTesterInstallSource | undefined) ?? "pypi";
+const DEFAULT_IFCTESTER_WHEEL_URL =
+    "/worker/bin/ifctester-0.8.5a260122-py3-none-any.whl";
 
 export const IFCTESTER_WHEEL_URL: string =
-    import.meta.env.VITE_IFCTESTER_WHEEL_URL ?? "";
+    import.meta.env.VITE_IFCTESTER_WHEEL_URL ?? DEFAULT_IFCTESTER_WHEEL_URL;
