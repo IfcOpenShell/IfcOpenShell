@@ -283,6 +283,7 @@ class Raycast(bonsai.core.tool.Raycast):
                     "distance": distance / 10,
                 }
                 points.append(snap_point)
+
         intersected = snap_obj.raycast_boxes(
             context, event, snap_obj.root, intersected=[], rays=(ray_origin, ray_direction)
         )
@@ -291,7 +292,7 @@ class Raycast(bonsai.core.tool.Raycast):
             edges.extend(it.edges)
         edges = set(edges)
         count = 0
-        distances = {}
+        selected_edges = {}
         for e in edges:
             idx = snap_obj.obj.data.edges[e].vertices
 
@@ -334,15 +335,15 @@ class Raycast(bonsai.core.tool.Raycast):
             dy = py - cy
             dist = math.hypot(dx, dy)
             if dist <= snap_threshold:
-                distances[dist] = e
+                selected_edges[dist] = e
 
-        if distances:
+        if selected_edges:
             min_dist = float("inf")
-            for key in distances:
+            for key in selected_edges:
                 if key < min_dist:
                     min_dist = key
 
-            idx = snap_obj.obj.data.edges[distances[min_dist]].vertices
+            idx = snap_obj.obj.data.edges[selected_edges[min_dist]].vertices
             edge_verts = (snap_obj.verts_3d[idx[0]], snap_obj.verts_3d[idx[1]])
             division_points = divide_vector(
                 edge_verts[0], edge_verts[1], 2
