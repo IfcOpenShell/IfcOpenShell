@@ -444,10 +444,24 @@
         (facet as Record<string, unknown>)[fieldName] = { 'restriction': restriction };
     };
 
-    let restrictionType = $derived(getRestrictionType());
+    let restrictionType = $state(getRestrictionType());
+    let hasUserSelectedType = $state(false);
+    let lastFacetRef = $state(facet);
     let enumerationValues = $derived(getEnumerationValues());
 
+    $effect(() => {
+        if (facet !== lastFacetRef) {
+            lastFacetRef = facet;
+            hasUserSelectedType = false;
+        }
+        const detected = getRestrictionType();
+        if (!hasUserSelectedType || detected !== 'Simple' || restrictionType === 'Simple') {
+            restrictionType = detected;
+        }
+    });
+
     const handleTypeChange = (newType: string) => {
+        hasUserSelectedType = true;
         restrictionType = newType;
         
         switch (newType) {
