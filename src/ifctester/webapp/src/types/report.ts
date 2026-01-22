@@ -44,6 +44,7 @@ export type AuditSpecification = {
     description: string;
     instructions: string;
     status: boolean;
+    is_skipped?: boolean;
     is_ifc_version: boolean;
     total_applicable: number;
     total_applicable_pass: number;
@@ -58,6 +59,9 @@ export type AuditSpecification = {
     requirements: AuditRequirement[];
     total_requirements?: number;
     total_requirements_pass?: number;
+    applicable_entities?: AuditReportEntity[];
+    total_omitted_applicable?: number;
+    has_omitted_applicable?: boolean;
 };
 
 export type AuditReportData = {

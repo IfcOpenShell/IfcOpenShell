@@ -260,19 +260,19 @@
                                 <p class="spec-description">{spec["@description"]}</p>
                             {/if}
                             <div class="spec-stats">
-                                {#if spec.applicability["@minOccurs"] === 1 && spec.applicability["@maxOccurs"] === 'unbounded'}
+                                {#if spec.applicability?.["@minOccurs"] === 1 && spec.applicability?.["@maxOccurs"] === 'unbounded'}
                                     <span class="stat-item">Required</span>
                                 {/if}
-                                {#if spec.applicability["@minOccurs"] === 0 && spec.applicability["@maxOccurs"] === 'unbounded'}
+                                {#if spec.applicability?.["@minOccurs"] === 0 && spec.applicability?.["@maxOccurs"] === 'unbounded'}
                                     <span class="stat-item">Optional</span>
                                 {/if}
-                                {#if spec.applicability["@minOccurs"] === 0 && spec.applicability["@maxOccurs"] === 0}
+                                {#if spec.applicability?.["@minOccurs"] === 0 && spec.applicability?.["@maxOccurs"] === 0}
                                     <span class="stat-item">Prohibited</span>
                                 {/if}
                                 {#if auditReport}
                                     {@const stats = getSpecificationStats(index, auditReport.data)}
                                     {@const status = getSpecificationStatus(index, auditReport.data)}
-                                    {#if stats && spec.applicability["@maxOccurs"] !== 0 && status !== 'skipped'}
+                                    {#if stats && spec.applicability?.["@maxOccurs"] !== 0 && status !== 'skipped'}
                                         <span class="stat-item">Checks: {stats.checksPassed}/{stats.checksTotal}</span>
                                         <span class="stat-item">Requirements: {stats.requirementsPassed}/{stats.requirements}</span>
                                     {/if}
@@ -325,7 +325,7 @@
 
                                 {#if auditReport}
                                     {@const status = getSpecificationStatus(index, auditReport.data)}
-                                    {#if ! status && spec.applicability["@maxOccurs"] == 0}
+                                    {#if status === false && spec.applicability?.["@maxOccurs"] === 0}
                                         {@const specReport = auditReport.data.specifications[index]}
                                         <div class="entity-tables">
                                             {#if specReport.applicable_entities && specReport.applicable_entities.length > 0}
