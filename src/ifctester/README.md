@@ -8,13 +8,13 @@ The IfcTester web app is written in Svelte 5, and uses Pyodide to run IfcOpenShe
 make webapp-dev
 ```
 
-The web app uses a bundled `ifctester-*.whl` from `webapp/public/worker/bin` by default (offline). If you want to build and use a local ifctester wheel instead:
+The web app uses a bundled `ifctester-*.whl` from `webapp/public/worker/bin` by default. If you want to build and use a local ifctester wheel instead:
 ```
-make ifctester-wheel  # Build and copy the wheel to the correct location
+make ifctester-wheel  # Builds and copies the wheel into bin
 make webapp-dev IFCTESTER_WHEEL_URL=/worker/bin/<wheel-name>.whl
 ```
 
-### Production build
+### Building for Production
 ```
 make webapp-build
 ```
@@ -25,6 +25,10 @@ make ifctester-wheel
 make webapp-build IFCTESTER_WHEEL_URL=/worker/bin/<wheel-name>.whl
 ```
 
-Notes:
-- Pyodide and required bundled wheels are downloaded to `webapp/public/pyodide` on first build and re-used for later builds.
-- If you want to explicitly set a wheel URL, pass `IFCTESTER_WHEEL_URL=/worker/bin/<wheel-name>.whl` to the make command.
+### Updating the bundled ifctester wheel
+1) Build a fresh wheel:
+```
+make ifctester-wheel
+```
+2) Delete any older `ifctester-*.whl` files from `webapp/public/worker/bin` so only the new wheel remains.
+3) Update `webapp/src/config.json` to point `wasm.ifctester_wheel_url` to the new wheel filename.

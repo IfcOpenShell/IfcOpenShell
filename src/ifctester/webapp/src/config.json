@@ -2,6 +2,7 @@
     "wasm": {
         "wheel_url": "/worker/bin/ifcopenshell-0.8.4+158fe92-cp313-cp313-pyodide_2025_0_wasm32.whl",
         "odfpy_url": "/worker/bin/odfpy-1.4.2-py2.py3-none-any.whl",
-        "api_py_url": "/worker/api.py"
+        "api_py_url": "/worker/api.py",
+        "ifctester_wheel_url": "/worker/bin/ifctester-0.8.5a260122-py3-none-any.whl"
     }
 }
