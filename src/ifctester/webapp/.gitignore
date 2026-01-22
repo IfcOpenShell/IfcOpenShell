@@ -25,3 +25,4 @@ dist-ssr
 
 .claude
 experiment/*
+public/pyodide

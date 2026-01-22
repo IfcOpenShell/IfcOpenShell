@@ -25,10 +25,33 @@ WEBAPP_BUILD_DIR := $(WEBAPP_DIR)/dist
 PYODIDE_DIR := $(WEBAPP_DIR)/public/pyodide
 PYODIDE_VERSION := 0.28.0
 PYODIDE_URL := https://github.com/pyodide/pyodide/releases/download/$(PYODIDE_VERSION)/pyodide-$(PYODIDE_VERSION).tar.bz2
+IFCTESTER_INSTALL_SOURCE ?= pypi
+IFCTESTER_WHEEL_BUILD_DIR ?= build_ifctester_wheel
+IFCTESTER_WHEEL_PUBLIC_DIR ?= /worker/bin
+IFCTESTER_WHEEL_URL ?=
+IFCTESTER_WHEEL_DIR := $(WEBAPP_DIR)/public$(IFCTESTER_WHEEL_PUBLIC_DIR)
+
+define RUN_WEBAPP
+	@WHEEL_URL=""; \
+	if [ "$(IFCTESTER_INSTALL_SOURCE)" = "wheel" ]; then \
+		if [ -n "$(IFCTESTER_WHEEL_URL)" ]; then \
+			WHEEL_URL="$(IFCTESTER_WHEEL_URL)"; \
+		else \
+			WHEEL_FILE=$$(ls $(IFCTESTER_WHEEL_DIR)/ifctester-*.whl | head -n 1); \
+			if [ -z "$$WHEEL_FILE" ]; then echo "No ifctester wheel found in $(IFCTESTER_WHEEL_DIR)"; exit 1; fi; \
+			WHEEL_URL="$(IFCTESTER_WHEEL_PUBLIC_DIR)/$$(basename $$WHEEL_FILE)"; \
+		fi; \
+	fi; \
+	if [ -n "$$WHEEL_URL" ]; then \
+		cd $(WEBAPP_DIR) && VITE_IFCTESTER_INSTALL_SOURCE=$(IFCTESTER_INSTALL_SOURCE) VITE_IFCTESTER_WHEEL_URL=$$WHEEL_URL npm run $(1); \
+	else \
+		cd $(WEBAPP_DIR) && VITE_IFCTESTER_INSTALL_SOURCE=$(IFCTESTER_INSTALL_SOURCE) npm run $(1); \
+	fi
+endef
 
 .PHONY: webapp-dev
 webapp-dev:
-	cd $(WEBAPP_DIR) && npm run dev
+	$(call RUN_WEBAPP,dev)
 
 .PHONY: pyodide-download
 pyodide-download:
@@ -65,7 +88,40 @@ pyodide-download:
 .PHONY: webapp-build
 webapp-build: pyodide-download
 	cd $(WEBAPP_DIR) && npm install
-	cd $(WEBAPP_DIR) && npm run build
+	$(call RUN_WEBAPP,build)
+
+.PHONY: ifctester-wheel
+ifctester-wheel:
+	rm -rf $(IFCTESTER_WHEEL_BUILD_DIR)
+	mkdir -p $(IFCTESTER_WHEEL_BUILD_DIR)
+	cp -r $(PACKAGE_NAME) $(IFCTESTER_WHEEL_BUILD_DIR)/
+	cp pyproject.toml $(IFCTESTER_WHEEL_BUILD_DIR)/
+	cp README.md $(IFCTESTER_WHEEL_BUILD_DIR)/
+	rm -rf $(IFCTESTER_WHEEL_BUILD_DIR)/$(PACKAGE_NAME)/webapp
+ifeq ($(IS_STABLE), TRUE)
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' $(IFCTESTER_WHEEL_BUILD_DIR)/pyproject.toml
+ifdef IS_MODULE
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' $(IFCTESTER_WHEEL_BUILD_DIR)/$(PACKAGE_NAME)
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' $(IFCTESTER_WHEEL_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
+endif
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' $(IFCTESTER_WHEEL_BUILD_DIR)/pyproject.toml
+ifdef IS_MODULE
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' $(IFCTESTER_WHEEL_BUILD_DIR)/$(PACKAGE_NAME)
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' $(IFCTESTER_WHEEL_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
+endif
+endif
+	cd $(IFCTESTER_WHEEL_BUILD_DIR) && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd $(IFCTESTER_WHEEL_BUILD_DIR) && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
+	mkdir -p $(IFCTESTER_WHEEL_DIR)
+	@WHEEL_FILE=$$(ls $(IFCTESTER_WHEEL_BUILD_DIR)/dist/ifctester-*.whl | head -n 1); \
+		if [ -z "$$WHEEL_FILE" ]; then echo "No ifctester wheel produced"; exit 1; fi; \
+		WHEEL_BASENAME=$$(basename $$WHEEL_FILE); \
+		cp $$WHEEL_FILE $(IFCTESTER_WHEEL_DIR)/$$WHEEL_BASENAME; \
+		echo "Copied $$WHEEL_FILE to $(IFCTESTER_WHEEL_DIR)/$$WHEEL_BASENAME";
+	rm -rf $(IFCTESTER_WHEEL_BUILD_DIR)
 
 .PHONY: webapp-serve
 webapp-serve: webapp-build

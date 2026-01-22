@@ -3,7 +3,7 @@
 */
 
 import { MessageType } from '../index';
-import config from '../../../config.json';
+import { CONFIG, IFCTESTER_INSTALL_SOURCE, IFCTESTER_WHEEL_URL } from "$src/config";
 import * as IDS from './ids';
 import * as API from './api';
 import type { ApiCallPayload, WorkerRequest } from "$src/types/wasm";
@@ -76,14 +76,21 @@ async function initEnvironment() {
     const micropip = pyodide.pyimport('micropip');
 
     // Install IfcOpenShell wheel
-    await micropip.install(config.wasm.wheel_url);
+    await micropip.install(CONFIG.wasm.wheel_url);
 
     // Install IfcTester dependencies
-    await micropip.install(config.wasm.odfpy_url);
+    await micropip.install(CONFIG.wasm.odfpy_url);
     await pyodide.loadPackage("shapely");
 
     // Install IfcTester
-    await micropip.install('ifctester');
+    if (IFCTESTER_INSTALL_SOURCE === "wheel") {
+        if (!IFCTESTER_WHEEL_URL) {
+            throw new Error("[worker] Missing IFCTESTER_WHEEL_URL for wheel install");
+        }
+        await micropip.install(IFCTESTER_WHEEL_URL);
+    } else {
+        await micropip.install('ifctester');
+    }
 
     // Initialize IDS and API
     await API.init(pyodide);

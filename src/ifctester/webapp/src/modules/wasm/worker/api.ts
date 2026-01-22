@@ -1,4 +1,4 @@
-import config from '../../../config.json';
+import { CONFIG } from "$src/config";
 import hyperid from 'hyperid';
 import type { AuditReportData } from "$src/types/report";
 
@@ -13,7 +13,7 @@ export async function init(pdide: any) {
     // Load Python API bindings
     await pyodide.runPythonAsync(`
         from pyodide.http import pyfetch
-        response = await pyfetch("${config.wasm.api_py_url}")
+        response = await pyfetch("${CONFIG.wasm.api_py_url}")
         with open("api.py", "wb") as f:
             f.write(await response.bytes())
     `);
