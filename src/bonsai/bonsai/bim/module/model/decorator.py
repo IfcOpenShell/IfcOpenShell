@@ -29,7 +29,6 @@ import bpy
 import gpu
 import ifcopenshell
 import mathutils
-import sys
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -467,14 +466,9 @@ class PolylineDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
-        ui_style = context.preferences.ui_styles[0]
-        widget_font_points = ui_style.widget.points
-        ui_scale = context.preferences.view.ui_scale
-        platform_scale = 2 if sys.platform == "darwin" else 1
-
-        font_size = widget_font_points * ui_scale * platform_scale
-        offset = widget_font_points * ui_scale * (1.5 * platform_scale)
-        line_height = widget_font_points * ui_scale * (1.25 * platform_scale)
+        font_size = tool.Blender.scale_font_size(None)
+        offset = tool.Blender.scale_font_size(None) * 1.5
+        line_height = tool.Blender.scale_font_size(None) * 1.25
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
@@ -522,12 +516,7 @@ class PolylineDecorator:
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        ui_style = context.preferences.ui_styles[0]
-        widget_font_points = ui_style.widget.points
-        ui_scale = context.preferences.view.ui_scale
-        platform_scale = 2 if sys.platform == "darwin" else 1
-
-        font_size = widget_font_points * ui_scale * platform_scale
+        font_size = tool.Blender.scale_font_size(None)
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
@@ -1948,13 +1937,7 @@ class BoundingBoxDecorator:
 
         addon_prefs = tool.Blender.get_addon_preferences()
         font_id = 0
-        # Get Blender's default UI widget font size from preferences
-        ui_style = context.preferences.ui_styles[0]
-        widget_font_points = ui_style.widget.points
-        ui_scale = context.preferences.view.ui_scale
-        platform_scale = 2 if sys.platform == "darwin" else 1
-
-        font_size = widget_font_points * ui_scale * platform_scale
+        font_size = tool.Blender.scale_font_size(None)
         blf.size(font_id, font_size)
         blf.enable(font_id, blf.SHADOW)
         blf.shadow(font_id, 6, 0, 0, 0, 1)
