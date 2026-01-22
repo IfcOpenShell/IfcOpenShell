@@ -81,6 +81,7 @@ class ResultsSpecification(TypedDict):
     description: str
     instructions: str
     status: bool
+    is_skipped: bool
     is_ifc_version: bool
     total_applicable: int
     total_applicable_pass: int
@@ -380,6 +381,7 @@ class Json(Reporter):
             description=specification.description,
             instructions=specification.instructions,
             status=specification.status,
+            is_skipped=cardinality == "optional" and total_checks == 0,
             is_ifc_version=specification.is_ifc_version,
             total_applicable=total_applicable,
             total_applicable_pass=total_applicable_pass,
@@ -474,8 +476,6 @@ class Html(Json):
     def report(self) -> None:
         super().report()
         for spec in self.results["specifications"]:
-            if spec["cardinality"] == "optional" and spec["total_checks"] == 0:
-                spec["is_skipped"] = True
             spec["is_prohibited"] = spec["cardinality"] == "prohibited"
             spec["cardinality"] = spec["cardinality"].capitalize()
             spec["has_requirements"] = bool(spec["requirements"])
