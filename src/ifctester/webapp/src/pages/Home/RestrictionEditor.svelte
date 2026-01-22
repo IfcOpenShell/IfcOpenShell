@@ -39,6 +39,27 @@
     const isDataTypeField = autocomplete === 'dataType';
 
     const baseId = `restriction-${fieldName}-${Math.random().toString(36).slice(2, 8)}`;
+
+    const activeDocument = $derived(
+        IDS.Module.activeDocument ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument) : null
+    );
+    const documentState = $derived(
+        IDS.Module.activeDocument ? (IDS.Module.states[IDS.Module.activeDocument] as DocumentState) : null
+    );
+    const activeSpecification = $derived(
+        activeDocument && documentState && documentState.activeSpecification !== null && activeDocument.specifications?.specification
+            ? (activeDocument.specifications.specification[documentState.activeSpecification] as Specification)
+            : null
+    );
+
+    const getFieldValue = () => (facet as Record<string, unknown>)[fieldName] as FacetValue | string | undefined;
+    const setFieldValue = (value: FacetValue | string) => {
+        (facet as Record<string, unknown>)[fieldName] = value;
+    };
+    const getFacetValue = () => {
+        const value = getFieldValue();
+        return typeof value === 'object' && value !== null ? (value as FacetValue) : undefined;
+    };
     
     // Predefined Types autocompletions
     let predefinedTypeOptions: string[] = $state([]);
@@ -51,17 +72,6 @@
     
     // Get the active specification's IFC schemas
     const getIfcVersions = () => {
-        const activeDocument = IDS.Module.activeDocument
-            ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument)
-            : null;
-        const documentState = IDS.Module.activeDocument
-            ? (IDS.Module.states[IDS.Module.activeDocument] as DocumentState)
-            : null;
-        const activeSpecification =
-            activeDocument && documentState && documentState.activeSpecification !== null && activeDocument.specifications?.specification
-                ? (activeDocument.specifications.specification[documentState.activeSpecification] as Specification)
-                : null;
-        
         const versions = activeSpecification?.["@ifcVersion"] || ['IFC4'];
         // TODO: Fix: Filter out IFC4X3 because it's buggy
         return versions.filter(version => version !== 'IFC4X3_ADD2');
@@ -77,17 +87,6 @@
     
     // Get all entity names from Entity facets in Applicability
     const getApplicabilityEntityNames = () => {
-        const activeDocument = IDS.Module.activeDocument
-            ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument)
-            : null;
-        const documentState = IDS.Module.activeDocument
-            ? (IDS.Module.states[IDS.Module.activeDocument] as DocumentState)
-            : null;
-        const activeSpecification =
-            activeDocument && documentState && documentState.activeSpecification !== null && activeDocument.specifications?.specification
-                ? (activeDocument.specifications.specification[documentState.activeSpecification] as Specification)
-                : null;
-        
         if (!activeSpecification?.applicability?.entity) return [];
         
         const entityFacets = activeSpecification.applicability.entity as Facet[];
@@ -113,17 +112,6 @@
     
     // Get entity facets with their predefined types
     const getApplicabilityEntityFacets = () => {
-        const activeDocument = IDS.Module.activeDocument
-            ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument)
-            : null;
-        const documentState = IDS.Module.activeDocument
-            ? (IDS.Module.states[IDS.Module.activeDocument] as DocumentState)
-            : null;
-        const activeSpecification =
-            activeDocument && documentState && documentState.activeSpecification !== null && activeDocument.specifications?.specification
-                ? (activeDocument.specifications.specification[documentState.activeSpecification] as Specification)
-                : null;
-        
         if (!activeSpecification?.applicability?.entity) return [];
         
         return (activeSpecification.applicability.entity as Facet[]).map(entityFacet => {
@@ -286,7 +274,7 @@
     };
     
     const getRestrictionType = () => {
-        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
+        const fieldValue = getFacetValue();
         if (!fieldValue) return 'Simple';
         if (fieldValue.simpleValue !== undefined) return 'Simple';
         if (fieldValue['restriction']) {
@@ -302,7 +290,7 @@
     };
     
     const getSimpleValue = (): string => {
-        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | string | undefined;
+        const fieldValue = getFieldValue();
 
         // For special properties (eg. @dataType), we return the value directly
         if (typeof fieldValue === 'string') return fieldValue;
@@ -314,7 +302,7 @@
     };
 
     const getEnumerationValues = () => {
-        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
+        const fieldValue = getFacetValue();
         if (!fieldValue?.['restriction']) return [''];
         const restriction = fieldValue['restriction'] as Restriction;
         const enumValues = restriction['enumeration'] as RestrictionValue[] | undefined;
@@ -323,7 +311,7 @@
     };
 
     const getPatternValue = () => {
-        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
+        const fieldValue = getFacetValue();
         if (!fieldValue?.['restriction']) return '';
         const restriction = fieldValue['restriction'] as Restriction;
         const pattern = restriction['pattern'] as RestrictionValue[] | undefined;
@@ -332,7 +320,7 @@
     };
 
     const getRangeValues = () => {
-        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
+        const fieldValue = getFacetValue();
         if (!fieldValue?.['restriction']) return { min: '', max: '', minType: 'Inclusive', maxType: 'Inclusive' };
         const restriction = fieldValue['restriction'] as Restriction;
         
@@ -358,7 +346,7 @@
     };
 
     const getLengthValue = () => {
-        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
+        const fieldValue = getFacetValue();
         if (!fieldValue?.['restriction']) return '';
         const restriction = fieldValue['restriction'] as Restriction;
         const length = restriction['length'] as RestrictionValue[] | undefined;
@@ -367,7 +355,7 @@
     };
 
     const getLengthRangeValues = () => {
-        const fieldValue = (facet as Record<string, unknown>)[fieldName] as FacetValue | undefined;
+        const fieldValue = getFacetValue();
         if (!fieldValue?.['restriction']) return { min: '', max: '' };
         const restriction = fieldValue['restriction'] as Restriction;
         
@@ -386,29 +374,29 @@
     const setSimpleValue = (value: string) => {
         // For special properties (eg. @dataType), we set the value directly
         if (isSpecialProp) {
-            (facet as Record<string, unknown>)[fieldName] = value;
+            setFieldValue(value);
             return;
         }
-        (facet as Record<string, unknown>)[fieldName] = { simpleValue: value };
+        setFieldValue({ simpleValue: value });
     };
 
     const setEnumerationValues = (values: string[]) => {
         const enumItems = values.filter(v => v && typeof v === 'string' && v.trim() !== '').map(v => ({ '@value': v }));
-        (facet as Record<string, unknown>)[fieldName] = {
+        setFieldValue({
             'restriction': {
                 '@base': 'xs:string',
                 'enumeration': enumItems
             }
-        };
+        });
     };
 
     const setPatternValue = (value: string) => {
-        (facet as Record<string, unknown>)[fieldName] = {
+        setFieldValue({
             'restriction': {
                 '@base': 'xs:string',
                 'pattern': [{ '@value': value }]
             }
-        };
+        });
     };
 
     const setRangeValues = (min: string, max: string, minType: string, maxType: string) => {
@@ -423,16 +411,16 @@
             (restriction as Record<string, RestrictionValue[]>)[maxKey] = [{ '@value': max }];
         }
         
-        (facet as Record<string, unknown>)[fieldName] = { 'restriction': restriction };
+        setFieldValue({ 'restriction': restriction });
     };
 
     const setLengthValue = (value: string) => {
-        (facet as Record<string, unknown>)[fieldName] = {
+        setFieldValue({
             'restriction': {
                 '@base': 'xs:string',
                 'length': [{ '@value': value }]
             }
-        };
+        });
     };
 
     const setLengthRangeValues = (min: string, max: string) => {
@@ -441,7 +429,7 @@
         if (min !== '') restriction['minLength'] = [{ '@value': min }];
         if (max !== '') restriction['maxLength'] = [{ '@value': max }];
         
-        (facet as Record<string, unknown>)[fieldName] = { 'restriction': restriction };
+        setFieldValue({ 'restriction': restriction });
     };
 
     let restrictionType = $state(getRestrictionType());
@@ -588,6 +576,7 @@
                 <input class="form-input" type="text" bind:value={() => getPatternValue(), (v) => setPatternValue(v)} placeholder="Enter regex pattern (e.g., DT[0-9]{2})" aria-label={`${label} pattern`}>
             
             {:else if restrictionType === 'Range'}
+                {@const range = getRangeValues()}
                 <div class="range-controls">
                     <div class="range-group">
                         <label for={`${baseId}-range-min`}>Min</label>
@@ -595,13 +584,13 @@
                             class="form-input"
                             type="text"
                             id={`${baseId}-range-min`}
-                            bind:value={() => getRangeValues().min, (v) => { const range = getRangeValues(); setRangeValues(v, range.max, range.minType, range.maxType); }}
+                            bind:value={() => range.min, (v) => setRangeValues(v, range.max, range.minType, range.maxType)}
                             placeholder="0"
                         >
                         <select
                             class="form-input"
                             aria-label="Min bound type"
-                            bind:value={() => getRangeValues().minType, (v) => { const range = getRangeValues(); setRangeValues(range.min, range.max, v, range.maxType); }}
+                            bind:value={() => range.minType, (v) => setRangeValues(range.min, range.max, v, range.maxType)}
                         >
                             <option value="Inclusive">Inclusive</option>
                             <option value="Exclusive">Exclusive</option>
@@ -613,13 +602,13 @@
                             class="form-input"
                             type="text"
                             id={`${baseId}-range-max`}
-                            bind:value={() => getRangeValues().max, (v) => { const range = getRangeValues(); setRangeValues(range.min, v, range.minType, range.maxType); }}
+                            bind:value={() => range.max, (v) => setRangeValues(range.min, v, range.minType, range.maxType)}
                             placeholder="0"
                         >
                         <select
                             class="form-input"
                             aria-label="Max bound type"
-                            bind:value={() => getRangeValues().maxType, (v) => { const range = getRangeValues(); setRangeValues(range.min, range.max, range.minType, v); }}
+                            bind:value={() => range.maxType, (v) => setRangeValues(range.min, range.max, range.minType, v)}
                         >
                             <option value="Inclusive">Inclusive</option>
                             <option value="Exclusive">Exclusive</option>
@@ -631,14 +620,15 @@
                 <input class="form-input" type="number" bind:value={() => getLengthValue(), (v) => setLengthValue(v)} placeholder="Enter exact length" aria-label={`${label} length`}>
             
             {:else if restrictionType === 'Length Range'}
+                {@const lengthRange = getLengthRangeValues()}
                 <div class="length-range-controls">
                     <div class="length-group">
                         <label for={`${baseId}-length-min`}>Min Length</label>
-                        <input class="form-input" id={`${baseId}-length-min`} type="number" bind:value={() => getLengthRangeValues().min, (v) => { const range = getLengthRangeValues(); setLengthRangeValues(v, range.max); }} placeholder="0">
+                        <input class="form-input" id={`${baseId}-length-min`} type="number" bind:value={() => lengthRange.min, (v) => setLengthRangeValues(v, lengthRange.max)} placeholder="0">
                     </div>
                     <div class="length-group">
                         <label for={`${baseId}-length-max`}>Max Length</label>
-                        <input class="form-input" id={`${baseId}-length-max`} type="number" bind:value={() => getLengthRangeValues().max, (v) => { const range = getLengthRangeValues(); setLengthRangeValues(range.min, v); }} placeholder="0">
+                        <input class="form-input" id={`${baseId}-length-max`} type="number" bind:value={() => lengthRange.max, (v) => setLengthRangeValues(lengthRange.min, v)} placeholder="0">
                     </div>
                 </div>
             {/if}
