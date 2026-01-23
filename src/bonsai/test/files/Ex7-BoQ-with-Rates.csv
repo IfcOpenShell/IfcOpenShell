@@ -1,0 +1,10 @@
+Index,Identification,Name,Unit,Value,Quantity,RateSchedule,RateID
+1,E.01,Walls,m3,,,,
+2,E.01.01,Ground floor walls,m3,100,42,,
+2,E.01.02,First floor walls,m3,200,35,,
+1,A.02,Paintings,m2,,,,
+2,A.03,Paintings with water,m2,,,,
+3,B.05,White paintings,m2,,45,Ex2-SoR,A.03
+3,B.06,Colored paintings,m2,32,33,,
+2,C-01,Paintings with machine,m2,17,133,,
+2,C-02,Decorated paintings,m2,40,8,,

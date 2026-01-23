@@ -169,7 +169,6 @@ class Csv2Ifc:
                 if not self.headers:
                     self.has_categories = True
                     self.has_rates = False
-                    self.has_categories = False
                     self.has_formula = False
                     self.headers = {col: i for i, col in enumerate(row) if col}
                     if "RateSchedule" in self.headers and "RateID" in self.headers:
