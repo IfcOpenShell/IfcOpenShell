@@ -1134,6 +1134,8 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 #endif
 	builder->SetFuzzyValue(fuzz);
 	builder->SetArguments(s1s);
+	// We use our own multi-threading in ifcopenshell on a per-product basis
+    builder->SetRunParallel(false);
 	copy_operand(b, b_tmp);
 	std::swap(b, b_tmp);
 	builder->SetTools(b);
