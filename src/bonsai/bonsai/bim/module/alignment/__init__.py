@@ -46,7 +46,7 @@ classes = (
     prop.SaikeiAlignmentProperties,
     # UILists
     ui.SAIKEI_UL_alignment_pis,
-    operator.ImportAlignmentCSV, # Richard Brice
+    operator.ImportAlignmentCSV,
     # Operators - PI Management
     operator.SAIKEI_OT_add_pi,
     operator.SAIKEI_OT_remove_pi,
@@ -57,22 +57,9 @@ classes = (
     operator.SAIKEI_OT_create_alignment,
     operator.SAIKEI_OT_create_alignment_by_pi,
     operator.SAIKEI_OT_import_alignment_csv,
-    operator.SAIKEI_OT_create_alignment_polyline,
-    operator.SAIKEI_OT_create_alignment_offset,
-    # Operators - Layout
-    operator.SAIKEI_OT_add_vertical_layout,
-    operator.SAIKEI_OT_add_layout_segment,
-    operator.SAIKEI_OT_layout_horizontal_by_pi,
-    operator.SAIKEI_OT_layout_vertical_by_pi,
     # Operators - Stationing
     operator.SAIKEI_OT_add_stationing_referent,
     operator.SAIKEI_OT_name_segments,
-    # Operators - Utilities
-    operator.SAIKEI_OT_create_representation,
-    operator.SAIKEI_OT_create_segment_representations,
-    operator.SAIKEI_OT_update_fallback_position,
-    operator.SAIKEI_OT_validate_segments,
-    operator.SAIKEI_OT_refresh_alignment_data,
     # UI Panels
     ui.SAIKEI_PT_horizontal_alignment,
     ui.SAIKEI_PT_alignment_creation,
