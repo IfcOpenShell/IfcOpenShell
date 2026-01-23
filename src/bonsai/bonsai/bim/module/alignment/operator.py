@@ -116,7 +116,7 @@ class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
 def poll_ifc4x3(cls, context):
     """Standard poll method for IFC4X3 requirement"""
-    ifc = tool.Alignment.get_ifc_file()
+    ifc = tool.Ifc.get()
     if ifc is None:
         cls.poll_message_set("No IFC file loaded. Open an IFC file via Bonsai.")
         return False
@@ -162,7 +162,7 @@ def sync_pis_from_ifc(props):
     Returns:
         bool: True if sync was successful, False if alignment was cleared.
     """
-    ifc = tool.Alignment.get_ifc_file()
+    ifc = tool.Ifc.get()
     if ifc is None:
         # No IFC file - clear everything
         props.pis.clear()
@@ -898,7 +898,7 @@ class SAIKEI_OT_recalculate_pis(Operator):
         return True
 
     def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
+        ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
         # Recalculate geometry in UI properties
@@ -976,7 +976,7 @@ class SAIKEI_OT_clear_pis(Operator):
         return context.window_manager.invoke_confirm(self, event)
 
     def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
+        ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
         removed_objects = 0
@@ -1029,7 +1029,7 @@ class SAIKEI_OT_create_alignment(Operator):
         return poll_ifc4x3(cls, context)
 
     def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
+        ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
         alignment = ifcopenshell.api.alignment.create(
@@ -1070,7 +1070,7 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
         return True
 
     def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
+        ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
         # Collect PI data
@@ -1151,7 +1151,7 @@ class SAIKEI_OT_import_alignment_csv(Operator, ImportHelper):
         return poll_ifc4x3(cls, context)
 
     def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
+        ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
         alignment = ifcopenshell.api.alignment.create_from_csv(ifc, self.filepath)
@@ -1163,245 +1163,6 @@ class SAIKEI_OT_import_alignment_csv(Operator, ImportHelper):
         props.active_alignment_id = alignment.id()
 
         self.report({"INFO"}, f"Imported alignment from {self.filepath}")
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_create_alignment_polyline(Operator):
-    """Create alignment as a polyline"""
-
-    bl_idname = "saikei.create_alignment_polyline"
-    bl_label = "Create as Polyline"
-    bl_description = "Create alignment from a polyline (no curves)"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return poll_ifc4x3(cls, context)
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        # Collect points from PIs (no radii)
-        points = [(pi.x, pi.y) for pi in props.pis]
-
-        if len(points) < 2:
-            self.report({"ERROR"}, "Need at least 2 points for polyline")
-            return {"CANCELLED"}
-
-        alignment = ifcopenshell.api.alignment.create_as_polyline(
-            ifc,
-            name=props.new_alignment_name,
-            points=points,
-        )
-
-        # Create full Blender hierarchy (alignment + layouts + segments)
-        obj = tool.Alignment.create_hierarchy_for_alignment(alignment)
-
-        props.active_alignment_name = props.new_alignment_name
-        props.active_alignment_id = alignment.id()
-
-        self.report({"INFO"}, f"Created polyline alignment with {len(points)} points")
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_create_alignment_offset(Operator):
-    """Create alignment as an offset from existing alignment"""
-
-    bl_idname = "saikei.create_alignment_offset"
-    bl_label = "Create as Offset Curve"
-    bl_description = "Create a new alignment offset from an existing alignment"
-    bl_options = {"REGISTER", "UNDO"}
-
-    offset_distance: FloatProperty(
-        name="Offset Distance",
-        description="Distance to offset (positive = right, negative = left)",
-        default=10.0,
-        unit="LENGTH",
-    )
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        return True
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        base_alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-        if base_alignment is None:
-            clear_invalid_alignment_reference(props)
-            self.report({"ERROR"}, "Base alignment no longer exists. Reference cleared.")
-            return {"CANCELLED"}
-
-        alignment = ifcopenshell.api.alignment.create_as_offset_curve(
-            ifc,
-            name=f"{props.new_alignment_name} (Offset)",
-            base_alignment=base_alignment,
-            offset=self.offset_distance,
-        )
-
-        # Create full Blender hierarchy (alignment + layouts + segments)
-        obj = tool.Alignment.create_hierarchy_for_alignment(alignment)
-
-        self.report({"INFO"}, f"Created offset alignment at {self.offset_distance}m")
-        return {"FINISHED"}
-
-
-# =============================================================================
-# Layout Operators
-# =============================================================================
-
-
-class SAIKEI_OT_add_vertical_layout(Operator):
-    """Add vertical layout to an alignment"""
-
-    bl_idname = "saikei.add_vertical_layout"
-    bl_label = "Add Vertical Layout"
-    bl_description = "Add an IfcAlignmentVertical to the active alignment"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        return True
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-        if alignment is None:
-            clear_invalid_alignment_reference(props)
-            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
-            return {"CANCELLED"}
-
-        vertical = ifcopenshell.api.alignment.add_vertical_layout(ifc, alignment)
-
-        self.report({"INFO"}, "Added vertical layout")
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_add_layout_segment(Operator):
-    """Add a segment to an alignment layout"""
-
-    bl_idname = "saikei.add_layout_segment"
-    bl_label = "Add Layout Segment"
-    bl_description = "Add a new segment to the alignment layout"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        return True
-
-    def execute(self, context):
-        # This operator would open a dialog for segment parameters
-        self.report({"INFO"}, "Add segment - dialog coming soon")
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_layout_horizontal_by_pi(Operator):
-    """Layout horizontal alignment using PI method"""
-
-    bl_idname = "saikei.layout_horizontal_by_pi"
-    bl_label = "Layout Horizontal by PI"
-    bl_description = "Layout the horizontal alignment using PI points"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        if len(props.pis) < 2:
-            cls.poll_message_set("Need at least 2 PI points")
-            return False
-        return True
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-        if alignment is None:
-            clear_invalid_alignment_reference(props)
-            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
-            return {"CANCELLED"}
-
-        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
-
-        if not h_layout:
-            self.report({"ERROR"}, "Alignment has no horizontal layout")
-            return {"CANCELLED"}
-
-        pis = [(pi.x, pi.y) for pi in props.pis]
-        radii = [pi.radius for pi in props.pis[1:-1]]
-
-        # Create the IFC segments
-        # Use safe wrapper to validate layout has parent alignment
-        tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, pis, radii)
-
-        # Find or create Blender object for the horizontal layout
-        # Use Bonsai's Ifc tool (re-exported via saikei.tool)
-        alignment_obj = tool.Ifc.get_object(alignment)
-        h_layout_obj = tool.Ifc.get_object(h_layout)
-
-        if not h_layout_obj and alignment_obj:
-            # Create the horizontal layout object if it doesn't exist
-            h_layout_obj = tool.Alignment.create_object_for_layout(h_layout, alignment_obj)
-
-        # Create Blender objects for the newly created segments
-        if h_layout_obj:
-            tool.Alignment.create_objects_for_layout_segments(h_layout, h_layout_obj)
-
-        self.report({"INFO"}, f"Laid out horizontal alignment with {len(pis)} PIs")
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_layout_vertical_by_pi(Operator):
-    """Layout vertical alignment using PI method"""
-
-    bl_idname = "saikei.layout_vertical_by_pi"
-    bl_label = "Layout Vertical by PI"
-    bl_description = "Layout the vertical alignment using PVI points"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        return True
-
-    def execute(self, context):
-        # This would collect vertical PIs and create vertical layout
-        self.report({"INFO"}, "Layout vertical - implementation coming soon")
         return {"FINISHED"}
 
 
@@ -1455,7 +1216,7 @@ class SAIKEI_OT_add_stationing_referent(Operator):
         layout.label(text=f"Station notation: {station_str}")
 
     def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
+        ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
         alignment = get_alignment_by_id(ifc, props.active_alignment_id)
@@ -1519,7 +1280,7 @@ class SAIKEI_OT_name_segments(Operator):
         return True
 
     def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
+        ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
         alignment = get_alignment_by_id(ifc, props.active_alignment_id)
@@ -1534,196 +1295,3 @@ class SAIKEI_OT_name_segments(Operator):
         return {"FINISHED"}
 
 
-# =============================================================================
-# Utility Operators
-# =============================================================================
-
-
-class SAIKEI_OT_create_representation(Operator):
-    """Create geometric representation for alignment"""
-
-    bl_idname = "saikei.create_representation"
-    bl_label = "Create Representation"
-    bl_description = "Create or update the geometric representation"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        return True
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-        if alignment is None:
-            clear_invalid_alignment_reference(props)
-            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
-            return {"CANCELLED"}
-
-        ifcopenshell.api.alignment.create_representation(ifc, alignment)
-
-        self.report({"INFO"}, "Created geometric representation")
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_create_segment_representations(Operator):
-    """Create representations for individual segments"""
-
-    bl_idname = "saikei.create_segment_representations"
-    bl_label = "Create Segment Representations"
-    bl_description = "Create geometric representations for each segment"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        return True
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-        if alignment is None:
-            clear_invalid_alignment_reference(props)
-            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
-            return {"CANCELLED"}
-
-        ifcopenshell.api.alignment.create_segment_representations(ifc, alignment)
-
-        self.report({"INFO"}, "Created segment representations")
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_update_fallback_position(Operator):
-    """Update the fallback position for the alignment"""
-
-    bl_idname = "saikei.update_fallback_position"
-    bl_label = "Update Fallback Position"
-    bl_description = "Update the fallback position point"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        return True
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-        if alignment is None:
-            clear_invalid_alignment_reference(props)
-            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
-            return {"CANCELLED"}
-
-        ifcopenshell.api.alignment.update_fallback_position(ifc, alignment)
-
-        self.report({"INFO"}, "Updated fallback position")
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_validate_segments(Operator):
-    """Validate alignment segments"""
-
-    bl_idname = "saikei.validate_segments"
-    bl_label = "Validate Segments"
-    bl_description = "Check for issues like zero-length segments"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        if not poll_ifc4x3(cls, context):
-            return False
-        props = context.scene.SaikeiAlignmentProperties
-        if props.active_alignment_id == 0:
-            cls.poll_message_set("Select an alignment first")
-            return False
-        return True
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-        if alignment is None:
-            clear_invalid_alignment_reference(props)
-            self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
-            return {"CANCELLED"}
-
-        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
-
-        if h_layout:
-            has_zero = ifcopenshell.api.alignment.has_zero_length_segment(h_layout)
-            if has_zero:
-                self.report({"WARNING"}, "Alignment has zero-length segments")
-            else:
-                self.report({"INFO"}, "All segments valid")
-        else:
-            self.report({"WARNING"}, "No horizontal layout found")
-
-        return {"FINISHED"}
-
-
-class SAIKEI_OT_refresh_alignment_data(Operator):
-    """Refresh alignment data display"""
-
-    bl_idname = "saikei.refresh_alignment_data"
-    bl_label = "Refresh Data"
-    bl_description = "Refresh the alignment segment list"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return poll_ifc4x3(cls, context)
-
-    def execute(self, context):
-        ifc = tool.Alignment.get_ifc_file()
-        props = context.scene.SaikeiAlignmentProperties
-
-        # Clear existing segments
-        props.segments.clear()
-
-        if props.active_alignment_id == 0:
-            return {"FINISHED"}
-
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-        if alignment is None:
-            # Alignment no longer exists - clear reference and return
-            clear_invalid_alignment_reference(props)
-            self.report({"WARNING"}, "Alignment no longer exists. Reference cleared.")
-            return {"FINISHED"}
-
-        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
-
-        if h_layout:
-            segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
-            for i, seg in enumerate(segments):
-                item = props.segments.add()
-                item.name = f"Segment {i + 1}"
-                if hasattr(seg, "DesignParameters") and seg.DesignParameters:
-                    dp = seg.DesignParameters
-                    item.segment_type = dp.PredefinedType or "UNKNOWN"
-                    item.length = dp.SegmentLength or 0.0
-                item.ifc_id = seg.id()
-
-        self.report({"INFO"}, f"Loaded {len(props.segments)} segments")
-        return {"FINISHED"}
