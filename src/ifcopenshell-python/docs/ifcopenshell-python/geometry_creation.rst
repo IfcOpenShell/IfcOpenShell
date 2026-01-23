@@ -344,7 +344,7 @@ In IFC, meshes may be stored as **Faceted BReps**, **Tessellations**, or
         [(0.,0.,0.), (0.,2.,0.), (2.,2.,0.), (2.,0.,0.), (1.,1.,1.)]
         ]
     faces = [
-        [(0,1,2,3), (0,4,1), (1,4,2), (2,4,3)]
+        [(0,1,2,3), (0,4,1), (1,4,2)]
         ]
     representation = ifcopenshell.api.geometry.add_mesh_representation(model, context=body, vertices=vertices, faces=faces)
 
