@@ -1792,6 +1792,10 @@ namespace IfcGeom {
                 auto& vs = elem->geometry().verts();
                 auto& fs = elem->geometry().faces();
 
+                if (vs.empty() || fs.empty()) {
+                    return;
+                }
+
                 gp_Trsf tr;
                 tr.SetValues(
                     m(0, 0), m(0, 1), m(0, 2), m(0, 3),
