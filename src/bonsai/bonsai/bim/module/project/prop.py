@@ -319,7 +319,7 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
+    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.05)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(
         name="Void Limit",
