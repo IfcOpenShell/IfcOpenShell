@@ -511,14 +511,15 @@ def draw_filter(
                 row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "EXCLUDE"
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
     row = layout.row(align=True)
-    if not tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
+    preferences = tool.Blender.get_addon_preferences()
+    if not preferences.chain_filter_with_set_operations:
         row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
     else:
-        if not filter_groups or not any(fg.filters for fg in filter_groups):
-            op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
-            op.type = "entity"
-            op.index = 0
-            op.module = module
+        row.prop(sprops, "facet", text="")
+        op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+        op.type = sprops.facet
+        op.index = 0
+        op.module = module
     op = row.operator("bim.edit_filter_query", text="", icon="FILTER")
     if "module" in op.bl_rna.properties:
         op.module = module
@@ -526,26 +527,23 @@ def draw_filter(
     for i, filter_group in enumerate(filter_groups):
         box = layout.box()
 
-        row = box.row(align=True)
-        row.prop(sprops, "facet", text="")
-        op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
-        op.type = sprops.facet
-        op.index = i
-        op.module = module
-        op = row.operator("bim.remove_filter_group", text="", icon="X")
-        op.index = i
-        op.module = module
+        preferences = tool.Blender.get_addon_preferences()
+        if not preferences.chain_filter_with_set_operations:
+            row = box.row(align=True)
+            row.prop(sprops, "facet", text="")
+            op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+            op.type = sprops.facet
+            op.index = i
+            op.module = module
+            op = row.operator("bim.remove_filter_group", text="", icon="X")
+            op.index = i
+            op.module = module
 
         for j, ifc_filter in enumerate(filter_group.filters):
             if ifc_filter.type == "entity":
                 row = box.row(align=True)
                 preferences = tool.Blender.get_addon_preferences()
-                if preferences.chain_filter_with_set_operations:
-                    show_mode_toggle = j > 0
-                else:
-                    show_mode_toggle = (
-                        preferences.default_filter_with_set_operations_for_globalid_and_class and j > 0
-                    )  # PR 7315 mode
+                show_mode_toggle = preferences.chain_filter_with_set_operations and j > 0
                 if show_mode_toggle:
                     mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
                     op = row.operator(
@@ -761,12 +759,7 @@ def draw_filter(
             elif ifc_filter.type == "instance":
                 row = box.row(align=True)
                 preferences = tool.Blender.get_addon_preferences()
-                if preferences.chain_filter_with_set_operations:
-                    show_mode_toggle = j > 0
-                else:
-                    show_mode_toggle = (
-                        preferences.default_filter_with_set_operations_for_globalid_and_class and j > 0
-                    )  # PR 7315 mode
+                show_mode_toggle = preferences.chain_filter_with_set_operations and j > 0
                 if show_mode_toggle:
                     mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
                     op = row.operator(

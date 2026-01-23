@@ -184,6 +184,78 @@ class ClassPropertyContractV1(TypedDict):
     qudtCodes: NotRequired[list[str]]
 
 
+class ClassRelationItemContractV1(TypedDict):
+    relationType: str
+    classUri: str
+    className: NotRequired[str]
+    fraction: NotRequired[float]
+    dictionaryUri: NotRequired[str]
+
+
+class ClassRelationsContractV1(TypedDict):
+    totalCount: NotRequired[int]
+    offset: NotRequired[int]
+    count: NotRequired[int]
+    classUri: NotRequired[str]
+    areReversedRelations: NotRequired[bool]
+    classRelations: NotRequired[list[ClassRelationItemContractV1]]
+
+
+class ClassPropertiesContractV1(TypedDict):
+    classUri: NotRequired[str]
+    totalCount: NotRequired[int]
+    offset: NotRequired[int]
+    count: NotRequired[int]
+    classProperties: list[ClassPropertyContractV1]
+
+
+class ClassPropertyItemContractV1(TypedDict):
+    name: str
+    propertySet: str
+    uri: str
+    description: NotRequired[str]
+    definition: NotRequired[str]
+    dataType: NotRequired[str]
+    dimension: NotRequired[str]
+    dimensionLength: NotRequired[int]
+    dimensionMass: NotRequired[int]
+    dimensionTime: NotRequired[int]
+    dimensionElectricCurrent: NotRequired[int]
+    dimensionThermodynamicTemperature: NotRequired[int]
+    dimensionAmountOfSubstance: NotRequired[int]
+    dimensionLuminousIntensity: NotRequired[int]
+    dynamicParameterPropertyCodes: NotRequired[list[str]]
+    example: NotRequired[str]
+    isDynamic: NotRequired[bool]
+    isRequired: NotRequired[bool]
+    isWritable: NotRequired[bool]
+    maxExclusive: NotRequired[float]
+    maxInclusive: NotRequired[float]
+    minExclusive: NotRequired[float]
+    minInclusive: NotRequired[float]
+    pattern: NotRequired[str]
+    physicalQuantity: NotRequired[str]
+    allowedValues: NotRequired[list[ClassPropertyValueItemContractV1]]
+    predefinedValue: NotRequired[str]
+    propertyCode: NotRequired[str]
+    propertyDictionaryName: NotRequired[str]
+    propertyDictionaryUri: NotRequired[str]
+    propertyUri: NotRequired[str]
+    propertyStatus: NotRequired[str]
+    propertyValueKind: NotRequired[str]
+    symbol: NotRequired[str]
+    units: NotRequired[list[str]]
+    qudtCodes: NotRequired[list[str]]
+
+
+class ClassPropertyValueItemContractV1(TypedDict):
+    uri: NotRequired[str]
+    code: NotRequired[str]
+    value: str
+    description: NotRequired[str]
+    sortNumber: NotRequired[int]
+
+
 class PropertyContractV5(TypedDict):
     dictionaryUri: NotRequired[str]
     activationDateUtc: str
@@ -708,6 +780,56 @@ class Client:
             "languageCode": language_code,
         }
         params = {k: v for k, v in params.items() if v is not None}
+        return self.get(endpoint, params)
+
+    def get_class_relations(
+        self,
+        class_uri: str,
+        get_reverse_relations: bool = False,
+        search_text: str = "",
+        offset: int = 0,
+        limit: int = 1000,
+        language_code: str = "",
+        version=1,
+    ) -> ClassRelationsContractV1:
+        """
+        Get class relations or reverse relations (paginated)
+        """
+        endpoint = f"Class/Relations/v{version}"
+        params = {
+            "ClassUri": class_uri,
+            "GetReverseRelations": get_reverse_relations,
+            "SearchText": search_text,
+            "Offset": offset,
+            "Limit": limit,
+            "languageCode": language_code,
+        }
+        return self.get(endpoint, params)
+
+    def get_class_properties(
+        self,
+        class_uri: str,
+        property_set: str = "",
+        property_code: str = "",
+        search_text: str = "",
+        offset: int = 0,
+        limit: int = 1000,
+        language_code: str = "",
+        version=1,
+    ) -> ClassPropertiesContractV1:
+        """
+        Get class properties (paginated)
+        """
+        endpoint = f"Class/Properties/v{version}"
+        params = {
+            "ClassUri": class_uri,
+            "PropertySet": property_set,
+            "PropertyCode": property_code,
+            "SearchText": search_text,
+            "Offset": offset,
+            "Limit": limit,
+            "languageCode": language_code,
+        }
         return self.get(endpoint, params)
 
     def get_property(self, uri, language_code="", version: int = 5) -> PropertyContractV5:

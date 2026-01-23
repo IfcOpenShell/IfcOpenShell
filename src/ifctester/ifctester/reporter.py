@@ -81,10 +81,12 @@ class ResultsSpecification(TypedDict):
     description: str
     instructions: str
     status: bool
+    is_skipped: bool
     is_ifc_version: bool
     total_applicable: int
     total_applicable_pass: int
     total_applicable_fail: int
+    applicable_entities: list[ResultsEntity]
     percent_applicable_pass: ResultsPercent
     total_checks: int
     total_checks_pass: int
@@ -367,16 +369,24 @@ class Json(Reporter):
             cardinality = "optional"
         elif specification.minOccurs == 0 and specification.maxOccurs == 0:
             cardinality = "prohibited"
+        elif specification.minOccurs >= 1:
+            # Any minimum occurrence >= 1 means the specification is required
+            cardinality = "required"
+        else:
+            # minOccurs == 0 with any other maxOccurs value means optional
+            cardinality = "optional"
 
         return ResultsSpecification(
             name=specification.name,
             description=specification.description,
             instructions=specification.instructions,
             status=specification.status,
+            is_skipped=cardinality == "optional" and total_checks == 0,
             is_ifc_version=specification.is_ifc_version,
             total_applicable=total_applicable,
             total_applicable_pass=total_applicable_pass,
             total_applicable_fail=total_applicable - total_applicable_pass,
+            applicable_entities=self.report_applicable_entities(specification),
             percent_applicable_pass=percent_applicable_pass,
             total_checks=total_checks,
             total_checks_pass=total_checks_pass,
@@ -386,6 +396,24 @@ class Json(Reporter):
             applicability=applicability,
             requirements=requirements,
         )
+
+    def report_applicable_entities(self, specification: Specification) -> list[ResultsEntity]:
+        return [
+            ResultsEntity(
+                {
+                    "element": e,
+                    "element_type": ifcopenshell.util.element.get_type(e),
+                    "class": e.is_a(),
+                    "predefined_type": ifcopenshell.util.element.get_predefined_type(e),
+                    "name": getattr(e, "Name", None),
+                    "description": getattr(e, "Description", None),
+                    "id": e.id(),
+                    "global_id": getattr(e, "GlobalId", None),
+                    "tag": getattr(e, "Tag", None),
+                }
+            )
+            for e in specification.applicable_entities
+        ]
 
     def report_passed_entities(self, requirement: Facet) -> list[ResultsEntity]:
         return [
@@ -448,11 +476,13 @@ class Html(Json):
     def report(self) -> None:
         super().report()
         for spec in self.results["specifications"]:
-            if spec["cardinality"] == "optional" and spec["total_checks"] == 0:
-                spec["is_skipped"] = True
             spec["is_prohibited"] = spec["cardinality"] == "prohibited"
             spec["cardinality"] = spec["cardinality"].capitalize()
             spec["has_requirements"] = bool(spec["requirements"])
+            total_applicable_entities = len(spec["applicable_entities"])
+            spec["applicable_entities"] = self.limit_entities(spec["applicable_entities"])
+            spec["has_omitted_applicable"] = total_applicable_entities > self.entity_limit
+            spec["total_omitted_applicable"] = total_applicable_entities - self.entity_limit
             for requirement in spec["requirements"]:
                 total_passed_entities = len(requirement["passed_entities"])
                 total_failed_entities = len(requirement["failed_entities"])

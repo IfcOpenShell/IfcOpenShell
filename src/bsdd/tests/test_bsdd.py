@@ -37,6 +37,22 @@ def test_get_class():
     ]
 
 
+def test_get_class_relations():
+    uri_light_fixture = next(l for l in get_ifc_classes()["classes"] if "IfcLightFixture" == l["code"])["uri"]
+    ifc4x3_light_fixture_relations = client.get_class_properties(uri_light_fixture, True)
+    assert "Electrical unit for light-line system" and "Tubelight system" in [
+        r["className"] for r in ifc4x3_light_fixture_relations["classRelations"]
+    ]
+
+
+def test_get_class_properties():
+    uri_light_fixture = next(l for l in get_ifc_classes()["classes"] if "IfcLightFixture" == l["code"])["uri"]
+    ifc4x3_light_fixture_properties = client.get_class_properties(uri_light_fixture)
+    assert "Maintenance Factor" and "Light Fixture Mounting Type" in [
+        l["name"] for l in ifc4x3_light_fixture_properties["classProperties"]
+    ]
+
+
 def test_search_class():
     ss_heat_pump_sys = client.search_class("Ss_60_40_36", [nbs_uri])
     li = [l + "source heat pump systems" for l in ["Air ", "Ground ", "Water "]]

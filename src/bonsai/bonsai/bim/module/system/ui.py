@@ -30,10 +30,10 @@ if TYPE_CHECKING:
 
 
 FLOW_DIRECTION_TO_ICON = {
-    "SOURCE": "FORWARD",
-    "SINK": "BACK",
-    "SOURCEANDSINK": "ARROW_LEFTRIGHT",
-    "NOTDEFINED": "CHECKBOX_DEHLT",
+    "SOURCE": "FULLSCREEN_ENTER",
+    "SINK": "FULLSCREEN_EXIT",
+    "SOURCEANDSINK": "CHECKBOX_DEHLT",
+    "NOTDEFINED": "QUESTION",
 }
 
 
@@ -163,44 +163,87 @@ class BIM_PT_ports(Panel):
             return
 
         row = self.layout.row(align=True)
-        row.label(text="Change Flow Direction:")
-
-        current_flow_direction = PortData.data["selected_objects_flow_direction"]
-        for flow_direction in FLOW_DIRECTION_TO_ICON.keys():
-            row.operator(
-                "bim.set_flow_direction",
-                icon=FLOW_DIRECTION_TO_ICON[flow_direction],
-                depress=flow_direction == current_flow_direction,
-                text="",
-            ).direction = flow_direction
-        row.enabled = len(context.selected_objects) == 2
+        row.label(text=f"Ports located in: {context.active_object.name} and connected Port/Objects:")
 
         row = self.layout.row(align=True)
-        row.label(text="Ports located on object and connected objects:")
-        row = self.layout.row(align=True)
-        cols = [row.column(align=True) for i in range(6)]
+        cols = [row.column(align=True) for i in range(9)]
+        cols[3].scale_x = 1.0
+        cols[6].scale_x = 1.0
+        cols[8].scale_x = 1.33
 
         for port_data in PortData.data["located_ports_data"]:
             flow_direction_icon = FLOW_DIRECTION_TO_ICON[port_data["FlowDirection"] or "NOTDEFINED"]
-            if port_data["port_obj_name"]:
-                cols[0].label(text="", icon=flow_direction_icon)
-                cols[1].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port_data["id"]
-                cols[2].label(text=port_data["port_obj_name"])
+
+            if port_data["connected_obj_name"]:
+                cols[0].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port_data["id"]
+                op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
+                op.port_id = port_data["id"]
             else:
-                cols[0].label(text="", icon=flow_direction_icon)
-                cols[1].label(text="", icon="HIDE_ON")
-                cols[2].label(text="Port is hidden")
+                op = cols[0].operator("bim.add_related_port_connection", text="", icon="PLUGIN")
+                op.relating_port_id = port_data["id"]
+                op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
+                op.port_id = port_data["id"]
+
+            if port_data["port_obj_name"]:
+                cols[2].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port_data["id"]
+                cols[3].label(text=port_data["port_obj_name"])
+            else:
+                cols[2].label(text="", icon="HIDE_ON")
+                cols[3].label(text="Port is hidden")
 
             if port_data["connected_obj_name"]:
                 connected_obj = bpy.data.objects[port_data["connected_obj_name"]]
-                cols[3].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port_data["id"]
+
+                port = tool.Ifc.get().by_id(port_data["id"])
+                connected_port = tool.System.get_connected_port(port)
+                if connected_port:
+                    connected_port_obj = tool.Ifc.get_object(connected_port)
+                    if connected_port_obj:
+                        connected_port_flow_dir = FLOW_DIRECTION_TO_ICON[connected_port.FlowDirection or "NOTDEFINED"]
+                        op = cols[4].operator(
+                            "bim.cycle_flow_direction", text="", icon=connected_port_flow_dir, emboss=True
+                        )
+                        op.port_id = connected_port.id()
+                        cols[5].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = (
+                            connected_port.id()
+                        )
+                        cols[6].label(text=connected_port_obj.name)
+                    else:
+                        blank4 = cols[4].column(align=True)
+                        blank4.scale_x = 0.1
+                        blank4.label(text="", icon="BLANK1")
+                        blank5 = cols[5].column(align=True)
+                        blank5.scale_x = 0.1
+                        blank5.label(text="", icon="BLANK1")
+                        cols[6].label(text="Port is hidden")
+                else:
+                    blank4 = cols[4].column(align=True)
+                    blank4.scale_x = 0.1
+                    blank4.label(text="", icon="BLANK1")
+                    blank5 = cols[5].column(align=True)
+                    blank5.scale_x = 0.1
+                    blank5.label(text="", icon="BLANK1")
+                    cols[6].label(text="")
+
                 ifc_id = tool.Blender.get_ifc_definition_id(connected_obj)
-                cols[4].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
-                cols[5].label(text=port_data["connected_obj_name"])
+                cols[7].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
+                cols[8].label(text=port_data["connected_obj_name"])
             else:
-                cols[3].label(text="", icon="UNLINKED")
-                cols[4].label(text="", icon="BLANK1")
-                cols[5].label(text="Port is disconnected")
+                blank4 = cols[4].column(align=True)
+                blank4.scale_x = 0.1
+                blank4.label(text="", icon="BLANK1")
+                blank5 = cols[5].column(align=True)
+                blank5.scale_x = 0.1
+                blank5.label(text="", icon="BLANK1")
+
+                cols[6].label(text="Port is disconnected")
+
+                blank7 = cols[7].column(align=True)
+                blank7.scale_x = 0.1
+                blank7.label(text="", icon="BLANK1")
+                blank8 = cols[8].column(align=True)
+                blank8.scale_x = 0.1
+                blank8.label(text="", icon="BLANK1")
 
 
 class BIM_PT_port(Panel):
@@ -223,14 +266,8 @@ class BIM_PT_port(Panel):
         return True
 
     def draw(self, context):
-        self.props = tool.System.get_system_props()
-
         layout = self.layout
         row = layout.row(align=True)
-        row.label(text="IfcDistributionPort")
-        row.operator("bim.connect_port", icon="PLUGIN", text="")
-        row.operator("bim.disconnect_port", icon="UNLINKED", text="")
-        row.operator("bim.remove_port", icon="X", text="")
 
         if not PortData.is_loaded:
             PortData.load()
@@ -238,42 +275,56 @@ class BIM_PT_port(Panel):
         if not PortData.data["is_port"]:
             return
 
-        element = tool.Ifc.get_entity(context.active_object)
-        current_flow_direction = str(element.FlowDirection)
-        row = layout.row(align=True)
-        row.label(text="Flow Direction:")
-        row.label(text=current_flow_direction)
-
-        # port located on
-        row = layout.row(align=True)
         relating_object_name = PortData.data["port_relating_object_name"]
-        relating_object = bpy.data.objects[relating_object_name]
-        row.label(text="Port located on:")
-        row.label(text=relating_object_name)
-        ifc_id = tool.Blender.get_ifc_definition_id(relating_object)
-        row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
+        row.label(text=f"IfcDistributionPort located in: {relating_object_name}")
+        row.operator("bim.remove_port", icon="X", text="")
 
-        # object connected to the port
+        element = tool.Ifc.get_entity(context.active_object)
+
         row = layout.row(align=True)
-        connected_object_name = PortData.data["port_connected_object_name"]
-        if connected_object_name:
-            connected_object = bpy.data.objects[connected_object_name]
-            row.label(text="Port connected to:")
-            row.label(text=connected_object_name)
-            ifc_id = tool.Blender.get_ifc_definition_id(connected_object)
-            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
+        cols = [row.column(align=True) for i in range(9)]
+        cols[3].scale_x = 1.0
+        cols[6].scale_x = 1.0
+        cols[8].scale_x = 1.33
+
+        flow_direction_icon = FLOW_DIRECTION_TO_ICON[element.FlowDirection or "NOTDEFINED"]
+        connected_port = tool.System.get_connected_port(element)
+
+        if connected_port:
+            cols[0].operator("bim.disconnect_port", text="", icon="UNLINKED")
+            op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
+            op.port_id = element.id()
         else:
-            row.label(text="Port is not connected to any element")
+            cols[0].operator("bim.connect_port", icon="PLUGIN", text="")
+            op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
+            op.port_id = element.id()
 
-        row = layout.row(align=True)
-        row.label(text="Change Flow Direction:")
-        for flow_direction in FLOW_DIRECTION_TO_ICON.keys():
-            row.operator(
-                "bim.set_flow_direction",
-                icon=FLOW_DIRECTION_TO_ICON[flow_direction],
-                depress=flow_direction == current_flow_direction,
-                text="",
-            ).direction = flow_direction
+        cols[2].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = element.id()
+        cols[3].label(text=context.active_object.name)
+
+        if connected_port:
+            connected_port_flow_dir = FLOW_DIRECTION_TO_ICON[connected_port.FlowDirection or "NOTDEFINED"]
+            op = cols[4].operator("bim.cycle_flow_direction", text="", icon=connected_port_flow_dir, emboss=True)
+            op.port_id = connected_port.id()
+            cols[5].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = connected_port.id()
+            connected_port_obj = tool.Ifc.get_object(connected_port)
+            cols[6].label(text=connected_port_obj.name if connected_port_obj else "Hidden Port")
+
+            connected_object_name = PortData.data["port_connected_object_name"]
+            if connected_object_name:
+                connected_obj = bpy.data.objects[connected_object_name]
+                ifc_id = tool.Blender.get_ifc_definition_id(connected_obj)
+                cols[7].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
+                cols[8].label(text=connected_object_name)
+            else:
+                cols[7].label(text="", icon="BLANK1")
+                cols[8].label(text="")
+        else:
+            cols[4].label(text="", icon="BLANK1")
+            cols[5].label(text="", icon="BLANK1")
+            cols[6].label(text="Port is disconnected")
+            cols[7].label(text="", icon="BLANK1")
+            cols[8].label(text="")
 
 
 class BIM_PT_flow_controls(Panel):

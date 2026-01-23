@@ -66,8 +66,8 @@ if TYPE_CHECKING:
         BIMRailingProperties,
         BIMExternalParametricGeometryProperties,
         BIMPolylineProperties,
-        BIMProductPreviewProperties,
     )
+    from sverchok.core.node_group import SvGroupTreeNode
 
 
 class Model(bonsai.core.tool.Model):
@@ -107,11 +107,6 @@ class Model(bonsai.core.tool.Model):
     def get_polyline_props(cls) -> BIMPolylineProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMPolylineProperties  # pyright: ignore[reportAttributeAccessIssue]
-
-    @classmethod
-    def get_product_preview_props(cls) -> BIMProductPreviewProperties:
-        assert (scene := bpy.context.scene)
-        return scene.BIMProductPreviewProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -2572,12 +2567,20 @@ class Model(bonsai.core.tool.Model):
         return [s for s in group_node.inputs if s.type != "GEOMETRY"]
 
     @classmethod
+    def get_ifcsverchok_group_node(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> SvGroupTreeNode:
+        from sverchok.core.node_group import SvGroupTreeNode
+
+        return next(n for n in node_tree.nodes if isinstance(n, SvGroupTreeNode) and n.label == "BBIM_EPG")
+
+    @classmethod
     def get_ifcsverchok_shape_output(
         cls, node_tree: sverchok.node_tree.SverchCustomTree
     ) -> ifcsverchok.nodes.ifc.shape_builder.shape_output.SvSbShapeOutput:
         from ifcsverchok.nodes.ifc.shape_builder.shape_output import SvSbShapeOutput
 
-        return next(n for n in node_tree.nodes if isinstance(n, SvSbShapeOutput))
+        group_node = cls.get_ifcsverchok_group_node(node_tree)
+        subtree = group_node.node_tree
+        return next(n for n in subtree.nodes if isinstance(n, SvSbShapeOutput))
 
     @classmethod
     def update_mesh_from_sverchok(
@@ -2750,3 +2753,20 @@ class Model(bonsai.core.tool.Model):
             list(nodes_to_update)
         finally:
             SvIfcStore.use_bonsai_file = False
+
+    @classmethod
+    def create_bmesh_from_vertices(cls, vertices, is_closed=False):
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in vertices]
+        if is_closed:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+            new_edges.append(
+                bm.edges.new((new_verts[-1], new_verts[0]))
+            )  # Add an edge between the last an first point to make it closed.
+        else:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        return bm

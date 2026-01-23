@@ -52,6 +52,11 @@ class AuthoringData:
         cls.is_loaded = True
         cls.props = tool.Model.get_model_props()
         cls.data["default_container"] = cls.default_container()
+        if tool.Ifc.get().schema == "IFC2X3":
+            if ifc_element_type == "IfcDoorType":
+                ifc_element_type = "IfcDoorStyle"
+            elif ifc_element_type == "IfcWindowType":
+                ifc_element_type = "IfcWindowStyle"
         cls.data["ifc_element_type"] = ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_class_current"] = cls.ifc_class_current()

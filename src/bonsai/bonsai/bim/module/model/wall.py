@@ -787,10 +787,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
-
         self.handle_inserting_polyline(context, event)
-
-        self.get_product_preview_data(context, self.relating_type)
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:

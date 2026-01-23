@@ -445,20 +445,17 @@ class FilterValueSuggestions(Operator):
                             if pset.HasProperties:
                                 for prop in pset.HasProperties:
                                     if hasattr(prop, "Name") and prop.Name == property_name:
-                                        if hasattr(prop, "NominalValue") and prop.NominalValue:
-                                            try:
-                                                value = prop.NominalValue.wrappedValue
-                                                if value is not None and value != "":
-                                                    if not hasattr(value, "is_a") and not isinstance(
-                                                        value, (tuple, list)
-                                                    ):
-                                                        str_value = str(value)
-                                                        if not str_value.startswith("#") and not str_value.startswith(
-                                                            "("
-                                                        ):
-                                                            property_values.add(str_value)
-                                            except:
-                                                continue
+                                        if prop.is_a("IfcPropertyEnumeratedValue"):
+                                            if hasattr(prop, "EnumerationReference") and prop.EnumerationReference:
+                                                enum_reference = prop.EnumerationReference
+                                                if hasattr(enum_reference, "EnumerationValues"):
+                                                    for enum_value in enum_reference.EnumerationValues:
+                                                        property_values.add(str(enum_value.wrappedValue))
+                                            if hasattr(prop, "EnumerationValues") and prop.EnumerationValues:
+                                                for enum_value in prop.EnumerationValues:
+                                                    property_values.add(str(enum_value.wrappedValue))
+                                        elif hasattr(prop, "NominalValue") and prop.NominalValue:
+                                            property_values.add(str(prop.NominalValue.wrappedValue))
             except:
                 continue
         return property_values
@@ -765,10 +762,7 @@ class Search(Operator):
         preferences = tool.Blender.get_addon_preferences()
 
         # Migrate old ! prefix filters to new filter_mode system when preferences are enabled
-        if (
-            preferences.chain_filter_with_set_operations
-            or preferences.default_filter_with_set_operations_for_globalid_and_class
-        ):
+        if preferences.chain_filter_with_set_operations:
             for filter_group in props.filter_groups:
                 for ifc_filter in filter_group.filters:
                     if ifc_filter.type not in ["entity", "instance"]:

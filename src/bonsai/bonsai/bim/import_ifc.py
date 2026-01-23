@@ -290,7 +290,6 @@ class IfcImporter:
         self.profile_code("Load linked models")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
-        self.hide_ifc_spaces()
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
@@ -1287,14 +1286,6 @@ class IfcImporter:
                         properties={"Aggregate_Index": aggregate_index, "Name": name},
                     )
 
-    def hide_ifc_spaces(self):
-        """Hide IfcSpace objects after they've been added to the scene."""
-        for ifc_definition_id, obj in self.added_data.items():
-            if isinstance(obj, bpy.types.Object):
-                element = self.file.by_id(ifc_definition_id)
-                if element.is_a("IfcSpace"):
-                    obj.hide_set(True)
-
 
 class IfcImportSettings:
     """
@@ -1312,7 +1303,7 @@ class IfcImportSettings:
         self.should_load_geometry = True
         self.should_clean_mesh = False
         self.should_cache = True
-        self.deflection_tolerance = 0.001
+        self.deflection_tolerance = 0.05  # Default is 0.001, but I find this to be more practical
         self.angular_tolerance = 0.5
         self.void_limit = 30
         self.style_limit = 300
