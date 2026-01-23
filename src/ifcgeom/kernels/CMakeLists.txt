@@ -42,3 +42,8 @@ foreach(kernel ${GEOMETRY_KERNELS})
 endforeach()
 
 set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
+
+install(
+    FILES ifc_geomlibrary_api.h
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ifcgeom/kernels/"
+)
