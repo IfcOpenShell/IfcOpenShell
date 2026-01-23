@@ -589,6 +589,7 @@ class BIMProperties(PropertyGroup):
     area_unit: EnumProperty(
         default="SQUARE_METRE",
         items=[
+            ("NONE", "None", ""),
             ("NANO/SQUARE_METRE", "Square Nanometre", ""),
             ("MICRO/SQUARE_METRE", "Square Micrometre", ""),
             ("MILLI/SQUARE_METRE", "Square Millimetre", ""),
@@ -606,6 +607,7 @@ class BIMProperties(PropertyGroup):
     volume_unit: EnumProperty(
         default="CUBIC_METRE",
         items=[
+            ("NONE", "None", ""),
             ("NANO/CUBIC_METRE", "Cubic Nanometre", ""),
             ("MICRO/CUBIC_METRE", "Cubic Micrometre", ""),
             ("MILLI/CUBIC_METRE", "Cubic Millimetre", ""),
@@ -619,31 +621,28 @@ class BIMProperties(PropertyGroup):
         ],
         name="IFC Volume Unit",
     )
-    add_mass_time_units: bpy.props.BoolProperty(
-        name="Add Mass and Time Units",
-        description="Enable to define mass and time units for the project",
-        default=False,
-    )
     mass_unit: EnumProperty(
         items=[
-            ("KILOGRAM", "Kilogram", "Kilograms"),
+            ("NONE", "None", ""),
             ("GRAM", "Gram", "Grams"),
-            ("POUND", "Pound", "Pounds"),
-            ("OUNCE", "Ounce", "Ounces"),
-            ("TONNE", "Tonne", "Metric Tons"),
+            ("KILO/KILOGRAM", "Kilogram", "Kilograms"),
+            ("MEGA/TONNE", "Tonne", "Metric Tons"),
+            ("pound", "Pound", "Pounds"),
+            ("ounce", "Ounce", "Ounces"),
         ],
         name="Mass Unit",
-        default="KILOGRAM",
+        default="NONE",
     )
     time_unit: EnumProperty(
         items=[
+            ("NONE", "None", ""),
             ("SECOND", "Second", "Seconds"),
-            ("MINUTE", "Minute", "Minutes"),
-            ("HOUR", "Hour", "Hours"),
-            ("DAY", "Day", "Days"),
+            ("minute", "Minute", "Minutes"),
+            ("hour", "Hour", "Hours"),
+            ("day", "Day", "Days"),
         ],
         name="Time Unit",
-        default="HOUR",
+        default="NONE",
     )
     tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
     active_tab_visibility_index: IntProperty(name="Active Tab Visibility Index")

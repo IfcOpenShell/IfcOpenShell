@@ -717,12 +717,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=False,
     )
 
-    mass_time_units_in_wizard: BoolProperty(
-        name="Mass and time units in project wizard",
-        description="Show mass and time units section in the new project wizard panel",
-        default=False,
-    )
-
     chain_filter_with_set_operations: BoolProperty(
         name="NEW Filter mode: Enable chained filters with set operations",
         description="Enable chaining search filters with set operations: ADD (union: combine sets), SUBTRACT (difference: remove from set), FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values",

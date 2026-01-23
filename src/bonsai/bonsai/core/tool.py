@@ -1124,7 +1124,7 @@ class Unit:
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
-    def get_scene_unit_si_prefix(cls, unit_type): pass
+    def get_scene_unit_si_prefix(cls, name): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
     def is_scene_unit_metric(cls): pass
