@@ -49,6 +49,7 @@ import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.sheeter as sheeter
 import bonsai.bim.export_ifc
+import math
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData, ElementValuesData
@@ -57,7 +58,7 @@ from bonsai.bim.prop import StrProperty
 from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict, get_args
 from lxml import etree
 from math import radians
-from mathutils import Vector, Color, Matrix
+from mathutils import Vector, Color, Matrix, Quaternion
 from timeit import default_timer as timer
 from bonsai.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
 from bonsai.bim.ifc import IfcStore
@@ -255,6 +256,7 @@ class CreateDrawing(bpy.types.Operator):
 
     drawing_name: str
     is_manifold_cache: dict[str, bool]
+    link_transformations: dict[str, tuple]  # Maps link UUID to (ifc_file, link_matrix)
 
     @classmethod
     def poll(cls, context):
@@ -588,6 +590,8 @@ class CreateDrawing(bpy.types.Operator):
         context_type: Literal["body", "annotation"],
         drawing_elements: set[ifcopenshell.entity_instance],
         target_view: str,
+        link_matrix=None,
+        link_id=None,
     ) -> None:
         drawing_elements = drawing_elements.copy()
         contexts_: list[list[int]] = getattr(contexts, context_type)
@@ -599,20 +603,86 @@ class CreateDrawing(bpy.types.Operator):
                 geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
 
+                offset_z = 0.0
                 if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
                     # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                    geom_settings.set("model-offset", (0.0, 0.0, 0.002 if target_view == "PLAN_VIEW" else -0.002))
+                    offset_z = 0.002 if target_view == "PLAN_VIEW" else -0.002
+                
+                if link_matrix is not None:
+                    # Apply link transformation via model-offset and model-rotation
+                    
+                    tx, ty, tz = link_matrix.translation
+                    geom_settings.set("model-offset", (tx, ty, tz + offset_z))
+                    
+                    quat = link_matrix.to_quaternion()
+                    geom_settings.set("model-rotation", (quat.x, quat.y, quat.z, quat.w))
+                    
+                elif offset_z != 0.0:
+                    geom_settings.set("model-offset", (0.0, 0.0, offset_z))
 
                 geom_settings.set("context-ids", context)
                 it = ifcopenshell.geom.iterator(
                     geom_settings, ifc, multiprocessing.cpu_count(), include=drawing_elements
                 )
                 processed = set()
+                elem_count = 0
                 for elem in it:
                     processed.add(ifc.by_id(elem.id))
+                    if not hasattr(self, '_guid_to_link'):
+                        self._guid_to_link = []
+                    if hasattr(elem, 'guid'):
+                        self._guid_to_link.append((elem.guid, link_id))
+                        elem_count += 1
                     self.serialiser.write(elem)
                     tree.add_element(elem)
+                
+                if elem_count > 0:
+                    print(f"      Serialized {elem_count} elements for {context_type} context to link {link_id}")
                 drawing_elements -= processed
+
+    def apply_svg_link_rotations(self, root):
+        camera_matrix = self.camera.matrix_world
+        camera_matrix_i = camera_matrix.inverted()
+        
+        all_groups = root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]")
+        
+        groups_transformed = 0
+        for idx, svg_group in enumerate(all_groups):
+            if idx >= len(self._guid_to_link):
+                break
+                
+            guid = svg_group.get("{http://www.ifcopenshell.org/ns}guid")
+            expected_guid, link_id = self._guid_to_link[idx]
+            
+            if guid != expected_guid:
+                found = False
+                for i, (g, lid) in enumerate(self._guid_to_link[idx:], start=idx):
+                    if g == guid:
+                        link_id = lid
+                        found = True
+                        break
+                if not found:
+                    continue
+            
+            if link_id not in self.link_transformations:
+                continue
+                
+            ifc_file, link_matrix = self.link_transformations[link_id]
+            if link_matrix is None:
+                continue
+            
+            transform_matrix = camera_matrix_i @ link_matrix
+            
+            
+            angle_rad = math.atan2(transform_matrix[1][0], transform_matrix[0][0])
+            angle_deg = -math.degrees(angle_rad)  # Negative because SVG Y is flipped
+            
+            if abs(angle_deg) > 0.01:
+                groups_transformed += 1
+                
+                transform_str = f"rotate({angle_deg})"
+                svg_group.set("transform", transform_str)
+        
 
     def generate_bisect_linework(self, context: bpy.types.Context, root) -> None:
         camera_matrix_i = context.scene.camera.matrix_world.inverted()
@@ -909,11 +979,22 @@ class CreateDrawing(bpy.types.Operator):
 
         bim_props = tool.Blender.get_bim_props()
         prefs = tool.Blender.get_addon_preferences()
-        files = {bim_props.ifc_file: tool.Ifc.get()}
+        # Store files with their associated link transformations (None for main file)
+        files = {bim_props.ifc_file: (tool.Ifc.get(), None, None)}
+
+        self.link_transformations = {}
+        self.link_transformations["main"] = (tool.Ifc.get(), None)
+        self.link_element_count = {}  # Track how many elements each link has
 
         props = tool.Project.get_project_props()
         for link in props.get_loaded_links_for_drawings():
-            files[link.name] = self.get_linked_file(link)
+            # Use UUID-based key to support multiple links to the same file
+            link_key = f"{link.name}#{link.uuid}" if link.uuid else link.name
+            # Get transformation from link's empty handle
+            link_matrix = link.empty_handle.matrix_world if link.empty_handle else None
+            linked_ifc = self.get_linked_file(link)
+            files[link_key] = (linked_ifc, link_matrix, link.uuid)
+            self.link_transformations[link.uuid] = (linked_ifc, link_matrix)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -921,7 +1002,10 @@ class CreateDrawing(bpy.types.Operator):
         tree = ifcopenshell.geom.tree()
         tree.enable_face_styles(True)
 
-        for ifc_path, ifc in files.items():
+        for ifc_path, file_data in files.items():
+            ifc = file_data[0]
+            link_matrix = file_data[1]
+            link_uuid = file_data[2] if len(file_data) > 2 else None
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
@@ -929,14 +1013,19 @@ class CreateDrawing(bpy.types.Operator):
 
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
+            
+            pset = ifcopenshell.util.element.get_psets(self.camera_element).get("EPset_Drawing", {})
+            has_include = "Include" in pset and pset["Include"]
+            has_exclude = "Exclude" in pset and pset["Exclude"]
 
             # Get all representation contexts to see what we're dealing with.
             # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
             # A drawing prioritises a target view context first, followed by a model view context as a fallback.
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
             contexts = self.get_linework_contexts(ifc, target_view)
-            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view)
-            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view)
+            link_id = link_uuid if link_uuid else "main"
+            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix, link_id)
+            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix, link_id)
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
@@ -1359,12 +1448,13 @@ class CreateDrawing(bpy.types.Operator):
         return True
 
     def get_linked_file(self, link: "Link") -> ifcopenshell.file:
-        link_path = link.name
-        ifc_file = IfcStore.session_files.get(link_path, None)
+        # Use UUID-based key to support multiple links to the same file
+        link_key = f"{link.name}#{link.uuid}" if link.uuid else link.name
+        ifc_file = IfcStore.session_files.get(link_key, None)
         if ifc_file is not None:
             return ifc_file
-        resolved_path = tool.Ifc.resolve_uri(link_path)
-        ifc_file = IfcStore.session_files[link_path] = ifcopenshell.open(resolved_path)
+        resolved_path = tool.Ifc.resolve_uri(link.name)
+        ifc_file = IfcStore.session_files[link_key] = ifcopenshell.open(resolved_path)
         return ifc_file
 
     def get_element_by_guid(self, guid: str) -> Union[ifcopenshell.entity_instance, None]:

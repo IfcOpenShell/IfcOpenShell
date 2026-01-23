@@ -292,11 +292,20 @@ class TestSaveLinkedModelsToIfc(NewFile):
     def test_save_linked_models_to_ifc_paths_to_add(self):
         ifc = ifcopenshell.file()
         ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+        tool.Ifc.set(ifc)
+        document = ifcopenshell.api.document.add_information(ifc)
+        document.Name = "BBIM_Linked_Models"
+        reference = ifcopenshell.api.document.add_reference(ifc, document)
+        linked_model_path = "test.ifc"
+        reference.Location = linked_model_path
+        reference.Identification = "10.0,20.0,30.0,45.0"  # 3D position
+        step_id = reference.id()
+        
         props = tool.Project.get_project_props()
         link = props.links.add()
-        linked_model_path = "test.ifc"
         link.name = linked_model_path
-        tool.Ifc.set(ifc)
+        link.uuid = f"#{step_id}"
+        
         subject.save_linked_models_to_ifc()
         assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
         assert documents[0].Name == "BBIM_Linked_Models"
@@ -314,11 +323,13 @@ class TestSaveLinkedModelsToIfc(NewFile):
         reference = ifcopenshell.api.document.add_reference(ifc, document)
         linked_model_path = "test.ifc"
         reference.Location = linked_model_path
+        reference.Identification = "10.0,20.0,30.0,45.0"
         reference_id = reference.id()
+        link_uuid = f"#{reference_id}"
 
         link = links.add()
-        linked_model_path = "test.ifc"
         link.name = linked_model_path
+        link.uuid = link_uuid
         tool.Ifc.set(ifc)
         subject.save_linked_models_to_ifc()
 
@@ -341,6 +352,7 @@ class TestSaveLinkedModelsToIfc(NewFile):
         reference = ifcopenshell.api.document.add_reference(ifc, document)
         linked_model_path = "test.ifc"
         reference.Location = linked_model_path
+        reference.Identification = "10.0,20.0,30.0,45.0"
 
         tool.Ifc.set(ifc)
         subject.save_linked_models_to_ifc()

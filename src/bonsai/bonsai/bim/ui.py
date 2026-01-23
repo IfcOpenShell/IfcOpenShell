@@ -734,6 +734,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=".ifc.metadata.blend",
     )
 
+    link_full_materials: BoolProperty(
+        name="Load Full Materials for IFC Links",
+        description="When enabled, linked IFC files will have complete materials with nodes and textures. When disabled (default), only simplified color materials are created for better performance.",
+        default=False,
+    )
+
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -773,6 +779,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
+        link_full_materials: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -995,6 +1002,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             else:
                 row = layout.row()
                 row.operator("bim.manage_tab_visibility", icon="PREFERENCES")
+        layout.prop(self, "link_full_materials")
 
 
 # Scene panel groups

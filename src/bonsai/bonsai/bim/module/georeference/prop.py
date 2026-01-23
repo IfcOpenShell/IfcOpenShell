@@ -227,6 +227,8 @@ class BIMGeoreferenceProperties(PropertyGroup):
     host_model_origin: StringProperty(name="Host Model Origin")
     host_model_origin_si: StringProperty(name="Host Model Origin SI")
     host_model_project_north: StringProperty(name="Host Model Angle to Grid North")
+    host_crs_name: StringProperty(name="Host CRS Name")
+    host_vertical_datum: StringProperty(name="Host Vertical Datum")
 
     # This is the ENH in project units and SI units of the Blender session's 0,0,0.
     # These are only for reference, using tool.Georeference.set_model_origin on
@@ -235,6 +237,8 @@ class BIMGeoreferenceProperties(PropertyGroup):
     model_origin: StringProperty(name="Model Origin")
     model_origin_si: StringProperty(name="Model Origin SI")
     model_project_north: StringProperty(name="Model Angle to Grid North")
+    model_crs_name: StringProperty(name="Model CRS Name")
+    model_vertical_datum: StringProperty(name="Model Vertical Datum")
 
     # True if there is a temporary Blender session coordinate system
     has_blender_offset: BoolProperty(name="Has Blender Offset")
@@ -276,10 +280,14 @@ class BIMGeoreferenceProperties(PropertyGroup):
         host_model_origin: str
         host_model_origin_si: str
         host_model_project_north: str
+        host_crs_name: str
+        host_vertical_datum: str
 
         model_origin: str
         model_origin_si: str
         model_project_north: str
+        model_crs_name: str
+        model_vertical_datum: str
 
         has_blender_offset: bool
         blender_offset_x: str
