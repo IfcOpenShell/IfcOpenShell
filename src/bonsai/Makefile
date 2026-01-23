@@ -86,6 +86,10 @@ PYPI_PLATFORM:=--platform win_amd64
 BLENDER_PLATFORM:=windows-x64
 endif
 
+define Download
+	cd $(1) && wget --tries=5 --timeout=60 --waitretry=10 --retry-connrefused --continue $(2)
+endef
+
 # Current build commit hash.
 OLD:=e8eb5e4
 .PHONY: bump
@@ -199,14 +203,14 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download flask $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 
 	# jQuery is required for web UI functionality
-	cd build/bonsai/bim/data/webui/static/js/ && wget https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
+	$(call Download,build/bonsai/bim/data/webui/static/js/,https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js)
 
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
-	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
-	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+	$(call Download,build/bonsai/bim/data/gantt/,https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js)
+	$(call Download,build/bonsai/bim/data/gantt/,https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css)
 
 	# Provides IFCJSON functionality
-	cd build && wget -O ifc2json.zip https://github.com/IFCJSON-Team/IFC2JSON_python/archive/refs/heads/master.zip
+	$(call Download,build,-O ifc2json.zip https://github.com/IFCJSON-Team/IFC2JSON_python/archive/refs/heads/master.zip)
 	cd build && unzip ifc2json.zip && rm ifc2json.zip
 	# IFCJSON doesn't have pyproject.toml, so we use python command.
 	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-*/file_converters && \
@@ -223,10 +227,10 @@ endif
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
 	# For now lets bundle the latest nightly schema
-	cd build/bonsai/bim/data/brick/ && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+	$(call Download,build/bonsai/bim/data/brick/,https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl)
 
 	# Required for hipped roof generation
-	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
+	$(call Download,build,https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip)
 	cd build && unzip master.zip && rm master.zip
 	cd build && . env/$(VENV_ACTIVATE) && cd bpypolyskel-master && \
 		$(PYTHON) -c "from setuptools import setup; \
@@ -242,10 +246,10 @@ endif
 
 	# required for three-way git merging
 ifeq ($(PLATFORM), win)
-	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/2025-01-26/ifcmerge.zip
+	$(call Download,build/bonsai/libs/bin,https://github.com/brunopostle/ifcmerge/releases/download/2025-01-26/ifcmerge.zip)
 	cd build/bonsai/libs/bin && unzip ifcmerge.zip && rm ifcmerge.zip
 else
-	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge && chmod +x ifcmerge
+	$(call Download,build/bonsai/libs/bin,https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge && chmod +x ifcmerge)
 endif
 
 	# Generate translations module for Bonsai build
