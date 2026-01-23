@@ -1177,7 +1177,7 @@ if "cgal" in targets:
         # Disable assembly, otherwise `emcc -c conftest.s` will crash due to assembly mismatch.
         gmp_args.extend(("--disable-assembly", "--enable-cxx"))
         mpfr_args.extend(("--host", "none"))
-    else:
+    elif "x86" in arch:
         gmp_args.append("--enable-fat") # See issues #7458 #7556
 
     OLD_CC = None
