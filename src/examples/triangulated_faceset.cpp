@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 		
 	product->setRepresentation(shape);
 
-	const std::string filename = "tesselated_faceset.ifc";
+	const std::string filename = "triangulated_faceset.ifc";
 	file.header().file_name()->setname(filename);
 	std::ofstream f(filename);
 	f << file;

@@ -36,7 +36,7 @@ typedef IfcParse::IfcGlobalId guid;
 boost::none_t const null = boost::none;
 
 int main(int argc, char** argv) {
-	const char filename[] = "IfcCompositeProfileDef.ifc";
+	const char filename[] = "composite_profile_def.ifc";
 	IfcHierarchyHelper<IfcSchema> file;
 	file.header().file_name()->setname(filename);
 
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
 	product->setRepresentation(shape);
 
 	using namespace std::string_literals;
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcCompositeProfileDef"s);
+	file.getSingle<IfcSchema::IfcProject>()->setName("composite_profile_def"s);
 
 	std::ofstream f(filename);
 	f << file;

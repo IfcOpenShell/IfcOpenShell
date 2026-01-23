@@ -107,7 +107,7 @@ void create_products_from_curve(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::
 }
 
 int main(int argc, char** argv) {
-	const char filename[] = "IfcArbitraryOpenProfileDef.ifc";
+	const char filename[] = "arbitrary_open_profile_def.ifc";
 	IfcHierarchyHelper<IfcSchema> file;
 	file.header().file_name()->setname(filename);
 
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
 	create_products_from_curve(file, trim);
 
     using namespace std::string_literals;
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcArbitraryOpenProfileDef"s);
+	file.getSingle<IfcSchema::IfcProject>()->setName("arbitrary_open_profile_def"s);
 
 	std::ofstream f(filename);
 	f << file;

@@ -133,7 +133,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-	const char filename[] = "IfcCsgPrimitive.ifc";
+	const char filename[] = "csg_primitive.ifc";
 	IfcHierarchyHelper<IfcSchema> file;
 	file.header().file_name()->setname(filename);
 
@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
 	product->setRepresentation(shape);
 
 	using namespace std::string_literals;
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcCompositeProfileDef"s);
+	file.getSingle<IfcSchema::IfcProject>()->setName("csg_primitive"s);
 
 	std::ofstream f(filename);
 	f << file;

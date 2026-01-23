@@ -82,8 +82,8 @@ void create_curve_rebar(IfcHierarchyHelper<IfcSchema>& file)
 	IfcSchema::IfcCircle* circle = new IfcSchema::IfcCircle(axis1, R);
 	file.addEntity(circle);
 
-	aggregate_of_instance::ptr trim1(new aggregate_of_instance);
-    aggregate_of_instance::ptr trim2(new aggregate_of_instance);
+	IfcSchema::IfcTrimmingSelect::list::ptr trim1(new IfcSchema::IfcTrimmingSelect::list);
+    IfcSchema::IfcTrimmingSelect::list::ptr trim2(new IfcSchema::IfcTrimmingSelect::list);
 	
 	trim1->push(new IfcSchema::IfcParameterValue(180));
 	trim1->push(p2);
@@ -91,7 +91,7 @@ void create_curve_rebar(IfcHierarchyHelper<IfcSchema>& file)
 	trim2->push(new IfcSchema::IfcParameterValue(270));
 	trim2->push(p4);
 	
-	IfcSchema::IfcTrimmedCurve* trimmed_curve = new IfcSchema::IfcTrimmedCurve(circle, trim1->as<IfcSchema::IfcTrimmingSelect>(), trim2->as<IfcSchema::IfcTrimmingSelect>(), false, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	IfcSchema::IfcTrimmedCurve* trimmed_curve = new IfcSchema::IfcTrimmedCurve(circle, trim1, trim2, false, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
 	file.addEntity(trimmed_curve);
 
 	IfcSchema::IfcCompositeCurveSegment* segment2 = new IfcSchema::IfcCompositeCurveSegment(IfcSchema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT, false, trimmed_curve);
