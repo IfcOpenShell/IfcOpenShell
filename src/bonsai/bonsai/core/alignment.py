@@ -1,33 +1,38 @@
-# ==============================================================================
-# Saikei Civil - Civil Engineering Tools for Blender
-# Copyright (c) 2025 Michael Yoder / Desert Springs Civil Engineering PLLC
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2025, 2026 Michael Yoder <myoder@desertspringscivil.com>
 #
-# This program is free software: you can redistribute it and/or modify
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# Bonsai is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
-# Primary Author: Michael Yoder
-# Company: Desert Springs Civil Engineering PLLC
-# ==============================================================================
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-"""Core alignment business logic - Pure Python, NO bpy imports.
+"""Core alignment business logic - Orchestration only, NO bpy imports.
 
-This module contains all alignment-related calculations and logic that
-can be tested outside of Blender. Functions receive tool classes as
-parameters following Bonsai's dependency injection pattern.
+This module contains alignment-related business logic and workflow
+orchestration. All calculations and algorithms are in the tool layer.
+Functions receive tool classes as parameters following Bonsai's
+dependency injection pattern.
+
+NOTE: Math, calculations, and algorithms belong in tool/alignment.py.
+This module only handles:
+- Business rules and validation
+- Workflow orchestration (calling tool methods in sequence)
+- Decision-making about what should happen
 """
 
 from __future__ import annotations
-import math
-from typing import TYPE_CHECKING, List, Tuple, Optional
+from typing import TYPE_CHECKING, Optional
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
@@ -57,149 +62,8 @@ class PIPoint:
     station: float = 0.0
 
 
-@dataclass
-class PIGeometryResult:
-    """Result of PI geometry calculation."""
-
-    stations: List[float]
-    lengths: List[float]
-    directions: List[float]
-    total_length: float
-
-
 # =============================================================================
-# Pure Python Calculation Functions
-# =============================================================================
-
-
-def calculate_pi_geometry(pis: List[Tuple[float, float]], start_station: float = 0.0) -> PIGeometryResult:
-    """Calculate lengths, stations, and directions for a list of PI points.
-
-    This is a pure Python function with no Blender dependencies.
-
-    Args:
-        pis: List of (x, y) coordinate tuples for each PI
-        start_station: Starting station value
-
-    Returns:
-        PIGeometryResult containing calculated values
-    """
-    if len(pis) < 2:
-        return PIGeometryResult(
-            stations=[start_station] if pis else [],
-            lengths=[0.0] if pis else [],
-            directions=[0.0] if pis else [],
-            total_length=0.0,
-        )
-
-    stations = []
-    lengths = []
-    directions = []
-    cumulative_length = start_station
-
-    for i, pi in enumerate(pis):
-        stations.append(cumulative_length)
-
-        if i < len(pis) - 1:
-            next_pi = pis[i + 1]
-            dx = next_pi[0] - pi[0]
-            dy = next_pi[1] - pi[1]
-            length = math.sqrt(dx * dx + dy * dy)
-            direction = math.atan2(dy, dx)
-            lengths.append(length)
-            directions.append(direction)
-            cumulative_length += length
-        else:
-            lengths.append(0.0)
-            directions.append(0.0)
-
-    total_length = cumulative_length - start_station
-
-    return PIGeometryResult(stations=stations, lengths=lengths, directions=directions, total_length=total_length)
-
-
-def calculate_deflection_angle(incoming_direction: float, outgoing_direction: float) -> float:
-    """Calculate the deflection angle between two tangent directions.
-
-    Args:
-        incoming_direction: Direction angle of incoming tangent (radians)
-        outgoing_direction: Direction angle of outgoing tangent (radians)
-
-    Returns:
-        Deflection angle in radians (always positive)
-    """
-    delta = outgoing_direction - incoming_direction
-    # Normalize to -pi to pi
-    while delta > math.pi:
-        delta -= 2 * math.pi
-    while delta < -math.pi:
-        delta += 2 * math.pi
-    return abs(delta)
-
-
-def calculate_tangent_length(radius: float, deflection_angle: float) -> float:
-    """Calculate tangent length for a circular curve.
-
-    T = R * tan(Δ/2)
-
-    Args:
-        radius: Curve radius
-        deflection_angle: Deflection angle in radians
-
-    Returns:
-        Tangent length
-    """
-    if deflection_angle == 0 or radius == 0:
-        return 0.0
-    return radius * math.tan(deflection_angle / 2)
-
-
-def calculate_arc_length(radius: float, deflection_angle: float) -> float:
-    """Calculate arc length for a circular curve.
-
-    L = R * Δ
-
-    Args:
-        radius: Curve radius
-        deflection_angle: Deflection angle in radians
-
-    Returns:
-        Arc length
-    """
-    return radius * deflection_angle
-
-
-def calculate_bc_ec_points(
-    pi_x: float, pi_y: float, incoming_direction: float, outgoing_direction: float, tangent_length: float
-) -> Tuple[Tuple[float, float], Tuple[float, float]]:
-    """Calculate Begin Curve (BC) and End Curve (EC) points.
-
-    BC = PI - incoming_tangent_vector * T
-    EC = PI + outgoing_tangent_vector * T
-
-    Args:
-        pi_x: PI X coordinate
-        pi_y: PI Y coordinate
-        incoming_direction: Direction of incoming tangent (radians)
-        outgoing_direction: Direction of outgoing tangent (radians)
-        tangent_length: Calculated tangent length
-
-    Returns:
-        Tuple of (BC point, EC point) as (x, y) tuples
-    """
-    # BC is along the incoming tangent, before the PI
-    bc_x = pi_x - tangent_length * math.cos(incoming_direction)
-    bc_y = pi_y - tangent_length * math.sin(incoming_direction)
-
-    # EC is along the outgoing tangent, after the PI
-    ec_x = pi_x + tangent_length * math.cos(outgoing_direction)
-    ec_y = pi_y + tangent_length * math.sin(outgoing_direction)
-
-    return ((bc_x, bc_y), (ec_x, ec_y))
-
-
-# =============================================================================
-# Alignment Visualization Logic (Pure Python)
+# Alignment Visualization Logic (Business Logic Orchestration)
 # =============================================================================
 
 

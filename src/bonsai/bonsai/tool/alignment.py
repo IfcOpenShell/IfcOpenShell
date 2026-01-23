@@ -1,21 +1,20 @@
-# ==============================================================================
-# Saikei Civil - Civil Engineering Tools for Blender
-# Copyright (c) 2025 Michael Yoder / Desert Springs Civil Engineering PLLC
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2025, 2026 Michael Yoder <myoder@desertspringscivil.com>
 #
-# This program is free software: you can redistribute it and/or modify
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# Bonsai is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
-# Primary Author: Michael Yoder
-# Company: Desert Springs Civil Engineering PLLC
-# ==============================================================================
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
 """Alignment Tool - Blender implementations for alignment visualization.
@@ -29,10 +28,28 @@ All methods are classmethods following Bonsai's tool pattern.
 
 from __future__ import annotations
 import bpy
-from typing import TYPE_CHECKING, Optional, List
+import math
+import bonsai.tool as tool
+from typing import TYPE_CHECKING, Optional, List, Tuple
+from dataclasses import dataclass
 
 if TYPE_CHECKING:
     import ifcopenshell
+
+
+# =============================================================================
+# Data Classes for PI Geometry Results
+# =============================================================================
+
+
+@dataclass
+class PIGeometryResult:
+    """Result of PI geometry calculation."""
+
+    stations: List[float]
+    lengths: List[float]
+    directions: List[float]
+    total_length: float
 
 
 class Alignment:
@@ -42,19 +59,146 @@ class Alignment:
     that can be called without instantiation.
     """
 
+    # =========================================================================
+    # Geometry Calculation Methods
+    # =========================================================================
+
     @classmethod
-    def get_ifc_file(cls) -> Optional[ifcopenshell.file]:
-        """Get the current IFC file from Bonsai.
+    def calculate_pi_geometry(
+        cls, pis: List[Tuple[float, float]], start_station: float = 0.0
+    ) -> PIGeometryResult:
+        """Calculate lengths, stations, and directions for a list of PI points.
+
+        Args:
+            pis: List of (x, y) coordinate tuples for each PI
+            start_station: Starting station value
 
         Returns:
-            The IFC file object, or None if not available
+            PIGeometryResult containing calculated values
         """
-        try:
-            import bonsai.tool as tool
+        if len(pis) < 2:
+            return PIGeometryResult(
+                stations=[start_station] if pis else [],
+                lengths=[0.0] if pis else [],
+                directions=[0.0] if pis else [],
+                total_length=0.0,
+            )
 
-            return tool.Ifc.get()
-        except (ImportError, AttributeError):
-            return None
+        stations = []
+        lengths = []
+        directions = []
+        cumulative_length = start_station
+
+        for i, pi in enumerate(pis):
+            stations.append(cumulative_length)
+
+            if i < len(pis) - 1:
+                next_pi = pis[i + 1]
+                dx = next_pi[0] - pi[0]
+                dy = next_pi[1] - pi[1]
+                length = math.sqrt(dx * dx + dy * dy)
+                direction = math.atan2(dy, dx)
+                lengths.append(length)
+                directions.append(direction)
+                cumulative_length += length
+            else:
+                lengths.append(0.0)
+                directions.append(0.0)
+
+        total_length = cumulative_length - start_station
+
+        return PIGeometryResult(
+            stations=stations, lengths=lengths, directions=directions, total_length=total_length
+        )
+
+    @classmethod
+    def calculate_deflection_angle(cls, incoming_direction: float, outgoing_direction: float) -> float:
+        """Calculate the deflection angle between two tangent directions.
+
+        Args:
+            incoming_direction: Direction angle of incoming tangent (radians)
+            outgoing_direction: Direction angle of outgoing tangent (radians)
+
+        Returns:
+            Deflection angle in radians (always positive)
+        """
+        delta = outgoing_direction - incoming_direction
+        # Normalize to -pi to pi
+        while delta > math.pi:
+            delta -= 2 * math.pi
+        while delta < -math.pi:
+            delta += 2 * math.pi
+        return abs(delta)
+
+    @classmethod
+    def calculate_tangent_length(cls, radius: float, deflection_angle: float) -> float:
+        """Calculate tangent length for a circular curve.
+
+        T = R * tan(Δ/2)
+
+        Args:
+            radius: Curve radius
+            deflection_angle: Deflection angle in radians
+
+        Returns:
+            Tangent length
+        """
+        if deflection_angle == 0 or radius == 0:
+            return 0.0
+        return radius * math.tan(deflection_angle / 2)
+
+    @classmethod
+    def calculate_arc_length(cls, radius: float, deflection_angle: float) -> float:
+        """Calculate arc length for a circular curve.
+
+        L = R * Δ
+
+        Args:
+            radius: Curve radius
+            deflection_angle: Deflection angle in radians
+
+        Returns:
+            Arc length
+        """
+        return radius * deflection_angle
+
+    @classmethod
+    def calculate_bc_ec_points(
+        cls,
+        pi_x: float,
+        pi_y: float,
+        incoming_direction: float,
+        outgoing_direction: float,
+        tangent_length: float,
+    ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+        """Calculate Begin Curve (BC) and End Curve (EC) points.
+
+        BC = PI - incoming_tangent_vector * T
+        EC = PI + outgoing_tangent_vector * T
+
+        Args:
+            pi_x: PI X coordinate
+            pi_y: PI Y coordinate
+            incoming_direction: Direction of incoming tangent (radians)
+            outgoing_direction: Direction of outgoing tangent (radians)
+            tangent_length: Calculated tangent length
+
+        Returns:
+            Tuple of (BC point, EC point) as (x, y) tuples
+        """
+        # BC is along the incoming tangent, before the PI
+        bc_x = pi_x - tangent_length * math.cos(incoming_direction)
+        bc_y = pi_y - tangent_length * math.sin(incoming_direction)
+
+        # EC is along the outgoing tangent, after the PI
+        ec_x = pi_x + tangent_length * math.cos(outgoing_direction)
+        ec_y = pi_y + tangent_length * math.sin(outgoing_direction)
+
+        return ((bc_x, bc_y), (ec_x, ec_y))
+
+    # =========================================================================
+    # Blender Object Creation
+    # =========================================================================
 
     @classmethod
     def create_object_for_alignment(cls, alignment: ifcopenshell.entity_instance) -> Optional[bpy.types.Object]:
@@ -71,33 +215,24 @@ class Alignment:
         Returns:
             The created Blender object, or existing one if already linked
         """
-        try:
-            import bonsai.tool as tool
+        # Check if a Blender object already exists for this IFC element
+        existing_obj = tool.Ifc.get_object(alignment)
+        if existing_obj:
+            return existing_obj
 
-            # Check if a Blender object already exists for this IFC element
-            existing_obj = tool.Ifc.get_object(alignment)
-            if existing_obj:
-                return existing_obj
+        # Create Blender Empty object with naming pattern "IfcClass/Name"
+        name = f"IfcAlignment/{alignment.Name or 'Unnamed'}"
+        obj = bpy.data.objects.new(name, None)  # None = Empty object
+        obj.empty_display_type = "ARROWS"
+        obj.empty_display_size = 1.0
 
-            # Create Blender Empty object with naming pattern "IfcClass/Name"
-            name = f"IfcAlignment/{alignment.Name or 'Unnamed'}"
-            obj = bpy.data.objects.new(name, None)  # None = Empty object
-            obj.empty_display_type = "ARROWS"
-            obj.empty_display_size = 1.0
+        # Link the Blender object to the IFC element (creates bidirectional mapping)
+        tool.Ifc.link(alignment, obj)
 
-            # Link the Blender object to the IFC element (creates bidirectional mapping)
-            tool.Ifc.link(alignment, obj)
+        # Assign to appropriate collection (Bonsai handles collection hierarchy)
+        tool.Collector.assign(obj)
 
-            # Also set ifc_definition_id manually as fallback for lookups
-            obj["ifc_definition_id"] = alignment.id()
-
-            # Assign to appropriate collection (Bonsai handles collection hierarchy)
-            tool.Collector.assign(obj)
-
-            return obj
-        except (ImportError, AttributeError) as e:
-            print(f"Warning: Could not create Blender object for alignment: {e}")
-            return None
+        return obj
 
     @classmethod
     def create_object_for_layout(
@@ -112,42 +247,33 @@ class Alignment:
         Returns:
             The created Blender object, or existing one if already linked
         """
-        try:
-            import bonsai.tool as tool
+        # Check if a Blender object already exists for this IFC element
+        existing_obj = tool.Ifc.get_object(layout_entity)
+        if existing_obj:
+            return existing_obj
 
-            # Check if a Blender object already exists for this IFC element
-            existing_obj = tool.Ifc.get_object(layout_entity)
-            if existing_obj:
-                return existing_obj
+        # Determine the layout type from the IFC class
+        ifc_class = layout_entity.is_a()
+        name = f"{ifc_class}"
 
-            # Determine the layout type from the IFC class
-            ifc_class = layout_entity.is_a()
-            name = f"{ifc_class}"
+        obj = bpy.data.objects.new(name, None)
+        obj.empty_display_type = "PLAIN_AXES"
+        obj.empty_display_size = 0.5
 
-            obj = bpy.data.objects.new(name, None)
-            obj.empty_display_type = "PLAIN_AXES"
-            obj.empty_display_size = 0.5
+        # Link to IFC element
+        tool.Ifc.link(layout_entity, obj)
 
-            # Link to IFC element
-            tool.Ifc.link(layout_entity, obj)
+        # Set parent relationship in Blender (mirrors IFC nesting)
+        if parent_obj:
+            obj.parent = parent_obj
 
-            # Also set ifc_definition_id manually as fallback for lookups
-            obj["ifc_definition_id"] = layout_entity.id()
+        # Assign to same collection as parent (avoid "Unsorted")
+        if parent_obj and parent_obj.users_collection:
+            parent_obj.users_collection[0].objects.link(obj)
+        else:
+            tool.Collector.assign(obj)
 
-            # Set parent relationship in Blender (mirrors IFC nesting)
-            if parent_obj:
-                obj.parent = parent_obj
-
-            # Assign to same collection as parent (avoid "Unsorted")
-            if parent_obj and parent_obj.users_collection:
-                parent_obj.users_collection[0].objects.link(obj)
-            else:
-                tool.Collector.assign(obj)
-
-            return obj
-        except (ImportError, AttributeError) as e:
-            print(f"Warning: Could not create Blender object for layout: {e}")
-            return None
+        return obj
 
     @classmethod
     def create_object_for_segment(
@@ -167,82 +293,71 @@ class Alignment:
         Returns:
             The created Blender object, or existing one if already linked
         """
-        import math
+        # Check if a Blender object already exists for this IFC element
+        existing_obj = tool.Ifc.get_object(segment)
+        if existing_obj:
+            return existing_obj
 
-        try:
-            import bonsai.tool as tool
-
-            # Check if a Blender object already exists for this IFC element
-            existing_obj = tool.Ifc.get_object(segment)
-            if existing_obj:
-                return existing_obj
-
-            # Get segment parameters
-            if not hasattr(segment, "DesignParameters") or not segment.DesignParameters:
-                return None
-
-            dp = segment.DesignParameters
-            seg_type = getattr(dp, "PredefinedType", "UNKNOWN") or "UNKNOWN"
-            seg_length = getattr(dp, "SegmentLength", 0.0) or 0.0
-
-            # Skip zero-length terminal segments
-            if seg_length < 0.0001:
-                return None
-
-            # Get start point
-            start_point = None
-            if hasattr(dp, "StartPoint") and dp.StartPoint:
-                coords = dp.StartPoint.Coordinates
-                if len(coords) >= 2:
-                    start_point = (coords[0], coords[1], 0.0)
-
-            if not start_point:
-                return None
-
-            # Get start direction - IFC stores this in degrees, convert to radians
-            start_direction_deg = getattr(dp, "StartDirection", 0.0) or 0.0
-            start_direction = math.radians(start_direction_deg)
-
-            name = f"Segment {index + 1} ({seg_type})"
-
-            # Create curve geometry based on segment type
-            if seg_type == "LINE":
-                obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
-            elif seg_type == "CIRCULARARC":
-                # Get radius for arc (positive = left, negative = right in IFC)
-                radius = getattr(dp, "StartRadiusOfCurvature", None)
-                if radius is None or radius == 0:
-                    # Fallback to line if no radius
-                    obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
-                else:
-                    obj = cls._create_arc_segment(name, start_point, start_direction, seg_length, radius)
-            else:
-                # For unsupported types, create a simple line approximation
-                obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
-
-            if not obj:
-                return None
-
-            # Link to IFC element
-            tool.Ifc.link(segment, obj)
-
-            # Also set ifc_definition_id manually as fallback for lookups
-            obj["ifc_definition_id"] = segment.id()
-
-            # Set parent relationship
-            if parent_obj:
-                obj.parent = parent_obj
-
-            # Assign to same collection as parent (avoid "Unsorted")
-            if parent_obj and parent_obj.users_collection:
-                parent_obj.users_collection[0].objects.link(obj)
-            else:
-                tool.Collector.assign(obj)
-
-            return obj
-        except (ImportError, AttributeError) as e:
-            print(f"Warning: Could not create Blender object for segment: {e}")
+        # Get segment parameters
+        if not hasattr(segment, "DesignParameters") or not segment.DesignParameters:
             return None
+
+        dp = segment.DesignParameters
+        seg_type = getattr(dp, "PredefinedType", "UNKNOWN") or "UNKNOWN"
+        seg_length = getattr(dp, "SegmentLength", 0.0) or 0.0
+
+        # Skip zero-length terminal segments
+        if seg_length < 0.0001:
+            return None
+
+        # Get start point
+        start_point = None
+        if hasattr(dp, "StartPoint") and dp.StartPoint:
+            coords = dp.StartPoint.Coordinates
+            if len(coords) >= 2:
+                start_point = (coords[0], coords[1], 0.0)
+
+        if not start_point:
+            return None
+
+        # Get start direction - IFC stores this in degrees, convert to radians
+        start_direction_deg = getattr(dp, "StartDirection", 0.0) or 0.0
+        start_direction = math.radians(start_direction_deg)
+
+        name = f"Segment {index + 1} ({seg_type})"
+
+        # Create curve geometry based on segment type
+        if seg_type == "LINE":
+            obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
+        elif seg_type == "CIRCULARARC":
+            # Get radius for arc (positive = left, negative = right in IFC)
+            radius = getattr(dp, "StartRadiusOfCurvature", None)
+            if radius is None or radius == 0:
+                # Fallback to line if no radius
+                obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
+            else:
+                obj = cls._create_arc_segment(name, start_point, start_direction, seg_length, radius)
+        else:
+            # For unsupported types, create a simple line approximation
+            obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
+
+        if not obj:
+            return None
+
+        # Link to IFC element
+        tool.Ifc.link(segment, obj)
+
+        # Set parent relationship
+        if parent_obj:
+            obj.parent = parent_obj
+
+        # Assign to same collection as parent (avoid "Unsorted")
+        if parent_obj and parent_obj.users_collection:
+            parent_obj.users_collection[0].objects.link(obj)
+        else:
+            tool.Collector.assign(obj)
+
+        return obj
 
     @classmethod
     def _create_line_segment(
@@ -259,8 +374,6 @@ class Alignment:
         Returns:
             Blender curve object
         """
-        import math
-
         # IFC uses standard math convention: angle counter-clockwise from +X axis
         end_x = start_point[0] + length * math.cos(direction)
         end_y = start_point[1] + length * math.sin(direction)
@@ -303,8 +416,6 @@ class Alignment:
         Returns:
             Blender curve object
         """
-        import math
-
         # Calculate arc parameters
         # Arc length L = R * theta, so theta = L / R
         abs_radius = abs(radius)
@@ -458,71 +569,26 @@ class Alignment:
         Returns:
             True if removed successfully
         """
+        # Unlink from IFC if linked
         try:
-            import bonsai.tool as tool
+            tool.Ifc.unlink(obj=obj)
+        except Exception:
+            pass  # Object might not be linked
 
-            # Unlink from IFC if linked
-            try:
-                tool.Ifc.unlink(obj)
-            except Exception:
-                pass  # Object might not be linked
+        # Store data reference before removing object
+        data = obj.data
 
-            # Store data reference before removing object
-            data = obj.data
+        # Remove the object
+        bpy.data.objects.remove(obj, do_unlink=True)
 
-            # Remove the object
-            bpy.data.objects.remove(obj, do_unlink=True)
+        # Clean up orphan curve/mesh data
+        if data and data.users == 0:
+            if isinstance(data, bpy.types.Curve):
+                bpy.data.curves.remove(data)
+            elif isinstance(data, bpy.types.Mesh):
+                bpy.data.meshes.remove(data)
 
-            # Clean up orphan curve/mesh data
-            if data and data.users == 0:
-                if isinstance(data, bpy.types.Curve):
-                    bpy.data.curves.remove(data)
-                elif isinstance(data, bpy.types.Mesh):
-                    bpy.data.meshes.remove(data)
-
-            return True
-        except Exception as e:
-            print(f"Warning: Could not remove object: {e}")
-            return False
-
-    @classmethod
-    def _find_object_by_ifc_id(cls, ifc_id: int) -> Optional[bpy.types.Object]:
-        """Find a Blender object by its IFC definition ID.
-
-        Fallback method when tool.Ifc.get_object() doesn't work.
-
-        Args:
-            ifc_id: The IFC entity ID
-
-        Returns:
-            The Blender object, or None if not found
-        """
-        for obj in bpy.data.objects:
-            if obj.get("ifc_definition_id") == ifc_id:
-                return obj
-        return None
-
-    @classmethod
-    def _find_object_by_name_pattern(cls, name_pattern: str) -> Optional[bpy.types.Object]:
-        """Find a Blender object by name pattern.
-
-        Last resort fallback that matches object name.
-
-        Args:
-            name_pattern: Name or partial name to match
-
-        Returns:
-            The Blender object, or None if not found
-        """
-        # Try exact match first
-        if name_pattern in bpy.data.objects:
-            return bpy.data.objects[name_pattern]
-
-        # Try partial match (for names like "IfcAlignment/SH-21")
-        for obj in bpy.data.objects:
-            if name_pattern in obj.name:
-                return obj
-        return None
+        return True
 
     @classmethod
     def remove_layout_segment_objects(cls, layout: ifcopenshell.entity_instance) -> int:
@@ -534,30 +600,13 @@ class Alignment:
         Returns:
             Number of objects removed
         """
-        try:
-            import bonsai.tool as tool
-        except ImportError:
-            tool = None
-
         removed_count = 0
 
         # Get segments via IfcRelNests
         for rel in getattr(layout, "IsNestedBy", []) or []:
             for segment in rel.RelatedObjects or []:
                 if segment.is_a() == "IfcAlignmentSegment":
-                    obj = None
-
-                    # Try to get object via Bonsai's tool
-                    if tool:
-                        try:
-                            obj = tool.Ifc.get_object(segment)
-                        except Exception:
-                            pass
-
-                    # Fallback: search by IFC ID
-                    if not obj:
-                        obj = cls._find_object_by_ifc_id(segment.id())
-
+                    obj = tool.Ifc.get_object(segment)
                     if obj and cls._remove_blender_object(obj):
                         removed_count += 1
 
@@ -573,13 +622,7 @@ class Alignment:
         Returns:
             Number of objects removed
         """
-        try:
-            import bonsai.tool as tool
-        except ImportError:
-            tool = None
-
         removed_count = 0
-        alignment_name = alignment.Name or "Unnamed"
 
         # Get nested layouts via IfcRelNests
         for rel in getattr(alignment, "IsNestedBy", []) or []:
@@ -588,41 +631,13 @@ class Alignment:
                     # Remove segment objects first
                     removed_count += cls.remove_layout_segment_objects(layout)
 
-                    # Try to get layout object via Bonsai's tool
-                    layout_obj = None
-                    if tool:
-                        try:
-                            layout_obj = tool.Ifc.get_object(layout)
-                        except Exception:
-                            pass
-
-                    # Fallback: search by IFC ID
-                    if not layout_obj:
-                        layout_obj = cls._find_object_by_ifc_id(layout.id())
-
-                    # Last resort: search by name pattern
-                    if not layout_obj:
-                        layout_obj = cls._find_object_by_name_pattern(layout.is_a())
-
+                    # Remove layout object
+                    layout_obj = tool.Ifc.get_object(layout)
                     if layout_obj and cls._remove_blender_object(layout_obj):
                         removed_count += 1
 
-        # Try to get alignment object via Bonsai's tool
-        alignment_obj = None
-        if tool:
-            try:
-                alignment_obj = tool.Ifc.get_object(alignment)
-            except Exception:
-                pass
-
-        # Fallback: search by IFC ID
-        if not alignment_obj:
-            alignment_obj = cls._find_object_by_ifc_id(alignment.id())
-
-        # Last resort: search by name pattern (IfcAlignment/Name)
-        if not alignment_obj:
-            alignment_obj = cls._find_object_by_name_pattern(f"IfcAlignment/{alignment_name}")
-
+        # Remove alignment object
+        alignment_obj = tool.Ifc.get_object(alignment)
         if alignment_obj and cls._remove_blender_object(alignment_obj):
             removed_count += 1
 
@@ -641,24 +656,18 @@ class Alignment:
         Returns:
             List of newly created segment objects
         """
-        try:
-            import bonsai.tool as tool
+        # Get or find the layout object
+        if layout_obj is None:
+            layout_obj = tool.Ifc.get_object(layout)
 
-            # Get or find the layout object
-            if layout_obj is None:
-                layout_obj = tool.Ifc.get_object(layout)
-
-            if layout_obj is None:
-                return []
-
-            # Remove existing segment objects
-            cls.remove_layout_segment_objects(layout)
-
-            # Create new segment objects
-            return cls.create_objects_for_layout_segments(layout, layout_obj)
-        except (ImportError, AttributeError) as e:
-            print(f"Warning: Could not refresh layout visualization: {e}")
+        if layout_obj is None:
             return []
+
+        # Remove existing segment objects
+        cls.remove_layout_segment_objects(layout)
+
+        # Create new segment objects
+        return cls.create_objects_for_layout_segments(layout, layout_obj)
 
     # =========================================================================
     # Validation and Safe Wrappers

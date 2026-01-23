@@ -593,17 +593,17 @@ def on_radius_changed(pi, context):
 
 
 def recalculate_pi_geometry(props):
-    """Recalculate lengths and stations for all PIs using core logic."""
+    """Recalculate lengths and stations for all PIs using tool layer."""
     pis = props.pis
     if len(pis) < 2:
         rebuild_display_rows(props)
         return
 
-    # Extract PI coordinates for pure Python calculation
+    # Extract PI coordinates for calculation
     pi_coords = [(pi.x, pi.y) for pi in pis]
 
-    # Use core function for calculation
-    result = core.calculate_pi_geometry(pi_coords, props.start_station)
+    # Use tool layer for calculation (math belongs in tool, not core)
+    result = tool.Alignment.calculate_pi_geometry(pi_coords, props.start_station)
 
     # Update Blender properties with results
     tool.Alignment.update_pi_properties(props, result)
