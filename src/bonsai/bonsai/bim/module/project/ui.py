@@ -670,15 +670,14 @@ class BIM_UL_links(UIList):
                     icon_row.alert = True
                 icon_row.label(text="", icon="WORLD")
                 icon_row.alert = False
-            row.label(text=f"{item.name}")
+            # Combine filename and ID
             if item.uuid:
-                id_text = f"ID: {item.uuid}"
+                name_and_id = f"{item.name}  {item.uuid}"
             else:
-                id_text = "ID: -"
-            row.label(text=id_text)
+                name_and_id = f"{item.name}  -"
+            row.label(text=name_and_id)
             
             # Display position from the empty handle if loaded
-            position_text = ""
             if item.is_loaded and item.empty_handle:
                 try:
                     empty = item.empty_handle
@@ -689,11 +688,9 @@ class BIM_UL_links(UIList):
                     position_z = round(loc.z, 3)
                     position_angle = round(math.degrees(rot.z), 1)
                     position_text = f"({position_x}, {position_y}, {position_z}) {position_angle}°"
+                    row.label(text=position_text)
                 except (AttributeError, TypeError):
                     pass
-            
-            if position_text:
-                row.label(text=position_text)
             
             if item.is_loaded:
                 op = row.operator(

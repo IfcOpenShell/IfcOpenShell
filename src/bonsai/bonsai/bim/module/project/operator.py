@@ -1825,10 +1825,20 @@ class LoadLink(bpy.types.Operator):
                         position_z = float(parts[2])
                         position_angle = float(parts[3])
                         
-                        empty.location = (position_x, position_y, position_z)
+                        pprops = tool.Project.get_project_props()
+                        should_use_cursor = (
+                            pprops.false_origin_mode == "AUTOMATIC" and
+                            link.georeferenced in ("NONE", "NOT_COMPATIBLE")
+                        )
                         
-                        project_north_rad = math.radians(position_angle)
-                        empty.rotation_euler = Euler((0, 0, project_north_rad), 'XYZ')
+                        if should_use_cursor:
+                            empty.location = bpy.context.scene.cursor.location
+                            empty.rotation_euler = Euler((0, 0, 0), 'XYZ')
+                        else:
+                            empty.location = (position_x, position_y, position_z)
+                            
+                            project_north_rad = math.radians(position_angle)
+                            empty.rotation_euler = Euler((0, 0, project_north_rad), 'XYZ')
 
         group_empties = []
         for child_collection in parent_collection.children:
@@ -1904,9 +1914,6 @@ class LoadLink(bpy.types.Operator):
             pprops = tool.Project.get_project_props()
             gprops = tool.Georeference.get_georeference_props()
             
-            preferences = tool.Blender.get_addon_preferences()
-            use_full_materials = getattr(preferences, 'link_full_materials', False)
-            
             if not GeoreferenceData.is_loaded:
                 GeoreferenceData.load()
             projected_crs = GeoreferenceData.data.get("projected_crs", {})
@@ -1934,7 +1941,6 @@ def run():
     gprops.host_vertical_datum = "{gprops.host_vertical_datum}"
     pprops = tool.Project.get_project_props()
     pprops.distance_limit = {pprops.distance_limit}
-    pprops.use_full_materials = {use_full_materials}
     # Always use DISABLED mode for cache - positioning handled by empty
     pprops.false_origin_mode = "DISABLED"
     pprops.false_origin = "0.0,0.0,0.0"
@@ -2595,8 +2601,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         self.json_filepath = os.path.join(os.path.dirname(self.filepath), f"{cache_basename}.json")
         
         pprops = tool.Project.get_project_props()
-        if pprops.use_full_materials:
-            self.create_styles()
+        self.create_styles()
         
         net_position = None
         net_angle = None
@@ -2903,7 +2908,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         """Get or create material for a geometry material instance"""
         pprops = tool.Project.get_project_props()
         
-        if pprops.use_full_materials and geom_material.instance_id():
+        if geom_material.instance_id():
             instance_id = geom_material.instance_id()
             
             ifc_element = self.file.by_id(instance_id)

@@ -419,11 +419,6 @@ class BIMProjectProperties(PropertyGroup):
         description="Load indexed maps (UV and color maps)",
         default=True,
     )
-    use_full_materials: BoolProperty(
-        name="Use Full Materials for Links",
-        description="Internal flag to control material loading in background process",
-        default=False,
-    )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema", update=update_export_schema)
