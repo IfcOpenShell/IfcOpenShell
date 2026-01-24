@@ -61,19 +61,23 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
             tool.Ifc.Operator._execute(self, context)
 
     @classmethod
-    def add_pset_as_template(
-        cls, pset: ifcopenshell.entity_instance, template_file: ifcopenshell.file
-    ) -> ifcopenshell.entity_instance:
-        # TODO: add tests.
-        pset_template = ifcopenshell.api.pset_template.add_pset_template(template_file, pset.Name)
-        for property in pset.HasProperties:
-            ifcopenshell.api.pset_template.add_prop_template(
-                template_file,
-                pset_template,
-                name=property.Name,
-                description=property.Description,
-                primary_measure_type=property.NominalValue.is_a(),
-            )
+    def add_pset_as_template(cls, pset_name: str, template_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        added_prop_names = set()
+        pset_template = ifcopenshell.api.pset_template.add_pset_template(template_file, pset_name)
+        for pset in tool.Ifc.get().by_type("IfcPropertySet"):
+            if pset.Name != pset_name:
+                continue
+            for prop in pset.HasProperties:
+                if prop.Name in added_prop_names:
+                    continue
+                added_prop_names.add(prop.Name)
+                ifcopenshell.api.pset_template.add_prop_template(
+                    template_file,
+                    pset_template,
+                    name=prop.Name,
+                    description=prop.Description,
+                    primary_measure_type=prop.NominalValue.is_a(),
+                )
         return pset_template
 
     @classmethod
