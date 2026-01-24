@@ -744,6 +744,8 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
         usage_type = tool.Model.get_usage_type(element)
 
+        # TODO: review #7537 properly, this is a quick fix but something doesn't seem right.
+        original_rotation_x = 0
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
