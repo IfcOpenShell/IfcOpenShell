@@ -1154,6 +1154,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
                 bpy.ops.bim.load_project_elements()
                 if self.import_without_ifc_data:
                     bpy.ops.bim.convert_to_blender()
+                else:
+                    bpy.ops.bim.load_all_links()
         except:
             bonsai.last_error = traceback.format_exc()
             raise
