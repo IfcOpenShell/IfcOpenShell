@@ -75,6 +75,73 @@ class IfcCsv:
         self.results = []
         self.dataframe = None
 
+    def Export(
+        self,
+        ifc_file: ifcopenshell.file,
+        elements: Iterable[ifcopenshell.entity_instance],
+        attributes: Union[list[str], None],
+        headers: Optional[list[str]] = None,
+        output=None,
+        include_global_id: bool = True,
+        delimiter: str = ",",
+        null: str = "-",
+        empty: str = "",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+        concat: str = ", ",
+    ):
+        """
+        Generator version: yields after each element for incremental export.
+        """
+        self.ifc_file = ifc_file
+        self.results = []
+        self.headers = []
+
+        attributes = list(attributes) if attributes else []
+        headers = list(headers) if headers else None
+
+        if not headers:
+            headers = [None] * len(attributes)
+
+        if include_global_id:
+            if "GlobalId" not in attributes:
+                attributes.insert(0, "GlobalId")
+                headers.insert(0, "GlobalId")
+            if "FileName" not in attributes:
+                attributes.insert(0, "FileName")
+                headers.insert(0, "FileName")
+
+        for element in elements:
+            result = []
+
+            for attribute in attributes:
+                if attribute == "FileName":
+                    base_name = os.path.basename(output) if output else ""
+                    value = re.sub(r"_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.\w+$", "", base_name)
+                else:
+                    value = ifcopenshell.util.selector.get_element_value(element, attribute)
+                    if value is None:
+                        value = null
+                    elif value == "":
+                        value = empty
+                    elif value is True:
+                        value = bool_true
+                    elif value is False:
+                        value = bool_false
+                    elif isinstance(value, (list, tuple)) and concat is not None:
+                        value = concat.join(map(str, value))
+                result.append(value)
+            self.results.append(result)
+            yield element
+
+        # Set headers after processing all elements
+        self.headers = []
+        for i, attribute in enumerate(attributes):
+            if headers[i]:
+                self.headers.append(headers[i])
+            else:
+                self.headers.append(attribute)
+
     def export(
         self,
         ifc_file: ifcopenshell.file,
@@ -99,30 +166,40 @@ class IfcCsv:
         self.ifc_file = ifc_file
         self.results = []
         self.headers = []
-        attributes = attributes or []
+
+        attributes = list(attributes) if attributes else []
+        headers = list(headers) if headers else None
 
         if not headers:
             headers = [None] * len(attributes)
 
         if include_global_id:
-            attributes.insert(0, "GlobalId")
-            headers.insert(0, "GlobalId")
+            if "GlobalId" not in attributes:
+                attributes.insert(0, "GlobalId")
+                headers.insert(0, "GlobalId")
+            if "FileName" not in attributes:
+                attributes.insert(0, "FileName")
+                headers.insert(0, "FileName")
 
         for element in elements:
             result = []
 
             for attribute in attributes:
-                value = ifcopenshell.util.selector.get_element_value(element, attribute)
-                if value is None:
-                    value = null
-                elif value == "":
-                    value = empty
-                elif value is True:
-                    value = bool_true
-                elif value is False:
-                    value = bool_false
-                elif isinstance(value, (list, tuple)) and concat is not None:
-                    value = concat.join(map(str, value))
+                if attribute == "FileName":
+                    base_name = os.path.basename(output)
+                    value = re.sub(r"_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.\w+$", "", base_name)
+                else:
+                    value = ifcopenshell.util.selector.get_element_value(element, attribute)
+                    if value is None:
+                        value = null
+                    elif value == "":
+                        value = empty
+                    elif value is True:
+                        value = bool_true
+                    elif value is False:
+                        value = bool_false
+                    elif isinstance(value, (list, tuple)) and concat is not None:
+                        value = concat.join(map(str, value))
                 result.append(value)
             self.results.append(result)
 
@@ -401,27 +478,54 @@ class IfcCsv:
 
     def Import(
         self,
-        ifc_file: ifcopenshell.file,
-        table: str,
-        attributes: Optional[list[Union[str, None]]] = None,
-        delimiter: str = ",",
-        null: str = "-",
-        empty: str = "",
-        bool_true: str = "YES",
-        bool_false: str = "NO",
-        concat: str = ", ",
-    ) -> None:
+        ifc_file,
+        table_or_df,
+        attributes=None,
+        delimiter=",",
+        null="-",
+        empty="",
+        bool_true="YES",
+        bool_false="NO",
+        concat=", ",
+    ):
         """
-        :param table: filepath to the table.
+        Generator version: yields after each row for incremental import.
+        Accepts either a file path or a pandas DataFrame.
         """
-        ext: FILE_FORMAT = table.split(".")[-1].lower()
+        if isinstance(table_or_df, str):
+            ext = table_or_df.split(".")[-1].lower()
+            if ext == "csv":
+                df = pd.read_csv(table_or_df, delimiter=delimiter)
+            elif ext == "ods":
+                df = pd.read_excel(table_or_df, engine="odf")
+            elif ext == "xlsx":
+                df = pd.read_excel(table_or_df)
+            else:
+                raise ValueError(f"Unsupported file extension: {ext}")
+        else:
+            df = table_or_df
+        headers = df.columns.tolist()
+        if not attributes:
+            attributes = ["" for _ in headers]
+        elif len(attributes) == len(headers) - 1:
+            attributes = list(attributes)
+            attributes.insert(0, "")
+        else:
+            attributes = list(attributes)
+        for _, row in df.iterrows():
+            self.process_row(
+                ifc_file,
+                row.tolist(),
+                headers,
+                attributes,
+                null,
+                empty,
+                bool_true,
+                bool_false,
+                concat
+            )
+            yield row
 
-        if ext == "csv":
-            self.import_csv(ifc_file, table, attributes, delimiter, null, empty, bool_true, bool_false, concat)
-        elif ext == "ods":
-            self.import_ods(ifc_file, table, attributes, null, empty, bool_true, bool_false, concat)
-        elif ext == "xlsx":
-            self.import_xlsx(ifc_file, table, attributes, null, empty, bool_true, bool_false, concat)
 
     def import_csv(
         self,
@@ -441,20 +545,45 @@ class IfcCsv:
             for row in reader:
                 if not headers:
                     headers = row
-                    if not attributes:
-                        attributes = [None] * len(headers)
+                    if attributes is None:
+                        attributes = [None for _ in headers]
+                    elif not attributes:
+                        attributes = [None for _ in headers]
                     elif len(attributes) == len(headers) - 1:
+                        attributes = list(attributes)
                         attributes.insert(0, "")  # The GlobalId column
+                    else:
+                        attributes = list(attributes)
                     continue
                 self.process_row(ifc_file, row, headers, attributes, null, empty, bool_true, bool_false, concat)
 
     def import_xlsx(self, ifc_file, table, attributes, null, empty, bool_true, bool_false, concat) -> None:
+        import pandas as pd
         df = pd.read_excel(table)
-        self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false)
+        headers = df.columns.tolist()
+        if not attributes:
+            attributes = ["" for _ in headers]
+        elif len(attributes) == len(headers) - 1:
+            attributes = list(attributes)
+            attributes.insert(0, "")
+        else:
+            attributes = list(attributes)
+        for _, row in df.iterrows():
+            self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false, concat)
 
     def import_ods(self, ifc_file, table, attributes, null, empty, bool_true, bool_false, concat) -> None:
+        import pandas as pd
         df = pd.read_excel(table, engine="odf")
-        self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false)
+        headers = df.columns.tolist()
+        if not attributes:
+            attributes = [None for _ in headers]
+        elif len(attributes) == len(headers) - 1:
+            attributes = list(attributes)
+            attributes.insert(0, "")
+        else:
+            attributes = list(attributes)
+        for _, row in df.iterrows():
+            self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false, concat)
 
     def import_pd(
         self,
@@ -470,9 +599,14 @@ class IfcCsv:
         headers = df.columns.tolist()
 
         if not attributes:
-            attributes = [None] * len(headers)
+            attributes = [None for _ in headers]
+        if attributes is None:
+            attributes = []
         elif len(attributes) == len(headers) - 1:
+            attributes = list(attributes)
             attributes.insert(0, "")  # The GlobalId column
+        else:
+            attributes = list(attributes)
 
         for _, row in df.iterrows():
             self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false, concat)
@@ -487,19 +621,22 @@ class IfcCsv:
         empty: str,
         bool_true: str,
         bool_false: str,
-        concat: str,
+        concat: str
     ) -> None:
         # Patterns to skip during import (substrings)
         SKIP_PATTERNS = {"count", "material"}
 
+        csv_filename = os.path.basename(row[0]).strip().lower()
+        ifc_filename = os.path.basename(getattr(ifc_file, 'path', '')).strip().lower()
+        if csv_filename != ifc_filename:
+            return
         try:
-            element = ifc_file.by_guid(row[0])
+            element = ifc_file.by_guid(row[1])
         except:
-            print("The element with GUID {} was not found".format(row[0]))
             return
         for i, value in enumerate(row):
-            if i == 0:
-                continue  # Skip GlobalId
+            if i < 2:
+                continue  # Skip filename and GlobalId
             if value == null:
                 value = None
             elif value == empty:
@@ -508,14 +645,15 @@ class IfcCsv:
                 value = True
             elif value == bool_false:
                 value = False
-            key = attributes[i] or headers[i]
+            key = attributes[i-2] or headers[i]
 
-            # Skip keys containing certain patterns
-            if any(pattern in key.lower() for pattern in SKIP_PATTERNS):
+            if isinstance(key, str) and any(pattern in key.lower() for pattern in SKIP_PATTERNS):
                 continue
 
-            ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value, concat=concat)
-
+            old_value = ifcopenshell.util.selector.get_element_value(element, key)
+            if old_value != value:
+                ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value, concat=concat)
+                
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Exports IFC data to and from CSV")

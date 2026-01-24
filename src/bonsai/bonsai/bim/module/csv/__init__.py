@@ -22,6 +22,11 @@ from . import ui, prop, operator
 classes = (
     operator.AddCsvAttribute,
     operator.ExportCsvAttributes,
+    operator.AddOutputFilterGroup,
+    operator.RemoveOutputFilterGroup,
+    operator.AddOutputFilter,
+    operator.RemoveOutputFilter,
+    operator.ToggleOutputFilterInclusion,
     operator.ExportIfcCsv,
     operator.ImportCsvAttributes,
     operator.ImportIfcCsv,
@@ -29,15 +34,26 @@ classes = (
     operator.RemoveCsvAttribute,
     operator.ReorderCsvAttribute,
     operator.SelectCsvIfcFile,
+    operator.AddIfcFiles,
+    operator.RemoveIfcFile,
+    operator.AddlinkedFiles,
+    operator.OpenIfcFile,
     prop.CsvAttribute,
+    prop.CsvOutputFilter,
+    prop.CsvOutputFilterGroup,
     prop.CsvProperties,
+    prop.IfcFile,
+    prop.IfcProperties,
     ui.BIM_PT_ifccsv,
+    ui.BIM_UL_ifc_files,
 )
 
 
 def register():
     bpy.types.Scene.CsvProperties = bpy.props.PointerProperty(type=prop.CsvProperties)
+    bpy.types.Scene.IfcProperties = bpy.props.PointerProperty(type=prop.IfcProperties)
 
 
 def unregister():
     del bpy.types.Scene.CsvProperties
+    del bpy.types.Scene.IfcProperties

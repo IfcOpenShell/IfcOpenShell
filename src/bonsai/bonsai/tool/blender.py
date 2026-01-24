@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
     from bonsai.bim.module.covetool.prop import CoveToolProperties
-    from bonsai.bim.module.csv.prop import CsvProperties
+    from bonsai.bim.module.csv.prop import CsvProperties, IfcProperties
     from bonsai.bim.module.diff.prop import DiffProperties
     from bonsai.bim.module.fm.prop import BIMFMProperties
     from bonsai.bim.module.light.prop import BIMSolarProperties, RadianceExporterProperties
@@ -1789,6 +1789,10 @@ class Blender(bonsai.core.tool.Blender):
     def get_csv_props(cls) -> CsvProperties:
         assert (scene := bpy.context.scene)
         return scene.CsvProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_ifc_props(cls) -> IfcProperties:
+        return bpy.context.scene.IfcProperties
 
     @classmethod
     def get_diff_props(cls) -> DiffProperties:

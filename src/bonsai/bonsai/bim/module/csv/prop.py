@@ -33,6 +33,18 @@ from typing import TYPE_CHECKING, Literal
 
 
 class CsvAttribute(PropertyGroup):
+    data_type: EnumProperty(
+        name="Data Type",
+        description="Type of the attribute for filtering and export",
+        items=[
+            ("string", "String", "Text/String value"),
+            ("float", "Float", "Floating point number"),
+            ("int", "Integer", "Integer number"),
+            ("bool", "Boolean", "True/False value"),
+            ("imperial_string", "Imperial String", "Imperial length as string (e.g. 10' 6\" or 8\")"),
+        ],
+        default="string",
+    )
     name: StringProperty(name="Query", default="class")
     header: StringProperty(name="Header Value", default="IFC Class")
     sort: EnumProperty(items=[("NONE", "None", ""), ("ASC", "Ascending", ""), ("DESC", "Descending", "")])
@@ -70,6 +82,54 @@ class CsvAttribute(PropertyGroup):
         formatting: str
 
 
+def filter_column_items(self, context):
+    props = context.scene.CsvProperties
+    items = [("__ALL__", "<All Columns>", "Apply to all columns (for regex only)")]
+    for attr in props.csv_attributes:
+        if attr.header:
+            items.append((attr.header, attr.header, ""))
+    return items
+
+
+class CsvOutputFilter(PropertyGroup):
+    name: StringProperty()
+    column: EnumProperty(
+        name="Column",
+        description="Column to filter",
+        items=filter_column_items,
+    )
+    comparison: EnumProperty(
+        items=[
+            ("regex", "regex", "Apply regex pattern"),
+            ("=", "approx equal", "Equal to (with tolerance of 1mm for floats and imperial lengths)"),
+            ("!=", "approx not equal", "Not equal to (with tolerance of 1mm for floats and imperial lengths)"),
+            (">", "greater", "Greater than"),
+            (">=", "greater or equal", "Greater than or equal to"),
+            ("<", "less", "Less than"),
+            ("<=", "less or equal", "Less than or equal to"),
+            ("*=", "contains", "Contains"),
+            ("!*=", "not contains", "Does not contain"),
+        ],
+        name="Operator",
+        default="=",
+    )
+    value: StringProperty(name="Value")
+    filter_mode: EnumProperty(
+        items=[
+            ("ADD", "Add", "Add elements matching this filter (union)"),
+            ("SUBTRACT", "Subtract", "Remove elements matching this filter (difference)"),
+            ("FILTER", "Filter", "Keep only elements matching this filter (intersection)"),
+        ],
+        name="Filter Mode",
+        default="ADD",
+    )
+
+
+class CsvOutputFilterGroup(bpy.types.PropertyGroup):
+    filters: bpy.props.CollectionProperty(type=CsvOutputFilter)
+    active_output_filter: bpy.props.IntProperty(default=-1, name="Active Output Filter")
+
+
 class CsvProperties(PropertyGroup):
     csv_ifc_file: StringProperty(default="", name="IFC File")
     ifc_selector: StringProperty(default="", name="IFC Selector")
@@ -77,7 +137,7 @@ class CsvProperties(PropertyGroup):
     csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
     should_generate_svg: BoolProperty(default=False, name="Generate SVG")
     should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
-    include_global_id: BoolProperty(default=True, name="Include GlobalId")
+    include_filename_and_global_id: BoolProperty(default=True, name="Include FileName and GlobalId")
     null_value: StringProperty(default="N/A", name="Null Value")
     empty_value: StringProperty(default="-", name="Empty String Value")
     true_value: StringProperty(default="YES", name="True Value")
@@ -115,6 +175,12 @@ class CsvProperties(PropertyGroup):
         description="Use IFC file currently loaded in Bonsai",
     )
 
+    output_filters: CollectionProperty(type=CsvOutputFilter, name="Output Filters")
+    active_output_filter: IntProperty(default=-1, name="Active Output Filter")
+    output_filter_groups: bpy.props.CollectionProperty(type=CsvOutputFilterGroup)
+    progress: FloatProperty(name="Progress", default=0.0)
+    import_phase: StringProperty(name="Import Phase", default="")
+
     if TYPE_CHECKING:
         csv_ifc_file: str
         ifc_selector: str
@@ -122,13 +188,13 @@ class CsvProperties(PropertyGroup):
         csv_attributes: bpy.types.bpy_prop_collection_idprop[CsvAttribute]
         should_generate_svg: bool
         should_preserve_existing: bool
-        include_global_id: bool
+        include_filename_and_global_id: bool
         null_value: str
         empty_value: str
         true_value: str
         false_value: str
         concat_value: str
-        csv_delimiter: Literal["NONE", "ASC", "DESC"]
+        csv_delimiter: Literal[";", ",", ".", "CUSTOM"]
         format: Literal["csv", "xlsx", "ods", "web"]
         csv_custom_delimiter: str
         should_show_settings: bool
@@ -137,3 +203,11 @@ class CsvProperties(PropertyGroup):
         should_show_summary: bool
         should_show_formatting: bool
         should_load_from_memory: bool
+
+class IfcFile(bpy.types.PropertyGroup):
+    file_path: StringProperty(name="File Path")
+    is_selected: BoolProperty(name="Selected", default=True)
+
+class IfcProperties(bpy.types.PropertyGroup):
+    ifc_files: CollectionProperty(type=IfcFile)
+    active_ifc_file_index: IntProperty()
