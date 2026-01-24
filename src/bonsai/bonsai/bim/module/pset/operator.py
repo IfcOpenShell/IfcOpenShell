@@ -569,7 +569,7 @@ class SavePsetAsTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
         template_file = IfcStore.pset_template_file
         assert template_file
 
-        tool.PsetTemplate.add_pset_as_template(pset, template_file)
+        tool.PsetTemplate.add_pset_as_template(pset.Name, template_file)
 
         template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()

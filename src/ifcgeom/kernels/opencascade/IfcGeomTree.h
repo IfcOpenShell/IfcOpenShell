@@ -1792,6 +1792,10 @@ namespace IfcGeom {
                 auto& vs = elem->geometry().verts();
                 auto& fs = elem->geometry().faces();
 
+                if (vs.empty() || fs.empty()) {
+                    return;
+                }
+
                 gp_Trsf tr;
                 tr.SetValues(
                     m(0, 0), m(0, 1), m(0, 2), m(0, 3),
@@ -1859,22 +1863,35 @@ namespace IfcGeom {
                     candidates.push_back({ std::abs(Z.Dot(ref)), ref });
                 }
 
-                if (candidates.empty()) {
-                    {
-                        gp_XYZ ref(0, 0, 1);
-                        candidates.push_back({ std::abs(Z.Dot(ref)), ref });
+                gp_Ax3 ax3;
+                gp_Trsf trsf2;
+                
+                for (size_t attempt = 0; attempt < 2; ++attempt) {
+
+                    if (candidates.empty() || attempt == 1) {
+                        {
+                            gp_XYZ ref(0, 0, 1);
+                            candidates.push_back({std::abs(Z.Dot(ref)), ref});
+                        }
+                        {
+                            gp_XYZ ref(1, 0, 0);
+                            candidates.push_back({std::abs(Z.Dot(ref)), ref});
+                        }
                     }
+
+                    auto X = std::min_element(candidates.begin(), candidates.end(), [](auto& p1, auto& p2) { return p1.first < p2.first; })->second;
+
                     {
-                        gp_XYZ ref(1, 0, 0);
-                        candidates.push_back({ std::abs(Z.Dot(ref)), ref });
+                        try {
+                            ax3 = gp_Ax3(gp::Origin(), Z, X);
+                            trsf2.SetTransformation(gp::XOY(), ax3);
+                        } catch (Standard_ConstructionError&) {
+                            // Try again, likely we have all identical normals in candidates so
+                            // we cannot find a suitable candidate and need the two default axes
+                            continue;
+                        }
                     }
                 }
-
-                auto X = std::min_element(candidates.begin(), candidates.end(), [](auto& p1, auto& p2) { return p1.first < p2.first; })->second;
-
-                gp_Trsf trsf2;
-                gp_Ax3 ax3(gp::Origin(), Z, X);
-                trsf2.SetTransformation(gp::XOY(), ax3);
 
                 Bnd_Box tmp;
 

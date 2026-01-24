@@ -330,66 +330,26 @@ class Unit(bonsai.core.tool.Unit):
         return bonsai.bim.helper.export_attributes(props.unit_attributes, callback=callback)
 
     @classmethod
-    def get_scene_unit_name(cls, unit_type: UNIT_TYPE) -> str:
-        bim_props = tool.Blender.get_bim_props()
+    def get_scene_unit_name(cls, unit_type: UNIT_TYPE) -> str | None:
         if unit_type == "LENGTHUNIT":
-            assert bpy.context.scene
-            props = bpy.context.scene.unit_settings
-            if props.length_unit == "MILES":
-                return "mile"
-            elif props.length_unit == "FEET" or props.length_unit == "ADAPTIVE":
-                return "foot"
-            elif props.length_unit == "INCHES":
-                return "inch"
-            elif props.length_unit == "THOU":
-                return "thou"
-            return "foot"
-        elif unit_type == "AREAUNIT":
-            return bim_props.area_unit
-        elif unit_type == "VOLUMEUNIT":
-            return bim_props.volume_unit
-        elif unit_type == "MASSUNIT":
-            return bim_props.mass_unit.lower()
-        elif unit_type == "TIMEUNIT":
-            return bim_props.time_unit.lower()
-        else:
-            assert_never(unit_type)
+            name = bpy.context.scene.unit_settings.length_unit
+            name = {"MILES": "mile", "FEET": "foot", "INCHES": "inch", "THOU": "thou", "ADAPTIVE": "METERS"}.get(
+                name, name
+            )
+            if len(name) > len("METERS") and name.endswith("METERS"):
+                return f"{name[:-6]}/METRE"
+            return name
+        bim_props = tool.Blender.get_bim_props()
+        if (name := getattr(bim_props, f"{unit_type[:-4].lower()}_unit")) != "NONE":
+            return name
 
     @classmethod
-    def get_scene_unit_si_prefix(cls, unit_type: UNIT_TYPE) -> Union[str, None]:
-        bim_props = tool.Blender.get_bim_props()
-        if unit_type == "LENGTHUNIT":
-            assert bpy.context.scene
-            props = bpy.context.scene.unit_settings
-            if props.length_unit == "ADAPTIVE" or props.length_unit == "METERS":
-                return
-            return props.length_unit.replace("METERS", "")
-        elif unit_type == "AREAUNIT":
-            unit = bim_props.area_unit
-        elif unit_type == "VOLUMEUNIT":
-            unit = bim_props.volume_unit
-        elif unit_type == "MASSUNIT":
-            unit = bim_props.mass_unit
-            if unit == "GRAM":
-                return None
-            elif unit == "KILOGRAM":
-                return "KILO"
-            elif unit == "TONNE":
-                return "MEGA"
-            elif unit in ["POUND", "OUNCE"]:
-                return "CONVERSION"
-            else:
-                return None
-        elif unit_type == "TIMEUNIT":
-            unit = bim_props.time_unit
-            if unit == "SECOND":
-                return None
-            else:
-                return "CONVERSION"
-        else:
-            assert_never(unit_type)
-        if "/" in unit:
-            return unit.split("/")[0]
+    def is_si_unit(cls, name: str) -> bool:
+        return name[0].isupper()
+
+    @classmethod
+    def get_scene_unit_si_prefix(cls, name: str) -> str | None:
+        return name.split("/")[0] if "/" in name else None
 
     @classmethod
     def import_unit_attributes(cls, unit: ifcopenshell.entity_instance) -> None:
@@ -504,9 +464,3 @@ class Unit(bonsai.core.tool.Unit):
         elif ifc_class == "IfcMonetaryUnit":
             return "COPY_ID"
         return "MOD_MESHDEFORM"
-
-    @classmethod
-    def add_mass_and_time_units(cls) -> bool:
-        """Return True if the user wants to add mass and time units, False otherwise."""
-        bim_props = tool.Blender.get_bim_props()
-        return getattr(bim_props, "add_mass_time_units", False)

@@ -91,7 +91,7 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 		volume = 0.;
 		return false;
 	}
-	volume = s->area()->to_double();
+	volume = s->volume()->to_double();
 	return true;
 }
 

@@ -750,6 +750,14 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
         if node.attr == "create_entity":
             return node
 
+        if node.attr.startswith("__"):
+            return node
+
+        # Don't rewrite at module scope (top-level, no indent)
+        enclosing_stmt = next((p for p in parents if isinstance(p, ast.stmt)), None)
+        if enclosing_stmt is not None and isinstance(getattr(enclosing_stmt, "parent", None), ast.Module):
+            return node
+
         new_value = self.visit(node.value)
 
         # Replace the Attribute node with a call to the built-in `getattr` function
@@ -842,18 +850,21 @@ if __name__ == "__main__":
 
     print(
         """
+def is_indeterminate(v):
+    return v is None or type(v).__name__ == 'indeterminate_type'
+
 def exists(v):
     if callable(v):
         try: return v() is not None
         except IndexError as e: return False
-    else: return v is not None
+    else: return not is_indeterminate(v)
 """,
         "\n",
         file=output,
         sep="\n",
     )
     print(
-        "def nvl(v, default): return v if v is not None else default",
+        "def nvl(v, default): return v if not is_indeterminate(v) else default",
         "\n",
         file=output,
         sep="\n",
@@ -871,14 +882,14 @@ def is_entity(inst):
 def express_len(v):
     if isinstance(v, ifcopenshell.entity_instance) and not is_entity(v):
         v = v[0]
-    elif v is None or v is INDETERMINATE:
+    elif is_indeterminate(v):
         return INDETERMINATE
     return len(v)
 
 old_range = range
 
 def range(*args):
-    if INDETERMINATE in args:
+    if any(map(is_indeterminate, args)):
         return
     yield from old_range(*args)
 
