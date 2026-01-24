@@ -1063,8 +1063,7 @@ class Model(bonsai.core.tool.Model):
                 removed_children = set(array["children"])
                 for removed_child in removed_children:
                     element = tool.Ifc.get().by_guid(removed_child)
-                    obj = tool.Ifc.get_object(element)
-                    if obj:
+                    if obj := tool.Ifc.get_object(element):
                         tool.Geometry.delete_ifc_object(obj)
                 array["children"].clear()
 
@@ -1087,19 +1086,18 @@ class Model(bonsai.core.tool.Model):
                 offset = base_offset * i
 
                 for obj in obj_stack:
-                    # get currently proccesed array element and it's object
-                    if child_i >= total_existing_children:
-                        child_obj = tool.Spatial.duplicate_object_and_data(obj)
-                        child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
-                    else:
+                    try:
                         global_id = array["children"][child_i]
-                        try:
-                            child_element = tool.Ifc.get().by_guid(global_id)
-                            child_obj = tool.Ifc.get_object(child_element)
-                            assert child_obj
-                        except:
-                            child_obj = tool.Spatial.duplicate_object_and_data(obj)
-                            child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
+                        child_element = tool.Ifc.get().by_guid(global_id)
+                        child_obj = tool.Ifc.get_object(child_element)
+                        assert child_obj
+                    except:
+                        old_to_new, _ = tool.Geometry.duplicate_ifc_objects([obj])
+                        # TODO Is this correct to assume one child? I really
+                        # don't understand the linked aggregates and array
+                        # behaviour.
+                        child_element = list(old_to_new.values())[0][0]
+                        child_obj = tool.Ifc.get_object(child_element)
 
                     # add child pset
                     child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")

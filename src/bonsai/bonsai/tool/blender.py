@@ -1223,7 +1223,8 @@ class Blender(bonsai.core.tool.Blender):
 
             @classmethod
             def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                parent_obj = tool.Ifc.get_object(parent_element)
+                if not (parent_obj := tool.Ifc.get_object(parent_element)):
+                    return  # Filtered out, arrayed void, etc
                 assert isinstance(parent_obj, bpy.types.Object)
                 children = cls.get_all_children_objects(parent_element)
                 for child in children:

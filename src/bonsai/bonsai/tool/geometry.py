@@ -2106,6 +2106,14 @@ class Geometry(bonsai.core.tool.Geometry):
         active_object: Optional[bpy.types.Object] = None,
         linked: bool = False,
     ) -> tuple[dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]], Union[bpy.types.Object, None]]:
+        """Duplicate IFC objects
+
+        Duplication is surprisingly complicated because you might only select
+        part of a group of related items.
+
+        TODO: write some tests and figure out how to make this function
+        actually understandable.
+        """
         # Handle arrays
         objects_to_duplicate = set(objects_to_duplicate)
         arrays_to_duplicate, array_children = cls.process_arrays_for_duplication(objects_to_duplicate)
