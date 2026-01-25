@@ -297,8 +297,31 @@ def create_ui_name_cache():
 
 
 def replace_variables(value):
+    # First do normal variable replacement (including {cwd})
     for key, new_value in variables.items():
-        value = value.replace("{" + key + "}", str(new_value))
+        if not key.startswith("link_uuid:"):  # Skip UUID mappings for now
+            value = value.replace("{" + key + "}", str(new_value))
+    
+    # Then replace link filepaths with UUIDs in operator parameters
+    import re
+    link_pattern = r"link='([^']+)'"
+    match = re.search(link_pattern, value)
+    if match:
+        filepath = match.group(1)
+        # Check if we have a UUID stored for this filepath
+        uuid_key = f"link_uuid:{filepath}"
+        if uuid_key in variables:
+            value = value.replace(f"link='{filepath}'", f"link='{variables[uuid_key]}'")
+    
+    # Also replace filepaths in property access like links['/path/to/file.ifc']
+    links_pattern = r"links\['([^']+)'\]"
+    match = re.search(links_pattern, value)
+    if match:
+        filepath = match.group(1)
+        uuid_key = f"link_uuid:{filepath}"
+        if uuid_key in variables:
+            value = value.replace(f"links['{filepath}']", f"links['{variables[uuid_key]}']")
+    
     return value
 
 
@@ -392,6 +415,77 @@ def i_link_ifc_project_from_filepath(filepath: str) -> None:
     filepath = replace_variables(filepath)
     CLEAN_LINKED_FILES_CACHE = True
     bpy.ops.bim.link_ifc(filepath=filepath, use_cache=False)
+    
+    # Store the link UUID in variables for later use
+    from pathlib import Path
+    import bonsai.tool as tool
+    
+    props = tool.Project.get_project_props()
+    filepath_posix = Path(filepath).as_posix()
+    
+    for link in props.links:
+        if Path(link.filepath).as_posix() == filepath_posix:
+            # Store UUID using filepath as key for easy lookup in tests
+            variables[f"link_uuid:{filepath}"] = link.name
+            break
+
+
+@then(parsers.parse('the link "{filepath}" is loaded'))
+def the_link_is_loaded(filepath: str) -> None:
+    filepath = replace_variables(filepath)
+    from pathlib import Path
+    import bonsai.tool as tool
+    
+    props = tool.Project.get_project_props()
+    filepath_posix = Path(filepath).as_posix()
+    
+    # Find the link by filepath
+    link_found = False
+    for link in props.links:
+        if Path(link.filepath).as_posix() == filepath_posix:
+            assert link.is_loaded, f"Link {filepath} exists but is not loaded"
+            link_found = True
+            break
+    
+    assert link_found, f"Link {filepath} not found in links collection"
+
+
+@then(parsers.parse('the link "{filepath}" empty is visible'))
+def the_link_empty_is_visible(filepath: str) -> None:
+    filepath = replace_variables(filepath)
+    from pathlib import Path
+    import bonsai.tool as tool
+    
+    props = tool.Project.get_project_props()
+    filepath_posix = Path(filepath).as_posix()
+    
+    # Find the link by filepath and check its empty handle visibility
+    for link in props.links:
+        if Path(link.filepath).as_posix() == filepath_posix:
+            assert link.empty_handle, f"Link {filepath} has no empty handle"
+            assert link.empty_handle.hide_get() == False, f"Link {filepath} empty is not visible"
+            return
+    
+    assert False, f"Link {filepath} not found"
+
+
+@then(parsers.parse('the link "{filepath}" empty is not visible'))
+def the_link_empty_is_not_visible(filepath: str) -> None:
+    filepath = replace_variables(filepath)
+    from pathlib import Path
+    import bonsai.tool as tool
+    
+    props = tool.Project.get_project_props()
+    filepath_posix = Path(filepath).as_posix()
+    
+    # Find the link by filepath and check its empty handle visibility
+    for link in props.links:
+        if Path(link.filepath).as_posix() == filepath_posix:
+            assert link.empty_handle, f"Link {filepath} has no empty handle"
+            assert link.empty_handle.hide_get() == True, f"Link {filepath} empty is visible"
+            return
+    
+    assert False, f"Link {filepath} not found"
 
 
 @given("the Brickschema is stubbed")

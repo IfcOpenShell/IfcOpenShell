@@ -277,10 +277,13 @@ class TestLoadLinkedModels(NewFile):
         reference = ifcopenshell.api.document.add_reference(ifc, document)
         linked_model_path = "test.ifc"
         reference.Location = linked_model_path
+        reference.Identification = "0.0,0.0,0.0,0.0"
         tool.Ifc.set(ifc)
         subject.load_linked_models_from_ifc()
         assert len(props.links) == 1
-        assert props.links[0].name == linked_model_path
+        assert props.links[0].name == f"#{reference.id()}"
+        assert props.links[0].filepath == linked_model_path
+        assert props.links[0].position == "0.0,0.0,0.0,0.0"
 
 
 class TestSaveLinkedModelsToIfc(NewFile):
@@ -297,13 +300,16 @@ class TestSaveLinkedModelsToIfc(NewFile):
         props = tool.Project.get_project_props()
         link = props.links.add()
         linked_model_path = "test.ifc"
-        link.name = linked_model_path
+        link.name = "#0"  # Temporary name before save
+        link.filepath = linked_model_path
+        link.position = "10.0,20.0,30.0,45.0"
         tool.Ifc.set(ifc)
-        subject.save_linked_models_to_ifc()
+        subject.save_linked_models_to_ifc(update_positions=False)
         assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
         assert documents[0].Name == "BBIM_Linked_Models"
         assert len(references := ifc.by_type("IfcDocumentReference")) == 1
         assert references[0].Location == linked_model_path
+        assert references[0].Identification == "10.0,20.0,30.0,45.0"
 
     def test_save_linked_models_to_ifc_already_created_references(self):
         ifc = ifcopenshell.file()
@@ -316,13 +322,16 @@ class TestSaveLinkedModelsToIfc(NewFile):
         reference = ifcopenshell.api.document.add_reference(ifc, document)
         linked_model_path = "test.ifc"
         reference.Location = linked_model_path
+        reference.Identification = "10.0,20.0,30.0,45.0"
         reference_id = reference.id()
 
         link = links.add()
         linked_model_path = "test.ifc"
-        link.name = linked_model_path
+        link.name = f"#{reference_id}"  # Use existing reference ID
+        link.filepath = linked_model_path
+        link.position = "10.0,20.0,30.0,45.0"
         tool.Ifc.set(ifc)
-        subject.save_linked_models_to_ifc()
+        subject.save_linked_models_to_ifc(update_positions=False)
 
         # Information and references to stay intact.
         assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
@@ -331,6 +340,7 @@ class TestSaveLinkedModelsToIfc(NewFile):
         assert len(references := ifc.by_type("IfcDocumentReference")) == 1
         assert references[0].id() == reference_id
         assert references[0].Location == linked_model_path
+        assert references[0].Identification == "10.0,20.0,30.0,45.0"
 
     def test_save_linked_models_to_ifc_references_to_remove(self):
         ifc = ifcopenshell.file()

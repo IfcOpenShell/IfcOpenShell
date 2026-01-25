@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import os
+import math
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -268,49 +269,108 @@ class Project(bonsai.core.tool.Project):
 
         for reference in references:
             link = links.add()
-            link.name = reference.Location
+            link.name = f"#{reference.id()}"  # UUID as primary key
+            link.filepath = reference.Location
+            link.position = reference.Identification or ""
 
     @classmethod
-    def save_linked_models_to_ifc(cls) -> None:
+    def save_linked_models_to_ifc(cls, update_positions: bool = True) -> bool:
+        """Save linked models to IFC. Returns True if successful, False if duplicate link found.
+        
+        Args:
+            update_positions: If True, update positions from empty handles. Set to False during link loading.
+        """
         ifc_file = tool.Ifc.get()
         links = tool.Project.get_project_props().links
-        filepaths: set[Path] = set()
+
+        # Update positions from empty handles for all loaded links (only when saving, not during linking)
+        if update_positions:
+            for link in links:
+                if link.is_loaded and link.empty_handle and link.name != "#0":
+                    # Update position from current empty handle location
+                    empty = link.empty_handle
+                    x = round(empty.location.x, 3)
+                    y = round(empty.location.y, 3)
+                    z = round(empty.location.z, 3)
+                    angle = round(math.degrees(empty.rotation_euler.z), 3)
+                    new_position = f"{x},{y},{z},{angle}"
+                    
+                    if link.position != new_position:
+                        print(f"DEBUG: Updating position for link {link.name} from '{link.position}' to '{new_position}'")
+                        link.position = new_position
+                        
+                        # Update the IfcDocumentReference.Identification
+                        reference_id = int(link.name[1:])
+                        reference = ifc_file.by_id(reference_id)
+                        reference.Identification = new_position
+
+        if "#0" in links:
+            new_link = links["#0"]
+            links_document = cls.get_linked_models_document()
+            if links_document:
+                references = tool.Document.get_document_references(links_document)
+                new_filepath = Path(new_link.filepath).as_posix()
+                new_position = new_link.position or ""
+                ref_set = set()
+                print("DEBUG save_linked_models_to_ifc: Checking for duplicates against references:")
+                for ref in references:
+                    loc = ref.Location or ""
+                    ident = getattr(ref, "Identification", None) or ""
+                    print(f"  - Location: '{loc}', Identification: '{ident}'")
+                    ref_set.add((loc, ident))
+                print(f"DEBUG save_linked_models_to_ifc: New link: filepath='{new_filepath}', position='{new_position}'")
+                if (new_filepath, new_position) in ref_set:
+                    print("DEBUG save_linked_models_to_ifc: Duplicate found!!!!!!!!!!!!")
+                    print("DEBUG save_linked_models_to_ifc: Returning False")
+                    return False
+
+        link_keys: set[tuple[str, str]] = set()
         for link in links:
-            filepaths.add(Path(link.name))
+            filepath = Path(link.filepath).as_posix()
+            identification = link.position or ""
+            link_keys.add((filepath, identification))
 
         links_document = cls.get_linked_models_document()
 
-        if not filepaths and links_document is None:
-            return
+        if not link_keys and links_document is None:
+            return True
 
-        paths_to_add = filepaths.copy()
-        references_to_remove: list[ifcopenshell.entity_instance] = []
+        docRef_keys: set[tuple[str, str]] = set()
+        reference_map: dict[tuple[str, str], ifcopenshell.entity_instance] = {}
+
         if links_document:
             references = tool.Document.get_document_references(links_document)
             for reference in references:
-                # I guess got corrupted by the user.
-                if not (location := reference.Location):
-                    references_to_remove.remove(reference)
-                    continue
-                path = Path(location)
-                if path in paths_to_add:
-                    paths_to_add.remove(path)
-                else:
-                    references_to_remove.append(reference)
+                location = reference.Location or ""
+                identification = getattr(reference, "Identification", None) or ""
+                pair = (location, identification)
+                docRef_keys.add(pair)
+                reference_map[pair] = reference
 
-        if paths_to_add:
+        docRefs_to_add = link_keys - docRef_keys
+        docRefs_to_remove = docRef_keys - link_keys
+
+        if docRefs_to_add:
             if links_document is None:
                 links_document = ifcopenshell.api.document.add_information(ifc_file)
                 links_document.Name = "BBIM_Linked_Models"
                 links_document.Description = "Bonsai internal document containing references to currently linked models"
 
-            for path in paths_to_add:
+            for filepath, identification in docRefs_to_add:
                 reference = ifcopenshell.api.document.add_reference(ifc_file, links_document)
-                reference.Location = path.as_posix()
+                reference.Location = filepath
+                reference.Identification = identification
 
-        if references_to_remove:
-            for reference in references_to_remove:
-                ifcopenshell.api.document.remove_reference(ifc_file, reference)
+                # Set name (uuid) on the corresponding link
+                for link in links:
+                    if Path(link.filepath).as_posix() == filepath and (link.position or "") == identification:
+                        link.name = f"#{reference.id()}"
+                        break
+
+        for docRef in docRefs_to_remove:
+            ifcopenshell.api.document.remove_reference(ifc_file, reference_map[docRef])
+
+        return True
 
     @classmethod
     def get_project_library_elements(

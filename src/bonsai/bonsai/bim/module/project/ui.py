@@ -22,6 +22,7 @@ import os
 from typing import TYPE_CHECKING
 
 import bpy
+import math
 import ifcopenshell
 from bpy.types import Menu, Panel, UIList
 
@@ -30,6 +31,8 @@ import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import LinksData, ProjectData
+from bonsai.bim.module.georeference.data import GeoreferenceData
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import (
@@ -477,6 +480,36 @@ class BIM_PT_links(Panel):
 
     def draw(self, context):
         self.props = tool.Project.get_project_props()
+        if not tool.Ifc.get():
+            row = self.layout.row(align=True)
+            row.operator("bim.create_project", text="Create Parent Project to Link Projects", icon="FILE_NEW")
+            return
+        
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
+        
+        georef_props = tool.Georeference.get_georeference_props()
+        projected_crs = GeoreferenceData.data.get("projected_crs", {})
+        
+        if georef_props.is_editing:
+            self.draw_georeferencing_editable_ui(context, georef_props)
+        else:
+            if projected_crs and projected_crs.get("Name"):
+                crs_name = projected_crs.get("Name")
+                vertical_datum = ""
+                if projected_crs.get("VerticalDatum"):
+                    vertical_datum = " / " + projected_crs.get("VerticalDatum")
+                else:
+                    vertical_datum = " - No vertical Datum. z coordinates might be inaccurate"
+                georef_row = self.layout.row(align=True)
+                georef_row.label(text=crs_name + vertical_datum, icon="WORLD")
+                georef_row.operator("bim.enable_editing_georeferencing", text="", icon="GREASEPENCIL")
+                georef_row.operator("bim.remove_georeferencing", text="", icon="X")
+            else:
+                georef_row = self.layout.row(align=True)
+                georef_row.label(text="Not georeferenced", icon="ERROR")
+                georef_row.operator("bim.add_georeferencing", text="", icon="ADD")
+
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:
@@ -529,6 +562,40 @@ class BIM_PT_links(Panel):
                     row.label(text=name)
                     row.label(text=value)
 
+    def draw_georeferencing_editable_ui(self, context, georef_props):
+        """Draw the georeferencing editing UI inline (same as in BIM_PT_gis)"""
+        from bonsai.bim.helper import draw_attributes, draw_attribute
+        
+        row = self.layout.row(align=True)
+        row.label(text="Projected CRS", icon="WORLD")
+        row.operator("bim.edit_georeferencing", icon="CHECKMARK", text="")
+        row.operator("bim.disable_editing_georeferencing", icon="CANCEL", text="")
+
+        draw_attributes(georef_props.projected_crs, self.layout)
+
+        row = self.layout.row()
+        row.label(text="Coordinate Operation", icon="GRID")
+
+        for attribute in georef_props.coordinate_operation:
+            if attribute.name == "XAxisAbscissa":
+                row = self.layout.row(align=True)
+                row.prop(georef_props, "grid_north_angle", text="Angle")
+                row.prop(
+                    georef_props, "x_axis_is_null", icon="RADIOBUT_OFF" if georef_props.x_axis_is_null else "RADIOBUT_ON", text=""
+                )
+                row = self.layout.row(align=True)
+                row.prop(georef_props, "x_axis_abscissa", text="XAxis Abscissa")
+                row.prop(
+                    georef_props, "x_axis_is_null", icon="RADIOBUT_OFF" if georef_props.x_axis_is_null else "RADIOBUT_ON", text=""
+                )
+            elif attribute.name == "XAxisOrdinate":
+                row = self.layout.row(align=True)
+                row.prop(georef_props, "x_axis_ordinate", text="XAxis Ordinate")
+                row.prop(
+                    georef_props, "x_axis_is_null", icon="RADIOBUT_OFF" if georef_props.x_axis_is_null else "RADIOBUT_ON", text=""
+                )
+            else:
+                draw_attribute(attribute, self.layout.row())
 
 class BIM_UL_library(UIList):
     def draw_item(
@@ -596,6 +663,13 @@ class BIM_UL_filter_categories(UIList):
 
 
 class BIM_UL_links(UIList):
+    def get_display_name(self, item: Link) -> str:
+        """Convert link name from #123 format to mode-based prefix (A123, M123, or D123)"""
+        if item.name.startswith("#"):
+            mode_prefix = item.mode[0]
+            return mode_prefix + item.name[1:]
+        return item.name
+
     def draw_item(
         self,
         context,
@@ -609,45 +683,112 @@ class BIM_UL_links(UIList):
     ):
         if item:
             row = layout.row(align=True)
-            if item.is_loaded:
-                row.label(text=item.name)
-                op = row.operator(
-                    "bim.toggle_link_selectability",
-                    text="",
-                    icon="RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON",
-                    emboss=False,
-                )
-                op.link = item.name
-                op = row.operator(
-                    "bim.toggle_link_visibility",
-                    text="",
-                    icon="CUBE" if item.is_wireframe else "MESH_CUBE",
-                    emboss=False,
-                )
-                op.link = item.name
-                op.mode = "WIREFRAME"
-                op = row.operator(
-                    "bim.toggle_link_visibility",
-                    text="",
-                    icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
-                    emboss=False,
-                )
-                op.link = item.name
-                op.mode = "VISIBLE"
-                op = row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA")
-                op.index = index
-                op = row.operator("bim.unload_link", text="", icon="UNLINKED")
-                op.filepath = item.name
-                op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
-                op.filepath = item.name
-            else:
-                row.prop(item, "name", text="")
-                op = row.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-                op.attribute_data_path = tool.Blender.get_full_data_path(item, "name")
-                op = row.operator("bim.load_link", text="", icon="LINKED")
-                op.filepath = item.name
-                op = row.operator("bim.unlink_ifc", text="", icon="X")
-                op.filepath = item.name
+        if item.is_loaded:
+            icon_row = row.row(align=True)
+            icon_row.ui_units_x = 1.0
+
+            placed_as_per_georef = item.placed_as_per_georef
+            if item.is_loaded and item.empty_handle and item.georeferenced in ("PARTIAL_COMPATIBLE", "FULL_COMPATIBLE"):
+                # Get current position and rotation
+                actual_x = round(item.empty_handle.location.x, 3)
+                actual_y = round(item.empty_handle.location.y, 3)
+                actual_z = round(item.empty_handle.location.z, 3)
+                actual_angle = round(math.degrees(item.empty_handle.rotation_euler.z), 3)  # Convert to degrees
+                
+                # Parse expected position from geo_pos_in_3dview
+                if item.geo_pos_in_3dview:
+                    parts = item.geo_pos_in_3dview.split(',')
+                    if len(parts) == 4:
+                        expected_x = float(parts[0])
+                        expected_y = float(parts[1])
+                        expected_z = float(parts[2])
+                        expected_angle = float(parts[3])
+                        
+                        if item.georeferenced == "PARTIAL_COMPATIBLE":
+                            placed_as_per_georef = (actual_x == expected_x and 
+                                                    actual_y == expected_y and
+                                                    actual_angle == expected_angle)
+                        elif item.georeferenced == "FULL_COMPATIBLE":
+                            placed_as_per_georef = (actual_x == expected_x and 
+                                                    actual_y == expected_y and 
+                                                    actual_z == expected_z and
+                                                    actual_angle == expected_angle)
+
+            if item.georeferenced == "NONE":
+                icon_row.enabled = False
+                icon_row.label(text="", icon="CANCEL")
+                icon_row.enabled = True
+
+            elif item.georeferenced == "NOT_COMPATIBLE":
+                icon_row.alert = True
+                icon_row.label(text="", icon="CANCEL")
+                icon_row.alert = False
+
+            elif item.georeferenced == "PARTIAL_COMPATIBLE":
+                if not placed_as_per_georef:
+                    icon_row.alert = True
+                icon_row.label(text="", icon="INTERNET_OFFLINE")
+                icon_row.alert = False
+
+            elif item.georeferenced == "FULL_COMPATIBLE":
+                if not placed_as_per_georef:
+                    icon_row.alert = True
+                icon_row.label(text="", icon="WORLD")
+                icon_row.alert = False
+
+            # Display position from the empty handle if loaded
+            position_text = "N/A"
+            if item.is_loaded and item.empty_handle:
+                empty = item.empty_handle
+                loc = empty.location
+                rot = empty.rotation_euler
+                position_x = round(loc.x, 3)
+                position_y = round(loc.y, 3)
+                position_z = round(loc.z, 3)
+                position_angle = round(math.degrees(rot.z), 1)
+                position_text = f"({position_x}, {position_y}, {position_z}) {position_angle}°"
+            
+            # Combine filename and ID
+            display_text = f"{self.get_display_name(item)} {position_text} {item.filepath}"
+            row.label(text=display_text)
+            
+            op = row.operator(
+                "bim.toggle_link_selectability",
+                text="",
+                icon="RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON",
+                emboss=False,
+            )
+            op.link = item.name
+            op = row.operator(
+                "bim.toggle_link_visibility",
+                text="",
+                icon="CUBE" if item.is_wireframe else "MESH_CUBE",
+                emboss=False,
+            )
+            op.link = item.name
+            op.mode = "WIREFRAME"
+            op = row.operator(
+                "bim.toggle_link_visibility",
+                text="",
+                icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
+                emboss=False,
+            )
+            op.link = item.name
+            op.mode = "VISIBLE"
+            op = row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA")
+            op.index = index
+            op = row.operator("bim.unload_link", text="", icon="UNLINKED")
+            op.link = item.name
+            op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
+            op.link = item.name
+        else:
+            display_name = self.get_display_name(item)
+            display_text = f"{display_name} | {item.filepath}"
+            row.label(text=display_text)
+            op = row.operator("bim.load_link", text="", icon="LINKED")
+            op.link = item.name
+            op = row.operator("bim.unlink_ifc", text="", icon="X")
+            op.link = item.name
 
 
 class BIM_PT_purge(Panel):

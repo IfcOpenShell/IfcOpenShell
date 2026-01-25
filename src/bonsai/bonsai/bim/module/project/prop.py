@@ -221,7 +221,47 @@ class FilterCategory(PropertyGroup):
 class Link(PropertyGroup):
     name: StringProperty(
         name="Name",
+        description="STEP ID of the IfcDocumentReference (format: #123). Used as unique identifier for dictionary lookup",
+    )
+    filepath: StringProperty(
+        name="Filepath",
         description="Filepath to linked .ifc file, stored in posix format (could be relative to .ifc file, not to .blend)",
+    )
+    position: StringProperty(
+        name="Position",
+        description="Position information (x,y,z,angle) for the linked model",
+        default="",
+    )
+    mode: EnumProperty(
+        name="Mode",
+        description="How the link was created",
+        items=[
+            ("AUTOMATIC", "Automatic", "Link created automatically with georeferencing"),
+            ("MANUAL", "Manual", "Link created manually with custom position"),
+            ("DISABLED", "Disabled", "Link created with georeferencing disabled"),
+        ],
+        default="AUTOMATIC",
+    )
+    georeferenced: EnumProperty(
+        name="Georeferenced",
+        description="Georeferencing status: compatibility between host and linked model",
+        items=[
+            ("NONE", "No Georef", "Linked model has no georeferencing"),
+            ("NOT_COMPATIBLE", "Not Compatible", "Has geo data but CRS name and vertical datum differ from host"),
+            ("PARTIAL_COMPATIBLE", "Partial Compatible", "Has geo data, CRS name matches but vertical datum differs"),
+            ("FULL_COMPATIBLE", "Full Compatible", "Both CRS name and vertical datum match host"),
+        ],
+        default="NONE",
+    )
+    placed_as_per_georef: BoolProperty(
+        name="Placed As Per Georeference",
+        description="Whether this link was rightly placed using georeferencing when created",
+        default=False,
+    )
+    geo_pos_in_3dview: StringProperty(
+        name="Position in 3D View when placed_as_per_georef",
+        description="Position and rotation in 3D view when placed_as_per_georef is True (format: x,y,z,angle)",
+        default="0.0,0.0,0.0,0.0",
     )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
@@ -236,6 +276,10 @@ class Link(PropertyGroup):
 
     if TYPE_CHECKING:
         name: str
+        filepath: str
+        position: str
+        mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
+        georeferenced: Literal["NONE", "NOT_COMPATIBLE", "PARTIAL_COMPATIBLE", "FULL_COMPATIBLE"]
         is_loaded: bool
         is_selectable: bool
         is_wireframe: bool

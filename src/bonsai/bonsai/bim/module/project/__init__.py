@@ -19,6 +19,8 @@
 import bpy
 
 from . import decorator, gizmo, operator, prop, ui, workspace
+from bpy.app.handlers import persistent
+import bonsai.tool as tool
 
 classes = (
     operator.AddProjectLibrary,
@@ -36,6 +38,7 @@ classes = (
     operator.CreateProject,
     operator.DisableCulling,
     operator.DisableEditingHeader,
+    operator.DuplicateLink,
     operator.EditHeader,
     operator.EditProjectLibrary,
     operator.EnableCulling,
@@ -94,6 +97,17 @@ classes = (
 
 addon_keymaps = []
 
+@persistent
+def update_link_ui_on_transform(scene):
+    props = tool.Project.get_project_props()
+    for link in props.links:
+        if link.is_loaded and link.empty_handle:
+            for window in bpy.context.window_manager.windows:
+                for area in window.screen.areas:
+                    if area.type == 'PROPERTIES':
+                        area.tag_redraw()
+            break
+
 
 def register():
     if not bpy.app.background:
@@ -101,6 +115,7 @@ def register():
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
     bpy.types.Scene.MeasureToolSettings = bpy.props.PointerProperty(type=prop.MeasureToolSettings)
     bpy.app.handlers.load_post.append(decorator.toggle_decorations_on_load)
+    bpy.app.handlers.depsgraph_update_post.append(update_link_ui_on_transform)
     bpy.types.TOPBAR_MT_file_import.append(ui.file_import_menu)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.prepend(ui.file_menu)
@@ -125,6 +140,7 @@ def unregister():
     del bpy.types.Scene.BIMProjectProperties
     del bpy.types.Scene.MeasureToolSettings
     bpy.app.handlers.load_post.remove(decorator.toggle_decorations_on_load)
+    bpy.app.handlers.depsgraph_update_post.remove(update_link_ui_on_transform)
     bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.remove(ui.file_menu)
 
