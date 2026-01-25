@@ -1797,6 +1797,10 @@ class Geometry(bonsai.core.tool.Geometry):
     def import_item_attributes(cls, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_mesh_props(obj.data)
         props.item_attributes.clear()
+        element = tool.Ifc.get_entity(tool.Geometry.get_geometry_props().representation_obj)
+        if tool.Model.get_usage_type(element) == "LAYER3":
+            return  # All LAYER3 attributes are parametrically determined from the IfcMaterialLayerSet
+
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         allowed_attributes = [
             a.name()
