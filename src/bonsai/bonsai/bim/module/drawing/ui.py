@@ -85,9 +85,9 @@ class BIM_PT_camera(Panel):
                 if links:
                     for link in links:
                         row = panel.row(align=True)
-                        split = row.split(factor=0.9)
-                        split.label(text=link.name, icon="FILE")
-                        split.prop(link, "include_in_drawings", text="")
+                        row.label(text=f"{link.name}", icon="FILE")
+                        row.label(text=f"UUID: {link.uuid[:8]}..." if link.uuid else "UUID: -")
+                        row.prop(link, "include_in_drawings", text="")
                 else:
                     panel.label(text="No IFC projects linked and loaded.")
 
@@ -166,37 +166,52 @@ class BIM_PT_element_filters(Panel):
 
         assert context.scene and (camera := context.scene.camera)
         props = tool.Drawing.get_camera_props(camera)
+        preferences = tool.Blender.get_addon_preferences()
 
-        if props.filter_mode == "INCLUDE":
-            bonsai.bim.helper.draw_filter(
-                self.layout, props.include_filter_groups, ElementFiltersData, "drawing_include"
-            )
-            row = self.layout.row(align=True)
-            row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Include Filter").filter_mode = (
-                "INCLUDE"
-            )
-            row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
-        elif props.filter_mode == "EXCLUDE":
-            bonsai.bim.helper.draw_filter(
-                self.layout, props.exclude_filter_groups, ElementFiltersData, "drawing_exclude"
-            )
-            row = self.layout.row(align=True)
-            row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Exclude Filter").filter_mode = (
-                "EXCLUDE"
-            )
-            row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
+        if preferences.chain_filter_with_set_operations:
+            if props.filter_mode == "INCLUDE":
+                bonsai.bim.helper.draw_filter(
+                    self.layout, props.include_filter_groups, ElementFiltersData, "drawing_include"
+                )
+                row = self.layout.row(align=True)
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Filter").filter_mode = "INCLUDE"
+                row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
+            else:
+                row = self.layout.row(align=True)
+                text = "Select Filter (If empty all elements are selected)"
+                row.label(text=text, icon="FILTER")
+                row.operator("bim.enable_editing_element_filter", icon="GREASEPENCIL", text="").filter_mode = "INCLUDE"
         else:
-            row = self.layout.row(align=True)
-            text = "Include Filter" if ElementFiltersData.data["has_include_filter"] else "No Include Filter Found"
-            icon = "GREASEPENCIL" if ElementFiltersData.data["has_include_filter"] else "ADD"
-            row.label(text=text, icon="FILTER")
-            row.operator("bim.enable_editing_element_filter", icon=icon, text="").filter_mode = "INCLUDE"
-            row = self.layout.row(align=True)
-            text = "Exclude Filter" if ElementFiltersData.data["has_exclude_filter"] else "No Exclude Filter Found"
-            icon = "GREASEPENCIL" if ElementFiltersData.data["has_exclude_filter"] else "ADD"
-            row.label(text=text, icon="FILTER")
-            row.operator("bim.exclude_annotation", icon="REMOVE", text="")
-            row.operator("bim.enable_editing_element_filter", icon=icon, text="").filter_mode = "EXCLUDE"
+            if props.filter_mode == "INCLUDE":
+                bonsai.bim.helper.draw_filter(
+                    self.layout, props.include_filter_groups, ElementFiltersData, "drawing_include"
+                )
+                row = self.layout.row(align=True)
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Include Filter").filter_mode = (
+                    "INCLUDE"
+                )
+                row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
+            elif props.filter_mode == "EXCLUDE":
+                bonsai.bim.helper.draw_filter(
+                    self.layout, props.exclude_filter_groups, ElementFiltersData, "drawing_exclude"
+                )
+                row = self.layout.row(align=True)
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Exclude Filter").filter_mode = (
+                    "EXCLUDE"
+                )
+                row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
+            else:
+                row = self.layout.row(align=True)
+                text = "Include Filter" if ElementFiltersData.data["has_include_filter"] else "No Include Filter Found"
+                icon = "GREASEPENCIL" if ElementFiltersData.data["has_include_filter"] else "ADD"
+                row.label(text=text, icon="FILTER")
+                row.operator("bim.enable_editing_element_filter", icon=icon, text="").filter_mode = "INCLUDE"
+                row = self.layout.row(align=True)
+                text = "Exclude Filter" if ElementFiltersData.data["has_exclude_filter"] else "No Exclude Filter Found"
+                icon = "GREASEPENCIL" if ElementFiltersData.data["has_exclude_filter"] else "ADD"
+                row.label(text=text, icon="FILTER")
+                row.operator("bim.exclude_annotation", icon="REMOVE", text="")
+                row.operator("bim.enable_editing_element_filter", icon=icon, text="").filter_mode = "EXCLUDE"
 
 
 class BIM_PT_drawing_underlay(Panel):

@@ -24,7 +24,7 @@ import bonsai.tool as tool
 import bonsai.bim.helper
 from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.prop import StrProperty, ObjProperty, Attribute
+from bonsai.bim.prop import StrProperty, ObjProperty, Attribute, BIMFilterGroup
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -221,11 +221,56 @@ class Link(PropertyGroup):
         name="Name",
         description="Filepath to linked .ifc file, stored in posix format (could be relative to .ifc file, not to .blend)",
     )
+    uuid: StringProperty(
+        name="UUID",
+        description="STEP ID of the IfcDocumentReference (format: #123). Used to uniquely identify this link and for cache file naming.",
+    )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
     include_in_drawings: BoolProperty(name="Include in Drawings", default=True, options=set())
+    placed_as_per_georef: BoolProperty(
+        name="Placed As Per Georeference",
+        description="Whether this link was placed using georeferencing data (AUTOMATIC mode)",
+        default=False,
+    )
+    has_georeference: BoolProperty(
+        name="Has Georeference",
+        description="Whether the linked IFC file has georeferencing data",
+        default=False,
+    )
+    georeferenced: EnumProperty(
+        name="Georeferenced",
+        description="Georeferencing status: compatibility between host and linked model",
+        items=[
+            ("NONE", "No Georef", "Linked model has no georeferencing"),
+            ("NOT_COMPATIBLE", "Not Compatible", "Has geo data but CRS name and vertical datum differ from host"),
+            ("PARTIAL_COMPATIBLE", "Partial Compatible", "Has geo data, CRS name matches but vertical datum differs"),
+            ("FULL_COMPATIBLE", "Full Compatible", "Both CRS name and vertical datum match host"),
+        ],
+        default="NONE",
+    )
+    expected_georef_x: FloatProperty(
+        name="Expected Georef X",
+        description="Expected X coordinate based on Helmert transformation from georeferencing",
+        default=0.0,
+    )
+    expected_georef_y: FloatProperty(
+        name="Expected Georef Y",
+        description="Expected Y coordinate based on Helmert transformation from georeferencing",
+        default=0.0,
+    )
+    expected_georef_z: FloatProperty(
+        name="Expected Georef Z",
+        description="Expected Z coordinate based on Helmert transformation from georeferencing",
+        default=0.0,
+    )
+    expected_georef_angle: FloatProperty(
+        name="Expected Georef Angle",
+        description="Expected Z rotation angle in radians based on georeferencing",
+        default=0.0,
+    )
     empty_handle: PointerProperty(
         name="Empty Object Handle",
         description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
@@ -239,6 +284,9 @@ class Link(PropertyGroup):
         is_wireframe: bool
         is_hidden: bool
         include_in_drawings: bool
+        placed_as_per_georef: bool
+        has_georeference: bool
+        georeferenced: str
         empty_handle: Union[bpy.types.Object, None]
 
 
@@ -290,6 +338,7 @@ class BIMProjectProperties(PropertyGroup):
     active_filter_category_index: IntProperty(name="Active Filter Category Index")
     filter_query: StringProperty(name="Filter Query")
     should_filter_spatial_elements: BoolProperty(name="Filter Spatial Elements", default=False)
+    filter_groups: CollectionProperty(name="Filter Groups", type=BIMFilterGroup)
     geometry_library: bpy.props.EnumProperty(
         items=[
             ("opencascade", "OpenCASCADE", "Best for stability and accuracy"),
@@ -319,7 +368,7 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.05)
+    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(
         name="Void Limit",
@@ -340,7 +389,7 @@ class BIMProjectProperties(PropertyGroup):
                 "An automatic false origin will be detected from geometry with large coordinates",
             ),
             ("MANUAL", "Manual", "You can specify the false origin coordinates"),
-            ("DISABLED", "Disabled", "The model in original local coordinates will be shown as is"),
+            ("DISABLED", "Disabled", "The model's origin will be located at the 3d Cursor position"),
         ],
         name="False Origin Mode",
         default="AUTOMATIC",

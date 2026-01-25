@@ -266,48 +266,50 @@ class Project(bonsai.core.tool.Project):
         for reference in references:
             link = links.add()
             link.name = reference.Location
+            step_id = reference.id()
+            link.uuid = f"#{step_id}"
 
     @classmethod
     def save_linked_models_to_ifc(cls) -> None:
         ifc_file = tool.Ifc.get()
         links = tool.Project.get_project_props().links
-        filepaths: set[Path] = set()
+        
+        active_uuids = set()
         for link in links:
-            filepaths.add(Path(link.name))
-
+            uuid = getattr(link, 'uuid', '')
+            if not uuid or not uuid.startswith('#'):
+                continue
+            active_uuids.add(uuid)
+           
+            step_id = int(uuid[1:])
+            reference = ifc_file.by_id(step_id)
+            
+            if link.empty_handle:
+                empty = link.empty_handle
+                loc = empty.location
+                rot = empty.rotation_euler
+                
+                position_x = round(loc.x, 3)
+                position_y = round(loc.y, 3)
+                position_z = round(loc.z, 3)
+                import math
+                position_angle = round(math.degrees(rot.z), 3)
+                
+                position_identification = f"{position_x},{position_y},{position_z},{position_angle}"
+                reference.Identification = position_identification
+        
         links_document = cls.get_linked_models_document()
-
-        if not filepaths and links_document is None:
-            return
-
-        paths_to_add = filepaths.copy()
-        references_to_remove: list[ifcopenshell.entity_instance] = []
         if links_document:
-            references = tool.Document.get_document_references(links_document)
-            for reference in references:
-                # I guess got corrupted by the user.
-                if not (location := reference.Location):
-                    references_to_remove.remove(reference)
-                    continue
-                path = Path(location)
-                if path in paths_to_add:
-                    paths_to_add.remove(path)
-                else:
-                    references_to_remove.append(reference)
+            if ifc_file.schema == "IFC2X3":
+                document_references = links_document.DocumentReferences or []
+            else:
+                document_references = links_document.HasDocumentReferences or []
+            
+            for reference in document_references:
+                reference_uuid = f"#{reference.id()}"
+                if reference_uuid not in active_uuids:
+                    ifcopenshell.api.document.remove_reference(ifc_file, reference)
 
-        if paths_to_add:
-            if links_document is None:
-                links_document = ifcopenshell.api.document.add_information(ifc_file)
-                links_document.Name = "BBIM_Linked_Models"
-                links_document.Description = "Bonsai internal document containing references to currently linked models"
-
-            for path in paths_to_add:
-                reference = ifcopenshell.api.document.add_reference(ifc_file, links_document)
-                reference.Location = path.as_posix()
-
-        if references_to_remove:
-            for reference in references_to_remove:
-                ifcopenshell.api.document.remove_reference(ifc_file, reference)
 
     @classmethod
     def get_project_library_elements(
